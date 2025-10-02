@@ -1,466 +1,323 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Bantu Stream Connect — Coming Soon</title>
+  <meta name="description" content="Bantu Stream Connect — Made by Africans, for Africans. Sign up early. Music, Film, Podcasts, STEM — all in one place." />
 
-    <title>Freebie 60 - Spatial UI (Tailwind CSS) by pixelcave</title>
+  <!-- if your template already provides CSS in assets, keep link -->
+  <link rel="stylesheet" href="/assets/style.css" /> <!-- optional template css -->
+  <!-- Custom glow + helper styles (kept small) -->
+  <style>
+    /* Basic layout helpers in case Tailwind isn't present in your template build */
+    :root{
+      --blue-900:#04132b; --blue-800:#0b2b49; --blue-700:#0f3f63; --gold:#FFD166;
+      --glow-blue: rgba(0, 222, 255, .16);
+    }
+    body{font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; margin:0; background:linear-gradient(180deg,#030617 0%, #061126 60%); color:#e6f0ff; -webkit-font-smoothing:antialiased;}
+    a{color:inherit; text-decoration:none}
+    .container{max-width:1100px;margin:0 auto;padding:0 20px;}
+    header{backdrop-filter: blur(6px); background:rgba(2,6,23,0.65)}
+    .nav-links a{margin-left:18px; color:rgba(255,255,255,0.9)}
+    .btn-primary{background:linear-gradient(90deg,#0ea5e9,#ffd166); color:#000; padding:10px 16px;border-radius:12px; font-weight:700; display:inline-block; box-shadow:0 6px 24px rgba(13,42,83,0.45); transition:transform .18s ease, box-shadow .18s ease;}
+    .btn-primary:hover{transform:translateY(-4px); box-shadow:0 14px 40px rgba(255,209,102,0.28)}
+    /* Glow animation */
+    @keyframes glowPulseText {
+      0%{text-shadow:0 0 6px #FFD166, 0 0 12px #00f0ff}
+      50%{text-shadow:0 0 12px #FFD166,0 0 24px #00f0ff}
+      100%{text-shadow:0 0 6px #FFD166, 0 0 12px #00f0ff}
+    }
+    .glow-heading{animation:glowPulseText 2.8s ease-in-out infinite alternate}
+    .glow-border{box-shadow:0 0 18px rgba(255,209,102,0.18), inset 0 0 28px rgba(0,240,255,0.02)}
+    /* Hero */
+    .hero{padding:72px 0 48px; text-align:center; position:relative; overflow:hidden;}
+    .hero .headline{font-size:2.05rem;line-height:1.05;margin-bottom:10px;font-weight:800;color:#fff}
+    .hero .sub{color:rgba(255,255,255,0.85); font-size:1.05rem;max-width:820px;margin:0 auto 18px}
+    /* App mockup */
+    .mockup-wrap{margin-top:28px}
+    .mockup{width:320px;border-radius:28px; box-shadow:0 30px 80px rgba(2,6,23,0.65); transition:transform .45s ease, box-shadow .4s ease; display:inline-block}
+    .mockup:hover{transform:translateY(-8px) rotate(-0.6deg)}
+    .screenshot{display:block;width:100%;border-radius:22px}
+    /* Sections */
+    section{padding:48px 0}
+    .card-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:18px}
+    @media (max-width:1000px){ .card-grid{grid-template-columns:repeat(2,1fr)} }
+    @media (max-width:600px){ .card-grid{grid-template-columns:1fr} .hero .headline{font-size:1.6rem} }
 
-    <meta
-      name="description"
-      content="Freebie 60 - Spatial UI (Tailwind CSS). Check out more at https://pixelcave.com"
-    />
-    <meta name="author" content="pixelcave" />
+    .feature-card{border-radius:14px;padding:18px;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); border:1px solid rgba(255,255,255,0.04); transition:transform .28s ease, box-shadow .28s ease}
+    .feature-card:hover{transform:translateY(-8px); box-shadow:0 24px 60px rgba(1,30,60,0.45)}
+    .feature-title{font-weight:700;color:#fff;margin-top:12px}
+    .muted{color:rgba(255,255,255,0.8)}
 
-    <!-- Icons -->
-    <link
-      rel="icon"
-      href="https://cdn.pixelcave.com/favicon.svg"
-      sizes="any"
-      type="image/svg+xml"
-    />
-    <link
-      rel="icon"
-      href="https://cdn.pixelcave.com/favicon.png"
-      type="image/png"
-    />
+    /* Signup form */
+    .signup-wrap{max-width:720px;margin:0 auto;padding:28px;border-radius:16px;background:linear-gradient(90deg, rgba(6,26,50,0.7), rgba(9,42,70,0.6)); border:1px solid rgba(255,209,102,0.12); box-shadow:0 10px 40px rgba(13,42,83,0.4)}
+    .form-row{display:flex;gap:12px}
+    .form-row .w-2{flex:2} .form-row .w-1{flex:1}
+    input[type="text"], input[type="email"], input[type="password"]{
+      width:100%; padding:12px 14px; border-radius:10px; border:1px solid rgba(255,209,102,0.12); background:rgba(255,255,255,0.02); color: #fff; outline:none;
+      transition:box-shadow .16s ease, transform .12s ease;
+    }
+    input:focus{box-shadow:0 6px 20px rgba(0,240,255,0.06); transform:translateY(-2px)}
+    .msg{margin-top:12px;font-weight:600}
 
-    <!-- Inter web font from bunny.net (GDPR compliant) -->
-    <link rel="preconnect" href="https://fonts.bunny.net" />
-    <link
-      href="https://fonts.bunny.net/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
-      rel="stylesheet"
-    />
+    /* badges */
+    .badge{display:inline-block;padding:10px 14px;border-radius:12px;background:linear-gradient(90deg,#07203a,#0b2e48);border:1px solid rgba(255,255,255,0.04); color:#fff; font-weight:700}
+    /* footer */
+    footer{padding:36px 0;background:#020417; color:rgba(255,255,255,0.85); text-align:center}
 
-    <!-- Tailwind CSS Play CDN (mostly for development/testing purposes) -->
-    <script src="https://unpkg.com/@tailwindcss/browser@4"></script>
+    /* hover-image slight animation */
+    .hover-img{transition:transform .45s cubic-bezier(.2,.9,.3,1), box-shadow .35s}
+    .hover-img:hover{transform:translateY(-10px) scale(1.03); box-shadow:0 30px 60px rgba(2,10,40,0.6)}
+    /* logo hover */
+    .logo{height:36px;transition:transform .28s, filter .28s}
+    .logo:hover{transform:scale(1.08); filter:drop-shadow(0 8px 20px rgba(255,209,102,0.35))}
 
-    <!-- Tailwind CSS v4 Configuration -->
-    <style type="text/tailwindcss">
-      /* Class based dark mode */
-      @custom-variant dark (&:where(.dark, .dark *));
+    /* small helpers */
+    .center{display:flex;align-items:center;justify-content:center}
+  </style>
+</head>
+<body>
 
-      /* Theme configuration */
-      @theme {
-        /* Fonts */
-        --default-font-family: "Inter";
-      }
-    </style>
-
-    <!-- Alpine.js -->
-    <script
-      defer
-      src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"
-    ></script>
-
-    <!-- Alpine.js (x-cloak - https://alpinejs.dev/directives/cloak) -->
-    <style>
-      [x-cloak] {
-        display: none !important;
-      }
-    </style>
-  </head>
-  <body>
-    <!-- Page Wrapper -->
-    <div
-      x-data="{ sidebarOpenOnMobile: false }"
-      class="flex h-dvh items-center justify-center bg-white bg-[url('assets/unsplash-KSfe2Z4REEM.jpg')] bg-cover bg-center px-1 text-white sm:px-10"
-    >
-      <!-- App Wrapper -->
-      <div
-        class="flex h-5/6 max-h-[800px] w-full max-w-6xl items-center sm:h-2/3"
-      >
-        <!-- Floating Actions -->
-        <nav
-          class="z-10 -mr-4 flex w-16 flex-none flex-col justify-center overflow-hidden rounded-2xl border-y border-t-white/20 border-b-white/10 bg-black/50 p-2 shadow-xl shadow-black/30 backdrop-blur-3xl sm:mr-2"
-        >
-          <a
-            href="javascript:void(0)"
-            class="group mb-6 flex items-center gap-2 rounded-xl px-3 py-2.5 transition hover:bg-white/5 active:scale-95 active:bg-white/10 lg:hidden"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 300 300"
-              class="inline-block w-6 text-orange-300 transition duration-150 ease-out group-hover:-rotate-12 group-active:rotate-300"
-            >
-              <path
-                fill="currentColor"
-                d="M113.85 273.14c.3-.32 1.15-1.68 1.15-3.65H85c0-12.04 8.44-21.5 25.07-28.12 10.38-4.14 23.63-7.3 36.44-10.36 9.78-2.34 24.42-5.84 33.11-9.31-8.69-3.47-23.33-6.97-33.11-9.31-12.81-3.06-26.06-6.23-36.44-10.36C93.43 195.4 85 185.94 85 173.91s8.44-21.5 25.07-28.12c10.38-4.14 23.63-7.3 36.44-10.36 9.78-2.34 24.42-5.84 33.11-9.31-8.69-3.47-23.33-6.97-33.11-9.31-12.81-3.06-26.06-6.23-36.44-10.36C93.43 99.82 85 90.36 85 78.32s8.44-21.5 25.07-28.13c10.38-4.14 23.63-7.3 36.44-10.36 13.27-3.17 35.47-8.48 39.64-12.96-.3.32-1.15 1.68-1.15 3.65h30c0 12.04-8.44 21.5-25.07 28.13-10.38 4.14-23.63 7.3-36.44 10.36-9.78 2.34-24.43 5.84-33.11 9.31 8.69 3.47 23.33 6.97 33.11 9.31 12.81 3.06 26.06 6.23 36.44 10.36 16.64 6.63 25.07 16.09 25.07 28.13s-8.44 21.5-25.07 28.12c-10.38 4.14-23.63 7.3-36.44 10.36-9.78 2.34-24.42 5.84-33.11 9.31 8.69 3.47 23.33 6.97 33.11 9.31 12.81 3.06 26.06 6.23 36.44 10.36 16.64 6.63 25.07 16.09 25.07 28.12s-8.44 21.5-25.07 28.12c-10.38 4.14-23.63 7.3-36.44 10.36-13.27 3.17-35.47 8.48-39.64 12.96z"
-              ></path>
-            </svg>
-          </a>
-          <a
-            href="javascript:void(0)"
-            class="group flex items-center gap-2 rounded-xl px-3 py-2.5 transition hover:bg-white/5 active:scale-95 active:bg-white/10"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke-width="1.5"
-              stroke="currentColor"
-              data-slot="icon"
-              class="hi-outline hi-puzzle-piece inline-block size-6 opacity-50 transition group-active:opacity-100"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                d="M14.25 6.087c0-.355.186-.676.401-.959.221-.29.349-.634.349-1.003 0-1.036-1.007-1.875-2.25-1.875s-2.25.84-2.25 1.875c0 .369.128.713.349 1.003.215.283.401.604.401.959v0a.64.64 0 0 1-.657.643 48.39 48.39 0 0 1-4.163-.3c.186 1.613.293 3.25.315 4.907a.656.656 0 0 1-.658.663v0c-.355 0-.676-.186-.959-.401a1.647 1.647 0 0 0-1.003-.349c-1.036 0-1.875 1.007-1.875 2.25s.84 2.25 1.875 2.25c.369 0 .713-.128 1.003-.349.283-.215.604-.401.959-.401v0c.31 0 .555.26.532.57a48.039 48.039 0 0 1-.642 5.056c1.518.19 3.058.309 4.616.354a.64.64 0 0 0 .657-.643v0c0-.355-.186-.676-.401-.959a1.647 1.647 0 0 1-.349-1.003c0-1.035 1.008-1.875 2.25-1.875 1.243 0 2.25.84 2.25 1.875 0 .369-.128.713-.349 1.003-.215.283-.4.604-.4.959v0c0 .333.277.599.61.58a48.1 48.1 0 0 0 5.427-.63 48.05 48.05 0 0 0 .582-4.717.532.532 0 0 0-.533-.57v0c-.355 0-.676.186-.959.401-.29.221-.634.349-1.003.349-1.035 0-1.875-1.007-1.875-2.25s.84-2.25 1.875-2.25c.37 0 .713.128 1.003.349.283.215.604.401.96.401v0a.656.656 0 0 0 .658-.663 48.422 48.422 0 0 0-.37-5.36c-1.886.342-3.81.574-5.766.689a.578.578 0 0 1-.61-.58v0Z"
-              />
-            </svg>
-          </a>
-          <a
-            href="javascript:void(0)"
-            class="group flex items-center gap-2 rounded-xl px-3 py-2.5 transition hover:bg-white/5 active:scale-95 active:bg-white/10"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke-width="1.5"
-              stroke="currentColor"
-              data-slot="icon"
-              class="hi-outline hi-sparkles inline-block size-6 opacity-50 transition group-active:opacity-100"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09ZM18.259 8.715 18 9.75l-.259-1.035a3.375 3.375 0 0 0-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 0 0 2.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 0 0 2.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 0 0-2.456 2.456ZM16.894 20.567 16.5 21.75l-.394-1.183a2.25 2.25 0 0 0-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 0 0 1.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 0 0 1.423 1.423l1.183.394-1.183.394a2.25 2.25 0 0 0-1.423 1.423Z"
-              />
-            </svg>
-          </a>
-          <a
-            href="javascript:void(0)"
-            class="group flex items-center gap-2 rounded-xl px-3 py-2.5 transition hover:bg-white/5 active:scale-95 active:bg-white/10"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke-width="1.5"
-              stroke="currentColor"
-              data-slot="icon"
-              class="hi-outline hi-document inline-block size-6 opacity-50 transition group-active:opacity-100"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z"
-              />
-            </svg>
-          </a>
-          <a
-            href="javascript:void(0)"
-            class="group mt-6 flex items-center gap-2 rounded-xl px-3 py-2.5 transition hover:bg-white/5 active:scale-95 active:bg-white/10"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke-width="1.5"
-              stroke="currentColor"
-              data-slot="icon"
-              class="hi-outline hi-user-circle inline-block size-6 opacity-50 transition group-active:opacity-100"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                d="M17.982 18.725A7.488 7.488 0 0 0 12 15.75a7.488 7.488 0 0 0-5.982 2.975m11.963 0a9 9 0 1 0-11.963 0m11.963 0A8.966 8.966 0 0 1 12 21a8.966 8.966 0 0 1-5.982-2.275M15 9.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"
-              />
-            </svg>
-          </a>
-          <a
-            href="javascript:void(0)"
-            class="group flex items-center gap-2 rounded-xl px-3 py-2.5 transition hover:bg-white/5 active:scale-95 active:bg-white/10"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke-width="1.5"
-              stroke="currentColor"
-              data-slot="icon"
-              class="hi-outline hi-arrow-right-start-on-rectangle inline-block size-6 opacity-50 transition group-active:opacity-100"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15m3 0 3-3m0 0-3-3m3 3H9"
-              />
-            </svg>
-          </a>
-        </nav>
-        <!-- END Floating Actions -->
-
-        <!-- Page Content -->
-        <div
-          class="relative flex h-full grow overflow-hidden rounded-[2rem] border-y border-t-white/15 border-b-white/10 bg-black/15 shadow-xl shadow-black/30 backdrop-blur-3xl"
-        >
-          <!-- Sidebar -->
-          <div
-            class="w-72 flex-none flex-col gap-5 overflow-y-auto p-5 transition lg:flex lg:bg-black/5"
-            x-bind:class="{
-              'flex absolute inset-y-0 left-0 bg-black/90 lg:static': sidebarOpenOnMobile,
-              'hidden': !sidebarOpenOnMobile,
-            }"
-          >
-            <!-- Logo -->
-            <div class="flex gap-2 text-center lg:block">
-              <button
-                x-on:click="sidebarOpenOnMobile = !sidebarOpenOnMobile"
-                type="button"
-                class="flex items-center justify-center rounded-xl bg-white/10 px-3 text-sm transition hover:bg-white/20 active:scale-95 active:bg-white/10 lg:hidden"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 24 24"
-                  fill="currentColor"
-                  data-slot="icon"
-                  class="hi-solid hi-x-mark inline-block size-6"
-                >
-                  <path
-                    fill-rule="evenodd"
-                    d="M5.47 5.47a.75.75 0 0 1 1.06 0L12 10.94l5.47-5.47a.75.75 0 1 1 1.06 1.06L13.06 12l5.47 5.47a.75.75 0 1 1-1.06 1.06L12 13.06l-5.47 5.47a.75.75 0 0 1-1.06-1.06L10.94 12 5.47 6.53a.75.75 0 0 1 0-1.06Z"
-                    clip-rule="evenodd"
-                  />
-                </svg>
-              </button>
-              <a
-                href="javascript:void(0)"
-                class="group flex items-center justify-center gap-2 rounded-xl p-2 text-xl font-medium transition hover:bg-white/5 active:scale-95 active:bg-white/10"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 300 300"
-                  class="inline-block w-6 text-orange-300 transition duration-150 ease-out group-hover:-rotate-12 group-active:rotate-300"
-                >
-                  <path
-                    fill="currentColor"
-                    d="M113.85 273.14c.3-.32 1.15-1.68 1.15-3.65H85c0-12.04 8.44-21.5 25.07-28.12 10.38-4.14 23.63-7.3 36.44-10.36 9.78-2.34 24.42-5.84 33.11-9.31-8.69-3.47-23.33-6.97-33.11-9.31-12.81-3.06-26.06-6.23-36.44-10.36C93.43 195.4 85 185.94 85 173.91s8.44-21.5 25.07-28.12c10.38-4.14 23.63-7.3 36.44-10.36 9.78-2.34 24.42-5.84 33.11-9.31-8.69-3.47-23.33-6.97-33.11-9.31-12.81-3.06-26.06-6.23-36.44-10.36C93.43 99.82 85 90.36 85 78.32s8.44-21.5 25.07-28.13c10.38-4.14 23.63-7.3 36.44-10.36 13.27-3.17 35.47-8.48 39.64-12.96-.3.32-1.15 1.68-1.15 3.65h30c0 12.04-8.44 21.5-25.07 28.13-10.38 4.14-23.63 7.3-36.44 10.36-9.78 2.34-24.43 5.84-33.11 9.31 8.69 3.47 23.33 6.97 33.11 9.31 12.81 3.06 26.06 6.23 36.44 10.36 16.64 6.63 25.07 16.09 25.07 28.13s-8.44 21.5-25.07 28.12c-10.38 4.14-23.63 7.3-36.44 10.36-9.78 2.34-24.42 5.84-33.11 9.31 8.69 3.47 23.33 6.97 33.11 9.31 12.81 3.06 26.06 6.23 36.44 10.36 16.64 6.63 25.07 16.09 25.07 28.12s-8.44 21.5-25.07 28.12c-10.38 4.14-23.63 7.3-36.44 10.36-13.27 3.17-35.47 8.48-39.64 12.96z"
-                  ></path>
-                </svg>
-                <span>Spatial UI</span>
-              </a>
-            </div>
-            <!-- END Logo -->
-
-            <!-- Navigation -->
-            <nav class="flex flex-col gap-2">
-              <h4
-                class="px-3 text-xs font-medium tracking-wider uppercase opacity-75"
-              >
-                Get Started
-              </h4>
-              <a
-                href="javascript:void(0)"
-                class="group flex items-center gap-2 rounded-xl px-3 py-2.5 transition hover:bg-white/5 active:scale-95 active:bg-white/10"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke-width="1.5"
-                  stroke="currentColor"
-                  data-slot="icon"
-                  class="hi-outline hi-document-text inline-block size-6 opacity-50 transition group-active:opacity-100"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z"
-                  />
-                </svg>
-                <span>Documentation</span>
-              </a>
-              <h4
-                class="px-3 pt-5 text-xs font-medium tracking-wider uppercase opacity-60"
-              >
-                Packages
-              </h4>
-              <a
-                href="javascript:void(0)"
-                class="group flex items-center gap-2 rounded-xl px-3 py-2.5 transition hover:bg-white/5 active:scale-95 active:bg-white/10"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke-width="1.5"
-                  stroke="currentColor"
-                  data-slot="icon"
-                  class="hi-outline hi-cpu-chip inline-block size-6 opacity-50 transition group-active:opacity-100"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    d="M8.25 3v1.5M4.5 8.25H3m18 0h-1.5M4.5 12H3m18 0h-1.5m-15 3.75H3m18 0h-1.5M8.25 19.5V21M12 3v1.5m0 15V21m3.75-18v1.5m0 15V21m-9-1.5h10.5a2.25 2.25 0 0 0 2.25-2.25V6.75a2.25 2.25 0 0 0-2.25-2.25H6.75A2.25 2.25 0 0 0 4.5 6.75v10.5a2.25 2.25 0 0 0 2.25 2.25Zm.75-12h9v9h-9v-9Z"
-                  />
-                </svg>
-                <span>Application UI</span>
-              </a>
-              <a
-                href="javascript:void(0)"
-                class="group flex items-center gap-2 rounded-xl px-3 py-2.5 transition hover:bg-white/5 active:scale-95 active:bg-white/10"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke-width="1.5"
-                  stroke="currentColor"
-                  data-slot="icon"
-                  class="hi-outline hi-building-storefront inline-block size-6 opacity-50 transition group-active:opacity-100"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    d="M13.5 21v-7.5a.75.75 0 0 1 .75-.75h3a.75.75 0 0 1 .75.75V21m-4.5 0H2.36m11.14 0H18m0 0h3.64m-1.39 0V9.349M3.75 21V9.349m0 0a3.001 3.001 0 0 0 3.75-.615A2.993 2.993 0 0 0 9.75 9.75c.896 0 1.7-.393 2.25-1.016a2.993 2.993 0 0 0 2.25 1.016c.896 0 1.7-.393 2.25-1.015a3.001 3.001 0 0 0 3.75.614m-16.5 0a3.004 3.004 0 0 1-.621-4.72l1.189-1.19A1.5 1.5 0 0 1 5.378 3h13.243a1.5 1.5 0 0 1 1.06.44l1.19 1.189a3 3 0 0 1-.621 4.72M6.75 18h3.75a.75.75 0 0 0 .75-.75V13.5a.75.75 0 0 0-.75-.75H6.75a.75.75 0 0 0-.75.75v3.75c0 .414.336.75.75.75Z"
-                  />
-                </svg>
-                <span>Marketing</span>
-              </a>
-              <a
-                href="javascript:void(0)"
-                class="group flex items-center gap-2 rounded-xl px-3 py-2.5 transition hover:bg-white/5 active:scale-95 active:bg-white/10"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke-width="1.5"
-                  stroke="currentColor"
-                  data-slot="icon"
-                  class="hi-outline hi-shopping-bag inline-block size-6 opacity-50 transition group-active:opacity-100"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    d="M15.75 10.5V6a3.75 3.75 0 1 0-7.5 0v4.5m11.356-1.993 1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 0 1-1.12-1.243l1.264-12A1.125 1.125 0 0 1 5.513 7.5h12.974c.576 0 1.059.435 1.119 1.007ZM8.625 10.5a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm7.5 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z"
-                  />
-                </svg>
-                <span>Ecommerce</span>
-              </a>
-              <h4
-                class="px-3 pt-5 text-xs font-medium tracking-wider uppercase opacity-60"
-              >
-                Manage
-              </h4>
-              <a
-                href="javascript:void(0)"
-                class="group flex items-center gap-2 rounded-xl px-3 py-2.5 transition hover:bg-white/5 active:scale-95 active:bg-white/10"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke-width="1.5"
-                  stroke="currentColor"
-                  data-slot="icon"
-                  class="hi-outline hi-user inline-block size-6 opacity-50 transition group-active:opacity-100"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z"
-                  />
-                </svg>
-                <span>Profile</span>
-              </a>
-              <a
-                href="javascript:void(0)"
-                class="group flex items-center gap-2 rounded-xl px-3 py-2.5 transition hover:bg-white/5 active:scale-95 active:bg-white/10"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke-width="1.5"
-                  stroke="currentColor"
-                  data-slot="icon"
-                  class="hi-outline hi-cog-8-tooth inline-block size-6 opacity-50 transition group-active:opacity-100"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    d="M10.343 3.94c.09-.542.56-.94 1.11-.94h1.093c.55 0 1.02.398 1.11.94l.149.894c.07.424.384.764.78.93.398.164.855.142 1.205-.108l.737-.527a1.125 1.125 0 0 1 1.45.12l.773.774c.39.389.44 1.002.12 1.45l-.527.737c-.25.35-.272.806-.107 1.204.165.397.505.71.93.78l.893.15c.543.09.94.559.94 1.109v1.094c0 .55-.397 1.02-.94 1.11l-.894.149c-.424.07-.764.383-.929.78-.165.398-.143.854.107 1.204l.527.738c.32.447.269 1.06-.12 1.45l-.774.773a1.125 1.125 0 0 1-1.449.12l-.738-.527c-.35-.25-.806-.272-1.203-.107-.398.165-.71.505-.781.929l-.149.894c-.09.542-.56.94-1.11.94h-1.094c-.55 0-1.019-.398-1.11-.94l-.148-.894c-.071-.424-.384-.764-.781-.93-.398-.164-.854-.142-1.204.108l-.738.527c-.447.32-1.06.269-1.45-.12l-.773-.774a1.125 1.125 0 0 1-.12-1.45l.527-.737c.25-.35.272-.806.108-1.204-.165-.397-.506-.71-.93-.78l-.894-.15c-.542-.09-.94-.56-.94-1.109v-1.094c0-.55.398-1.02.94-1.11l.894-.149c.424-.07.765-.383.93-.78.165-.398.143-.854-.108-1.204l-.526-.738a1.125 1.125 0 0 1 .12-1.45l.773-.773a1.125 1.125 0 0 1 1.45-.12l.737.527c.35.25.807.272 1.204.107.397-.165.71-.505.78-.929l.15-.894Z"
-                  />
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"
-                  />
-                </svg>
-                <span>Settings</span>
-              </a>
-            </nav>
-            <!-- END Navigation -->
-          </div>
-          <!-- END Sidebar -->
-
-          <!-- Main Content -->
-          <div class="flex grow flex-col gap-5 overflow-y-auto p-5">
-            <!-- Search -->
-            <div class="flex gap-2">
-              <button
-                x-on:click="sidebarOpenOnMobile = true"
-                type="button"
-                class="flex items-center justify-center rounded-xl bg-black/10 px-3 text-sm transition hover:bg-black/20 active:scale-95 active:bg-black/10 lg:hidden"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 24 24"
-                  fill="currentColor"
-                  data-slot="icon"
-                  class="hi-solid hi-bars-2 inline-block size-6"
-                >
-                  <path
-                    fill-rule="evenodd"
-                    d="M3 9a.75.75 0 0 1 .75-.75h16.5a.75.75 0 0 1 0 1.5H3.75A.75.75 0 0 1 3 9Zm0 6.75a.75.75 0 0 1 .75-.75h16.5a.75.75 0 0 1 0 1.5H3.75a.75.75 0 0 1-.75-.75Z"
-                    clip-rule="evenodd"
-                  />
-                </svg>
-              </button>
-              <input
-                type="text"
-                class="w-full rounded-xl border-0 bg-black/10 px-4 py-2.5 outline-hidden transition placeholder:text-white/60 focus:bg-black/25 focus:ring-2 focus:ring-white/20"
-                placeholder="Search app.."
-              />
-            </div>
-            <!-- END Search -->
-
-            <!-- Actions -->
-            <div class="grid grid-cols-1 gap-5 lg:grid-cols-3">
-              <a
-                href="javascript:void(0)"
-                class="flex flex-col gap-2 rounded-xl bg-white/10 px-3 py-5 text-center text-sm transition hover:bg-white/20 active:scale-95 active:bg-white/10"
-              >
-                <img src="assets/icon1.png" class="mx-auto w-32" />
-                <span>New dashboard</span>
-              </a>
-              <a
-                href="javascript:void(0)"
-                class="flex flex-col gap-2 rounded-xl bg-white/10 px-3 py-5 text-center text-sm transition hover:bg-white/20 active:scale-95 active:bg-white/10"
-              >
-                <img src="assets/icon2.png" class="mx-auto w-32" />
-                <span>New landing page</span>
-              </a>
-              <a
-                href="javascript:void(0)"
-                class="flex flex-col gap-2 rounded-xl bg-white/10 px-3 py-5 text-center text-sm transition hover:bg-white/20 active:scale-95 active:bg-white/10"
-              >
-                <img src="assets/icon3.png" class="mx-auto w-32" />
-                <span>Settings</span>
-              </a>
-            </div>
-            <!-- END Actions -->
-          </div>
-          <!-- END Main Content -->
-        </div>
-        <!-- END Page Content -->
+  <!-- HEADER -->
+  <header class="container" role="banner" style="position:sticky; top:0; z-index:90;">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;">
+      <div style="display:flex;align-items:center;gap:14px">
+        <img src="/images/BSC-LOGO0219.png" alt="Bantu Stream Connect" class="logo" onerror="this.src='/assets/icon1.png'">
+        <strong style="font-size:1.05rem;color:#fff">Bantu Stream Connect</strong>
       </div>
-      <!-- END App Wrapper -->
-    </div>
-    <!-- END Page Wrapper -->
-  </body>
-</html>
 
+      <nav class="nav-links" aria-label="Main navigation" style="display:flex;align-items:center">
+        <a href="#about" class="muted">About</a>
+        <a href="#features" class="muted">Features</a>
+        <a href="#signup" class="muted">Sign Up</a>
+        <span style="width:12px"></span>
+        <a href="#signup" class="btn-primary glow-heading pulse" style="margin-left:12px">Join Early</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- HERO -->
+  <main>
+    <section class="hero">
+      <div class="container">
+        <h1 class="headline glow-heading">The African way baba, it’s all in the DNA.</h1>
+        <p class="sub">A platform built for African creators and audiences. Music, Film, Podcasts, STEM — all in one place.</p>
+
+        <div style="margin-top:18px">
+          <a href="#signup" class="btn-primary glow-heading">Sign Up Today →</a>
+        </div>
+
+        <div class="mockup-wrap" style="margin-top:28px">
+          <div class="mockup">
+            <!-- try to load your splash screenshot from /images first; fallback to template asset if not present -->
+            <img class="screenshot hover-img" src="/images/SPLASH-SCREEN.png" alt="App splash" onerror="this.onerror=null; this.src='/assets/unsplash-KSfe2Z4REEM.jpg'">
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TRUST / APP PREVIEW -->
+    <section id="features">
+      <div class="container">
+        <h2 class="glow-heading" style="text-align:center;font-size:1.6rem;margin-bottom:18px">A Glimpse of What’s Coming</h2>
+
+        <div class="card-grid">
+          <div class="feature-card center">
+            <img src="/images/CREATOR-UPLOAD-1.png" alt="Upload" width="240" onerror="this.onerror=null; this.src='/assets/icon2.png'" class="hover-img" />
+            <div class="feature-title">Upload Screen</div>
+            <div class="muted">Easy uploads for creators</div>
+          </div>
+
+          <div class="feature-card center">
+            <img src="/images/HOME-FEED-1.png" alt="Home Feed" width="240" onerror="this.onerror=null; this.src='/assets/icon3.png'" class="hover-img" />
+            <div class="feature-title">Audio / Video Player</div>
+            <div class="muted">Smooth playback & playlists</div>
+          </div>
+
+          <div class="feature-card center">
+            <img src="/images/LOG-IN-SCREEN-1.png" alt="Explore" width="240" onerror="this.onerror=null; this.src='/assets/icon1.png'" class="hover-img" />
+            <div class="feature-title">Explore Page</div>
+            <div class="muted">Discover creators & trending content</div>
+          </div>
+
+          <div class="feature-card center">
+            <img src="/images/CREATOR-DASHBOARD-1.png" alt="Dashboard" width="240" onerror="this.onerror=null; this.src='/assets/unsplash-KSfe2Z4REEM.jpg'" class="hover-img" />
+            <div class="feature-title">Creator Dashboard</div>
+            <div class="muted">Manage content, earnings & insights</div>
+          </div>
+        </div>
+
+        <p style="text-align:center;margin-top:18px;color:#ffd166;font-weight:700">Built with security and community at heart. Your data is safe with us.</p>
+      </div>
+    </section>
+
+    <!-- WHY JOIN -->
+    <section style="background:linear-gradient(180deg, rgba(2,8,25,0.85), rgba(4,12,36,0.85));">
+      <div class="container">
+        <h2 class="glow-heading" style="text-align:center;margin-bottom:22px">Why Join Bantu Stream Connect Before Launch?</h2>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:18px">
+          <div class="feature-card center" style="padding:22px;">
+            <div style="font-size:34px">🎬</div>
+            <div class="feature-title">Exclusive First Access</div>
+            <div class="muted">Be first to explore African content.</div>
+          </div>
+          <div class="feature-card center" style="padding:22px;">
+            <div style="font-size:34px">💸</div>
+            <div class="feature-title">Support Creators</div>
+            <div class="muted">Empower local voices from day one.</div>
+          </div>
+          <div class="feature-card center" style="padding:22px;">
+            <div style="font-size:34px">🚀</div>
+            <div class="feature-title">Shape the Platform</div>
+            <div class="muted">Early users get to influence the journey.</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- MISSION / ABOUT -->
+    <section id="about">
+      <div class="container" style="text-align:center">
+        <h2 class="glow-heading">Made by Africans, for Africans</h2>
+        <p class="muted" style="max-width:900px;margin:14px auto 6px">
+          Our mission is to empower creators and audiences across the continent. We’re not just building another app — we’re building a digital home for African stories, music, and innovation.
+        </p>
+        <div style="margin-top:18px">
+          <img src="/images/BANTU-STREAM-CONNECT-ICON0001.png" alt="Icon" width="110" class="logo hover-img" onerror="this.onerror=null;this.src='/assets/icon1.png'">
+        </div>
+      </div>
+    </section>
+
+    <!-- SIGNUP / CTA -->
+    <section id="signup" style="padding-top:36px;padding-bottom:56px">
+      <div class="container">
+        <h2 class="glow-heading" style="text-align:center;color:#ffd166">Be Part of the Movement</h2>
+        <p style="text-align:center;color:rgba(255,255,255,0.85);margin-bottom:16px">Sign up now and secure your spot as one of the first members of Bantu Stream Connect.</p>
+
+        <div class="signup-wrap">
+          <form id="signupForm" novalidate>
+            <div style="display:flex;flex-direction:row;gap:12px;flex-wrap:wrap;">
+              <div style="flex:2;min-width:180px">
+                <label class="muted" style="font-size:0.8rem">Name</label>
+                <input type="text" name="name" placeholder="Your full name" required />
+              </div>
+              <div style="flex:3;min-width:220px">
+                <label class="muted" style="font-size:0.8rem">Email</label>
+                <input type="email" name="email" placeholder="you@example.com" required />
+              </div>
+            </div>
+
+            <div style="margin-top:12px">
+              <label class="muted" style="font-size:0.8rem">Password</label>
+              <input type="password" name="password" placeholder="Choose a password" required />
+            </div>
+
+            <div style="margin-top:16px;display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+              <button type="submit" class="btn-primary">Sign Up</button>
+              <div style="flex:1;"></div>
+              <div style="font-size:0.9rem;color:rgba(255,255,255,0.75)">No spam — just updates & launch invites.</div>
+            </div>
+
+            <div id="signupMessage" class="msg" role="status" aria-live="polite"></div>
+          </form>
+        </div>
+      </div>
+    </section>
+
+    <!-- COMING SOON -->
+    <section style="padding:40px 0">
+      <div class="container center" style="flex-direction:column;gap:12px">
+        <h3 class="glow-heading">Launching Soon</h3>
+        <div style="display:flex;gap:12px;margin-top:14px;flex-wrap:wrap;align-items:center;justify-content:center">
+          <div class="badge">Coming Soon on Google Play</div>
+          <div class="badge">Coming Soon on App Store</div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="container">
+      <div style="display:flex;align-items:center;justify-content:center;gap:22px;margin-bottom:12px;flex-wrap:wrap">
+        <a href="#" class="muted">Privacy Policy</a>
+        <a href="#" class="muted">Terms & Conditions</a>
+        <a href="#" class="muted">Contact</a>
+      </div>
+      <div class="muted">© 2025 Bantu Stream Connect Pty Ltd. All rights reserved.</div>
+      <div style="margin-top:6px;color:rgba(255,255,255,0.6)">Built with ❤️ in Africa.</div>
+    </div>
+  </footer>
+
+  <!-- Supabase integration (client-side) -->
+  <script type="module">
+    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+
+    const supabaseUrl = 'https://ydnxqnbjoshvxteevemc.supabase.co'
+    const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U'
+
+    const supabase = createClient(supabaseUrl, supabaseAnonKey)
+
+    const form = document.getElementById('signupForm')
+    const msgEl = document.getElementById('signupMessage')
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault()
+      msgEl.textContent = ''
+      msgEl.style.color = '#FFD166'
+
+      const name = form.name.value.trim()
+      const email = form.email.value.trim()
+      const password = form.password.value
+
+      if (!name || !email || !password) {
+        msgEl.textContent = 'Please complete all fields.'
+        msgEl.style.color = '#ff7b7b'
+        return
+      }
+
+      // create user
+      try {
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password,
+        }, {
+          // attach user metadata (full_name) so your DB triggers can use it
+          data: { full_name: name }
+        })
+
+        if (error) {
+          msgEl.textContent = 'Sign-up failed: ' + error.message
+          msgEl.style.color = '#ff7b7b'
+          return
+        }
+
+        // success
+        msgEl.textContent = 'Sign-up successful! Please check your email to confirm your account.'
+        msgEl.style.color = '#7ef0b1'
+
+        // Optionally, you could POST name/email to a "profiles" table via REST only if you have RLS/policies
+        // but your auth trigger already handles creator/profile creation when auth.users row is inserted.
+
+        form.reset()
+      } catch (err) {
+        msgEl.textContent = 'Sign-up failed. Please try again.'
+        msgEl.style.color = '#ff7b7b'
+        console.error(err)
+      }
+    })
+  </script>
+
+  <!-- small script to smooth-scroll nav links -->
+  <script>
+    document.querySelectorAll('a[href^="#"]').forEach(a=>{
+      a.addEventListener('click', function(e){
+        const target = document.querySelector(this.getAttribute('href'));
+        if(target){ e.preventDefault(); target.scrollIntoView({behavior:'smooth', block:'start'}) }
+      })
+    })
+  </script>
+</body>
+</html>
