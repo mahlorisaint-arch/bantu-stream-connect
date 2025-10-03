@@ -6,178 +6,281 @@
   <title>Bantu Stream Connect — Coming Soon</title>
   <meta name="description" content="Bantu Stream Connect — Made by Africans, for Africans. Sign up early. Music, Film, Podcasts, STEM — all in one place." />
 
-  <link rel="stylesheet" href="/assets/style.css" /> <!-- optional -->
+  <!-- Optional template CSS -->
+  <link rel="stylesheet" href="/assets/style.css" />
 
+  <!-- Custom styles for glow, neon, and layout -->
   <style>
     :root{
-      --gold:#FFD166;
-      --bg-dark:#030617;
+      --blue-900:#04132b; --blue-800:#0b2b49; --blue-700:#0f3f63; --gold:#FFD166;
+      --glow-blue: rgba(0, 222, 255, .16);
     }
     body{
-      font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto;
-      margin:0; color:#e6f0ff; background:var(--bg-dark); overflow-x:hidden;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      margin:0;
+      background:linear-gradient(180deg,#030617 0%, #061126 60%);
+      color:#e6f0ff; 
+      -webkit-font-smoothing:antialiased;
+      overflow-x:hidden;
+      position:relative;
     }
-    header{backdrop-filter: blur(6px); background:rgba(2,6,23,0.65)}
+    a{color:inherit; text-decoration:none;}
     .container{max-width:1100px;margin:0 auto;padding:0 20px;}
-    .btn-primary{background:linear-gradient(90deg,#0ea5e9,#ffd166);color:#000;padding:10px 16px;border-radius:12px;font-weight:700;display:inline-block}
-    .btn-primary:hover{transform:translateY(-3px);box-shadow:0 8px 24px rgba(255,209,102,.25)}
-    .glow-heading{animation:glowPulse 3s infinite alternate}
-    @keyframes glowPulse{
-      0%{text-shadow:0 0 6px #FFD166,0 0 12px #00f0ff}
-      100%{text-shadow:0 0 12px #FFD166,0 0 28px #00f0ff}
+    header{backdrop-filter: blur(6px); background:rgba(2,6,23,0.65);}
+    .nav-links a{margin-left:18px; color:rgba(255,255,255,0.9);}
+    .btn-primary{
+      background:linear-gradient(90deg,#0ea5e9,#ffd166);
+      color:#000; padding:10px 16px;border-radius:12px; font-weight:700; display:inline-block;
+      box-shadow:0 6px 24px rgba(13,42,83,0.45); transition:transform .18s ease, box-shadow .18s ease;
     }
-    section{padding:48px 0}
-    .hero{padding:72px 0;text-align:center;position:relative;overflow:hidden}
-    .hero .headline{font-size:2rem;font-weight:800;margin-bottom:10px;color:#fff}
-    .hero .sub{color:rgba(255,255,255,0.85);max-width:800px;margin:0 auto 18px}
-    .mockup img{width:320px;border-radius:24px;box-shadow:0 20px 60px rgba(0,0,0,.6)}
-    .card-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:20px}
-    .feature-card{padding:18px;background:rgba(255,255,255,0.03);border-radius:14px;text-align:center;border:1px solid rgba(255,255,255,0.05)}
-    .feature-card img{border-radius:12px;max-width:100%}
-    .feature-title{margin-top:12px;font-weight:700;color:#fff}
-    .muted{color:rgba(255,255,255,.8)}
-    .signup-wrap{max-width:720px;margin:0 auto;padding:28px;background:rgba(9,30,60,.7);border-radius:16px}
-    input{width:100%;padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.05);color:#fff}
-    .badge{padding:10px 14px;border-radius:12px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08)}
-    footer{padding:36px 0;text-align:center;background:#020417;color:rgba(255,255,255,.8)}
+    .btn-primary:hover{transform:translateY(-4px); box-shadow:0 14px 40px rgba(255,209,102,0.28);}
+    /* Glow animation */
+    @keyframes glowPulseText {
+      0%{text-shadow:0 0 6px #FFD166, 0 0 12px #00f0ff}
+      50%{text-shadow:0 0 12px #FFD166,0 0 24px #00f0ff}
+      100%{text-shadow:0 0 6px #FFD166, 0 0 12px #00f0ff}
+    }
+    .glow-heading{animation:glowPulseText 2.8s ease-in-out infinite alternate}
+    .pulse{animation: pulseGlow 2.4s infinite alternate;}
+    @keyframes pulseGlow {
+      0%{box-shadow:0 0 10px #0ea5e9,0 0 20px #FFD166;}
+      100%{box-shadow:0 0 18px #0ea5e9,0 0 36px #FFD166;}
+    }
+    .mockup-wrap{margin-top:28px}
+    .mockup{width:320px;border-radius:28px; box-shadow:0 30px 80px rgba(2,6,23,0.65); transition:transform .45s ease, box-shadow .4s ease; display:inline-block;}
+    .mockup:hover{transform:translateY(-8px) rotate(-0.6deg);}
+    .screenshot{display:block;width:100%;border-radius:22px;}
+    section{padding:48px 0;}
+    .card-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;}
+    @media (max-width:1000px){ .card-grid{grid-template-columns:repeat(2,1fr);} }
+    @media (max-width:600px){ .card-grid{grid-template-columns:1fr} .hero .headline{font-size:1.6rem;} }
 
-    /* Animated neon streaks */
-    .bg-anim{
-      position:fixed;top:0;left:0;width:100%;height:100%;
-      background:radial-gradient(circle at 20% 30%,rgba(0,255,255,.12),transparent 40%),
-                 radial-gradient(circle at 80% 70%,rgba(255,209,102,.1),transparent 35%);
+    .feature-card{border-radius:14px;padding:18px;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); border:1px solid rgba(255,255,255,0.04); transition:transform .28s ease, box-shadow .28s ease}
+    .feature-card:hover{transform:translateY(-8px); box-shadow:0 24px 60px rgba(1,30,60,0.45);}
+    .feature-title{font-weight:700;color:#fff;margin-top:12px;}
+    .muted{color:rgba(255,255,255,0.8);}
+
+    /* Signup form */
+    .signup-wrap{max-width:720px;margin:0 auto;padding:28px;border-radius:16px;background:linear-gradient(90deg, rgba(6,26,50,0.7), rgba(9,42,70,0.6)); border:1px solid rgba(255,209,102,0.12); box-shadow:0 10px 40px rgba(13,42,83,0.4);}
+    input[type="text"], input[type="email"], input[type="password"]{
+      width:100%; padding:12px 14px; border-radius:10px; border:1px solid rgba(255,209,102,0.12); background:rgba(255,255,255,0.02); color: #fff; outline:none;
+      transition:box-shadow .16s ease, transform .12s ease;
+    }
+    input:focus{box-shadow:0 6px 20px rgba(0,240,255,0.06); transform:translateY(-2px);}
+    .msg{margin-top:12px;font-weight:600;}
+
+    .badge{display:inline-block;padding:10px 14px;border-radius:12px;background:linear-gradient(90deg,#07203a,#0b2e48);border:1px solid rgba(255,255,255,0.04); color:#fff; font-weight:700;}
+    footer{padding:36px 0;background:#020417; color:rgba(255,255,255,0.85); text-align:center;}
+
+    /* hover-image slight animation */
+    .hover-img{transition:transform .45s cubic-bezier(.2,.9,.3,1), box-shadow .35s;}
+    .hover-img:hover{transform:translateY(-10px) scale(1.03); box-shadow:0 30px 60px rgba(2,10,40,0.6);}
+    .logo{height:36px;transition:transform .28s, filter .28s;}
+    .logo:hover{transform:scale(1.08); filter:drop-shadow(0 8px 20px rgba(255,209,102,0.35));}
+
+    /* animated neon streaks */
+    .neon-bg{
+      position:absolute; top:0; left:0; width:100%; height:100%; z-index:-1;
+      background:linear-gradient(90deg, rgba(0,255,255,.08), rgba(255,209,102,.08));
       background-size:200% 200%;
-      animation:moveBg 12s ease-in-out infinite alternate;
-      z-index:-1;
+      animation: moveBG 12s linear infinite;
     }
-    @keyframes moveBg{
-      0%{background-position:20% 30%,80% 70%}
-      100%{background-position:40% 60%,60% 40%}
+    @keyframes moveBG{
+      0%{background-position:0 0;}
+      100%{background-position:200% 200%;}
     }
+
+    .center{display:flex;align-items:center;justify-content:center;}
   </style>
 </head>
 <body>
-<div class="bg-anim"></div>
+  <div class="neon-bg"></div>
 
   <!-- HEADER -->
-  <header class="container" style="position:sticky;top:0;z-index:99;">
+  <header class="container" role="banner" style="position:sticky; top:0; z-index:90;">
     <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;">
-      <div style="display:flex;align-items:center;gap:12px">
-        <img src="/assets/bsc-logo.png" alt="Bantu Stream Connect" style="height:40px">
-        <strong>Bantu Stream Connect</strong>
+      <div style="display:flex;align-items:center;gap:14px">
+        <img src="/assets/bsc-logo.png" alt="Bantu Stream Connect" class="logo">
+        <strong style="font-size:1.05rem;color:#fff">Bantu Stream Connect</strong>
       </div>
-      <nav style="display:flex;align-items:center;gap:18px">
+      <nav class="nav-links" aria-label="Main navigation" style="display:flex;align-items:center">
         <a href="#about" class="muted">About</a>
         <a href="#features" class="muted">Features</a>
         <a href="#signup" class="muted">Sign Up</a>
-        <a href="#signup" class="btn-primary">Join Early</a>
+        <span style="width:12px"></span>
+        <a href="#signup" class="btn-primary glow-heading pulse" style="margin-left:12px">Join Early</a>
       </nav>
     </div>
   </header>
 
   <!-- HERO -->
-  <section class="hero">
-    <div class="container">
-      <h1 class="headline glow-heading">The African way baba, it’s all in the DNA.</h1>
-      <p class="sub">A platform built for African creators and audiences. Music, Film, Podcasts, STEM — all in one place.</p>
-      <a href="#signup" class="btn-primary">Sign Up Today →</a>
-      <div class="mockup" style="margin-top:28px">
-        <img src="/assets/splash-screen.png" alt="Splash Screen">
+  <main>
+    <section class="hero">
+      <div class="container">
+        <h1 class="headline glow-heading">The African way baba, it’s all in the DNA.</h1>
+        <p class="sub">A platform built for African creators and audiences. Music, Film, Podcasts, STEM — all in one place.</p>
+        <div style="margin-top:18px">
+          <a href="#signup" class="btn-primary glow-heading">Sign Up Today →</a>
+        </div>
+        <div class="mockup-wrap" style="margin-top:28px">
+          <div class="mockup">
+            <img class="screenshot hover-img" src="/assets/splash-screen.png" alt="App splash">
+          </div>
+        </div>
       </div>
-    </div>
-  </section>
+    </section>
 
-  <!-- PREVIEW -->
-  <section id="features">
-    <div class="container">
-      <h2 class="glow-heading" style="text-align:center">A Glimpse of What’s Coming</h2>
-      <div class="card-grid" style="margin-top:24px">
-        <div class="feature-card">
-          <img src="/assets/creator-upload.png" alt="Upload">
-          <div class="feature-title">Upload Screen</div>
-          <div class="muted">Easy uploads for creators</div>
+    <!-- TRUST / APP PREVIEW -->
+    <section id="features">
+      <div class="container">
+        <h2 class="glow-heading" style="text-align:center;font-size:1.6rem;margin-bottom:18px">A Glimpse of What’s Coming</h2>
+        <div class="card-grid">
+          <div class="feature-card center">
+            <img src="/assets/creator-upload.png" alt="Upload" width="240" class="hover-img" />
+            <div class="feature-title">Upload Screen</div>
+            <div class="muted">Easy uploads for creators</div>
+          </div>
+          <div class="feature-card center">
+            <img src="/assets/log-in-screen.png" alt="Log In" width="240" class="hover-img" />
+            <div class="feature-title">Log In Screen</div>
+            <div class="muted">Secure sign in for all users</div>
+          </div>
+          <div class="feature-card center">
+            <img src="/assets/creator-dashboard.png" alt="Creator Dashboard" width="240" class="hover-img" />
+            <div class="feature-title">Creator Dashboard</div>
+            <div class="muted">Manage content, earnings & insights</div>
+          </div>
         </div>
-        <div class="feature-card">
-          <img src="/assets/log-in-screen.png" alt="Login">
-          <div class="feature-title">Log In</div>
-          <div class="muted">Secure and seamless access</div>
-        </div>
-        <div class="feature-card">
-          <img src="/assets/creator-dashboard.png" alt="Creator Dashboard">
-          <div class="feature-title">Creator Dashboard</div>
-          <div class="muted">Manage content & insights</div>
-        </div>
-        <div class="feature-card">
-          <img src="/assets/bsc-icon.png" alt="App Icon">
-          <div class="feature-title">Our Identity</div>
-          <div class="muted">Built with African DNA</div>
-        </div>
+        <p style="text-align:center;margin-top:18px;color:#ffd166;font-weight:700">Built with security and community at heart. Your data is safe with us.</p>
       </div>
-      <p style="text-align:center;margin-top:20px;color:#FFD166;font-weight:700">
-        Built with security and community at heart. Your data is safe with us.
-      </p>
-    </div>
-  </section>
+    </section>
 
-  <!-- SIGNUP -->
-  <section id="signup">
-    <div class="container">
-      <h2 class="glow-heading" style="text-align:center;color:#FFD166">Be Part of the Movement</h2>
-      <p style="text-align:center" class="muted">Sign up now and secure your spot as one of the first members of Bantu Stream Connect.</p>
-      <div class="signup-wrap">
-        <form id="signupForm">
-          <label>Name</label>
-          <input type="text" name="name" placeholder="Your full name" required>
-          <label>Email</label>
-          <input type="email" name="email" placeholder="you@example.com" required>
-          <label>Password</label>
-          <input type="password" name="password" placeholder="Choose a password" required>
-          <button type="submit" class="btn-primary" style="margin-top:14px">Sign Up</button>
-          <div id="signupMessage" class="msg"></div>
-        </form>
+    <!-- WHY JOIN -->
+    <section style="background:linear-gradient(180deg, rgba(2,8,25,0.85), rgba(4,12,36,0.85));">
+      <div class="container">
+        <h2 class="glow-heading" style="text-align:center;margin-bottom:22px">Why Join Bantu Stream Connect Before Launch?</h2>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:18px">
+          <div class="feature-card center" style="padding:22px;">
+            <div style="font-size:34px">🎬</div>
+            <div class="feature-title">Exclusive First Access</div>
+            <div class="muted">Be first to explore African content.</div>
+          </div>
+          <div class="feature-card center" style="padding:22px;">
+            <div style="font-size:34px">💸</div>
+            <div class="feature-title">Support Creators</div>
+            <div class="muted">Empower local voices from day one.</div>
+          </div>
+          <div class="feature-card center" style="padding:22px;">
+            <div style="font-size:34px">🚀</div>
+            <div class="feature-title">Shape the Platform</div>
+            <div class="muted">Early users get to influence the journey.</div>
+          </div>
+        </div>
       </div>
-    </div>
-  </section>
+    </section>
 
-  <!-- COMING SOON -->
-  <section>
-    <div class="container" style="text-align:center">
-      <h3 class="glow-heading">Launching Soon</h3>
-      <div style="margin-top:16px;display:flex;justify-content:center;gap:12px;flex-wrap:wrap">
-        <img src="/assets/google-play-store-icon.png" alt="Google Play" style="height:40px">
-        <img src="/assets/app-store-icon.png" alt="App Store" style="height:40px">
+    <!-- MISSION / ABOUT -->
+    <section id="about">
+      <div class="container" style="text-align:center">
+        <h2 class="glow-heading">Made by Africans, for Africans</h2>
+        <p class="muted" style="max-width:900px;margin:14px auto 6px">
+          Our mission is to empower creators and audiences across the continent. We’re not just building another app — we’re building a digital home for African stories, music, and innovation.
+        </p>
+        <div style="margin-top:18px">
+          <img src="/assets/bsc-icon.png" alt="Icon" width="110" class="logo hover-img">
+        </div>
       </div>
-    </div>
-  </section>
+    </section>
+
+    <!-- SIGNUP / CTA -->
+    <section id="signup" style="padding-top:36px;padding-bottom:56px">
+      <div class="container">
+        <h2 class="glow-heading" style="text-align:center;color:#ffd166">Be Part of the Movement</h2>
+        <p style="text-align:center;color:rgba(255,255,255,0.85);margin-bottom:16px">Sign up now and secure your spot as one of the first members of Bantu Stream Connect.</p>
+        <div class="signup-wrap">
+          <form id="signupForm" novalidate>
+            <div style="display:flex;flex-direction:row;gap:12px;flex-wrap:wrap;">
+              <div style="flex:2;min-width:180px">
+                <label class="muted" style="font-size:0.8rem">Name</label>
+                <input type="text" name="name" placeholder="Your full name" required />
+              </div>
+              <div style="flex:3;min-width:220px">
+                <label class="muted" style="font-size:0.8rem">Email</label>
+                <input type="email" name="email" placeholder="you@example.com" required />
+              </div>
+            </div>
+            <div style="margin-top:12px">
+              <label class="muted" style="font-size:0.8rem">Password</label>
+              <input type="password" name="password" placeholder="Choose a password" required />
+            </div>
+            <div style="margin-top:16px;display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+              <button type="submit" class="btn-primary">Sign Up</button>
+              <span id="signupMessage" class="msg"></span>
+            </div>
+          </form>
+        </div>
+      </div>
+    </section>
+  </main>
 
   <!-- FOOTER -->
   <footer>
-    <div class="container">
-      <div style="margin-bottom:12px;display:flex;justify-content:center;gap:18px;flex-wrap:wrap">
-        <a href="#" class="muted">Privacy Policy</a>
-        <a href="#" class="muted">Terms & Conditions</a>
-        <a href="#" class="muted">Contact</a>
-      </div>
-      <div>© 2025 Bantu Stream Connect Pty Ltd. All rights reserved.</div>
-      <div style="margin-top:4px">Built with ❤️ in Africa.</div>
-    </div>
+    &copy; 2025 Bantu Stream Connect. All rights reserved.
   </footer>
 
-  <!-- Supabase Signup Script -->
+  <!-- Supabase integration (client-side) -->
   <script type="module">
     import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
-    const supabase = createClient(
-      'https://ydnxqnbjoshvxteevemc.supabase.co',
-      'YOUR_PUBLIC_ANON_KEY'
-    )
-    const form=document.getElementById('signupForm')
-    const msg=document.getElementById('signupMessage')
-    form.addEventListener('submit',async(e)=>{
+    const supabaseUrl = 'https://ydnxqnbjoshvxteevemc.supabase.co'
+    const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U'
+    const supabase = createClient(supabaseUrl, supabaseAnonKey)
+
+    const form = document.getElementById('signupForm')
+    const msgEl = document.getElementById('signupMessage')
+
+    form.addEventListener('submit', async (e) => {
       e.preventDefault()
-      const {name,email,password}=Object.fromEntries(new FormData(form))
-      const { error } = await supabase.auth.signUp({email,password},{data:{full_name:name}})
-      if(error){msg.textContent="Error: "+error.message;msg.style.color="#ff7b7b"}
-      else{msg.textContent="Sign-up successful! Please check your email.";msg.style.color="#7ef0b1";form.reset()}
+      msgEl.textContent = ''
+      msgEl.style.color = '#FFD166'
+      const name = form.name.value.trim()
+      const email = form.email.value.trim()
+      const password = form.password.value
+      if (!name || !email || !password) {
+        msgEl.textContent = 'Please complete all fields.'
+        msgEl.style.color = '#ff7b7b'
+        return
+      }
+      try {
+        const { data, error } = await supabase.auth.signUp(
+          { email, password },
+          { data: { full_name: name } }
+        )
+        if (error) {
+          msgEl.textContent = 'Sign-up failed: ' + error.message
+          msgEl.style.color = '#ff7b7b'
+          return
+        }
+        msgEl.textContent = 'Sign-up successful! Please check your email to confirm your account.'
+        msgEl.style.color = '#7ef0b1'
+        form.reset()
+      } catch (err) {
+        msgEl.textContent = 'Sign-up failed. Please try again.'
+        msgEl.style.color = '#ff7b7b'
+        console.error(err)
+      }
+    })
+  </script>
+
+  <!-- small script to smooth-scroll nav links -->
+  <script>
+    document.querySelectorAll('a[href^="#"]').forEach(a=>{
+      a.addEventListener('click', function(e){
+        const target = document.querySelector(this.getAttribute('href'))
+        if(target){
+          e.preventDefault()
+          target.scrollIntoView({behavior:'smooth', block:'start'})
+        }
+      })
     })
   </script>
 </body>
