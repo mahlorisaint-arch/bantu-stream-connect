@@ -1,0 +1,12 @@
+# Node
+node_modules/
+package-lock.json
+
+# Tailwind build
+*.log
+*.tmp
+.DS_Store
+
+# Env and configs
+.env
+.env.local
