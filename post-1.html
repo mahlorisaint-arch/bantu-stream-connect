@@ -12,6 +12,7 @@
     .fade-in-delay-1 { animation-delay: 0.3s; }
     .fade-in-delay-2 { animation-delay: 0.6s; }
     @keyframes fadeInUp { to { opacity: 1; transform: translateY(0); } }
+    .prose p { margin-bottom: 1rem; }
   </style>
 </head>
 
@@ -65,8 +66,6 @@
   </footer>
 
   <script>
-    // Get URL parameter to determine which post to load
-    const params = new URLSearchParams(window.location.search);
     const postUrl = window.location.pathname.split("/").pop(); // e.g., "post-1.html"
 
     fetch('data/posts.json')
@@ -80,7 +79,9 @@
         }
         document.getElementById('post-title').textContent = post.title;
         document.getElementById('post-excerpt').textContent = post.excerpt;
-        document.getElementById('post-content').innerHTML = post.content;
+        document.getElementById('post-content').innerHTML = post.fullContent
+          .replace(/\n\n/g, '</p><p>') // Convert double line breaks to paragraphs
+          .replace(/\n/g, '<br>'); // Handle single line breaks
       })
       .catch(err => {
         console.error(err);
