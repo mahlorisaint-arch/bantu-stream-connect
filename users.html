@@ -1,1 +1,107 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bantu Stream Connect — Users</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config={darkMode:'class'}</script>
+  <link href="assets/css/bantu-global.css" rel="stylesheet">
+  <style>
+    .fade-in { opacity:0; transform:translateY(20px); animation:fadeInUp 1s forwards; }
+    .fade-in-delay-1{animation-delay:.3s} 
+    .fade-in-delay-2{animation-delay:.6s} 
+    .fade-in-delay-3{animation-delay:.9s}
+    @keyframes fadeInUp { to{opacity:1; transform:translateY(0);} }
+  </style>
+</head>
+<body class="bg-black text-white font-sans dark:bg-black dark:text-white">
 
+<!-- Navbar -->
+<header class="bg-black bg-opacity-80 backdrop-blur-md fixed w-full z-50">
+  <div class="container mx-auto flex justify-between items-center h-16 px-4 sm:px-6 lg:px-8">
+    <div class="flex items-center space-x-2">
+      <a href="index.html"><img src="assets/bsc-logo.png" alt="BSC Logo" class="h-10 w-auto"></a>
+      <span class="font-bold text-xl">Bantu Stream Connect</span>
+    </div>
+    <nav class="hidden md:flex space-x-6 items-center">
+      <a href="index.html" class="hover:text-blue-500 transition">Home</a>
+      <a href="creators.html" class="hover:text-blue-500 transition">Creators</a>
+      <a href="users.html" class="text-blue-500 font-semibold">Users</a>
+      <a href="empowerment.html" class="hover:text-blue-500 transition">Empowerment</a>
+      <a href="blog.html" class="hover:text-blue-500 transition">Blog</a>
+      <a href="#waitlist" class="button-primary fade-in fade-in-delay-2">Join Waitlist</a>
+    </nav>
+  </div>
+</header>
+
+<!-- Hero -->
+<section class="relative h-screen flex items-center justify-center text-center">
+  <img src="assets/bsc-icon.png" alt="Users" class="absolute inset-0 w-full h-full object-contain opacity-20">
+  <div class="absolute inset-0 bg-gradient-to-b from-black/70 via-black/85 to-black/95"></div>
+  <div class="relative z-10 px-4 sm:px-6 lg:px-8">
+    <h1 class="text-4xl sm:text-5xl md:text-6xl font-bold mb-4 fade-in fade-in-delay-1">Early Access & Exclusive Rewards</h1>
+    <p class="text-lg sm:text-xl mb-8 fade-in fade-in-delay-2">Be the first to discover African stories, music, films, and podcasts. Join the waitlist and unlock referral bonuses and sneak peeks.</p>
+    <a href="#waitlist" class="button-primary fade-in fade-in-delay-3">Join Waitlist</a>
+  </div>
+</section>
+
+<!-- Referral Program -->
+<section class="py-20 bg-gray-900 text-center">
+  <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+    <h2 class="text-3xl sm:text-4xl font-bold mb-12">Refer Friends, Earn Rewards</h2>
+    <p class="mb-8">Invite friends to join the waitlist and earn exclusive perks. The more friends you refer, the more rewards you unlock!</p>
+    <div class="flex justify-center gap-4 flex-wrap">
+      <div class="feature-card max-w-xs">
+        <h3 class="text-xl font-semibold mb-2">Step 1</h3>
+        <p>Share your unique referral link with friends and family.</p>
+      </div>
+      <div class="feature-card max-w-xs">
+        <h3 class="text-xl font-semibold mb-2">Step 2</h3>
+        <p>Your friends sign up on the waitlist using your link.</p>
+      </div>
+      <div class="feature-card max-w-xs">
+        <h3 class="text-xl font-semibold mb-2">Step 3</h3>
+        <p>Unlock rewards like free subscription months, early content access, and exclusive teasers.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Teaser Content Drip / Email Capture -->
+<section class="py-20 text-center">
+  <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+    <h2 class="text-3xl sm:text-4xl font-bold mb-6">Get Sneak Peeks Delivered to Your Inbox</h2>
+    <p class="mb-8">Subscribe to receive exclusive content from founding creators, behind-the-scenes previews, and updates on our launch.</p>
+    <form class="max-w-lg mx-auto flex flex-col sm:flex-row gap-4">
+      <input type="email" placeholder="Enter your email" class="px-4 py-3 rounded-lg text-black flex-1" required>
+      <button type="submit" class="button-primary">Subscribe</button>
+    </form>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="py-20 bg-gray-900 text-center">
+  <h2 class="text-3xl sm:text-4xl font-bold mb-6">Don't Miss Out!</h2>
+  <p class="mb-8">Join thousands of users waiting to experience Bantu Stream Connect first.</p>
+  <a href="#waitlist" class="button-primary fade-in fade-in-delay-1">Join Waitlist</a>
+</section>
+
+<!-- Footer -->
+<footer class="bg-black bg-opacity-80 text-gray-400">
+  <div class="container mx-auto px-4 sm:px-6 lg:px-8 text-center py-8">
+    <img src="assets/bsc-logo.png" alt="BSC Logo" class="h-12 mx-auto mb-4">
+    <p class="mb-4">© 2025 Bantu Stream Connect. All rights reserved.</p>
+    <div class="flex justify-center gap-6 mb-4 flex-wrap">
+      <a href="#" class="hover:text-blue-500 transition">Privacy Policy</a>
+      <a href="#" class="hover:text-blue-500 transition">Terms of Service</a>
+    </div>
+    <p>Made with ❤️ in South Africa</p>
+  </div>
+</footer>
+
+<script src="js/main.js"></script>
+<script src="js/supabase.js"></script>
+<script src="js/referral.js"></script>
+</body>
+</html>
