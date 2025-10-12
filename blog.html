@@ -1,140 +1,76 @@
-<!DOCTYPE html>
-<html lang="en" class="scroll-smooth">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Bantu Stream Connect — Blog</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>tailwind.config = { darkMode: 'class' }</script>
-  <link href="assets/css/bantu-global.css" rel="stylesheet" />
-  <style>
-    .fade-in { opacity: 0; transform: translateY(20px); animation: fadeInUp 1s forwards; }
-    .fade-in-delay-1 { animation-delay: 0.3s; }
-    .fade-in-delay-2 { animation-delay: 0.6s; }
-    .fade-in-delay-3 { animation-delay: 0.9s; }
-    @keyframes fadeInUp { to { opacity: 1; transform: translateY(0); } }
-  </style>
-</head>
+<script>
+  let page = 0;
+  const perPage = 6;
 
-<body class="bg-black text-white font-sans dark:bg-black dark:text-white">
+  async function loadPosts() {
+    const grid = document.getElementById('blog-grid');
+    const loadBtn = document.getElementById('load-more');
+    const possiblePaths = [
+      'data/posts.json',
+      './data/posts.json',
+      '/data/posts.json'
+    ];
 
-  <!-- Navbar -->
-  <header class="bg-black bg-opacity-80 backdrop-blur-md fixed w-full z-50">
-    <div class="container mx-auto flex justify-between items-center h-16 px-4 sm:px-6 lg:px-8">
-      <div class="flex items-center space-x-2">
-        <a href="index.html"><img src="assets/bsc-logo.png" alt="BSC Logo" class="h-10 w-auto"></a>
-        <span class="font-bold text-xl">Bantu Stream Connect</span>
-      </div>
-      <nav class="hidden md:flex space-x-6 items-center">
-        <a href="index.html" class="hover:text-blue-500 transition">Home</a>
-        <a href="creators.html" class="hover:text-blue-500 transition">Creators</a>
-        <a href="users.html" class="hover:text-blue-500 transition">Users</a>
-        <a href="empowerment.html" class="hover:text-blue-500 transition">Empowerment</a>
-        <a href="blog.html" class="text-blue-500 font-semibold">Blog</a>
-        <a href="#waitlist" class="button-primary fade-in fade-in-delay-2">Join Waitlist</a>
-      </nav>
-    </div>
-  </header>
+    let posts = null;
 
-  <!-- Hero Section -->
-  <section class="relative h-[60vh] flex items-center justify-center text-center">
-    <img src="assets/bsc-icon.png" alt="Bantu Stream Connect Blog Hero" class="absolute inset-0 w-full h-full object-cover opacity-40">
-    <div class="absolute inset-0 bg-gradient-to-b from-black/70 via-black/80 to-black/95"></div>
-    <div class="relative z-10 px-4 sm:px-6 lg:px-8 fade-in fade-in-delay-1">
-      <h1 class="text-4xl sm:text-5xl md:text-6xl font-bold mb-4">Beyond the Frame</h1>
-      <p class="text-lg sm:text-xl max-w-2xl mx-auto">Stories, updates, and insights from the heart of Africa’s creative movement.</p>
-    </div>
-  </section>
-
-  <!-- Blog Posts -->
-  <section class="py-20 bg-gray-900">
-    <div class="container mx-auto px-4 sm:px-6 lg:px-8">
-      <h2 class="text-3xl sm:text-4xl font-bold text-center mb-12">Latest Posts</h2>
-
-      <!-- Blog Grid -->
-      <div id="blog-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-10 fade-in fade-in-delay-2"></div>
-
-      <!-- Load More -->
-      <div class="text-center mt-10">
-        <button id="load-more" class="button-primary">Load More</button>
-      </div>
-    </div>
-  </section>
-
-  <!-- Footer -->
-  <footer class="bg-black bg-opacity-80 text-gray-400">
-    <div class="container mx-auto px-4 sm:px-6 lg:px-8 text-center py-8">
-      <img src="assets/bsc-logo.png" alt="BSC Logo" class="h-12 mx-auto mb-4">
-      <p class="mb-4">© 2025 Bantu Stream Connect. All rights reserved.</p>
-      <div class="flex justify-center gap-6 mb-4 flex-wrap">
-        <a href="#" class="hover:text-blue-500 transition">Privacy Policy</a>
-        <a href="#" class="hover:text-blue-500 transition">Terms of Service</a>
-      </div>
-      <p>Made with ❤️ in South Africa</p>
-    </div>
-  </footer>
-
-  <script>
-    // BLOG SCRIPT — Dynamic loading from posts.json
-    let page = 0;
-    const perPage = 6;
-    let allPosts = [];
-
-    async function loadPosts() {
-      // Load JSON once
-      if (allPosts.length === 0) {
-        const res = await fetch('posts.json');
-        const data = await res.json();
-        allPosts = data.posts;
-      }
-
-      const start = page * perPage;
-      const end = start + perPage;
-      const pagePosts = allPosts.slice(start, end);
-
-      const grid = document.getElementById('blog-grid');
-      pagePosts.forEach(post => {
-        const card = document.createElement('div');
-        card.className = "bg-gray-800 rounded-xl overflow-hidden shadow-lg hover:scale-[1.02] transition";
-        card.innerHTML = `
-          <img src="${post.thumbnail}" alt="${post.title}" class="w-full h-48 object-cover">
-          <div class="p-6">
-            <h3 class="text-xl font-semibold mb-2">${post.title}</h3>
-            <p class="text-gray-400 mb-4">${post.excerpt}</p>
-            <button onclick="openPost(${post.id})" class="text-blue-500 hover:underline">Read more →</button>
-          </div>
-        `;
-        grid.appendChild(card);
-      });
-
-      page++;
-      if (end >= allPosts.length) {
-        document.getElementById('load-more').style.display = 'none';
+    for (const path of possiblePaths) {
+      try {
+        const res = await fetch(path);
+        if (res.ok) {
+          posts = await res.json();
+          console.log("✅ Loaded posts from:", path);
+          break;
+        } else {
+          console.warn("⚠️ Tried:", path, "— got", res.status);
+        }
+      } catch (err) {
+        console.warn("❌ Fetch failed for", path, err);
       }
     }
 
-    // Show full post in modal view
-    function openPost(id) {
-      const post = allPosts.find(p => p.id === id);
-      const modal = document.createElement('div');
-      modal.className = "fixed inset-0 bg-black/90 backdrop-blur-lg z-50 flex items-center justify-center p-4 overflow-y-auto";
-      modal.innerHTML = `
-        <div class="bg-gray-900 rounded-2xl max-w-3xl w-full p-8 relative">
-          <button onclick="this.parentElement.parentElement.remove()" class="absolute top-4 right-4 text-gray-400 hover:text-white text-2xl">&times;</button>
-          <img src="${post.thumbnail}" alt="${post.title}" class="w-full h-64 object-cover rounded-lg mb-6">
-          <h2 class="text-3xl font-bold mb-4">${post.title}</h2>
-          <p class="text-gray-400 text-sm mb-4">${post.author} • ${post.date}</p>
-          <div class="space-y-4 text-gray-300 leading-relaxed">
-            ${post.content.map(p => `<p>${p}</p>`).join('')}
-          </div>
+    if (!posts) {
+      grid.innerHTML = `
+        <div class="text-center col-span-full text-gray-400 p-10">
+          ⚠️ Could not load posts.json. Please check your GitHub Pages folder paths.
+        </div>`;
+      loadBtn.style.display = 'none';
+      return;
+    }
+
+    const start = page * perPage;
+    const end = start + perPage;
+    const pagePosts = posts.slice(start, end);
+
+    if (pagePosts.length === 0 && page === 0) {
+      grid.innerHTML = `
+        <div class="text-center col-span-full text-gray-400 p-10">
+          No blog posts available yet. Please add entries in <code>data/posts.json</code>.
+        </div>`;
+      loadBtn.style.display = 'none';
+      return;
+    }
+
+    pagePosts.forEach(post => {
+      const card = document.createElement('div');
+      card.className =
+        "bg-gray-800 rounded-xl overflow-hidden shadow-lg hover:scale-[1.02] transition";
+      card.innerHTML = `
+        <img src="${post.image}" alt="${post.title}" class="w-full h-48 object-cover">
+        <div class="p-6">
+          <h3 class="text-xl font-semibold mb-2">${post.title}</h3>
+          <p class="text-gray-400 mb-4">${post.excerpt}</p>
+          <a href="${post.url}" class="text-blue-500 hover:underline">Read more →</a>
         </div>
       `;
-      document.body.appendChild(modal);
+      grid.appendChild(card);
+    });
+
+    page++;
+    if (end >= posts.length) {
+      loadBtn.style.display = 'none';
     }
+  }
 
-    document.getElementById('load-more').addEventListener('click', loadPosts);
-    loadPosts();
-  </script>
-
-</body>
-</html>
+  document.getElementById('load-more').addEventListener('click', loadPosts);
+  loadPosts();
+</script>
