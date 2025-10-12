@@ -75,40 +75,66 @@
   </footer>
 
   <script>
-    // Load posts dynamically from /data/posts.json
+    // BLOG SCRIPT — Dynamic loading from posts.json
     let page = 0;
     const perPage = 6;
+    let allPosts = [];
 
     async function loadPosts() {
-      const res = await fetch('data/posts.json');
-      const posts = await res.json();
+      // Load JSON once
+      if (allPosts.length === 0) {
+        const res = await fetch('posts.json');
+        const data = await res.json();
+        allPosts = data.posts;
+      }
+
       const start = page * perPage;
       const end = start + perPage;
-      const pagePosts = posts.slice(start, end);
+      const pagePosts = allPosts.slice(start, end);
 
       const grid = document.getElementById('blog-grid');
       pagePosts.forEach(post => {
         const card = document.createElement('div');
         card.className = "bg-gray-800 rounded-xl overflow-hidden shadow-lg hover:scale-[1.02] transition";
         card.innerHTML = `
-          <img src="${post.image}" alt="${post.title}" class="w-full h-48 object-cover">
+          <img src="${post.thumbnail}" alt="${post.title}" class="w-full h-48 object-cover">
           <div class="p-6">
             <h3 class="text-xl font-semibold mb-2">${post.title}</h3>
             <p class="text-gray-400 mb-4">${post.excerpt}</p>
-            <a href="${post.url}" class="text-blue-500 hover:underline">Read more →</a>
+            <button onclick="openPost(${post.id})" class="text-blue-500 hover:underline">Read more →</button>
           </div>
         `;
         grid.appendChild(card);
       });
 
       page++;
-      if (end >= posts.length) {
+      if (end >= allPosts.length) {
         document.getElementById('load-more').style.display = 'none';
       }
+    }
+
+    // Show full post in modal view
+    function openPost(id) {
+      const post = allPosts.find(p => p.id === id);
+      const modal = document.createElement('div');
+      modal.className = "fixed inset-0 bg-black/90 backdrop-blur-lg z-50 flex items-center justify-center p-4 overflow-y-auto";
+      modal.innerHTML = `
+        <div class="bg-gray-900 rounded-2xl max-w-3xl w-full p-8 relative">
+          <button onclick="this.parentElement.parentElement.remove()" class="absolute top-4 right-4 text-gray-400 hover:text-white text-2xl">&times;</button>
+          <img src="${post.thumbnail}" alt="${post.title}" class="w-full h-64 object-cover rounded-lg mb-6">
+          <h2 class="text-3xl font-bold mb-4">${post.title}</h2>
+          <p class="text-gray-400 text-sm mb-4">${post.author} • ${post.date}</p>
+          <div class="space-y-4 text-gray-300 leading-relaxed">
+            ${post.content.map(p => `<p>${p}</p>`).join('')}
+          </div>
+        </div>
+      `;
+      document.body.appendChild(modal);
     }
 
     document.getElementById('load-more').addEventListener('click', loadPosts);
     loadPosts();
   </script>
+
 </body>
 </html>
