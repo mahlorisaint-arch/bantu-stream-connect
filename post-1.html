@@ -1,21 +1,19 @@
 <!DOCTYPE html>
 <html lang="en" class="scroll-smooth">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Bantu Stream Connect — Blog Post</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script>tailwind.config = { darkMode: 'class' }</script>
   <link href="assets/css/bantu-global.css" rel="stylesheet" />
   <style>
     .fade-in { opacity: 0; transform: translateY(20px); animation: fadeInUp 1s forwards; }
-    .fade-in-delay-1 { animation-delay: 0.3s; }
-    .fade-in-delay-2 { animation-delay: 0.6s; }
+    .fade-in-delay-1{animation-delay:.3s} .fade-in-delay-2{animation-delay:.6s}
     @keyframes fadeInUp { to { opacity: 1; transform: translateY(0); } }
     .prose p { margin-bottom: 1rem; }
   </style>
 </head>
-
 <body class="bg-black text-white font-sans dark:bg-black dark:text-white">
 
   <!-- Navbar -->
@@ -35,9 +33,9 @@
     </div>
   </header>
 
-  <!-- Hero Section -->
+  <!-- Hero -->
   <section class="relative h-[40vh] flex items-center justify-center text-center mt-16">
-    <img src="assets/blog/blog-1.png" alt="Blog Hero Image" class="absolute inset-0 w-full h-full object-cover opacity-40">
+    <img id="hero-img" src="assets/blog/blog-1.png" alt="Blog Hero" class="absolute inset-0 w-full h-full object-cover opacity-40">
     <div class="absolute inset-0 bg-gradient-to-b from-black/70 via-black/80 to-black/95"></div>
     <div class="relative z-10 px-4 sm:px-6 lg:px-8 fade-in fade-in-delay-1">
       <h1 id="post-title" class="text-4xl sm:text-5xl md:text-6xl font-bold mb-4">Loading...</h1>
@@ -45,50 +43,107 @@
     </div>
   </section>
 
-  <!-- Blog Content -->
+  <!-- Content -->
   <section class="py-20 bg-gray-900">
     <div class="container mx-auto px-4 sm:px-6 lg:px-8 fade-in fade-in-delay-2">
       <div id="post-content" class="prose prose-invert max-w-none"></div>
+      <div class="mt-10 text-center">
+        <a href="blog.html" class="button-primary">Back to blog</a>
+      </div>
     </div>
   </section>
 
-  <!-- Footer -->
   <footer class="bg-black bg-opacity-80 text-gray-400">
     <div class="container mx-auto px-4 sm:px-6 lg:px-8 text-center py-8">
       <img src="assets/bsc-logo.png" alt="BSC Logo" class="h-12 mx-auto mb-4">
       <p class="mb-4">© 2025 Bantu Stream Connect. All rights reserved.</p>
-      <div class="flex justify-center gap-6 mb-4 flex-wrap">
-        <a href="#" class="hover:text-blue-500 transition">Privacy Policy</a>
-        <a href="#" class="hover:text-blue-500 transition">Terms of Service</a>
-      </div>
-      <p>Made with ❤️ in South Africa</p>
     </div>
   </footer>
 
-  <script>
-    const postUrl = window.location.pathname.split("/").pop(); // e.g., "post-1.html"
+<script>
+(async function () {
+  // Helpful debug info
+  console.log("post-1.html booting — attempting to load data/posts.json");
 
-    fetch('data/posts.json')
-      .then(res => res.json())
-      .then(posts => {
-        const post = posts.find(p => p.url === postUrl);
-        if (!post) {
-          document.getElementById('post-title').textContent = 'Post Not Found';
-          document.getElementById('post-content').innerHTML = '<p class="text-gray-400">The requested blog post could not be found.</p>';
-          return;
-        }
-        document.getElementById('post-title').textContent = post.title;
-        document.getElementById('post-excerpt').textContent = post.excerpt;
-        document.getElementById('post-content').innerHTML = post.fullContent
-          .replace(/\n\n/g, '</p><p>') // Convert double line breaks to paragraphs
-          .replace(/\n/g, '<br>'); // Handle single line breaks
-      })
-      .catch(err => {
-        console.error(err);
-        document.getElementById('post-title').textContent = 'Error Loading Post';
-        document.getElementById('post-content').innerHTML = '<p class="text-gray-400">There was an error loading the blog post. Please try again later.</p>';
-      });
-  </script>
+  // determine possible keys used in posts.json
+  function tryFindPost(posts, match) {
+    if (!posts) return null;
+    // exact url match
+    let p = posts.find(x => x.url && x.url === match);
+    if (p) return p;
+    // try id match if match numeric
+    if (!isNaN(Number(match))) {
+      p = posts.find(x => x.id && Number(x.id) === Number(match));
+      if (p) return p;
+    }
+    // try matching by slug/title fallback
+    p = posts.find(x => x.title && x.title.toLowerCase().includes(String(match).toLowerCase()));
+    return p || null;
+  }
 
+  // choose candidate keys to search
+  const pathname = window.location.pathname.split("/").pop(); // e.g., 'post-1.html'
+  const searchParams = new URLSearchParams(window.location.search);
+  const idParam = searchParams.get('id'); // e.g., ?id=1
+  console.log("Detected pathname:", pathname, "query id:", idParam);
+
+  try {
+    const res = await fetch('data/posts.json');
+    if (!res.ok) throw new Error('posts.json fetch failed: ' + res.status);
+    const posts = await res.json();
+    console.log("Loaded posts.json, posts length:", posts.length || 0);
+
+    // try matching strategies in order
+    let post = null;
+    post = tryFindPost(posts, pathname);
+    if (!post && idParam) post = tryFindPost(posts, idParam);
+    if (!post) post = posts[0]; // fallback: use first post so page never empty
+
+    if (!post) {
+      document.getElementById('post-title').textContent = 'Post Not Found';
+      document.getElementById('post-content').innerHTML = '<p class="text-gray-400">The requested blog post could not be found.</p>';
+      console.warn("No post found in posts.json using pathname or id; posts array:", posts);
+      return;
+    }
+
+    console.log("Rendering post:", post.title || post.id);
+
+    // fill content
+    document.getElementById('post-title').textContent = post.title || 'Untitled';
+    document.getElementById('post-excerpt').textContent = post.excerpt || '';
+    if (post.image) {
+      const hero = document.getElementById('hero-img');
+      hero.src = post.image;
+    }
+
+    // If fullContent exists, support both HTML and plain text
+    let html = '';
+    if (post.fullContent) {
+      // if looks like HTML (contains <p>), use as-is, else convert line breaks
+      if (post.fullContent.trim().startsWith('<')) {
+        html = post.fullContent;
+      } else {
+        html = '<p>' + post.fullContent.replace(/\n\n/g, '</p><p>').replace(/\n/g, '<br>') + '</p>';
+      }
+    } else if (post.content) {
+      // older field name support
+      if (Array.isArray(post.content)) {
+        html = post.content.map(p => `<p>${p}</p>`).join('');
+      } else {
+        html = String(post.content).replace(/\n\n/g, '</p><p>').replace(/\n/g, '<br>');
+      }
+    } else {
+      html = '<p class="text-gray-400">Full content unavailable for this post.</p>';
+    }
+
+    document.getElementById('post-content').innerHTML = html;
+
+  } catch (err) {
+    console.error("Error loading post:", err);
+    document.getElementById('post-title').textContent = 'Error Loading Post';
+    document.getElementById('post-content').innerHTML = '<p class="text-gray-400">There was an error loading the blog post. Check console for details.</p>';
+  }
+})();
+</script>
 </body>
 </html>
