@@ -5,69 +5,39 @@
   async function loadPosts() {
     const grid = document.getElementById('blog-grid');
     const loadBtn = document.getElementById('load-more');
-    const possiblePaths = [
-      'data/posts.json',
-      './data/posts.json',
-      '/data/posts.json'
-    ];
 
-    let posts = null;
+    try {
+      const res = await fetch('data/posts.json'); // relative to root
+      const posts = await res.json();
 
-    for (const path of possiblePaths) {
-      try {
-        const res = await fetch(path);
-        if (res.ok) {
-          posts = await res.json();
-          console.log("✅ Loaded posts from:", path);
-          break;
-        } else {
-          console.warn("⚠️ Tried:", path, "— got", res.status);
-        }
-      } catch (err) {
-        console.warn("❌ Fetch failed for", path, err);
-      }
-    }
+      const start = page * perPage;
+      const end = start + perPage;
+      const pagePosts = posts.slice(start, end);
 
-    if (!posts) {
+      pagePosts.forEach(post => {
+        const card = document.createElement('div');
+        card.className =
+          "bg-gray-800 rounded-xl overflow-hidden shadow-lg hover:scale-[1.02] transition";
+        card.innerHTML = `
+          <img src="${post.image}" alt="${post.title}" class="w-full h-48 object-cover">
+          <div class="p-6">
+            <h3 class="text-xl font-semibold mb-2">${post.title}</h3>
+            <p class="text-gray-400 mb-4">${post.excerpt}</p>
+            <a href="${post.url}" class="text-blue-500 hover:underline">Read more →</a>
+          </div>
+        `;
+        grid.appendChild(card);
+      });
+
+      page++;
+      if (end >= posts.length) loadBtn.style.display = 'none';
+    } catch (err) {
       grid.innerHTML = `
         <div class="text-center col-span-full text-gray-400 p-10">
-          ⚠️ Could not load posts.json. Please check your GitHub Pages folder paths.
+          ⚠️ Could not load posts. Check that data/posts.json exists and is valid JSON.
         </div>`;
       loadBtn.style.display = 'none';
-      return;
-    }
-
-    const start = page * perPage;
-    const end = start + perPage;
-    const pagePosts = posts.slice(start, end);
-
-    if (pagePosts.length === 0 && page === 0) {
-      grid.innerHTML = `
-        <div class="text-center col-span-full text-gray-400 p-10">
-          No blog posts available yet. Please add entries in <code>data/posts.json</code>.
-        </div>`;
-      loadBtn.style.display = 'none';
-      return;
-    }
-
-    pagePosts.forEach(post => {
-      const card = document.createElement('div');
-      card.className =
-        "bg-gray-800 rounded-xl overflow-hidden shadow-lg hover:scale-[1.02] transition";
-      card.innerHTML = `
-        <img src="${post.image}" alt="${post.title}" class="w-full h-48 object-cover">
-        <div class="p-6">
-          <h3 class="text-xl font-semibold mb-2">${post.title}</h3>
-          <p class="text-gray-400 mb-4">${post.excerpt}</p>
-          <a href="${post.url}" class="text-blue-500 hover:underline">Read more →</a>
-        </div>
-      `;
-      grid.appendChild(card);
-    });
-
-    page++;
-    if (end >= posts.length) {
-      loadBtn.style.display = 'none';
+      console.error(err);
     }
   }
 
