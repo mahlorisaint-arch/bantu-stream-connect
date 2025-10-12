@@ -1,1 +1,91 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bantu Stream Connect — Creators</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config={darkMode:'class'}</script>
+  <link href="assets/css/bantu-global.css" rel="stylesheet">
+  <style>
+    .fade-in { opacity:0; transform:translateY(20px); animation:fadeInUp 1s forwards; }
+    .fade-in-delay-1{animation-delay:.3s} .fade-in-delay-2{animation-delay:.6s} .fade-in-delay-3{animation-delay:.9s}
+    @keyframes fadeInUp { to{opacity:1; transform:translateY(0);} }
+  </style>
+</head>
+<body class="bg-black text-white font-sans dark:bg-black dark:text-white">
 
+<!-- Navbar -->
+<header class="bg-black bg-opacity-80 backdrop-blur-md fixed w-full z-50">
+  <div class="container mx-auto flex justify-between items-center h-16 px-4 sm:px-6 lg:px-8">
+    <div class="flex items-center space-x-2">
+      <a href="index.html"><img src="assets/bsc-logo.png" alt="BSC Logo" class="h-10 w-auto"></a>
+      <span class="font-bold text-xl">Bantu Stream Connect</span>
+    </div>
+    <nav class="hidden md:flex space-x-6 items-center">
+      <a href="index.html" class="hover:text-blue-500 transition">Home</a>
+      <a href="creators.html" class="text-blue-500 font-semibold">Creators</a>
+      <a href="users.html" class="hover:text-blue-500 transition">Users</a>
+      <a href="empowerment.html" class="hover:text-blue-500 transition">Empowerment</a>
+      <a href="blog.html" class="hover:text-blue-500 transition">Blog</a>
+      <a href="#creator-apply" class="button-primary fade-in fade-in-delay-2">Apply as Creator</a>
+    </nav>
+  </div>
+</header>
+
+<!-- Hero -->
+<section class="relative h-screen flex items-center justify-center text-center">
+  <img src="assets/splash-screen.png" alt="Creators" class="absolute inset-0 w-full h-full object-cover">
+  <div class="absolute inset-0 bg-gradient-to-b from-black/70 via-black/80 to-black/95"></div>
+  <div class="relative z-10 px-4 sm:px-6 lg:px-8">
+    <h1 class="text-4xl sm:text-5xl md:text-6xl font-bold mb-4 fade-in fade-in-delay-1">Grow Your Audience & Revenue</h1>
+    <p class="text-lg sm:text-xl mb-8 fade-in fade-in-delay-2">Join Bantu Stream Connect as a founding creator. Access exclusive tools, analytics, and a premium 90/10 revenue split.</p>
+    <a href="#creator-apply" class="button-primary fade-in fade-in-delay-3">Apply as Founding Creator</a>
+  </div>
+</section>
+
+<!-- Revenue & Founding Program -->
+<section class="py-20 bg-gray-900">
+  <div class="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
+    <h2 class="text-3xl sm:text-4xl font-bold mb-12">Our Creator Promise</h2>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+      <div class="feature-card">
+        <h3 class="text-xl font-semibold mb-2">Superior Revenue</h3>
+        <p>Enjoy a 90/10 split. We keep only 10%, leaving you with the lion’s share of your earnings.</p>
+      </div>
+      <div class="feature-card">
+        <h3 class="text-xl font-semibold mb-2">Founding Creator Program</h3>
+        <p>Get guaranteed homepage placement, personal onboarding support, and a small revenue guarantee for early months.</p>
+      </div>
+      <div class="feature-card">
+        <h3 class="text-xl font-semibold mb-2">Audience Analytics</h3>
+        <p>Receive targeted insights and analytics that help you grow your niche audience faster than anywhere else.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="py-20 text-center">
+  <h2 class="text-3xl sm:text-4xl font-bold mb-6">Ready to Join?</h2>
+  <a href="#creator-apply" class="button-primary fade-in fade-in-delay-1">Apply Now</a>
+</section>
+
+<!-- Footer -->
+<footer class="bg-black bg-opacity-80 text-gray-400">
+  <div class="container mx-auto px-4 sm:px-6 lg:px-8 text-center py-8">
+    <img src="assets/bsc-logo.png" alt="BSC Logo" class="h-12 mx-auto mb-4">
+    <p class="mb-4">© 2025 Bantu Stream Connect. All rights reserved.</p>
+    <div class="flex justify-center gap-6 mb-4 flex-wrap">
+      <a href="#" class="hover:text-blue-500 transition">Privacy Policy</a>
+      <a href="#" class="hover:text-blue-500 transition">Terms of Service</a>
+    </div>
+    <p>Made with ❤️ in South Africa</p>
+  </div>
+</footer>
+
+<script src="js/main.js"></script>
+<script src="js/supabase.js"></script>
+<script src="js/referral.js"></script>
+</body>
+</html>
