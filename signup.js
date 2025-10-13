@@ -1,16 +1,12 @@
 // ------------------ CONFIG ------------------
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
-import { BSCReferral } from './referral.js';
 import { SUPABASE_URL, SUPABASE_KEY } from './config.js';
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 const SIGNUPS_TABLE = 'signups';
 const REFERRALS_TABLE = 'referrals';
 const SITE_URL = "https://bantustreamconnect.com";
-
-// ✅ Google Sheets Web App endpoint
-const GOOGLE_SHEET_URL =
-  "https://script.google.com/macros/s/AKfycbxzeAevE3TwQBsRZ7uDAobEB0779iRClKo_rlyM3bfA5nmFLAQmxkvMBeIO6h2xitKDrw/exec";
+const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxzeAevE3TwQBsRZ7uDAobEB0779iRClKo_rlyM3bfA5nmFLAQmxkvMBeIO6h2xitKDrw/exec";
 
 // ------------------ HELPER FUNCTIONS ------------------
 
@@ -21,129 +17,106 @@ function generateReferralCode(email) {
   return `${prefix}-${random}`.toLowerCase();
 }
 
-// Insert or update referral if not exists
+// Insert referral if not exists
 async function upsertReferral(email, code) {
   const { data, error } = await supabase
     .from(REFERRALS_TABLE)
-    .upsert(
-      { email, code, count: 0, created_at: new Date().toISOString() },
-      { onConflict: ['email'] }
-    );
-  if (error) console.error('❌ Error upserting referral:', error);
+    .upsert({ email, code, count: 0, created_at: new Date().toISOString() }, { onConflict: ['email'] });
+  if (error) console.error('Error upserting referral:', error);
   return data;
 }
 
-// Increment referral count if referred_by exists
+// Increment referral count
 async function incrementReferral(referredByCode) {
   if (!referredByCode) return;
   const { data, error } = await supabase.rpc('increment_referral_count', { ref_code: referredByCode });
-  if (error) console.error('❌ Error incrementing referral count:', error);
+  if (error) console.error('Error incrementing referral count:', error);
   return data;
 }
 
-// ✅ Export signup data to Google Sheets
+// Export signup data to Google Sheets
 async function exportToSheet(signupData) {
   try {
-    const res = await fetch(GOOGLE_SHEET_URL, {
+    const res = await fetch(GOOGLE_SCRIPT_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(signupData),
+      body: JSON.stringify(signupData)
     });
     const result = await res.json();
-    console.log("✅ Exported to Google Sheet:", result);
+    console.log("Export success:", result);
   } catch (e) {
-    console.error("❌ Sheet export failed:", e);
+    console.error("Sheet export failed", e);
   }
 }
 
-// ------------------ ANALYTICS TRACKING ------------------
-
-// Google Analytics 4 tracking helper
-function trackGA4Event(eventName, params = {}) {
-  if (typeof gtag === "function") {
-    gtag("event", eventName, params);
-    console.log("📊 GA4 Event:", eventName, params);
-  } else {
-    console.warn("⚠️ GA4 not initialized on this page");
-  }
-}
-
-// Meta Pixel tracking helper
-function trackMetaEvent(eventName, params = {}) {
-  if (typeof fbq === "function") {
-    fbq("track", eventName, params);
-    console.log("📈 Meta Pixel Event:", eventName, params);
-  } else {
-    console.warn("⚠️ Meta Pixel not initialized on this page");
-  }
-}
-
-// ------------------ MAIN FORM SUBMISSION HANDLER ------------------
+// ------------------ FORM HANDLER ------------------
 export async function handleSignupForm(formId) {
   const form = document.getElementById(formId);
-  if (!form) {
-    console.error(`Form with ID "${formId}" not found.`);
-    return;
-  }
+  if (!form) return;
 
-  form.addEventListener("submit", async (e) => {
+  form.addEventListener('submit', async (e) => {
     e.preventDefault();
 
     const formData = new FormData(form);
-    const name = formData.get("name");
-    const email = formData.get("email");
-    const userType = formData.get("user_type"); // "user" or "creator"
+    const name = formData.get('name');
+    const email = formData.get('email');
+    const userType = formData.get('user_type');
 
-    // Check for referral in URL (?ref=xxxxx)
     const urlParams = new URLSearchParams(window.location.search);
-    const referredBy = urlParams.get("ref");
+    const referredBy = urlParams.get('ref');
 
-    // Generate referral code for this new user
     const myCode = generateReferralCode(email);
 
-    // --- 1️⃣ Save to Supabase signups ---
+    // 1️⃣ Save to Supabase
     const { data: signupData, error: signupError } = await supabase
       .from(SIGNUPS_TABLE)
-      .insert([
-        {
-          name,
-          email,
-          user_type: userType,
-          referral_code: myCode,
-          referred_by: referredBy || null,
-          created_at: new Date().toISOString(),
-        },
-      ]);
+      .insert([{
+        name,
+        email,
+        user_type: userType,
+        referral_code: myCode,
+        referred_by: referredBy || null,
+        created_at: new Date().toISOString()
+      }]);
 
     if (signupError) {
-      console.error("❌ Error saving signup:", signupError);
-      alert("There was an error submitting your sign-up. Please try again.");
+      console.error('Error saving signup:', signupError);
+      alert('There was an error submitting your sign-up. Please try again.');
       return;
     }
 
-    // --- 2️⃣ Save referral in local storage & Supabase ---
-    BSCReferral.saveReferral(email);
+    // 2️⃣ Save to referrals table
     await upsertReferral(email, myCode);
 
-    // --- 3️⃣ Increment referral count if they were referred ---
+    // 3️⃣ Increment referrer count (if applicable)
     if (referredBy) await incrementReferral(referredBy);
 
-    // --- 4️⃣ Export signup to Google Sheets ---
-    const signupExportData = {
-      name,
-      email,
-      user_type: userType,
-      referral_code: myCode,
-      referred_by: referredBy || "",
-    };
-    await exportToSheet(signupExportData);
+    // 4️⃣ Export to Google Sheets
+    await exportToSheet({ name, email, user_type: userType, referral_code: myCode, referred_by: referredBy });
 
-    // --- 5️⃣ Fire Analytics Events ---
-    const eventParams = { name, email, user_type: userType, referral_code: myCode };
-    trackGA4Event("signup_submitted", eventParams);
-    trackMetaEvent("CompleteRegistration", { user_type: userType });
+    // 5️⃣ Fire Analytics Events
+    try {
+      // Google Analytics 4
+      if (typeof gtag === 'function') {
+        gtag('event', 'signup_submitted', {
+          method: 'Website Form',
+          user_type: userType,
+          email_domain: email.split('@')[1]
+        });
+      }
 
-    // --- 6️⃣ Redirect to Thank You page ---
+      // Meta Pixel
+      if (typeof fbq === 'function') {
+        fbq('track', 'CompleteRegistration', {
+          content_name: userType,
+          status: 'success',
+        });
+      }
+    } catch (err) {
+      console.warn("Analytics tracking failed:", err);
+    }
+
+    // 6️⃣ Redirect to thank-you page with referral code
     window.location.href = `${SITE_URL}/thank-you.html?ref=${myCode}`;
   });
 }
