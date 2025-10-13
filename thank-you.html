@@ -1,1 +1,149 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Thank You — Bantu Stream Connect</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config = { darkMode: 'class' }</script>
+  <link href="assets/css/bantu-global.css" rel="stylesheet" />
+  <style>
+    .fade-in { opacity: 0; transform: translateY(20px); animation: fadeInUp 1s forwards; }
+    .fade-in-delay-1 { animation-delay: 0.3s; }
+    .fade-in-delay-2 { animation-delay: 0.6s; }
+    .fade-in-delay-3 { animation-delay: 0.9s; }
+    @keyframes fadeInUp { to { opacity: 1; transform: translateY(0); } }
 
+    .glow-text { text-shadow: 0 0 15px rgba(59, 130, 246, 0.8); }
+    .ref-box { background: rgba(30, 41, 59, 0.8); backdrop-filter: blur(12px); }
+    canvas#confetti { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 50; }
+  </style>
+</head>
+
+<body class="bg-black text-white font-sans dark:bg-black dark:text-white">
+
+  <!-- Confetti Canvas -->
+  <canvas id="confetti"></canvas>
+
+  <!-- Navbar -->
+  <header class="bg-black bg-opacity-80 backdrop-blur-md fixed w-full z-50">
+    <div class="container mx-auto flex justify-between items-center h-16 px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center space-x-2">
+        <a href="index.html"><img src="assets/bsc-logo.png" alt="BSC Logo" class="h-10 w-auto"></a>
+        <span class="font-bold text-xl">Bantu Stream Connect</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <section class="relative h-[60vh] flex flex-col justify-center items-center text-center mt-16">
+    <img src="assets/bsc-icon.png" alt="Bantu Stream Hero" class="absolute inset-0 w-full h-full object-cover opacity-30">
+    <div class="absolute inset-0 bg-gradient-to-b from-black/70 via-black/80 to-black/95"></div>
+
+    <div class="relative z-10 px-4 fade-in fade-in-delay-1">
+      <h1 class="text-5xl sm:text-6xl font-extrabold glow-text mb-4">Welcome to the Movement</h1>
+      <p class="text-lg sm:text-xl max-w-2xl mx-auto">Thank you for joining <span class="font-semibold text-blue-500">Bantu Stream Connect</span> — your support powers Africa’s creative revolution.</p>
+    </div>
+  </section>
+
+  <!-- Referral Section -->
+  <section class="py-20 bg-gray-900 relative z-10">
+    <div class="container mx-auto px-4 sm:px-6 lg:px-8 text-center fade-in fade-in-delay-2">
+      <h2 class="text-3xl sm:text-4xl font-bold mb-6">🎉 Share the Movement</h2>
+      <p class="text-gray-300 mb-8 max-w-2xl mx-auto">Invite friends, creators, and supporters. Each person who joins through your link brings us closer to changing the African entertainment landscape.</p>
+
+      <div class="ref-box mx-auto max-w-2xl p-6 rounded-2xl border border-gray-700 shadow-lg">
+        <input id="ref-link" readonly class="w-full text-black text-center px-3 py-3 rounded-lg bg-white font-semibold" />
+        <button id="copy-btn" onclick="BSCReferral.copyReferralLink()" class="button-primary mt-4 w-full">Copy My Link</button>
+        <p class="mt-6 text-lg">You’ve referred <span id="ref-count" class="font-bold text-blue-400">0</span> people so far!</p>
+      </div>
+
+      <div class="flex justify-center gap-4 mt-10 flex-wrap fade-in fade-in-delay-3">
+        <a href="#" onclick="shareLink('twitter')" class="px-5 py-3 bg-blue-500 rounded-lg hover:bg-blue-600 transition">Share on Twitter</a>
+        <a href="#" onclick="shareLink('whatsapp')" class="px-5 py-3 bg-green-500 rounded-lg hover:bg-green-600 transition">Share on WhatsApp</a>
+        <a href="#" onclick="shareLink('facebook')" class="px-5 py-3 bg-blue-700 rounded-lg hover:bg-blue-800 transition">Share on Facebook</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="bg-black bg-opacity-80 text-gray-400">
+    <div class="container mx-auto px-4 sm:px-6 lg:px-8 text-center py-8">
+      <img src="assets/bsc-logo.png" alt="BSC Logo" class="h-12 mx-auto mb-4">
+      <p class="mb-4">© 2025 Bantu Stream Connect. All rights reserved.</p>
+      <p>Made with ❤️ in South Africa</p>
+    </div>
+  </footer>
+
+  <!-- Scripts -->
+  <script src="assets/js/referral.js"></script>
+  <script>
+    // Display referral info
+    BSCReferral.displayReferralInfo();
+
+    // Simple confetti celebration 🎊
+    const canvas = document.getElementById('confetti');
+    const ctx = canvas.getContext('2d');
+    let pieces = [];
+    let W = window.innerWidth, H = window.innerHeight;
+    canvas.width = W; canvas.height = H;
+
+    window.addEventListener('resize', () => {
+      W = window.innerWidth; H = window.innerHeight;
+      canvas.width = W; canvas.height = H;
+    });
+
+    for (let i = 0; i < 150; i++) {
+      pieces.push({
+        x: Math.random() * W,
+        y: Math.random() * H - H,
+        r: Math.random() * 6 + 4,
+        d: Math.random() * 150 + 50,
+        color: `hsl(${Math.random() * 360}, 70%, 60%)`,
+        tilt: Math.random() * 10 - 10,
+        tiltAngleIncremental: Math.random() * 0.07 + 0.05,
+        tiltAngle: 0
+      });
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, W, H);
+      for (let i = 0; i < pieces.length; i++) {
+        const p = pieces[i];
+        ctx.beginPath();
+        ctx.lineWidth = p.r;
+        ctx.strokeStyle = p.color;
+        ctx.moveTo(p.x + p.tilt + p.r / 2, p.y);
+        ctx.lineTo(p.x + p.tilt, p.y + p.tilt + p.r / 2);
+        ctx.stroke();
+      }
+      update();
+      requestAnimationFrame(draw);
+    }
+
+    function update() {
+      for (let i = 0; i < pieces.length; i++) {
+        const p = pieces[i];
+        p.tiltAngle += p.tiltAngleIncremental;
+        p.y += (Math.cos(p.d) + 3 + p.r / 2) / 2;
+        p.x += Math.sin(p.d);
+        p.tilt = Math.sin(p.tiltAngle - i / 3) * 15;
+        if (p.y > H) {
+          pieces[i] = { ...p, x: Math.random() * W, y: -10 };
+        }
+      }
+    }
+    draw();
+
+    // Social share logic
+    function shareLink(platform) {
+      const link = document.getElementById("ref-link").value;
+      let url = "";
+      if (platform === "twitter") url = `https://twitter.com/intent/tweet?text=Join%20me%20on%20Bantu%20Stream%20Connect!%20${encodeURIComponent(link)}`;
+      if (platform === "whatsapp") url = `https://api.whatsapp.com/send?text=Join%20me%20on%20Bantu%20Stream%20Connect!%20${encodeURIComponent(link)}`;
+      if (platform === "facebook") url = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(link)}`;
+      window.open(url, "_blank");
+    }
+  </script>
+</body>
+</html>
