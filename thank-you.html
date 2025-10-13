@@ -38,20 +38,20 @@
   <!-- Referral Section -->
   <section class="bg-gray-900 bg-opacity-70 backdrop-blur-md rounded-2xl shadow-xl p-8 mx-6 max-w-xl fade-in mt-4">
     <h2 class="text-2xl font-bold mb-3 text-blue-400">Your Referral Link</h2>
-    <input id="referralLink" readonly
+    <input id="ref-link" readonly
       class="w-full text-center bg-black border border-gray-700 rounded-lg py-2 px-3 text-sm text-gray-300 select-all"
       value="Loading your link..." />
 
     <div class="flex justify-center mt-4 gap-4 flex-wrap">
-      <button id="copyLink" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg transition">Copy</button>
-      <button id="shareWhatsApp" class="bg-green-600 hover:bg-green-700 px-4 py-2 rounded-lg transition">WhatsApp</button>
-      <button id="shareTwitter" class="bg-blue-400 hover:bg-blue-500 px-4 py-2 rounded-lg transition">Twitter</button>
+      <button id="copy-btn" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg transition">Copy</button>
+      <button id="share-whatsapp" class="bg-green-600 hover:bg-green-700 px-4 py-2 rounded-lg transition">WhatsApp</button>
+      <button id="share-twitter" class="bg-blue-400 hover:bg-blue-500 px-4 py-2 rounded-lg transition">Twitter</button>
     </div>
 
     <!-- Referral Stats -->
     <div class="mt-8 bg-black border border-gray-700 rounded-xl py-4 px-6">
       <p class="text-gray-300 text-sm mb-2">Your total referrals:</p>
-      <p id="referralCount" class="text-4xl font-bold text-blue-400">0</p>
+      <p id="ref-count" class="text-4xl font-bold text-blue-400">0</p>
       <p class="text-gray-400 text-sm mt-2">
         Invite 5 friends to unlock <span class="text-blue-300 font-semibold">Founding Member Perks</span> 🎁
       </p>
@@ -71,10 +71,29 @@
     <p>© 2025 Bantu Stream Connect. The African way, baba — it's all in the DNA.</p>
   </footer>
 
+  <!-- Referral & Confetti Script -->
   <script type="module">
-    import { initReferralPage } from './referral.js';
+    import { BSCReferral } from './referral.js';
+
     document.addEventListener('DOMContentLoaded', async () => {
-      await initReferralPage();
+      // Handle referral visit & display
+      BSCReferral.handleReferralVisit();
+      BSCReferral.displayReferralInfo();
+
+      // Copy link button
+      document.getElementById('copy-btn').addEventListener('click', BSCReferral.copyReferralLink);
+
+      // WhatsApp share
+      document.getElementById('share-whatsapp').addEventListener('click', () => {
+        const link = document.getElementById('ref-link').value;
+        window.open(`https://wa.me/?text=Join me on Bantu Stream Connect! ${link}`, '_blank');
+      });
+
+      // Twitter share
+      document.getElementById('share-twitter').addEventListener('click', () => {
+        const link = document.getElementById('ref-link').value;
+        window.open(`https://twitter.com/intent/tweet?text=Join me on Bantu Stream Connect!&url=${encodeURIComponent(link)}`, '_blank');
+      });
 
       // 🎉 Confetti Celebration
       const duration = 3000;
@@ -98,6 +117,5 @@
       })();
     });
   </script>
-
 </body>
 </html>
