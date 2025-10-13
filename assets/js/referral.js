@@ -1,41 +1,40 @@
-// --- CONFIG ---
-const SITE_URL = "https://bantustreamconnect.com"; // Change if testing locally
+// ----- CONFIG -----
+const SITE_URL = "https://bantustreamconnect.com"; // Update if testing locally
 const REF_STORAGE_KEY = "bsc_referral_code";
 const REF_VISITS_KEY = "bsc_referral_visits";
 
-// --- SUPABASE SETUP ---
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { SUPABASE_URL, SUPABASE_KEY } from "./config.js";
-const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+// ----- SUPABASE SETUP -----
+import { supabase } from "./config.js"; // uses your config.js exports
 
-// --- Generate referral code ---
-function generateReferralCode(email) {
-  const prefix = email.split("@")[0].substring(0, 5);
+// ----- GENERATE REFERRAL CODE -----
+export function generateReferralCode(email) {
+  const prefix = (email?.split("@")[0] || "anon").substring(0, 5);
   const random = Math.random().toString(36).substring(2, 7);
   return `${prefix}-${random}`.toLowerCase();
 }
 
-// --- Save referral for new user ---
-async function saveReferral(email) {
+// ----- SAVE REFERRAL FOR NEW USER -----
+export async function saveReferral(email) {
   const code = generateReferralCode(email);
   localStorage.setItem(REF_STORAGE_KEY, code);
 
   try {
-    await supabase.from("referrals").insert([{ email, code, count: 0 }]);
+    const { error } = await supabase.from("referrals").insert([{ email, code, count: 0 }]);
+    if (error) console.warn("Supabase insert skipped or failed:", error.message);
   } catch (err) {
-    console.warn("Supabase insert skipped or failed:", err.message);
+    console.warn("Supabase insert exception:", err.message);
   }
 
   return code;
 }
 
-// --- Get referral code from localStorage ---
-function getReferralCode() {
+// ----- GET REFERRAL CODE -----
+export function getReferralCode() {
   return localStorage.getItem(REF_STORAGE_KEY);
 }
 
-// --- Handle referral visit (?ref=code) ---
-async function handleReferralVisit() {
+// ----- HANDLE REFERRAL VISIT (?ref=code) -----
+export async function handleReferralVisit() {
   const params = new URLSearchParams(window.location.search);
   const ref = params.get("ref");
   if (!ref) return;
@@ -62,8 +61,8 @@ async function handleReferralVisit() {
   }
 }
 
-// --- Display referral info on thank-you page ---
-async function displayReferralInfo() {
+// ----- DISPLAY REFERRAL INFO ON THANK-YOU PAGE -----
+export async function displayReferralInfo() {
   const code = getReferralCode();
   if (!code) return;
 
@@ -88,44 +87,42 @@ async function displayReferralInfo() {
   if (countDisplay) countDisplay.textContent = count;
 }
 
-// --- Copy referral link ---
-function copyReferralLink() {
+// ----- COPY REFERRAL LINK -----
+export function copyReferralLink() {
   const input = document.getElementById("referralLink");
+  if (!input) return;
+
   input.select();
   input.setSelectionRange(0, 99999);
   document.execCommand("copy");
 
   const btn = document.getElementById("copyLink");
-  btn.textContent = "Copied!";
-  setTimeout(() => (btn.textContent = "Copy"), 2000);
+  if (btn) {
+    btn.textContent = "Copied!";
+    setTimeout(() => (btn.textContent = "Copy"), 2000);
+  }
 }
 
-// --- Share buttons ---
-function setupShareButtons() {
-  const link = document.getElementById("referralLink")?.value || `${SITE_URL}`;
+// ----- SHARE BUTTONS -----
+export function setupShareButtons() {
+  const link = document.getElementById("referralLink")?.value || SITE_URL;
+
   document.getElementById("shareWhatsApp")?.addEventListener("click", () => {
     window.open(`https://wa.me/?text=Join%20Bantu%20Stream%20Connect!%20${encodeURIComponent(link)}`, "_blank");
   });
+
   document.getElementById("shareTwitter")?.addEventListener("click", () => {
     window.open(`https://twitter.com/intent/tweet?text=Join%20Bantu%20Stream%20Connect!%20${encodeURIComponent(link)}`, "_blank");
   });
+
   document.getElementById("copyLink")?.addEventListener("click", copyReferralLink);
 }
 
-// --- Initialize Thank-You Page ---
+// ----- INIT THANK-YOU PAGE -----
 export async function initReferralPage() {
   await displayReferralInfo();
   setupShareButtons();
 }
 
-// --- Auto-run referral tracking on every page load ---
+// ----- AUTO-RUN REFERRAL TRACKING ON PAGE LOAD -----
 handleReferralVisit();
-
-// --- Export for other pages ---
-export {
-  saveReferral,
-  getReferralCode,
-  handleReferralVisit,
-  displayReferralInfo,
-  copyReferralLink,
-};
