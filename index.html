@@ -1,34 +1,143 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en" class="scroll-smooth">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Bantu Stream Connect — Landing Page</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Bantu Stream Connect — The Home for African Film, Music & Creativity</title>
+  <meta name="description" content="Bantu Stream Connect — Built for African creators and fans. Join the waitlist or apply to be a Founding Creator. Empowerment programs, 90/10 revenue split, and daily updates on our blog." />
+  <meta property="og:title" content="Bantu Stream Connect — The Home for African Film, Music & Creativity" />
+  <meta property="og:description" content="Join the movement: creators-first streaming, creator bootcamps, and a 90/10 revenue split. Sign up for early access or apply as a Founding Creator." />
+  <meta property="og:image" content="/assets/images/og-teaser.jpg" />
+  <meta name="theme-color" content="#071428" />
+  <link rel="icon" href="/assets/images/favicon.ico" />
+
+  <!-- Tailwind CDN for quick preview. Replace with compiled CSS (bantu-global.css) in production. -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <link href="assets/css/bantu-global.css" rel="stylesheet" />
+  <link href="/assets/css/bantu-global.css" rel="stylesheet" />
+
   <style>
-    body { background: black; color: white; font-family: 'Poppins', sans-serif; }
-    .fade-in { opacity: 0; transform: translateY(20px); animation: fadeInUp 1s forwards; }
-    @keyframes fadeInUp { to { opacity: 1; transform: translateY(0); } }
-    .gradient-text { background: linear-gradient(to right, #00aaff, #0077ff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-    .success-msg { color: #00ff99; }
-    .error-msg { color: #ff5555; }
-    a { text-decoration: none; }
+    /* Extra small set of custom CSS to match wireframe look */
+    :root{
+      --accent: #00a3ff;
+      --accent-2: #00ffd5;
+      --muted: #9aa9bf;
+      --bg: #05060a;
+    }
+    .glass { background: rgba(255,255,255,0.03); }
+    .card { background: #0b1220; border: 1px solid rgba(255,255,255,0.03); }
+    /* Small focus ring for accessibility */
+    .focus-ring:focus { outline: 2px solid rgba(0,163,255,0.28); outline-offset: 2px; }
   </style>
+
+  <!-- ========== GOOGLE ANALYTICS 4 (gtag) — YOUR ID INSERTED ========== -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-JZXZCYRJYV"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-JZXZCYRJYV');
+  </script>
+
+  <!-- ========== META PIXEL (Facebook/Instagram) — YOUR ID INSERTED ========== -->
+  <script>
+    !function(f,b,e,v,n,t,s)
+    {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+    n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+    if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+    n.queue=[];t=b.createElement(e);t.async=!0;
+    t.src=v;s=b.getElementsByTagName(e)[0];
+    s.parentNode.insertBefore(t,s)}(window, document,'script',
+    'https://connect.facebook.net/en_US/fbevents.js');
+    fbq('init', '1331891561809016');
+    fbq('track', 'PageView');
+  </script>
+  <noscript>
+    <img height="1" width="1" style="display:none"
+         src="https://www.facebook.com/tr?id=1331891561809016&ev=PageView&noscript=1" />
+  </noscript>
+  <!-- End Meta Pixel -->
 </head>
 
-<body class="min-h-screen flex flex-col items-center justify-start text-center bg-black text-white">
+<body class="bg-gradient-to-b from-[#02030a] to-[#071428] text-slate-100 antialiased">
 
-  <!-- Hero Section -->
-  <section class="relative px-6 py-20 max-w-3xl mx-auto fade-in">
-    <img src="assets/bsc-logo.png" alt="Bantu Stream Logo" class="h-16 mx-auto mb-6">
-    <h1 class="text-4xl sm:text-5xl font-bold mb-4 gradient-text">Join the Movement</h1>
-    <p class="text-lg sm:text-xl text-gray-300 mb-6">
-      Be among the first to join <span class="font-semibold text-blue-400">Bantu Stream Connect</span>.
-    </p>
-  </section>
+  <div class="max-w-6xl mx-auto px-5 py-6">
+    <!-- Header -->
+    <header class="flex items-center justify-between gap-4">
+      <div class="flex items-center gap-3">
+        <div class="w-12 h-12 rounded-lg flex items-center justify-center font-extrabold text-black" style="background:linear-gradient(135deg,var(--accent),var(--accent-2));">
+          B
+        </div>
+        <div>
+          <div class="font-extrabold text-lg">Bantu Stream Connect</div>
+          <div class="text-sm text-slate-400">The African way — it's all in the DNA.</div>
+        </div>
+      </div>
 
-  <!-- Signup Form -->
+      <nav class="hidden md:flex items-center gap-6 text-sm text-slate-300">
+        <a href="#features" class="hover:text-white">Why BSC</a>
+        <a href="/creators" class="hover:text-white">For Creators</a>
+        <a href="/users" class="hover:text-white">For Users</a>
+        <a href="/empowerment" class="hover:text-white">Empowerment</a>
+        <a href="/app" class="hover:text-white">App</a>
+        <a href="/blog" class="hover:text-white">Blog</a>
+        <button id="apply-creator-btn" class="ml-2 px-3 py-2 border rounded-md text-sm border-slate-600 hover:border-white">Apply as Creator</button>
+        <button id="join-waitlist-btn" class="ml-2 px-4 py-2 rounded-md font-semibold" style="background:linear-gradient(90deg,var(--accent),var(--accent-2)); color:#021026">Join Waitlist</button>
+      </nav>
+
+      <!-- Mobile menu button -->
+      <div class="md:hidden">
+        <button id="mobile-menu-btn" class="p-2 rounded-md border border-transparent focus-ring">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" class="text-slate-200"><path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- Mobile nav (hidden by default) -->
+    <div id="mobile-nav" class="mt-3 md:hidden hidden">
+      <div class="flex flex-col gap-2 text-slate-300">
+        <a href="#features" class="py-2">Why BSC</a>
+        <a href="/creators" class="py-2">For Creators</a>
+        <a href="/users" class="py-2">For Users</a>
+        <a href="/empowerment" class="py-2">Empowerment</a>
+        <a href="/app" class="py-2">App</a>
+        <a href="/blog" class="py-2">Blog</a>
+        <div class="flex gap-2 mt-2">
+          <button id="apply-creator-mobile" class="flex-1 px-3 py-2 border rounded-md">Apply as Creator</button>
+          <button id="join-waitlist-mobile" class="flex-1 px-3 py-2 rounded-md" style="background:linear-gradient(90deg,var(--accent),var(--accent-2)); color:#021026">Join Waitlist</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Hero -->
+    <main class="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+      <div>
+        <div class="inline-block glass px-3 py-2 rounded-md text-sm font-semibold">
+          Launching: <span id="launch-date-text" class="ml-2">November 1, 2025</span>
+          <span class="ml-3 text-xs text-slate-300">• Creator applications close in</span>
+          <span id="countdown" class="ml-2 font-bold">00d 00h 00m</span>
+        </div>
+
+        <h1 class="mt-6 text-3xl md:text-5xl font-extrabold leading-tight">
+          The Home for African Film, Music & Creativity — Launching Soon.
+        </h1>
+        <p class="mt-4 text-slate-300 max-w-xl">
+          Built by Africans, for Africans. Stream, grow, and monetize — the African way. Join the movement now whether you watch, create, or partner with us.
+        </p>
+
+        <div class="mt-6 flex flex-wrap gap-3">
+          <button id="hero-join-btn" class="px-5 py-3 rounded-lg font-bold" style="background:linear-gradient(90deg,var(--accent),var(--accent-2)); color:#021026">Join the Waitlist</button>
+          <button id="hero-apply-btn" class="px-5 py-3 rounded-lg border border-slate-600 text-slate-200">Apply as Founding Creator</button>
+          <button id="hero-empower-btn" class="px-4 py-3 rounded-lg border border-slate-600 text-slate-200">Learn about Empowerment</button>
+        </div>
+
+        <!-- Social Proof -->
+        <div class="mt-6 flex flex-wrap gap-3 items-center text-sm text-slate-300">
+          <div class="card px-3 py-2 rounded-md">🌍 <strong>1,250+</strong> early supporters</div>
+          <div class="card px-3 py-2 rounded-md">⭐ <strong>45</strong> Founding Creator applications</div>
+          <div class="card px-3 py-2 rounded-md">📣 <strong>12,000</strong> social reach (30d)</div>
+        </div>
+
+        <!-- Signup Form -->
   <section class="bg-gray-900 bg-opacity-70 backdrop-blur-md rounded-2xl shadow-xl p-8 mx-6 max-w-xl fade-in mt-4">
     <h2 class="text-2xl font-bold mb-4 text-blue-400">Sign Up Now</h2>
     <form id="signupForm" class="flex flex-col gap-3">
@@ -47,138 +156,253 @@
     <p id="signupMessage" class="mt-2 text-sm"></p>
   </section>
 
-  <!-- Empowerment Section -->
-  <section class="mt-16 px-6 max-w-5xl fade-in">
-    <h2 class="text-3xl font-bold mb-4 gradient-text">The Bantu Creator Empowerment Initiative</h2>
-    <p class="text-gray-400 mb-6">
-      Through bootcamps, mentorship, workshops, and our revenue guarantee, we empower African creators to grow, monetize, and scale their content globally.
-    </p>
-    <div class="grid md:grid-cols-3 gap-6">
-      <div class="bg-gray-900 p-4 rounded-xl shadow-md">
-        <h3 class="font-bold text-xl mb-2">Bootcamps</h3>
-        <p class="text-gray-300 text-sm">Hands-on training sessions to accelerate your skills and content creation process.</p>
-      </div>
-      <div class="bg-gray-900 p-4 rounded-xl shadow-md">
-        <h3 class="font-bold text-xl mb-2">Mentorship</h3>
-        <p class="text-gray-300 text-sm">Personal guidance from experienced creators and industry experts.</p>
-      </div>
-      <div class="bg-gray-900 p-4 rounded-xl shadow-md">
-        <h3 class="font-bold text-xl mb-2">Workshops & Grants</h3>
-        <p class="text-gray-300 text-sm">Exclusive workshops and funding opportunities to help creators thrive on Bantu Stream Connect.</p>
-      </div>
-    </div>
-  </section>
+      <!-- Teaser / Mockup Aside -->
+      <aside class="card p-4 rounded-md">
+        <div class="flex justify-between items-center">
+          <div class="font-semibold">Teaser: Preview</div>
+          <div class="text-sm text-slate-400">30–60s teaser reel</div>
+        </div>
 
-  <!-- Blog Section -->
-  <section class="mt-16 px-6 max-w-5xl fade-in">
-    <h2 class="text-3xl font-bold mb-6 gradient-text">Latest Updates from Our Blog</h2>
-    <div class="grid md:grid-cols-3 gap-6">
-      <article class="bg-gray-900 p-4 rounded-xl shadow-md text-left">
-        <h3 class="font-semibold text-xl mb-2">Creator Spotlight: Lihle</h3>
-        <p class="text-gray-300 text-sm">Discover how Lihle is breaking boundaries with unique content on Bantu Stream Connect.</p>
-        <a href="/blog/lihles-journey" class="text-blue-400 mt-2 inline-block text-sm">Read More →</a>
-      </article>
-      <article class="bg-gray-900 p-4 rounded-xl shadow-md text-left">
-        <h3 class="font-semibold text-xl mb-2">Platform Feature Update</h3>
-        <p class="text-gray-300 text-sm">New tools for creators: analytics, playlists, and better revenue tracking.</p>
-        <a href="/blog/platform-features" class="text-blue-400 mt-2 inline-block text-sm">Read More →</a>
-      </article>
-      <article class="bg-gray-900 p-4 rounded-xl shadow-md text-left">
-        <h3 class="font-semibold text-xl mb-2">Upcoming Events</h3>
-        <p class="text-gray-300 text-sm">Join our upcoming workshops, bootcamps, and webinars to level up your skills.</p>
-        <a href="/blog/upcoming-events" class="text-blue-400 mt-2 inline-block text-sm">Read More →</a>
-      </article>
-    </div>
-  </section>
+        <div class="mt-4">
+          <video controls muted playsinline poster="/assets/images/teaser-poster.jpg" class="w-full rounded-md">
+            <source src="/assets/videos/teaser.mp4" type="video/mp4">
+            Your browser does not support the video tag.
+          </video>
+        </div>
 
-  <!-- Footer -->
-  <footer class="mt-16 py-8 text-gray-500 text-sm w-full text-center fade-in">
-    <p>© 2025 Bantu Stream Connect. Made with African pride.</p>
-    <p class="mt-2">Follow us on 
-      <a href="#" class="text-blue-400">Twitter</a>, 
-      <a href="#" class="text-blue-400">Instagram</a>, 
-      <a href="#" class="text-blue-400">LinkedIn</a>
-    </p>
-  </footer>
+        <div class="mt-4 flex gap-2">
+          <a href="#" class="px-3 py-2 rounded-md border border-slate-700 text-sm">Watch on YouTube</a>
+          <a href="/app" class="px-3 py-2 rounded-md border border-slate-700 text-sm">View UI Mockups</a>
+        </div>
 
-  <!-- ================= MODULE SCRIPTS ================= -->
+        <p class="mt-3 text-sm text-slate-400">Sign up to unlock the early-bird discount and exclusive content from Founding Creators.</p>
+      </aside>
+    </main>
+
+    <!-- Features / Why BSC -->
+    <section id="features" class="mt-10 grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div class="card p-5 rounded-md">
+        <h3 class="text-xl font-bold">Why Bantu Stream Connect?</h3>
+        <p class="mt-3 text-slate-300">We prioritize creators and cultural authenticity. Our platform focuses on African stories across film, music, podcasts, and educational content — with tools to help creators earn and scale.</p>
+        <ul class="mt-3 text-slate-400 list-disc list-inside space-y-1">
+          <li>Creator-first revenue model (90/10 split)</li>
+          <li>Founding Creator Program: placement, onboarding & revenue guarantee</li>
+          <li>Targeted audience growth and advanced creator analytics</li>
+        </ul>
+      </div>
+
+      <div class="card p-5 rounded-md">
+        <h3 class="text-xl font-bold">Data & Targeting Promise</h3>
+        <p class="mt-3 text-slate-300">We deliver high-quality, niche traffic to creators. Expect detailed analytics on views, demographics, engagement, and conversion performance so creators can grow faster.</p>
+        <p class="mt-3 text-slate-400">Preview: analytics mockup, segmentation tools, and creator growth dashboard (coming soon).</p>
+      </div>
+    </section>
+
+    <!-- Empowerment Initiative -->
+    <section id="empowerment" class="mt-10 card p-6 rounded-md">
+      <div class="md:flex md:gap-6">
+        <div class="md:flex-1">
+          <h2 class="text-2xl font-bold">The Bantu Creator Empowerment Initiative</h2>
+          <p class="mt-3 text-slate-300">Bantu Stream Connect is a South African built streaming and creator empowerment platform dedicated to uplifting Africa’s next generation of storytellers, musicians, filmmakers, and innovators.</p>
+          <p class="mt-3 text-slate-300">Through the Bantu Creator Empowerment Initiative, we’re building a movement, not just a platform. We host digital bootcamps, mentorship programs, and creative workshops that equip young Africans with the tools to produce, manage, and monetize their craft responsibly.</p>
+          <p class="mt-3"><strong class="text-white">Our mission is simple:</strong> To turn creativity into opportunity. Empowering creators to build sustainable careers while showcasing Africa’s talent on a global stage.</p>
+          <p class="mt-3 text-slate-300">By partnering with us, your brand becomes part of a growing movement that champions economic inclusion, digital education, and creative entrepreneurship across the continent. Together, we can give every young African the chance to learn, earn, and tell their story, the African way.</p>
+
+          <div class="mt-4 flex gap-3">
+            <a href="/empowerment" class="px-4 py-2 rounded-md font-semibold" style="background:linear-gradient(90deg,var(--accent),var(--accent-2)); color:#021026">Explore the Initiative</a>
+            <a href="#partner" class="px-4 py-2 rounded-md border border-slate-600">Partner with us</a>
+          </div>
+        </div>
+
+        <div class="md:w-96 mt-6 md:mt-0 space-y-4">
+          <div class="card p-4 rounded-md">
+            <h4 class="font-semibold">Programs</h4>
+            <ul class="mt-2 text-slate-400 list-disc list-inside space-y-1">
+              <li>Digital Bootcamps — Production, Editing, Monetization</li>
+              <li>Mentorship — One-on-one creator coaching</li>
+              <li>Workshops — Storytelling, Branding, Rights Management</li>
+              <li>Grants & Sponsorships — Partner-funded creator support</li>
+            </ul>
+          </div>
+
+          <div class="card p-4 rounded-md">
+            <h4 class="font-semibold">How to Join</h4>
+            <ol class="mt-2 text-slate-400 list-decimal list-inside space-y-1">
+              <li>Sign up as a creator</li>
+              <li>Apply to the Founding Creator Program</li>
+              <li>Attend onboarding workshops & bootcamps</li>
+              <li>Start publishing and get promoted</li>
+            </ol>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Founding Creators & Revenue Model -->
+    <section class="mt-10 grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div class="card p-5 rounded-md">
+        <h3 class="text-xl font-bold">Founding Creator Program</h3>
+        <p class="mt-3 text-slate-300">An exclusive cohort for early creators. Benefits include guaranteed placement at launch, a dedicated onboarding manager, promotional features, and a temporary revenue guarantee to de-risk your move.</p>
+        <ul class="mt-3 text-slate-400 list-disc list-inside">
+          <li>Featured homepage placement</li>
+          <li>Onboarding & dedicated support</li>
+          <li>Revenue guarantee for first 3 months</li>
+          <li>Access to empowerment bootcamps</li>
+        </ul>
+        <div class="mt-4"><button id="apply-creator-2" class="px-4 py-2 rounded-md" style="background:linear-gradient(90deg,var(--accent),var(--accent-2)); color:#021026">Apply as a Founding Creator</button></div>
+      </div>
+
+      <div class="card p-5 rounded-md">
+        <h3 class="text-xl font-bold">Revenue Model</h3>
+        <p class="mt-3 text-slate-300">We keep 10% — creators keep 90%. Transparent fees, monthly payouts, and detailed revenue reporting.</p>
+        <p class="mt-3 text-slate-400">Payouts will be processed via Creator Dashboard (Supabase-backed) — payout method options: bank transfer, PayPal, or local payout providers.</p>
+      </div>
+    </section>
+
+    <!-- Blog preview -->
+    <section class="mt-10 card p-6 rounded-md">
+      <h3 class="text-xl font-bold">From the Blog</h3>
+      <p class="mt-2 text-slate-300">Daily posts: platform updates, creator spotlights, sponsorship news, tutorials, and industry insights.</p>
+
+      <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+        <article class="card p-4 rounded-md">
+          <h4 class="font-semibold">How to Monetize Your Short Film</h4>
+          <p class="mt-2 text-slate-400 text-sm">A short guide from our team and creators on monetization strategies for short-form filmmakers.</p>
+          <a href="/blog/how-to-monetize-short-film" class="mt-3 inline-block text-sm text-blue-300">Read →</a>
+        </article>
+        <article class="card p-4 rounded-md">
+          <h4 class="font-semibold">Creator Spotlight: Lihle</h4>
+          <p class="mt-2 text-slate-400 text-sm">Meet Lihle — one of our early creators blending traditional storytelling with futuristic visuals.</p>
+          <a href="/blog/creator-spotlight-lihle" class="mt-3 inline-block text-sm text-blue-300">Read →</a>
+        </article>
+        <article class="card p-4 rounded-md">
+          <h4 class="font-semibold">Partnering for Grants</h4>
+          <p class="mt-2 text-slate-400 text-sm">How brands can sponsor creators and fund empowerment initiatives.</p>
+          <a href="/blog/partnering-for-grants" class="mt-3 inline-block text-sm text-blue-300">Read →</a>
+        </article>
+      </div>
+
+      <div class="mt-4"><a href="/blog" class="px-4 py-2 rounded-md" style="background:linear-gradient(90deg,var(--accent),var(--accent-2)); color:#021026">Visit the Blog</a></div>
+    </section>
+
+    <!-- Signup + Referral -->
+    <section class="mt-10 card p-6 rounded-md">
+      <h3 class="text-xl font-bold">Join & Refer — Grow with Us</h3>
+      <p class="mt-2 text-slate-300">Sign up and get a unique referral link. Refer friends to move up the waitlist and unlock rewards like extended free trials, discounts, or entry into exclusive creator grants.</p>
+
+      <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="card p-4 rounded-md">
+          <h4 class="font-semibold">Sign up</h4>
+          <form id="full-signup" class="mt-3 flex flex-col gap-3">
+            <input name="name" placeholder="Full name" required class="px-3 py-2 rounded-md bg-transparent border border-slate-700 focus-ring" />
+            <input name="email" type="email" placeholder="Email address" required class="px-3 py-2 rounded-md bg-transparent border border-slate-700 focus-ring" />
+            <!-- changed name to user_type to match signup.js -->
+            <select name="user_type" class="px-3 py-2 rounded-md bg-transparent border border-slate-700 focus-ring">
+              <option value="user">User / Viewer</option>
+              <option value="creator">Creator</option>
+              <option value="brand">Brand / Partner</option>
+            </select>
+            <!-- referrer field renamed to referred_by to directly map to DB field -->
+            <input name="referred_by" placeholder="Referral code (optional)" class="px-3 py-2 rounded-md bg-transparent border border-slate-700 focus-ring" />
+            <button type="submit" class="mt-2 px-4 py-2 rounded-md" style="background:linear-gradient(90deg,var(--accent),var(--accent-2)); color:#021026">Sign Up & Get Referral Link</button>
+          </form>
+        </div>
+
+        <div class="card p-4 rounded-md">
+          <h4 class="font-semibold">How referrals work</h4>
+          <ol class="mt-2 text-slate-400 list-decimal list-inside space-y-1">
+            <li>Sign up and get your unique referral link.</li>
+            <li>Share it — friends sign up using your link.</li>
+            <li>For every 3 successful referrals you receive a month of free premium or entries into creator grant draws.</li>
+          </ol>
+          <p class="mt-3 text-sm text-slate-400">Referral links are tracked and stored in Supabase. Payouts or rewards will be applied to your account after verification.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Export / Admin -->
+    <section class="mt-10 card p-6 rounded-md">
+      <h3 class="text-xl font-bold">Export to Sheets & Admin Checklist</h3>
+      <p class="mt-2 text-slate-300">Admins can export the signup database to Google Sheets for campaign tracking. (Integration: Supabase → Cloud Function → Google Sheets API or Apps Script webhook)</p>
+      <div class="mt-4 flex gap-3">
+        <button class="px-4 py-2 rounded-md border border-slate-600">Request Export (Admin)</button>
+        <button class="px-4 py-2 rounded-md border border-slate-600">Download CSV</button>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="mt-10 py-6 text-slate-400">
+      <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+          <div class="font-bold">Bantu Stream Connect</div>
+          <div class="text-sm">Built in South Africa. © 2025 Bantu Stream Connect</div>
+        </div>
+        <div class="flex gap-4 text-sm">
+          <a href="/terms" class="hover:text-white">Terms</a>
+          <a href="/privacy" class="hover:text-white">Privacy</a>
+          <a href="/contact" class="hover:text-white">Contact</a>
+          <a href="/press" class="hover:text-white">Press</a>
+        </div>
+      </div>
+    </footer>
+  </div>
+
+  <!-- Scripts -->
+  <script>
+    // ---------- Mobile menu toggle ----------
+    document.getElementById('mobile-menu-btn').addEventListener('click', function(){
+      const nav = document.getElementById('mobile-nav');
+      nav.classList.toggle('hidden');
+    });
+
+    // ---------- countdown (targeted launch date updated to Nov 1, 2025) ----------
+    (function(){
+      const targetISO = '2025-11-01T12:00:00+02:00';
+      const target = new Date(targetISO).getTime();
+      const countdownEl = document.getElementById('countdown');
+      function update(){
+        const now = Date.now();
+        const diff = Math.max(0, target - now);
+        const days = Math.floor(diff / (1000*60*60*24));
+        const hours = Math.floor((diff/(1000*60*60))%24);
+        const minutes = Math.floor((diff/(1000*60))%60);
+        countdownEl.textContent = ${String(days).padStart(2,'0')}d ${String(hours).padStart(2,'0')}h ${String(minutes).padStart(2,'0')}m;
+      }
+      update(); setInterval(update, 60000);
+    })();
+  </script>
+
+  <!-- ========== Modules: referral, analytics, signup ========== -->
   <script type="module">
-    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+    // IMPORTANT: config.js must export SUPABASE_URL and SUPABASE_KEY
+    // Example (assets/js/config.js):
+    // export const SUPABASE_URL = "https://ydnxqnbjoshvxteevemc.supabase.co";
+    // export const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U";
 
-    // ---------- Supabase Setup ----------
-    const SUPABASE_URL = "https://ydnxqnbjoshvxteevemc.supabase.co";
-    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U";
-    const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
-
-    // ---------- Helper: generate unique referral code ----------
-    async function generateUniqueCode() {
-      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-      let code;
-      let exists = true;
-      while (exists) {
-        code = Array.from({length:6}, () => chars[Math.floor(Math.random()*chars.length)]).join('');
-        let { data, error } = await supabase.from('signups').select('id').eq('referral_code', code).limit(1);
-        exists = data.length > 0;
+    import('/assets/js/referral.js').then(m => {
+      // If referral module exports BSCReferral as named export
+      const BSCReferral = m.BSCReferral || window.BSCReferral || m.default;
+      if (BSCReferral && typeof BSCReferral.handleReferralVisit === 'function') {
+        BSCReferral.handleReferralVisit(); // capture ?ref= visits
       }
-      return code;
-    }
+    });
 
-    // ---------- Handle Form ----------
-    const form = document.getElementById('signupForm');
-    const message = document.getElementById('signupMessage');
+    // Load analytics module so gtag/fbq loaders and helpers are available
+    import('/assets/js/analytics.js').then(m => {
+      // analytics module has been loaded and initialized
+    });
 
-    form.addEventListener('submit', async e => {
-      e.preventDefault();
-      message.textContent = '';
-      message.className = '';
-
-      const formData = new FormData(form);
-      const name = formData.get('name').trim();
-      const email = formData.get('email').trim();
-      const user_type = formData.get('user_type');
-      const referred_by = formData.get('referred_by') || null;
-
-      if (!name || !email || !user_type) {
-        message.textContent = 'Please fill in all required fields.';
-        message.className = 'error-msg';
-        return;
-      }
-
-      try {
-        // Check if email already exists
-        let { data: existing, error: checkErr } = await supabase
-          .from('signups')
-          .select('id')
-          .eq('email', email)
-          .limit(1);
-
-        if (checkErr) throw checkErr;
-        if (existing.length > 0) {
-          message.textContent = 'Email already registered.';
-          message.className = 'error-msg';
-          return;
-        }
-
-        // Generate unique referral code
-        const referral_code = await generateUniqueCode();
-
-        // Insert into Supabase
-        let { data, error } = await supabase.from('signups').insert([{
-          name, email, user_type, referral_code, referred_by
-        }]);
-
-        if (error) throw error;
-
-        message.textContent = '🎉 Signup successful! Your referral code: ' + referral_code;
-        message.className = 'success-msg';
-        form.reset();
-
-      } catch(err) {
-        console.error(err);
-        message.textContent = 'There was an error submitting your sign-up. Please try again.';
-        message.className = 'error-msg';
+    // Load signup handler and attach to both forms
+    import('/assets/js/signup.js').then(m => {
+      const handler = m.handleSignupForm;
+      if (typeof handler === 'function') {
+        handler('hero-signup'); // hero compact form
+        handler('full-signup'); // main signup form
+      } else {
+        console.warn('signup.js handler not found');
       }
     });
   </script>
+
 </body>
 </html>
