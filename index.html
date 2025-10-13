@@ -1,97 +1,20 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en" class="scroll-smooth">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Bantu Stream Connect — The Home for African Film, Music & Creativity</title>
-  <meta name="description" content="Bantu Stream Connect — Built for African creators and fans. Join the waitlist or apply to be a Founding Creator. Empowerment programs, 90/10 revenue split, and daily updates on our blog." />
-  <meta property="og:title" content="Bantu Stream Connect — The Home for African Film, Music & Creativity" />
-  <meta property="og:description" content="Join the movement: creators-first streaming, creator bootcamps, and a 90/10 revenue split. Sign up for early access or apply as a Founding Creator." />
-  <meta property="og:image" content="/assets/images/og-teaser.jpg" />
-  <meta name="theme-color" content="#071428" />
-  <link rel="icon" href="/assets/images/favicon.ico" />
-
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bantu Stream Connect — Landing Page</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link href="/assets/css/bantu-global.css" rel="stylesheet" />
-
+  <link href="assets/css/bantu-global.css" rel="stylesheet" />
   <style>
-    :root{ --accent: #00a3ff; --accent-2: #00ffd5; --muted: #9aa9bf; --bg: #05060a; }
     body { background: black; color: white; font-family: 'Poppins', sans-serif; }
     .fade-in { opacity: 0; transform: translateY(20px); animation: fadeInUp 1s forwards; }
     @keyframes fadeInUp { to { opacity: 1; transform: translateY(0); } }
     .gradient-text { background: linear-gradient(to right, #00aaff, #0077ff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-    .glass { background: rgba(255,255,255,0.03); }
-    .card { background: #0b1220; border: 1px solid rgba(255,255,255,0.03); }
     .focus-ring:focus { outline: 2px solid rgba(0,163,255,0.28); outline-offset: 2px; }
   </style>
-
-  <!-- Google Analytics -->
-  <script async src="https://www.googletagmanager.com/gtag/js?id=G-JZXZCYRJYV"></script>
-  <script>
-    window.dataLayer = window.dataLayer || [];
-    function gtag(){dataLayer.push(arguments);}
-    gtag('js', new Date());
-    gtag('config', 'G-JZXZCYRJYV');
-  </script>
-
-  <!-- Meta Pixel -->
-  <script>
-    !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?
-    n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;
-    n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;
-    t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,
-    document,'script','https://connect.facebook.net/en_US/fbevents.js');
-    fbq('init','1331891561809016'); fbq('track','PageView');
-  </script>
-  <noscript><img height="1" width="1" style="display:none"
-  src="https://www.facebook.com/tr?id=1331891561809016&ev=PageView&noscript=1"/></noscript>
 </head>
-
-<body class="bg-gradient-to-b from-[#02030a] to-[#071428] text-slate-100 antialiased">
-
-<div class="max-w-6xl mx-auto px-5 py-6">
-
-  <!-- Header -->
-  <header class="flex items-center justify-between gap-4">
-    <div class="flex items-center gap-3">
-      <div class="w-12 h-12 rounded-lg flex items-center justify-center font-extrabold text-black" style="background:linear-gradient(135deg,var(--accent),var(--accent-2));"> B </div>
-      <div>
-        <div class="font-extrabold text-lg">Bantu Stream Connect</div>
-        <div class="text-sm text-slate-400">The African way — it's all in the DNA.</div>
-      </div>
-    </div>
-    <nav class="hidden md:flex items-center gap-6 text-sm text-slate-300">
-      <a href="#features" class="hover:text-white">Why BSC</a>
-      <a href="/creators" class="hover:text-white">For Creators</a>
-      <a href="/users" class="hover:text-white">For Users</a>
-      <a href="/empowerment" class="hover:text-white">Empowerment</a>
-      <a href="/app" class="hover:text-white">App</a>
-      <a href="/blog" class="hover:text-white">Blog</a>
-      <button id="apply-creator-btn" class="ml-2 px-3 py-2 border rounded-md text-sm border-slate-600 hover:border-white">Apply as Creator</button>
-      <button id="join-waitlist-btn" class="ml-2 px-4 py-2 rounded-md font-semibold" style="background:linear-gradient(90deg,var(--accent),var(--accent-2)); color:#021026">Join Waitlist</button>
-    </nav>
-    <div class="md:hidden">
-      <button id="mobile-menu-btn" class="p-2 rounded-md border border-transparent focus-ring">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" class="text-slate-200"><path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-      </button>
-    </div>
-  </header>
-
-  <!-- Mobile nav -->
-  <div id="mobile-nav" class="mt-3 md:hidden hidden">
-    <div class="flex flex-col gap-2 text-slate-300">
-      <a href="#features" class="py-2">Why BSC</a>
-      <a href="/creators" class="py-2">For Creators</a>
-      <a href="/users" class="py-2">For Users</a>
-      <a href="/empowerment" class="py-2">Empowerment</a>
-      <a href="/app" class="py-2">App</a>
-      <a href="/blog" class="py-2">Blog</a>
-      <div class="flex gap-2 mt-2">
-        <button id="apply-creator-mobile" class="flex-1 px-3 py-2 border rounded-md">Apply as Creator</button>
-        <button id="join-waitlist-mobile" class="flex-1 px-3 py-2 rounded-md" style="background:linear-gradient(90deg,var(--accent),var(--accent-2)); color:#021026">Join Waitlist</button>
-      </div>
-    </div>
-  </div>
+<body class="min-h-screen flex flex-col items-center justify-center text-center bg-black text-white">
 
   <!-- Hero Section -->
   <section class="relative px-6 py-20 max-w-3xl mx-auto fade-in">
@@ -100,77 +23,115 @@
     <p class="text-lg sm:text-xl text-gray-300 mb-6">
       Be among the first to join <span class="font-semibold text-blue-400">Bantu Stream Connect</span>.
     </p>
-
-    <!-- Signup Form -->
-    <section class="bg-gray-900 bg-opacity-70 backdrop-blur-md rounded-2xl shadow-xl p-8 mx-6 max-w-xl fade-in mt-4">
-      <h2 class="text-2xl font-bold mb-4 text-blue-400">Sign Up Now</h2>
-      <form id="signupForm" class="flex flex-col gap-3">
-        <input type="text" name="name" placeholder="Full Name" required class="border p-2 rounded w-full" />
-        <input type="email" name="email" placeholder="Email Address" required class="border p-2 rounded w-full" />
-        <select name="user_type" required class="border p-2 rounded w-full">
-          <option value="">Select Type</option>
-          <option value="creator">Creator</option>
-          <option value="user">User</option>
-        </select>
-        <button type="submit" class="bg-blue-600 text-white px-4 py-2 mt-2 rounded w-full hover:bg-blue-700 transition">
-          Join Now
-        </button>
-      </form>
-    </section>
-
-    <!-- Optional Referral Teaser -->
-    <section class="mt-10 fade-in">
-      <p class="text-gray-400">Have a referral code? Enter it during signup to earn rewards.</p>
-    </section>
   </section>
 
-  <!-- [THE REST OF ALL SECTIONS FROM YOUR ORIGINAL INDEX.HTML] -->
-  <!-- Features, Empowerment Initiative, Founding Creators, Revenue Model, Blog, Full Signup + Referral, Export/Admin, Footer -->
-  <!-- All content remains exactly as it was before, untouched. -->
+  <!-- Hero Signup Form -->
+  <section class="bg-gray-900 bg-opacity-70 backdrop-blur-md rounded-2xl shadow-xl p-8 mx-6 max-w-xl fade-in mt-4">
+    <h2 class="text-2xl font-bold mb-4 text-blue-400">Sign Up Now</h2>
+    <form id="hero-signup" class="flex flex-col gap-3">
+      <input name="name" placeholder="Full Name" required class="border p-2 rounded w-full focus-ring"/>
+      <input type="email" name="email" placeholder="Email Address" required class="border p-2 rounded w-full focus-ring"/>
+      <select name="user_type" required class="border p-2 rounded w-full focus-ring">
+        <option value="">Select Type</option>
+        <option value="creator">Creator</option>
+        <option value="user">User</option>
+      </select>
+      <input type="text" name="referred_by" placeholder="Referral code (optional)" class="border p-2 rounded w-full focus-ring"/>
+      <button type="submit" class="bg-blue-600 text-white px-4 py-2 mt-2 rounded w-full hover:bg-blue-700 transition">Join Now</button>
+      <div id="hero-signup-message" class="mt-2 text-sm"></div>
+    </form>
+  </section>
 
-</div>
+  <!-- Optional Referral Teaser -->
+  <section class="mt-10 fade-in">
+    <p class="text-gray-400">Have a referral code? Enter it during signup to earn rewards.</p>
+  </section>
 
-<script>
-  // Mobile menu toggle
-  document.getElementById('mobile-menu-btn').addEventListener('click', function(){
-    const nav = document.getElementById('mobile-nav');
-    nav.classList.toggle('hidden');
-  });
+  <!-- Full Signup Form + Referral Section -->
+  <section class="mt-10 card p-6 rounded-md fade-in">
+    <h3 class="text-xl font-bold">Join & Refer — Grow with Us</h3>
+    <p class="mt-2 text-slate-300">Sign up and get a unique referral link. Refer friends to move up the waitlist and unlock rewards.</p>
+    <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div class="card p-4 rounded-md">
+        <h4 class="font-semibold">Sign up</h4>
+        <form id="full-signup" class="mt-3 flex flex-col gap-3">
+          <input name="name" placeholder="Full name" required class="px-3 py-2 rounded-md bg-transparent border border-slate-700 focus-ring" />
+          <input name="email" type="email" placeholder="Email address" required class="px-3 py-2 rounded-md bg-transparent border border-slate-700 focus-ring" />
+          <select name="user_type" required class="px-3 py-2 rounded-md bg-transparent border border-slate-700 focus-ring">
+            <option value="user">User / Viewer</option>
+            <option value="creator">Creator</option>
+          </select>
+          <input name="referred_by" placeholder="Referral code (optional)" class="px-3 py-2 rounded-md bg-transparent border border-slate-700 focus-ring" />
+          <button type="submit" class="mt-2 px-4 py-2 rounded-md" style="background:linear-gradient(90deg,#00aaff,#0077ff); color:#021026">Sign Up & Get Referral Link</button>
+          <div id="full-signup-message" class="mt-2 text-sm"></div>
+        </form>
+      </div>
+      <div class="card p-4 rounded-md">
+        <h4 class="font-semibold">How referrals work</h4>
+        <ol class="mt-2 text-slate-400 list-decimal list-inside space-y-1">
+          <li>Sign up and get your unique referral link.</li>
+          <li>Share it — friends sign up using your link.</li>
+          <li>Earn rewards for every 3 successful referrals.</li>
+        </ol>
+        <p class="mt-3 text-sm text-slate-400">Referral links are tracked and stored in Supabase. Rewards will be applied after verification.</p>
+      </div>
+    </div>
+  </section>
 
-  // Countdown to launch
-  (function(){
-    const targetISO = '2025-11-01T12:00:00+02:00';
-    const target = new Date(targetISO).getTime();
-    const countdownEl = document.getElementById('countdown');
-    function update(){
-      const now = Date.now();
-      const diff = Math.max(0, target - now);
-      const days = Math.floor(diff / (1000*60*60*24));
-      const hours = Math.floor((diff/(1000*60*60))%24);
-      const minutes = Math.floor((diff/(1000*60))%60);
-      countdownEl.textContent = `${String(days).padStart(2,'0')}d ${String(hours).padStart(2,'0')}h ${String(minutes).padStart(2,'0')}m`;
+  <!-- Footer -->
+  <footer class="mt-16 py-8 text-gray-500 text-sm fade-in">
+    <p>© 2025 Bantu Stream Connect. Made with African pride.</p>
+  </footer>
+
+  <!-- ================= MODULE SCRIPTS ================= -->
+  <script type="module">
+    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
+
+    const SUPABASE_URL = 'https://ydnxqnbjoshvxteevemc.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U';
+    const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    function generateReferralCode(length = 6) {
+      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+      return Array.from({length}, () => chars[Math.floor(Math.random()*chars.length)]).join('');
     }
-    update();
-    setInterval(update, 60000);
-  })();
-</script>
 
-<!-- Modules -->
-<script type="module">
-  import { handleSignupForm } from '/assets/js/signup.js';
-  import { handleReferralVisit } from '/assets/js/referral.js';
-  import { testSupabase } from '/assets/js/config.js';
-  import '/assets/js/analytics.js';
+    async function handleSignup(formId, messageId) {
+      const form = document.getElementById(formId);
+      const messageEl = document.getElementById(messageId);
 
-  // Initialize referral tracking
-  handleReferralVisit();
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        messageEl.textContent = '';
+        const formData = new FormData(form);
+        const name = formData.get('name');
+        const email = formData.get('email');
+        const user_type = formData.get('user_type');
+        const referred_by = formData.get('referred_by') || null;
+        const referral_code = generateReferralCode();
 
-  // Initialize signup form
-  handleSignupForm('signupForm');
+        try {
+          const { data, error } = await supabase
+            .from('signups')
+            .insert([{ name, email, user_type, referral_code, referred_by }]);
 
-  // Test Supabase connection (optional)
-  testSupabase();
-</script>
+          if (error) {
+            console.error(error);
+            messageEl.textContent = 'There was an error submitting your sign-up. Please try again.';
+            return;
+          }
 
+          messageEl.textContent = `Thank you! Your referral code is ${referral_code}`;
+          form.reset();
+        } catch(err) {
+          console.error(err);
+          messageEl.textContent = 'There was an error submitting your sign-up. Please try again.';
+        }
+      });
+    }
+
+    handleSignup('hero-signup', 'hero-signup-message');
+    handleSignup('full-signup', 'full-signup-message');
+  </script>
 </body>
 </html>
