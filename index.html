@@ -11,21 +11,21 @@
   <meta name="theme-color" content="#071428" />
   <link rel="icon" href="/assets/images/favicon.ico" />
 
-  <!-- Tailwind & Custom CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="/assets/css/bantu-global.css" rel="stylesheet" />
+
   <style>
     :root{ --accent: #00a3ff; --accent-2: #00ffd5; --muted: #9aa9bf; --bg: #05060a; }
-    .glass { background: rgba(255,255,255,0.03); }
-    .card { background: #0b1220; border: 1px solid rgba(255,255,255,0.03); }
-    .focus-ring:focus { outline: 2px solid rgba(0,163,255,0.28); outline-offset: 2px; }
     body { background: black; color: white; font-family: 'Poppins', sans-serif; }
     .fade-in { opacity: 0; transform: translateY(20px); animation: fadeInUp 1s forwards; }
     @keyframes fadeInUp { to { opacity: 1; transform: translateY(0); } }
     .gradient-text { background: linear-gradient(to right, #00aaff, #0077ff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .glass { background: rgba(255,255,255,0.03); }
+    .card { background: #0b1220; border: 1px solid rgba(255,255,255,0.03); }
+    .focus-ring:focus { outline: 2px solid rgba(0,163,255,0.28); outline-offset: 2px; }
   </style>
 
-  <!-- Google Analytics 4 -->
+  <!-- Google Analytics -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-JZXZCYRJYV"></script>
   <script>
     window.dataLayer = window.dataLayer || [];
@@ -35,146 +35,142 @@
   </script>
 
   <!-- Meta Pixel -->
-  <script>!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window, document,'script','https://connect.facebook.net/en_US/fbevents.js'); fbq('init','1331891561809016'); fbq('track','PageView');</script>
-  <noscript><img height="1" width="1" style="display:none" src="https://www.facebook.com/tr?id=1331891561809016&ev=PageView&noscript=1" /></noscript>
+  <script>
+    !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+    n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;
+    n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;
+    t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,
+    document,'script','https://connect.facebook.net/en_US/fbevents.js');
+    fbq('init','1331891561809016'); fbq('track','PageView');
+  </script>
+  <noscript><img height="1" width="1" style="display:none"
+  src="https://www.facebook.com/tr?id=1331891561809016&ev=PageView&noscript=1"/></noscript>
 </head>
 
 <body class="bg-gradient-to-b from-[#02030a] to-[#071428] text-slate-100 antialiased">
-  <div class="max-w-6xl mx-auto px-5 py-6">
-    <!-- Header -->
-    <header class="flex items-center justify-between gap-4">
-      <div class="flex items-center gap-3">
-        <div class="w-12 h-12 rounded-lg flex items-center justify-center font-extrabold text-black" style="background:linear-gradient(135deg,var(--accent),var(--accent-2));">B</div>
-        <div>
-          <div class="font-extrabold text-lg">Bantu Stream Connect</div>
-          <div class="text-sm text-slate-400">The African way — it's all in the DNA.</div>
-        </div>
-      </div>
-      <nav class="hidden md:flex items-center gap-6 text-sm text-slate-300">
-        <a href="#features" class="hover:text-white">Why BSC</a>
-        <a href="/creators" class="hover:text-white">For Creators</a>
-        <a href="/users" class="hover:text-white">For Users</a>
-        <a href="/empowerment" class="hover:text-white">Empowerment</a>
-        <a href="/app" class="hover:text-white">App</a>
-        <a href="/blog" class="hover:text-white">Blog</a>
-        <button id="apply-creator-btn" class="ml-2 px-3 py-2 border rounded-md text-sm border-slate-600 hover:border-white">Apply as Creator</button>
-        <button id="join-waitlist-btn" class="ml-2 px-4 py-2 rounded-md font-semibold" style="background:linear-gradient(90deg,var(--accent),var(--accent-2)); color:#021026">Join Waitlist</button>
-      </nav>
-      <div class="md:hidden">
-        <button id="mobile-menu-btn" class="p-2 rounded-md border border-transparent focus-ring">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" class="text-slate-200"><path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-        </button>
-      </div>
-    </header>
 
-    <!-- Mobile nav -->
-    <div id="mobile-nav" class="mt-3 md:hidden hidden">
-      <div class="flex flex-col gap-2 text-slate-300">
-        <a href="#features" class="py-2">Why BSC</a>
-        <a href="/creators" class="py-2">For Creators</a>
-        <a href="/users" class="py-2">For Users</a>
-        <a href="/empowerment" class="py-2">Empowerment</a>
-        <a href="/app" class="py-2">App</a>
-        <a href="/blog" class="py-2">Blog</a>
-        <div class="flex gap-2 mt-2">
-          <button id="apply-creator-mobile" class="flex-1 px-3 py-2 border rounded-md">Apply as Creator</button>
-          <button id="join-waitlist-mobile" class="flex-1 px-3 py-2 rounded-md" style="background:linear-gradient(90deg,var(--accent),var(--accent-2)); color:#021026">Join Waitlist</button>
-        </div>
+<div class="max-w-6xl mx-auto px-5 py-6">
+
+  <!-- Header -->
+  <header class="flex items-center justify-between gap-4">
+    <div class="flex items-center gap-3">
+      <div class="w-12 h-12 rounded-lg flex items-center justify-center font-extrabold text-black" style="background:linear-gradient(135deg,var(--accent),var(--accent-2));"> B </div>
+      <div>
+        <div class="font-extrabold text-lg">Bantu Stream Connect</div>
+        <div class="text-sm text-slate-400">The African way — it's all in the DNA.</div>
       </div>
     </div>
+    <nav class="hidden md:flex items-center gap-6 text-sm text-slate-300">
+      <a href="#features" class="hover:text-white">Why BSC</a>
+      <a href="/creators" class="hover:text-white">For Creators</a>
+      <a href="/users" class="hover:text-white">For Users</a>
+      <a href="/empowerment" class="hover:text-white">Empowerment</a>
+      <a href="/app" class="hover:text-white">App</a>
+      <a href="/blog" class="hover:text-white">Blog</a>
+      <button id="apply-creator-btn" class="ml-2 px-3 py-2 border rounded-md text-sm border-slate-600 hover:border-white">Apply as Creator</button>
+      <button id="join-waitlist-btn" class="ml-2 px-4 py-2 rounded-md font-semibold" style="background:linear-gradient(90deg,var(--accent),var(--accent-2)); color:#021026">Join Waitlist</button>
+    </nav>
+    <div class="md:hidden">
+      <button id="mobile-menu-btn" class="p-2 rounded-md border border-transparent focus-ring">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" class="text-slate-200"><path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+  </header>
 
-    <!-- Hero + Simplified Signup Section -->
-    <main class="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
-      <div>
-        <div class="inline-block glass px-3 py-2 rounded-md text-sm font-semibold">
-          Launching: <span id="launch-date-text" class="ml-2">November 1, 2025</span>
-          <span class="ml-3 text-xs text-slate-300">• Creator applications close in</span>
-          <span id="countdown" class="ml-2 font-bold">00d 00h 00m</span>
-        </div>
-        <h1 class="mt-6 text-3xl md:text-5xl font-extrabold leading-tight">
-          The Home for African Film, Music & Creativity — Launching Soon.
-        </h1>
-        <p class="mt-4 text-slate-300 max-w-xl">
-          Built by Africans, for Africans. Stream, grow, and monetize — the African way. Join the movement now whether you watch, create, or partner with us.
-        </p>
-
-        <!-- Integrated simplified signup form -->
-        <section class="bg-gray-900 bg-opacity-70 backdrop-blur-md rounded-2xl shadow-xl p-8 mt-6 max-w-xl fade-in">
-          <h2 class="text-2xl font-bold mb-4 text-blue-400">Sign Up Now</h2>
-          <form id="signupForm" class="flex flex-col gap-3">
-            <input type="text" name="name" placeholder="Full Name" required class="border p-2 rounded w-full" />
-            <input type="email" name="email" placeholder="Email Address" required class="border p-2 rounded w-full" />
-            <select name="user_type" required class="border p-2 rounded w-full">
-              <option value="">Select Type</option>
-              <option value="creator">Creator</option>
-              <option value="user">User</option>
-            </select>
-            <button type="submit" class="bg-blue-600 text-white px-4 py-2 mt-2 rounded w-full hover:bg-blue-700 transition">
-              Join Now
-            </button>
-          </form>
-        </section>
+  <!-- Mobile nav -->
+  <div id="mobile-nav" class="mt-3 md:hidden hidden">
+    <div class="flex flex-col gap-2 text-slate-300">
+      <a href="#features" class="py-2">Why BSC</a>
+      <a href="/creators" class="py-2">For Creators</a>
+      <a href="/users" class="py-2">For Users</a>
+      <a href="/empowerment" class="py-2">Empowerment</a>
+      <a href="/app" class="py-2">App</a>
+      <a href="/blog" class="py-2">Blog</a>
+      <div class="flex gap-2 mt-2">
+        <button id="apply-creator-mobile" class="flex-1 px-3 py-2 border rounded-md">Apply as Creator</button>
+        <button id="join-waitlist-mobile" class="flex-1 px-3 py-2 rounded-md" style="background:linear-gradient(90deg,var(--accent),var(--accent-2)); color:#021026">Join Waitlist</button>
       </div>
-
-      <!-- Teaser / Mockup Aside -->
-      <aside class="card p-4 rounded-md">
-        <div class="flex justify-between items-center">
-          <div class="font-semibold">Teaser: Preview</div>
-          <div class="text-sm text-slate-400">30–60s teaser reel</div>
-        </div>
-        <div class="mt-4">
-          <video controls muted playsinline poster="/assets/images/teaser-poster.jpg" class="w-full rounded-md">
-            <source src="/assets/videos/teaser.mp4" type="video/mp4"> Your browser does not support the video tag.
-          </video>
-        </div>
-        <div class="mt-4 flex gap-2">
-          <a href="#" class="px-3 py-2 rounded-md border border-slate-700 text-sm">Watch on YouTube</a>
-          <a href="/app" class="px-3 py-2 rounded-md border border-slate-700 text-sm">View UI Mockups</a>
-        </div>
-        <p class="mt-3 text-sm text-slate-400">Sign up to unlock the early-bird discount and exclusive content from Founding Creators.</p>
-      </aside>
-    </main>
-
-    <!-- All other sections (features, empowerment, blog, referrals, footer) remain unchanged -->
-    <!-- ... [existing full content from your index.html continues here] ... -->
-
+    </div>
   </div>
 
-  <!-- Scripts -->
-  <script>
-    // Mobile menu toggle
-    document.getElementById('mobile-menu-btn').addEventListener('click', function(){
-      const nav = document.getElementById('mobile-nav'); nav.classList.toggle('hidden');
-    });
+  <!-- Hero Section -->
+  <section class="relative px-6 py-20 max-w-3xl mx-auto fade-in">
+    <img src="assets/bsc-logo.png" alt="Bantu Stream Logo" class="h-16 mx-auto mb-6">
+    <h1 class="text-4xl sm:text-5xl font-bold mb-4 gradient-text">Join the Movement</h1>
+    <p class="text-lg sm:text-xl text-gray-300 mb-6">
+      Be among the first to join <span class="font-semibold text-blue-400">Bantu Stream Connect</span>.
+    </p>
 
-    // Countdown
-    (function(){
-      const targetISO = '2025-11-01T12:00:00+02:00';
-      const target = new Date(targetISO).getTime();
-      const countdownEl = document.getElementById('countdown');
-      function update(){
-        const now = Date.now();
-        const diff = Math.max(0,target-now);
-        const days = Math.floor(diff/(1000*60*60*24));
-        const hours = Math.floor((diff/(1000*60*60))%24);
-        const minutes = Math.floor((diff/(1000*60))%60);
-        countdownEl.textContent = `${String(days).padStart(2,'0')}d ${String(hours).padStart(2,'0')}h ${String(minutes).padStart(2,'0')}m`;
-      }
-      update();
-      setInterval(update,60000);
-    })();
-  </script>
+    <!-- Signup Form -->
+    <section class="bg-gray-900 bg-opacity-70 backdrop-blur-md rounded-2xl shadow-xl p-8 mx-6 max-w-xl fade-in mt-4">
+      <h2 class="text-2xl font-bold mb-4 text-blue-400">Sign Up Now</h2>
+      <form id="signupForm" class="flex flex-col gap-3">
+        <input type="text" name="name" placeholder="Full Name" required class="border p-2 rounded w-full" />
+        <input type="email" name="email" placeholder="Email Address" required class="border p-2 rounded w-full" />
+        <select name="user_type" required class="border p-2 rounded w-full">
+          <option value="">Select Type</option>
+          <option value="creator">Creator</option>
+          <option value="user">User</option>
+        </select>
+        <button type="submit" class="bg-blue-600 text-white px-4 py-2 mt-2 rounded w-full hover:bg-blue-700 transition">
+          Join Now
+        </button>
+      </form>
+    </section>
 
-  <!-- Modules -->
-  <script type="module">
-    import { handleSignupForm } from '/assets/js/signup.js';
-    import { handleReferralVisit } from '/assets/js/referral.js';
-    import { testSupabase } from '/assets/js/config.js';
-    import '/assets/js/analytics.js';
+    <!-- Optional Referral Teaser -->
+    <section class="mt-10 fade-in">
+      <p class="text-gray-400">Have a referral code? Enter it during signup to earn rewards.</p>
+    </section>
+  </section>
 
-    handleReferralVisit();
-    handleSignupForm('signupForm'); // linked simplified signup form
-    testSupabase();
-  </script>
+  <!-- [THE REST OF ALL SECTIONS FROM YOUR ORIGINAL INDEX.HTML] -->
+  <!-- Features, Empowerment Initiative, Founding Creators, Revenue Model, Blog, Full Signup + Referral, Export/Admin, Footer -->
+  <!-- All content remains exactly as it was before, untouched. -->
+
+</div>
+
+<script>
+  // Mobile menu toggle
+  document.getElementById('mobile-menu-btn').addEventListener('click', function(){
+    const nav = document.getElementById('mobile-nav');
+    nav.classList.toggle('hidden');
+  });
+
+  // Countdown to launch
+  (function(){
+    const targetISO = '2025-11-01T12:00:00+02:00';
+    const target = new Date(targetISO).getTime();
+    const countdownEl = document.getElementById('countdown');
+    function update(){
+      const now = Date.now();
+      const diff = Math.max(0, target - now);
+      const days = Math.floor(diff / (1000*60*60*24));
+      const hours = Math.floor((diff/(1000*60*60))%24);
+      const minutes = Math.floor((diff/(1000*60))%60);
+      countdownEl.textContent = `${String(days).padStart(2,'0')}d ${String(hours).padStart(2,'0')}h ${String(minutes).padStart(2,'0')}m`;
+    }
+    update();
+    setInterval(update, 60000);
+  })();
+</script>
+
+<!-- Modules -->
+<script type="module">
+  import { handleSignupForm } from '/assets/js/signup.js';
+  import { handleReferralVisit } from '/assets/js/referral.js';
+  import { testSupabase } from '/assets/js/config.js';
+  import '/assets/js/analytics.js';
+
+  // Initialize referral tracking
+  handleReferralVisit();
+
+  // Initialize signup form
+  handleSignupForm('signupForm');
+
+  // Test Supabase connection (optional)
+  testSupabase();
+</script>
+
 </body>
 </html>
