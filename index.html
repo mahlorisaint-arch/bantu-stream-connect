@@ -11,9 +11,11 @@
     .fade-in { opacity: 0; transform: translateY(20px); animation: fadeInUp 1s forwards; }
     @keyframes fadeInUp { to { opacity: 1; transform: translateY(0); } }
     .gradient-text { background: linear-gradient(to right, #00aaff, #0077ff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-    .focus-ring:focus { outline: 2px solid rgba(0,163,255,0.28); outline-offset: 2px; }
+    .success-msg { color: #00ff99; }
+    .error-msg { color: #ff5555; }
   </style>
 </head>
+
 <body class="min-h-screen flex flex-col items-center justify-center text-center bg-black text-white">
 
   <!-- Hero Section -->
@@ -25,21 +27,23 @@
     </p>
   </section>
 
-  <!-- Hero Signup Form -->
+  <!-- Signup Form -->
   <section class="bg-gray-900 bg-opacity-70 backdrop-blur-md rounded-2xl shadow-xl p-8 mx-6 max-w-xl fade-in mt-4">
     <h2 class="text-2xl font-bold mb-4 text-blue-400">Sign Up Now</h2>
-    <form id="hero-signup" class="flex flex-col gap-3">
-      <input name="name" placeholder="Full Name" required class="border p-2 rounded w-full focus-ring"/>
-      <input type="email" name="email" placeholder="Email Address" required class="border p-2 rounded w-full focus-ring"/>
-      <select name="user_type" required class="border p-2 rounded w-full focus-ring">
+    <form id="signupForm" class="flex flex-col gap-3">
+      <input type="text" name="name" placeholder="Full Name" required class="border p-2 rounded w-full" />
+      <input type="email" name="email" placeholder="Email Address" required class="border p-2 rounded w-full" />
+      <select name="user_type" required class="border p-2 rounded w-full">
         <option value="">Select Type</option>
         <option value="creator">Creator</option>
         <option value="user">User</option>
       </select>
-      <input type="text" name="referred_by" placeholder="Referral code (optional)" class="border p-2 rounded w-full focus-ring"/>
-      <button type="submit" class="bg-blue-600 text-white px-4 py-2 mt-2 rounded w-full hover:bg-blue-700 transition">Join Now</button>
-      <div id="hero-signup-message" class="mt-2 text-sm"></div>
+      <input type="text" name="referred_by" placeholder="Referral Code (optional)" class="border p-2 rounded w-full" />
+      <button type="submit" class="bg-blue-600 text-white px-4 py-2 mt-2 rounded w-full hover:bg-blue-700 transition">
+        Join Now
+      </button>
     </form>
+    <p id="signupMessage" class="mt-2 text-sm"></p>
   </section>
 
   <!-- Optional Referral Teaser -->
@@ -47,91 +51,89 @@
     <p class="text-gray-400">Have a referral code? Enter it during signup to earn rewards.</p>
   </section>
 
-  <!-- Full Signup Form + Referral Section -->
-  <section class="mt-10 card p-6 rounded-md fade-in">
-    <h3 class="text-xl font-bold">Join & Refer — Grow with Us</h3>
-    <p class="mt-2 text-slate-300">Sign up and get a unique referral link. Refer friends to move up the waitlist and unlock rewards.</p>
-    <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-      <div class="card p-4 rounded-md">
-        <h4 class="font-semibold">Sign up</h4>
-        <form id="full-signup" class="mt-3 flex flex-col gap-3">
-          <input name="name" placeholder="Full name" required class="px-3 py-2 rounded-md bg-transparent border border-slate-700 focus-ring" />
-          <input name="email" type="email" placeholder="Email address" required class="px-3 py-2 rounded-md bg-transparent border border-slate-700 focus-ring" />
-          <select name="user_type" required class="px-3 py-2 rounded-md bg-transparent border border-slate-700 focus-ring">
-            <option value="user">User / Viewer</option>
-            <option value="creator">Creator</option>
-          </select>
-          <input name="referred_by" placeholder="Referral code (optional)" class="px-3 py-2 rounded-md bg-transparent border border-slate-700 focus-ring" />
-          <button type="submit" class="mt-2 px-4 py-2 rounded-md" style="background:linear-gradient(90deg,#00aaff,#0077ff); color:#021026">Sign Up & Get Referral Link</button>
-          <div id="full-signup-message" class="mt-2 text-sm"></div>
-        </form>
-      </div>
-      <div class="card p-4 rounded-md">
-        <h4 class="font-semibold">How referrals work</h4>
-        <ol class="mt-2 text-slate-400 list-decimal list-inside space-y-1">
-          <li>Sign up and get your unique referral link.</li>
-          <li>Share it — friends sign up using your link.</li>
-          <li>Earn rewards for every 3 successful referrals.</li>
-        </ol>
-        <p class="mt-3 text-sm text-slate-400">Referral links are tracked and stored in Supabase. Rewards will be applied after verification.</p>
-      </div>
-    </div>
-  </section>
-
   <!-- Footer -->
-  <footer class="mt-16 py-8 text-gray-500 text-sm fade-in">
+  <footer class="mt-16 py-8 text-gray-500 text-sm">
     <p>© 2025 Bantu Stream Connect. Made with African pride.</p>
   </footer>
 
   <!-- ================= MODULE SCRIPTS ================= -->
   <script type="module">
-    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
+    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
 
-    const SUPABASE_URL = 'https://ydnxqnbjoshvxteevemc.supabase.co';
-    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U';
+    // ---------- Supabase Setup ----------
+    const SUPABASE_URL = "https://ydnxqnbjoshvxteevemc.supabase.co";
+    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U";
     const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    function generateReferralCode(length = 6) {
+    // ---------- Helper: generate unique referral code ----------
+    async function generateUniqueCode() {
       const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-      return Array.from({length}, () => chars[Math.floor(Math.random()*chars.length)]).join('');
+      let code;
+      let exists = true;
+      while (exists) {
+        code = Array.from({length:6}, () => chars[Math.floor(Math.random()*chars.length)]).join('');
+        let { data, error } = await supabase.from('signups').select('id').eq('referral_code', code).limit(1);
+        exists = data.length > 0;
+      }
+      return code;
     }
 
-    async function handleSignup(formId, messageId) {
-      const form = document.getElementById(formId);
-      const messageEl = document.getElementById(messageId);
+    // ---------- Handle Form ----------
+    const form = document.getElementById('signupForm');
+    const message = document.getElementById('signupMessage');
 
-      form.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        messageEl.textContent = '';
-        const formData = new FormData(form);
-        const name = formData.get('name');
-        const email = formData.get('email');
-        const user_type = formData.get('user_type');
-        const referred_by = formData.get('referred_by') || null;
-        const referral_code = generateReferralCode();
+    form.addEventListener('submit', async e => {
+      e.preventDefault();
+      message.textContent = '';
+      message.className = '';
 
-        try {
-          const { data, error } = await supabase
-            .from('signups')
-            .insert([{ name, email, user_type, referral_code, referred_by }]);
+      const formData = new FormData(form);
+      const name = formData.get('name').trim();
+      const email = formData.get('email').trim();
+      const user_type = formData.get('user_type');
+      const referred_by = formData.get('referred_by') || null;
 
-          if (error) {
-            console.error(error);
-            messageEl.textContent = 'There was an error submitting your sign-up. Please try again.';
-            return;
-          }
+      if (!name || !email || !user_type) {
+        message.textContent = 'Please fill in all required fields.';
+        message.className = 'error-msg';
+        return;
+      }
 
-          messageEl.textContent = `Thank you! Your referral code is ${referral_code}`;
-          form.reset();
-        } catch(err) {
-          console.error(err);
-          messageEl.textContent = 'There was an error submitting your sign-up. Please try again.';
+      try {
+        // Check if email already exists
+        let { data: existing, error: checkErr } = await supabase
+          .from('signups')
+          .select('id')
+          .eq('email', email)
+          .limit(1);
+
+        if (checkErr) throw checkErr;
+        if (existing.length > 0) {
+          message.textContent = 'Email already registered.';
+          message.className = 'error-msg';
+          return;
         }
-      });
-    }
 
-    handleSignup('hero-signup', 'hero-signup-message');
-    handleSignup('full-signup', 'full-signup-message');
+        // Generate unique referral code
+        const referral_code = await generateUniqueCode();
+
+        // Insert into Supabase
+        let { data, error } = await supabase.from('signups').insert([{
+          name, email, user_type, referral_code, referred_by
+        }]);
+
+        if (error) throw error;
+
+        message.textContent = '🎉 Signup successful! Your referral code: ' + referral_code;
+        message.className = 'success-msg';
+        form.reset();
+
+      } catch(err) {
+        console.error(err);
+        message.textContent = 'There was an error submitting your sign-up. Please try again.';
+        message.className = 'error-msg';
+      }
+    });
   </script>
 </body>
 </html>
