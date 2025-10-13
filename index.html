@@ -13,6 +13,8 @@
 
   <!-- Tailwind CDN for quick preview. Replace with compiled CSS (bantu-global.css) in production. -->
   <script src="https://cdn.tailwindcss.com"></script>
+  <link href="/assets/css/bantu-global.css" rel="stylesheet" />
+
   <style>
     /* Extra small set of custom CSS to match wireframe look */
     :root{
@@ -26,7 +28,36 @@
     /* Small focus ring for accessibility */
     .focus-ring:focus { outline: 2px solid rgba(0,163,255,0.28); outline-offset: 2px; }
   </style>
+
+  <!-- ========== GOOGLE ANALYTICS 4 (gtag) — YOUR ID INSERTED ========== -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-JZXZCYRJYV"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-JZXZCYRJYV');
+  </script>
+
+  <!-- ========== META PIXEL (Facebook/Instagram) — YOUR ID INSERTED ========== -->
+  <script>
+    !function(f,b,e,v,n,t,s)
+    {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+    n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+    if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+    n.queue=[];t=b.createElement(e);t.async=!0;
+    t.src=v;s=b.getElementsByTagName(e)[0];
+    s.parentNode.insertBefore(t,s)}(window, document,'script',
+    'https://connect.facebook.net/en_US/fbevents.js');
+    fbq('init', '1331891561809016');
+    fbq('track', 'PageView');
+  </script>
+  <noscript>
+    <img height="1" width="1" style="display:none"
+         src="https://www.facebook.com/tr?id=1331891561809016&ev=PageView&noscript=1" />
+  </noscript>
+  <!-- End Meta Pixel -->
 </head>
+
 <body class="bg-gradient-to-b from-[#02030a] to-[#071428] text-slate-100 antialiased">
 
   <div class="max-w-6xl mx-auto px-5 py-6">
@@ -81,7 +112,7 @@
     <main class="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
       <div>
         <div class="inline-block glass px-3 py-2 rounded-md text-sm font-semibold">
-          Launching: <span id="launch-date-text" class="ml-2">December 1, 2025</span>
+          Launching: <span id="launch-date-text" class="ml-2">November 1, 2025</span>
           <span class="ml-3 text-xs text-slate-300">• Creator applications close in</span>
           <span id="countdown" class="ml-2 font-bold">00d 00h 00m</span>
         </div>
@@ -111,7 +142,8 @@
           <form id="hero-signup" class="flex flex-col gap-3">
             <input name="name" required placeholder="Your name" class="px-3 py-2 rounded-md bg-transparent border border-slate-700 focus-ring" />
             <input name="email" type="email" required placeholder="Email address" class="px-3 py-2 rounded-md bg-transparent border border-slate-700 focus-ring" />
-            <select name="role" class="px-3 py-2 rounded-md bg-transparent border border-slate-700 focus-ring">
+            <!-- changed name to user_type to match signup.js expectation -->
+            <select name="user_type" class="px-3 py-2 rounded-md bg-transparent border border-slate-700 focus-ring">
               <option value="user">I want to watch</option>
               <option value="creator">I'm a creator</option>
             </select>
@@ -263,12 +295,14 @@
           <form id="full-signup" class="mt-3 flex flex-col gap-3">
             <input name="name" placeholder="Full name" required class="px-3 py-2 rounded-md bg-transparent border border-slate-700 focus-ring" />
             <input name="email" type="email" placeholder="Email address" required class="px-3 py-2 rounded-md bg-transparent border border-slate-700 focus-ring" />
-            <select name="role" class="px-3 py-2 rounded-md bg-transparent border border-slate-700 focus-ring">
+            <!-- changed name to user_type to match signup.js -->
+            <select name="user_type" class="px-3 py-2 rounded-md bg-transparent border border-slate-700 focus-ring">
               <option value="user">User / Viewer</option>
               <option value="creator">Creator</option>
               <option value="brand">Brand / Partner</option>
             </select>
-            <input name="referrer" placeholder="Referral code (optional)" class="px-3 py-2 rounded-md bg-transparent border border-slate-700 focus-ring" />
+            <!-- referrer field renamed to referred_by to directly map to DB field -->
+            <input name="referred_by" placeholder="Referral code (optional)" class="px-3 py-2 rounded-md bg-transparent border border-slate-700 focus-ring" />
             <button type="submit" class="mt-2 px-4 py-2 rounded-md" style="background:linear-gradient(90deg,var(--accent),var(--accent-2)); color:#021026">Sign Up & Get Referral Link</button>
           </form>
         </div>
@@ -320,9 +354,9 @@
       nav.classList.toggle('hidden');
     });
 
-    // ---------- countdown (targeted launch date) ----------
+    // ---------- countdown (targeted launch date updated to Nov 1, 2025) ----------
     (function(){
-      const targetISO = '2025-12-01T12:00:00+02:00'; // update if needed
+      const targetISO = '2025-11-01T12:00:00+02:00';
       const target = new Date(targetISO).getTime();
       const countdownEl = document.getElementById('countdown');
       function update(){
@@ -335,46 +369,39 @@
       }
       update(); setInterval(update, 60000);
     })();
-
-    // ---------- referral code generator ----------
-    function generateReferralCode(email){
-      const clean = (email||'anon').replace(/[^a-z0-9]/ig,'').slice(0,6).toLowerCase();
-      return (Date.now().toString(36).slice(-6) + '-' + clean);
-    }
-
-    // ---------- Hero quick signup ----------
-    document.getElementById('hero-signup').addEventListener('submit', function(e){
-      e.preventDefault();
-      const form = e.target;
-      const data = Object.fromEntries(new FormData(form).entries());
-      data.referral_code = generateReferralCode(data.email || data.name);
-      // TODO: Replace alert with Supabase insert or server endpoint call
-      alert('Thanks! We reserved your spot. Check your email for confirmation. Referral: ' + data.referral_code);
-      // For production: POST to your secure endpoint which stores record in Supabase and sends email.
-    });
-
-    // ---------- Full signup ----------
-    document.getElementById('full-signup').addEventListener('submit', function(e){
-      e.preventDefault();
-      const form = e.target;
-      const data = Object.fromEntries(new FormData(form).entries());
-      data.referral_code = generateReferralCode(data.email || data.name);
-      alert('Account reserved — confirmation sent to ' + data.email + '. Your referral: ' + data.referral_code);
-      // redirect to thank-you page with referral param:
-      // window.location.href = '/thank-you?ref=' + encodeURIComponent(data.referral_code);
-    });
-
-    // ---------- CTA bindings ----------
-    document.getElementById('hero-join-btn').addEventListener('click', function(){ document.getElementById('full-signup').scrollIntoView({behavior:'smooth'}); });
-    document.getElementById('hero-apply-btn').addEventListener('click', function(){ document.querySelector('section h3').scrollIntoView({behavior:'smooth'}); });
-    document.getElementById('hero-empower-btn').addEventListener('click', function(){ document.getElementById('empowerment').scrollIntoView({behavior:'smooth'}); });
-    document.getElementById('join-waitlist-btn').addEventListener('click', function(){ document.getElementById('full-signup').scrollIntoView({behavior:'smooth'}); });
-    document.getElementById('apply-creator-btn').addEventListener('click', function(){ document.querySelectorAll('#apply-creator-2, #hero-apply-btn').forEach(btn=>btn.click()); });
-
-    // ---------- Analytics + Integration notes ----------
-    // - Add GA4 / Meta Pixel here.
-    // - Use server-side functions for reliable event attribution.
-    // - Replace frontend alerts with real Supabase integration in /js/supabase.js (server-side for secrets).
   </script>
+
+  <!-- ========== Modules: referral, analytics, signup ========== -->
+  <script type="module">
+    // IMPORTANT: config.js must export SUPABASE_URL and SUPABASE_KEY
+    // Example (assets/js/config.js):
+    // export const SUPABASE_URL = "https://xxxx.supabase.co";
+    // export const SUPABASE_KEY = "public-anon-key";
+
+    import('/assets/js/referral.js').then(m => {
+      // If referral module exports BSCReferral as named export
+      const BSCReferral = m.BSCReferral || window.BSCReferral || m.default;
+      if (BSCReferral && typeof BSCReferral.handleReferralVisit === 'function') {
+        BSCReferral.handleReferralVisit(); // capture ?ref= visits
+      }
+    });
+
+    // Load analytics module so gtag/fbq loaders and helpers are available
+    import('/assets/js/analytics.js').then(m => {
+      // analytics module has been loaded and initialized
+    });
+
+    // Load signup handler and attach to both forms
+    import('/assets/js/signup.js').then(m => {
+      const handler = m.handleSignupForm;
+      if (typeof handler === 'function') {
+        handler('hero-signup'); // hero compact form
+        handler('full-signup'); // main signup form
+      } else {
+        console.warn('signup.js handler not found');
+      }
+    });
+  </script>
+
 </body>
 </html>
