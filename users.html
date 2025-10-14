@@ -13,6 +13,48 @@
     .fade-in-delay-2{animation-delay:.6s} 
     .fade-in-delay-3{animation-delay:.9s}
     @keyframes fadeInUp { to{opacity:1; transform:translateY(0);} }
+    
+    .form-message {
+      padding: 8px 12px;
+      border-radius: 6px;
+      margin-top: 8px;
+      font-size: 14px;
+    }
+    .form-success {
+      background: rgba(34, 197, 94, 0.1);
+      border: 1px solid rgba(34, 197, 94, 0.3);
+      color: #4ade80;
+    }
+    .form-error {
+      background: rgba(239, 68, 68, 0.1);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      color: #f87171;
+    }
+    .loading {
+      opacity: 0.7;
+      pointer-events: none;
+    }
+    .feature-card {
+      background: #0b1220;
+      border: 1px solid rgba(255,255,255,0.03);
+      padding: 2rem;
+      border-radius: 0.5rem;
+    }
+    .button-primary {
+      background: linear-gradient(90deg, #00a3ff, #00ffd5);
+      color: #021026;
+      padding: 0.75rem 1.5rem;
+      border-radius: 0.375rem;
+      font-weight: 600;
+      display: inline-block;
+    }
+    .reward-tier {
+      background: linear-gradient(135deg, #1e3a8a, #3730a3);
+      border: 1px solid rgba(99, 102, 241, 0.3);
+      padding: 1.5rem;
+      border-radius: 0.5rem;
+      text-align: center;
+    }
   </style>
 </head>
 <body class="bg-black text-white font-sans dark:bg-black dark:text-white">
@@ -36,7 +78,7 @@
 </header>
 
 <!-- Hero -->
-<section class="relative h-screen flex items-center justify-center text-center">
+<section class="relative h-screen flex items-center justify-center text-center pt-16">
   <img src="assets/bsc-icon.png" alt="Users" class="absolute inset-0 w-full h-full object-contain opacity-20">
   <div class="absolute inset-0 bg-gradient-to-b from-black/70 via-black/85 to-black/95"></div>
   <div class="relative z-10 px-4 sm:px-6 lg:px-8">
@@ -46,45 +88,185 @@
   </div>
 </section>
 
-<!-- Referral Program -->
-<section class="py-20 bg-gray-900 text-center">
-  <div class="container mx-auto px-4 sm:px-6 lg:px-8">
-    <h2 class="text-3xl sm:text-4xl font-bold mb-12">Refer Friends, Earn Rewards</h2>
-    <p class="mb-8">Invite friends to join the waitlist and earn exclusive perks. The more friends you refer, the more rewards you unlock!</p>
-    <div class="flex justify-center gap-4 flex-wrap">
-      <div class="feature-card max-w-xs">
-        <h3 class="text-xl font-semibold mb-2">Step 1</h3>
-        <p>Share your unique referral link with friends and family.</p>
+<!-- User Benefits -->
+<section class="py-20 bg-black">
+  <div class="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
+    <h2 class="text-3xl sm:text-4xl font-bold mb-12">Why Join Bantu Stream Connect?</h2>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+      <div class="feature-card">
+        <div class="text-3xl mb-4">🎬</div>
+        <h3 class="text-xl font-semibold mb-2">Exclusive African Content</h3>
+        <p class="text-gray-300">Discover original films, music, podcasts, and stories from talented African creators you won't find anywhere else.</p>
       </div>
-      <div class="feature-card max-w-xs">
-        <h3 class="text-xl font-semibold mb-2">Step 2</h3>
-        <p>Your friends sign up on the waitlist using your link.</p>
+      <div class="feature-card">
+        <div class="text-3xl mb-4">🚀</div>
+        <h3 class="text-xl font-semibold mb-2">Early Access Privileges</h3>
+        <p class="text-gray-300">Get first access to new content, features, and platform updates before general release.</p>
       </div>
-      <div class="feature-card max-w-xs">
-        <h3 class="text-xl font-semibold mb-2">Step 3</h3>
-        <p>Unlock rewards like free subscription months, early content access, and exclusive teasers.</p>
+      <div class="feature-card">
+        <div class="text-3xl mb-4">💰</div>
+        <h3 class="text-xl font-semibold mb-2">Rewards & Discounts</h3>
+        <p class="text-gray-300">Earn free subscription months, exclusive content, and special discounts through our referral program.</p>
       </div>
     </div>
   </div>
 </section>
 
-<!-- Teaser Content Drip / Email Capture -->
-<section class="py-20 text-center">
+<!-- Referral Program -->
+<section class="py-20 bg-gray-900 text-center">
   <div class="container mx-auto px-4 sm:px-6 lg:px-8">
-    <h2 class="text-3xl sm:text-4xl font-bold mb-6">Get Sneak Peeks Delivered to Your Inbox</h2>
-    <p class="mb-8">Subscribe to receive exclusive content from founding creators, behind-the-scenes previews, and updates on our launch.</p>
-    <form class="max-w-lg mx-auto flex flex-col sm:flex-row gap-4">
-      <input type="email" placeholder="Enter your email" class="px-4 py-3 rounded-lg text-black flex-1" required>
-      <button type="submit" class="button-primary">Subscribe</button>
-    </form>
+    <h2 class="text-3xl sm:text-4xl font-bold mb-12">Refer Friends, Earn Rewards</h2>
+    <p class="mb-8 text-lg">Invite friends to join the waitlist and earn exclusive perks. The more friends you refer, the more rewards you unlock!</p>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
+      <div class="feature-card">
+        <div class="text-2xl mb-4">🔗</div>
+        <h3 class="text-xl font-semibold mb-2">Step 1: Get Your Link</h3>
+        <p class="text-gray-300">Sign up to receive your unique referral link instantly.</p>
+      </div>
+      <div class="feature-card">
+        <div class="text-2xl mb-4">📤</div>
+        <h3 class="text-xl font-semibold mb-2">Step 2: Share Widely</h3>
+        <p class="text-gray-300">Share your link with friends, family, and on social media.</p>
+      </div>
+      <div class="feature-card">
+        <div class="text-2xl mb-4">🎁</div>
+        <h3 class="text-xl font-semibold mb-2">Step 3: Earn Rewards</h3>
+        <p class="text-gray-300">Unlock rewards as your friends join the waitlist.</p>
+      </div>
+    </div>
+
+    <!-- Reward Tiers -->
+    <div class="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+      <div class="reward-tier">
+        <h3 class="text-xl font-bold mb-3 text-blue-300">Bronze Tier</h3>
+        <div class="text-4xl font-bold mb-2">3+</div>
+        <p class="text-gray-300 mb-4">Referrals</p>
+        <ul class="text-sm text-gray-300 space-y-2">
+          <li>• 1 Month Free Premium</li>
+          <li>• Early Access Pass</li>
+          <li>• Exclusive Content Pack</li>
+        </ul>
+      </div>
+      <div class="reward-tier">
+        <h3 class="text-xl font-bold mb-3 text-purple-300">Silver Tier</h3>
+        <div class="text-4xl font-bold mb-2">10+</div>
+        <p class="text-gray-300 mb-4">Referrals</p>
+        <ul class="text-sm text-gray-300 space-y-2">
+          <li>• 3 Months Free Premium</li>
+          <li>• Founder Badge</li>
+          <li>• Creator Meet & Greet</li>
+          <li>• Premium Content Bundle</li>
+        </ul>
+      </div>
+      <div class="reward-tier">
+        <h3 class="text-xl font-bold mb-3 text-yellow-300">Gold Tier</h3>
+        <div class="text-4xl font-bold mb-2">25+</div>
+        <p class="text-gray-300 mb-4">Referrals</p>
+        <ul class="text-sm text-gray-300 space-y-2">
+          <li>• 6 Months Free Premium</li>
+          <li>• Executive Founder Status</li>
+          <li>• Personalized Creator Content</li>
+          <li>• Platform Co-creator Role</li>
+        </ul>
+      </div>
+    </div>
   </div>
 </section>
 
-<!-- CTA -->
+<!-- Waitlist Signup Form -->
+<section id="waitlist" class="py-20 bg-black">
+  <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-2xl">
+    <div class="feature-card">
+      <h2 class="text-3xl font-bold mb-2 text-center">Join the Waitlist</h2>
+      <p class="text-gray-300 text-center mb-8">Be among the first to experience Bantu Stream Connect and get your unique referral code.</p>
+      
+      <form id="user-signup-form" class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium mb-2">Full Name *</label>
+          <input type="text" name="name" required placeholder="Your full name" 
+                 class="w-full px-4 py-3 bg-transparent border border-gray-700 rounded-lg focus:outline-none focus:border-blue-500">
+        </div>
+        
+        <div>
+          <label class="block text-sm font-medium mb-2">Email Address *</label>
+          <input type="email" name="email" required placeholder="your.email@example.com" 
+                 class="w-full px-4 py-3 bg-transparent border border-gray-700 rounded-lg focus:outline-none focus:border-blue-500">
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium mb-2">Content Interests</label>
+          <div class="grid grid-cols-2 gap-2">
+            <label class="flex items-center">
+              <input type="checkbox" name="interests" value="film" class="mr-2">
+              <span class="text-sm">Film & Video</span>
+            </label>
+            <label class="flex items-center">
+              <input type="checkbox" name="interests" value="music" class="mr-2">
+              <span class="text-sm">Music</span>
+            </label>
+            <label class="flex items-center">
+              <input type="checkbox" name="interests" value="podcast" class="mr-2">
+              <span class="text-sm">Podcasts</span>
+            </label>
+            <label class="flex items-center">
+              <input type="checkbox" name="interests" value="education" class="mr-2">
+              <span class="text-sm">Education</span>
+            </label>
+            <label class="flex items-center">
+              <input type="checkbox" name="interests" value="comedy" class="mr-2">
+              <span class="text-sm">Comedy</span>
+            </label>
+            <label class="flex items-center">
+              <input type="checkbox" name="interests" value="gaming" class="mr-2">
+              <span class="text-sm">Gaming</span>
+            </label>
+          </div>
+        </div>
+        
+        <div>
+          <label class="block text-sm font-medium mb-2">Referral Code (Optional)</label>
+          <input type="text" name="referred_by" placeholder="Enter referral code from a friend" 
+                 class="w-full px-4 py-3 bg-transparent border border-gray-700 rounded-lg focus:outline-none focus:border-blue-500">
+        </div>
+        
+        <button type="submit" class="w-full button-primary py-3 rounded-lg font-bold user-signup-btn">
+          Join Waitlist & Get Referral Code
+        </button>
+        
+        <div id="user-signup-message" class="form-message hidden"></div>
+      </form>
+      
+      <div class="mt-6 p-4 bg-green-900 bg-opacity-20 rounded-lg">
+        <h4 class="font-semibold text-green-300 mb-2">What happens after you join:</h4>
+        <ul class="text-sm text-gray-300 space-y-1">
+          <li>• Immediate access to your personal referral dashboard</li>
+          <li>• Weekly updates on platform development</li>
+          <li>• Exclusive sneak peeks from founding creators</li>
+          <li>• Early bird discount at launch</li>
+          <li>• Priority access when we go live</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Email Newsletter -->
 <section class="py-20 bg-gray-900 text-center">
-  <h2 class="text-3xl sm:text-4xl font-bold mb-6">Don't Miss Out!</h2>
-  <p class="mb-8">Join thousands of users waiting to experience Bantu Stream Connect first.</p>
-  <a href="#waitlist" class="button-primary fade-in fade-in-delay-1">Join Waitlist</a>
+  <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-3xl">
+    <h2 class="text-3xl sm:text-4xl font-bold mb-6">Stay Updated with Creator Spotlights</h2>
+    <p class="mb-8 text-lg text-gray-300">Get exclusive content from founding creators, behind-the-scenes previews, and early access to new features.</p>
+    <div class="feature-card max-w-2xl mx-auto">
+      <p class="mb-4">Already on the waitlist? You'll automatically receive our creator spotlight newsletter!</p>
+      <p class="text-sm text-gray-400">Can't wait? <a href="#waitlist" class="text-blue-400 hover:text-blue-300">Join the waitlist above</a> to get started.</p>
+    </div>
+  </div>
+</section>
+
+<!-- Final CTA -->
+<section class="py-20 bg-black text-center">
+  <h2 class="text-3xl sm:text-4xl font-bold mb-6">Join Thousands of Early Supporters</h2>
+  <p class="mb-8 text-lg text-gray-300">Don't miss your chance to be part of Africa's streaming revolution from day one.</p>
+  <a href="#waitlist" class="button-primary fade-in fade-in-delay-1">Secure Your Spot Now</a>
 </section>
 
 <!-- Footer -->
@@ -95,13 +277,166 @@
     <div class="flex justify-center gap-6 mb-4 flex-wrap">
       <a href="#" class="hover:text-blue-500 transition">Privacy Policy</a>
       <a href="#" class="hover:text-blue-500 transition">Terms of Service</a>
+      <a href="index.html" class="hover:text-blue-500 transition">Home</a>
+      <a href="creators.html" class="hover:text-blue-500 transition">For Creators</a>
     </div>
     <p>Made with ❤️ in South Africa</p>
   </div>
 </footer>
 
+<!-- Integrated Signup Functionality for Users -->
+<script type="module">
+  import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+
+  // Supabase Setup (same credentials as other pages)
+  const SUPABASE_URL = "https://ydnxqnbjoshvxteevemc.supabase.co";
+  const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U";
+  const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+  // Helper: generate unique referral code
+  async function generateUniqueCode() {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let code;
+    let exists = true;
+    while (exists) {
+      code = Array.from({length:6}, () => chars[Math.floor(Math.random()*chars.length)]).join('');
+      let { data, error } = await supabase.from('signups').select('id').eq('referral_code', code).limit(1);
+      exists = data.length > 0;
+    }
+    return code;
+  }
+
+  // Handle User Signup Form
+  document.addEventListener('DOMContentLoaded', () => {
+    const form = document.getElementById('user-signup-form');
+    const message = document.getElementById('user-signup-message');
+
+    if (form && message) {
+      form.addEventListener('submit', async e => {
+        e.preventDefault();
+        message.textContent = '';
+        message.className = 'form-message hidden';
+
+        const formData = new FormData(form);
+        const name = formData.get('name').trim();
+        const email = formData.get('email').trim();
+        const referred_by = formData.get('referred_by') || null;
+        
+        // Get selected interests
+        const interests = [];
+        const interestCheckboxes = form.querySelectorAll('input[name="interests"]:checked');
+        interestCheckboxes.forEach(checkbox => {
+          interests.push(checkbox.value);
+        });
+        const content_interests = interests.length > 0 ? interests.join(', ') : null;
+        
+        // For users page, user_type is always 'user'
+        const user_type = 'user';
+
+        if (!name || !email) {
+          message.textContent = 'Please fill in all required fields.';
+          message.className = 'form-message form-error';
+          message.classList.remove('hidden');
+          return;
+        }
+
+        // Show loading state
+        const button = form.querySelector('.user-signup-btn');
+        const originalText = button.textContent;
+        button.disabled = true;
+        button.innerHTML = '<span class="animate-pulse">Joining Waitlist...</span>';
+
+        try {
+          // Check if email already exists
+          let { data: existing, error: checkErr } = await supabase
+            .from('signups')
+            .select('id')
+            .eq('email', email)
+            .limit(1);
+
+          if (checkErr) throw checkErr;
+          if (existing.length > 0) {
+            message.textContent = 'This email is already registered on our waitlist.';
+            message.className = 'form-message form-error';
+            message.classList.remove('hidden');
+            return;
+          }
+
+          // Generate unique referral code
+          const referral_code = await generateUniqueCode();
+
+          // Insert into Supabase - including user-specific fields
+          let { data, error } = await supabase.from('signups').insert([{
+            name, 
+            email, 
+            user_type, 
+            referral_code, 
+            referred_by,
+            content_interests
+          }]);
+
+          if (error) throw error;
+
+          message.innerHTML = `
+            🎉 Successfully joined the waitlist!<br><br>
+            <strong>Your personal referral code: ${referral_code}</strong><br><br>
+            Share your link: <code class="bg-gray-800 px-2 py-1 rounded">https://bantustream.com?ref=${referral_code}</code><br><br>
+            Start sharing to unlock rewards!
+          `;
+          message.className = 'form-message form-success';
+          message.classList.remove('hidden');
+          form.reset();
+
+          // Track conversion for users
+          if (typeof gtag !== 'undefined') {
+            gtag('event', 'sign_up', {
+              method: 'user_waitlist',
+              email: email
+            });
+          }
+
+          if (typeof fbq !== 'undefined') {
+            fbq('track', 'Lead', {
+              content_name: 'User Waitlist',
+              content_category: 'user',
+              value: 1
+            });
+          }
+
+        } catch(err) {
+          console.error(err);
+          message.textContent = 'There was an error joining the waitlist. Please try again.';
+          message.className = 'form-message form-error';
+          message.classList.remove('hidden');
+        } finally {
+          // Reset button
+          button.disabled = false;
+          button.textContent = originalText;
+        }
+      });
+    }
+
+    // Smooth scroll to waitlist form when clicking "Join Waitlist" buttons
+    const waitlistButtons = document.querySelectorAll('a[href="#waitlist"]');
+    waitlistButtons.forEach(button => {
+      button.addEventListener('click', (e) => {
+        e.preventDefault();
+        const target = document.getElementById('waitlist');
+        if (target) {
+          target.scrollIntoView({ behavior: 'smooth' });
+          
+          // Focus on the first input field
+          const firstInput = target.querySelector('input');
+          if (firstInput) {
+            setTimeout(() => firstInput.focus(), 500);
+          }
+        }
+      });
+    });
+  });
+</script>
+
+<!-- If you need to include additional scripts -->
 <script src="js/main.js"></script>
-<script src="js/supabase.js"></script>
-<script src="js/referral.js"></script>
 </body>
 </html>
