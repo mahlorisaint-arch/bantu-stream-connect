@@ -13,6 +13,41 @@
     .fade-in-delay-2{animation-delay:.6s} 
     .fade-in-delay-3{animation-delay:.9s}
     @keyframes fadeInUp { to{opacity:1; transform:translateY(0);} }
+    
+    .form-message {
+      padding: 8px 12px;
+      border-radius: 6px;
+      margin-top: 8px;
+      font-size: 14px;
+    }
+    .form-success {
+      background: rgba(34, 197, 94, 0.1);
+      border: 1px solid rgba(34, 197, 94, 0.3);
+      color: #4ade80;
+    }
+    .form-error {
+      background: rgba(239, 68, 68, 0.1);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      color: #f87171;
+    }
+    .loading {
+      opacity: 0.7;
+      pointer-events: none;
+    }
+    .feature-card {
+      background: #0b1220;
+      border: 1px solid rgba(255,255,255,0.03);
+      padding: 2rem;
+      border-radius: 0.5rem;
+    }
+    .button-primary {
+      background: linear-gradient(90deg, #00a3ff, #00ffd5);
+      color: #021026;
+      padding: 0.75rem 1.5rem;
+      border-radius: 0.375rem;
+      font-weight: 600;
+      display: inline-block;
+    }
   </style>
 </head>
 <body class="bg-black text-white font-sans dark:bg-black dark:text-white">
@@ -36,7 +71,7 @@
 </header>
 
 <!-- Hero -->
-<section class="relative h-screen flex items-center justify-center text-center">
+<section class="relative h-screen flex items-center justify-center text-center pt-16">
   <img src="assets/bsc-icon.png" alt="Creators" class="absolute inset-0 w-full h-full object-contain opacity-20">
   <div class="absolute inset-0 bg-gradient-to-b from-black/70 via-black/85 to-black/95"></div>
   <div class="relative z-10 px-4 sm:px-6 lg:px-8">
@@ -53,7 +88,7 @@
     <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
       <div class="feature-card">
         <h3 class="text-xl font-semibold mb-2">Superior Revenue</h3>
-        <p>Enjoy a 90/10 split. We keep only 10%, leaving you with the lion’s share of your earnings.</p>
+        <p>Enjoy a 90/10 split. We keep only 10%, leaving you with the lion's share of your earnings.</p>
       </div>
       <div class="feature-card">
         <h3 class="text-xl font-semibold mb-2">Founding Creator Program</h3>
@@ -67,10 +102,108 @@
   </div>
 </section>
 
-<!-- CTA -->
-<section class="py-20 text-center">
-  <h2 class="text-3xl sm:text-4xl font-bold mb-6">Ready to Join?</h2>
-  <a href="#creator-apply" class="button-primary fade-in fade-in-delay-1">Apply Now</a>
+<!-- Creator Application Form -->
+<section id="creator-apply" class="py-20 bg-black">
+  <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-2xl">
+    <div class="feature-card">
+      <h2 class="text-3xl font-bold mb-2 text-center">Apply as a Founding Creator</h2>
+      <p class="text-gray-300 text-center mb-8">Join our exclusive founding creator program with enhanced benefits and support.</p>
+      
+      <form id="creator-signup-form" class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium mb-2">Full Name *</label>
+          <input type="text" name="name" required placeholder="Your full name" 
+                 class="w-full px-4 py-3 bg-transparent border border-gray-700 rounded-lg focus:outline-none focus:border-blue-500">
+        </div>
+        
+        <div>
+          <label class="block text-sm font-medium mb-2">Email Address *</label>
+          <input type="email" name="email" required placeholder="your.email@example.com" 
+                 class="w-full px-4 py-3 bg-transparent border border-gray-700 rounded-lg focus:outline-none focus:border-blue-500">
+        </div>
+        
+        <div>
+          <label class="block text-sm font-medium mb-2">Content Category *</label>
+          <select name="content_category" required 
+                  class="w-full px-4 py-3 bg-transparent border border-gray-700 rounded-lg focus:outline-none focus:border-blue-500">
+            <option value="">Select your primary content category</option>
+            <option value="film">Film & Video</option>
+            <option value="music">Music & Audio</option>
+            <option value="podcast">Podcasts</option>
+            <option value="education">Educational Content</option>
+            <option value="comedy">Comedy & Entertainment</option>
+            <option value="gaming">Gaming</option>
+            <option value="lifestyle">Lifestyle & Vlogs</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+        
+        <div>
+          <label class="block text-sm font-medium mb-2">Current Platform & Audience Size</label>
+          <input type="text" name="current_platform" placeholder="e.g., YouTube, TikTok, Instagram" 
+                 class="w-full px-4 py-3 bg-transparent border border-gray-700 rounded-lg focus:outline-none focus:border-blue-500">
+        </div>
+        
+        <div>
+          <label class="block text-sm font-medium mb-2">Tell us about your content</label>
+          <textarea name="content_description" rows="3" placeholder="Briefly describe your content and what makes it unique..." 
+                    class="w-full px-4 py-3 bg-transparent border border-gray-700 rounded-lg focus:outline-none focus:border-blue-500"></textarea>
+        </div>
+        
+        <div>
+          <label class="block text-sm font-medium mb-2">Referral Code (Optional)</label>
+          <input type="text" name="referred_by" placeholder="Enter referral code if you have one" 
+                 class="w-full px-4 py-3 bg-transparent border border-gray-700 rounded-lg focus:outline-none focus:border-blue-500">
+        </div>
+        
+        <button type="submit" class="w-full button-primary py-3 rounded-lg font-bold creator-signup-btn">
+          Apply as Founding Creator
+        </button>
+        
+        <div id="creator-signup-message" class="form-message hidden"></div>
+      </form>
+      
+      <div class="mt-6 p-4 bg-blue-900 bg-opacity-20 rounded-lg">
+        <h4 class="font-semibold text-blue-300 mb-2">Founding Creator Benefits:</h4>
+        <ul class="text-sm text-gray-300 space-y-1">
+          <li>• Guaranteed homepage placement at launch</li>
+          <li>• Dedicated creator onboarding manager</li>
+          <li>• Revenue guarantee for first 3 months</li>
+          <li>• Early access to creator tools and analytics</li>
+          <li>• Priority support and promotion</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Additional Creator Benefits -->
+<section class="py-20 bg-gray-900">
+  <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+    <h2 class="text-3xl sm:text-4xl font-bold mb-12 text-center">Why Choose Bantu Stream Connect?</h2>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div class="feature-card text-center">
+        <div class="text-2xl mb-3">🎯</div>
+        <h3 class="text-xl font-semibold mb-2">Targeted African Audience</h3>
+        <p class="text-gray-300">Reach audiences specifically interested in African content and stories.</p>
+      </div>
+      <div class="feature-card text-center">
+        <div class="text-2xl mb-3">💸</div>
+        <h3 class="text-xl font-semibold mb-2">Better Revenue Share</h3>
+        <p class="text-gray-300">Keep 90% of your earnings with our creator-first revenue model.</p>
+      </div>
+      <div class="feature-card text-center">
+        <div class="text-2xl mb-3">📊</div>
+        <h3 class="text-xl font-semibold mb-2">Advanced Analytics</h3>
+        <p class="text-gray-300">Get detailed insights into your audience demographics and engagement.</p>
+      </div>
+      <div class="feature-card text-center">
+        <div class="text-2xl mb-3">🤝</div>
+        <h3 class="text-xl font-semibold mb-2">Creator Empowerment</h3>
+        <p class="text-gray-300">Access workshops, bootcamps, and mentorship programs.</p>
+      </div>
+    </div>
+  </div>
 </section>
 
 <!-- Footer -->
@@ -81,13 +214,153 @@
     <div class="flex justify-center gap-6 mb-4 flex-wrap">
       <a href="#" class="hover:text-blue-500 transition">Privacy Policy</a>
       <a href="#" class="hover:text-blue-500 transition">Terms of Service</a>
+      <a href="index.html" class="hover:text-blue-500 transition">Home</a>
     </div>
     <p>Made with ❤️ in South Africa</p>
   </div>
 </footer>
 
+<!-- Integrated Signup Functionality for Creators -->
+<script type="module">
+  import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+
+  // Supabase Setup (same credentials as main page)
+  const SUPABASE_URL = "https://ydnxqnbjoshvxteevemc.supabase.co";
+  const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U";
+  const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+  // Helper: generate unique referral code
+  async function generateUniqueCode() {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let code;
+    let exists = true;
+    while (exists) {
+      code = Array.from({length:6}, () => chars[Math.floor(Math.random()*chars.length)]).join('');
+      let { data, error } = await supabase.from('signups').select('id').eq('referral_code', code).limit(1);
+      exists = data.length > 0;
+    }
+    return code;
+  }
+
+  // Handle Creator Signup Form
+  document.addEventListener('DOMContentLoaded', () => {
+    const form = document.getElementById('creator-signup-form');
+    const message = document.getElementById('creator-signup-message');
+
+    if (form && message) {
+      form.addEventListener('submit', async e => {
+        e.preventDefault();
+        message.textContent = '';
+        message.className = 'form-message hidden';
+
+        const formData = new FormData(form);
+        const name = formData.get('name').trim();
+        const email = formData.get('email').trim();
+        const content_category = formData.get('content_category');
+        const current_platform = formData.get('current_platform') || null;
+        const content_description = formData.get('content_description') || null;
+        const referred_by = formData.get('referred_by') || null;
+        
+        // For creators page, user_type is always 'creator'
+        const user_type = 'creator';
+
+        if (!name || !email || !content_category) {
+          message.textContent = 'Please fill in all required fields.';
+          message.className = 'form-message form-error';
+          message.classList.remove('hidden');
+          return;
+        }
+
+        // Show loading state
+        const button = form.querySelector('.creator-signup-btn');
+        const originalText = button.textContent;
+        button.disabled = true;
+        button.innerHTML = '<span class="animate-pulse">Applying...</span>';
+
+        try {
+          // Check if email already exists
+          let { data: existing, error: checkErr } = await supabase
+            .from('signups')
+            .select('id')
+            .eq('email', email)
+            .limit(1);
+
+          if (checkErr) throw checkErr;
+          if (existing.length > 0) {
+            message.textContent = 'This email is already registered.';
+            message.className = 'form-message form-error';
+            message.classList.remove('hidden');
+            return;
+          }
+
+          // Generate unique referral code
+          const referral_code = await generateUniqueCode();
+
+          // Insert into Supabase - including creator-specific fields
+          let { data, error } = await supabase.from('signups').insert([{
+            name, 
+            email, 
+            user_type, 
+            referral_code, 
+            referred_by,
+            content_category,
+            current_platform,
+            content_description,
+            is_founding_creator: true // Mark as founding creator application
+          }]);
+
+          if (error) throw error;
+
+          message.textContent = '🎉 Application submitted successfully! Your referral code: ' + referral_code + ' - We will review your application and contact you soon.';
+          message.className = 'form-message form-success';
+          message.classList.remove('hidden');
+          form.reset();
+
+          // Track conversion for creators
+          if (typeof gtag !== 'undefined') {
+            gtag('event', 'sign_up', {
+              method: 'creator_application',
+              content_category: content_category,
+              email: email
+            });
+          }
+
+          if (typeof fbq !== 'undefined') {
+            fbq('track', 'Lead', {
+              content_name: 'Creator Application',
+              content_category: content_category,
+              value: 1
+            });
+          }
+
+        } catch(err) {
+          console.error(err);
+          message.textContent = 'There was an error submitting your application. Please try again.';
+          message.className = 'form-message form-error';
+          message.classList.remove('hidden');
+        } finally {
+          // Reset button
+          button.disabled = false;
+          button.textContent = originalText;
+        }
+      });
+    }
+
+    // Smooth scroll to application form when clicking "Apply as Creator" buttons
+    const applyButtons = document.querySelectorAll('a[href="#creator-apply"]');
+    applyButtons.forEach(button => {
+      button.addEventListener('click', (e) => {
+        e.preventDefault();
+        const target = document.getElementById('creator-apply');
+        if (target) {
+          target.scrollIntoView({ behavior: 'smooth' });
+        }
+      });
+    });
+  });
+</script>
+
+<!-- If you need to include additional scripts -->
 <script src="js/main.js"></script>
-<script src="js/supabase.js"></script>
-<script src="js/referral.js"></script>
 </body>
 </html>
