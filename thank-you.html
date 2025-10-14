@@ -83,7 +83,7 @@
         </div>
       </div>
       
-      <h1 class="text-4xl sm:text-5xl font-bold mb-4 gradient-text">Welcome to the Movement! 🎉</h1>
+      <h1 class="text-4xl sm:text-5xl font-bold mb-4 gradient-text">Welcome to the Movement, <span class="user-welcome">Friend</span>! 🎉</h1>
       <p class="text-xl text-gray-300 mb-6">
         Thank you for joining <span class="font-semibold text-blue-400">Bantu Stream Connect</span>
       </p>
@@ -249,6 +249,68 @@
   <!-- Enhanced Referral & Confetti Script -->
   <script>
     document.addEventListener('DOMContentLoaded', async () => {
+      // Get referral data from sessionStorage
+      function getReferralData() {
+        const referralCode = sessionStorage.getItem('userReferralCode');
+        const userName = sessionStorage.getItem('userName');
+        const userType = sessionStorage.getItem('userType');
+        
+        // Clear the storage after reading
+        sessionStorage.removeItem('userReferralCode');
+        sessionStorage.removeItem('userName');
+        sessionStorage.removeItem('userType');
+        
+        if (referralCode) {
+          return {
+            referralCode: referralCode,
+            userName: userName || 'Friend',
+            userType: userType || 'user',
+            referralCount: 0, // Start with 0 referrals
+            baseUrl: window.location.origin || 'https://bantustream.com'
+          };
+        } else {
+          // Fallback for direct access to thank-you page
+          return {
+            referralCode: 'BSC' + Math.random().toString(36).substr(2, 6).toUpperCase(),
+            userName: 'Friend',
+            userType: 'user',
+            referralCount: Math.floor(Math.random() * 5),
+            baseUrl: window.location.origin || 'https://bantustream.com'
+          };
+        }
+      }
+
+      // Display referral information
+      function displayReferralInfo() {
+        const refLink = document.getElementById('ref-link');
+        const refCount = document.getElementById('ref-count');
+        const progressBar = document.getElementById('progress-bar');
+        const refsNeeded = document.getElementById('refs-needed');
+        
+        const referralData = getReferralData();
+        const referralLink = `${referralData.baseUrl}?ref=${referralData.referralCode}`;
+        refLink.value = referralLink;
+        
+        const currentRefs = referralData.referralCount;
+        refCount.textContent = currentRefs;
+        
+        // Update welcome message with user's name if available
+        const welcomeElements = document.querySelectorAll('.user-welcome');
+        welcomeElements.forEach(el => {
+          if (referralData.userName && referralData.userName !== 'Friend') {
+            el.textContent = referralData.userName;
+          }
+        });
+        
+        // Calculate progress (next reward at 5 referrals)
+        const nextRewardAt = 5;
+        const progress = Math.min((currentRefs / nextRewardAt) * 100, 100);
+        progressBar.style.width = `${progress}%`;
+        
+        const needed = Math.max(nextRewardAt - currentRefs, 0);
+        refsNeeded.textContent = needed;
+      }
+
       // 🎉 Enhanced Confetti Celebration
       function launchConfetti() {
         const duration = 5000;
@@ -294,38 +356,6 @@
         }, 1000);
       }
 
-      // Initialize confetti
-      launchConfetti();
-
-      // Mock referral data (replace with actual data from your referral system)
-      const mockReferralData = {
-        referralCode: 'BSC' + Math.random().toString(36).substr(2, 6).toUpperCase(),
-        referralCount: Math.floor(Math.random() * 5),
-        baseUrl: 'https://bantustream.com'
-      };
-
-      // Display referral information
-      function displayReferralInfo() {
-        const refLink = document.getElementById('ref-link');
-        const refCount = document.getElementById('ref-count');
-        const progressBar = document.getElementById('progress-bar');
-        const refsNeeded = document.getElementById('refs-needed');
-        
-        const referralLink = `${mockReferralData.baseUrl}?ref=${mockReferralData.referralCode}`;
-        refLink.value = referralLink;
-        
-        const currentRefs = mockReferralData.referralCount;
-        refCount.textContent = currentRefs;
-        
-        // Calculate progress (next reward at 5 referrals)
-        const nextRewardAt = 5;
-        const progress = Math.min((currentRefs / nextRewardAt) * 100, 100);
-        progressBar.style.width = `${progress}%`;
-        
-        const needed = Math.max(nextRewardAt - currentRefs, 0);
-        refsNeeded.textContent = needed;
-      }
-
       // Copy link functionality
       function copyReferralLink() {
         const refLink = document.getElementById('ref-link');
@@ -368,7 +398,8 @@
         window.open(shareUrl, '_blank', 'width=600,height=400');
       }
 
-      // Initialize referral info
+      // Initialize
+      launchConfetti();
       displayReferralInfo();
 
       // Event listeners
