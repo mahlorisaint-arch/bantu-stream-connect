@@ -14,6 +14,41 @@
     .fade-in-delay-3{animation-delay:.9s}
     .fade-in-delay-4{animation-delay:1.2s}
     @keyframes fadeInUp { to{opacity:1; transform:translateY(0);} }
+    .feature-card {
+      background: #0b1220;
+      border: 1px solid rgba(255,255,255,0.03);
+      padding: 2rem;
+      border-radius: 0.5rem;
+    }
+    .button-primary {
+      background: linear-gradient(90deg, #00a3ff, #00ffd5);
+      color: #021026;
+      padding: 0.75rem 1.5rem;
+      border-radius: 0.375rem;
+      font-weight: 600;
+      display: inline-block;
+    }
+    .features-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1.5rem;
+    }
+    @media (min-width: 768px) {
+      .features-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+    @media (min-width: 1024px) {
+      .features-grid {
+        grid-template-columns: repeat(4, 1fr);
+      }
+    }
+    .contact-card {
+      background: linear-gradient(135deg, #1e3a8a, #3730a3);
+      border: 1px solid rgba(99, 102, 241, 0.3);
+      padding: 2rem;
+      border-radius: 0.5rem;
+    }
   </style>
 </head>
 <body class="bg-black text-white font-sans dark:bg-black dark:text-white">
@@ -31,61 +66,195 @@
       <a href="users.html" class="hover:text-blue-500 transition">Users</a>
       <a href="empowerment.html" class="text-blue-500 font-semibold">Empowerment</a>
       <a href="blog.html" class="hover:text-blue-500 transition">Blog</a>
-      <a href="#join-initiative" class="button-primary fade-in fade-in-delay-2">Join the Initiative</a>
+      <a href="#partner-with-us" class="button-primary fade-in fade-in-delay-2">Partner With Us</a>
     </nav>
   </div>
 </header>
 
 <!-- Hero Section -->
-<section class="relative h-screen flex items-center justify-center text-center">
+<section class="relative h-screen flex items-center justify-center text-center pt-16">
   <img src="assets/bsc-icon.png" alt="Empowerment" class="absolute inset-0 w-full h-full object-contain opacity-20">
   <div class="absolute inset-0 bg-gradient-to-b from-black/70 via-black/85 to-black/95"></div>
   <div class="relative z-10 px-4 sm:px-6 lg:px-8">
     <h1 class="text-4xl sm:text-5xl md:text-6xl font-bold mb-4 fade-in fade-in-delay-1">The Bantu Creator Empowerment Initiative</h1>
-    <p class="text-lg sm:text-xl mb-8 fade-in fade-in-delay-2">Empowering Africa’s next generation of storytellers, musicians, filmmakers, and innovators through education, mentorship, and creative tools.</p>
-    <a href="#join-initiative" class="button-primary fade-in fade-in-delay-3">Join the Initiative</a>
+    <p class="text-lg sm:text-xl mb-8 fade-in fade-in-delay-2">Empowering Africa's next generation of storytellers, musicians, filmmakers, and innovators through education, mentorship, and creative tools.</p>
+    <a href="#partner-with-us" class="button-primary fade-in fade-in-delay-3 mr-4">Partner With Us</a>
+    <a href="#join-initiative" class="border border-blue-500 text-blue-500 px-6 py-3 rounded-lg hover:bg-blue-500 hover:text-white transition fade-in fade-in-delay-3">Join as Creator</a>
   </div>
 </section>
 
-<!-- Mission Section -->
-<section class="py-20 bg-gray-900 text-center">
-  <div class="container mx-auto px-4 sm:px-6 lg:px-8">
-    <h2 class="text-3xl sm:text-4xl font-bold mb-12">Our Mission</h2>
-    <p class="text-lg sm:text-xl mb-8 fade-in fade-in-delay-1">To turn creativity into opportunity. Empowering creators to build sustainable careers while showcasing Africa’s talent on a global stage.</p>
-  </div>
-</section>
-
-<!-- Programs Section -->
-<section class="py-20 text-center">
-  <div class="container mx-auto px-4 sm:px-6 lg:px-8">
-    <h2 class="text-3xl sm:text-4xl font-bold mb-12">Programs & Workshops</h2>
-    <div class="features-grid">
-      <div class="feature-card fade-in fade-in-delay-1">
-        <h3 class="text-xl font-semibold mb-2">Digital Bootcamps</h3>
-        <p>Hands-on training in music production, filmmaking, podcasting, and content creation tools to kickstart your career.</p>
-      </div>
-      <div class="feature-card fade-in fade-in-delay-2">
-        <h3 class="text-xl font-semibold mb-2">Mentorship Programs</h3>
-        <p>Learn directly from industry experts who guide you on creative, technical, and business aspects of content creation.</p>
-      </div>
-      <div class="feature-card fade-in fade-in-delay-3">
-        <h3 class="text-xl font-semibold mb-2">Creative Workshops</h3>
-        <p>Participate in specialized workshops covering storytelling, branding, marketing, and monetization strategies.</p>
-      </div>
-      <div class="feature-card fade-in fade-in-delay-4">
-        <h3 class="text-xl font-semibold mb-2">Partnerships & Sponsorships</h3>
-        <p>Access opportunities to collaborate with brands and sponsors while growing your reach and impact.</p>
+<!-- Initiative Message Section -->
+<section class="py-20 bg-black">
+  <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-4xl">
+    <div class="feature-card">
+      <h2 class="text-3xl sm:text-4xl font-bold mb-8 text-center">The Bantu Creator Empowerment Initiative</h2>
+      
+      <div class="space-y-6 text-lg text-gray-300">
+        <p>
+          Bantu Stream Connect is a South African-built streaming and creator empowerment platform dedicated to uplifting Africa's next generation of storytellers, musicians, filmmakers, and innovators.
+        </p>
+        
+        <p>
+          Through the Bantu Creator Empowerment Initiative, we're building a movement, not just a platform. We host digital bootcamps, mentorship programs, and creative workshops that equip young Africans with the tools to produce, manage, and monetize their craft responsibly.
+        </p>
+        
+        <div class="bg-blue-900 bg-opacity-20 p-6 rounded-lg border-l-4 border-blue-500">
+          <p class="font-semibold text-blue-300 mb-2">Our mission is simple:</p>
+          <p class="text-white">To turn creativity into opportunity. Empowering creators to build sustainable careers while showcasing Africa's talent on a global stage.</p>
+        </div>
+        
+        <p>
+          By partnering with us, your brand becomes part of a growing movement that champions economic inclusion, digital education, and creative entrepreneurship across the continent.
+        </p>
+        
+        <p class="text-center text-xl font-semibold text-blue-300">
+          Together, we can give every young African the chance to learn, earn, and tell their story the African way. 🌍
+        </p>
       </div>
     </div>
   </div>
 </section>
 
-<!-- CTA Section -->
-<section class="py-20 bg-gray-900 text-center" id="join-initiative">
+<!-- Programs Section -->
+<section class="py-20 bg-gray-900">
   <div class="container mx-auto px-4 sm:px-6 lg:px-8">
-    <h2 class="text-3xl sm:text-4xl font-bold mb-6 fade-in fade-in-delay-1">Become Part of the Movement</h2>
-    <p class="mb-8 text-lg sm:text-xl fade-in fade-in-delay-2">Sign up today to gain access to bootcamps, mentorship, workshops, and all the tools to grow as a creator.</p>
-    <a href="#join-initiative" class="button-primary fade-in fade-in-delay-3">Join the Initiative</a>
+    <h2 class="text-3xl sm:text-4xl font-bold mb-12 text-center">Programs & Workshops</h2>
+    <div class="features-grid">
+      <div class="feature-card fade-in fade-in-delay-1">
+        <div class="text-3xl mb-4">🎓</div>
+        <h3 class="text-xl font-semibold mb-2">Digital Bootcamps</h3>
+        <p class="text-gray-300">Hands-on training in music production, filmmaking, podcasting, and content creation tools to kickstart your career.</p>
+      </div>
+      <div class="feature-card fade-in fade-in-delay-2">
+        <div class="text-3xl mb-4">👥</div>
+        <h3 class="text-xl font-semibold mb-2">Mentorship Programs</h3>
+        <p class="text-gray-300">Learn directly from industry experts who guide you on creative, technical, and business aspects of content creation.</p>
+      </div>
+      <div class="feature-card fade-in fade-in-delay-3">
+        <div class="text-3xl mb-4">💡</div>
+        <h3 class="text-xl font-semibold mb-2">Creative Workshops</h3>
+        <p class="text-gray-300">Participate in specialized workshops covering storytelling, branding, marketing, and monetization strategies.</p>
+      </div>
+      <div class="feature-card fade-in fade-in-delay-4">
+        <div class="text-3xl mb-4">🤝</div>
+        <h3 class="text-xl font-semibold mb-2">Grants & Sponsorships</h3>
+        <p class="text-gray-300">Access opportunities to collaborate with brands and sponsors while growing your reach and impact.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Partnership & Contact Section -->
+<section id="partner-with-us" class="py-20 bg-black">
+  <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-4xl">
+    <h2 class="text-3xl sm:text-4xl font-bold mb-12 text-center">Partner With Us</h2>
+    
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+      <!-- For Brands & Sponsors -->
+      <div class="contact-card">
+        <h3 class="text-2xl font-bold mb-4 text-blue-300">For Brands & Sponsors</h3>
+        <p class="text-gray-300 mb-6">Join us in empowering Africa's creative talent. Your sponsorship can fund:</p>
+        <ul class="text-gray-300 space-y-2 mb-6">
+          <li>• Creator bootcamps and workshops</li>
+          <li>• Equipment grants for emerging creators</li>
+          <li>• Mentorship program funding</li>
+          <li>• Content production grants</li>
+        </ul>
+        <div class="text-center">
+          <a href="mailto:support@bantustreamconnect.com" class="button-primary inline-block">Contact Our Partnerships Team</a>
+        </div>
+      </div>
+
+      <!-- For Investors -->
+      <div class="contact-card">
+        <h3 class="text-2xl font-bold mb-4 text-green-300">For Investors</h3>
+        <p class="text-gray-300 mb-6">Invest in Africa's creative economy and be part of building the continent's premier streaming platform.</p>
+        <ul class="text-gray-300 space-y-2 mb-6">
+          <li>• Scale our empowerment initiatives</li>
+          <li>• Expand creator tools and technology</li>
+          <li>• Grow our African market presence</li>
+          <li>• Support sustainable creative careers</li>
+        </ul>
+        <div class="text-center">
+          <a href="mailto:support@bantustreamconnect.com" class="button-primary inline-block">Discuss Investment Opportunities</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Contact Information -->
+    <div class="mt-12 feature-card text-center">
+      <h3 class="text-2xl font-bold mb-6">Get In Touch</h3>
+      <div class="space-y-4">
+        <div>
+          <p class="text-gray-400 mb-2">Email us for partnerships, sponsorships, or investment inquiries:</p>
+          <a href="mailto:support@bantustreamconnect.com" class="text-2xl font-bold text-blue-400 hover:text-blue-300 transition">
+            support@bantustreamconnect.com
+          </a>
+        </div>
+        <div>
+          <p class="text-gray-400 mb-2">Follow our journey and see our creators in action:</p>
+          <a href="https://www.instagram.com/bantustream_connect/" target="_blank" class="text-pink-400 hover:text-pink-300 transition font-semibold text-lg">
+            📷 @bantustream_connect
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Creator Join Section -->
+<section id="join-initiative" class="py-20 bg-gray-900 text-center">
+  <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-3xl">
+    <h2 class="text-3xl sm:text-4xl font-bold mb-6 fade-in fade-in-delay-1">Ready to Join the Movement?</h2>
+    <p class="mb-8 text-lg sm:text-xl text-gray-300 fade-in fade-in-delay-2">Apply as a creator to access our empowerment programs, bootcamps, and mentorship opportunities.</p>
+    
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+      <div class="feature-card text-left">
+        <h4 class="text-xl font-semibold mb-3 text-blue-300">For Aspiring Creators</h4>
+        <ul class="text-gray-300 space-y-2 text-sm">
+          <li>• Free access to digital bootcamps</li>
+          <li>• One-on-one mentorship sessions</li>
+          <li>• Creative workshops and resources</li>
+          <li>• Equipment access programs</li>
+        </ul>
+      </div>
+      <div class="feature-card text-left">
+        <h4 class="text-xl font-semibold mb-3 text-green-300">For Established Creators</h4>
+        <ul class="text-gray-300 space-y-2 text-sm">
+          <li>• Advanced monetization tools</li>
+          <li>• Brand partnership opportunities</li>
+          <li>• Revenue guarantee programs</li>
+          <li>• Featured placement and promotion</li>
+        </ul>
+      </div>
+    </div>
+    
+    <a href="creators.html#creator-apply" class="button-primary fade-in fade-in-delay-3">Apply as a Creator</a>
+  </div>
+</section>
+
+<!-- Impact Stats -->
+<section class="py-20 bg-black text-center">
+  <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+    <h2 class="text-3xl sm:text-4xl font-bold mb-12">Our Impact Goals</h2>
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-4xl mx-auto">
+      <div class="feature-card">
+        <div class="text-3xl font-bold text-blue-400 mb-2">1,000+</div>
+        <p class="text-gray-300">Creators Empowered</p>
+      </div>
+      <div class="feature-card">
+        <div class="text-3xl font-bold text-green-400 mb-2">50+</div>
+        <p class="text-gray-300">Bootcamps & Workshops</p>
+      </div>
+      <div class="feature-card">
+        <div class="text-3xl font-bold text-purple-400 mb-2">$500k+</div>
+        <p class="text-gray-300">In Creator Grants</p>
+      </div>
+      <div class="feature-card">
+        <div class="text-3xl font-bold text-yellow-400 mb-2">10+</div>
+        <p class="text-gray-300">African Countries</p>
+      </div>
+    </div>
   </div>
 </section>
 
@@ -97,13 +266,17 @@
     <div class="flex justify-center gap-6 mb-4 flex-wrap">
       <a href="#" class="hover:text-blue-500 transition">Privacy Policy</a>
       <a href="#" class="hover:text-blue-500 transition">Terms of Service</a>
+      <a href="mailto:support@bantustreamconnect.com" class="hover:text-blue-500 transition">Contact</a>
+      <a href="https://www.instagram.com/bantustream_connect/" target="_blank" class="hover:text-pink-500 transition">Instagram</a>
     </div>
-    <p>Made with ❤️ in South Africa</p>
+    <p class="mb-2">Partnership & Investment Inquiries:</p>
+    <a href="mailto:support@bantustreamconnect.com" class="text-blue-400 hover:text-blue-300 transition">
+      support@bantustreamconnect.com
+    </a>
+    <p class="mt-4">Made with ❤️ in South Africa</p>
   </div>
 </footer>
 
 <script src="js/main.js"></script>
-<script src="js/supabase.js"></script>
-<script src="js/referral.js"></script>
 </body>
 </html>
