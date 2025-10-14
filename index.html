@@ -386,108 +386,117 @@
 
     <!-- INTEGRATED WORKING SIGNUP FUNCTIONALITY -->
     <script type="module">
-        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
 
-        // ---------- Supabase Setup (using your working credentials) ----------
-        const SUPABASE_URL = "https://ydnxqnbjoshvxteevemc.supabase.co";
-        const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U";
-        const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+    // ---------- Supabase Setup (using your working credentials) ----------
+    const SUPABASE_URL = "https://ydnxqnbjoshvxteevemc.supabase.co";
+    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U";
+    const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        // ---------- Helper: generate unique referral code ----------
-        async function generateUniqueCode() {
-            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-            let code;
-            let exists = true;
-            while (exists) {
-                code = Array.from({length:6}, () => chars[Math.floor(Math.random()*chars.length)]).join('');
-                let { data, error } = await supabase.from('signups').select('id').eq('referral_code', code).limit(1);
-                exists = data.length > 0;
-            }
-            return code;
+    // ---------- Helper: generate unique referral code ----------
+    async function generateUniqueCode() {
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+        let code;
+        let exists = true;
+        while (exists) {
+            code = Array.from({length:6}, () => chars[Math.floor(Math.random()*chars.length)]).join('');
+            let { data, error } = await supabase.from('signups').select('id').eq('referral_code', code).limit(1);
+            exists = data.length > 0;
         }
+        return code;
+    }
 
-        // ---------- Handle Both Forms ----------
-        function setupForm(formId, messageId) {
-            const form = document.getElementById(formId);
-            const message = document.getElementById(messageId);
+    // ---------- Handle Both Forms ----------
+    function setupForm(formId, messageId) {
+        const form = document.getElementById(formId);
+        const message = document.getElementById(messageId);
 
-            if (!form || !message) return;
+        if (!form || !message) return;
 
-            form.addEventListener('submit', async e => {
-                e.preventDefault();
-                message.textContent = '';
-                message.className = 'form-message hidden';
+        form.addEventListener('submit', async e => {
+            e.preventDefault();
+            message.textContent = '';
+            message.className = 'form-message hidden';
 
-                const formData = new FormData(form);
-                const name = formData.get('name').trim();
-                const email = formData.get('email').trim();
-                const user_type = formData.get('user_type');
-                const referred_by = formData.get('referred_by') || null;
+            const formData = new FormData(form);
+            const name = formData.get('name').trim();
+            const email = formData.get('email').trim();
+            const user_type = formData.get('user_type');
+            const referred_by = formData.get('referred_by') || null;
 
-                if (!name || !email || !user_type) {
-                    message.textContent = 'Please fill in all required fields.';
+            if (!name || !email || !user_type) {
+                message.textContent = 'Please fill in all required fields.';
+                message.className = 'form-message form-error';
+                message.classList.remove('hidden');
+                return;
+            }
+
+            // Show loading state on buttons
+            const buttons = form.querySelectorAll('.signup-btn');
+            buttons.forEach(btn => {
+                btn.disabled = true;
+                btn.innerHTML = '<span class="animate-pulse">Signing up...</span>';
+            });
+
+            try {
+                // Check if email already exists
+                let { data: existing, error: checkErr } = await supabase
+                    .from('signups')
+                    .select('id')
+                    .eq('email', email)
+                    .limit(1);
+
+                if (checkErr) throw checkErr;
+                if (existing.length > 0) {
+                    message.textContent = 'Email already registered.';
                     message.className = 'form-message form-error';
                     message.classList.remove('hidden');
                     return;
                 }
 
-                // Show loading state on buttons
-                const buttons = form.querySelectorAll('.signup-btn');
-                buttons.forEach(btn => {
-                    btn.disabled = true;
-                    btn.innerHTML = '<span class="animate-pulse">Signing up...</span>';
-                });
+                // Generate unique referral code
+                const referral_code = await generateUniqueCode();
 
-                try {
-                    // Check if email already exists
-                    let { data: existing, error: checkErr } = await supabase
-                        .from('signups')
-                        .select('id')
-                        .eq('email', email)
-                        .limit(1);
+                // Insert into Supabase
+                let { data, error } = await supabase.from('signups').insert([{
+                    name, email, user_type, referral_code, referred_by
+                }]);
 
-                    if (checkErr) throw checkErr;
-                    if (existing.length > 0) {
-                        message.textContent = 'Email already registered.';
-                        message.className = 'form-message form-error';
-                        message.classList.remove('hidden');
-                        return;
-                    }
+                if (error) throw error;
 
-                    // Generate unique referral code
-                    const referral_code = await generateUniqueCode();
-
-                    // Insert into Supabase
-                    let { data, error } = await supabase.from('signups').insert([{
-                        name, email, user_type, referral_code, referred_by
-                    }]);
-
-                    if (error) throw error;
-
-                    message.textContent = '🎉 Signup successful! Your referral code: ' + referral_code;
-                    message.className = 'form-message form-success';
-                    message.classList.remove('hidden');
-                    form.reset();
-
-                    // Track conversion
+                // SUCCESS: Redirect to thank-you page with referral code
+                // Store referral code in sessionStorage for the thank-you page
+                sessionStorage.setItem('userReferralCode', referral_code);
+                sessionStorage.setItem('userName', name);
+                sessionStorage.setItem('userType', user_type);
+                
+                // Track conversion before redirect
+                if (typeof gtag !== 'undefined') {
                     gtag('event', 'sign_up', {
                         method: user_type,
                         email: email
                     });
+                }
 
+                if (typeof fbq !== 'undefined') {
                     fbq('track', 'Lead', {
                         content_name: 'Waitlist Signup',
                         content_category: user_type,
                         value: 1
                     });
+                }
 
-                } catch(err) {
-                    console.error(err);
-                    message.textContent = 'There was an error submitting your sign-up. Please try again.';
-                    message.className = 'form-message form-error';
-                    message.classList.remove('hidden');
-                } finally {
-                    // Reset buttons
+                // Redirect to thank-you page
+                window.location.href = 'thank-you.html';
+
+            } catch(err) {
+                console.error(err);
+                message.textContent = 'There was an error submitting your sign-up. Please try again.';
+                message.className = 'form-message form-error';
+                message.classList.remove('hidden');
+            } finally {
+                // Reset buttons only if there was an error (no redirect)
+                if (!sessionStorage.getItem('userReferralCode')) {
                     buttons.forEach(btn => {
                         btn.disabled = false;
                         if (formId === 'hero-signup') {
@@ -497,56 +506,54 @@
                         }
                     });
                 }
-            });
-        }
-
-        // Setup both forms when DOM is loaded
-        document.addEventListener('DOMContentLoaded', () => {
-            setupForm('hero-signup', 'hero-signup-message');
-            setupForm('full-signup', 'full-signup-message');
-
-            // Setup button handlers to scroll to forms
-            const buttons = [
-                'apply-creator-btn', 'join-waitlist-btn', 'apply-creator-mobile',
-                'join-waitlist-mobile', 'hero-join-btn', 'hero-apply-btn', 
-                'hero-empower-btn', 'apply-creator-2'
-            ];
-
-            buttons.forEach(btnId => {
-                const button = document.getElementById(btnId);
-                if (button) {
-                    button.addEventListener('click', () => {
-                        const targetForm = btnId.includes('creator') ? 'full-signup' : 'hero-signup';
-                        const formElement = document.getElementById(targetForm);
-                        
-                        if (formElement) {
-                            formElement.scrollIntoView({ behavior: 'smooth' });
-                            
-                            // Pre-select user type for creator buttons
-                            if (btnId.includes('creator')) {
-                                const userTypeSelect = formElement.querySelector('select[name="user_type"]');
-                                if (userTypeSelect) {
-                                    userTypeSelect.value = 'creator';
-                                }
-                            }
-                        }
-                    });
-                }
-            });
-        });
-
-        // Keep your existing module imports for referral and analytics
-        import('/assets/js/referral.js').then(m => {
-            const BSCReferral = m.BSCReferral || window.BSCReferral || m.default;
-            if (BSCReferral && typeof BSCReferral.handleReferralVisit === 'function') {
-                BSCReferral.handleReferralVisit();
             }
         });
+    }
 
-        import('/assets/js/analytics.js').then(m => {
-            // analytics module loaded
+    // Setup both forms when DOM is loaded
+    document.addEventListener('DOMContentLoaded', () => {
+        setupForm('hero-signup', 'hero-signup-message');
+        setupForm('full-signup', 'full-signup-message');
+
+        // Setup button handlers to scroll to forms
+        const buttons = [
+            'apply-creator-btn', 'join-waitlist-btn', 'apply-creator-mobile',
+            'join-waitlist-mobile', 'hero-join-btn', 'hero-apply-btn', 
+            'hero-empower-btn', 'apply-creator-2'
+        ];
+
+        buttons.forEach(btnId => {
+            const button = document.getElementById(btnId);
+            if (button) {
+                button.addEventListener('click', () => {
+                    const targetForm = btnId.includes('creator') ? 'full-signup' : 'hero-signup';
+                    const formElement = document.getElementById(targetForm);
+                    
+                    if (formElement) {
+                        formElement.scrollIntoView({ behavior: 'smooth' });
+                        
+                        // Pre-select user type for creator buttons
+                        if (btnId.includes('creator')) {
+                            const userTypeSelect = formElement.querySelector('select[name="user_type"]');
+                            if (userTypeSelect) {
+                                userTypeSelect.value = 'creator';
+                            }
+                        }
+                    }
+                });
+            }
         });
-    </script>
-</body>
-</html>
+    });
 
+    // Keep your existing module imports for referral and analytics
+    import('/assets/js/referral.js').then(m => {
+        const BSCReferral = m.BSCReferral || window.BSCReferral || m.default;
+        if (BSCReferral && typeof BSCReferral.handleReferralVisit === 'function') {
+            BSCReferral.handleReferralVisit();
+        }
+    });
+
+    import('/assets/js/analytics.js').then(m => {
+        // analytics module loaded
+    });
+</script>
