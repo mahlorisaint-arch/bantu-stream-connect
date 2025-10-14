@@ -377,15 +377,10 @@
 
           if (error) throw error;
 
-          message.innerHTML = `
-            🎉 Successfully joined the waitlist!<br><br>
-            <strong>Your personal referral code: ${referral_code}</strong><br><br>
-            Share your link: <code class="bg-gray-800 px-2 py-1 rounded">https://bantustream.com?ref=${referral_code}</code><br><br>
-            Start sharing to unlock rewards!
-          `;
-          message.className = 'form-message form-success';
-          message.classList.remove('hidden');
-          form.reset();
+          // SUCCESS: Redirect to thank-you page with referral code
+          sessionStorage.setItem('userReferralCode', referral_code);
+          sessionStorage.setItem('userName', name);
+          sessionStorage.setItem('userType', 'user'); // Always 'user' for this page
 
           // Track conversion for users
           if (typeof gtag !== 'undefined') {
@@ -403,15 +398,20 @@
             });
           }
 
+          // Redirect to thank-you page
+          window.location.href = 'thank-you.html';
+
         } catch(err) {
           console.error(err);
           message.textContent = 'There was an error joining the waitlist. Please try again.';
           message.className = 'form-message form-error';
           message.classList.remove('hidden');
         } finally {
-          // Reset button
-          button.disabled = false;
-          button.textContent = originalText;
+          // Reset button only if there was an error (no redirect)
+          if (!sessionStorage.getItem('userReferralCode')) {
+            button.disabled = false;
+            button.textContent = originalText;
+          }
         }
       });
     }
