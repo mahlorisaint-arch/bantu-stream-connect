@@ -311,10 +311,10 @@
 
           if (error) throw error;
 
-          message.textContent = '🎉 Application submitted successfully! Your referral code: ' + referral_code + ' - We will review your application and contact you soon.';
-          message.className = 'form-message form-success';
-          message.classList.remove('hidden');
-          form.reset();
+          // SUCCESS: Redirect to thank-you page with referral code
+          sessionStorage.setItem('userReferralCode', referral_code);
+          sessionStorage.setItem('userName', name);
+          sessionStorage.setItem('userType', 'creator'); // Always 'creator' for this page
 
           // Track conversion for creators
           if (typeof gtag !== 'undefined') {
@@ -333,15 +333,20 @@
             });
           }
 
+          // Redirect to thank-you page
+          window.location.href = 'thank-you.html';
+
         } catch(err) {
           console.error(err);
           message.textContent = 'There was an error submitting your application. Please try again.';
           message.className = 'form-message form-error';
           message.classList.remove('hidden');
         } finally {
-          // Reset button
-          button.disabled = false;
-          button.textContent = originalText;
+          // Reset button only if there was an error (no redirect)
+          if (!sessionStorage.getItem('userReferralCode')) {
+            button.disabled = false;
+            button.textContent = originalText;
+          }
         }
       });
     }
