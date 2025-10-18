@@ -9,7 +9,7 @@
     <meta property="og:description" content="Join the movement: creators-first streaming, creator bootcamps, and a 90/10 revenue split. Sign up for early access or apply as a Founding Creator." />
     <meta property="og:image" content="/assets/images/og-teaser.jpg" />
     <meta name="theme-color" content="#071428" />
-    <link rel="icon" href="/assets/images/bsc-icon.png" />
+    <link rel="icon" href="assets/bsc-icon.png" />
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="/assets/css/bantu-global.css" rel="stylesheet" />
     <style>
@@ -50,6 +50,13 @@
             opacity: 0.7;
             pointer-events: none;
         }
+        .stem-feature {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .stem-feature:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0, 163, 255, 0.2);
+        }
     </style>
     
     <!-- Analytics scripts -->
@@ -82,7 +89,7 @@
         <header class="flex items-center justify-between gap-4">
             <div class="flex items-center gap-3">
                 <div class="w-12 h-12 rounded-lg flex items-center justify-center font-extrabold text-black" style="background:linear-gradient(135deg,var(--accent),var(--accent-2));">
-                    B
+                    <img src="assets/bsc-icon.png" alt="Bantu Stream Connect" class="w-8 h-8">
                 </div>
                 <div>
                     <div class="font-extrabold text-lg">Bantu Stream Connect</div>
@@ -91,6 +98,7 @@
             </div>
             <nav class="hidden md:flex items-center gap-6 text-sm text-slate-300">
                 <a href="#features" class="hover:text-white">Why BSC</a>
+                <a href="#stem" class="hover:text-white">STEM</a>
                 <a href="/creators" class="hover:text-white">For Creators</a>
                 <a href="/users" class="hover:text-white">For Users</a>
                 <a href="/empowerment" class="hover:text-white">Empowerment</a>
@@ -111,6 +119,7 @@
         <div id="mobile-nav" class="mt-3 md:hidden hidden">
             <div class="flex flex-col gap-2 text-slate-300">
                 <a href="#features" class="py-2">Why BSC</a>
+                <a href="#stem" class="py-2">STEM</a>
                 <a href="/creators" class="py-2">For Creators</a>
                 <a href="/users" class="py-2">For Users</a>
                 <a href="/empowerment" class="py-2">Empowerment</a>
@@ -181,14 +190,14 @@
                     <div class="text-sm text-slate-400">30–60s teaser reel</div>
                 </div>
                 <div class="mt-4">
-                    <video controls muted playsinline poster="/assets/images/teaser-poster.jpg" class="w-full rounded-md">
-                        <source src="/assets/videos/teaser.mp4" type="video/mp4">
+                    <video controls muted playsinline class="w-full rounded-md" poster="assets/bsc-icon.png">
+                        <source src="assets/2025-10-17-092817946.mp4" type="video/mp4">
                         Your browser does not support the video tag.
                     </video>
                 </div>
                 <div class="mt-4 flex gap-2">
-                    <a href="#" class="px-3 py-2 rounded-md border border-slate-700 text-sm">Watch on YouTube</a>
-                    <a href="/app" class="px-3 py-2 rounded-md border border-slate-700 text-sm">View UI Mockups</a>
+                    <a href="https://www.youtube.com/watch?v=cTSe7uimTKU" target="_blank" class="px-3 py-2 rounded-md border border-slate-700 text-sm hover:bg-slate-800 transition">Watch on YouTube</a>
+                    <a href="/app" class="px-3 py-2 rounded-md border border-slate-700 text-sm hover:bg-slate-800 transition">View UI Mockups</a>
                 </div>
                 <p class="mt-3 text-sm text-slate-400">Sign up to unlock the early-bird discount and exclusive content from Founding Creators.</p>
             </aside>
@@ -209,6 +218,73 @@
                 <h3 class="text-xl font-bold">Data & Targeting Promise</h3>
                 <p class="mt-3 text-slate-300">We deliver high-quality, niche traffic to creators. Expect detailed analytics on views, demographics, engagement, and conversion performance so creators can grow faster.</p>
                 <p class="mt-3 text-slate-400">Preview: analytics mockup, segmentation tools, and creator growth dashboard (coming soon).</p>
+            </div>
+        </section>
+
+        <!-- STEM Section -->
+        <section id="stem" class="mt-20 card p-8 rounded-md">
+            <div class="text-center mb-12">
+                <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-900 bg-opacity-30 text-blue-300 text-sm font-semibold mb-4">
+                    ⚡ Bantu Stream Connect — STEM Section
+                </div>
+                <h2 class="text-3xl md:text-4xl font-bold mb-4">STEM: Building Africa's Future</h2>
+                <p class="text-xl text-slate-300 mb-6 max-w-3xl mx-auto">
+                    Where knowledge meets innovation, and innovation meets Africa.
+                </p>
+                <p class="text-lg text-slate-400 max-w-4xl mx-auto">
+                    The future of Africa isn't just being imagined, it's being engineered. At Bantu Stream Connect, we empower innovators, educators, and learners across the continent to explore Science, Technology, Engineering, and Mathematics (STEM) in new and exciting ways.
+                    From coding and robotics to climate science and space tech, we're streaming the brilliance shaping tomorrow, the African way.
+                </p>
+            </div>
+
+            <!-- STEM Features Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+                <div class="card p-6 rounded-md stem-feature">
+                    <div class="text-3xl mb-4">💻</div>
+                    <h3 class="text-xl font-bold mb-3">Tech & Innovation</h3>
+                    <p class="text-slate-400">Dive into content from Africa's top coders, developers, and inventors pushing digital transformation forward.</p>
+                </div>
+                <div class="card p-6 rounded-md stem-feature">
+                    <div class="text-3xl mb-4">⚙️</div>
+                    <h3 class="text-xl font-bold mb-3">Engineering & Design</h3>
+                    <p class="text-slate-400">Explore how African engineers are solving real-world challenges with creativity and precision.</p>
+                </div>
+                <div class="card p-6 rounded-md stem-feature">
+                    <div class="text-3xl mb-4">🔬</div>
+                    <h3 class="text-xl font-bold mb-3">Science Explained</h3>
+                    <p class="text-slate-400">Watch experiments, research stories, and discoveries told by African scientists.</p>
+                </div>
+                <div class="card p-6 rounded-md stem-feature">
+                    <div class="text-3xl mb-4">🧮</div>
+                    <h3 class="text-xl font-bold mb-3">Mathematics in Motion</h3>
+                    <p class="text-slate-400">Learn from creators who make complex math simple, practical, and fun.</p>
+                </div>
+                <div class="card p-6 rounded-md stem-feature">
+                    <div class="text-3xl mb-4">🌍</div>
+                    <h3 class="text-xl font-bold mb-3">Sustainability & Climate</h3>
+                    <p class="text-slate-400">Discover how Africa is leading in clean energy, recycling, and climate technology innovation.</p>
+                </div>
+                <div class="card p-6 rounded-md stem-feature">
+                    <div class="text-3xl mb-4">🚀</div>
+                    <h3 class="text-xl font-bold mb-3">Space & Robotics</h3>
+                    <p class="text-slate-400">Meet the minds taking African innovation beyond the skies.</p>
+                </div>
+            </div>
+
+            <!-- STEM Call to Action -->
+            <div class="text-center bg-gradient-to-r from-blue-900 to-purple-900 rounded-xl p-8">
+                <h3 class="text-2xl md:text-3xl font-bold mb-6">Join the Minds Building Africa's Tomorrow</h3>
+                <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                    <a href="/creators" class="px-6 py-3 rounded-lg font-bold text-white bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 transition">
+                        Apply as a STEM Creator
+                    </a>
+                    <a href="#stem-streams" class="px-6 py-3 rounded-lg font-bold border border-blue-400 text-blue-400 hover:bg-blue-400 hover:text-white transition">
+                        Explore STEM Streams
+                    </a>
+                </div>
+                <p class="mt-4 text-blue-200 text-sm">
+                    Empower others with your knowledge or watch, learn, and grow with Africa's brightest minds.
+                </p>
             </div>
         </section>
 
@@ -557,3 +633,5 @@
         // analytics module loaded
     });
 </script>
+</body>
+</html>
