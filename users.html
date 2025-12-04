@@ -3,57 +3,116 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Bantu Stream Connect — Users</title>
+  <title>Privacy Policy - Bantu Stream Connect</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script>tailwind.config={darkMode:'class'}</script>
   <link href="assets/css/bantu-global.css" rel="stylesheet">
   <style>
+    .glassmorphism {
+      background: rgba(11, 18, 32, 0.7);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    }
+    
     .fade-in { opacity:0; transform:translateY(20px); animation:fadeInUp 1s forwards; }
     .fade-in-delay-1{animation-delay:.3s} 
     .fade-in-delay-2{animation-delay:.6s} 
     .fade-in-delay-3{animation-delay:.9s}
     @keyframes fadeInUp { to{opacity:1; transform:translateY(0);} }
     
-    .form-message {
-      padding: 8px 12px;
-      border-radius: 6px;
-      margin-top: 8px;
-      font-size: 14px;
-    }
-    .form-success {
-      background: rgba(34, 197, 94, 0.1);
-      border: 1px solid rgba(34, 197, 94, 0.3);
-      color: #4ade80;
-    }
-    .form-error {
-      background: rgba(239, 68, 68, 0.1);
-      border: 1px solid rgba(239, 68, 68, 0.3);
-      color: #f87171;
-    }
-    .loading {
-      opacity: 0.7;
-      pointer-events: none;
-    }
-    .feature-card {
+    .policy-card {
       background: #0b1220;
       border: 1px solid rgba(255,255,255,0.03);
       padding: 2rem;
-      border-radius: 0.5rem;
+      border-radius: 0.75rem;
+      transition: all 0.3s ease;
     }
-    .button-primary {
+    
+    .policy-card:hover {
+      border-color: rgba(99, 102, 241, 0.3);
+      transform: translateY(-5px);
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+    }
+    
+    .section-number {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 2rem;
+      height: 2rem;
       background: linear-gradient(90deg, #00a3ff, #00ffd5);
       color: #021026;
-      padding: 0.75rem 1.5rem;
-      border-radius: 0.375rem;
-      font-weight: 600;
-      display: inline-block;
+      border-radius: 50%;
+      font-weight: bold;
+      margin-right: 0.75rem;
     }
-    .reward-tier {
-      background: linear-gradient(135deg, #1e3a8a, #3730a3);
-      border: 1px solid rgba(99, 102, 241, 0.3);
+    
+    .rights-card {
+      background: rgba(30, 58, 138, 0.2);
+      border: 1px solid rgba(99, 102, 241, 0.2);
       padding: 1.5rem;
       border-radius: 0.5rem;
-      text-align: center;
+      border-left: 4px solid #00ffd5;
+    }
+    
+    .info-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1.5rem 0;
+    }
+    
+    .info-table th {
+      background: rgba(99, 102, 241, 0.1);
+      padding: 1rem;
+      text-align: left;
+      font-weight: 600;
+      color: #818cf8;
+      border-bottom: 2px solid rgba(99, 102, 241, 0.3);
+    }
+    
+    .info-table td {
+      padding: 1rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    
+    .info-table tr:hover {
+      background: rgba(99, 102, 241, 0.05);
+    }
+    
+    .gradient-text {
+      background: linear-gradient(90deg, #00a3ff, #00ffd5);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+    
+    .bullet-list li {
+      position: relative;
+      padding-left: 1.5rem;
+      margin-bottom: 0.5rem;
+    }
+    
+    .bullet-list li::before {
+      content: "•";
+      color: #00ffd5;
+      position: absolute;
+      left: 0;
+    }
+    
+    /* Smooth scrolling for anchor links */
+    html {
+      scroll-behavior: smooth;
+    }
+    
+    /* Responsive table */
+    @media (max-width: 768px) {
+      .info-table {
+        display: block;
+        overflow-x: auto;
+        white-space: nowrap;
+      }
     }
   </style>
 </head>
@@ -69,205 +128,461 @@
     <nav class="hidden md:flex space-x-6 items-center">
       <a href="index.html" class="hover:text-blue-500 transition">Home</a>
       <a href="creators.html" class="hover:text-blue-500 transition">Creators</a>
-      <a href="users.html" class="text-blue-500 font-semibold">Users</a>
+      <a href="users.html" class="hover:text-blue-500 transition">Users</a>
       <a href="empowerment.html" class="hover:text-blue-500 transition">Empowerment</a>
       <a href="blog.html" class="hover:text-blue-500 transition">Blog</a>
-      <a href="#waitlist" class="button-primary fade-in fade-in-delay-2">Join Waitlist</a>
+      <a href="privacy-policy.html" class="text-blue-500 font-semibold">Privacy Policy</a>
     </nav>
   </div>
 </header>
 
-<!-- Hero -->
-<section class="relative h-screen flex items-center justify-center text-center pt-16">
-  <img src="assets/bsc-icon.png" alt="Users" class="absolute inset-0 w-full h-full object-contain opacity-20">
-  <div class="absolute inset-0 bg-gradient-to-b from-black/70 via-black/85 to-black/95"></div>
-  <div class="relative z-10 px-4 sm:px-6 lg:px-8">
-    <h1 class="text-4xl sm:text-5xl md:text-6xl font-bold mb-4 fade-in fade-in-delay-1">Early Access & Exclusive Rewards</h1>
-    <p class="text-lg sm:text-xl mb-8 fade-in fade-in-delay-2">Be the first to discover African stories, music, films, and podcasts. Join the waitlist and unlock referral bonuses and sneak peeks.</p>
-    <a href="#waitlist" class="button-primary fade-in fade-in-delay-3">Join Waitlist</a>
-  </div>
-</section>
-
-<!-- User Benefits -->
-<section class="py-20 bg-black">
-  <div class="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
-    <h2 class="text-3xl sm:text-4xl font-bold mb-12">Why Join Bantu Stream Connect?</h2>
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-      <div class="feature-card">
-        <div class="text-3xl mb-4">🎬</div>
-        <h3 class="text-xl font-semibold mb-2">Exclusive African Content</h3>
-        <p class="text-gray-300">Discover original films, music, podcasts, and stories from talented African creators you won't find anywhere else.</p>
-      </div>
-      <div class="feature-card">
-        <div class="text-3xl mb-4">🚀</div>
-        <h3 class="text-xl font-semibold mb-2">Early Access Privileges</h3>
-        <p class="text-gray-300">Get first access to new content, features, and platform updates before general release.</p>
-      </div>
-      <div class="feature-card">
-        <div class="text-3xl mb-4">💰</div>
-        <h3 class="text-xl font-semibold mb-2">Rewards & Discounts</h3>
-        <p class="text-gray-300">Earn free subscription months, exclusive content, and special discounts through our referral program.</p>
+<!-- Hero Section -->
+<section class="relative pt-32 pb-20 px-4 sm:px-6 lg:px-8">
+  <div class="absolute inset-0 bg-gradient-to-b from-black via-black to-transparent z-0"></div>
+  <div class="container mx-auto relative z-10">
+    <div class="max-w-4xl mx-auto text-center fade-in">
+      <h1 class="text-4xl sm:text-5xl md:text-6xl font-bold mb-6">Privacy Policy</h1>
+      <p class="text-xl text-gray-300 mb-4">Your privacy is our priority</p>
+      <div class="inline-flex items-center justify-center space-x-4 text-gray-400 text-sm">
+        <span>Effective Date: 1 November 2025</span>
+        <span class="h-1 w-1 bg-gray-600 rounded-full"></span>
+        <span>Last Updated: 1 November 2025</span>
       </div>
     </div>
   </div>
 </section>
 
-<!-- Referral Program -->
-<section class="py-20 bg-gray-900 text-center">
-  <div class="container mx-auto px-4 sm:px-6 lg:px-8">
-    <h2 class="text-3xl sm:text-4xl font-bold mb-12">Refer Friends, Earn Rewards</h2>
-    <p class="mb-8 text-lg">Invite friends to join the waitlist and earn exclusive perks. The more friends you refer, the more rewards you unlock!</p>
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
-      <div class="feature-card">
-        <div class="text-2xl mb-4">🔗</div>
-        <h3 class="text-xl font-semibold mb-2">Step 1: Get Your Link</h3>
-        <p class="text-gray-300">Sign up to receive your unique referral link instantly.</p>
-      </div>
-      <div class="feature-card">
-        <div class="text-2xl mb-4">📤</div>
-        <h3 class="text-xl font-semibold mb-2">Step 2: Share Widely</h3>
-        <p class="text-gray-300">Share your link with friends, family, and on social media.</p>
-      </div>
-      <div class="feature-card">
-        <div class="text-2xl mb-4">🎁</div>
-        <h3 class="text-xl font-semibold mb-2">Step 3: Earn Rewards</h3>
-        <p class="text-gray-300">Unlock rewards as your friends join the waitlist.</p>
-      </div>
-    </div>
-
-    <!-- Reward Tiers -->
-    <div class="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
-      <div class="reward-tier">
-        <h3 class="text-xl font-bold mb-3 text-blue-300">Bronze Tier</h3>
-        <div class="text-4xl font-bold mb-2">3+</div>
-        <p class="text-gray-300 mb-4">Referrals</p>
-        <ul class="text-sm text-gray-300 space-y-2">
-          <li>• 1 Month Free Premium</li>
-          <li>• Early Access Pass</li>
-          <li>• Exclusive Content Pack</li>
-        </ul>
-      </div>
-      <div class="reward-tier">
-        <h3 class="text-xl font-bold mb-3 text-purple-300">Silver Tier</h3>
-        <div class="text-4xl font-bold mb-2">10+</div>
-        <p class="text-gray-300 mb-4">Referrals</p>
-        <ul class="text-sm text-gray-300 space-y-2">
-          <li>• 3 Months Free Premium</li>
-          <li>• Founder Badge</li>
-          <li>• Creator Meet & Greet</li>
-          <li>• Premium Content Bundle</li>
-        </ul>
-      </div>
-      <div class="reward-tier">
-        <h3 class="text-xl font-bold mb-3 text-yellow-300">Gold Tier</h3>
-        <div class="text-4xl font-bold mb-2">25+</div>
-        <p class="text-gray-300 mb-4">Referrals</p>
-        <ul class="text-sm text-gray-300 space-y-2">
-          <li>• 6 Months Free Premium</li>
-          <li>• Executive Founder Status</li>
-          <li>• Personalized Creator Content</li>
-          <li>• Platform Co-creator Role</li>
-        </ul>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- Waitlist Signup Form -->
-<section id="waitlist" class="py-20 bg-black">
-  <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-2xl">
-    <div class="feature-card">
-      <h2 class="text-3xl font-bold mb-2 text-center">Join the Waitlist</h2>
-      <p class="text-gray-300 text-center mb-8">Be among the first to experience Bantu Stream Connect and get your unique referral code.</p>
-      
-      <form id="user-signup-form" class="space-y-4">
-        <div>
-          <label class="block text-sm font-medium mb-2">Full Name *</label>
-          <input type="text" name="name" required placeholder="Your full name" 
-                 class="w-full px-4 py-3 bg-transparent border border-gray-700 rounded-lg focus:outline-none focus:border-blue-500">
+<!-- Main Content -->
+<main class="pb-20 px-4 sm:px-6 lg:px-8">
+  <div class="container mx-auto max-w-6xl">
+    
+    <!-- Introduction -->
+    <section class="mb-12 fade-in fade-in-delay-1">
+      <div class="policy-card glassmorphism">
+        <div class="flex items-center mb-6">
+          <span class="section-number">1</span>
+          <h2 class="text-2xl font-bold">Introduction: Our Commitment to Your Privacy</h2>
         </div>
-        
-        <div>
-          <label class="block text-sm font-medium mb-2">Email Address *</label>
-          <input type="email" name="email" required placeholder="your.email@example.com" 
-                 class="w-full px-4 py-3 bg-transparent border border-gray-700 rounded-lg focus:outline-none focus:border-blue-500">
+        <div class="space-y-4 text-gray-300">
+          <p>Welcome to Bantu Stream Connect ("we", "us", "our"). We are a South African–built digital streaming and creator empowerment platform dedicated to uplifting African storytellers, artists, and innovators.</p>
+          <p>To provide a high-quality entertainment and creator ecosystem, we must collect and process certain information about you.</p>
+          <p>We are committed to:</p>
+          <ul class="bullet-list pl-4 space-y-2">
+            <li>Protecting your privacy</li>
+            <li>Being transparent about how your data is used</li>
+            <li>Giving you meaningful control over your information</li>
+          </ul>
+          <p>This Privacy Policy explains what data we collect, how we use it, how it's protected, and the rights you have as a user.</p>
         </div>
+      </div>
+    </section>
 
-        <div>
-          <label class="block text-sm font-medium mb-2">Content Interests</label>
-          <div class="grid grid-cols-2 gap-2">
-            <label class="flex items-center">
-              <input type="checkbox" name="interests" value="film" class="mr-2">
-              <span class="text-sm">Film & Video</span>
-            </label>
-            <label class="flex items-center">
-              <input type="checkbox" name="interests" value="music" class="mr-2">
-              <span class="text-sm">Music</span>
-            </label>
-            <label class="flex items-center">
-              <input type="checkbox" name="interests" value="podcast" class="mr-2">
-              <span class="text-sm">Podcasts</span>
-            </label>
-            <label class="flex items-center">
-              <input type="checkbox" name="interests" value="education" class="mr-2">
-              <span class="text-sm">Education</span>
-            </label>
-            <label class="flex items-center">
-              <input type="checkbox" name="interests" value="comedy" class="mr-2">
-              <span class="text-sm">Comedy</span>
-            </label>
-            <label class="flex items-center">
-              <input type="checkbox" name="interests" value="gaming" class="mr-2">
-              <span class="text-sm">Gaming</span>
-            </label>
+    <!-- Information We Collect -->
+    <section class="mb-12 fade-in fade-in-delay-2">
+      <div class="policy-card glassmorphism">
+        <div class="flex items-center mb-6">
+          <span class="section-number">2</span>
+          <h2 class="text-2xl font-bold">Information We Collect</h2>
+        </div>
+        <div class="space-y-8 text-gray-300">
+          <p>We collect information in three ways:</p>
+          
+          <div>
+            <h3 class="text-xl font-semibold mb-3 text-blue-300">(A) Information You Provide Directly</h3>
+            <div class="space-y-4">
+              <div>
+                <h4 class="font-medium text-gray-200 mb-2">Account Information</h4>
+                <ul class="bullet-list pl-4">
+                  <li>Full name</li>
+                  <li>Email address</li>
+                  <li>Phone number</li>
+                  <li>Encrypted password</li>
+                  <li>Date of birth (used for age verification)</li>
+                </ul>
+              </div>
+              
+              <div>
+                <h4 class="font-medium text-gray-200 mb-2">Payment Information</h4>
+                <p class="mb-2">If you subscribe, rent, purchase, or tip creators:</p>
+                <ul class="bullet-list pl-4">
+                  <li>Transaction details</li>
+                  <li>Payment confirmation data</li>
+                </ul>
+                <p class="text-sm text-gray-400 italic mt-2">(We do not store your full credit/debit card number. Payments are handled by secure third-party processors such as Stripe, Paystack, or mobile money partners.)</p>
+              </div>
+              
+              <div>
+                <h4 class="font-medium text-gray-200 mb-2">Creator Payout Information</h4>
+                <p class="mb-2">For creators receiving revenue:</p>
+                <ul class="bullet-list pl-4">
+                  <li>Bank account or mobile money details</li>
+                  <li>Tax documents (if legally required)</li>
+                </ul>
+              </div>
+              
+              <div>
+                <h4 class="font-medium text-gray-200 mb-2">Support Information</h4>
+                <ul class="bullet-list pl-4">
+                  <li>Emails, support tickets, and communication logs</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+          
+          <div>
+            <h3 class="text-xl font-semibold mb-3 text-blue-300">(B) Information Collected Automatically (Usage Data)</h3>
+            <div class="space-y-4">
+              <div>
+                <h4 class="font-medium text-gray-200 mb-2">Device & Connection Information</h4>
+                <ul class="bullet-list pl-4">
+                  <li>Device type and model</li>
+                  <li>Device ID</li>
+                  <li>Operating system and version</li>
+                  <li>Browser type</li>
+                  <li>IP address</li>
+                  <li>Mobile network provider</li>
+                  <li>Crash reports and diagnostic data</li>
+                </ul>
+              </div>
+              
+              <div>
+                <h4 class="font-medium text-gray-200 mb-2">Usage & Interaction Data</h4>
+                <ul class="bullet-list pl-4">
+                  <li>Videos watched</li>
+                  <li>Time spent watching</li>
+                  <li>Search queries</li>
+                  <li>Playback actions (pause, rewind, skip)</li>
+                  <li>Likes, comments, shares, follows</li>
+                  <li>Viewing patterns and recommendations clicked</li>
+                  <li>Real-time performance data (buffering, bitrate, quality)</li>
+                </ul>
+              </div>
+              
+              <div>
+                <h4 class="font-medium text-gray-200 mb-2">General Location Information</h4>
+                <ul class="bullet-list pl-4">
+                  <li>Region/country inferred from IP</li>
+                  <li>Only collects precise GPS location if you explicitly opt in</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+          
+          <div>
+            <h3 class="text-xl font-semibold mb-3 text-blue-300">(C) Information From Third Parties</h3>
+            <ul class="bullet-list pl-4">
+              <li>Payment processors (to confirm transactions)</li>
+              <li>Authentication providers (if you sign in using Google, Apple, etc.)</li>
+              <li>Advertising partners (for ad-supported content tiers)</li>
+              <li>Analytics services (Firebase, Google Analytics)</li>
+            </ul>
           </div>
         </div>
-        
-        <div>
-          <label class="block text-sm font-medium mb-2">Referral Code (Optional)</label>
-          <input type="text" name="referred_by" placeholder="Enter referral code from a friend" 
-                 class="w-full px-4 py-3 bg-transparent border border-gray-700 rounded-lg focus:outline-none focus:border-blue-500">
-        </div>
-        
-        <button type="submit" class="w-full button-primary py-3 rounded-lg font-bold user-signup-btn">
-          Join Waitlist & Get Referral Code
-        </button>
-        
-        <div id="user-signup-message" class="form-message hidden"></div>
-      </form>
-      
-      <div class="mt-6 p-4 bg-green-900 bg-opacity-20 rounded-lg">
-        <h4 class="font-semibold text-green-300 mb-2">What happens after you join:</h4>
-        <ul class="text-sm text-gray-300 space-y-1">
-          <li>• Immediate access to your personal referral dashboard</li>
-          <li>• Weekly updates on platform development</li>
-          <li>• Exclusive sneak peeks from founding creators</li>
-          <li>• Early bird discount at launch</li>
-          <li>• Priority access when we go live</li>
-        </ul>
       </div>
-    </div>
-  </div>
-</section>
+    </section>
 
-<!-- Email Newsletter -->
-<section class="py-20 bg-gray-900 text-center">
-  <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-3xl">
-    <h2 class="text-3xl sm:text-4xl font-bold mb-6">Stay Updated with Creator Spotlights</h2>
-    <p class="mb-8 text-lg text-gray-300">Get exclusive content from founding creators, behind-the-scenes previews, and early access to new features.</p>
-    <div class="feature-card max-w-2xl mx-auto">
-      <p class="mb-4">Already on the waitlist? You'll automatically receive our creator spotlight newsletter!</p>
-      <p class="text-sm text-gray-400">Can't wait? <a href="#waitlist" class="text-blue-400 hover:text-blue-300">Join the waitlist above</a> to get started.</p>
-    </div>
-  </div>
-</section>
+    <!-- How We Use Your Information -->
+    <section class="mb-12 fade-in fade-in-delay-3">
+      <div class="policy-card glassmorphism">
+        <div class="flex items-center mb-6">
+          <span class="section-number">3</span>
+          <h2 class="text-2xl font-bold">How We Use Your Information</h2>
+        </div>
+        <div class="space-y-6 text-gray-300">
+          <table class="info-table">
+            <thead>
+              <tr>
+                <th>Category</th>
+                <th>Purpose of Use</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="font-medium text-gray-200">Service Operations</td>
+                <td>Account creation & verification; subscription processing; streaming delivery; saving preferences.</td>
+              </tr>
+              <tr>
+                <td class="font-medium text-gray-200">Personalization</td>
+                <td>Content suggestions based on your activity, preferences, and engagement patterns.</td>
+              </tr>
+              <tr>
+                <td class="font-medium text-gray-200">Monetization & Payouts</td>
+                <td>Creator revenue calculations; distributing the 90/10 split; processing viewer tips.</td>
+              </tr>
+              <tr>
+                <td class="font-medium text-gray-200">Security & Safety</td>
+                <td>Fraud prevention; detecting abuse; enforcing Terms of Service; protecting intellectual property.</td>
+              </tr>
+              <tr>
+                <td class="font-medium text-gray-200">Product Improvement</td>
+                <td>Fixing bugs; monitoring performance; optimizing load time; improving quality.</td>
+              </tr>
+              <tr>
+                <td class="font-medium text-gray-200">Marketing & Communication</td>
+                <td>Service updates; announcements; relevant content recommendations; optional promotional messages (you may opt out).</td>
+              </tr>
+            </tbody>
+          </table>
+          <p class="text-center font-bold text-green-400">We never sell your personal data.</p>
+        </div>
+      </div>
+    </section>
 
-<!-- Final CTA -->
-<section class="py-20 bg-black text-center">
-  <h2 class="text-3xl sm:text-4xl font-bold mb-6">Join Thousands of Early Supporters</h2>
-  <p class="mb-8 text-lg text-gray-300">Don't miss your chance to be part of Africa's streaming revolution from day one.</p>
-  <a href="#waitlist" class="button-primary fade-in fade-in-delay-1">Secure Your Spot Now</a>
-</section>
+    <!-- Data Storage & Security -->
+    <section class="mb-12">
+      <div class="policy-card glassmorphism">
+        <div class="flex items-center mb-6">
+          <span class="section-number">4</span>
+          <h2 class="text-2xl font-bold">Data Storage & Security</h2>
+        </div>
+        <div class="space-y-8 text-gray-300">
+          <div>
+            <h3 class="text-xl font-semibold mb-3 text-blue-300">A. Where We Store Data</h3>
+            <p>Your information is stored on secure cloud servers located in:</p>
+            <ul class="bullet-list pl-4 mt-2">
+              <li>South Africa</li>
+              <li>And/or GDPR-compliant international data centers</li>
+            </ul>
+            <p class="mt-4">We use distributed infrastructure to ensure uptime, performance, and resilience.</p>
+          </div>
+          
+          <div>
+            <h3 class="text-xl font-semibold mb-3 text-blue-300">B. How We Protect Your Data</h3>
+            <p>We use industry-standard security controls, including:</p>
+            <ul class="bullet-list pl-4 mt-2">
+              <li>Encryption in transit (SSL/TLS)</li>
+              <li>Encryption at rest (AES-256)</li>
+              <li>Role-based access controls (RBAC)</li>
+              <li>Multi-factor authentication for internal systems</li>
+              <li>Routine security audits and penetration tests</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- When We Share Your Information -->
+    <section class="mb-12">
+      <div class="policy-card glassmorphism">
+        <div class="flex items-center mb-6">
+          <span class="section-number">5</span>
+          <h2 class="text-2xl font-bold">When We Share Your Information</h2>
+        </div>
+        <div class="space-y-8 text-gray-300">
+          <p class="font-bold text-green-400 text-lg">We never sell your data.</p>
+          <p>We share information only under the following circumstances:</p>
+          
+          <div>
+            <h3 class="text-xl font-semibold mb-3 text-blue-300">A. With Creators (Limited & Anonymized Data Only)</h3>
+            <p class="mb-2">Creators may receive:</p>
+            <ul class="bullet-list pl-4 mb-4">
+              <li>Total view counts</li>
+              <li>Engagement statistics</li>
+              <li>Anonymous demographic summaries (e.g., "viewers from South Africa")</li>
+            </ul>
+            <p class="mb-2">We do not share:</p>
+            <ul class="bullet-list pl-4">
+              <li>Email</li>
+              <li>Phone number</li>
+              <li>Password</li>
+              <li>Private account details</li>
+            </ul>
+          </div>
+          
+          <div>
+            <h3 class="text-xl font-semibold mb-3 text-blue-300">B. With Trusted Third-Party Service Providers</h3>
+            <p class="mb-2">Including:</p>
+            <ul class="bullet-list pl-4 mb-4">
+              <li>Payment processors</li>
+              <li>Analytics tools (e.g., Firebase)</li>
+              <li>Cloud storage & hosting providers</li>
+              <li>Advertising partners (for ad-supported streaming tiers)</li>
+            </ul>
+            <p class="mb-2">Advertising partners may receive:</p>
+            <ul class="bullet-list pl-4 mb-4">
+              <li>Device identifiers (IDFA / Ad ID)</li>
+              <li>Anonymous interaction metrics</li>
+            </ul>
+            <p class="text-sm text-gray-400 italic">You can opt out of targeted advertising in your device settings.</p>
+          </div>
+          
+          <div>
+            <h3 class="text-xl font-semibold mb-3 text-blue-300">C. For Legal Reasons</h3>
+            <p>We may disclose information if required by:</p>
+            <ul class="bullet-list pl-4 mt-2">
+              <li>Subpoena</li>
+              <li>Court order</li>
+              <li>Government mandate</li>
+              <li>To protect the rights and safety of our users or platform</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Your Rights and Choices -->
+    <section class="mb-12">
+      <div class="policy-card glassmorphism">
+        <div class="flex items-center mb-6">
+          <span class="section-number">6</span>
+          <h2 class="text-2xl font-bold">Your Rights and Choices</h2>
+        </div>
+        <div class="space-y-8 text-gray-300">
+          <p>Depending on your location (GDPR, POPIA, CCPA), you may have the following rights:</p>
+          
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="rights-card">
+              <h4 class="font-bold text-lg mb-2 flex items-center">
+                <span class="text-green-400 mr-2">✓</span>
+                Right to Access
+              </h4>
+              <p class="text-gray-300">Request a copy of the personal information we hold about you.</p>
+            </div>
+            
+            <div class="rights-card">
+              <h4 class="font-bold text-lg mb-2 flex items-center">
+                <span class="text-green-400 mr-2">✓</span>
+                Right to Correction
+              </h4>
+              <p class="text-gray-300">Fix incorrect or incomplete information.</p>
+            </div>
+            
+            <div class="rights-card">
+              <h4 class="font-bold text-lg mb-2 flex items-center">
+                <span class="text-green-400 mr-2">✓</span>
+                Right to Deletion
+              </h4>
+              <p class="text-gray-300">Request account and data deletion (with legal/financial record exceptions).</p>
+            </div>
+            
+            <div class="rights-card">
+              <h4 class="font-bold text-lg mb-2 flex items-center">
+                <span class="text-green-400 mr-2">✓</span>
+                Right to Restrict or Object to Processing
+              </h4>
+              <p class="text-gray-300">Control how your data is processed.</p>
+            </div>
+          </div>
+          
+          <div>
+            <h3 class="text-xl font-semibold mb-3 text-blue-300">Opt-Out Options</h3>
+            <p>You can opt out of:</p>
+            <ul class="bullet-list pl-4 mt-2">
+              <li>Marketing emails</li>
+              <li>Targeted advertising</li>
+              <li>GPS location access</li>
+              <li>Certain analytics tools</li>
+            </ul>
+            <p class="mt-4 text-gray-400">Most controls are available in Account Settings.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Cookies & Tracking Technologies -->
+    <section class="mb-12">
+      <div class="policy-card glassmorphism">
+        <div class="flex items-center mb-6">
+          <span class="section-number">7</span>
+          <h2 class="text-2xl font-bold">Cookies & Tracking Technologies</h2>
+        </div>
+        <div class="space-y-6 text-gray-300">
+          <p>We use cookies, SDKs, and similar technologies for:</p>
+          
+          <div>
+            <h3 class="text-xl font-semibold mb-3 text-blue-300">Essential Functions</h3>
+            <ul class="bullet-list pl-4">
+              <li>Staying logged in</li>
+              <li>Saving preferences (e.g., volume, theme)</li>
+              <li>Stable video playback</li>
+            </ul>
+          </div>
+          
+          <div>
+            <h3 class="text-xl font-semibold mb-3 text-blue-300">Analytics</h3>
+            <ul class="bullet-list pl-4">
+              <li>Performance monitoring</li>
+              <li>Crash detection</li>
+              <li>Measuring usage trends</li>
+            </ul>
+          </div>
+          
+          <div>
+            <h3 class="text-xl font-semibold mb-3 text-blue-300">Advertising (Where Applicable)</h3>
+            <ul class="bullet-list pl-4">
+              <li>Showing relevant ads</li>
+              <li>Frequency capping</li>
+              <li>Measuring ad performance</li>
+            </ul>
+          </div>
+          
+          <p class="text-gray-400 italic">You can manage cookies in your browser or device settings. Disabling essential cookies may affect streaming functionality.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Changes to This Policy -->
+    <section class="mb-12">
+      <div class="policy-card glassmorphism">
+        <div class="flex items-center mb-6">
+          <span class="section-number">8</span>
+          <h2 class="text-2xl font-bold">Changes to This Policy</h2>
+        </div>
+        <div class="space-y-6 text-gray-300">
+          <p>We may update this Privacy Policy to reflect:</p>
+          <ul class="bullet-list pl-4">
+            <li>New features</li>
+            <li>Legal requirements</li>
+            <li>Security improvements</li>
+          </ul>
+          <p>We will notify you through:</p>
+          <ul class="bullet-list pl-4">
+            <li>In-app notices</li>
+            <li>Email alerts (if appropriate)</li>
+            <li>Updated "Last Updated" date</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- Contact Us -->
+    <section class="mb-12">
+      <div class="policy-card glassmorphism">
+        <div class="flex items-center mb-6">
+          <span class="section-number">9</span>
+          <h2 class="text-2xl font-bold">Contact Us</h2>
+        </div>
+        <div class="space-y-8 text-gray-300">
+          <p>If you have questions or want to exercise your rights:</p>
+          
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="bg-gray-900 p-6 rounded-lg">
+              <h4 class="text-lg font-semibold mb-3 text-blue-300">Privacy & Data Requests</h4>
+              <p class="flex items-center">
+                <span class="mr-2">📧</span>
+                <a href="mailto:support@bantustreamconnect.com" class="text-blue-400 hover:text-blue-300 transition">support@bantustreamconnect.com</a>
+              </p>
+            </div>
+            
+            <div class="bg-gray-900 p-6 rounded-lg">
+              <h4 class="text-lg font-semibold mb-3 text-blue-300">General Support</h4>
+              <p class="flex items-center">
+                <span class="mr-2">📧</span>
+                <a href="mailto:support@bantustreamconnect.com" class="text-blue-400 hover:text-blue-300 transition">support@bantustreamconnect.com</a>
+              </p>
+            </div>
+            
+            <div class="bg-gray-900 p-6 rounded-lg">
+              <h4 class="text-lg font-semibold mb-3 text-blue-300">Registered Company Address</h4>
+              <p>Buchu Crescent, Riverside View,<br>Fourways 2069<br>Johannesburg, South Africa</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </div>
+</main>
 
 <!-- Footer -->
 <footer class="bg-black bg-opacity-80 text-gray-400">
@@ -275,168 +590,58 @@
     <img src="assets/bsc-logo.png" alt="BSC Logo" class="h-12 mx-auto mb-4">
     <p class="mb-4">© 2025 Bantu Stream Connect. All rights reserved.</p>
     <div class="flex justify-center gap-6 mb-4 flex-wrap">
-      <a href="#" class="hover:text-blue-500 transition">Privacy Policy</a>
-      <a href="#" class="hover:text-blue-500 transition">Terms of Service</a>
       <a href="index.html" class="hover:text-blue-500 transition">Home</a>
-      <a href="creators.html" class="hover:text-blue-500 transition">For Creators</a>
+      <a href="creators.html" class="hover:text-blue-500 transition">Creators</a>
+      <a href="users.html" class="hover:text-blue-500 transition">Users</a>
+      <a href="empowerment.html" class="hover:text-blue-500 transition">Empowerment</a>
+      <a href="blog.html" class="hover:text-blue-500 transition">Blog</a>
+      <a href="privacy-policy.html" class="text-blue-500 font-semibold">Privacy Policy</a>
     </div>
     <p>Made with ❤️ in South Africa</p>
   </div>
 </footer>
 
-<!-- Integrated Signup Functionality for Users -->
-<script type="module">
-  import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
-
-  // Supabase Setup (same credentials as other pages)
-  const SUPABASE_URL = "https://ydnxqnbjoshvxteevemc.supabase.co";
-  const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U";
-  const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
-
-  // Helper: generate unique referral code
-  async function generateUniqueCode() {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-    let code;
-    let exists = true;
-    while (exists) {
-      code = Array.from({length:6}, () => chars[Math.floor(Math.random()*chars.length)]).join('');
-      let { data, error } = await supabase.from('signups').select('id').eq('referral_code', code).limit(1);
-      exists = data.length > 0;
-    }
-    return code;
-  }
-
-  // Handle User Signup Form
-  document.addEventListener('DOMContentLoaded', () => {
-    const form = document.getElementById('user-signup-form');
-    const message = document.getElementById('user-signup-message');
-
-    if (form && message) {
-      form.addEventListener('submit', async e => {
-        e.preventDefault();
-        message.textContent = '';
-        message.className = 'form-message hidden';
-
-        const formData = new FormData(form);
-        const name = formData.get('name').trim();
-        const email = formData.get('email').trim();
-        const referred_by = formData.get('referred_by') || null;
-        
-        // Get selected interests
-        const interests = [];
-        const interestCheckboxes = form.querySelectorAll('input[name="interests"]:checked');
-        interestCheckboxes.forEach(checkbox => {
-          interests.push(checkbox.value);
-        });
-        const content_interests = interests.length > 0 ? interests.join(', ') : null;
-        
-        // For users page, user_type is always 'user'
-        const user_type = 'user';
-
-        if (!name || !email) {
-          message.textContent = 'Please fill in all required fields.';
-          message.className = 'form-message form-error';
-          message.classList.remove('hidden');
-          return;
-        }
-
-        // Show loading state
-        const button = form.querySelector('.user-signup-btn');
-        const originalText = button.textContent;
-        button.disabled = true;
-        button.innerHTML = '<span class="animate-pulse">Joining Waitlist...</span>';
-
-        try {
-          // Check if email already exists
-          let { data: existing, error: checkErr } = await supabase
-            .from('signups')
-            .select('id')
-            .eq('email', email)
-            .limit(1);
-
-          if (checkErr) throw checkErr;
-          if (existing.length > 0) {
-            message.textContent = 'This email is already registered on our waitlist.';
-            message.className = 'form-message form-error';
-            message.classList.remove('hidden');
-            return;
-          }
-
-          // Generate unique referral code
-          const referral_code = await generateUniqueCode();
-
-          // Insert into Supabase - including user-specific fields
-          let { data, error } = await supabase.from('signups').insert([{
-            name, 
-            email, 
-            user_type, 
-            referral_code, 
-            referred_by,
-            content_interests
-          }]);
-
-          if (error) throw error;
-
-          // SUCCESS: Redirect to thank-you page with referral code
-          sessionStorage.setItem('userReferralCode', referral_code);
-          sessionStorage.setItem('userName', name);
-          sessionStorage.setItem('userType', 'user'); // Always 'user' for this page
-
-          // Track conversion for users
-          if (typeof gtag !== 'undefined') {
-            gtag('event', 'sign_up', {
-              method: 'user_waitlist',
-              email: email
-            });
-          }
-
-          if (typeof fbq !== 'undefined') {
-            fbq('track', 'Lead', {
-              content_name: 'User Waitlist',
-              content_category: 'user',
-              value: 1
-            });
-          }
-
-          // Redirect to thank-you page
-          window.location.href = 'thank-you.html';
-
-        } catch(err) {
-          console.error(err);
-          message.textContent = 'There was an error joining the waitlist. Please try again.';
-          message.className = 'form-message form-error';
-          message.classList.remove('hidden');
-        } finally {
-          // Reset button only if there was an error (no redirect)
-          if (!sessionStorage.getItem('userReferralCode')) {
-            button.disabled = false;
-            button.textContent = originalText;
-          }
+<!-- Scripts -->
+<script src="js/main.js"></script>
+<script>
+  // Add scroll animations
+  document.addEventListener('DOMContentLoaded', function() {
+    // Animate sections on scroll
+    const observerOptions = {
+      threshold: 0.1,
+      rootMargin: '0px 0px -50px 0px'
+    };
+    
+    const observer = new IntersectionObserver(function(entries) {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.style.opacity = '1';
+          entry.target.style.transform = 'translateY(0)';
         }
       });
-    }
-
-    // Smooth scroll to waitlist form when clicking "Join Waitlist" buttons
-    const waitlistButtons = document.querySelectorAll('a[href="#waitlist"]');
-    waitlistButtons.forEach(button => {
-      button.addEventListener('click', (e) => {
-        e.preventDefault();
-        const target = document.getElementById('waitlist');
-        if (target) {
-          target.scrollIntoView({ behavior: 'smooth' });
-          
-          // Focus on the first input field
-          const firstInput = target.querySelector('input');
-          if (firstInput) {
-            setTimeout(() => firstInput.focus(), 500);
-          }
-        }
-      });
+    }, observerOptions);
+    
+    // Observe all policy sections
+    document.querySelectorAll('.policy-card').forEach((card, index) => {
+      card.style.opacity = '0';
+      card.style.transform = 'translateY(20px)';
+      card.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+      card.style.transitionDelay = (index * 0.1) + 's';
+      observer.observe(card);
+    });
+    
+    // Update nav link to indicate current page
+    const currentPage = window.location.pathname.split('/').pop();
+    const navLinks = document.querySelectorAll('nav a');
+    navLinks.forEach(link => {
+      const linkHref = link.getAttribute('href');
+      if (linkHref === currentPage || (linkHref === 'privacy-policy.html' && currentPage === 'privacy-policy.html')) {
+        link.classList.add('text-blue-500', 'font-semibold');
+      } else {
+        link.classList.remove('text-blue-500', 'font-semibold');
+      }
     });
   });
 </script>
-
-<!-- If you need to include additional scripts -->
-<script src="js/main.js"></script>
 </body>
 </html>
