@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Privacy Policy - Bantu Stream Connect</title>
+    
+    <!-- Glassmorphism and Responsive CSS -->
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-color: #6d28d9;
+            --secondary-color: #8b5cf6;
+            --accent-color: #10b981;
+            --glass-bg: rgba(255, 255, 255, 0.1);
+            --glass-border: rgba(255, 255, 255, 0.2);
+            --text-primary: #ffffff;
+            --text-secondary: #e2e8f0;
+            --bg-gradient: linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #1e1b4b 100%);
+            --card-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            line-height: 1.6;
+            color: var(--text-primary);
+            background: var(--bg-gradient);
+            min-height: 100vh;
+            background-attachment: fixed;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        /* Glassmorphism Effects */
+        .glass-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            box-shadow: var(--card-shadow);
+            padding: 30px;
+            margin-bottom: 30px;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .glass-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Header Styles */
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding-top: 40px;
+        }
+
+        .logo {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(45deg, var(--secondary-color), var(--accent-color));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            margin-bottom: 10px;
+            display: inline-block;
+        }
+
+        .subtitle {
+            color: var(--text-secondary);
+            font-size: 1.2rem;
+            margin-bottom: 10px;
+        }
+
+        .effective-date {
+            color: var(--accent-color);
+            font-weight: 500;
+            font-size: 0.9rem;
+            margin-bottom: 30px;
+        }
+
+        /* Main Content */
+        .policy-section {
+            margin-bottom: 40px;
+        }
+
+        .section-title {
+            font-size: 1.8rem;
+            color: var(--secondary-color);
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid rgba(139, 92, 246, 0.3);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .section-title::before {
+            content: "•";
+            color: var(--accent-color);
+            font-size: 2rem;
+        }
+
+        .section-content {
+            color: var(--text-secondary);
+        }
+
+        .section-content p {
+            margin-bottom: 15px;
+        }
+
+        .section-content ul, .section-content ol {
+            margin-left: 20px;
+            margin-bottom: 15px;
+        }
+
+        .section-content li {
+            margin-bottom: 8px;
+        }
+
+        /* Table Styles */
+        .info-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .info-table th {
+            background: rgba(139, 92, 246, 0.2);
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+            color: var(--secondary-color);
+        }
+
+        .info-table td {
+            padding: 15px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .info-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        /* Rights Grid */
+        .rights-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        .right-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            padding: 20px;
+            border-left: 4px solid var(--accent-color);
+        }
+
+        .right-card h4 {
+            color: var(--accent-color);
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .right-card h4::before {
+            content: "✓";
+            color: var(--accent-color);
+            font-weight: bold;
+        }
+
+        /* Contact Section */
+        .contact-info {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 30px;
+            margin-top: 20px;
+        }
+
+        .contact-item {
+            flex: 1;
+            min-width: 250px;
+        }
+
+        .contact-item h4 {
+            color: var(--secondary-color);
+            margin-bottom: 10px;
+        }
+
+        .contact-item p {
+            color: var(--text-secondary);
+        }
+
+        .email-link {
+            color: var(--accent-color);
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        .email-link:hover {
+            color: var(--secondary-color);
+            text-decoration: underline;
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: 30px 0;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin-top: 40px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .glass-card {
+                padding: 20px;
+                margin-bottom: 20px;
+            }
+
+            .logo {
+                font-size: 2rem;
+            }
+
+            .section-title {
+                font-size: 1.5rem;
+            }
+
+            .info-table {
+                display: block;
+                overflow-x: auto;
+            }
+
+            .rights-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .contact-info {
+                flex-direction: column;
+                gap: 20px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            body {
+                padding: 10px;
+            }
+
+            .container {
+                padding: 0 10px;
+            }
+
+            .glass-card {
+                padding: 15px;
+                border-radius: 15px;
+            }
+
+            .logo {
+                font-size: 1.8rem;
+            }
+
+            .section-title {
+                font-size: 1.3rem;
+            }
+        }
+
+        /* Print Styles */
+        @media print {
+            body {
+                background: white;
+                color: black;
+            }
+
+            .glass-card {
+                background: white;
+                border: 1px solid #ddd;
+                box-shadow: none;
+            }
+
+            .section-title {
+                color: #333;
+            }
+
+            .section-content {
+                color: #555;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header glass-card">
+            <h1 class="logo">BANTU STREAM CONNECT</h1>
+            <p class="subtitle">PRIVACY POLICY</p>
+            <p class="effective-date">Effective Date: 1 November 2025 | Last Updated: 1 November 2025</p>
+        </header>
+
+        <!-- Main Content -->
+        <main>
+            <!-- Section 1: Introduction -->
+            <section class="policy-section glass-card">
+                <h2 class="section-title">1. Introduction: Our Commitment to Your Privacy</h2>
+                <div class="section-content">
+                    <p>Welcome to Bantu Stream Connect ("we", "us", "our"). We are a South African–built digital streaming and creator empowerment platform dedicated to uplifting African storytellers, artists, and innovators.</p>
+                    <p>To provide a high-quality entertainment and creator ecosystem, we must collect and process certain information about you.</p>
+                    <p>We are committed to:</p>
+                    <ul>
+                        <li>Protecting your privacy</li>
+                        <li>Being transparent about how your data is used</li>
+                        <li>Giving you meaningful control over your information</li>
+                    </ul>
+                    <p>This Privacy Policy explains what data we collect, how we use it, how it's protected, and the rights you have as a user.</p>
+                </div>
+            </section>
+
+            <!-- Section 2: Information We Collect -->
+            <section class="policy-section glass-card">
+                <h2 class="section-title">2. Information We Collect</h2>
+                <div class="section-content">
+                    <p>We collect information in three ways:</p>
+                    
+                    <h3>(A) Information You Provide Directly</h3>
+                    <h4>Account Information</h4>
+                    <ul>
+                        <li>Full name</li>
+                        <li>Email address</li>
+                        <li>Phone number</li>
+                        <li>Encrypted password</li>
+                        <li>Date of birth (used for age verification)</li>
+                    </ul>
+                    
+                    <h4>Payment Information</h4>
+                    <p>If you subscribe, rent, purchase, or tip creators:</p>
+                    <ul>
+                        <li>Transaction details</li>
+                        <li>Payment confirmation data</li>
+                    </ul>
+                    <p><em>(We do not store your full credit/debit card number. Payments are handled by secure third-party processors such as Stripe, Paystack, or mobile money partners.)</em></p>
+                    
+                    <h4>Creator Payout Information</h4>
+                    <p>For creators receiving revenue:</p>
+                    <ul>
+                        <li>Bank account or mobile money details</li>
+                        <li>Tax documents (if legally required)</li>
+                    </ul>
+                    
+                    <h4>Support Information</h4>
+                    <ul>
+                        <li>Emails, support tickets, and communication logs</li>
+                    </ul>
+                    
+                    <h3>(B) Information Collected Automatically (Usage Data)</h3>
+                    <h4>Device & Connection Information</h4>
+                    <ul>
+                        <li>Device type and model</li>
+                        <li>Device ID</li>
+                        <li>Operating system and version</li>
+                        <li>Browser type</li>
+                        <li>IP address</li>
+                        <li>Mobile network provider</li>
+                        <li>Crash reports and diagnostic data</li>
+                    </ul>
+                    
+                    <h4>Usage & Interaction Data</h4>
+                    <ul>
+                        <li>Videos watched</li>
+                        <li>Time spent watching</li>
+                        <li>Search queries</li>
+                        <li>Playback actions (pause, rewind, skip)</li>
+                        <li>Likes, comments, shares, follows</li>
+                        <li>Viewing patterns and recommendations clicked</li>
+                        <li>Real-time performance data (buffering, bitrate, quality)</li>
+                    </ul>
+                    
+                    <h4>General Location Information</h4>
+                    <ul>
+                        <li>Region/country inferred from IP</li>
+                        <li>Only collects precise GPS location if you explicitly opt in</li>
+                    </ul>
+                    
+                    <h3>(C) Information From Third Parties</h3>
+                    <ul>
+                        <li>Payment processors (to confirm transactions)</li>
+                        <li>Authentication providers (if you sign in using Google, Apple, etc.)</li>
+                        <li>Advertising partners (for ad-supported content tiers)</li>
+                        <li>Analytics services (Firebase, Google Analytics)</li>
+                    </ul>
+                </div>
+            </section>
+
+            <!-- Section 3: How We Use Your Information -->
+            <section class="policy-section glass-card">
+                <h2 class="section-title">3. How We Use Your Information</h2>
+                <div class="section-content">
+                    <table class="info-table">
+                        <thead>
+                            <tr>
+                                <th>Category</th>
+                                <th>Purpose of Use</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Service Operations</td>
+                                <td>Account creation & verification; subscription processing; streaming delivery; saving preferences.</td>
+                            </tr>
+                            <tr>
+                                <td>Personalization</td>
+                                <td>Content suggestions based on your activity, preferences, and engagement patterns.</td>
+                            </tr>
+                            <tr>
+                                <td>Monetization & Payouts</td>
+                                <td>Creator revenue calculations; distributing the 90/10 split; processing viewer tips.</td>
+                            </tr>
+                            <tr>
+                                <td>Security & Safety</td>
+                                <td>Fraud prevention; detecting abuse; enforcing Terms of Service; protecting intellectual property.</td>
+                            </tr>
+                            <tr>
+                                <td>Product Improvement</td>
+                                <td>Fixing bugs; monitoring performance; optimizing load time; improving quality.</td>
+                            </tr>
+                            <tr>
+                                <td>Marketing & Communication</td>
+                                <td>Service updates; announcements; relevant content recommendations; optional promotional messages (you may opt out).</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <p><strong>We never sell your personal data.</strong></p>
+                </div>
+            </section>
+
+            <!-- Section 4: Data Storage & Security -->
+            <section class="policy-section glass-card">
+                <h2 class="section-title">4. Data Storage & Security</h2>
+                <div class="section-content">
+                    <h3>A. Where We Store Data</h3>
+                    <p>Your information is stored on secure cloud servers located in:</p>
+                    <ul>
+                        <li>South Africa</li>
+                        <li>And/or GDPR-compliant international data centers</li>
+                    </ul>
+                    <p>We use distributed infrastructure to ensure uptime, performance, and resilience.</p>
+                    
+                    <h3>B. How We Protect Your Data</h3>
+                    <p>We use industry-standard security controls, including:</p>
+                    <ul>
+                        <li>Encryption in transit (SSL/TLS)</li>
+                        <li>Encryption at rest (AES-256)</li>
+                        <li>Role-based access controls (RBAC)</li>
+                        <li>Multi-factor authentication for internal systems</li>
+                        <li>Routine security audits and penetration tests</li>
+                    </ul>
+                </div>
+            </section>
+
+            <!-- Section 5: When We Share Your Information -->
+            <section class="policy-section glass-card">
+                <h2 class="section-title">5. When We Share Your Information</h2>
+                <div class="section-content">
+                    <p><strong>We never sell your data.</strong><br>
+                    We share information only under the following circumstances:</p>
+                    
+                    <h3>A. With Creators (Limited & Anonymized Data Only)</h3>
+                    <p>Creators may receive:</p>
+                    <ul>
+                        <li>Total view counts</li>
+                        <li>Engagement statistics</li>
+                        <li>Anonymous demographic summaries (e.g., "viewers from South Africa")</li>
+                    </ul>
+                    <p>We do not share:</p>
+                    <ul>
+                        <li>Email</li>
+                        <li>Phone number</li>
+                        <li>Password</li>
+                        <li>Private account details</li>
+                    </ul>
+                    
+                    <h3>B. With Trusted Third-Party Service Providers</h3>
+                    <p>Including:</p>
+                    <ul>
+                        <li>Payment processors</li>
+                        <li>Analytics tools (e.g., Firebase)</li>
+                        <li>Cloud storage & hosting providers</li>
+                        <li>Advertising partners (for ad-supported streaming tiers)</li>
+                    </ul>
+                    <p>Advertising partners may receive:</p>
+                    <ul>
+                        <li>Device identifiers (IDFA / Ad ID)</li>
+                        <li>Anonymous interaction metrics</li>
+                    </ul>
+                    <p>You can opt out of targeted advertising in your device settings.</p>
+                    
+                    <h3>C. For Legal Reasons</h3>
+                    <p>We may disclose information if required by:</p>
+                    <ul>
+                        <li>Subpoena</li>
+                        <li>Court order</li>
+                        <li>Government mandate</li>
+                        <li>To protect the rights and safety of our users or platform</li>
+                    </ul>
+                </div>
+            </section>
+
+            <!-- Section 6: Your Rights and Choices -->
+            <section class="policy-section glass-card">
+                <h2 class="section-title">6. Your Rights and Choices</h2>
+                <div class="section-content">
+                    <p>Depending on your location (GDPR, POPIA, CCPA), you may have the following rights:</p>
+                    
+                    <div class="rights-grid">
+                        <div class="right-card">
+                            <h4>Right to Access</h4>
+                            <p>Request a copy of the personal information we hold about you.</p>
+                        </div>
+                        <div class="right-card">
+                            <h4>Right to Correction</h4>
+                            <p>Fix incorrect or incomplete information.</p>
+                        </div>
+                        <div class="right-card">
+                            <h4>Right to Deletion</h4>
+                            <p>Request account and data deletion (with legal/financial record exceptions).</p>
+                        </div>
+                        <div class="right-card">
+                            <h4>Right to Restrict or Object to Processing</h4>
+                            <p>Control how your data is processed.</p>
+                        </div>
+                    </div>
+                    
+                    <h3>Opt-Out Options</h3>
+                    <p>You can opt out of:</p>
+                    <ul>
+                        <li>Marketing emails</li>
+                        <li>Targeted advertising</li>
+                        <li>GPS location access</li>
+                        <li>Certain analytics tools</li>
+                    </ul>
+                    <p>Most controls are available in Account Settings.</p>
+                </div>
+            </section>
+
+            <!-- Section 7: Cookies & Tracking Technologies -->
+            <section class="policy-section glass-card">
+                <h2 class="section-title">7. Cookies & Tracking Technologies</h2>
+                <div class="section-content">
+                    <p>We use cookies, SDKs, and similar technologies for:</p>
+                    
+                    <h3>Essential Functions</h3>
+                    <ul>
+                        <li>Staying logged in</li>
+                        <li>Saving preferences (e.g., volume, theme)</li>
+                        <li>Stable video playback</li>
+                    </ul>
+                    
+                    <h3>Analytics</h3>
+                    <ul>
+                        <li>Performance monitoring</li>
+                        <li>Crash detection</li>
+                        <li>Measuring usage trends</li>
+                    </ul>
+                    
+                    <h3>Advertising (Where Applicable)</h3>
+                    <ul>
+                        <li>Showing relevant ads</li>
+                        <li>Frequency capping</li>
+                        <li>Measuring ad performance</li>
+                    </ul>
+                    
+                    <p>You can manage cookies in your browser or device settings. Disabling essential cookies may affect streaming functionality.</p>
+                </div>
+            </section>
+
+            <!-- Section 8: Changes to This Policy -->
+            <section class="policy-section glass-card">
+                <h2 class="section-title">8. Changes to This Policy</h2>
+                <div class="section-content">
+                    <p>We may update this Privacy Policy to reflect:</p>
+                    <ul>
+                        <li>New features</li>
+                        <li>Legal requirements</li>
+                        <li>Security improvements</li>
+                    </ul>
+                    <p>We will notify you through:</p>
+                    <ul>
+                        <li>In-app notices</li>
+                        <li>Email alerts (if appropriate)</li>
+                        <li>Updated "Last Updated" date</li>
+                    </ul>
+                </div>
+            </section>
+
+            <!-- Section 9: Contact Us -->
+            <section class="policy-section glass-card">
+                <h2 class="section-title">9. Contact Us</h2>
+                <div class="section-content">
+                    <p>If you have questions or want to exercise your rights:</p>
+                    
+                    <div class="contact-info">
+                        <div class="contact-item">
+                            <h4>Privacy & Data Requests</h4>
+                            <p>📧 <a href="mailto:support@bantustreamconnect.com" class="email-link">support@bantustreamconnect.com</a></p>
+                        </div>
+                        
+                        <div class="contact-item">
+                            <h4>General Support</h4>
+                            <p>📧 <a href="mailto:support@bantustreamconnect.com" class="email-link">support@bantustreamconnect.com</a></p>
+                        </div>
+                        
+                        <div class="contact-item">
+                            <h4>Registered Company Address</h4>
+                            <p>Buchu Crescent, Riverside View,<br>
+                            Fourways 2069<br>
+                            Johannesburg, South Africa</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Footer -->
+        <footer class="footer glass-card">
+            <p>© 2025 Bantu Stream Connect. All rights reserved.</p>
+            <p>This Privacy Policy is effective from November 1, 2025.</p>
+        </footer>
+    </div>
+
+    <script>
+        // Smooth scroll for anchor links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+
+        // Add scroll effect to glass cards
+        window.addEventListener('scroll', () => {
+            const cards = document.querySelectorAll('.glass-card');
+            cards.forEach(card => {
+                const rect = card.getBoundingClientRect();
+                const isVisible = (rect.top <= window.innerHeight) && (rect.bottom >= 0);
+                
+                if (isVisible) {
+                    const speed = card.dataset.speed || 0.5;
+                    const yPos = -(rect.top * speed);
+                    card.style.transform = `translateY(${yPos}px)`;
+                }
+            });
+        });
+    </script>
+</body>
+</html>
