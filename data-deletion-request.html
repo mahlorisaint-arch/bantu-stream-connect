@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Data Deletion Request - Bantu Stream Connect</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config={darkMode:'class'}</script>
+  <link href="assets/css/bantu-global.css" rel="stylesheet">
+  <style>
+    .glassmorphism {
+      background: rgba(11, 18, 32, 0.7);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    }
+    
+    .fade-in { opacity:0; transform:translateY(20px); animation:fadeInUp 1s forwards; }
+    .fade-in-delay-1{animation-delay:.3s} 
+    .fade-in-delay-2{animation-delay:.6s} 
+    .fade-in-delay-3{animation-delay:.9s}
+    @keyframes fadeInUp { to{opacity:1; transform:translateY(0);} }
+    
+    .policy-card {
+      background: #0b1220;
+      border: 1px solid rgba(255,255,255,0.03);
+      padding: 2rem;
+      border-radius: 0.75rem;
+      transition: all 0.3s ease;
+    }
+    
+    .policy-card:hover {
+      border-color: rgba(99, 102, 241, 0.3);
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+    }
+    
+    .data-category-card {
+      background: rgba(30, 58, 138, 0.1);
+      border: 1px solid rgba(99, 102, 241, 0.2);
+      padding: 1.5rem;
+      border-radius: 0.5rem;
+      border-left: 4px solid #00ffd5;
+    }
+    
+    .checkbox-group {
+      background: rgba(255, 255, 255, 0.03);
+      border-radius: 0.5rem;
+      padding: 1rem;
+      transition: all 0.3s ease;
+    }
+    
+    .checkbox-group:hover {
+      background: rgba(255, 255, 255, 0.05);
+      transform: translateY(-2px);
+    }
+    
+    .checkbox-group input[type="checkbox"] {
+      width: 1.25rem;
+      height: 1.25rem;
+      border: 2px solid rgba(99, 102, 241, 0.5);
+      border-radius: 0.25rem;
+      background: rgba(11, 18, 32, 0.8);
+      cursor: pointer;
+    }
+    
+    .checkbox-group input[type="checkbox"]:checked {
+      background-color: #00ffd5;
+      border-color: #00ffd5;
+    }
+    
+    .button-primary {
+      background: linear-gradient(90deg, #00a3ff, #00ffd5);
+      color: #021026;
+      padding: 1rem 2rem;
+      border-radius: 0.5rem;
+      font-weight: 600;
+      display: inline-block;
+      transition: all 0.3s ease;
+    }
+    
+    .button-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 20px rgba(0, 163, 255, 0.3);
+    }
+    
+    .form-input {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 0.75rem 1rem;
+      border-radius: 0.5rem;
+      color: white;
+      width: 100%;
+      transition: all 0.3s ease;
+    }
+    
+    .form-input:focus {
+      outline: none;
+      border-color: #00ffd5;
+      box-shadow: 0 0 0 3px rgba(0, 255, 213, 0.1);
+    }
+    
+    .form-label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-weight: 500;
+    }
+    
+    .required::after {
+      content: " *";
+      color: #ef4444;
+    }
+    
+    .info-box {
+      background: rgba(59, 130, 246, 0.1);
+      border: 1px solid rgba(59, 130, 246, 0.3);
+      padding: 1rem;
+      border-radius: 0.5rem;
+      border-left: 4px solid #3b82f6;
+    }
+    
+    .warning-box {
+      background: rgba(245, 158, 11, 0.1);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      padding: 1rem;
+      border-radius: 0.5rem;
+      border-left: 4px solid #f59e0b;
+    }
+    
+    .success-box {
+      background: rgba(34, 197, 94, 0.1);
+      border: 1px solid rgba(34, 197, 94, 0.3);
+      padding: 1rem;
+      border-radius: 0.5rem;
+      border-left: 4px solid #22c55e;
+    }
+    
+    .step-circle {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 2.5rem;
+      height: 2.5rem;
+      background: linear-gradient(90deg, #00a3ff, #00ffd5);
+      color: #021026;
+      border-radius: 50%;
+      font-weight: bold;
+      margin-right: 1rem;
+    }
+    
+    /* Smooth scrolling for anchor links */
+    html {
+      scroll-behavior: smooth;
+    }
+    
+    /* Custom scrollbar */
+    ::-webkit-scrollbar {
+      width: 8px;
+    }
+    
+    ::-webkit-scrollbar-track {
+      background: rgba(255, 255, 255, 0.05);
+    }
+    
+    ::-webkit-scrollbar-thumb {
+      background: linear-gradient(90deg, #00a3ff, #00ffd5);
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body class="bg-black text-white font-sans dark:bg-black dark:text-white">
+
+<!-- Navbar -->
+<header class="bg-black bg-opacity-80 backdrop-blur-md fixed w-full z-50">
+  <div class="container mx-auto flex justify-between items-center h-16 px-4 sm:px-6 lg:px-8">
+    <div class="flex items-center space-x-2">
+      <a href="index.html"><img src="assets/bsc-logo.png" alt="BSC Logo" class="h-10 w-auto"></a>
+      <span class="font-bold text-xl">Bantu Stream Connect</span>
+    </div>
+    <nav class="hidden md:flex space-x-6 items-center">
+      <a href="index.html" class="hover:text-blue-500 transition">Home</a>
+      <a href="creators.html" class="hover:text-blue-500 transition">Creators</a>
+      <a href="users.html" class="hover:text-blue-500 transition">Users</a>
+      <a href="empowerment.html" class="hover:text-blue-500 transition">Empowerment</a>
+      <a href="blog.html" class="hover:text-blue-500 transition">Blog</a>
+      <a href="privacy-policy.html" class="hover:text-blue-500 transition">Privacy Policy</a>
+      <a href="delete-account.html" class="hover:text-blue-500 transition">Delete Account</a>
+      <a href="data-deletion-request.html" class="text-blue-500 font-semibold">Data Request</a>
+    </nav>
+  </div>
+</header>
+
+<!-- Hero Section -->
+<section class="relative pt-32 pb-20 px-4 sm:px-6 lg:px-8">
+  <div class="absolute inset-0 bg-gradient-to-b from-black via-black to-transparent z-0"></div>
+  <div class="container mx-auto relative z-10">
+    <div class="max-w-4xl mx-auto text-center fade-in">
+      <h1 class="text-4xl sm:text-5xl md:text-6xl font-bold mb-6">Data Deletion Request</h1>
+      <p class="text-xl text-gray-300 mb-4">Request specific data deletion without deleting your account</p>
+      <div class="inline-flex items-center justify-center space-x-4 text-gray-400 text-sm">
+        <span>Last updated: December 2025</span>
+        <span class="h-1 w-1 bg-gray-600 rounded-full"></span>
+        <span>GDPR, POPIA & CCPA Compliant</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Main Content -->
+<main class="pb-20 px-4 sm:px-6 lg:px-8">
+  <div class="container mx-auto max-w-6xl">
+    
+    <!-- Introduction -->
+    <section class="mb-12 fade-in fade-in-delay-1">
+      <div class="policy-card glassmorphism">
+        <div class="flex items-start mb-6">
+          <div class="text-3xl mr-4">🔍</div>
+          <div>
+            <h2 class="text-2xl font-bold mb-3">Selective Data Deletion</h2>
+            <p class="text-gray-300">
+              Under data protection laws (GDPR, POPIA, CCPA), you have the right to request deletion of specific personal data 
+              without deleting your entire Bantu Stream Connect account. This form allows you to specify exactly which data 
+              you want us to remove.
+            </p>
+          </div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+          <div class="info-box">
+            <h4 class="font-semibold mb-2 text-blue-300">⚠️ Important Notice</h4>
+            <p class="text-sm text-gray-300">
+              Deleting certain data may affect your experience. For example, removing viewing history will reset your recommendations.
+            </p>
+          </div>
+          <div class="success-box">
+            <h4 class="font-semibold mb-2 text-green-300">📅 Processing Time</h4>
+            <p class="text-sm text-gray-300">
+              We process data deletion requests within 7-14 business days and will notify you upon completion.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- How It Works -->
+    <section class="mb-12 fade-in fade-in-delay-2">
+      <div class="policy-card glassmorphism">
+        <h2 class="text-2xl font-bold mb-8 text-center">How It Works</h2>
+        <div class="space-y-6">
+          <div class="flex items-start">
+            <div class="step-circle">1</div>
+            <div>
+              <h3 class="text-xl font-semibold mb-2">Select Data Categories</h3>
+              <p class="text-gray-300">Choose which specific data categories you want us to delete from the list below.</p>
+            </div>
+          </div>
+          <div class="flex items-start">
+            <div class="step-circle">2</div>
+            <div>
+              <h3 class="text-xl font-semibold mb-2">Provide Identification</h3>
+              <p class="text-gray-300">Enter your account information so we can locate your data securely.</p>
+            </div>
+          </div>
+          <div class="flex items-start">
+            <div class="step-circle">3</div>
+            <div>
+              <h3 class="text-xl font-semibold mb-2">Submit Request</h3>
+              <p class="text-gray-300">We'll generate an email with your selections. Just hit send from your email client.</p>
+            </div>
+          </div>
+          <div class="flex items-start">
+            <div class="step-circle">4</div>
+            <div>
+              <h3 class="text-xl font-semibold mb-2">Confirmation & Processing</h3>
+              <p class="text-gray-300">We'll confirm receipt within 24 hours and process your request within 7-14 days.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Data Deletion Request Form -->
+    <section class="mb-12">
+      <div class="policy-card glassmorphism" id="request-form">
+        <h2 class="text-2xl font-bold mb-6">Data Deletion Request Form</h2>
+        
+        <!-- User Information -->
+        <div class="mb-8">
+          <h3 class="text-xl font-semibold mb-4">Your Information</h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label class="form-label required">Full Name</label>
+              <input type="text" id="userName" class="form-input" placeholder="Enter your full name" required>
+            </div>
+            <div>
+              <label class="form-label required">Email Address</label>
+              <input type="email" id="userEmail" class="form-input" placeholder="your.email@example.com" required>
+            </div>
+          </div>
+          <div class="mt-6">
+            <label class="form-label">Account ID or Username (Optional)</label>
+            <input type="text" id="accountId" class="form-input" placeholder="Helps us locate your account faster">
+          </div>
+        </div>
+
+        <!-- Data Categories Selection -->
+        <div class="mb-8">
+          <h3 class="text-xl font-semibold mb-4">Select Data to Delete</h3>
+          <p class="text-gray-300 mb-6">Check the boxes next to the data categories you want us to delete:</p>
+          
+          <!-- Select All -->
+          <div class="checkbox-group mb-4">
+            <label class="flex items-center cursor-pointer">
+              <input type="checkbox" id="selectAll" class="mr-3">
+              <span class="font-semibold text-lg">Select All Personal Data</span>
+            </label>
+            <p class="text-sm text-gray-400 mt-2 ml-8">Selects all categories below (except mandatory retention data)</p>
+          </div>
+          
+          <!-- Data Categories Grid -->
+          <div class="space-y-4">
+            <!-- Category 1: Account Information -->
+            <div class="checkbox-group">
+              <label class="flex items-start cursor-pointer">
+                <input type="checkbox" id="category1" class="mr-3 mt-1" data-category="account">
+                <div>
+                  <span class="font-semibold">Account Information</span>
+                  <div class="text-sm text-gray-400 mt-1 space-y-1 ml-1">
+                    <div>• Full name, email address, phone number</div>
+                    <div>• Profile information and preferences</div>
+                    <div>• Account settings and preferences</div>
+                  </div>
+                </div>
+              </label>
+            </div>
+            
+            <!-- Category 2: Usage & Activity Data -->
+            <div class="checkbox-group">
+              <label class="flex items-start cursor-pointer">
+                <input type="checkbox" id="category2" class="mr-3 mt-1" data-category="usage">
+                <div>
+                  <span class="font-semibold">Usage & Activity Data</span>
+                  <div class="text-sm text-gray-400 mt-1 space-y-1 ml-1">
+                    <div>• Videos watched and viewing history</div>
+                    <div>• Search queries and watch history</div>
+                    <div>• Likes, comments, shares, and follows</div>
+                    <div>• Playback actions and watch time data</div>
+                  </div>
+                </div>
+              </label>
+            </div>
+            
+            <!-- Category 3: Device & Location -->
+            <div class="checkbox-group">
+              <label class="flex items-start cursor-pointer">
+                <input type="checkbox" id="category3" class="mr-3 mt-1" data-category="device">
+                <div>
+                  <span class="font-semibold">Device & Location Information</span>
+                  <div class="text-sm text-gray-400 mt-1 space-y-1 ml-1">
+                    <div>• Device identifiers and IP addresses</div>
+                    <div>• Browser and device information</div>
+                    <div>• Approximate location data</div>
+                    <div>• GPS location (if previously enabled)</div>
+                  </div>
+                </div>
+              </label>
+            </div>
+            
+            <!-- Category 4: Payment Information -->
+            <div class="checkbox-group">
+              <label class="flex items-start cursor-pointer">
+                <input type="checkbox" id="category4" class="mr-3 mt-1" data-category="payment">
+                <div>
+                  <span class="font-semibold">Payment & Transaction Data</span>
+                  <div class="text-sm text-gray-400 mt-1 space-y-1 ml-1">
+                    <div>• Transaction history and payment records</div>
+                    <div>• Subscription information</div>
+                    <div>• Tip history to creators</div>
+                    <div class="text-yellow-400 italic">*Note: Some financial records may be retained for legal compliance</div>
+                  </div>
+                </div>
+              </label>
+            </div>
+            
+            <!-- Category 5: Creator Content -->
+            <div class="checkbox-group">
+              <label class="flex items-start cursor-pointer">
+                <input type="checkbox" id="category5" class="mr-3 mt-1" data-category="content">
+                <div>
+                  <span class="font-semibold">Creator Content (If Applicable)</span>
+                  <div class="text-sm text-gray-400 mt-1 space-y-1 ml-1">
+                    <div>• Uploaded videos and audio content</div>
+                    <div>• Creator channel information</div>
+                    <div>• Thumbnails and metadata</div>
+                    <div>• Creator analytics data</div>
+                  </div>
+                </div>
+              </label>
+            </div>
+            
+            <!-- Category 6: Communication Data -->
+            <div class="checkbox-group">
+              <label class="flex items-start cursor-pointer">
+                <input type="checkbox" id="category6" class="mr-3 mt-1" data-category="communication">
+                <div>
+                  <span class="font-semibold">Communication Data</span>
+                  <div class="text-sm text-gray-400 mt-1 space-y-1 ml-1">
+                    <div>• Support tickets and email correspondence</div>
+                    <div>• Chat messages with creators</div>
+                    <div>• Newsletter subscription preferences</div>
+                    <div>• Marketing communication history</div>
+                  </div>
+                </div>
+              </label>
+            </div>
+            
+            <!-- Category 7: Analytics & Cookies -->
+            <div class="checkbox-group">
+              <label class="flex items-start cursor-pointer">
+                <input type="checkbox" id="category7" class="mr-3 mt-1" data-category="analytics">
+                <div>
+                  <span class="font-semibold">Analytics & Cookies Data</span>
+                  <div class="text-sm text-gray-400 mt-1 space-y-1 ml-1">
+                    <div>• Analytics tracking data</div>
+                    <div>• Cookie preferences and tracking consents</div>
+                    <div>• Advertising identifiers (IDFA/Ad ID)</div>
+                    <div>• Personalized recommendation data</div>
+                  </div>
+                </div>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Additional Details -->
+        <div class="mb-8">
+          <h3 class="text-xl font-semibold mb-4">Additional Details</h3>
+          <div>
+            <label class="form-label">Specific Request Details (Optional)</label>
+            <textarea id="requestDetails" class="form-input min-h-[120px]" placeholder="Please provide any additional details about your data deletion request. For example: 'Delete only viewing history from June 2024', 'Remove my location data but keep payment history', etc."></textarea>
+          </div>
+          <div class="mt-6">
+            <label class="form-label">Reason for Request (Optional)</label>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-2">
+              <label class="flex items-center">
+                <input type="radio" name="reason" value="privacy" class="mr-2">
+                <span>Privacy concerns</span>
+              </label>
+              <label class="flex items-center">
+                <input type="radio" name="reason" value="cleanup" class="mr-2">
+                <span>Data cleanup</span>
+              </label>
+              <label class="flex items-center">
+                <input type="radio" name="reason" value="other" class="mr-2">
+                <span>Other</span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Verification -->
+        <div class="mb-8">
+          <div class="warning-box">
+            <h4 class="font-semibold mb-2 text-yellow-300">Verification Required</h4>
+            <p class="text-sm text-gray-300 mb-4">
+              For security reasons, we may need to verify your identity before processing your request. 
+              We might contact you for additional verification.
+            </p>
+            <label class="flex items-start">
+              <input type="checkbox" id="verificationConsent" class="mr-3 mt-1" required>
+              <span class="text-sm">I understand that Bantu Stream Connect may need to verify my identity before processing this data deletion request, and I consent to being contacted for verification purposes if necessary.</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Submit Button -->
+        <div class="text-center">
+          <button id="submitRequest" class="button-primary w-full md:w-auto px-12 py-4">
+            Generate Data Deletion Request Email
+          </button>
+          <p class="text-sm text-gray-400 mt-4">
+            This will open your email client with a pre-filled request. You just need to hit "Send".
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Important Information -->
+    <section class="mb-12">
+      <div class="policy-card glassmorphism">
+        <h2 class="text-2xl font-bold mb-6">Important Information</h2>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div class="data-category-card">
+            <h4 class="font-semibold mb-3 text-blue-300">📋 What Happens Next</h4>
+            <ul class="space-y-2 text-gray-300">
+              <li class="flex items-start">
+                <span class="text-green-400 mr-2">✓</span>
+                <span>Confirmation email within 24 hours</span>
+              </li>
+              <li class="flex items-start">
+                <span class="text-green-400 mr-2">✓</span>
+                <span>Request processing within 7-14 business days</span>
+              </li>
+              <li class="flex items-start">
+                <span class="text-green-400 mr-2">✓</span>
+                <span>Completion notification via email</span>
+              </li>
+              <li class="flex items-start">
+                <span class="text-green-400 mr-2">✓</span>
+                <span>Option to request confirmation of deletion</span>
+              </li>
+            </ul>
+          </div>
+          
+          <div class="data-category-card">
+            <h4 class="font-semibold mb-3 text-yellow-300">⚠️ Data Retention Exceptions</h4>
+            <ul class="space-y-2 text-gray-300">
+              <li class="flex items-start">
+                <span class="text-yellow-400 mr-2">•</span>
+                <span>Financial records (up to 3 years for legal compliance)</span>
+              </li>
+              <li class="flex items-start">
+                <span class="text-yellow-400 mr-2">•</span>
+                <span>Fraud prevention data (up to 90 days)</span>
+              </li>
+              <li class="flex items-start">
+                <span class="text-yellow-400 mr-2">•</span>
+                <span>Legal/compliance records (as required by law)</span>
+              </li>
+              <li class="flex items-start">
+                <span class="text-yellow-400 mr-2">•</span>
+                <span>Anonymized analytics data</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+        
+        <div class="mt-6 p-4 bg-gray-900 rounded-lg">
+          <h4 class="font-semibold mb-2">Need Help?</h4>
+          <p class="text-gray-300">
+            If you have questions about data deletion or need assistance, contact our Data Protection Officer at 
+            <a href="mailto:support@bantustreamconnect.com" class="text-blue-400 hover:text-blue-300">support@bantustreamconnect.com</a>
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Alternative Methods -->
+    <section class="mb-12">
+      <div class="policy-card glassmorphism">
+        <h2 class="text-2xl font-bold mb-6">Alternative Methods</h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div class="text-center p-6 bg-gray-900 rounded-lg">
+            <div class="text-3xl mb-4">📱</div>
+            <h4 class="font-semibold mb-2">In-App Controls</h4>
+            <p class="text-sm text-gray-300">You can delete some data directly in the app under Settings → Privacy → Manage My Data</p>
+          </div>
+          
+          <div class="text-center p-6 bg-gray-900 rounded-lg">
+            <div class="text-3xl mb-4">✉️</div>
+            <h4 class="font-semibold mb-2">Direct Email</h4>
+            <p class="text-sm text-gray-300">Email us directly at <a href="mailto:support@bantustreamconnect.com" class="text-blue-400">support@bantustreamconnect.com</a></p>
+          </div>
+          
+          <div class="text-center p-6 bg-gray-900 rounded-lg">
+            <div class="text-3xl mb-4">📄</div>
+            <h4 class="font-semibold mb-2">Full Account Deletion</h4>
+            <p class="text-sm text-gray-300">Need to delete your entire account? <a href="delete-account.html" class="text-blue-400 hover:text-blue-300">Use the account deletion form</a></p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </div>
+</main>
+
+<!-- Footer -->
+<footer class="bg-black bg-opacity-80 text-gray-400">
+  <div class="container mx-auto px-4 sm:px-6 lg:px-8 text-center py-8">
+    <img src="assets/bsc-logo.png" alt="BSC Logo" class="h-12 mx-auto mb-4">
+    <p class="mb-4">© 2025 Bantu Stream Connect. All rights reserved.</p>
+    <div class="flex justify-center gap-6 mb-4 flex-wrap">
+      <a href="index.html" class="hover:text-blue-500 transition">Home</a>
+      <a href="creators.html" class="hover:text-blue-500 transition">Creators</a>
+      <a href="users.html" class="hover:text-blue-500 transition">Users</a>
+      <a href="empowerment.html" class="hover:text-blue-500 transition">Empowerment</a>
+      <a href="blog.html" class="hover:text-blue-500 transition">Blog</a>
+      <a href="privacy-policy.html" class="hover:text-blue-500 transition">Privacy Policy</a>
+      <a href="delete-account.html" class="hover:text-blue-500 transition">Delete Account</a>
+      <a href="data-deletion-request.html" class="text-blue-500 font-semibold">Data Request</a>
+    </div>
+    <p>Made with ❤️ in South Africa</p>
+  </div>
+</footer>
+
+<!-- Scripts -->
+<script src="js/main.js"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const selectAllCheckbox = document.getElementById('selectAll');
+    const categoryCheckboxes = document.querySelectorAll('input[type="checkbox"][data-category]');
+    const verificationCheckbox = document.getElementById('verificationConsent');
+    const submitButton = document.getElementById('submitRequest');
+    
+    // Select All functionality
+    selectAllCheckbox.addEventListener('change', function() {
+      categoryCheckboxes.forEach(checkbox => {
+        checkbox.checked = this.checked;
+      });
+    });
+    
+    // Update Select All when individual checkboxes change
+    categoryCheckboxes.forEach(checkbox => {
+      checkbox.addEventListener('change', function() {
+        const allChecked = Array.from(categoryCheckboxes).every(cb => cb.checked);
+        selectAllCheckbox.checked = allChecked;
+      });
+    });
+    
+    // Form submission
+    submitButton.addEventListener('click', function() {
+      // Get user info
+      const userName = document.getElementById('userName').value.trim();
+      const userEmail = document.getElementById('userEmail').value.trim();
+      const accountId = document.getElementById('accountId').value.trim();
+      const requestDetails = document.getElementById('requestDetails').value.trim();
+      
+      // Validate required fields
+      if (!userName || !userEmail) {
+        alert('Please fill in your name and email address.');
+        return;
+      }
+      
+      if (!verificationCheckbox.checked) {
+        alert('Please confirm that you understand the verification process.');
+        return;
+      }
+      
+      // Check if at least one category is selected
+      const selectedCategories = Array.from(categoryCheckboxes).filter(cb => cb.checked);
+      if (selectedCategories.length === 0) {
+        alert('Please select at least one data category to delete.');
+        return;
+      }
+      
+      // Get selected categories
+      const categories = [];
+      selectedCategories.forEach(cb => {
+        const label = cb.closest('label').querySelector('.font-semibold').textContent;
+        categories.push(label);
+      });
+      
+      // Get selected reason
+      const reason = document.querySelector('input[name="reason"]:checked');
+      const reasonText = reason ? reason.value : 'Not specified';
+      
+      // Build email content
+      const subject = `Data Deletion Request - Bantu Stream Connect`;
+      const body = `DATA DELETION REQUEST FORM SUBMISSION
+
+Personal Information:
+- Full Name: ${userName}
+- Email Address: ${userEmail}
+- Account ID/Username: ${accountId || 'Not provided'}
+
+Selected Data Categories for Deletion:
+${categories.map((cat, index) => `${index + 1}. ${cat}`).join('\n')}
+
+Additional Details:
+${requestDetails || 'No additional details provided'}
+
+Reason for Request: ${reasonText}
+
+Verification Consent: Yes, I consent to identity verification if required.
+
+---
+This request was submitted via the Bantu Stream Connect Data Deletion Request Form.
+Request Date: ${new Date().toLocaleDateString()}
+User IP Address: [Your email client will typically include this]
+
+Please process this data deletion request as per your privacy policy.
+`;
+
+      // Create mailto link
+      const mailtoLink = `mailto:support@bantustreamconnect.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+      
+      // Open email client
+      window.location.href = mailtoLink;
+      
+      // Show confirmation message
+      setTimeout(() => {
+        alert('Email client opened! Please review the pre-filled email and click "Send". We\'ll confirm receipt within 24 hours.');
+      }, 500);
+    });
+    
+    // Add visual feedback for checkboxes
+    categoryCheckboxes.forEach(checkbox => {
+      checkbox.addEventListener('change', function() {
+        const group = this.closest('.checkbox-group');
+        if (this.checked) {
+          group.style.borderColor = 'rgba(0, 255, 213, 0.5)';
+          group.style.background = 'rgba(0, 255, 213, 0.05)';
+        } else {
+          group.style.borderColor = 'rgba(99, 102, 241, 0.2)';
+          group.style.background = 'rgba(255, 255, 255, 0.03)';
+        }
+      });
+    });
+    
+    // Update nav link to indicate current page
+    const currentPage = window.location.pathname.split('/').pop();
+    const navLinks = document.querySelectorAll('nav a');
+    navLinks.forEach(link => {
+      const linkHref = link.getAttribute('href');
+      if (linkHref === currentPage) {
+        link.classList.add('text-blue-500', 'font-semibold');
+      } else {
+        link.classList.remove('text-blue-500', 'font-semibold');
+      }
+    });
+    
+    // Add scroll animations
+    const observerOptions = {
+      threshold: 0.1,
+      rootMargin: '0px 0px -50px 0px'
+    };
+    
+    const observer = new IntersectionObserver(function(entries) {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.style.opacity = '1';
+          entry.target.style.transform = 'translateY(0)';
+        }
+      });
+    }, observerOptions);
+    
+    // Observe all policy sections
+    document.querySelectorAll('.policy-card').forEach((card, index) => {
+      card.style.opacity = '0';
+      card.style.transform = 'translateY(20px)';
+      card.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+      card.style.transitionDelay = (index * 0.1) + 's';
+      observer.observe(card);
+    });
+  });
+</script>
+</body>
+</html>
