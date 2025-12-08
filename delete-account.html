@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Account Deletion Request - Bantu Stream Connect</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config={darkMode:'class'}</script>
+  <link href="assets/css/bantu-global.css" rel="stylesheet">
+  <style>
+    .glassmorphism {
+      background: rgba(11, 18, 32, 0.7);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    }
+    
+    .fade-in { opacity:0; transform:translateY(20px); animation:fadeInUp 1s forwards; }
+    .fade-in-delay-1{animation-delay:.3s} 
+    .fade-in-delay-2{animation-delay:.6s} 
+    .fade-in-delay-3{animation-delay:.9s}
+    @keyframes fadeInUp { to{opacity:1; transform:translateY(0);} }
+    
+    .policy-card {
+      background: #0b1220;
+      border: 1px solid rgba(255,255,255,0.03);
+      padding: 2rem;
+      border-radius: 0.75rem;
+      transition: all 0.3s ease;
+    }
+    
+    .policy-card:hover {
+      border-color: rgba(99, 102, 241, 0.3);
+      transform: translateY(-5px);
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+    }
+    
+    .option-card {
+      background: rgba(30, 58, 138, 0.2);
+      border: 1px solid rgba(99, 102, 241, 0.2);
+      padding: 2rem;
+      border-radius: 0.75rem;
+      border-left: 4px solid #00ffd5;
+      transition: all 0.3s ease;
+    }
+    
+    .option-card:hover {
+      background: rgba(30, 58, 138, 0.3);
+      transform: translateY(-5px);
+    }
+    
+    .bullet-list li {
+      position: relative;
+      padding-left: 1.5rem;
+      margin-bottom: 0.5rem;
+    }
+    
+    .bullet-list li::before {
+      content: "•";
+      color: #00ffd5;
+      position: absolute;
+      left: 0;
+    }
+    
+    .data-deleted-card {
+      background: rgba(239, 68, 68, 0.1);
+      border: 1px solid rgba(239, 68, 68, 0.2);
+      border-left: 4px solid #ef4444;
+    }
+    
+    .data-retained-card {
+      background: rgba(245, 158, 11, 0.1);
+      border: 1px solid rgba(245, 158, 11, 0.2);
+      border-left: 4px solid #f59e0b;
+    }
+    
+    .children-card {
+      background: rgba(34, 197, 94, 0.1);
+      border: 1px solid rgba(34, 197, 94, 0.2);
+      border-left: 4px solid #22c55e;
+    }
+    
+    .contact-card {
+      background: rgba(99, 102, 241, 0.1);
+      border: 1px solid rgba(99, 102, 241, 0.2);
+      border-left: 4px solid #6366f1;
+    }
+    
+    .icon-box {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 3rem;
+      height: 3rem;
+      background: rgba(99, 102, 241, 0.2);
+      border-radius: 50%;
+      margin-bottom: 1rem;
+    }
+    
+    .email-button {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: linear-gradient(90deg, #00a3ff, #00ffd5);
+      color: #021026;
+      padding: 0.75rem 1.5rem;
+      border-radius: 0.375rem;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.3s ease;
+    }
+    
+    .email-button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 20px rgba(0, 163, 255, 0.3);
+    }
+    
+    /* Smooth scrolling for anchor links */
+    html {
+      scroll-behavior: smooth;
+    }
+  </style>
+</head>
+<body class="bg-black text-white font-sans dark:bg-black dark:text-white">
+
+<!-- Navbar -->
+<header class="bg-black bg-opacity-80 backdrop-blur-md fixed w-full z-50">
+  <div class="container mx-auto flex justify-between items-center h-16 px-4 sm:px-6 lg:px-8">
+    <div class="flex items-center space-x-2">
+      <a href="index.html"><img src="assets/bsc-logo.png" alt="BSC Logo" class="h-10 w-auto"></a>
+      <span class="font-bold text-xl">Bantu Stream Connect</span>
+    </div>
+    <nav class="hidden md:flex space-x-6 items-center">
+      <a href="index.html" class="hover:text-blue-500 transition">Home</a>
+      <a href="creators.html" class="hover:text-blue-500 transition">Creators</a>
+      <a href="users.html" class="hover:text-blue-500 transition">Users</a>
+      <a href="empowerment.html" class="hover:text-blue-500 transition">Empowerment</a>
+      <a href="blog.html" class="hover:text-blue-500 transition">Blog</a>
+      <a href="privacy-policy.html" class="hover:text-blue-500 transition">Privacy Policy</a>
+      <a href="delete-account.html" class="text-blue-500 font-semibold">Delete Account</a>
+    </nav>
+  </div>
+</header>
+
+<!-- Hero Section -->
+<section class="relative pt-32 pb-20 px-4 sm:px-6 lg:px-8">
+  <div class="absolute inset-0 bg-gradient-to-b from-black via-black to-transparent z-0"></div>
+  <div class="container mx-auto relative z-10">
+    <div class="max-w-4xl mx-auto text-center fade-in">
+      <h1 class="text-4xl sm:text-5xl md:text-6xl font-bold mb-6">Account & Data Deletion</h1>
+      <p class="text-xl text-gray-300 mb-4">Complete control over your personal data</p>
+      <div class="inline-flex items-center justify-center space-x-4 text-gray-400 text-sm">
+        <span>🌍 Bantu Stream Connect</span>
+        <span class="h-1 w-1 bg-gray-600 rounded-full"></span>
+        <span>Last updated: December 2025</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Main Content -->
+<main class="pb-20 px-4 sm:px-6 lg:px-8">
+  <div class="container mx-auto max-w-6xl">
+    
+    <!-- Introduction -->
+    <section class="mb-12 fade-in fade-in-delay-1">
+      <div class="policy-card glassmorphism">
+        <div class="flex items-start mb-6">
+          <div class="icon-box mr-4">
+            <span class="text-xl">🔒</span>
+          </div>
+          <div>
+            <h2 class="text-2xl font-bold mb-3">Your Right to Data Control</h2>
+            <p class="text-gray-300">
+              Bantu Stream Connect is committed to protecting your privacy and giving you full control over your data.
+              If you would like to delete your account or request that some or all of your personal data be deleted, 
+              please follow the steps below.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- How to Request Account Deletion -->
+    <section class="mb-12 fade-in fade-in-delay-2">
+      <div class="policy-card glassmorphism">
+        <div class="flex items-center mb-8">
+          <div class="icon-box mr-4">
+            <span class="text-xl">🔥</span>
+          </div>
+          <h2 class="text-2xl font-bold">How to Request Account Deletion</h2>
+        </div>
+        <p class="text-gray-300 mb-8">You can request deletion in two ways:</p>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+          <!-- Option 1 -->
+          <div class="option-card">
+            <div class="flex items-center mb-4">
+              <span class="bg-blue-500 text-white rounded-full w-8 h-8 flex items-center justify-center mr-3">1</span>
+              <h3 class="text-xl font-bold">Delete Your Account Inside the App</h3>
+            </div>
+            <ul class="bullet-list pl-4 text-gray-300 mb-6">
+              <li>Open the Bantu Stream Connect app</li>
+              <li>Go to Profile → Scroll to "Delete Account"</li>
+              <li>Tap "Delete Account"</li>
+              <li>Confirm the request</li>
+            </ul>
+            <p class="text-gray-400 italic">
+              Your account and associated personal data will be permanently deleted.
+            </p>
+          </div>
+          
+          <!-- Option 2 -->
+          <div class="option-card">
+            <div class="flex items-center mb-4">
+              <span class="bg-purple-500 text-white rounded-full w-8 h-8 flex items-center justify-center mr-3">2</span>
+              <h3 class="text-xl font-bold">Request Deletion by Email (Immediate Support)</h3>
+            </div>
+            <div class="mb-4">
+              <p class="text-gray-300 mb-2">Send an email to:</p>
+              <div class="flex items-center text-lg font-semibold text-blue-400">
+                <span class="mr-2">📧</span>
+                <a href="mailto:support@bantustreamconnect.com" class="hover:text-blue-300 transition">support@bantustreamconnect.com</a>
+              </div>
+            </div>
+            <div class="mb-4">
+              <p class="text-gray-300 mb-2">Subject:</p>
+              <code class="bg-gray-900 px-3 py-1 rounded text-sm">Account Deletion Request</code>
+            </div>
+            <div>
+              <p class="text-gray-300 mb-2">Include the following:</p>
+              <ul class="bullet-list pl-4 text-gray-300">
+                <li>Your registered email address</li>
+                <li>Optional: Reason for account deletion</li>
+              </ul>
+            </div>
+            <p class="text-gray-400 italic mt-4">
+              We will delete your account within 7 days and notify you when completed.
+            </p>
+          </div>
+        </div>
+        
+        <!-- Quick Action -->
+        <div class="bg-gray-900 p-6 rounded-lg">
+          <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div>
+              <h4 class="text-lg font-semibold mb-2">Need to delete your account now?</h4>
+              <p class="text-gray-300">Send us an email and we'll process your request within 24-48 hours.</p>
+            </div>
+            <a href="mailto:support@bantustreamconnect.com?subject=Account%20Deletion%20Request" 
+               class="email-button whitespace-nowrap">
+              <span>📧</span>
+              Request Deletion Now
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- What data is deleted -->
+    <section class="mb-12">
+      <div class="policy-card glassmorphism data-deleted-card">
+        <div class="flex items-center mb-8">
+          <div class="icon-box mr-4">
+            <span class="text-xl">🧹</span>
+          </div>
+          <div>
+            <h2 class="text-2xl font-bold mb-2">What data is deleted?</h2>
+            <p class="text-gray-300">When you request deletion, we permanently remove:</p>
+          </div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <ul class="bullet-list pl-4 text-gray-300">
+            <li>Your Bantu Stream Connect account</li>
+            <li>Name & email</li>
+            <li>Profile photo</li>
+            <li>Uploaded content (videos, audio, thumbnails)*</li>
+          </ul>
+          <ul class="bullet-list pl-4 text-gray-300">
+            <li>Likes, comments & saved items</li>
+            <li>App usage analytics (Supabase buckets)</li>
+            <li>Authentication tokens</li>
+            <li>Search history</li>
+          </ul>
+        </div>
+        <div class="mt-6 p-4 bg-red-900 bg-opacity-20 rounded-lg">
+          <p class="text-sm text-gray-300">
+            <span class="font-semibold text-red-400">*Important:</span> Creator content may have up to a 30-day retention period for copyright, fraud, or legal compliance purposes.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- What data may be temporarily kept -->
+    <section class="mb-12">
+      <div class="policy-card glassmorphism data-retained-card">
+        <div class="flex items-center mb-8">
+          <div class="icon-box mr-4">
+            <span class="text-xl">📁</span>
+          </div>
+          <div>
+            <h2 class="text-2xl font-bold mb-2">What data may be temporarily kept?</h2>
+            <p class="text-gray-300">To comply with financial and security laws, we may retain:</p>
+          </div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div class="bg-gray-900 p-4 rounded-lg">
+            <h4 class="font-semibold mb-2 text-yellow-400">Transaction Records</h4>
+            <p class="text-sm text-gray-300">(if you made purchases) — kept for up to 3 years</p>
+          </div>
+          <div class="bg-gray-900 p-4 rounded-lg">
+            <h4 class="font-semibold mb-2 text-yellow-400">Fraud Prevention Logs</h4>
+            <p class="text-sm text-gray-300">— kept for up to 90 days</p>
+          </div>
+          <div class="bg-gray-900 p-4 rounded-lg">
+            <h4 class="font-semibold mb-2 text-yellow-400">Legal Compliance Records</h4>
+            <p class="text-sm text-gray-300">— as required by South African law</p>
+          </div>
+        </div>
+        <div class="mt-6 p-4 bg-yellow-900 bg-opacity-20 rounded-lg">
+          <p class="text-sm text-gray-300">
+            This retained data cannot be used for marketing or personalization. It is kept solely for legal compliance and security purposes.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Children's Privacy -->
+    <section class="mb-12">
+      <div class="policy-card glassmorphism children-card">
+        <div class="flex items-center mb-8">
+          <div class="icon-box mr-4">
+            <span class="text-xl">👶</span>
+          </div>
+          <div>
+            <h2 class="text-2xl font-bold mb-2">Children's Privacy (Families Policy)</h2>
+            <p class="text-gray-300">Since Bantu Stream Connect may be used by younger audiences, we follow the Google Play Families Policy, including:</p>
+          </div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <h4 class="font-semibold mb-3 text-green-400">Data Protection for Children</h4>
+            <ul class="bullet-list pl-4 text-gray-300">
+              <li>No personalized advertising to children</li>
+              <li>Highest standards of data minimization</li>
+              <li>Parental consent requirements for data collection</li>
+            </ul>
+          </div>
+          <div>
+            <h4 class="font-semibold mb-3 text-green-400">Extra Safeguards</h4>
+            <ul class="bullet-list pl-4 text-gray-300">
+              <li>Extra verification steps for deletion requests</li>
+              <li>Special procedures for minors' guardians</li>
+              <li>Enhanced privacy settings for young users</li>
+            </ul>
+          </div>
+        </div>
+        <div class="mt-6 p-4 bg-green-900 bg-opacity-20 rounded-lg">
+          <p class="text-sm text-gray-300">
+            <span class="font-semibold text-green-400">Note:</span> If you are submitting a deletion request on behalf of a minor, please include "Minor Account Deletion" in your email subject and provide proof of guardianship.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Contact Us -->
+    <section class="mb-12">
+      <div class="policy-card glassmorphism contact-card">
+        <div class="flex items-center mb-8">
+          <div class="icon-box mr-4">
+            <span class="text-xl">🏢</span>
+          </div>
+          <div>
+            <h2 class="text-2xl font-bold mb-2">Contact Us</h2>
+            <p class="text-gray-300">For privacy or deletion concerns:</p>
+          </div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div class="bg-gray-900 p-6 rounded-lg text-center">
+            <div class="text-3xl mb-4">📧</div>
+            <h4 class="font-semibold mb-2">Email</h4>
+            <a href="mailto:support@bantustreamconnect.com" class="text-blue-400 hover:text-blue-300 transition">support@bantustreamconnect.com</a>
+          </div>
+          <div class="bg-gray-900 p-6 rounded-lg text-center">
+            <div class="text-3xl mb-4">🌐</div>
+            <h4 class="font-semibold mb-2">Website</h4>
+            <a href="index.html" class="text-blue-400 hover:text-blue-300 transition">www.bantustreamconnect.com</a>
+          </div>
+          <div class="bg-gray-900 p-6 rounded-lg text-center">
+            <div class="text-3xl mb-4">⏰</div>
+            <h4 class="font-semibold mb-2">Response Time</h4>
+            <p class="text-gray-300">Typically within 24-48 hours</p>
+          </div>
+        </div>
+        <div class="mt-8 p-6 bg-gray-900 rounded-lg">
+          <p class="text-center text-lg text-gray-300">
+            We are here to assist you with any data privacy concerns or account deletion requests.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Quick Links -->
+    <section class="mb-12">
+      <div class="policy-card glassmorphism">
+        <h3 class="text-xl font-bold mb-6 text-center">Related Resources</h3>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <a href="privacy-policy.html" class="bg-gray-900 p-4 rounded-lg hover:bg-gray-800 transition text-center">
+            <span class="text-blue-400">🔒</span>
+            <p class="font-medium mt-2">Privacy Policy</p>
+          </a>
+          <a href="index.html" class="bg-gray-900 p-4 rounded-lg hover:bg-gray-800 transition text-center">
+            <span class="text-blue-400">🏠</span>
+            <p class="font-medium mt-2">Home Page</p>
+          </a>
+          <a href="users.html" class="bg-gray-900 p-4 rounded-lg hover:bg-gray-800 transition text-center">
+            <span class="text-blue-400">👥</span>
+            <p class="font-medium mt-2">User Features</p>
+          </a>
+        </div>
+      </div>
+    </section>
+
+  </div>
+</main>
+
+<!-- Footer -->
+<footer class="bg-black bg-opacity-80 text-gray-400">
+  <div class="container mx-auto px-4 sm:px-6 lg:px-8 text-center py-8">
+    <img src="assets/bsc-logo.png" alt="BSC Logo" class="h-12 mx-auto mb-4">
+    <p class="mb-4">© 2025 Bantu Stream Connect. All rights reserved.</p>
+    <div class="flex justify-center gap-6 mb-4 flex-wrap">
+      <a href="index.html" class="hover:text-blue-500 transition">Home</a>
+      <a href="creators.html" class="hover:text-blue-500 transition">Creators</a>
+      <a href="users.html" class="hover:text-blue-500 transition">Users</a>
+      <a href="empowerment.html" class="hover:text-blue-500 transition">Empowerment</a>
+      <a href="blog.html" class="hover:text-blue-500 transition">Blog</a>
+      <a href="privacy-policy.html" class="hover:text-blue-500 transition">Privacy Policy</a>
+      <a href="delete-account.html" class="text-blue-500 font-semibold">Delete Account</a>
+    </div>
+    <p>Made with ❤️ in South Africa</p>
+  </div>
+</footer>
+
+<!-- Scripts -->
+<script src="js/main.js"></script>
+<script>
+  // Add scroll animations
+  document.addEventListener('DOMContentLoaded', function() {
+    // Animate sections on scroll
+    const observerOptions = {
+      threshold: 0.1,
+      rootMargin: '0px 0px -50px 0px'
+    };
+    
+    const observer = new IntersectionObserver(function(entries) {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.style.opacity = '1';
+          entry.target.style.transform = 'translateY(0)';
+        }
+      });
+    }, observerOptions);
+    
+    // Observe all policy sections
+    document.querySelectorAll('.policy-card').forEach((card, index) => {
+      card.style.opacity = '0';
+      card.style.transform = 'translateY(20px)';
+      card.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+      card.style.transitionDelay = (index * 0.1) + 's';
+      observer.observe(card);
+    });
+    
+    // Update nav link to indicate current page
+    const currentPage = window.location.pathname.split('/').pop();
+    const navLinks = document.querySelectorAll('nav a');
+    navLinks.forEach(link => {
+      const linkHref = link.getAttribute('href');
+      if (linkHref === currentPage || (linkHref === 'delete-account.html' && currentPage === 'delete-account.html')) {
+        link.classList.add('text-blue-500', 'font-semibold');
+      } else {
+        link.classList.remove('text-blue-500', 'font-semibold');
+      }
+    });
+    
+    // Auto-fill email subject for better UX
+    const emailLinks = document.querySelectorAll('a[href^="mailto:"]');
+    emailLinks.forEach(link => {
+      if (link.href.includes('support@bantustreamconnect.com')) {
+        if (!link.href.includes('subject=')) {
+          link.href = 'mailto:support@bantustreamconnect.com?subject=Account%20Deletion%20Request';
+        }
+      }
+    });
+  });
+  
+  // Copy email to clipboard functionality
+  document.addEventListener('click', function(e) {
+    if (e.target.classList.contains('copy-email')) {
+      e.preventDefault();
+      const email = 'support@bantustreamconnect.com';
+      navigator.clipboard.writeText(email).then(() => {
+        const button = e.target;
+        const originalText = button.textContent;
+        button.textContent = 'Email copied!';
+        button.style.background = '#10b981';
+        setTimeout(() => {
+          button.textContent = originalText;
+          button.style.background = '';
+        }, 2000);
+      });
+    }
+  });
+</script>
+</body>
+</html>
