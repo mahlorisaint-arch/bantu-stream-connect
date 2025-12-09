@@ -3,15 +3,17 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>Bantu Stream Connect — The Home for African Film, Music & Creativity</title>
-    <meta name="description" content="Bantu Stream Connect — Built for African creators and fans. Join the waitlist or apply to be a Founding Creator. Empowerment programs, 90/10 revenue split, and daily updates on our blog." />
+    <title>Bantu Stream Connect — Watch Amazing Content</title>
+    <meta name="description" content="Watch amazing content from African creators. Stream videos, music, podcasts, and more on Bantu Stream Connect." />
     <meta property="og:title" content="Bantu Stream Connect — The Home for African Film, Music & Creativity" />
-    <meta property="og:description" content="Join the movement: creators-first streaming, creator bootcamps, and a 90/10 revenue split. Sign up for early access or apply as a Founding Creator." />
+    <meta property="og:description" content="Watch amazing content from African creators. Stream videos, music, podcasts, and more on Bantu Stream Connect." />
     <meta property="og:image" content="/assets/images/og-teaser.jpg" />
     <meta name="theme-color" content="#071428" />
     <link rel="icon" href="assets/bsc-icon.png" />
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="/assets/css/bantu-global.css" rel="stylesheet" />
+    
+    <!-- Home Feed Specific Styles -->
     <style>
         :root{ 
             --accent: #00a3ff; 
@@ -30,32 +32,162 @@
             outline: 2px solid rgba(0,163,255,0.28); 
             outline-offset: 2px; 
         }
-        .form-message {
-            padding: 8px 12px;
-            border-radius: 6px;
-            margin-top: 8px;
-            font-size: 14px;
+        
+        /* Loading Indicator */
+        .loading-indicator {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #001F54 0%, #0A0E3F 50%, #000000 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
         }
-        .form-success {
-            background: rgba(34, 197, 94, 0.1);
-            border: 1px solid rgba(34, 197, 94, 0.3);
-            color: #4ade80;
+        
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: #4dabf7;
+            animation: spin 1s ease-in-out infinite;
         }
-        .form-error {
-            background: rgba(239, 68, 68, 0.1);
-            border: 1px solid rgba(239, 68, 68, 0.3);
-            color: #f87171;
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
         }
-        .loading {
-            opacity: 0.7;
-            pointer-events: none;
+        
+        /* Toast Notifications */
+        .error-toast, .success-toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 16px 24px;
+            border-radius: 12px;
+            color: white;
+            font-weight: 500;
+            z-index: 10000;
+            animation: slideIn 0.3s ease;
+            max-width: 300px;
         }
-        .stem-feature {
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        
+        .error-toast {
+            background: linear-gradient(135deg, #ff6b6b 0%, #c92a2a 100%);
         }
-        .stem-feature:hover {
+        
+        .success-toast {
+            background: linear-gradient(135deg, #51cf66 0%, #2b8a3e 100%);
+        }
+        
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        /* Content Card Styles */
+        .content-card {
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .content-card:hover {
             transform: translateY(-5px);
-            box-shadow: 0 10px 30px rgba(0, 163, 255, 0.2);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+            border-color: rgba(255, 255, 255, 0.3) !important;
+        }
+        
+        .content-thumbnail {
+            position: relative;
+            overflow: hidden;
+            border-radius: 8px;
+        }
+        
+        .content-thumbnail img {
+            transition: transform 0.3s ease;
+        }
+        
+        .content-card:hover .content-thumbnail img {
+            transform: scale(1.05);
+        }
+        
+        .thumbnail-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(to bottom, transparent 50%, rgba(0, 0, 0, 0.5) 100%);
+        }
+        
+        /* Category Tabs */
+        .category-tabs-container {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        
+        .category-tabs-container::-webkit-scrollbar {
+            display: none;
+        }
+        
+        .category-tab {
+            transition: all 0.3s ease;
+            white-space: nowrap;
+        }
+        
+        .category-tab:hover {
+            background: rgba(255, 255, 255, 0.2) !important;
+            transform: translateY(-2px);
+        }
+        
+        .category-tab.active {
+            background: linear-gradient(135deg, #4dabf7 0%, #748ffc 100%) !important;
+            border-color: transparent !important;
+            box-shadow: 0 4px 15px rgba(77, 171, 247, 0.4);
+        }
+        
+        /* Creator Button */
+        .creator-btn {
+            background: linear-gradient(135deg, #4dabf7 0%, #748ffc 100%) !important;
+            transition: all 0.3s ease;
+        }
+        
+        .creator-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(77, 171, 247, 0.4);
+        }
+        
+        /* Scrollable Content Carousels */
+        .content-carousel {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        
+        .content-carousel::-webkit-scrollbar {
+            height: 6px;
+        }
+        
+        .content-carousel::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+        }
+        
+        .content-carousel::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 3px;
+        }
+        
+        .content-carousel::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.4);
         }
     </style>
     
@@ -83,555 +215,663 @@
     </noscript>
 </head>
 <body class="bg-gradient-to-b from-[#02030a] to-[#071428] text-slate-100 antialiased">
-    <div class="max-w-6xl mx-auto px-5 py-6">
+    <!-- Loading Indicator -->
+    <div id="loading-indicator" class="loading-indicator hidden">
+        <div class="loading-spinner"></div>
+        <p class="mt-4 text-white">Loading content...</p>
+    </div>
+
+    <div class="max-w-6xl mx-auto px-5 py-4">
         
-        <!-- Header -->
-        <header class="flex items-center justify-between gap-4">
+        <!-- Header - Modified for Home Feed -->
+        <header class="flex items-center justify-between gap-4 mb-6">
             <div class="flex items-center gap-3">
-                <div class="w-12 h-12 rounded-lg flex items-center justify-center font-extrabold text-black" style="background:linear-gradient(135deg,var(--accent),var(--accent-2));">
+                <div class="w-12 h-12 rounded-lg flex items-center justify-center" style="background:linear-gradient(135deg,var(--accent),var(--accent-2));">
                     <img src="assets/bsc-icon.png" alt="Bantu Stream Connect" class="w-8 h-8">
                 </div>
                 <div>
                     <div class="font-extrabold text-lg">Bantu Stream Connect</div>
-                    <div class="text-sm text-slate-400">The African way — it's all in the DNA.</div>
+                    <div class="text-sm text-slate-400">Watch amazing content</div>
                 </div>
             </div>
-            <nav class="hidden md:flex items-center gap-6 text-sm text-slate-300">
-                <a href="#features" class="hover:text-white">Why BSC</a>
-                <a href="#stem" class="hover:text-white">STEM</a>
-                <a href="/creators" class="hover:text-white">For Creators</a>
-                <a href="/users" class="hover:text-white">For Users</a>
-                <a href="/empowerment" class="hover:text-white">Empowerment</a>
-                <a href="/app" class="hover:text-white">App</a>
-                <a href="/blog" class="hover:text-white">Blog</a>
-                <button id="apply-creator-btn" class="ml-2 px-3 py-2 border rounded-md text-sm border-slate-600 hover:border-white">Apply as Creator</button>
-                <button id="join-waitlist-btn" class="ml-2 px-4 py-2 rounded-md font-semibold" style="background:linear-gradient(90deg,var(--accent),var(--accent-2)); color:#021026">Join Waitlist</button>
-            </nav>
-            <!-- Mobile menu button -->
-            <div class="md:hidden">
-                <button id="mobile-menu-btn" class="p-2 rounded-md border border-transparent focus-ring">
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" class="text-slate-200"><path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+            
+            <!-- Search and Profile Actions -->
+            <div class="flex items-center gap-4">
+                <!-- Search Button -->
+                <button id="search-btn" class="p-2 rounded-full border border-slate-600 hover:border-white transition focus-ring">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                    </svg>
+                </button>
+                
+                <!-- Profile Button -->
+                <button id="profile-btn" class="p-2 rounded-full border border-slate-600 hover:border-white transition focus-ring">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                    </svg>
                 </button>
             </div>
         </header>
 
-        <!-- Mobile nav -->
-        <div id="mobile-nav" class="mt-3 md:hidden hidden">
-            <div class="flex flex-col gap-2 text-slate-300">
-                <a href="#features" class="py-2">Why BSC</a>
-                <a href="#stem" class="py-2">STEM</a>
-                <a href="/creators" class="py-2">For Creators</a>
-                <a href="/users" class="py-2">For Users</a>
-                <a href="/empowerment" class="py-2">Empowerment</a>
-                <a href="/app" class="py-2">App</a>
-                <a href="/blog" class="py-2">Blog</a>
-                <div class="flex gap-2 mt-2">
-                    <button id="apply-creator-mobile" class="flex-1 px-3 py-2 border rounded-md">Apply as Creator</button>
-                    <button id="join-waitlist-mobile" class="flex-1 px-3 py-2 rounded-md" style="background:linear-gradient(90deg,var(--accent),var(--accent-2)); color:#021026">Join Waitlist</button>
-                </div>
+        <!-- Category Tabs -->
+        <div class="category-tabs-container mb-6">
+            <div id="category-tabs" class="flex gap-2 pb-2">
+                <!-- Categories will be loaded dynamically -->
             </div>
         </div>
 
-        <!-- Hero Section -->
-        <main class="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
-            <div>
-                <div class="inline-block glass px-3 py-2 rounded-md text-sm font-semibold">
-                    Launching: <span id="launch-date-text" class="ml-2">November 1, 2025</span>
-                    <span class="ml-3 text-xs text-slate-300">• Creator applications close in</span>
-                    <span id="countdown" class="ml-2 font-bold">00d 00h 00m</span>
-                </div>
-                <h1 class="mt-6 text-3xl md:text-5xl font-extrabold leading-tight">
-                    The Home for African Film, Music & Creativity — Launching Soon.
-                </h1>
-                <p class="mt-4 text-slate-300 max-w-xl">
-                    Built by Africans, for Africans. Stream, grow, and monetize — the African way. Join the movement now whether you watch, create, or partner with us.
-                </p>
-                <div class="mt-6 flex flex-wrap gap-3">
-                    <button id="hero-join-btn" class="px-5 py-3 rounded-lg font-bold" style="background:linear-gradient(90deg,var(--accent),var(--accent-2)); color:#021026">Join the Waitlist</button>
-                    <button id="hero-apply-btn" class="px-5 py-3 rounded-lg border border-slate-600 text-slate-200">Apply as Founding Creator</button>
-                    <button id="hero-empower-btn" class="px-4 py-3 rounded-lg border border-slate-600 text-slate-200">Learn about Empowerment</button>
-                </div>
-
-                <!-- Social Proof -->
-                <div class="mt-6 flex flex-wrap gap-3 items-center text-sm text-slate-300">
-                    <div class="card px-3 py-2 rounded-md">🌍 <strong>1,250+</strong> early supporters</div>
-                    <div class="card px-3 py-2 rounded-md">⭐ <strong>45</strong> Founding Creator applications</div>
-                    <div class="card px-3 py-2 rounded-md">📣 <strong>12,000</strong> social reach (30d)</div>
-                </div>
-
-                <!-- Compact Signup Form -->
-                <div class="mt-6 card p-4 rounded-md">
-                    <form id="hero-signup" class="flex flex-col gap-3">
-                        <input name="name" required placeholder="Your name" 
-                               class="px-3 py-2 rounded-md bg-transparent border border-slate-700 focus-ring" />
-                        <input name="email" type="email" required placeholder="Email address" 
-                               class="px-3 py-2 rounded-md bg-transparent border border-slate-700 focus-ring" />
-                        <select name="user_type" 
-                                class="px-3 py-2 rounded-md bg-transparent border border-slate-700 focus-ring">
-                            <option value="user">I want to watch</option>
-                            <option value="creator">I'm a creator</option>
-                        </select>
-                        <div class="flex items-center gap-3">
-                            <button type="submit" class="px-4 py-2 rounded-md font-bold signup-btn" 
-                                    style="background:linear-gradient(90deg,var(--accent),var(--accent-2)); color:#021026">
-                                Reserve My Spot
-                            </button>
-                            <div class="text-sm text-slate-400">Sign up now for an early-bird discount.</div>
-                        </div>
-                        <div id="hero-signup-message" class="form-message hidden"></div>
-                    </form>
-                </div>
+        <!-- Main Content Area -->
+        <main>
+            <!-- Hero Banner (optional - can be removed) -->
+            <div class="card p-6 rounded-lg mb-8">
+                <h1 class="text-2xl md:text-3xl font-bold mb-4">Welcome to Bantu Stream Connect</h1>
+                <p class="text-slate-300 mb-6">Discover amazing content from creators across Africa</p>
+                <button id="browse-all-btn" class="px-5 py-3 rounded-lg font-bold" style="background:linear-gradient(90deg,var(--accent),var(--accent-2)); color:#021026">
+                    Browse All Content
+                </button>
             </div>
 
-            <!-- Teaser / Mockup Aside -->
-            <aside class="card p-4 rounded-md">
-                <div class="flex justify-between items-center">
-                    <div class="font-semibold">Teaser: Preview</div>
-                    <div class="text-sm text-slate-400">30–60s teaser reel</div>
-                </div>
-                <div class="mt-4">
-                    <video controls muted playsinline class="w-full rounded-md" poster="assets/bsc-icon.png">
-                        <source src="assets/2025-10-17-092817946.mp4" type="video/mp4">
-                        Your browser does not support the video tag.
-                    </video>
-                </div>
-                <div class="mt-4 flex gap-2">
-                    <a href="https://www.youtube.com/watch?v=cTSe7uimTKU" target="_blank" class="px-3 py-2 rounded-md border border-slate-700 text-sm hover:bg-slate-800 transition">Watch on YouTube</a>
-                    <a href="/app" class="px-3 py-2 rounded-md border border-slate-700 text-sm hover:bg-slate-800 transition">View UI Mockups</a>
-                </div>
-                <p class="mt-3 text-sm text-slate-400">Sign up to unlock the early-bird discount and exclusive content from Founding Creators.</p>
-            </aside>
+            <!-- Content Sections -->
+            <div id="content-sections">
+                <!-- Content will be loaded dynamically -->
+            </div>
         </main>
 
-        <!-- Features / Why BSC -->
-        <section id="features" class="mt-10 grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div class="card p-5 rounded-md">
-                <h3 class="text-xl font-bold">Why Bantu Stream Connect?</h3>
-                <p class="mt-3 text-slate-300">We prioritize creators and cultural authenticity. Our platform focuses on African stories across film, music, podcasts, and educational content — with tools to help creators earn and scale.</p>
-                <ul class="mt-3 text-slate-400 list-disc list-inside space-y-1">
-                    <li>Creator-first revenue model (90/10 split)</li>
-                    <li>Founding Creator Program: placement, onboarding & revenue guarantee</li>
-                    <li>Targeted audience growth and advanced creator analytics</li>
-                </ul>
-            </div>
-            <div class="card p-5 rounded-md">
-                <h3 class="text-xl font-bold">Data & Targeting Promise</h3>
-                <p class="mt-3 text-slate-300">We deliver high-quality, niche traffic to creators. Expect detailed analytics on views, demographics, engagement, and conversion performance so creators can grow faster.</p>
-                <p class="mt-3 text-slate-400">Preview: analytics mockup, segmentation tools, and creator growth dashboard (coming soon).</p>
-            </div>
-        </section>
-
-        <!-- STEM Section -->
-        <section id="stem" class="mt-20 card p-8 rounded-md">
-            <div class="text-center mb-12">
-                <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-900 bg-opacity-30 text-blue-300 text-sm font-semibold mb-4">
-                    ⚡ Bantu Stream Connect — STEM Section
-                </div>
-                <h2 class="text-3xl md:text-4xl font-bold mb-4">STEM: Building Africa's Future</h2>
-                <p class="text-xl text-slate-300 mb-6 max-w-3xl mx-auto">
-                    Where knowledge meets innovation, and innovation meets Africa.
-                </p>
-                <p class="text-lg text-slate-400 max-w-4xl mx-auto">
-                    The future of Africa isn't just being imagined, it's being engineered. At Bantu Stream Connect, we empower innovators, educators, and learners across the continent to explore Science, Technology, Engineering, and Mathematics (STEM) in new and exciting ways.
-                    From coding and robotics to climate science and space tech, we're streaming the brilliance shaping tomorrow, the African way.
-                </p>
-            </div>
-
-            <!-- STEM Features Grid -->
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
-                <div class="card p-6 rounded-md stem-feature">
-                    <div class="text-3xl mb-4">💻</div>
-                    <h3 class="text-xl font-bold mb-3">Tech & Innovation</h3>
-                    <p class="text-slate-400">Dive into content from Africa's top coders, developers, and inventors pushing digital transformation forward.</p>
-                </div>
-                <div class="card p-6 rounded-md stem-feature">
-                    <div class="text-3xl mb-4">⚙️</div>
-                    <h3 class="text-xl font-bold mb-3">Engineering & Design</h3>
-                    <p class="text-slate-400">Explore how African engineers are solving real-world challenges with creativity and precision.</p>
-                </div>
-                <div class="card p-6 rounded-md stem-feature">
-                    <div class="text-3xl mb-4">🔬</div>
-                    <h3 class="text-xl font-bold mb-3">Science Explained</h3>
-                    <p class="text-slate-400">Watch experiments, research stories, and discoveries told by African scientists.</p>
-                </div>
-                <div class="card p-6 rounded-md stem-feature">
-                    <div class="text-3xl mb-4">🧮</div>
-                    <h3 class="text-xl font-bold mb-3">Mathematics in Motion</h3>
-                    <p class="text-slate-400">Learn from creators who make complex math simple, practical, and fun.</p>
-                </div>
-                <div class="card p-6 rounded-md stem-feature">
-                    <div class="text-3xl mb-4">🌍</div>
-                    <h3 class="text-xl font-bold mb-3">Sustainability & Climate</h3>
-                    <p class="text-slate-400">Discover how Africa is leading in clean energy, recycling, and climate technology innovation.</p>
-                </div>
-                <div class="card p-6 rounded-md stem-feature">
-                    <div class="text-3xl mb-4">🚀</div>
-                    <h3 class="text-xl font-bold mb-3">Space & Robotics</h3>
-                    <p class="text-slate-400">Meet the minds taking African innovation beyond the skies.</p>
-                </div>
-            </div>
-
-            <!-- STEM Call to Action -->
-            <div class="text-center bg-gradient-to-r from-blue-900 to-purple-900 rounded-xl p-8">
-                <h3 class="text-2xl md:text-3xl font-bold mb-6">Join the Minds Building Africa's Tomorrow</h3>
-                <div class="flex flex-col sm:flex-row gap-4 justify-center">
-                    <a href="/creators" class="px-6 py-3 rounded-lg font-bold text-white bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 transition">
-                        Apply as a STEM Creator
-                    </a>
-                    <a href="#stem-streams" class="px-6 py-3 rounded-lg font-bold border border-blue-400 text-blue-400 hover:bg-blue-400 hover:text-white transition">
-                        Explore STEM Streams
-                    </a>
-                </div>
-                <p class="mt-4 text-blue-200 text-sm">
-                    Empower others with your knowledge or watch, learn, and grow with Africa's brightest minds.
-                </p>
-            </div>
-        </section>
-
-        <!-- Empowerment Initiative -->
-        <section id="empowerment" class="mt-10 card p-6 rounded-md">
-            <div class="md:flex md:gap-6">
-                <div class="md:flex-1">
-                    <h2 class="text-2xl font-bold">The Bantu Creator Empowerment Initiative</h2>
-                    <p class="mt-3 text-slate-300">Bantu Stream Connect is a South African built streaming and creator empowerment platform dedicated to uplifting Africa's next generation of storytellers, musicians, filmmakers, and innovators.</p>
-                    <p class="mt-3 text-slate-300">Through the Bantu Creator Empowerment Initiative, we're building a movement, not just a platform. We host digital bootcamps, mentorship programs, and creative workshops that equip young Africans with the tools to produce, manage, and monetize their craft responsibly.</p>
-                    <p class="mt-3"><strong class="text-white">Our mission is simple:</strong> To turn creativity into opportunity. Empowering creators to build sustainable careers while showcasing Africa's talent on a global stage.</p>
-                    <p class="mt-3 text-slate-300">By partnering with us, your brand becomes part of a growing movement that champions economic inclusion, digital education, and creative entrepreneurship across the continent. Together, we can give every young African the chance to learn, earn, and tell their story, the African way.</p>
-                    <div class="mt-4 flex gap-3">
-                        <a href="/empowerment" class="px-4 py-2 rounded-md font-semibold" style="background:linear-gradient(90deg,var(--accent),var(--accent-2)); color:#021026">Explore the Initiative</a>
-                        <a href="#partner" class="px-4 py-2 rounded-md border border-slate-600">Partner with us</a>
-                    </div>
-                </div>
-                <div class="md:w-96 mt-6 md:mt-0 space-y-4">
-                    <div class="card p-4 rounded-md">
-                        <h4 class="font-semibold">Programs</h4>
-                        <ul class="mt-2 text-slate-400 list-disc list-inside space-y-1">
-                            <li>Digital Bootcamps — Production, Editing, Monetization</li>
-                            <li>Mentorship — One-on-one creator coaching</li>
-                            <li>Workshops — Storytelling, Branding, Rights Management</li>
-                            <li>Grants & Sponsorships — Partner-funded creator support</li>
-                        </ul>
-                    </div>
-                    <div class="card p-4 rounded-md">
-                        <h4 class="font-semibold">How to Join</h4>
-                        <ol class="mt-2 text-slate-400 list-decimal list-inside space-y-1">
-                            <li>Sign up as a creator</li>
-                            <li>Apply to the Founding Creator Program</li>
-                            <li>Attend onboarding workshops & bootcamps</li>
-                            <li>Start publishing and get promoted</li>
-                        </ol>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- Founding Creators & Revenue Model -->
-        <section class="mt-10 grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div class="card p-5 rounded-md">
-                <h3 class="text-xl font-bold">Founding Creator Program</h3>
-                <p class="mt-3 text-slate-300">An exclusive cohort for early creators. Benefits include guaranteed placement at launch, a dedicated onboarding manager, promotional features, and a temporary revenue guarantee to de-risk your move.</p>
-                <ul class="mt-3 text-slate-400 list-disc list-inside">
-                    <li>Featured homepage placement</li>
-                    <li>Onboarding & dedicated support</li>
-                    <li>Revenue guarantee for first 3 months</li>
-                    <li>Access to empowerment bootcamps</li>
-                </ul>
-                <div class="mt-4"><button id="apply-creator-2" class="px-4 py-2 rounded-md" style="background:linear-gradient(90deg,var(--accent),var(--accent-2)); color:#021026">Apply as a Founding Creator</button></div>
-            </div>
-            <div class="card p-5 rounded-md">
-                <h3 class="text-xl font-bold">Revenue Model</h3>
-                <p class="mt-3 text-slate-300">We keep 10% — creators keep 90%. Transparent fees, monthly payouts, and detailed revenue reporting.</p>
-                <p class="mt-3 text-slate-400">Payouts will be processed via Creator Dashboard (Supabase-backed) — payout method options: bank transfer, PayPal, or local payout providers.</p>
-            </div>
-        </section>
-
-        <!-- Blog preview -->
-        <section class="mt-10 card p-6 rounded-md">
-            <h3 class="text-xl font-bold">From the Blog</h3>
-            <p class="mt-2 text-slate-300">Daily posts: platform updates, creator spotlights, sponsorship news, tutorials, and industry insights.</p>
-            <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
-                <article class="card p-4 rounded-md">
-                    <h4 class="font-semibold">How to Monetize Your Short Film</h4>
-                    <p class="mt-2 text-slate-400 text-sm">A short guide from our team and creators on monetization strategies for short-form filmmakers.</p>
-                    <a href="/blog/how-to-monetize-short-film" class="mt-3 inline-block text-sm text-blue-300">Read →</a>
-                </article>
-                <article class="card p-4 rounded-md">
-                    <h4 class="font-semibold">Creator Spotlight: Lihle</h4>
-                    <p class="mt-2 text-slate-400 text-sm">Meet Lihle — one of our early creators blending traditional storytelling with futuristic visuals.</p>
-                    <a href="/blog/creator-spotlight-lihle" class="mt-3 inline-block text-sm text-blue-300">Read →</a>
-                </article>
-                <article class="card p-4 rounded-md">
-                    <h4 class="font-semibold">Partnering for Grants</h4>
-                    <p class="mt-2 text-slate-400 text-sm">How brands can sponsor creators and fund empowerment initiatives.</p>
-                    <a href="/blog/partnering-for-grants" class="mt-3 inline-block text-sm text-blue-300">Read →</a>
-                </article>
-            </div>
-            <div class="mt-4"><a href="/blog" class="px-4 py-2 rounded-md" style="background:linear-gradient(90deg,var(--accent),var(--accent-2)); color:#021026">Visit the Blog</a></div>
-        </section>
-
-        <!-- Signup + Referral -->
-        <section class="mt-10 card p-6 rounded-md">
-            <h3 class="text-xl font-bold">Join & Refer — Grow with Us</h3>
-            <p class="mt-2 text-slate-300">Sign up and get a unique referral link. Refer friends to move up the waitlist and unlock rewards like extended free trials, discounts, or entry into exclusive creator grants.</p>
-            <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div class="card p-4 rounded-md">
-                    <h4 class="font-semibold">Sign up</h4>
-                    <form id="full-signup" class="mt-3 flex flex-col gap-3">
-                        <input name="name" placeholder="Full name" required 
-                               class="px-3 py-2 rounded-md bg-transparent border border-slate-700 focus-ring" />
-                        <input name="email" type="email" placeholder="Email address" required 
-                               class="px-3 py-2 rounded-md bg-transparent border border-slate-700 focus-ring" />
-                        <select name="user_type" 
-                                class="px-3 py-2 rounded-md bg-transparent border border-slate-700 focus-ring">
-                            <option value="user">User / Viewer</option>
-                            <option value="creator">Creator</option>
-                            <option value="brand">Brand / Partner</option>
-                        </select>
-                        <input name="referred_by" placeholder="Referral code (optional)" 
-                               class="px-3 py-2 rounded-md bg-transparent border border-slate-700 focus-ring" />
-                        <button type="submit" class="mt-2 px-4 py-2 rounded-md signup-btn" 
-                                style="background:linear-gradient(90deg,var(--accent),var(--accent-2)); color:#021026">
-                            Sign Up & Get Referral Link
-                        </button>
-                        <div id="full-signup-message" class="form-message hidden"></div>
-                    </form>
-                </div>
-                <div class="card p-4 rounded-md">
-                    <h4 class="font-semibold">How referrals work</h4>
-                    <ol class="mt-2 text-slate-400 list-decimal list-inside space-y-1">
-                        <li>Sign up and get your unique referral link.</li>
-                        <li>Share it — friends sign up using your link.</li>
-                        <li>For every 3 successful referrals you receive a month of free premium or entries into creator grant draws.</li>
-                    </ol>
-                    <p class="mt-3 text-sm text-slate-400">Referral links are tracked and stored in Supabase. Payouts or rewards will be applied to your account after verification.</p>
-                </div>
-            </div>
-        </section>
-
-        <!-- Export / Admin -->
-        <section class="mt-10 card p-6 rounded-md">
-            <h3 class="text-xl font-bold">Export to Sheets & Admin Checklist</h3>
-            <p class="mt-2 text-slate-300">Admins can export the signup database to Google Sheets for campaign tracking. (Integration: Supabase → Cloud Function → Google Sheets API or Apps Script webhook)</p>
-            <div class="mt-4 flex gap-3">
-                <button class="px-4 py-2 rounded-md border border-slate-600">Request Export (Admin)</button>
-                <button class="px-4 py-2 rounded-md border border-slate-600">Download CSV</button>
-            </div>
-        </section>
-
         <!-- Footer -->
-        <footer class="mt-10 py-6 text-slate-400">
+        <footer class="mt-12 py-6 text-slate-400 border-t border-slate-800">
             <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
                     <div class="font-bold">Bantu Stream Connect</div>
                     <div class="text-sm">Built in South Africa. © 2025 Bantu Stream Connect</div>
                 </div>
                 <div class="flex gap-4 text-sm">
-                    <a href="/terms" class="hover:text-white">Terms</a>
+                    <a href="/creators" class="hover:text-white">For Creators</a>
+                    <a href="/empowerment" class="hover:text-white">Empowerment</a>
+                    <a href="/blog" class="hover:text-white">Blog</a>
                     <a href="/privacy" class="hover:text-white">Privacy</a>
-                    <a href="/contact" class="hover:text-white">Contact</a>
-                    <a href="/press" class="hover:text-white">Press</a>
                 </div>
             </div>
         </footer>
     </div>
 
-    <!-- Mobile menu and countdown scripts -->
-    <script>
-        document.getElementById('mobile-menu-btn').addEventListener('click', function(){
-            const nav = document.getElementById('mobile-nav');
-            nav.classList.toggle('hidden');
-        });
+    <!-- Toast Container -->
+    <div id="toast-container"></div>
 
-        // Countdown
-        (function(){
-            const targetISO = '2025-11-01T12:00:00+02:00';
-            const target = new Date(targetISO).getTime();
-            const countdownEl = document.getElementById('countdown');
-            function update(){
-                const now = Date.now();
-                const diff = Math.max(0, target - now);
-                const days = Math.floor(diff / (1000*60*60*24));
-                const hours = Math.floor((diff/(1000*60*60))%24);
-                const minutes = Math.floor((diff/(1000*60))%60);
-                countdownEl.textContent = `${String(days).padStart(2,'0')}d ${String(hours).padStart(2,'0')}h ${String(minutes).padStart(2,'0')}m`;
+    <!-- Import Supabase -->
+    <script type="module">
+        // Import Supabase
+        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm'
+
+        // ✅ Use the same Supabase credentials from your mobile app
+        const SUPABASE_URL = 'https://ydnxqnbjoshvxteevemc.supabase.co'
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U'
+
+        // Create Supabase client
+        const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+
+        // Make it globally available
+        window.supabase = supabase
+
+        // Check auth state
+        supabase.auth.onAuthStateChange((event, session) => {
+            console.log('Auth state changed:', event)
+            if (event === 'SIGNED_IN') {
+                console.log('User signed in:', session?.user?.email)
+            } else if (event === 'SIGNED_OUT') {
+                console.log('User signed out')
             }
-            update();
-            setInterval(update, 60000);
-        })();
+        })
     </script>
 
-    <!-- INTEGRATED WORKING SIGNUP FUNCTIONALITY -->
+    <!-- Home Feed JavaScript (Embedded in the HTML) -->
     <script type="module">
-    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
-
-    // ---------- Supabase Setup (using your working credentials) ----------
-    const SUPABASE_URL = "https://ydnxqnbjoshvxteevemc.supabase.co";
-    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U";
-    const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
-
-    // ---------- Helper: generate unique referral code ----------
-    async function generateUniqueCode() {
-        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-        let code;
-        let exists = true;
-        while (exists) {
-            code = Array.from({length:6}, () => chars[Math.floor(Math.random()*chars.length)]).join('');
-            let { data, error } = await supabase.from('signups').select('id').eq('referral_code', code).limit(1);
-            exists = data.length > 0;
-        }
-        return code;
-    }
-
-    // ---------- Handle Both Forms ----------
-    function setupForm(formId, messageId) {
-        const form = document.getElementById(formId);
-        const message = document.getElementById(messageId);
-
-        if (!form || !message) return;
-
-        form.addEventListener('submit', async e => {
-            e.preventDefault();
-            message.textContent = '';
-            message.className = 'form-message hidden';
-
-            const formData = new FormData(form);
-            const name = formData.get('name').trim();
-            const email = formData.get('email').trim();
-            const user_type = formData.get('user_type');
-            const referred_by = formData.get('referred_by') || null;
-
-            if (!name || !email || !user_type) {
-                message.textContent = 'Please fill in all required fields.';
-                message.className = 'form-message form-error';
-                message.classList.remove('hidden');
-                return;
-            }
-
-            // Show loading state on buttons
-            const buttons = form.querySelectorAll('.signup-btn');
-            buttons.forEach(btn => {
-                btn.disabled = true;
-                btn.innerHTML = '<span class="animate-pulse">Signing up...</span>';
-            });
-
-            try {
-                // Check if email already exists
-                let { data: existing, error: checkErr } = await supabase
-                    .from('signups')
-                    .select('id')
-                    .eq('email', email)
-                    .limit(1);
-
-                if (checkErr) throw checkErr;
-                if (existing.length > 0) {
-                    message.textContent = 'Email already registered.';
-                    message.className = 'form-message form-error';
-                    message.classList.remove('hidden');
-                    return;
+        // Wait for DOM to be ready
+        document.addEventListener('DOMContentLoaded', async () => {
+            console.log('🚀 Home Feed Initializing...')
+            
+            // Get DOM elements
+            const categoryTabsContainer = document.getElementById('category-tabs')
+            const contentSectionsContainer = document.getElementById('content-sections')
+            const loadingIndicator = document.getElementById('loading-indicator')
+            
+            // State variables
+            let allContentData = []
+            let filteredContentData = []
+            let selectedCategoryIndex = 0
+            let isLoading = false
+            
+            // Categories (same as mobile app)
+            const categories = [
+                'All',
+                'Movies',
+                'TV Shows',
+                'Documentaries',
+                'Kids',
+                'Sports',
+                'News',
+                'Music',
+                'Videos',
+                'Podcasts',
+                'Skits',
+                'Content',
+                'STEM'
+            ]
+            
+            // ✅ SET LOADING STATE
+            function setLoading(loading) {
+                isLoading = loading
+                if (loadingIndicator) {
+                    loadingIndicator.classList.toggle('hidden', !loading)
                 }
-
-                // Generate unique referral code
-                const referral_code = await generateUniqueCode();
-
-                // Insert into Supabase
-                let { data, error } = await supabase.from('signups').insert([{
-                    name, email, user_type, referral_code, referred_by
-                }]);
-
-                if (error) throw error;
-
-                // SUCCESS: Redirect to thank-you page with referral code
-                // Store referral code in sessionStorage for the thank-you page
-                sessionStorage.setItem('userReferralCode', referral_code);
-                sessionStorage.setItem('userName', name);
-                sessionStorage.setItem('userType', user_type);
+            }
+            
+            // ✅ SHOW ERROR TOAST
+            function showError(message) {
+                const toast = document.createElement('div')
+                toast.className = 'error-toast'
+                toast.textContent = message
+                document.getElementById('toast-container').appendChild(toast)
                 
-                // Track conversion before redirect
-                if (typeof gtag !== 'undefined') {
-                    gtag('event', 'sign_up', {
-                        method: user_type,
-                        email: email
-                    });
-                }
-
-                if (typeof fbq !== 'undefined') {
-                    fbq('track', 'Lead', {
-                        content_name: 'Waitlist Signup',
-                        content_category: user_type,
-                        value: 1
-                    });
-                }
-
-                // Redirect to thank-you page
-                window.location.href = 'thank-you.html';
-
-            } catch(err) {
-                console.error(err);
-                message.textContent = 'There was an error submitting your sign-up. Please try again.';
-                message.className = 'form-message form-error';
-                message.classList.remove('hidden');
-            } finally {
-                // Reset buttons only if there was an error (no redirect)
-                if (!sessionStorage.getItem('userReferralCode')) {
-                    buttons.forEach(btn => {
-                        btn.disabled = false;
-                        if (formId === 'hero-signup') {
-                            btn.textContent = 'Reserve My Spot';
-                        } else {
-                            btn.textContent = 'Sign Up & Get Referral Link';
-                        }
-                    });
-                }
+                setTimeout(() => {
+                    toast.remove()
+                }, 5000)
             }
-        });
-    }
+            
+            // ✅ SHOW SUCCESS TOAST
+            function showSuccess(message) {
+                const toast = document.createElement('div')
+                toast.className = 'success-toast'
+                toast.textContent = message
+                document.getElementById('toast-container').appendChild(toast)
+                
+                setTimeout(() => {
+                    toast.remove()
+                }, 3000)
+            }
+            
+            // ✅ FETCH HOME FEED CONTENT
+            async function getHomeFeedContent(limit = 50, category = null) {
+                try {
+                    let query = supabase
+                        .from('Content')
+                        .select(`
+                            id,
+                            title,
+                            description,
+                            thumbnail_url,
+                            media_type,
+                            file_url,
+                            created_at,
+                            user_id,
+                            creator_id,
+                            genre,
+                            status,
+                            views_count,
+                            likes_count,
+                            user_profiles!user_id(
+                                full_name,
+                                username,
+                                avatar_url
+                            )
+                        `)
+                        .eq('status', 'published')
+                        .order('created_at', { ascending: false })
+                        .limit(limit)
 
-    // Setup both forms when DOM is loaded
-    document.addEventListener('DOMContentLoaded', () => {
-        setupForm('hero-signup', 'hero-signup-message');
-        setupForm('full-signup', 'full-signup-message');
-
-        // Setup button handlers to scroll to forms
-        const buttons = [
-            'apply-creator-btn', 'join-waitlist-btn', 'apply-creator-mobile',
-            'join-waitlist-mobile', 'hero-join-btn', 'hero-apply-btn', 
-            'hero-empower-btn', 'apply-creator-2'
-        ];
-
-        buttons.forEach(btnId => {
-            const button = document.getElementById(btnId);
-            if (button) {
-                button.addEventListener('click', () => {
-                    const targetForm = btnId.includes('creator') ? 'full-signup' : 'hero-signup';
-                    const formElement = document.getElementById(targetForm);
-                    
-                    if (formElement) {
-                        formElement.scrollIntoView({ behavior: 'smooth' });
-                        
-                        // Pre-select user type for creator buttons
-                        if (btnId.includes('creator')) {
-                            const userTypeSelect = formElement.querySelector('select[name="user_type"]');
-                            if (userTypeSelect) {
-                                userTypeSelect.value = 'creator';
-                            }
-                        }
+                    if (category && category !== 'All') {
+                        query = query.eq('genre', category)
                     }
-                });
+
+                    const { data, error } = await query
+
+                    if (error) throw error
+
+                    // Process data with creator names
+                    const processedData = data.map(item => {
+                        let creatorDisplayName = 'Content Creator'
+                        
+                        if (item.user_profiles) {
+                            creatorDisplayName = item.user_profiles.full_name || 
+                                               item.user_profiles.username || 
+                                               'Content Creator'
+                        }
+
+                        return {
+                            id: item.id,
+                            title: item.title || 'Untitled',
+                            description: item.description || '',
+                            thumbnail_url: item.thumbnail_url,
+                            file_url: item.file_url,
+                            media_type: item.media_type || 'video',
+                            genre: item.genre,
+                            created_at: item.created_at,
+                            creator: creatorDisplayName,
+                            creator_display_name: creatorDisplayName,
+                            creator_id: item.creator_id,
+                            user_id: item.user_id,
+                            views: item.views_count || 0,
+                            likes: item.likes_count || 0
+                        }
+                    })
+
+                    console.log('✅ Home feed loaded:', processedData.length, 'items')
+                    return processedData
+                } catch (error) {
+                    console.error('❌ Error fetching home feed:', error)
+                    return []
+                }
             }
-        });
-    });
-
-    // Keep your existing module imports for referral and analytics
-    import('/assets/js/referral.js').then(m => {
-        const BSCReferral = m.BSCReferral || window.BSCReferral || m.default;
-        if (BSCReferral && typeof BSCReferral.handleReferralVisit === 'function') {
-            BSCReferral.handleReferralVisit();
-        }
-    });
-
-    import('/assets/js/analytics.js').then(m => {
-        // analytics module loaded
-    });
-</script>
+            
+            // ✅ GET MOST VIEWED CONTENT
+            function getMostViewedContent(contentData = []) {
+                if (contentData.length === 0) return []
+                
+                return [...contentData]
+                    .sort((a, b) => (b.views || 0) - (a.views || 0))
+                    .slice(0, 10)
+            }
+            
+            // ✅ GET MOST LIKED CONTENT
+            function getMostLikedContent(contentData = []) {
+                if (contentData.length === 0) return []
+                
+                return [...contentData]
+                    .sort((a, b) => (b.likes || 0) - (a.likes || 0))
+                    .slice(0, 10)
+            }
+            
+            // ✅ GET TRENDING CONTENT
+            function getTrendingContent(contentData = []) {
+                if (contentData.length === 0) return []
+                
+                const oneWeekAgo = new Date()
+                oneWeekAgo.setDate(oneWeekAgo.getDate() - 7)
+                
+                const recentContent = contentData.filter(item => {
+                    try {
+                        const createdAt = new Date(item.created_at)
+                        return createdAt >= oneWeekAgo
+                    } catch {
+                        return false
+                    }
+                })
+                
+                return recentContent
+                    .sort((a, b) => {
+                        const aScore = (a.views || 0) + ((a.likes || 0) * 2)
+                        const bScore = (b.views || 0) + ((b.likes || 0) * 2)
+                        return bScore - aScore
+                    })
+                    .slice(0, 10)
+            }
+            
+            // ✅ INITIALIZE HOME FEED
+            async function initializeHomeFeed() {
+                try {
+                    setLoading(true)
+                    
+                    // Load content
+                    allContentData = await getHomeFeedContent(100)
+                    filteredContentData = allContentData
+                    
+                    // Render UI
+                    renderCategoryTabs()
+                    renderContentSections()
+                    
+                    setLoading(false)
+                    
+                } catch (error) {
+                    console.error('❌ Error initializing home feed:', error)
+                    showError('Failed to load content. Please try again.')
+                    setLoading(false)
+                }
+            }
+            
+            // ✅ RENDER CATEGORY TABS
+            function renderCategoryTabs() {
+                if (!categoryTabsContainer) return
+                
+                categoryTabsContainer.innerHTML = categories.map((category, index) => `
+                    <button class="category-tab px-4 py-2 rounded-full border border-slate-700 text-sm ${
+                        index === selectedCategoryIndex ? 'active text-white' : 'text-slate-300'
+                    }" 
+                            data-index="${index}"
+                            data-category="${category}">
+                        ${category}
+                    </button>
+                `).join('')
+                
+                // Add click handlers
+                document.querySelectorAll('.category-tab').forEach(button => {
+                    button.addEventListener('click', () => {
+                        const index = parseInt(button.dataset.index)
+                        onCategoryChanged(index)
+                    })
+                })
+            }
+            
+            // ✅ RENDER CONTENT SECTIONS
+            function renderContentSections() {
+                if (!contentSectionsContainer) return
+                
+                contentSectionsContainer.innerHTML = `
+                    <!-- Latest Uploads -->
+                    <section class="mb-10">
+                        <div class="flex justify-between items-center mb-4">
+                            <h2 class="text-xl font-bold">Latest Uploads</h2>
+                            <button class="see-all-btn text-sm text-blue-400 hover:text-blue-300" data-action="browse-all">
+                                See All
+                            </button>
+                        </div>
+                        <div class="content-carousel flex gap-4 pb-4">
+                            ${renderContentCards(filteredContentData.slice(0, 10))}
+                        </div>
+                    </section>
+                    
+                    <!-- Most Viewed -->
+                    <section class="mb-10">
+                        <div class="flex justify-between items-center mb-4">
+                            <h2 class="text-xl font-bold">Most Viewed</h2>
+                            <button class="see-all-btn text-sm text-blue-400 hover:text-blue-300" data-action="browse-all">
+                                See All
+                            </button>
+                        </div>
+                        <div class="content-carousel flex gap-4 pb-4">
+                            ${renderContentCards(getMostViewedContent(filteredContentData))}
+                        </div>
+                    </section>
+                    
+                    <!-- Most Liked -->
+                    <section class="mb-10">
+                        <div class="flex justify-between items-center mb-4">
+                            <h2 class="text-xl font-bold">Most Liked</h2>
+                            <button class="see-all-btn text-sm text-blue-400 hover:text-blue-300" data-action="browse-all">
+                                See All
+                            </button>
+                        </div>
+                        <div class="content-carousel flex gap-4 pb-4">
+                            ${renderContentCards(getMostLikedContent(filteredContentData))}
+                        </div>
+                    </section>
+                    
+                    <!-- Trending Now -->
+                    <section class="mb-10">
+                        <div class="flex justify-between items-center mb-4">
+                            <h2 class="text-xl font-bold">Trending Now</h2>
+                            <button class="see-all-btn text-sm text-blue-400 hover:text-blue-300" data-action="browse-all">
+                                See All
+                            </button>
+                        </div>
+                        <div class="content-carousel flex gap-4 pb-4">
+                            ${renderContentCards(getTrendingContent(filteredContentData))}
+                        </div>
+                    </section>
+                    
+                    <!-- Category-specific content -->
+                    ${selectedCategoryIndex !== 0 ? `
+                        <section class="mb-10">
+                            <div class="flex justify-between items-center mb-4">
+                                <h2 class="text-xl font-bold">${categories[selectedCategoryIndex]}</h2>
+                                <button class="see-all-btn text-sm text-blue-400 hover:text-blue-300" data-action="browse-all">
+                                    See All
+                                </button>
+                            </div>
+                            <div class="content-carousel flex gap-4 pb-4">
+                                ${filteredContentData.length > 0 
+                                    ? renderContentCards(filteredContentData.slice(0, 10))
+                                    : renderEmptyCategoryState(categories[selectedCategoryIndex])
+                                }
+                            </div>
+                        </section>
+                    ` : ''}
+                    
+                    <!-- Browse All CTA -->
+                    <div class="text-center mt-12 mb-8">
+                        <button id="browse-all-cta" class="px-8 py-4 rounded-lg font-bold text-lg" style="background:linear-gradient(90deg,var(--accent),var(--accent-2)); color:#021026">
+                            Browse All Content
+                        </button>
+                    </div>
+                `
+                
+                // Add event listeners
+                setupContentCardListeners()
+                setupEventListeners()
+            }
+            
+            // ✅ RENDER CONTENT CARDS
+            function renderContentCards(contentItems) {
+                if (!contentItems || contentItems.length === 0) {
+                    return '<div class="text-slate-400 py-8 text-center">No content available</div>'
+                }
+                
+                return contentItems.map(content => `
+                    <div class="content-card card p-3 rounded-lg flex-none w-48" data-content-id="${content.id}">
+                        <div class="content-thumbnail mb-3 h-32">
+                            <img src="${content.thumbnail_url || 'assets/bsc-icon.png'}" 
+                                 alt="${content.title}"
+                                 class="w-full h-full object-cover rounded"
+                                 loading="lazy">
+                            <div class="thumbnail-overlay"></div>
+                            <button class="share-btn absolute top-2 right-2 p-1.5 rounded-full bg-black bg-opacity-60 border border-slate-600 text-amber-400 hover:bg-opacity-80 transition"
+                                    data-content='${JSON.stringify(content).replace(/'/g, "&#39;")}'>
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8M16 6l-4-4-4 4M12 2v13"/>
+                                </svg>
+                            </button>
+                        </div>
+                        <div>
+                            <h3 class="font-semibold text-sm mb-2 line-clamp-2 h-10" title="${content.title}">
+                                ${content.title.length > 50 ? content.title.substring(0, 50) + '...' : content.title}
+                            </h3>
+                            <div class="flex justify-between items-center">
+                                <button class="creator-btn px-3 py-1.5 rounded-md text-xs font-medium text-white flex items-center gap-1"
+                                        data-creator-id="${content.creator_id}"
+                                        data-creator-name="${content.creator}">
+                                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
+                                        <circle cx="12" cy="7" r="4"/>
+                                    </svg>
+                                    ${content.creator.length > 12 ? content.creator.substring(0, 12) + '...' : content.creator}
+                                </button>
+                                <div class="text-xs text-slate-400">
+                                    ${content.views.toLocaleString()} views
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `).join('')
+            }
+            
+            // ✅ RENDER EMPTY CATEGORY STATE
+            function renderEmptyCategoryState(category) {
+                const icon = category === 'Kids' ? '👶' : '🔍'
+                
+                return `
+                    <div class="text-center py-12 text-slate-400 w-48 flex-none">
+                        <div class="text-4xl mb-3">${icon}</div>
+                        <h3 class="font-semibold text-white mb-1">No ${category} Content Yet</h3>
+                        <p class="text-sm">Be the first to upload ${category.toLowerCase()} content!</p>
+                    </div>
+                `
+            }
+            
+            // ✅ CATEGORY CHANGE HANDLER
+            function onCategoryChanged(index) {
+                selectedCategoryIndex = index
+                const selectedCategory = categories[index]
+                
+                console.log(`🎯 Category changed to: ${selectedCategory}`)
+                
+                // Update active tab
+                document.querySelectorAll('.category-tab').forEach((btn, i) => {
+                    btn.classList.toggle('active', i === index)
+                    btn.classList.toggle('text-white', i === index)
+                    btn.classList.toggle('text-slate-300', i !== index)
+                })
+                
+                // Filter content
+                if (selectedCategory === 'All') {
+                    filteredContentData = allContentData
+                } else {
+                    filteredContentData = allContentData.filter(item => {
+                        const itemGenre = item.genre
+                        if (!itemGenre) return false
+                        
+                        const normalizedItemGenre = itemGenre.toLowerCase().trim()
+                        const normalizedSelectedCategory = selectedCategory.toLowerCase().trim()
+                        
+                        if (selectedCategory === 'Kids') {
+                            return normalizedItemGenre === 'kids'
+                        }
+                        
+                        return normalizedItemGenre === normalizedSelectedCategory
+                    })
+                }
+                
+                console.log(`📊 Filtered content count: ${filteredContentData.length}`)
+                
+                // Re-render content sections
+                renderContentSections()
+            }
+            
+            // ✅ SETUP CONTENT CARD LISTENERS
+            function setupContentCardListeners() {
+                // Content card clicks
+                document.querySelectorAll('.content-card').forEach(card => {
+                    card.addEventListener('click', (e) => {
+                        // Don't trigger if clicking on share or creator button
+                        if (e.target.closest('.share-btn') || e.target.closest('.creator-btn')) {
+                            return
+                        }
+                        
+                        const contentId = card.dataset.contentId
+                        const content = allContentData.find(c => c.id === parseInt(contentId))
+                        if (content) {
+                            navigateToVideoPlayer(content)
+                        }
+                    })
+                })
+                
+                // Share buttons
+                document.querySelectorAll('.share-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        e.stopPropagation()
+                        const content = JSON.parse(btn.dataset.content.replace(/&#39;/g, "'"))
+                        shareContent(content)
+                    })
+                })
+                
+                // Creator buttons
+                document.querySelectorAll('.creator-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        e.stopPropagation()
+                        const creatorId = btn.dataset.creatorId
+                        const creatorName = btn.dataset.creatorName
+                        navigateToCreatorChannel(creatorId, creatorName)
+                    })
+                })
+            }
+            
+            // ✅ SETUP EVENT LISTENERS
+            function setupEventListeners() {
+                // Search button
+                const searchBtn = document.getElementById('search-btn')
+                if (searchBtn) {
+                    searchBtn.addEventListener('click', handleSearch)
+                }
+                
+                // Profile button
+                const profileBtn = document.getElementById('profile-btn')
+                if (profileBtn) {
+                    profileBtn.addEventListener('click', handleProfile)
+                }
+                
+                // Browse all buttons
+                document.querySelectorAll('[data-action="browse-all"], #browse-all-btn, #browse-all-cta').forEach(btn => {
+                    btn.addEventListener('click', handleBrowseAll)
+                })
+            }
+            
+            // ✅ EVENT HANDLERS
+            function handleSearch() {
+                console.log('🔍 Search clicked')
+                // Navigate to search page or open search modal
+                window.location.href = 'search.html'
+            }
+            
+            function handleBrowseAll() {
+                console.log('📚 Browse All clicked')
+                window.location.href = 'content-library.html'
+            }
+            
+            function handleProfile() {
+                const { data: { user } } = supabase.auth.getUser()
+                if (user) {
+                    window.location.href = `creator-dashboard.html?userId=${user.id}`
+                } else {
+                    window.location.href = 'login.html'
+                }
+            }
+            
+            function navigateToCreatorChannel(creatorId, creatorName) {
+                if (!creatorId) {
+                    showError(`Cannot view ${creatorName}'s channel - missing creator information`)
+                    return
+                }
+                
+                console.log(`🔄 Navigating to creator channel: ${creatorId} (${creatorName})`)
+                window.location.href = `creator-channel.html?creatorId=${creatorId}`
+            }
+            
+            function navigateToVideoPlayer(content) {
+                if (!content.id || !content.file_url) {
+                    showError('Unable to play content: Missing required data')
+                    return
+                }
+                
+                const params = new URLSearchParams({
+                    id: content.id,
+                    title: content.title || 'Untitled',
+                    description: content.description || '',
+                    file_url: content.file_url,
+                    thumbnail_url: content.thumbnail_url,
+                    media_type: content.media_type || 'video',
+                    creator: content.creator,
+                    creator_id: content.creator_id,
+                    user_id: content.user_id,
+                    created_at: content.created_at,
+                    views: content.views || 0,
+                    likes: content.likes || 0
+                })
+                
+                window.location.href = `video-player.html?${params.toString()}`
+            }
+            
+            function shareContent(content) {
+                const title = content.title || 'Amazing Content'
+                const creatorName = content.creator || 'Bantu Creator'
+                const contentId = content.id || 'unknown'
+                
+                const shareLink = `https://bantustreamconnect.com/content/${contentId}`
+                const shareText = `Check out "${title}" by ${creatorName} on Bantu Stream Connect! 🚀\n\n${shareLink}\n\nDiscover amazing content and connect with creators from around the world.\n\n#BantuStreamConnect #ContentCreation`
+                
+                if (navigator.share) {
+                    navigator.share({
+                        title: 'Amazing content on Bantu Stream Connect',
+                        text: shareText,
+                        url: shareLink
+                    })
+                } else {
+                    // Fallback: copy to clipboard
+                    navigator.clipboard.writeText(shareText).then(() => {
+                        showSuccess('Link copied to clipboard!')
+                    })
+                }
+            }
+            
+            // Initialize the home feed
+            await initializeHomeFeed()
+        })
+    </script>
 </body>
 </html>
