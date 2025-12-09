@@ -1,0 +1,2158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Content Library - Bantu Stream Connect</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Orbitron:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        /* Color Theme (from Flutter app) */
+        :root {
+            --deep-black: #0A0E12;
+            --deep-navy: #0F172A;
+            --soft-white: #F8FAFC;
+            --slate-grey: #94A3B8;
+            --bantu-blue: #1D4ED8;
+            --warm-gold: #F59E0B;
+            --error-color: #EF4444;
+            --success-color: #10B981;
+            --glow-blue-1: #00A3FF;
+            --glow-blue-2: #0066FF;
+            --glow-purple: #8B5CF6;
+            --glow-pink: #EC4899;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--deep-black);
+            color: var(--soft-white);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        
+        /* Loading Screen */
+        .loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--deep-black);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 3px solid rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            border-top-color: var(--warm-gold);
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        /* Animated Background */
+        .animated-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            overflow: hidden;
+            background: linear-gradient(45deg, #0a1f3a, #2a4a7f, #0a1f3a);
+            background-size: 400% 400%;
+            animation: gradientPulse 15s ease infinite;
+        }
+        
+        @keyframes gradientPulse {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        
+        /* Glassmorphism Effects */
+        .glassmorphism {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        
+        .glassmorphism-gold {
+            background: rgba(245, 158, 11, 0.1);
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(245, 158, 11, 0.3);
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(245, 158, 11, 0.2);
+        }
+        
+        /* Navigation */
+        .main-nav {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: rgba(15, 23, 42, 0.9);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .nav-brand {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--soft-white);
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.5rem;
+            font-weight: 700;
+            text-decoration: none;
+            letter-spacing: 1px;
+        }
+        
+        .nav-brand i {
+            color: var(--warm-gold);
+        }
+        
+        .nav-center {
+            display: flex;
+            gap: 2rem;
+        }
+        
+        .nav-link {
+            color: var(--soft-white);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+        
+        .nav-link:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateY(-2px);
+        }
+        
+        .nav-link.active {
+            background: rgba(245, 158, 11, 0.2);
+            color: var(--warm-gold);
+        }
+        
+        .nav-right {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .search-box {
+            display: flex;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+        
+        .search-box:focus-within {
+            box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.3);
+        }
+        
+        .search-box input {
+            background: transparent;
+            border: none;
+            padding: 0.5rem 1rem;
+            color: var(--soft-white);
+            width: 200px;
+            font-family: 'Inter', sans-serif;
+        }
+        
+        .search-box input::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+        }
+        
+        .search-box input:focus {
+            outline: none;
+        }
+        
+        .search-box button {
+            background: transparent;
+            border: none;
+            color: var(--soft-white);
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            transition: color 0.3s ease;
+        }
+        
+        .search-box button:hover {
+            color: var(--warm-gold);
+        }
+        
+        .user-avatar {
+            color: var(--soft-white);
+            font-size: 1.5rem;
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+        
+        .user-avatar:hover {
+            color: var(--warm-gold);
+        }
+        
+        /* Main Content */
+        .content-container {
+            position: relative;
+            z-index: 2;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        /* Library Header */
+        .library-header {
+            padding: 2rem;
+            text-align: center;
+        }
+        
+        .library-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2.5rem;
+            color: var(--warm-gold);
+            margin-bottom: 0.5rem;
+            letter-spacing: 2px;
+        }
+        
+        .library-subtitle {
+            color: var(--slate-grey);
+            font-size: 1rem;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        
+        /* Search Section */
+        .search-section {
+            padding: 0 2rem 2rem;
+        }
+        
+        .search-container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .search-wrapper {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+        
+        .search-input-wrapper {
+            flex: 1;
+            position: relative;
+        }
+        
+        .search-input {
+            width: 100%;
+            padding: 1rem 1.5rem 1rem 3rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
+            color: var(--soft-white);
+            font-family: 'Inter', sans-serif;
+            font-size: 1rem;
+        }
+        
+        .search-input:focus {
+            outline: none;
+            border-color: var(--warm-gold);
+            box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.2);
+        }
+        
+        .search-icon {
+            position: absolute;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--warm-gold);
+        }
+        
+        .search-controls {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .control-btn {
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            color: var(--soft-white);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+        
+        .control-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+        
+        .control-btn.active {
+            background: rgba(245, 158, 11, 0.2);
+            border-color: rgba(245, 158, 11, 0.3);
+            color: var(--warm-gold);
+        }
+        
+        /* Genres Tabs */
+        .genres-section {
+            padding: 0 2rem 2rem;
+            overflow-x: auto;
+        }
+        
+        .genres-container {
+            display: flex;
+            gap: 0.5rem;
+            padding-bottom: 0.5rem;
+        }
+        
+        .genre-tab {
+            padding: 0.75rem 1.5rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            color: var(--slate-grey);
+            font-family: 'Inter', sans-serif;
+            font-weight: 500;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.3s ease;
+        }
+        
+        .genre-tab:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--soft-white);
+        }
+        
+        .genre-tab.active {
+            background: linear-gradient(135deg, var(--warm-gold), #f97316);
+            color: var(--deep-black);
+            border-color: transparent;
+            font-weight: 600;
+        }
+        
+        /* Content Sections */
+        .content-sections {
+            padding: 0 2rem 4rem;
+        }
+        
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+        
+        .section-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.5rem;
+            color: var(--soft-white);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .section-title i {
+            color: var(--warm-gold);
+        }
+        
+        .view-all {
+            color: var(--warm-gold);
+            text-decoration: none;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: gap 0.3s ease;
+        }
+        
+        .view-all:hover {
+            gap: 1rem;
+        }
+        
+        /* Featured Carousel */
+        .featured-carousel {
+            margin-bottom: 4rem;
+        }
+        
+        .carousel-container {
+            position: relative;
+            border-radius: 20px;
+            overflow: hidden;
+            height: 400px;
+        }
+        
+        .carousel-slide {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+            display: flex;
+            align-items: flex-end;
+            padding: 3rem;
+            background-size: cover;
+            background-position: center;
+        }
+        
+        .carousel-slide.active {
+            opacity: 1;
+        }
+        
+        .carousel-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.3) 50%, transparent 100%);
+        }
+        
+        .carousel-content {
+            position: relative;
+            z-index: 2;
+            max-width: 600px;
+        }
+        
+        .carousel-badge {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            background: rgba(245, 158, 11, 0.3);
+            border: 1px solid rgba(245, 158, 11, 0.5);
+            border-radius: 20px;
+            color: var(--soft-white);
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+        
+        .carousel-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2.5rem;
+            color: var(--soft-white);
+            margin-bottom: 0.5rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+        
+        .carousel-creator {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+        
+        .creator-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 2px solid var(--warm-gold);
+            overflow: hidden;
+        }
+        
+        .creator-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .creator-name {
+            color: var(--warm-gold);
+            font-weight: 600;
+        }
+        
+        .carousel-actions {
+            display: flex;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+        
+        .play-btn {
+            padding: 1rem 2rem;
+            background: linear-gradient(135deg, var(--warm-gold), #f97316);
+            color: var(--deep-black);
+            border: none;
+            border-radius: 20px;
+            font-family: 'Inter', sans-serif;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.3s ease;
+        }
+        
+        .play-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(245, 158, 11, 0.4);
+        }
+        
+        .details-btn {
+            padding: 1rem 2rem;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
+            color: var(--soft-white);
+            font-family: 'Inter', sans-serif;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.3s ease;
+        }
+        
+        .details-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+        
+        .carousel-dots {
+            display: flex;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+        
+        .carousel-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .carousel-dot.active {
+            background: var(--warm-gold);
+            transform: scale(1.2);
+        }
+        
+        /* Trending Section */
+        .trending-section {
+            margin-bottom: 4rem;
+        }
+        
+        .trending-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+        
+        /* Content Grid */
+        .content-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 1.5rem;
+        }
+        
+        /* Content Card */
+        .content-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            text-decoration: none;
+            color: inherit;
+        }
+        
+        .content-card:hover {
+            transform: translateY(-10px);
+            border-color: var(--warm-gold);
+            box-shadow: 0 15px 40px rgba(245, 158, 11, 0.2);
+        }
+        
+        .card-thumbnail {
+            height: 150px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .card-thumbnail img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.3s ease;
+        }
+        
+        .content-card:hover .card-thumbnail img {
+            transform: scale(1.1);
+        }
+        
+        .card-badges {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .card-badge {
+            padding: 0.25rem 0.75rem;
+            background: rgba(0, 0, 0, 0.7);
+            border-radius: 12px;
+            color: var(--soft-white);
+            font-size: 0.7rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+        
+        .badge-live {
+            background: rgba(239, 68, 68, 0.8);
+        }
+        
+        .badge-trending {
+            background: rgba(245, 158, 11, 0.8);
+        }
+        
+        .badge-new {
+            background: rgba(29, 78, 216, 0.8);
+        }
+        
+        .play-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        .content-card:hover .play-overlay {
+            opacity: 1;
+        }
+        
+        .play-icon {
+            width: 50px;
+            height: 50px;
+            background: rgba(245, 158, 11, 0.9);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--deep-black);
+            font-size: 1.5rem;
+            transform: scale(0.8);
+            transition: all 0.3s ease;
+        }
+        
+        .content-card:hover .play-icon {
+            transform: scale(1);
+        }
+        
+        .card-info {
+            padding: 1.5rem;
+        }
+        
+        .card-title {
+            font-size: 1rem;
+            color: var(--soft-white);
+            margin-bottom: 0.5rem;
+            line-height: 1.4;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        
+        .card-creator {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+        
+        .creator-avatar-sm {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            border: 1px solid var(--warm-gold);
+            overflow: hidden;
+        }
+        
+        .creator-avatar-sm img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .creator-name-sm {
+            color: var(--slate-grey);
+            font-size: 0.9rem;
+        }
+        
+        .card-stats {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+            color: var(--slate-grey);
+            font-size: 0.8rem;
+        }
+        
+        .stat-item i {
+            color: var(--warm-gold);
+        }
+        
+        /* Search Suggestions */
+        .search-suggestions {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            width: 100%;
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            margin-top: 0.5rem;
+            overflow: hidden;
+            z-index: 100;
+            display: none;
+        }
+        
+        .suggestions-header {
+            padding: 1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .suggestions-title {
+            color: var(--warm-gold);
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+        
+        .suggestion-item {
+            padding: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+        
+        .suggestion-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+        
+        .suggestion-thumbnail {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+        
+        .suggestion-thumbnail img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .suggestion-info {
+            flex: 1;
+        }
+        
+        .suggestion-title {
+            color: var(--soft-white);
+            font-size: 0.9rem;
+            font-weight: 500;
+            margin-bottom: 0.25rem;
+        }
+        
+        .suggestion-creator {
+            color: var(--slate-grey);
+            font-size: 0.8rem;
+        }
+        
+        /* Empty States */
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+        }
+        
+        .empty-icon {
+            font-size: 4rem;
+            color: var(--slate-grey);
+            margin-bottom: 1.5rem;
+            opacity: 0.5;
+        }
+        
+        .empty-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.5rem;
+            color: var(--soft-white);
+            margin-bottom: 0.5rem;
+        }
+        
+        .empty-message {
+            color: var(--slate-grey);
+            max-width: 400px;
+            margin: 0 auto;
+        }
+        
+        /* Toast Notifications */
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 3000;
+        }
+        
+        .toast {
+            background: var(--deep-navy);
+            color: var(--soft-white);
+            padding: 16px 24px;
+            border-radius: 12px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            animation: slideIn 0.3s ease;
+            border-left: 4px solid var(--warm-gold);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+            max-width: 400px;
+        }
+        
+        .toast.success {
+            border-left-color: var(--success-color);
+        }
+        
+        .toast.error {
+            border-left-color: var(--error-color);
+        }
+        
+        .toast.info {
+            border-left-color: var(--bantu-blue);
+        }
+        
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        /* Scrollbar Styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: var(--warm-gold);
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: #f97316;
+        }
+        
+        /* Responsive Design */
+        @media (max-width: 1200px) {
+            .trending-grid,
+            .content-grid {
+                grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            }
+        }
+        
+        @media (max-width: 992px) {
+            .carousel-title {
+                font-size: 2rem;
+            }
+            
+            .trending-grid,
+            .content-grid {
+                grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .main-nav {
+                flex-direction: column;
+                gap: 1rem;
+                padding: 1rem;
+            }
+            
+            .nav-center {
+                gap: 0.5rem;
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+            
+            .nav-right {
+                width: 100%;
+                justify-content: center;
+            }
+            
+            .search-box input {
+                width: 150px;
+            }
+            
+            .carousel-container {
+                height: 300px;
+            }
+            
+            .carousel-title {
+                font-size: 1.5rem;
+            }
+            
+            .carousel-content {
+                padding: 2rem;
+            }
+            
+            .trending-grid,
+            .content-grid {
+                grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            }
+            
+            .library-header,
+            .search-section,
+            .genres-section,
+            .content-sections {
+                padding-left: 1rem;
+                padding-right: 1rem;
+            }
+        }
+        
+        @media (max-width: 576px) {
+            .search-wrapper {
+                flex-direction: column;
+            }
+            
+            .search-controls {
+                width: 100%;
+                justify-content: center;
+            }
+            
+            .carousel-actions {
+                flex-direction: column;
+            }
+            
+            .trending-grid,
+            .content-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .content-card {
+                max-width: 300px;
+                margin: 0 auto;
+            }
+        }
+        
+        /* Back to Top Button */
+        .back-to-top {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: linear-gradient(135deg, var(--warm-gold), #f97316);
+            color: var(--deep-black);
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            z-index: 100;
+            border: none;
+            font-size: 1.5rem;
+        }
+        
+        .back-to-top:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(245, 158, 11, 0.3);
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading Screen -->
+    <div id="loading" class="loading-screen">
+        <div class="spinner"></div>
+        <div id="loading-text">Loading Content Library...</div>
+    </div>
+
+    <!-- Animated Background -->
+    <div class="animated-bg"></div>
+
+    <!-- Navigation -->
+    <nav class="main-nav glassmorphism">
+        <a href="index.html" class="nav-brand">
+            <i class="fas fa-stream"></i>
+            <span>Bantu Stream</span>
+        </a>
+        
+        <div class="nav-center">
+            <a href="index.html" class="nav-link"><i class="fas fa-home"></i> Home</a>
+            <a href="explore.html" class="nav-link"><i class="fas fa-compass"></i> Explore</a>
+            <a href="content-library.html" class="nav-link active"><i class="fas fa-photo-video"></i> Library</a>
+            <a href="subscriptions.html" class="nav-link"><i class="fas fa-users"></i> Subscriptions</a>
+            <a href="profile.html" class="nav-link"><i class="fas fa-user"></i> Profile</a>
+        </div>
+        
+        <div class="nav-right">
+            <div class="search-box">
+                <input type="text" id="navSearch" placeholder="Search...">
+                <button><i class="fas fa-search"></i></button>
+            </div>
+            <a href="profile.html" class="user-avatar">
+                <i class="fas fa-user-circle"></i>
+            </a>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="content-container">
+        <!-- Library Header -->
+        <div class="library-header">
+            <h1 class="library-title">CONTENT LIBRARY</h1>
+            <p class="library-subtitle">Discover, stream, and save amazing African content across all genres</p>
+        </div>
+
+        <!-- Search Section -->
+        <div class="search-section">
+            <div class="search-container">
+                <div class="search-wrapper">
+                    <div class="search-input-wrapper">
+                        <i class="fas fa-search search-icon"></i>
+                        <input type="text" 
+                               id="mainSearch" 
+                               class="search-input glassmorphism" 
+                               placeholder="Search creators, shows, topics...">
+                        <div id="searchSuggestions" class="search-suggestions"></div>
+                    </div>
+                    <div class="search-controls">
+                        <button class="control-btn" id="filterBtn" title="Filter">
+                            <i class="fas fa-filter"></i>
+                        </button>
+                        <button class="control-btn" id="sortBtn" title="Sort">
+                            <i class="fas fa-sort"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Genres Tabs -->
+        <div class="genres-section">
+            <div class="genres-container" id="genresContainer">
+                <!-- Genres will be populated by JavaScript -->
+            </div>
+        </div>
+
+        <!-- Content Sections -->
+        <div class="content-sections">
+            <!-- Featured Content Carousel -->
+            <div class="featured-carousel">
+                <div class="section-header">
+                    <h2 class="section-title">
+                        <i class="fas fa-star"></i>
+                        Featured Content
+                    </h2>
+                    <a href="#" class="view-all">
+                        View All
+                        <i class="fas fa-arrow-right"></i>
+                    </a>
+                </div>
+                
+                <div class="carousel-container glassmorphism" id="featuredCarousel">
+                    <!-- Featured content will be loaded by JavaScript -->
+                    <div class="carousel-overlay"></div>
+                    <div class="carousel-content">
+                        <div class="carousel-badge">FEATURED</div>
+                        <h3 class="carousel-title">Loading Featured Content...</h3>
+                        <div class="carousel-creator">
+                            <div class="creator-avatar">
+                                <i class="fas fa-user-circle"></i>
+                            </div>
+                            <span class="creator-name">Loading...</span>
+                        </div>
+                        <div class="carousel-actions">
+                            <button class="play-btn" id="carouselPlayBtn">
+                                <i class="fas fa-play"></i>
+                                Play Now
+                            </button>
+                            <button class="details-btn" id="carouselDetailsBtn">
+                                <i class="fas fa-info-circle"></i>
+                                Details
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="carousel-dots" id="carouselDots"></div>
+            </div>
+
+            <!-- Trending Now Section -->
+            <div class="trending-section">
+                <div class="section-header">
+                    <h2 class="section-title">
+                        <i class="fas fa-fire"></i>
+                        Trending Now
+                    </h2>
+                    <a href="#" class="view-all">
+                        View All
+                        <i class="fas fa-arrow-right"></i>
+                    </a>
+                </div>
+                
+                <div class="trending-grid" id="trendingGrid">
+                    <!-- Trending content will be loaded by JavaScript -->
+                    <div class="empty-state">
+                        <div class="empty-icon">
+                            <i class="fas fa-fire"></i>
+                        </div>
+                        <h3 class="empty-title">Loading Trending Content...</h3>
+                        <p class="empty-message">Hot content will appear here</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- All Content Grid -->
+            <div class="content-grid-section">
+                <div class="section-header">
+                    <h2 class="section-title">
+                        <i class="fas fa-th-large"></i>
+                        All Content
+                    </h2>
+                    <div style="display: flex; align-items: center; gap: 1rem;">
+                        <span id="contentCount" style="color: var(--slate-grey);">Loading...</span>
+                        <a href="#" class="view-all" id="viewAllLink">
+                            View All
+                            <i class="fas fa-arrow-right"></i>
+                        </a>
+                    </div>
+                </div>
+                
+                <div class="content-grid" id="contentGrid">
+                    <!-- Content will be loaded by JavaScript -->
+                    <div class="empty-state">
+                        <div class="empty-icon">
+                            <i class="fas fa-video"></i>
+                        </div>
+                        <h3 class="empty-title">Loading Content...</h3>
+                        <p class="empty-message">Content will appear here as we load it</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- Back to Top Button -->
+    <button class="back-to-top" id="backToTop" style="display: none;">
+        <i class="fas fa-arrow-up"></i>
+    </button>
+
+    <!-- Import Supabase -->
+    <script>
+        // Simple Supabase REST client for Content Library
+        class SupabaseLibraryClient {
+            constructor(url, key) {
+                this.url = url;
+                this.key = key;
+                this.headers = {
+                    'apikey': key,
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${key}`
+                };
+            }
+            
+            async getCurrentUser() {
+                try {
+                    const response = await fetch(`${this.url}/auth/v1/user`, {
+                        headers: this.headers
+                    });
+                    
+                    if (response.ok) {
+                        const { user } = await response.json();
+                        return user;
+                    }
+                    return null;
+                } catch (error) {
+                    console.error('Error getting current user:', error);
+                    return null;
+                }
+            }
+            
+            async getHomeFeedContent(limit = 200) {
+                try {
+                    const response = await fetch(
+                        `${this.url}/rest/v1/Content?select=*,creator:user_id(id,username,display_name,avatar_url)&status=eq.published&order=created_at.desc&limit=${limit}`,
+                        { headers: this.headers }
+                    );
+                    
+                    if (response.ok) {
+                        const content = await response.json();
+                        // Get view counts for all content
+                        const contentWithViews = await Promise.all(
+                            content.map(async item => {
+                                const views = await this.getContentViewCount(item.id);
+                                return {
+                                    ...item,
+                                    views_count: views
+                                };
+                            })
+                        );
+                        return contentWithViews;
+                    }
+                    return [];
+                } catch (error) {
+                    console.error('Error getting content:', error);
+                    return [];
+                }
+            }
+            
+            async getContentViewCount(contentId) {
+                try {
+                    const response = await fetch(
+                        `${this.url}/rest/v1/content_views?content_id=eq.${contentId}&select=id`,
+                        { headers: this.headers }
+                    );
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        return data.length;
+                    }
+                    return 0;
+                } catch (error) {
+                    console.error('Error getting view count:', error);
+                    return 0;
+                }
+            }
+            
+            async getFeaturedContent(limit = 5) {
+                try {
+                    const response = await fetch(
+                        `${this.url}/rest/v1/Content?select=*,creator:user_id(id,username,display_name,avatar_url)&status=eq.published&thumbnail_url=not.is.null&order=created_at.desc&limit=${limit}`,
+                        { headers: this.headers }
+                    );
+                    
+                    if (response.ok) {
+                        const content = await response.json();
+                        // Get view counts for featured content
+                        const contentWithViews = await Promise.all(
+                            content.map(async item => {
+                                const views = await this.getContentViewCount(item.id);
+                                return {
+                                    ...item,
+                                    views_count: views
+                                };
+                            })
+                        );
+                        return contentWithViews;
+                    }
+                    return [];
+                } catch (error) {
+                    console.error('Error getting featured content:', error);
+                    return [];
+                }
+            }
+            
+            async searchContent(query, limit = 20) {
+                try {
+                    const response = await fetch(
+                        `${this.url}/rest/v1/Content?select=*,creator:user_id(id,username,display_name,avatar_url)&or=(title.ilike.%25${encodeURIComponent(query)}%25,description.ilike.%25${encodeURIComponent(query)}%25)&order=created_at.desc&limit=${limit}`,
+                        { headers: this.headers }
+                    );
+                    
+                    if (response.ok) {
+                        return await response.json();
+                    }
+                    return [];
+                } catch (error) {
+                    console.error('Error searching content:', error);
+                    return [];
+                }
+            }
+            
+            async searchSuggestions(query, limit = 5) {
+                try {
+                    const response = await fetch(
+                        `${this.url}/rest/v1/Content?select=id,title,thumbnail_url,creator:user_id(display_name)&title.ilike.%25${encodeURIComponent(query)}%25&limit=${limit}`,
+                        { headers: this.headers }
+                    );
+                    
+                    if (response.ok) {
+                        return await response.json();
+                    }
+                    return [];
+                } catch (error) {
+                    console.error('Error getting search suggestions:', error);
+                    return [];
+                }
+            }
+            
+            async recordView(contentId, userId) {
+                try {
+                    const response = await fetch(`${this.url}/rest/v1/content_views`, {
+                        method: 'POST',
+                        headers: this.headers,
+                        body: JSON.stringify({
+                            content_id: contentId,
+                            viewer_id: userId,
+                            device_type: 'web',
+                            created_at: new Date().toISOString()
+                        })
+                    });
+                    
+                    return response.ok;
+                } catch (error) {
+                    console.error('Error recording view:', error);
+                    return false;
+                }
+            }
+            
+            fixMediaUrl(url) {
+                if (!url) return '';
+                if (url.startsWith('http')) return url;
+                return `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/${url.replace(/^\/+/, '')}`;
+            }
+        }
+        
+        // Initialize Supabase client
+        const supabase = new SupabaseLibraryClient(
+            'https://ydnxqnbjoshvxteevemc.supabase.co',
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U'
+        );
+        
+        console.log('✅ Supabase Library client initialized');
+    </script>
+
+    <!-- Content Library JavaScript -->
+    <script>
+        // Wait for DOM to be ready
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('📚 Content Library Screen Initializing...');
+            
+            // Global variables
+            let currentUser = null;
+            let allContent = [];
+            let featuredContent = [];
+            let trendingContent = [];
+            let filteredContent = [];
+            let searchQuery = '';
+            let selectedGenre = 'All Content';
+            let currentCarouselIndex = 0;
+            let carouselInterval = null;
+            let isSearching = false;
+            
+            // Genres list (same as Flutter app)
+            const genres = [
+                'All Content',
+                'Films',
+                'TV Shows',
+                'Music',
+                'Podcasts',
+                'STEM',
+                'Documentaries',
+                'Sports',
+                'Skits',
+                'News',
+                'Vlogs & Tutorials'
+            ];
+            
+            // DOM Elements
+            const loading = document.getElementById('loading');
+            const loadingText = document.getElementById('loading-text');
+            const navSearch = document.getElementById('navSearch');
+            const mainSearch = document.getElementById('mainSearch');
+            const searchSuggestions = document.getElementById('searchSuggestions');
+            const genresContainer = document.getElementById('genresContainer');
+            const featuredCarousel = document.getElementById('featuredCarousel');
+            const carouselContent = featuredCarousel.querySelector('.carousel-content');
+            const carouselPlayBtn = document.getElementById('carouselPlayBtn');
+            const carouselDetailsBtn = document.getElementById('carouselDetailsBtn');
+            const carouselDots = document.getElementById('carouselDots');
+            const trendingGrid = document.getElementById('trendingGrid');
+            const contentGrid = document.getElementById('contentGrid');
+            const contentCount = document.getElementById('contentCount');
+            const viewAllLink = document.getElementById('viewAllLink');
+            const filterBtn = document.getElementById('filterBtn');
+            const sortBtn = document.getElementById('sortBtn');
+            const backToTopBtn = document.getElementById('backToTop');
+            const toastContainer = document.getElementById('toast-container');
+            
+            // ✅ INITIALIZE
+            async function init() {
+                try {
+                    // Get current user
+                    currentUser = await supabase.getCurrentUser();
+                    console.log('👤 Current user:', currentUser?.email || 'Not logged in');
+                    
+                    // Initialize genres
+                    initGenres();
+                    
+                    // Initialize event listeners
+                    initEventListeners();
+                    
+                    // Load all content
+                    await loadAllContent();
+                    
+                    // Initialize carousel
+                    initCarousel();
+                    
+                    // Hide loading screen
+                    loading.style.display = 'none';
+                    
+                    // Initialize back to top button
+                    initBackToTop();
+                    
+                    console.log('✅ Content library initialized successfully');
+                    
+                } catch (error) {
+                    console.error('❌ Initialization error:', error);
+                    showToast('Failed to load content library', 'error');
+                    loadingText.textContent = 'Error loading content. Please try again.';
+                }
+            }
+            
+            // ✅ INITIALIZE EVENT LISTENERS
+            function initEventListeners() {
+                // Navigation search
+                navSearch.addEventListener('input', (e) => {
+                    searchQuery = e.target.value.trim();
+                    if (searchQuery) {
+                        performSearch(searchQuery);
+                    }
+                });
+                
+                // Main search
+                mainSearch.addEventListener('input', debounce((e) => {
+                    searchQuery = e.target.value.trim();
+                    if (searchQuery) {
+                        showSearchSuggestions(searchQuery);
+                    } else {
+                        searchSuggestions.style.display = 'none';
+                        // Reset to show all content
+                        selectedGenre = 'All Content';
+                        updateGenreTabs();
+                        renderContentGrid();
+                    }
+                }, 300));
+                
+                mainSearch.addEventListener('focus', () => {
+                    if (searchQuery) {
+                        showSearchSuggestions(searchQuery);
+                    }
+                });
+                
+                // Filter and sort buttons
+                filterBtn.addEventListener('click', toggleFilter);
+                sortBtn.addEventListener('click', toggleSort);
+                
+                // Carousel buttons
+                carouselPlayBtn.addEventListener('click', playFeaturedContent);
+                carouselDetailsBtn.addEventListener('click', showFeaturedDetails);
+            }
+            
+            // ✅ INITIALIZE GENRES
+            function initGenres() {
+                genres.forEach(genre => {
+                    const tab = document.createElement('button');
+                    tab.className = `genre-tab ${genre === selectedGenre ? 'active' : ''}`;
+                    tab.textContent = genre;
+                    tab.dataset.genre = genre;
+                    
+                    tab.addEventListener('click', () => {
+                        selectedGenre = genre;
+                        updateGenreTabs();
+                        filterContentByGenre();
+                    });
+                    
+                    genresContainer.appendChild(tab);
+                });
+            }
+            
+            // ✅ UPDATE GENRE TABS
+            function updateGenreTabs() {
+                document.querySelectorAll('.genre-tab').forEach(tab => {
+                    if (tab.dataset.genre === selectedGenre) {
+                        tab.classList.add('active');
+                    } else {
+                        tab.classList.remove('active');
+                    }
+                });
+            }
+            
+            // ✅ LOAD ALL CONTENT
+            async function loadAllContent() {
+                try {
+                    loadingText.textContent = 'Loading content from database...';
+                    
+                    allContent = await supabase.getHomeFeedContent(200);
+                    
+                    if (allContent.length === 0) {
+                        showEmptyStates();
+                        return;
+                    }
+                    
+                    console.log(`✅ Loaded ${allContent.length} content items`);
+                    
+                    // Process content
+                    processContentSections();
+                    
+                    // Update UI
+                    updateContentCount();
+                    renderTrendingGrid();
+                    renderContentGrid();
+                    
+                } catch (error) {
+                    console.error('❌ Error loading content:', error);
+                    showEmptyStates();
+                }
+            }
+            
+            // ✅ PROCESS CONTENT SECTIONS
+            function processContentSections() {
+                // Get featured content (most recent with thumbnails)
+                featuredContent = allContent
+                    .filter(item => item.thumbnail_url)
+                    .slice(0, 5);
+                
+                // Get trending content (based on views)
+                trendingContent = [...allContent]
+                    .sort((a, b) => (b.views_count || 0) - (a.views_count || 0))
+                    .slice(0, 10);
+                
+                // Initially show all content
+                filteredContent = [...allContent];
+                
+                // Load featured content for carousel
+                if (featuredContent.length > 0) {
+                    loadFeaturedCarousel();
+                }
+            }
+            
+            // ✅ LOAD FEATURED CAROUSEL
+            function loadFeaturedCarousel() {
+                // Clear existing content
+                featuredCarousel.innerHTML = '';
+                
+                // Create slides
+                featuredContent.forEach((content, index) => {
+                    const slide = document.createElement('div');
+                    slide.className = `carousel-slide ${index === 0 ? 'active' : ''}`;
+                    
+                    const thumbnailUrl = supabase.fixMediaUrl(content.thumbnail_url);
+                    slide.style.backgroundImage = `url('${thumbnailUrl}')`;
+                    
+                    const overlay = document.createElement('div');
+                    overlay.className = 'carousel-overlay';
+                    
+                    const slideContent = document.createElement('div');
+                    slideContent.className = 'carousel-content';
+                    slideContent.innerHTML = `
+                        <div class="carousel-badge">FEATURED</div>
+                        <h3 class="carousel-title">${content.title || 'Untitled'}</h3>
+                        <div class="carousel-creator">
+                            <div class="creator-avatar">
+                                ${content.creator?.avatar_url ? 
+                                    `<img src="${supabase.fixMediaUrl(content.creator.avatar_url)}" alt="${content.creator.display_name || content.creator.username}">` :
+                                    `<i class="fas fa-user-circle"></i>`
+                                }
+                            </div>
+                            <span class="creator-name">${content.creator?.display_name || content.creator?.username || 'Creator'}</span>
+                        </div>
+                        <div class="carousel-actions">
+                            <button class="play-btn" data-index="${index}">
+                                <i class="fas fa-play"></i>
+                                Play Now
+                            </button>
+                            <button class="details-btn" data-index="${index}">
+                                <i class="fas fa-info-circle"></i>
+                                Details
+                            </button>
+                        </div>
+                    `;
+                    
+                    slide.appendChild(overlay);
+                    slide.appendChild(slideContent);
+                    featuredCarousel.appendChild(slide);
+                });
+                
+                // Create dots
+                carouselDots.innerHTML = '';
+                featuredContent.forEach((_, index) => {
+                    const dot = document.createElement('div');
+                    dot.className = `carousel-dot ${index === 0 ? 'active' : ''}`;
+                    dot.dataset.index = index;
+                    
+                    dot.addEventListener('click', () => {
+                        goToCarouselSlide(index);
+                    });
+                    
+                    carouselDots.appendChild(dot);
+                });
+                
+                // Add event listeners to carousel buttons
+                featuredCarousel.querySelectorAll('.play-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const index = parseInt(e.target.closest('button').dataset.index);
+                        playContent(featuredContent[index]);
+                    });
+                });
+                
+                featuredCarousel.querySelectorAll('.details-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const index = parseInt(e.target.closest('button').dataset.index);
+                        showContentDetails(featuredContent[index]);
+                    });
+                });
+                
+                // Start carousel auto-rotation
+                startCarouselAutoRotate();
+            }
+            
+            // ✅ START CAROUSEL AUTO ROTATE
+            function startCarouselAutoRotate() {
+                if (carouselInterval) {
+                    clearInterval(carouselInterval);
+                }
+                
+                if (featuredContent.length > 1) {
+                    carouselInterval = setInterval(() => {
+                        const nextIndex = (currentCarouselIndex + 1) % featuredContent.length;
+                        goToCarouselSlide(nextIndex);
+                    }, 5000);
+                }
+            }
+            
+            // ✅ GO TO CAROUSEL SLIDE
+            function goToCarouselSlide(index) {
+                if (index === currentCarouselIndex || index >= featuredContent.length) return;
+                
+                // Update slides
+                document.querySelectorAll('.carousel-slide').forEach((slide, i) => {
+                    if (i === index) {
+                        slide.classList.add('active');
+                    } else {
+                        slide.classList.remove('active');
+                    }
+                });
+                
+                // Update dots
+                document.querySelectorAll('.carousel-dot').forEach((dot, i) => {
+                    if (i === index) {
+                        dot.classList.add('active');
+                    } else {
+                        dot.classList.remove('active');
+                    }
+                });
+                
+                currentCarouselIndex = index;
+                
+                // Reset auto-rotate timer
+                if (carouselInterval) {
+                    clearInterval(carouselInterval);
+                    startCarouselAutoRotate();
+                }
+            }
+            
+            // ✅ PLAY FEATURED CONTENT
+            function playFeaturedContent() {
+                if (featuredContent.length > 0) {
+                    playContent(featuredContent[currentCarouselIndex]);
+                }
+            }
+            
+            // ✅ SHOW FEATURED DETAILS
+            function showFeaturedDetails() {
+                if (featuredContent.length > 0) {
+                    showContentDetails(featuredContent[currentCarouselIndex]);
+                }
+            }
+            
+            // ✅ RENDER TRENDING GRID
+            function renderTrendingGrid() {
+                if (trendingContent.length === 0) {
+                    trendingGrid.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-icon">
+                                <i class="fas fa-fire"></i>
+                            </div>
+                            <h3 class="empty-title">No Trending Content</h3>
+                            <p class="empty-message">Check back later for trending videos</p>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                trendingGrid.innerHTML = '';
+                trendingContent.forEach(content => {
+                    const card = createContentCard(content, true);
+                    trendingGrid.appendChild(card);
+                });
+            }
+            
+            // ✅ RENDER CONTENT GRID
+            function renderContentGrid() {
+                if (filteredContent.length === 0) {
+                    contentGrid.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-icon">
+                                <i class="fas fa-video-slash"></i>
+                            </div>
+                            <h3 class="empty-title">No Content Found</h3>
+                            <p class="empty-message">${searchQuery ? `No results for "${searchQuery}"` : 'Try selecting a different genre'}</p>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                contentGrid.innerHTML = '';
+                filteredContent.forEach(content => {
+                    const card = createContentCard(content);
+                    contentGrid.appendChild(card);
+                });
+            }
+            
+            // ✅ CREATE CONTENT CARD
+            function createContentCard(content, isTrending = false) {
+                const card = document.createElement('a');
+                card.className = 'content-card glassmorphism';
+                card.href = `content-detail.html?id=${content.id}`;
+                
+                const thumbnailUrl = supabase.fixMediaUrl(content.thumbnail_url);
+                const creatorName = content.creator?.display_name || content.creator?.username || 'Creator';
+                const creatorAvatar = supabase.fixMediaUrl(content.creator?.avatar_url);
+                
+                // Determine badges
+                const badges = [];
+                if (isTrending) badges.push({ text: 'TRENDING', class: 'badge-trending', icon: 'fa-fire' });
+                if (content.is_live) badges.push({ text: 'LIVE', class: 'badge-live', icon: 'fa-circle' });
+                
+                // Check if content is new (less than 7 days old)
+                if (content.created_at) {
+                    const createdDate = new Date(content.created_at);
+                    const daysAgo = (Date.now() - createdDate.getTime()) / (1000 * 60 * 60 * 24);
+                    if (daysAgo < 7) {
+                        badges.push({ text: 'NEW', class: 'badge-new', icon: 'fa-star' });
+                    }
+                }
+                
+                card.innerHTML = `
+                    <div class="card-thumbnail">
+                        ${thumbnailUrl ? 
+                            `<img src="${thumbnailUrl}" alt="${content.title}" loading="lazy">` :
+                            `<div style="width: 100%; height: 100%; background: linear-gradient(45deg, #1a1a2e, #16213e); display: flex; align-items: center; justify-content: center; color: var(--warm-gold); font-size: 3rem;">
+                                <i class="fas fa-play-circle"></i>
+                            </div>`
+                        }
+                        ${badges.length > 0 ? `
+                            <div class="card-badges">
+                                ${badges.map(badge => `
+                                    <div class="card-badge ${badge.class}">
+                                        <i class="fas ${badge.icon}"></i>
+                                        ${badge.text}
+                                    </div>
+                                `).join('')}
+                            </div>
+                        ` : ''}
+                        <div class="play-overlay">
+                            <div class="play-icon">
+                                <i class="fas fa-play"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-info">
+                        <h3 class="card-title">${content.title || 'Untitled'}</h3>
+                        <div class="card-creator">
+                            <div class="creator-avatar-sm">
+                                ${creatorAvatar ? 
+                                    `<img src="${creatorAvatar}" alt="${creatorName}">` :
+                                    `<i class="fas fa-user-circle"></i>`
+                                }
+                            </div>
+                            <span class="creator-name-sm">${creatorName}</span>
+                        </div>
+                        <div class="card-stats">
+                            <div class="stat-item">
+                                <i class="fas fa-eye"></i>
+                                <span>${content.views_count || 0}</span>
+                            </div>
+                            <div class="stat-item">
+                                <i class="fas fa-clock"></i>
+                                <span>${formatTimeAgo(content.created_at)}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                // Add click handler to record view
+                card.addEventListener('click', async (e) => {
+                    if (currentUser) {
+                        await supabase.recordView(content.id, currentUser.id);
+                    }
+                });
+                
+                return card;
+            }
+            
+            // ✅ FILTER CONTENT BY GENRE
+            function filterContentByGenre() {
+                if (selectedGenre === 'All Content') {
+                    filteredContent = [...allContent];
+                } else {
+                    filteredContent = allContent.filter(content => 
+                        content.genre === selectedGenre
+                    );
+                }
+                
+                updateContentCount();
+                renderContentGrid();
+            }
+            
+            // ✅ PERFORM SEARCH
+            async function performSearch(query) {
+                if (!query.trim()) {
+                    // Reset to show all content
+                    filteredContent = [...allContent];
+                    selectedGenre = 'All Content';
+                    updateGenreTabs();
+                    renderContentGrid();
+                    return;
+                }
+                
+                isSearching = true;
+                searchQuery = query;
+                
+                try {
+                    const results = await supabase.searchContent(query);
+                    filteredContent = results;
+                    
+                    // Update UI
+                    updateContentCount();
+                    renderContentGrid();
+                    
+                    // Hide search suggestions
+                    searchSuggestions.style.display = 'none';
+                    
+                } catch (error) {
+                    console.error('❌ Error searching:', error);
+                    showToast('Search failed. Please try again.', 'error');
+                } finally {
+                    isSearching = false;
+                }
+            }
+            
+            // ✅ SHOW SEARCH SUGGESTIONS
+            async function showSearchSuggestions(query) {
+                if (!query.trim() || isSearching) {
+                    searchSuggestions.style.display = 'none';
+                    return;
+                }
+                
+                try {
+                    const suggestions = await supabase.searchSuggestions(query);
+                    
+                    if (suggestions.length === 0) {
+                        searchSuggestions.style.display = 'none';
+                        return;
+                    }
+                    
+                    searchSuggestions.innerHTML = `
+                        <div class="suggestions-header">
+                            <div class="suggestions-title">SEARCH SUGGESTIONS</div>
+                        </div>
+                        ${suggestions.map(item => `
+                            <div class="suggestion-item" data-content-id="${item.id}">
+                                <div class="suggestion-thumbnail">
+                                    ${item.thumbnail_url ? 
+                                        `<img src="${supabase.fixMediaUrl(item.thumbnail_url)}" alt="${item.title}">` :
+                                        `<div style="width: 100%; height: 100%; background: #1a1a2e; display: flex; align-items: center; justify-content: center; color: var(--warm-gold);">
+                                            <i class="fas fa-video"></i>
+                                        </div>`
+                                    }
+                                </div>
+                                <div class="suggestion-info">
+                                    <div class="suggestion-title">${item.title || 'Untitled'}</div>
+                                    <div class="suggestion-creator">${item.creator?.display_name || 'Creator'}</div>
+                                </div>
+                                <i class="fas fa-arrow-right" style="color: var(--warm-gold);"></i>
+                            </div>
+                        `).join('')}
+                    `;
+                    
+                    searchSuggestions.style.display = 'block';
+                    
+                    // Add click handlers to suggestions
+                    searchSuggestions.querySelectorAll('.suggestion-item').forEach(item => {
+                        item.addEventListener('click', () => {
+                            const contentId = item.dataset.contentId;
+                            window.location.href = `content-detail.html?id=${contentId}`;
+                        });
+                    });
+                    
+                } catch (error) {
+                    console.error('❌ Error getting suggestions:', error);
+                    searchSuggestions.style.display = 'none';
+                }
+            }
+            
+            // ✅ UPDATE CONTENT COUNT
+            function updateContentCount() {
+                if (searchQuery) {
+                    contentCount.textContent = `${filteredContent.length} results for "${searchQuery}"`;
+                    viewAllLink.style.display = 'none';
+                } else {
+                    contentCount.textContent = `${filteredContent.length} content items`;
+                    viewAllLink.style.display = 'flex';
+                }
+            }
+            
+            // ✅ SHOW EMPTY STATES
+            function showEmptyStates() {
+                // Featured carousel
+                featuredCarousel.innerHTML = `
+                    <div class="empty-state" style="height: 400px; display: flex; flex-direction: column; justify-content: center;">
+                        <div class="empty-icon">
+                            <i class="fas fa-star"></i>
+                        </div>
+                        <h3 class="empty-title">No Featured Content</h3>
+                        <p class="empty-message">Featured content will appear here</p>
+                    </div>
+                `;
+                
+                // Trending grid
+                trendingGrid.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">
+                            <i class="fas fa-fire"></i>
+                        </div>
+                        <h3 class="empty-title">No Trending Content</h3>
+                        <p class="empty-message">Check back later for trending videos</p>
+                    </div>
+                `;
+                
+                // Content grid
+                contentGrid.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">
+                            <i class="fas fa-video-slash"></i>
+                        </div>
+                        <h3 class="empty-title">No Content Available</h3>
+                        <p class="empty-message">Content will appear here as creators upload</p>
+                    </div>
+                `;
+                
+                contentCount.textContent = '0 content items';
+            }
+            
+            // ✅ PLAY CONTENT
+            function playContent(content) {
+                if (!content) return;
+                
+                // Record view
+                if (currentUser) {
+                    supabase.recordView(content.id, currentUser.id);
+                }
+                
+                // Navigate to video player
+                const videoUrl = content.file_url ? supabase.fixMediaUrl(content.file_url) : '';
+                window.location.href = `video-player.html?id=${content.id}&title=${encodeURIComponent(content.title)}&video=${encodeURIComponent(videoUrl)}`;
+            }
+            
+            // ✅ SHOW CONTENT DETAILS
+            function showContentDetails(content) {
+                if (!content) return;
+                
+                // Record view
+                if (currentUser) {
+                    supabase.recordView(content.id, currentUser.id);
+                }
+                
+                // Navigate to content detail
+                window.location.href = `content-detail.html?id=${content.id}`;
+            }
+            
+            // ✅ TOGGLE FILTER
+            function toggleFilter() {
+                filterBtn.classList.toggle('active');
+                showToast('Filter functionality coming soon', 'info');
+            }
+            
+            // ✅ TOGGLE SORT
+            function toggleSort() {
+                sortBtn.classList.toggle('active');
+                
+                if (filteredContent.length > 0) {
+                    // Toggle between newest and most viewed
+                    if (sortBtn.classList.contains('active')) {
+                        // Sort by views (descending)
+                        filteredContent.sort((a, b) => (b.views_count || 0) - (a.views_count || 0));
+                        showToast('Sorted by: Most Viewed', 'info');
+                    } else {
+                        // Sort by date (descending)
+                        filteredContent.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+                        showToast('Sorted by: Newest', 'info');
+                    }
+                    
+                    renderContentGrid();
+                }
+            }
+            
+            // ✅ INIT BACK TO TOP BUTTON
+            function initBackToTop() {
+                window.addEventListener('scroll', () => {
+                    if (window.pageYOffset > 300) {
+                        backToTopBtn.style.display = 'flex';
+                    } else {
+                        backToTopBtn.style.display = 'none';
+                    }
+                });
+                
+                backToTopBtn.addEventListener('click', () => {
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                });
+            }
+            
+            // ✅ UTILITY FUNCTIONS
+            
+            function formatTimeAgo(dateString) {
+                if (!dateString) return 'Recently';
+                
+                try {
+                    const date = new Date(dateString);
+                    const now = new Date();
+                    const diffMs = now - date;
+                    const diffSec = Math.floor(diffMs / 1000);
+                    const diffMin = Math.floor(diffSec / 60);
+                    const diffHour = Math.floor(diffMin / 60);
+                    const diffDay = Math.floor(diffHour / 24);
+                    const diffMonth = Math.floor(diffDay / 30);
+                    const diffYear = Math.floor(diffMonth / 12);
+                    
+                    if (diffYear > 0) return `${diffYear}y ago`;
+                    if (diffMonth > 0) return `${diffMonth}mo ago`;
+                    if (diffDay > 0) return `${diffDay}d ago`;
+                    if (diffHour > 0) return `${diffHour}h ago`;
+                    if (diffMin > 0) return `${diffMin}m ago`;
+                    return 'Just now';
+                } catch (e) {
+                    return 'Recently';
+                }
+            }
+            
+            function showToast(message, type = 'info') {
+                // Remove existing toast
+                const existingToast = document.querySelector('.toast');
+                if (existingToast) existingToast.remove();
+                
+                // Create new toast
+                const toast = document.createElement('div');
+                toast.className = `toast ${type}`;
+                
+                let icon = 'info-circle';
+                if (type === 'success') icon = 'check-circle';
+                if (type === 'error') icon = 'exclamation-circle';
+                if (type === 'warning') icon = 'exclamation-triangle';
+                
+                toast.innerHTML = `
+                    <i class="fas fa-${icon}"></i>
+                    <span>${message}</span>
+                `;
+                
+                toastContainer.appendChild(toast);
+                
+                // Remove toast after 3 seconds
+                setTimeout(() => {
+                    if (toast.parentNode) {
+                        toast.style.opacity = '0';
+                        setTimeout(() => {
+                            if (toast.parentNode) toast.remove();
+                        }, 300);
+                    }
+                }, 3000);
+            }
+            
+            function debounce(func, wait) {
+                let timeout;
+                return function executedFunction(...args) {
+                    const later = () => {
+                        clearTimeout(timeout);
+                        func(...args);
+                    };
+                    clearTimeout(timeout);
+                    timeout = setTimeout(later, wait);
+                };
+            }
+            
+            // Hide search suggestions when clicking outside
+            document.addEventListener('click', (e) => {
+                if (!mainSearch.contains(e.target) && !searchSuggestions.contains(e.target)) {
+                    searchSuggestions.style.display = 'none';
+                }
+            });
+            
+            // ✅ START INITIALIZATION
+            setTimeout(() => {
+                init();
+            }, 500);
+            
+            console.log('✅ Content library script loaded');
+        });
+    </script>
+</body>
+</html>
