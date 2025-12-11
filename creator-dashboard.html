@@ -1,0 +1,1607 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Creator Dashboard - Bantu Stream Connect</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Orbitron:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Custom Styles -->
+    <style>
+        /* Color Theme (from Flutter app) */
+        :root {
+            --deep-black: #0A0E12;
+            --deep-navy: #0F172A;
+            --soft-white: #F8FAFC;
+            --slate-grey: #94A3B8;
+            --bantu-blue: #1D4ED8;
+            --warm-gold: #F59E0B;
+            --error-color: #EF4444;
+            --success-color: #10B981;
+            --glow-blue-1: #00A3FF;
+            --glow-blue-2: #0066FF;
+            --glow-purple: #8B5CF6;
+            --glow-pink: #EC4899;
+        }
+        
+        /* Reset & Base */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #001F54 0%, #0A0E3F 50%, #000000 100%);
+            color: var(--soft-white);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        
+        /* Loading Screen */
+        .loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #001F54 0%, #0A0E3F 50%, #000000 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+        }
+        
+        .spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            border-top-color: var(--warm-gold);
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        /* Animated Background */
+        .animated-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            overflow: hidden;
+        }
+        
+        .bg-gradient {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at 30% -40%, var(--bantu-blue) 0%, transparent 50%),
+                        radial-gradient(circle at 70% 120%, var(--glow-purple) 0%, transparent 50%),
+                        radial-gradient(circle at 10% 60%, var(--warm-gold) 0%, transparent 50%);
+            opacity: 0.1;
+        }
+        
+        .bg-circle {
+            position: absolute;
+            border-radius: 50%;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            animation: rotate 20s linear infinite;
+        }
+        
+        .bg-circle-1 {
+            top: 10%;
+            right: 20%;
+            width: 300px;
+            height: 300px;
+            border-color: rgba(245, 158, 11, 0.1);
+            animation-duration: 25s;
+        }
+        
+        .bg-circle-2 {
+            bottom: 20%;
+            left: 15%;
+            width: 250px;
+            height: 250px;
+            border-color: rgba(29, 78, 216, 0.1);
+            animation-duration: 20s;
+            animation-direction: reverse;
+        }
+        
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        
+        /* Glassmorphism Effects */
+        .glassmorphism {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+        }
+        
+        .glassmorphism-light {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        /* Header */
+        .header {
+            position: sticky;
+            top: 0;
+            background: rgba(0, 31, 84, 0.9);
+            backdrop-filter: blur(10px);
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 100;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+            color: var(--soft-white);
+        }
+        
+        .logo-icon {
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, #4dabf7 0%, #748ffc 100%);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .logo-text {
+            font-size: 18px;
+            font-weight: 600;
+        }
+        
+        /* Main Content */
+        .main-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        /* Welcome Header */
+        .welcome-header {
+            padding: 30px 20px;
+        }
+        
+        .creator-profile {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .avatar-container {
+            position: relative;
+        }
+        
+        .creator-avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            border: 3px solid var(--warm-gold);
+            object-fit: cover;
+            background: linear-gradient(135deg, var(--bantu-blue), var(--glow-purple));
+        }
+        
+        .founder-badge {
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            width: 30px;
+            height: 30px;
+            background: var(--warm-gold);
+            border-radius: 50%;
+            border: 2px solid var(--soft-white);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--deep-black);
+            font-size: 14px;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+        
+        .creator-info {
+            flex: 1;
+        }
+        
+        .welcome-text {
+            font-size: 14px;
+            color: var(--slate-grey);
+            margin-bottom: 5px;
+        }
+        
+        .creator-name {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--soft-white);
+            margin-bottom: 5px;
+        }
+        
+        .connector-count {
+            font-size: 14px;
+            color: var(--warm-gold);
+            font-weight: 600;
+        }
+        
+        .header-actions {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .icon-btn {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .icon-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+        
+        /* Stats Row */
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+        
+        .stat-card {
+            padding: 25px;
+            text-align: center;
+        }
+        
+        .stat-icon {
+            font-size: 30px;
+            color: var(--warm-gold);
+            margin-bottom: 15px;
+        }
+        
+        .stat-value {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--soft-white);
+            margin-bottom: 5px;
+        }
+        
+        .stat-label {
+            font-size: 14px;
+            color: var(--slate-grey);
+        }
+        
+        /* Sections */
+        .dashboard-section {
+            margin: 30px 0;
+        }
+        
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding: 15px 20px;
+        }
+        
+        .section-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--soft-white);
+        }
+        
+        .see-all-btn {
+            padding: 8px 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            color: var(--bantu-blue);
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .see-all-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateX(5px);
+        }
+        
+        /* My Uploads */
+        .uploads-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        
+        .upload-card {
+            padding: 20px;
+        }
+        
+        .upload-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--soft-white);
+            margin-bottom: 10px;
+            line-height: 1.4;
+        }
+        
+        .upload-status {
+            display: inline-block;
+            padding: 6px 15px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .status-published {
+            background: rgba(245, 158, 11, 0.2);
+            color: var(--warm-gold);
+        }
+        
+        .status-draft {
+            background: rgba(148, 163, 184, 0.2);
+            color: var(--slate-grey);
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            grid-column: 1 / -1;
+        }
+        
+        .empty-icon {
+            font-size: 60px;
+            color: var(--slate-grey);
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+        
+        .empty-text {
+            font-size: 16px;
+            color: var(--slate-grey);
+            line-height: 1.5;
+        }
+        
+        /* Upload New Content */
+        .upload-promo {
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .promo-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--soft-white);
+            margin-bottom: 10px;
+        }
+        
+        .promo-text {
+            font-size: 16px;
+            color: rgba(255, 255, 255, 0.8);
+            margin-bottom: 25px;
+            line-height: 1.5;
+        }
+        
+        .upload-btn {
+            background: linear-gradient(135deg, var(--bantu-blue), #3730a3);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .upload-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(29, 78, 216, 0.4);
+        }
+        
+        /* Quick Actions */
+        .quick-actions {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+        
+        .action-card {
+            padding: 25px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .action-card:hover {
+            transform: translateY(-5px);
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+        
+        .action-icon {
+            width: 60px;
+            height: 60px;
+            margin: 0 auto 15px;
+            border-radius: 50%;
+            background: rgba(77, 171, 247, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: var(--bantu-blue);
+        }
+        
+        .action-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--soft-white);
+        }
+        
+        /* Payout Action */
+        .payout-action {
+            grid-column: span 2;
+            max-width: 300px;
+            margin: 0 auto;
+        }
+        
+        /* Messages Section */
+        .messages-section {
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .messages-icon {
+            font-size: 50px;
+            color: var(--slate-grey);
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+        
+        .messages-text {
+            font-size: 16px;
+            color: var(--slate-grey);
+            line-height: 1.5;
+        }
+        
+        /* Navigation */
+        .global-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(10px);
+            display: flex;
+            justify-content: space-around;
+            padding: 15px 0;
+            z-index: 100;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: var(--slate-grey);
+            text-decoration: none;
+            font-size: 0.8rem;
+            transition: all 0.3s ease;
+        }
+        
+        .nav-item i {
+            font-size: 1.2rem;
+            margin-bottom: 5px;
+        }
+        
+        .nav-item:hover {
+            color: var(--soft-white);
+        }
+        
+        .nav-item.active {
+            color: var(--warm-gold);
+        }
+        
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 15px 25px;
+            border-radius: 10px;
+            color: white;
+            font-weight: 500;
+            z-index: 1000;
+            animation: slideIn 0.3s ease;
+            max-width: 300px;
+        }
+        
+        .toast.error {
+            background: linear-gradient(135deg, #ff6b6b 0%, #c92a2a 100%);
+        }
+        
+        .toast.success {
+            background: linear-gradient(135deg, #51cf66 0%, #2b8a3e 100%);
+        }
+        
+        .toast.info {
+            background: linear-gradient(135deg, #4dabf7 0%, #748ffc 100%);
+        }
+        
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        /* Error State */
+        .error-state {
+            text-align: center;
+            padding: 40px 20px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        
+        .error-icon {
+            font-size: 60px;
+            color: var(--error-color);
+            margin-bottom: 20px;
+        }
+        
+        .error-title {
+            font-size: 24px;
+            font-weight: 600;
+            color: var(--soft-white);
+            margin-bottom: 10px;
+        }
+        
+        .error-message {
+            color: var(--slate-grey);
+            margin-bottom: 30px;
+            line-height: 1.6;
+        }
+        
+        .error-actions {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+        }
+        
+        .action-btn {
+            padding: 12px 24px;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .retry-btn {
+            background: var(--bantu-blue);
+            color: white;
+        }
+        
+        .retry-btn:hover {
+            background: #3b9ce6;
+            transform: translateY(-2px);
+        }
+        
+        .login-btn {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .login-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+        
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 20px;
+        }
+        
+        .modal-content {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 30px;
+            width: 100%;
+            max-width: 500px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .modal-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .modal-icon {
+            font-size: 24px;
+            color: var(--warm-gold);
+        }
+        
+        .modal-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--soft-white);
+            flex: 1;
+        }
+        
+        .modal-close {
+            background: transparent;
+            border: none;
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 20px;
+            cursor: pointer;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .modal-close:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+        
+        .modal-body {
+            margin-bottom: 25px;
+        }
+        
+        .payout-amount {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 36px;
+            font-weight: 700;
+            color: var(--warm-gold);
+            text-align: center;
+            margin: 20px 0;
+        }
+        
+        .modal-note {
+            font-size: 14px;
+            color: var(--slate-grey);
+            line-height: 1.5;
+            margin-top: 15px;
+        }
+        
+        .modal-actions {
+            display: flex;
+            gap: 15px;
+        }
+        
+        .modal-btn {
+            flex: 1;
+            padding: 15px;
+            border-radius: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: none;
+            font-size: 16px;
+        }
+        
+        .modal-btn.primary {
+            background: var(--warm-gold);
+            color: var(--deep-black);
+        }
+        
+        .modal-btn.primary:hover {
+            background: #f97316;
+            transform: translateY(-2px);
+        }
+        
+        .modal-btn.secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .modal-btn.secondary:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .creator-name {
+                font-size: 22px;
+            }
+            
+            .creator-avatar {
+                width: 60px;
+                height: 60px;
+            }
+            
+            .stats-row {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .quick-actions {
+                grid-template-columns: 1fr;
+            }
+            
+            .payout-action {
+                grid-column: span 1;
+            }
+            
+            .modal-content {
+                padding: 20px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .stats-row {
+                grid-template-columns: 1fr;
+            }
+            
+            .creator-profile {
+                flex-direction: column;
+                text-align: center;
+                gap: 15px;
+            }
+            
+            .error-actions {
+                flex-direction: column;
+            }
+            
+            .action-btn {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading Screen -->
+    <div id="loading" class="loading-screen">
+        <div class="spinner"></div>
+        <div id="loading-text">Loading Creator Dashboard...</div>
+    </div>
+
+    <!-- Animated Background -->
+    <div class="animated-bg">
+        <div class="bg-gradient"></div>
+        <div class="bg-circle bg-circle-1"></div>
+        <div class="bg-circle bg-circle-2"></div>
+    </div>
+
+    <!-- Main App (hidden until loaded) -->
+    <div id="app" style="display: none;">
+        <!-- Header -->
+        <header class="header">
+            <a href="index.html" class="logo">
+                <div class="logo-icon">
+                    <i class="fas fa-stream"></i>
+                </div>
+                <div class="logo-text">Bantu Stream Connect</div>
+            </a>
+            <div class="header-actions">
+                <button id="signout-btn" class="icon-btn" title="Sign Out">
+                    <i class="fas fa-sign-out-alt"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Welcome Header -->
+            <section class="dashboard-section">
+                <div class="glassmorphism welcome-header">
+                    <div class="creator-profile">
+                        <div class="avatar-container">
+                            <img id="creatorAvatar" src="" alt="Creator Avatar" class="creator-avatar" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAiIGhlaWdodD0iODAiIHZpZXdCb3g9IjAgMCA4MCA4MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjgwIiBoZWlnaHQ9IjgwIiByeD0iNDAiIGZpbGw9InVybCgjZ3JhZGllbnQwX3JhZGlhbF8xMzZfODQ0KSIvPgo8ZGVmcz4KPHJhZGlhbEdyYWRpZW50IGlkPSJncmFkaWVudDBfcmFkaWFsXzEzNl84NDQiIGN4PSIwIiBjeT0iMCIgcj0iMSIgZ3JhZGllbnRVbml0cz0idXNlclNwYWNlT25Vc2UiIGdyYWRpZW50VHJhbnNmb3JtPSJ0cmFuc2xhdGUoNDAgNDApIHNjYWxlKDUzLjE4NDIpIj4KPHN0b3Agc3RvcC1jb2xvcj0iIzFFNERCOCIvPgo8c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiM4QjVDNEY2Ii8+CjwvcmFkaWFsR3JhZGllbnQ+CjwvZGVmcz4KPC9zdmc+'">
+                            <div id="founderBadge" class="founder-badge" style="display: none;">
+                                <i class="fas fa-check"></i>
+                            </div>
+                        </div>
+                        <div class="creator-info">
+                            <div class="welcome-text">Welcome back,</div>
+                            <h1 id="creatorName" class="creator-name">Loading...</h1>
+                            <div id="connectorCount" class="connector-count">0 Connectors</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Stats Row -->
+            <section class="dashboard-section">
+                <div class="stats-row">
+                    <div class="glassmorphism stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                        </div>
+                        <div id="totalUploads" class="stat-value">0</div>
+                        <div class="stat-label">Uploads</div>
+                    </div>
+                    <div class="glassmorphism stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-eye"></i>
+                        </div>
+                        <div id="totalViews" class="stat-value">0</div>
+                        <div class="stat-label">Total Views</div>
+                    </div>
+                    <div class="glassmorphism stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-money-bill-wave"></i>
+                        </div>
+                        <div id="totalEarnings" class="stat-value">R0.00</div>
+                        <div class="stat-label">Earnings</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- My Uploads Section -->
+            <section class="dashboard-section">
+                <div class="glassmorphism section-header">
+                    <h2 class="section-title">My Uploads</h2>
+                    <button id="seeAllUploads" class="see-all-btn">
+                        See All
+                        <i class="fas fa-arrow-right"></i>
+                    </button>
+                </div>
+                <div id="uploadsContent" class="uploads-grid">
+                    <!-- Content will be loaded here -->
+                </div>
+            </section>
+
+            <!-- Upload New Content -->
+            <section class="dashboard-section">
+                <div class="glassmorphism upload-promo">
+                    <h2 class="promo-title">Upload New Content</h2>
+                    <p class="promo-text">Share your stories with the world and start earning</p>
+                    <button id="uploadContentBtn" class="upload-btn">
+                        <i class="fas fa-plus-circle"></i>
+                        Upload Content
+                    </button>
+                </div>
+            </section>
+
+            <!-- Quick Actions -->
+            <section class="dashboard-section">
+                <div class="glassmorphism section-header">
+                    <h2 class="section-title">Quick Actions</h2>
+                </div>
+                <div class="quick-actions">
+                    <div class="glassmorphism action-card" id="quickUpload">
+                        <div class="action-icon">
+                            <i class="fas fa-cloud-upload"></i>
+                        </div>
+                        <div class="action-title">Upload Content</div>
+                    </div>
+                    <div class="glassmorphism action-card" id="viewAnalytics">
+                        <div class="action-icon">
+                            <i class="fas fa-chart-line"></i>
+                        </div>
+                        <div class="action-title">View Analytics</div>
+                    </div>
+                    <div class="glassmorphism action-card payout-action" id="payoutRequest">
+                        <div class="action-icon">
+                            <i class="fas fa-wallet"></i>
+                        </div>
+                        <div class="action-title">Payout Request</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Messages & Notifications -->
+            <section class="dashboard-section">
+                <div class="glassmorphism section-header">
+                    <h2 class="section-title">Messages & Notifications</h2>
+                </div>
+                <div class="glassmorphism messages-section">
+                    <div class="messages-icon">
+                        <i class="fas fa-envelope-open-text"></i>
+                    </div>
+                    <p class="messages-text">
+                        No new messages. We'll notify you when fans interact with your content.
+                    </p>
+                </div>
+            </section>
+        </main>
+
+        <!-- Global Navigation -->
+        <nav class="global-nav">
+            <a href="index.html" class="nav-item">
+                <i class="fas fa-home"></i>
+                Home
+            </a>
+            <a href="trending_screen.html" class="nav-item">
+                <i class="fas fa-fire"></i>
+                Trending
+            </a>
+            <a href="content-library.html" class="nav-item">
+                <i class="fas fa-th-large"></i>
+                Library
+            </a>
+            <a href="creator-dashboard.html" class="nav-item active">
+                <i class="fas fa-user"></i>
+                Creator
+            </a>
+        </nav>
+    </div>
+
+    <!-- Error State -->
+    <div id="errorState" class="error-state" style="display: none;">
+        <div class="error-icon">
+            <i class="fas fa-wifi-slash"></i>
+        </div>
+        <h2 class="error-title" id="errorTitle">Connection Error</h2>
+        <p class="error-message" id="errorMessage">Your account is ready, but we're having trouble loading your dashboard.</p>
+        <div class="error-actions">
+            <button id="retryBtn" class="action-btn retry-btn">
+                <i class="fas fa-redo"></i>
+                Retry
+            </button>
+            <button id="reloginBtn" class="action-btn login-btn">
+                <i class="fas fa-sign-in-alt"></i>
+                Re-Login
+            </button>
+        </div>
+    </div>
+
+    <!-- Payout Modal -->
+    <div id="payoutModal" class="modal-overlay">
+        <div class="modal-content glassmorphism">
+            <div class="modal-header">
+                <div class="modal-icon">
+                    <i class="fas fa-wallet"></i>
+                </div>
+                <div class="modal-title">Payout Request</div>
+                <button class="modal-close" id="closePayoutModal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div style="color: var(--slate-grey); font-size: 14px; margin-bottom: 10px;">
+                    Available Balance:
+                </div>
+                <div id="payoutAmount" class="payout-amount">R0.00</div>
+                <div class="modal-note">
+                    Minimum payout amount: R100.00<br><br>
+                    Your earnings will be processed within 3-5 business days.
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button class="modal-btn secondary" id="cancelPayout">
+                    Cancel
+                </button>
+                <button class="modal-btn primary" id="requestPayout">
+                    Request Payout
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toast-container"></div>
+
+    <!-- SUPABASE CLIENT - SAME AS OTHER PAGES -->
+    <script>
+        // Simple Supabase REST client
+        class SimpleSupabaseClient {
+            constructor(url, key) {
+                this.url = url;
+                this.key = key;
+            }
+            
+            async query(table, options = {}) {
+                const {
+                    select = '*',
+                    where = {},
+                    orderBy = 'created_at',
+                    order = 'desc',
+                    limit = 100,
+                    offset = 0
+                } = options;
+                
+                // Build query URL
+                let queryUrl = `${this.url}/rest/v1/${table}?select=${select}`;
+                
+                // Add filters
+                Object.keys(where).forEach(key => {
+                    queryUrl += `&${key}=eq.${encodeURIComponent(where[key])}`;
+                });
+                
+                // Add ordering
+                if (orderBy) {
+                    queryUrl += `&order=${orderBy}.${order}`;
+                }
+                
+                // Add limit and offset
+                queryUrl += `&limit=${limit}&offset=${offset}`;
+                
+                try {
+                    const response = await fetch(queryUrl, {
+                        headers: {
+                            'apikey': this.key,
+                            'Authorization': `Bearer ${this.key}`,
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    
+                    return await response.json();
+                } catch (error) {
+                    console.error('Supabase query error:', error);
+                    throw error;
+                }
+            }
+            
+            async queryWithFilter(table, column, value, select = '*') {
+                try {
+                    const response = await fetch(
+                        `${this.url}/rest/v1/${table}?${column}=eq.${encodeURIComponent(value)}&select=${select}`,
+                        {
+                            headers: {
+                                'apikey': this.key,
+                                'Authorization': `Bearer ${this.key}`,
+                                'Content-Type': 'application/json'
+                            }
+                        }
+                    );
+                    
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    
+                    return await response.json();
+                } catch (error) {
+                    console.error('Supabase query error:', error);
+                    throw error;
+                }
+            }
+            
+            fixMediaUrl(url) {
+                if (!url) return '';
+                if (url.startsWith('http')) return url;
+                return `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/${url.replace(/^\/+/, '')}`;
+            }
+            
+            async getCurrentUser() {
+                try {
+                    // For web, we need to check session differently
+                    // We'll use localStorage to store session
+                    const session = JSON.parse(localStorage.getItem('supabase.auth.token') || '{}');
+                    if (session.user) {
+                        return {
+                            id: session.user.id,
+                            email: session.user.email,
+                            name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'Creator'
+                        };
+                    }
+                    return null;
+                } catch (error) {
+                    console.error('Error getting current user:', error);
+                    return null;
+                }
+            }
+            
+            async signOut() {
+                try {
+                    // Clear localStorage session
+                    localStorage.removeItem('supabase.auth.token');
+                    return true;
+                } catch (error) {
+                    console.error('Error signing out:', error);
+                    return false;
+                }
+            }
+            
+            async getCreatorDashboardData(userId) {
+                try {
+                    // Get creator's content
+                    const content = await this.queryWithFilter('Content', 'user_id', userId, '*,user_profiles!user_id(*)');
+                    
+                    // Calculate analytics
+                    const analytics = {
+                        total_uploads: content.length || 0,
+                        total_views: 0,
+                        total_earnings: 0,
+                        total_connectors: 0
+                    };
+                    
+                    // Calculate total views and earnings
+                    for (const item of content) {
+                        analytics.total_views += item.views_count || 0;
+                        // Simple earnings calculation: R0.01 per view
+                        analytics.total_earnings += (item.views_count || 0) * 0.01;
+                    }
+                    
+                    // Get connector count (simulated)
+                    analytics.total_connectors = Math.floor(analytics.total_views / 100);
+                    
+                    return {
+                        user: {
+                            name: 'Creator',
+                            avatar_url: null
+                        },
+                        analytics: analytics,
+                        content: content.map(item => ({
+                            id: item.id,
+                            title: item.title || 'Untitled',
+                            description: item.description || '',
+                            thumbnail_url: item.thumbnail_url,
+                            status: item.status || 'draft',
+                            views: item.views_count || 0,
+                            created_at: item.created_at
+                        }))
+                    };
+                } catch (error) {
+                    console.error('Error getting dashboard data:', error);
+                    throw error;
+                }
+            }
+        }
+        
+        // Initialize simple Supabase client
+        const supabase = new SimpleSupabaseClient(
+            'https://ydnxqnbjoshvxteevemc.supabase.co',
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U'
+        );
+        
+        console.log('✅ Simple Supabase client initialized for creator dashboard');
+    </script>
+
+    <!-- CREATOR DASHBOARD JAVASCRIPT -->
+    <script>
+        // Wait for DOM to be ready
+        document.addEventListener('DOMContentLoaded', async () => {
+            console.log('👑 Creator Dashboard Initializing...');
+            
+            // State variables
+            let currentUser = null;
+            let dashboardData = null;
+            let isLoading = true;
+            let error = null;
+            
+            // DOM Elements
+            const loadingScreen = document.getElementById('loading');
+            const loadingText = document.getElementById('loading-text');
+            const app = document.getElementById('app');
+            const errorState = document.getElementById('errorState');
+            const errorTitle = document.getElementById('errorTitle');
+            const errorMessage = document.getElementById('errorMessage');
+            
+            // User Info Elements
+            const creatorAvatar = document.getElementById('creatorAvatar');
+            const creatorName = document.getElementById('creatorName');
+            const connectorCount = document.getElementById('connectorCount');
+            const founderBadge = document.getElementById('founderBadge');
+            
+            // Stats Elements
+            const totalUploads = document.getElementById('totalUploads');
+            const totalViews = document.getElementById('totalViews');
+            const totalEarnings = document.getElementById('totalEarnings');
+            
+            // Uploads Elements
+            const uploadsContent = document.getElementById('uploadsContent');
+            
+            // Buttons
+            const signoutBtn = document.getElementById('signout-btn');
+            const seeAllUploads = document.getElementById('seeAllUploads');
+            const uploadContentBtn = document.getElementById('uploadContentBtn');
+            const quickUpload = document.getElementById('quickUpload');
+            const viewAnalytics = document.getElementById('viewAnalytics');
+            const payoutRequest = document.getElementById('payoutRequest');
+            const retryBtn = document.getElementById('retryBtn');
+            const reloginBtn = document.getElementById('reloginBtn');
+            
+            // Modal Elements
+            const payoutModal = document.getElementById('payoutModal');
+            const closePayoutModal = document.getElementById('closePayoutModal');
+            const payoutAmount = document.getElementById('payoutAmount');
+            const cancelPayout = document.getElementById('cancelPayout');
+            const requestPayout = document.getElementById('requestPayout');
+            
+            // ✅ SHOW/HIDE LOADING
+            function setLoading(loading, text = '') {
+                if (text) loadingText.textContent = text;
+                
+                if (loading) {
+                    loadingScreen.style.display = 'flex';
+                    app.style.display = 'none';
+                    errorState.style.display = 'none';
+                } else {
+                    setTimeout(() => {
+                        loadingScreen.style.display = 'none';
+                    }, 500);
+                }
+            }
+            
+            // ✅ SHOW ERROR STATE
+            function showError(title, message) {
+                errorTitle.textContent = title;
+                errorMessage.textContent = message;
+                errorState.style.display = 'block';
+                app.style.display = 'none';
+                loadingScreen.style.display = 'none';
+            }
+            
+            // ✅ SHOW TOAST MESSAGE
+            function showToast(message, type = 'info') {
+                const toast = document.createElement('div');
+                toast.className = `toast ${type}`;
+                toast.textContent = message;
+                
+                const container = document.getElementById('toast-container');
+                container.appendChild(toast);
+                
+                setTimeout(() => {
+                    toast.style.opacity = '0';
+                    toast.style.transform = 'translateX(100%)';
+                    setTimeout(() => toast.remove(), 300);
+                }, 3000);
+            }
+            
+            // ✅ FORMAT CURRENCY (ZAR)
+            function formatCurrency(amount) {
+                return 'R' + parseFloat(amount).toFixed(2);
+            }
+            
+            // ✅ FORMAT NUMBER
+            function formatNumber(num) {
+                if (num >= 1000000) {
+                    return (num / 1000000).toFixed(1) + 'M';
+                } else if (num >= 1000) {
+                    return (num / 1000).toFixed(1) + 'K';
+                }
+                return num;
+            }
+            
+            // ✅ CONVERT USD TO ZAR
+            function convertToZAR(usdAmount) {
+                const usdToZarRate = 18.5;
+                const zarAmount = usdAmount * usdToZarRate;
+                return formatCurrency(zarAmount);
+            }
+            
+            // ✅ CHECK AUTHENTICATION
+            async function checkAuthentication() {
+                try {
+                    setLoading(true, 'Checking authentication...');
+                    
+                    currentUser = await supabase.getCurrentUser();
+                    
+                    if (!currentUser) {
+                        console.log('⚠️ No user session found, redirecting to login...');
+                        // Store current page for redirect back
+                        localStorage.setItem('redirectAfterLogin', 'creator-dashboard.html');
+                        window.location.href = 'login.html';
+                        return false;
+                    }
+                    
+                    console.log('✅ User authenticated:', currentUser);
+                    return true;
+                    
+                } catch (error) {
+                    console.error('❌ Authentication error:', error);
+                    return false;
+                }
+            }
+            
+            // ✅ LOAD DASHBOARD DATA
+            async function loadDashboardData() {
+                try {
+                    setLoading(true, 'Loading dashboard data...');
+                    
+                    dashboardData = await supabase.getCreatorDashboardData(currentUser.id);
+                    
+                    console.log('✅ Dashboard data loaded:', dashboardData);
+                    
+                    // Update UI
+                    updateUserInfo();
+                    updateStats();
+                    updateUploads();
+                    
+                    // Show the app
+                    app.style.display = 'block';
+                    setLoading(false);
+                    
+                } catch (error) {
+                    console.error('❌ Error loading dashboard data:', error);
+                    
+                    const errorStr = error.toString().toLowerCase();
+                    let userFriendlyError = '⚠️ Connection issue. Please check network or refresh.';
+                    
+                    if (errorStr.includes('not authenticated') || errorStr.includes('unauthorized') || errorStr.includes('auth')) {
+                        // Redirect to login
+                        localStorage.setItem('redirectAfterLogin', 'creator-dashboard.html');
+                        window.location.href = 'login.html';
+                        return;
+                    } else if (errorStr.includes('network') || errorStr.includes('connection') || errorStr.includes('timeout')) {
+                        userFriendlyError = '⚠️ Network issue. Please check your internet connection.';
+                    } else if (errorStr.includes('permission') || errorStr.includes('access denied')) {
+                        userFriendlyError = '⚠️ Access denied. Please log in again.';
+                    } else if (errorStr.includes('database') || errorStr.includes('table')) {
+                        userFriendlyError = '⚠️ Data loading issue. Your profile may need setup.';
+                    }
+                    
+                    showError('Loading Error', userFriendlyError);
+                }
+            }
+            
+            // ✅ UPDATE USER INFO
+            function updateUserInfo() {
+                if (!dashboardData) return;
+                
+                const user = dashboardData.user;
+                
+                // Set creator name
+                creatorName.textContent = user.name || currentUser.name || 'Creator';
+                
+                // Set avatar
+                if (user.avatar_url) {
+                    creatorAvatar.src = supabase.fixMediaUrl(user.avatar_url);
+                }
+                
+                // Set connector count
+                const connectors = dashboardData.analytics.total_connectors || 0;
+                connectorCount.textContent = `${formatNumber(connectors)} Connector${connectors !== 1 ? 's' : ''}`;
+                
+                // Show founder badge if applicable
+                // This would come from user profile data
+                const isFounder = user.is_founder || false;
+                if (isFounder) {
+                    founderBadge.style.display = 'flex';
+                }
+            }
+            
+            // ✅ UPDATE STATS
+            function updateStats() {
+                if (!dashboardData) return;
+                
+                const analytics = dashboardData.analytics;
+                
+                totalUploads.textContent = formatNumber(analytics.total_uploads);
+                totalViews.textContent = formatNumber(analytics.total_views);
+                totalEarnings.textContent = convertToZAR(analytics.total_earnings || 0);
+            }
+            
+            // ✅ UPDATE UPLOADS
+            function updateUploads() {
+                if (!dashboardData) return;
+                
+                const content = dashboardData.content;
+                
+                if (!content || content.length === 0) {
+                    uploadsContent.innerHTML = `
+                        <div class="glassmorphism empty-state">
+                            <div class="empty-icon">
+                                <i class="fas fa-film"></i>
+                            </div>
+                            <p class="empty-text">
+                                You haven't uploaded yet.<br>
+                                Upload your first story today 🎬
+                            </p>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                // Show only first 2 items
+                const displayContent = content.slice(0, 2);
+                
+                uploadsContent.innerHTML = displayContent.map(item => {
+                    const statusClass = item.status === 'published' ? 'status-published' : 'status-draft';
+                    const statusText = item.status === 'published' ? 'Published' : 'Draft';
+                    
+                    return `
+                        <div class="glassmorphism upload-card">
+                            <h3 class="upload-title" title="${item.title}">
+                                ${item.title.length > 50 ? item.title.substring(0, 50) + '...' : item.title}
+                            </h3>
+                            <div class="${statusClass} upload-status">
+                                ${statusText}
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+                
+                // Add message about managing content
+                if (content.length > 2) {
+                    uploadsContent.innerHTML += `
+                        <div class="glassmorphism empty-state">
+                            <p class="empty-text">
+                                Showing ${displayContent.length} of ${content.length} uploads.<br>
+                                Click "See All" to manage all your content.
+                            </p>
+                        </div>
+                    `;
+                }
+            }
+            
+            // ✅ SETUP EVENT LISTENERS
+            function setupEventListeners() {
+                // Sign out button
+                signoutBtn.addEventListener('click', async () => {
+                    try {
+                        await supabase.signOut();
+                        showToast('Signed out successfully', 'success');
+                        setTimeout(() => {
+                            window.location.href = 'login.html';
+                        }, 1500);
+                    } catch (error) {
+                        console.error('Sign out error:', error);
+                        showToast('Error signing out', 'error');
+                    }
+                });
+                
+                // See all uploads button
+                seeAllUploads.addEventListener('click', () => {
+                    showToast('My Uploads page coming soon!', 'info');
+                    // In a real app: window.location.href = 'my-uploads.html';
+                });
+                
+                // Upload content buttons
+                uploadContentBtn.addEventListener('click', () => {
+                    showToast('Upload page coming soon!', 'info');
+                    // In a real app: window.location.href = 'upload-content.html';
+                });
+                
+                quickUpload.addEventListener('click', () => {
+                    showToast('Upload page coming soon!', 'info');
+                    // In a real app: window.location.href = 'upload-content.html';
+                });
+                
+                // View analytics button
+                viewAnalytics.addEventListener('click', () => {
+                    showToast('Analytics dashboard coming soon!', 'info');
+                    // In a real app: show analytics modal
+                });
+                
+                // Payout request button
+                payoutRequest.addEventListener('click', () => {
+                    if (dashboardData && dashboardData.analytics) {
+                        const earnings = dashboardData.analytics.total_earnings || 0;
+                        payoutAmount.textContent = convertToZAR(earnings);
+                        payoutModal.style.display = 'flex';
+                    }
+                });
+                
+                // Modal close buttons
+                closePayoutModal.addEventListener('click', () => {
+                    payoutModal.style.display = 'none';
+                });
+                
+                cancelPayout.addEventListener('click', () => {
+                    payoutModal.style.display = 'none';
+                });
+                
+                // Request payout button
+                requestPayout.addEventListener('click', () => {
+                    const earnings = dashboardData.analytics.total_earnings || 0;
+                    const zarAmount = earnings * 18.5;
+                    
+                    if (zarAmount < 100) {
+                        showToast(`Minimum payout amount is R100.00. Current balance: ${convertToZAR(earnings)}`, 'error');
+                        return;
+                    }
+                    
+                    showToast(`Payout request submitted for ${convertToZAR(earnings)}`, 'success');
+                    payoutModal.style.display = 'none';
+                });
+                
+                // Error state buttons
+                retryBtn.addEventListener('click', () => {
+                    errorState.style.display = 'none';
+                    initializeDashboard();
+                });
+                
+                reloginBtn.addEventListener('click', () => {
+                    localStorage.setItem('redirectAfterLogin', 'creator-dashboard.html');
+                    window.location.href = 'login.html';
+                });
+                
+                // Close modal when clicking outside
+                payoutModal.addEventListener('click', (e) => {
+                    if (e.target === payoutModal) {
+                        payoutModal.style.display = 'none';
+                    }
+                });
+            }
+            
+            // ✅ INITIALIZE DASHBOARD
+            async function initializeDashboard() {
+                console.log('👑 Initializing Creator Dashboard...');
+                
+                // Check authentication
+                const isAuthenticated = await checkAuthentication();
+                
+                if (!isAuthenticated) {
+                    return;
+                }
+                
+                // Load dashboard data
+                await loadDashboardData();
+                
+                // Setup event listeners
+                setupEventListeners();
+                
+                console.log('✅ Creator Dashboard initialized successfully');
+            }
+            
+            // Start initialization
+            await initializeDashboard();
+        });
+    </script>
+</body>
+</html>
