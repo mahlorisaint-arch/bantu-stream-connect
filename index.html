@@ -70,14 +70,12 @@
             gap: 12px;
         }
         
-        .logo-icon {
-            width: 32px;
-            height: 32px;
-            background: linear-gradient(135deg, #4dabf7 0%, #748ffc 100%);
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+        .app-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            object-fit: cover;
+            border: 2px solid rgba(255, 255, 255, 0.2);
         }
         
         .logo-text {
@@ -113,42 +111,36 @@
             color: #FFD700;
         }
         
-        /* Category Tabs */
-        .category-tabs-container {
-            background: rgba(10, 17, 40, 0.9);
-            backdrop-filter: blur(10px);
-            padding: 15px 20px;
-            position: sticky;
-            top: 70px;
-            z-index: 99;
-            overflow-x: auto;
-            white-space: nowrap;
-        }
-        
-        .category-tabs {
-            display: inline-flex;
-            gap: 8px;
-        }
-        
-        .category-tab {
-            padding: 8px 16px;
+        .profile-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
             background: rgba(255, 255, 255, 0.1);
             border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 20px;
-            color: white;
-            font-size: 14px;
             cursor: pointer;
+            overflow: hidden;
             transition: all 0.3s ease;
         }
         
-        .category-tab:hover {
+        .profile-btn:hover {
             background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
         }
         
-        .category-tab.active {
+        .profile-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .profile-placeholder {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             background: linear-gradient(135deg, #4dabf7 0%, #748ffc 100%);
-            border-color: transparent;
-            box-shadow: 0 4px 15px rgba(77, 171, 247, 0.4);
+            color: white;
         }
         
         /* Main Content */
@@ -363,6 +355,41 @@
             color: rgba(255, 255, 255, 0.6);
         }
         
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .footer-links a {
+            color: #4dabf7;
+            text-decoration: none;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+        
+        .footer-links a:hover {
+            color: #FFD700;
+            text-decoration: underline;
+        }
+        
+        .footer-contact {
+            margin-top: 20px;
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.7);
+        }
+        
+        .footer-contact a {
+            color: #FFD700;
+            text-decoration: none;
+        }
+        
+        .footer-contact a:hover {
+            text-decoration: underline;
+        }
+        
         /* Empty State */
         .empty-state {
             text-align: center;
@@ -429,6 +456,14 @@
             .card-thumbnail {
                 height: 120px;
             }
+            
+            .footer-links {
+                gap: 10px;
+            }
+            
+            .footer-links a {
+                font-size: 12px;
+            }
         }
         
         @media (max-width: 480px) {
@@ -439,6 +474,11 @@
             .hero-btn, .cta-button {
                 padding: 12px 24px;
                 font-size: 16px;
+            }
+            
+            .footer-links {
+                flex-direction: column;
+                gap: 8px;
             }
         }
     </style>
@@ -455,11 +495,7 @@
         <!-- Header -->
         <header class="header">
             <div class="logo">
-                <div class="logo-icon">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
-                        <path d="M4 6h16M4 12h16M4 18h16"/>
-                    </svg>
-                </div>
+                <img src="assets/icon/bantu_stream_connect_icon.png" alt="Bantu Stream Connect" class="app-icon">
                 <div class="logo-text">Bantu Stream Connect</div>
             </div>
             <div class="header-actions">
@@ -468,20 +504,16 @@
                         <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
                     </svg>
                 </button>
-                <button id="profile-btn" class="icon-btn" title="Profile">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
-                    </svg>
+                <button id="profile-btn" class="profile-btn" title="Profile">
+                    <!-- Profile picture will be loaded here -->
+                    <div class="profile-placeholder">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                        </svg>
+                    </div>
                 </button>
             </div>
         </header>
-
-        <!-- Category Tabs -->
-        <div class="category-tabs-container">
-            <div id="category-tabs" class="category-tabs">
-                <!-- Categories will be loaded here -->
-            </div>
-        </div>
 
         <!-- Main Content -->
         <main class="container">
@@ -489,7 +521,7 @@
             <section class="hero">
                 <h1>Welcome to Bantu Stream Connect</h1>
                 <p>Discover amazing content from creators across Africa</p>
-                <button id="browse-all-btn" class="hero-btn">Browse All Content</button>
+                <button id="browse-all-btn" class="hero-btn" data-target="explore">Browse All Content</button>
             </section>
 
             <!-- Content Sections -->
@@ -499,7 +531,7 @@
 
             <!-- Browse All CTA -->
             <div class="browse-all-cta">
-                <button id="browse-all-cta" class="cta-button">
+                <button id="browse-all-cta" class="cta-button" data-target="content-library">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M3 12a9 9 0 1018 0 9 9 0 10-18 0"/>
                         <path d="M12 3v18"/>
@@ -516,6 +548,17 @@
         <!-- Footer -->
         <footer class="footer">
             <p>Bantu Stream Connect © 2025 • Built in South Africa</p>
+            <div class="footer-links">
+                <a href="data-deletion-request.html">Data Deletion Request</a>
+                <a href="delete-account.html">Delete Account</a>
+                <a href="empowerment.html">Empowerment</a>
+                <a href="blog.html">Blog</a>
+                <a href="privacy-policy.html">Privacy Policy</a>
+                <a href="thank-you.html">Thank You</a>
+            </div>
+            <div class="footer-contact">
+                Need help? Contact us at <a href="mailto:support@bantustreamconnect.com">support@bantustreamconnect.com</a>
+            </div>
         </footer>
     </div>
 
@@ -576,6 +619,34 @@
                     throw error;
                 }
             }
+            
+            async getCurrentUser() {
+                try {
+                    // Check if we have a stored session
+                    const session = localStorage.getItem('supabase.auth.token');
+                    if (!session) return null;
+                    
+                    const sessionData = JSON.parse(session);
+                    return sessionData.user || null;
+                } catch (error) {
+                    console.error('Error getting current user:', error);
+                    return null;
+                }
+            }
+            
+            async getUserProfile(userId) {
+                try {
+                    const profiles = await this.query('user_profiles', {
+                        where: { user_id: userId },
+                        limit: 1
+                    });
+                    
+                    return profiles.length > 0 ? profiles[0] : null;
+                } catch (error) {
+                    console.error('Error getting user profile:', error);
+                    return null;
+                }
+            }
         }
         
         // Initialize simple Supabase client
@@ -598,6 +669,8 @@
             let filteredContentData = [];
             let selectedCategoryIndex = 0;
             let isLoading = true;
+            let currentUser = null;
+            let userProfile = null;
             
             // Categories (same as mobile app)
             const categories = [
@@ -620,8 +693,8 @@
             const loadingScreen = document.getElementById('loading');
             const loadingText = document.getElementById('loading-text');
             const app = document.getElementById('app');
-            const categoryTabs = document.getElementById('category-tabs');
             const contentSections = document.getElementById('content-sections');
+            const profileBtn = document.getElementById('profile-btn');
             
             // ✅ SHOW/HIDE LOADING
             function setLoading(loading, text = '') {
@@ -653,6 +726,47 @@
                     toast.style.transform = 'translateX(100%)';
                     setTimeout(() => toast.remove(), 300);
                 }, 3000);
+            }
+            
+            // ✅ LOAD USER PROFILE PICTURE
+            async function loadUserProfilePicture() {
+                try {
+                    currentUser = await supabase.getCurrentUser();
+                    
+                    if (currentUser) {
+                        userProfile = await supabase.getUserProfile(currentUser.id);
+                        
+                        if (userProfile && userProfile.avatar_url) {
+                            // Fix avatar URL
+                            let avatarUrl = userProfile.avatar_url;
+                            if (!avatarUrl.startsWith('http')) {
+                                avatarUrl = `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/${avatarUrl.replace(/^\/+/, '')}`;
+                            }
+                            
+                            // Create img element for profile picture
+                            const profileImg = document.createElement('img');
+                            profileImg.className = 'profile-img';
+                            profileImg.src = avatarUrl;
+                            profileImg.alt = 'Profile Picture';
+                            profileImg.onerror = function() {
+                                // If image fails to load, show placeholder
+                                this.parentElement.innerHTML = `
+                                    <div class="profile-placeholder">
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                                        </svg>
+                                    </div>
+                                `;
+                            };
+                            
+                            // Clear placeholder and add image
+                            profileBtn.innerHTML = '';
+                            profileBtn.appendChild(profileImg);
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error loading user profile picture:', error);
+                }
             }
             
             // ✅ FETCH HOME FEED CONTENT
@@ -865,6 +979,9 @@
                 try {
                     setLoading(true, 'Loading Bantu Stream Connect...');
                     
+                    // Load user profile picture
+                    await loadUserProfilePicture();
+                    
                     // Load content
                     loadingText.textContent = 'Fetching content...';
                     allContentData = await fetchHomeFeedContent();
@@ -874,7 +991,6 @@
                     
                     // Render UI
                     loadingText.textContent = 'Setting up interface...';
-                    renderCategoryTabs();
                     renderContentSections();
                     
                     // Setup event listeners
@@ -888,26 +1004,6 @@
                     showToast('Failed to initialize. Please refresh the page.', 'error');
                     setLoading(false);
                 }
-            }
-            
-            // ✅ RENDER CATEGORY TABS
-            function renderCategoryTabs() {
-                if (!categoryTabs) return;
-                
-                categoryTabs.innerHTML = categories.map((category, index) => `
-                    <button class="category-tab ${index === selectedCategoryIndex ? 'active' : ''}" 
-                            data-index="${index}">
-                        ${category}
-                    </button>
-                `).join('');
-                
-                // Add click handlers
-                document.querySelectorAll('.category-tab').forEach(button => {
-                    button.addEventListener('click', (e) => {
-                        const index = parseInt(button.dataset.index);
-                        onCategoryChanged(index);
-                    });
-                });
             }
             
             // ✅ RENDER CONTENT SECTIONS
@@ -930,7 +1026,7 @@
                     <section class="section">
                         <div class="section-header">
                             <h2 class="section-title">Latest Uploads</h2>
-                            <button class="see-all-btn" data-action="browse-all">See All</button>
+                            <button class="see-all-btn" data-action="see-all" data-target="content-library">See All</button>
                         </div>
                         <div class="content-grid">
                             ${renderContentCards(filteredContentData.slice(0, 5))}
@@ -941,7 +1037,7 @@
                     <section class="section">
                         <div class="section-header">
                             <h2 class="section-title">Most Viewed</h2>
-                            <button class="see-all-btn" data-action="browse-all">See All</button>
+                            <button class="see-all-btn" data-action="see-all" data-target="content-library">See All</button>
                         </div>
                         <div class="content-grid">
                             ${renderContentCards(getMostViewedContent(filteredContentData))}
@@ -952,7 +1048,7 @@
                     <section class="section">
                         <div class="section-header">
                             <h2 class="section-title">Most Liked</h2>
-                            <button class="see-all-btn" data-action="browse-all">See All</button>
+                            <button class="see-all-btn" data-action="see-all" data-target="content-library">See All</button>
                         </div>
                         <div class="content-grid">
                             ${renderContentCards(getMostLikedContent(filteredContentData))}
@@ -963,7 +1059,7 @@
                     <section class="section">
                         <div class="section-header">
                             <h2 class="section-title">Trending Now</h2>
-                            <button class="see-all-btn" data-action="browse-all">See All</button>
+                            <button class="see-all-btn" data-action="see-all" data-target="trending">See All</button>
                         </div>
                         <div class="content-grid">
                             ${renderContentCards(getTrendingContent(filteredContentData))}
@@ -975,7 +1071,7 @@
                         <section class="section">
                             <div class="section-header">
                                 <h2 class="section-title">${categories[selectedCategoryIndex]}</h2>
-                                <button class="see-all-btn" data-action="browse-all">See All</button>
+                                <button class="see-all-btn" data-action="see-all" data-target="content-library">See All</button>
                             </div>
                             <div class="content-grid">
                                 ${filteredContentData.length > 0 
@@ -1028,75 +1124,58 @@
                 `).join('');
             }
             
-            // ✅ CATEGORY CHANGE HANDLER
-            function onCategoryChanged(index) {
-                selectedCategoryIndex = index;
-                const selectedCategory = categories[index];
-                
-                console.log(`🎯 Category changed to: ${selectedCategory}`);
-                
-                // Update active tab
-                document.querySelectorAll('.category-tab').forEach((btn, i) => {
-                    btn.classList.toggle('active', i === index);
-                });
-                
-                // Filter content
-                if (selectedCategory === 'All') {
-                    filteredContentData = allContentData;
-                } else {
-                    filteredContentData = allContentData.filter(item => {
-                        const itemGenre = item.genre;
-                        if (!itemGenre) return false;
-                        
-                        const normalizedItemGenre = itemGenre.toLowerCase().trim();
-                        const normalizedSelectedCategory = selectedCategory.toLowerCase().trim();
-                        
-                        if (selectedCategory === 'Kids') {
-                            return normalizedItemGenre === 'kids';
-                        }
-                        
-                        return normalizedItemGenre === normalizedSelectedCategory;
+            // ✅ SETUP EVENT LISTENERS
+            function setupEventListeners() {
+                // Search button - redirect to content-library.html
+                const searchBtn = document.getElementById('search-btn');
+                if (searchBtn) {
+                    searchBtn.addEventListener('click', () => {
+                        window.location.href = 'content-library.html';
                     });
                 }
                 
-                console.log(`📊 Filtered content count: ${filteredContentData.length}`);
-                
-                // Re-render content sections
-                renderContentSections();
-            }
-            
-            // ✅ SETUP EVENT LISTENERS
-            function setupEventListeners() {
-                // Search button
-                const searchBtn = document.getElementById('search-btn');
-                if (searchBtn) {
-                    searchBtn.addEventListener('click', handleSearch);
-                }
-                
-                // Profile button
-                const profileBtn = document.getElementById('profile-btn');
+                // Profile button - redirect to profile.html
                 if (profileBtn) {
-                    profileBtn.addEventListener('click', handleProfile);
+                    profileBtn.addEventListener('click', () => {
+                        window.location.href = 'profile.html';
+                    });
                 }
                 
                 // Browse all buttons
                 const browseAllBtn = document.getElementById('browse-all-btn');
                 const browseAllCta = document.getElementById('browse-all-cta');
                 
-                if (browseAllBtn) browseAllBtn.addEventListener('click', handleBrowseAll);
-                if (browseAllCta) browseAllCta.addEventListener('click', handleBrowseAll);
+                if (browseAllBtn) {
+                    browseAllBtn.addEventListener('click', () => {
+                        // Hero section button goes to explore-screen.html
+                        window.location.href = 'explore-screen.html';
+                    });
+                }
+                
+                if (browseAllCta) {
+                    browseAllCta.addEventListener('click', () => {
+                        // Bottom button goes to content-library.html
+                        window.location.href = 'content-library.html';
+                    });
+                }
                 
                 // See all buttons (delegated)
                 document.addEventListener('click', (e) => {
-                    if (e.target.closest('[data-action="browse-all"]')) {
-                        handleBrowseAll();
+                    const seeAllBtn = e.target.closest('[data-action="see-all"]');
+                    if (seeAllBtn) {
+                        const target = seeAllBtn.dataset.target;
+                        if (target === 'trending') {
+                            window.location.href = 'trending_screen.html';
+                        } else {
+                            window.location.href = 'content-library.html';
+                        }
                     }
                 });
             }
             
             // ✅ SETUP CONTENT CARD LISTENERS
             function setupContentCardListeners() {
-                // Content card clicks
+                // Content card clicks - redirect to content-detail.html
                 document.querySelectorAll('.content-card').forEach(card => {
                     card.addEventListener('click', (e) => {
                         // Don't trigger if clicking on share or creator button
@@ -1105,9 +1184,8 @@
                         }
                         
                         const contentId = card.dataset.contentId;
-                        const content = allContentData.find(c => c.id == contentId);
-                        if (content) {
-                            navigateToVideoPlayer(content);
+                        if (contentId) {
+                            window.location.href = `content-detail.html?id=${contentId}`;
                         }
                     });
                 });
@@ -1124,56 +1202,22 @@
                     });
                 });
                 
-                // Creator buttons
+                // Creator buttons - redirect to creator-channel.html
                 document.querySelectorAll('.creator-btn').forEach(btn => {
                     btn.addEventListener('click', (e) => {
                         e.stopPropagation();
                         const creatorId = btn.dataset.creatorId;
                         const creatorName = btn.dataset.creatorName;
-                        navigateToCreatorChannel(creatorId, creatorName);
+                        if (creatorId) {
+                            window.location.href = `creator-channel.html?id=${creatorId}&name=${encodeURIComponent(creatorName)}`;
+                        } else {
+                            showToast(`Cannot view ${creatorName}'s channel - missing creator information`, 'error');
+                        }
                     });
                 });
             }
             
-            // ✅ EVENT HANDLERS
-            function handleSearch() {
-                console.log('🔍 Search clicked');
-                showToast('Search functionality coming soon!', 'success');
-            }
-            
-            function handleProfile() {
-                console.log('👤 Profile clicked');
-                showToast('Profile page coming soon!', 'success');
-            }
-            
-            function handleBrowseAll() {
-                console.log('📚 Browse All clicked');
-                showToast('Content library coming soon!', 'success');
-            }
-            
-            function navigateToCreatorChannel(creatorId, creatorName) {
-                if (!creatorId) {
-                    showToast(`Cannot view ${creatorName}'s channel - missing creator information`, 'error');
-                    return;
-                }
-                
-                console.log(`🔄 Navigating to creator channel: ${creatorId} (${creatorName})`);
-                showToast(`Opening ${creatorName}'s channel...`, 'success');
-            }
-            
-            function navigateToVideoPlayer(content) {
-                if (!content.id || !content.file_url) {
-                    showToast('Unable to play content: Missing required data', 'error');
-                    return;
-                }
-                
-                console.log('▶️ Playing content:', content.title);
-                showToast(`Playing "${content.title}"...`, 'success');
-                
-                // In a real app, this would navigate to video player
-                // window.location.href = `video-player.html?id=${content.id}`;
-            }
-            
+            // ✅ SHARE CONTENT
             function shareContent(content) {
                 const title = content.title || 'Amazing Content';
                 const creatorName = content.creator || 'Bantu Creator';
