@@ -565,10 +565,13 @@
     <!-- Toast Container -->
     <div id="toast-container"></div>
 
-    <!-- SIMPLE SUPABASE CLIENT WITHOUT AUTH ISSUES -->
+    <!-- Import Auth Manager -->
+    <script src="auth.js"></script>
+
+    <!-- SIMPLE SUPABASE CLIENT FOR CONTENT QUERIES -->
     <script>
-        // Simple Supabase REST client (no AuthClient dependency)
-        class SimpleSupabaseClient {
+        // Simple Supabase REST client for content queries (not authentication)
+        class ContentSupabaseClient {
             constructor(url, key) {
                 this.url = url;
                 this.key = key;
@@ -619,43 +622,15 @@
                     throw error;
                 }
             }
-            
-            async getCurrentUser() {
-                try {
-                    // Check if we have a stored session
-                    const session = localStorage.getItem('supabase.auth.token');
-                    if (!session) return null;
-                    
-                    const sessionData = JSON.parse(session);
-                    return sessionData.user || null;
-                } catch (error) {
-                    console.error('Error getting current user:', error);
-                    return null;
-                }
-            }
-            
-            async getUserProfile(userId) {
-                try {
-                    const profiles = await this.query('user_profiles', {
-                        where: { user_id: userId },
-                        limit: 1
-                    });
-                    
-                    return profiles.length > 0 ? profiles[0] : null;
-                } catch (error) {
-                    console.error('Error getting user profile:', error);
-                    return null;
-                }
-            }
         }
         
-        // Initialize simple Supabase client
-        const supabase = new SimpleSupabaseClient(
+        // Initialize content Supabase client
+        const contentSupabase = new ContentSupabaseClient(
             'https://ydnxqnbjoshvxteevemc.supabase.co',
             'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U'
         );
         
-        console.log('✅ Simple Supabase client initialized');
+        console.log('✅ Content Supabase client initialized');
     </script>
 
     <!-- Home Feed JavaScript -->
@@ -664,13 +639,32 @@
         document.addEventListener('DOMContentLoaded', async () => {
             console.log('🚀 Bantu Stream Connect Home Feed Initializing...');
             
+            // Initialize auth and check if user is logged in
+            const isAuthenticated = await auth.initialize();
+            
+            if (!isAuthenticated) {
+                // User is not authenticated, show a toast and update profile button behavior
+                console.log('⚠️ User not authenticated, showing public home feed');
+                showToast('Welcome! Sign in to access all features.', 'info');
+                
+                // Update profile button to redirect to login
+                const profileBtn = document.getElementById('profile-btn');
+                if (profileBtn) {
+                    profileBtn.addEventListener('click', () => {
+                        window.location.href = 'login.html?redirect=index.html';
+                    });
+                }
+            } else {
+                // User is authenticated
+                console.log('✅ User authenticated:', auth.getCurrentUser()?.email);
+                showToast(`Welcome back, ${auth.getUserProfile()?.full_name || auth.getCurrentUser()?.email}!`, 'success');
+            }
+            
             // State variables
             let allContentData = [];
             let filteredContentData = [];
             let selectedCategoryIndex = 0;
             let isLoading = true;
-            let currentUser = null;
-            let userProfile = null;
             
             // Categories (same as mobile app)
             const categories = [
@@ -731,38 +725,36 @@
             // ✅ LOAD USER PROFILE PICTURE
             async function loadUserProfilePicture() {
                 try {
-                    currentUser = await supabase.getCurrentUser();
+                    if (!auth.isAuthenticated()) return;
                     
-                    if (currentUser) {
-                        userProfile = await supabase.getUserProfile(currentUser.id);
-                        
-                        if (userProfile && userProfile.avatar_url) {
-                            // Fix avatar URL
-                            let avatarUrl = userProfile.avatar_url;
-                            if (!avatarUrl.startsWith('http')) {
-                                avatarUrl = `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/${avatarUrl.replace(/^\/+/, '')}`;
-                            }
-                            
-                            // Create img element for profile picture
-                            const profileImg = document.createElement('img');
-                            profileImg.className = 'profile-img';
-                            profileImg.src = avatarUrl;
-                            profileImg.alt = 'Profile Picture';
-                            profileImg.onerror = function() {
-                                // If image fails to load, show placeholder
-                                this.parentElement.innerHTML = `
-                                    <div class="profile-placeholder">
-                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                            <path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
-                                        </svg>
-                                    </div>
-                                `;
-                            };
-                            
-                            // Clear placeholder and add image
-                            profileBtn.innerHTML = '';
-                            profileBtn.appendChild(profileImg);
+                    const userProfile = auth.getUserProfile();
+                    
+                    if (userProfile && userProfile.avatar_url) {
+                        // Fix avatar URL
+                        let avatarUrl = userProfile.avatar_url;
+                        if (!avatarUrl.startsWith('http')) {
+                            avatarUrl = `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/${avatarUrl.replace(/^\/+/, '')}`;
                         }
+                        
+                        // Create img element for profile picture
+                        const profileImg = document.createElement('img');
+                        profileImg.className = 'profile-img';
+                        profileImg.src = avatarUrl;
+                        profileImg.alt = 'Profile Picture';
+                        profileImg.onerror = function() {
+                            // If image fails to load, show placeholder
+                            this.parentElement.innerHTML = `
+                                <div class="profile-placeholder">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                                    </svg>
+                                </div>
+                            `;
+                        };
+                        
+                        // Clear placeholder and add image
+                        profileBtn.innerHTML = '';
+                        profileBtn.appendChild(profileImg);
                     }
                 } catch (error) {
                     console.error('Error loading user profile picture:', error);
@@ -780,7 +772,7 @@
                     
                     try {
                         // Try Content table first
-                        contentData = await supabase.query('Content', {
+                        contentData = await contentSupabase.query('Content', {
                             select: '*,user_profiles!user_id(*)',
                             where: { status: 'published' },
                             orderBy: 'created_at',
@@ -793,7 +785,7 @@
                         
                         // Try lowercase table name
                         try {
-                            contentData = await supabase.query('content', {
+                            contentData = await contentSupabase.query('content', {
                                 select: '*',
                                 where: { status: 'published' },
                                 orderBy: 'created_at',
@@ -979,7 +971,7 @@
                 try {
                     setLoading(true, 'Loading Bantu Stream Connect...');
                     
-                    // Load user profile picture
+                    // Load user profile picture if authenticated
                     await loadUserProfilePicture();
                     
                     // Load content
@@ -1134,10 +1126,15 @@
                     });
                 }
                 
-                // Profile button - redirect to profile.html
+                // Profile button behavior depends on authentication
                 if (profileBtn) {
+                    // Remove any existing click listeners and add new one
                     profileBtn.addEventListener('click', () => {
-                        window.location.href = 'profile.html';
+                        if (auth.isAuthenticated()) {
+                            window.location.href = 'profile.html';
+                        } else {
+                            window.location.href = 'login.html?redirect=index.html';
+                        }
                     });
                 }
                 
