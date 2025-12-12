@@ -698,91 +698,30 @@
         </div>
     </div>
 
-    <!-- Import Supabase -->
-    <script>
-        // Simple Supabase REST client
-        class SupabaseAuthClient {
-            constructor(url, key) {
-                this.url = url;
-                this.key = key;
-            }
-            
-            async signInWithEmail(email, password) {
-                const response = await fetch(`${this.url}/auth/v1/token?grant_type=password`, {
-                    method: 'POST',
-                    headers: {
-                        'apikey': this.key,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ email, password })
-                });
-                
-                if (!response.ok) {
-                    const error = await response.json();
-                    throw new Error(error.message || 'Invalid email or password');
-                }
-                
-                return await response.json();
-            }
-            
-            async signUp(email, password, userData = {}) {
-                const response = await fetch(`${this.url}/auth/v1/signup`, {
-                    method: 'POST',
-                    headers: {
-                        'apikey': this.key,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ email, password, data: userData })
-                });
-                
-                if (!response.ok) {
-                    const error = await response.json();
-                    throw new Error(error.message || 'Sign up failed');
-                }
-                
-                return await response.json();
-            }
-            
-            async resetPassword(email) {
-                const response = await fetch(`${this.url}/auth/v1/recover`, {
-                    method: 'POST',
-                    headers: {
-                        'apikey': this.key,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ email })
-                });
-                
-                if (!response.ok) {
-                    const error = await response.json();
-                    throw new Error(error.message || 'Password reset failed');
-                }
-                
-                return await response.json();
-            }
-            
-            async signInWithGoogle() {
-                // For Google OAuth, we need to redirect to Supabase OAuth URL
-                const redirectTo = window.location.origin + '/index.html';
-                const authUrl = `${this.url}/auth/v1/authorize?provider=google&redirect_to=${encodeURIComponent(redirectTo)}`;
-                window.location.href = authUrl;
-            }
-        }
-        
-        // Initialize Supabase client
-        const supabase = new SupabaseAuthClient(
-            'https://ydnxqnbjoshvxteevemc.supabase.co',
-            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U'
-        );
-        
-        console.log('✅ Supabase Auth client initialized');
-    </script>
+    <!-- Import Auth Manager -->
+    <script src="auth.js"></script>
 
     <!-- Login JavaScript -->
     <script>
         // Wait for DOM to be ready
-        document.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener('DOMContentLoaded', async () => {
             console.log('🔐 Login Screen Initializing...');
+            
+            // Check if already logged in
+            const isAuthenticated = await auth.initialize();
+            if (isAuthenticated) {
+                // Get redirect URL from URL parameters or default to index.html
+                const urlParams = new URLSearchParams(window.location.search);
+                const redirectTo = urlParams.get('redirect') || 'index.html';
+                window.location.href = redirectTo;
+                return;
+            }
+            
+            // Handle OAuth redirect from Google
+            if (window.location.hash.includes('access_token')) {
+                await handleOAuthRedirect();
+                return;
+            }
             
             // Hide loading screen
             setTimeout(() => {
@@ -819,6 +758,36 @@
             const emailError = document.getElementById('email-error');
             const passwordError = document.getElementById('password-error');
             
+            // ✅ HANDLE OAUTH REDIRECT
+            async function handleOAuthRedirect() {
+                setLoading(true);
+                try {
+                    const success = await auth.handleAuthRedirect();
+                    if (success) {
+                        showToast('Google sign-in successful! Redirecting...', 'success');
+                        
+                        // Get redirect URL from URL parameters or default to index.html
+                        const urlParams = new URLSearchParams(window.location.search);
+                        const redirectTo = urlParams.get('redirect') || 'index.html';
+                        
+                        setTimeout(() => {
+                            window.location.href = redirectTo;
+                        }, 1000);
+                    } else {
+                        setLoading(false);
+                        showToast('Google sign-in failed. Please try again.', 'error');
+                        // Hide loading screen
+                        document.getElementById('loading').style.display = 'none';
+                    }
+                } catch (error) {
+                    setLoading(false);
+                    console.error('OAuth redirect error:', error);
+                    showToast('Google sign-in failed. Please try again.', 'error');
+                    // Hide loading screen
+                    document.getElementById('loading').style.display = 'none';
+                }
+            }
+            
             // ✅ TOGGLE BETWEEN LOGIN AND SIGN UP
             toggleBtn.addEventListener('click', () => {
                 isSignUpMode = !isSignUpMode;
@@ -837,7 +806,7 @@
                     btnText.textContent = 'Login';
                     toggleText.textContent = 'Don\'t have an account?';
                     toggleBtn.textContent = 'Sign Up';
-                    appSubtitle.textContent = "The African way, baba — it's all in the DNA.";
+                    appSubtitle.textContent = "The African way — it's all in the DNA.";
                     forgotPassword.style.display = 'block';
                 }
                 
@@ -947,14 +916,18 @@
                     const email = emailInput.value.trim();
                     const password = passwordInput.value;
                     
-                    const result = await supabase.signInWithEmail(email, password);
+                    const result = await auth.signInWithEmail(email, password);
                     
                     console.log('✅ Login successful:', result.user?.email);
                     showToast('Login successful! Redirecting...', 'success');
                     
-                    // Redirect to home page after successful login
+                    // Get redirect URL from URL parameters or default to index.html
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const redirectTo = urlParams.get('redirect') || 'index.html';
+                    
+                    // Redirect to appropriate page after successful login
                     setTimeout(() => {
-                        window.location.href = 'index.html';
+                        window.location.href = redirectTo;
                     }, 1000);
                     
                 } catch (error) {
@@ -968,6 +941,8 @@
                     } else if (errorStr.includes('email not confirmed')) {
                         errorMessage = 'Please confirm your email before logging in.';
                     } else if (errorStr.includes('invalid login')) {
+                        errorMessage = 'Invalid email or password.';
+                    } else if (errorStr.includes('invalid grant')) {
                         errorMessage = 'Invalid email or password.';
                     }
                     
@@ -993,10 +968,10 @@
                     const userData = {
                         full_name: fullName,
                         username: generateUsername(email),
-                        role: 'creator'
+                        role: 'viewer'
                     };
                     
-                    const result = await supabase.signUp(email, password, userData);
+                    const result = await auth.signUp(email, password, userData);
                     
                     console.log('✅ Sign up successful:', result.user?.email);
                     
@@ -1005,9 +980,13 @@
                         'success'
                     );
                     
-                    // Redirect to home page
+                    // Get redirect URL from URL parameters or default to index.html
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const redirectTo = urlParams.get('redirect') || 'index.html';
+                    
+                    // Redirect to appropriate page
                     setTimeout(() => {
-                        window.location.href = 'index.html';
+                        window.location.href = redirectTo;
                     }, 1500);
                     
                 } catch (error) {
@@ -1024,7 +1003,7 @@
                         btnText.textContent = 'Login';
                         toggleText.textContent = 'Don\'t have an account?';
                         toggleBtn.textContent = 'Sign Up';
-                        appSubtitle.textContent = "The African way, baba — it's all in the DNA.";
+                        appSubtitle.textContent = "The African way — it's all in the DNA.";
                         forgotPassword.style.display = 'block';
                         fullNameInput.value = '';
                     } else if (errorStr.includes('password')) {
@@ -1052,7 +1031,14 @@
             // ✅ GOOGLE SIGN IN
             googleBtn.addEventListener('click', async () => {
                 try {
-                    await supabase.signInWithGoogle();
+                    // Get redirect URL from URL parameters or default to index.html
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const redirectTo = urlParams.get('redirect') || 'index.html';
+                    
+                    // Google OAuth redirect
+                    const currentUrl = window.location.origin + window.location.pathname;
+                    const authUrl = `${auth.supabaseUrl}/auth/v1/authorize?provider=google&redirect_to=${encodeURIComponent(currentUrl + '?redirect=' + redirectTo)}`;
+                    window.location.href = authUrl;
                 } catch (error) {
                     console.error('❌ Google sign in error:', error);
                     showToast('Google sign-in failed. Please try again.', 'error');
@@ -1095,7 +1081,7 @@
                 modalSubmit.innerHTML = '<div class="submit-btn-loading" style="display: inline-block;"></div>';
                 
                 try {
-                    await supabase.resetPassword(email);
+                    await auth.resetPassword(email);
                     
                     showToast('Password reset link sent! Check your email.', 'success');
                     forgotModal.style.display = 'none';
