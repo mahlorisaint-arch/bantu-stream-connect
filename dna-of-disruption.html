@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>The DNA of Disruption: How Blockchain, AI, and Green Tech are Rewriting Africa's Future - Bantu Stream Connect</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            'bantu-primary': '#4f46e5',
+            'bantu-accent': '#f59e0b',
+            'bantu-dark': '#0f172a',
+            'bantu-text': '#e2e8f0',
+          },
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+          },
+          typography: {
+            DEFAULT: {
+              css: {
+                maxWidth: 'none',
+                color: '#e2e8f0',
+                a: {
+                  color: '#f59e0b',
+                  '&:hover': {
+                    color: '#fbbf24',
+                  },
+                },
+                strong: {
+                  color: '#ffffff',
+                },
+                h1: {
+                  color: '#ffffff',
+                  fontWeight: '800',
+                },
+                h2: {
+                  color: '#ffffff',
+                  fontWeight: '700',
+                },
+                h3: {
+                  color: '#ffffff',
+                  fontWeight: '600',
+                },
+                blockquote: {
+                  color: '#cbd5e1',
+                  borderLeftColor: '#f59e0b',
+                },
+              },
+            },
+          },
+        }
+      }
+    }
+  </script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link href="assets/css/bantu-global.css" rel="stylesheet" />
+  <style>
+    /* Custom scrollbar */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #1e293b;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #475569;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #64748b;
+    }
+
+    /* Article content styling */
+    .article-content p {
+      margin-bottom: 1.5rem;
+      line-height: 1.8;
+    }
+
+    .article-content h2 {
+      margin-top: 3rem;
+      margin-bottom: 1.5rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 2px solid #4f46e5;
+    }
+
+    .article-content h3 {
+      margin-top: 2rem;
+      margin-bottom: 1rem;
+    }
+
+    .article-content ul, .article-content ol {
+      margin-bottom: 1.5rem;
+      padding-left: 1.5rem;
+    }
+
+    .article-content li {
+      margin-bottom: 0.5rem;
+    }
+
+    .article-content blockquote {
+      border-left: 4px solid #f59e0b;
+      padding-left: 1.5rem;
+      margin: 2rem 0;
+      font-style: italic;
+    }
+
+    .article-content img {
+      border-radius: 0.75rem;
+      margin: 2rem 0;
+    }
+
+    .highlight-box {
+      background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+      border: 1px solid #4f46e5;
+      border-radius: 0.75rem;
+      padding: 2rem;
+      margin: 2rem 0;
+    }
+
+    .tech-pill {
+      display: inline-flex;
+      align-items: center;
+      padding: 0.5rem 1rem;
+      background: rgba(79, 70, 229, 0.1);
+      border: 1px solid rgba(79, 70, 229, 0.3);
+      border-radius: 9999px;
+      margin-right: 0.5rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .tech-pill i {
+      margin-right: 0.5rem;
+    }
+  </style>
+</head>
+<body class="bg-bantu-dark text-bantu-text font-sans">
+
+  <!-- Updated Navbar -->
+  <header class="sticky top-0 z-50 bg-bantu-dark/95 backdrop-blur-sm border-b border-bantu-primary/30 shadow-lg">
+    <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
+      <!-- Logo -->
+      <div class="flex items-center space-x-2">
+        <a href="index.html"><img src="assets/bsc-logo.png" alt="BSC Logo" class="h-10 w-auto"></a>
+        <span class="font-bold text-xl text-bantu-accent">Bantu Stream Connect</span>
+      </div>
+      
+      <!-- Navigation -->
+      <nav class="hidden md:flex space-x-6 text-sm font-medium items-center">
+        <a href="index.html" class="hover:text-bantu-accent transition duration-150">Home</a>
+        <a href="creators.html" class="hover:text-bantu-accent transition duration-150">Creators</a>
+        <a href="users.html" class="hover:text-bantu-accent transition duration-150">Users</a>
+        <a href="empowerment.html" class="hover:text-bantu-accent transition duration-150">Empowerment</a>
+        <a href="blog.html" class="text-bantu-accent border-b-2 border-bantu-accent pb-1">Blog</a>
+        <a href="#waitlist" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg shadow-sm text-bantu-dark bg-bantu-accent hover:bg-yellow-500 transition duration-150">
+          Join the Community
+        </a>
+      </nav>
+      
+      <!-- Mobile Menu Icon -->
+      <div class="md:hidden">
+        <i data-lucide="menu" class="w-6 h-6 text-bantu-text"></i>
+      </div>
+    </div>
+  </header>
+
+  <!-- Blog Post Hero -->
+  <article class="min-h-screen">
+    <!-- Hero Image & Title -->
+    <div class="relative">
+      <div class="absolute inset-0 bg-gradient-to-b from-black/70 via-black/50 to-bantu-dark z-10"></div>
+      <img src="assets/blog/African-tech.jpeg" 
+           alt="African Technology Innovation - Blockchain, AI, and Green Tech"
+           class="w-full h-[50vh] object-cover"
+           onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=2000&q=80'">
+      
+      <div class="absolute inset-0 z-20 flex items-center">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+          <div class="max-w-4xl">
+            <!-- Categories -->
+            <div class="flex flex-wrap gap-2 mb-4">
+              <span class="tech-pill">
+                <i data-lucide="cpu" class="w-4 h-4"></i>
+                Tech & Innovation
+              </span>
+              <span class="tech-pill">
+                <i data-lucide="leaf" class="w-4 h-4 text-green-500"></i>
+                Sustainability
+              </span>
+              <span class="tech-pill">
+                <i data-lucide="rocket" class="w-4 h-4 text-bantu-accent"></i>
+                Entrepreneurship
+              </span>
+            </div>
+            
+            <!-- Title -->
+            <h1 class="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6 leading-tight">
+              The DNA of Disruption: How Blockchain, AI, and Green Tech are Rewriting Africa's Future
+            </h1>
+            
+            <!-- Meta Info -->
+            <div class="flex flex-wrap items-center gap-4 text-bantu-text/70">
+              <div class="flex items-center">
+                <i data-lucide="user" class="w-4 h-4 mr-2"></i>
+                <span>By Bantu Stream Connect Insights Team</span>
+              </div>
+              <div class="flex items-center">
+                <i data-lucide="calendar" class="w-4 h-4 mr-2"></i>
+                <span>April 2025</span>
+              </div>
+              <div class="flex items-center">
+                <i data-lucide="clock" class="w-4 h-4 mr-2"></i>
+                <span>12 min read</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Article Content -->
+    <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <div class="max-w-4xl mx-auto">
+        <!-- Introduction -->
+        <div class="article-content mb-16">
+          <div class="highlight-box">
+            <p class="text-lg italic mb-4">
+              "The African way baba, it's all in the DNA."
+            </p>
+            <p class="text-bantu-text/70">
+              The continent of Africa is not just catching up to global technological trends; it is actively rewriting the playbook. In boardrooms from Nairobi to Johannesburg, a consensus is forming: the future of African economic power rests not on copying old models, but on leapfrogging them entirely.
+            </p>
+          </div>
+
+          <p class="text-xl">
+            This is the African moment. A convergence of a youthful, digitally native population and foundational technological advancements in three critical areas: Blockchain, Artificial Intelligence (AI), and Renewable Energy.
+          </p>
+
+          <p>
+            At Bantu Stream Connect, we understand that empowering African creators requires more than just a 90/10 revenue split. It requires stable infrastructure, secure finance, and localized innovation. These three trends are the pillars supporting that vision.
+          </p>
+
+          <p>
+            Let's break down how this technological trinity is embedded in the "African way baba, it's all in the DNA."
+          </p>
+
+          <!-- Section 1: Blockchain -->
+          <h2 class="flex items-center gap-3">
+            <i data-lucide="link" class="w-8 h-8 text-bantu-primary"></i>
+            1. Blockchain: Building the Trust Economy
+          </h2>
+
+          <h3 class="text-2xl font-bold text-white">Current State & Applications</h3>
+
+          <p>
+            For a continent where large portions of the population remain unbanked or lack formal property titles, centralized institutions have often failed to foster trust. Blockchain technology, with its decentralized, immutable ledger, offers a powerful alternative.
+          </p>
+
+          <p>
+            The African application of blockchain is less about speculative trading and more about solving real-world, foundational problems:
+          </p>
+
+          <div class="highlight-box">
+            <h4 class="text-xl font-bold text-white mb-4 flex items-center">
+              <i data-lucide="shield-check" class="w-5 h-5 mr-2 text-bantu-primary"></i>
+              Financial Inclusion
+            </h4>
+            <p>
+              In Nigeria, Kenya, and South Africa, decentralized finance (DeFi) platforms and local crypto exchanges are providing secure, low-fee remittance options, bypassing traditional banking roadblocks. For entrepreneurs, this means faster access to global capital.
+            </p>
+          </div>
+
+          <div class="highlight-box">
+            <h4 class="text-xl font-bold text-white mb-4 flex items-center">
+              <i data-lucide="fingerprint" class="w-5 h-5 mr-2 text-bantu-primary"></i>
+              Identity & Governance
+            </h4>
+            <p>
+              Projects are exploring the use of blockchain for secure digital identity management and land registries. Imagine a system where property ownership is transparent and unchangeable, cutting corruption and unlocking massive economic potential.
+            </p>
+          </div>
+
+          <div class="highlight-box">
+            <h4 class="text-xl font-bold text-white mb-4 flex items-center">
+              <i data-lucide="copyright" class="w-5 h-5 mr-2 text-bantu-primary"></i>
+              Creative Ownership
+            </h4>
+            <p>
+              For creators on platforms like Bantu Stream Connect, blockchain technology can secure intellectual property (IP) rights, track content consumption instantly, and facilitate smart contracts for revenue distribution. Ensuring that the 90% share is automated and auditable.
+            </p>
+          </div>
+
+          <blockquote>
+            <p class="text-lg">
+              "Successful decentralized applications are emerging, particularly in cross-border trade and currency exchange, driven by the need to stabilize against currency volatility. The market adoption is happening from the ground up, proving that the tech fits the trust deficit perfectly."
+            </p>
+          </blockquote>
+
+          <!-- Section 2: AI -->
+          <h2 class="flex items-center gap-3 mt-12">
+            <i data-lucide="brain" class="w-8 h-8 text-bantu-primary"></i>
+            2. Artificial Intelligence: Contextualizing Intelligence
+          </h2>
+
+          <h3 class="text-2xl font-bold text-white">Current State & Applications</h3>
+
+          <p>
+            AI is often perceived through the lens of large language models (LLMs), but in Africa, its primary power lies in making services relevant and accessible despite fragmented data and diverse local languages. This is about contextualizing intelligence.
+          </p>
+
+          <div class="bg-gradient-to-r from-bantu-primary/10 to-green-500/10 rounded-xl p-6 my-8 border-l-4 border-bantu-primary">
+            <h3 class="text-xl font-bold text-white mb-3">1. Agricultural Optimization: AI Is Transforming the Future of African Farming</h3>
+            <p>
+              Agriculture remains the backbone of Sub-Saharan Africa, with nearly 60% of the population relying on rain fed farming for survival. But unpredictable weather, poor soil management, and limited access to agronomists keep many farmers trapped in low-yield cycles. This is where AI is quietly triggering a revolution.
+            </p>
+            <p>
+              Forward-thinking African agri-tech startups are combining satellite imagery, IoT soil sensors, and machine learning models to offer farmers hyper-local insights that were unimaginable a decade ago. These tools can analyze soil nutrients, detect early signs of crop disease, predict rainfall down to specific villages, and recommend the best planting and harvesting periods.
+            </p>
+            <p class="font-semibold">
+              The result? Higher yields, lower risk, and stronger food security across regions that traditionally faced climate vulnerability. Rather than replacing farmers' expertise, AI serves as a smart extension of their intuition, giving them data driven confidence to adapt and thrive in a changing climate.
+            </p>
+            <p>
+              And yet, the potential is still enormous. Much of Africa's ecological data soil maps, climate records, crop performance logs, remains unstructured or incomplete. Building rich agricultural datasets is one of the continent's biggest business opportunities for the next decade.
+            </p>
+          </div>
+
+          <div class="bg-gradient-to-r from-green-500/10 to-blue-500/10 rounded-xl p-6 my-8 border-l-4 border-green-500">
+            <h3 class="text-xl font-bold text-white mb-3">2. Healthcare Diagnostics: AI Is Expanding the Reach of African Medical Specialists</h3>
+            <p>
+              In many rural African communities, access to specialized healthcare can be a matter of distance, cost, or pure luck. Entire regions may rely on a single radiologist or ophthalmologist to read hundreds of scans. But AI-powered diagnostic tools are beginning to bridge this gap, not by replacing doctors, but by empowering them.
+            </p>
+            <p>
+              Modern AI systems can analyze X-rays and medical scans for early signs of tuberculosis, pneumonia, cervical abnormalities, diabetic retinopathy, and other conditions with remarkable accuracy. These tools are being piloted in clinics, mobile health units, and remote telemedicine hubs, enabling frontline healthcare workers to get reliable preliminary assessments within minutes.
+            </p>
+            <p class="font-semibold">
+              For specialists, AI acts like a second pair of expert eyes, flagging abnormalities, reducing misdiagnosis, and dramatically speeding up workflows. More importantly, by making specialist level insights available in remote regions, AI is helping create jobs, not eliminate them. Nurses, technicians, community health workers, and local clinics can now offer diagnostic services that previously required expensive urban infrastructure.
+            </p>
+            <p>
+              But the biggest challenge? High-quality medical datasets from African populations are still limited. Building these datasets ethically, securely, and collaboratively will define the next generation of African health innovation.
+            </p>
+          </div>
+
+          <div class="bg-gradient-to-r from-blue-500/10 to-pink-500/10 rounded-xl p-6 my-8 border-l-4 border-pink-500">
+            <h3 class="text-xl font-bold text-white mb-3">3. Language & Culture: AI Is Unlocking a New Era of African Content Discovery</h3>
+            <p>
+              Africa is home to over 2,000 languages, each rich with slang, tonal variations, cultural references, and region specific storytelling traditions. For streaming platforms and content ecosystems, this diversity is both a challenge and a superpower.
+            </p>
+            <p>
+              AI is now the key to unlocking that superpower. Advanced natural language models can understand local dialects, contextual meaning, and regional pop culture trends. This allows content platforms like Bantu Stream Connect to build smarter recommendation engines tailored to African tastes. Instead of generic "global bestsellers," a user in Ghana might see Twi-language comedies, while a viewer in South Africa gets trending isiZulu dramas or Xitsonga music videos.
+            </p>
+            <p class="font-semibold">
+              This kind of cultural aware personalization doesn't just improve the user experience, it amplifies local creators, boosts discovery of niche content, and supports the growth of Africa's digital economy. AI essentially becomes a cultural bridge, ensuring Africans are seen, heard, and prioritized on their own platforms.
+            </p>
+            <p>
+              However, there's a major bottleneck. African language datasets are some of the most underrepresented in the world. Many dialects lack large, clean, annotated corpora required for training AI models. This gap represents a massive opportunity for startups specializing in African data aggregation, cultural linguistics, audio transcription, and language model training.
+            </p>
+            <p class="italic font-medium">
+              The continent is overdue for AI systems that truly understand its people.
+            </p>
+          </div>
+
+          <div class="highlight-box border-2 border-bantu-accent">
+            <h3 class="text-2xl font-bold text-white mb-4 flex items-center">
+              <i data-lucide="database" class="w-6 h-6 mr-3 text-bantu-accent"></i>
+              Overall Opportunity: The African Data Gap
+            </h3>
+            <p>
+              Across agriculture, healthcare, and culture, the same truth emerges. Africa has the talent and potential, but the continent needs data, clean, local, and abundant.
+            </p>
+            <p class="mt-4">
+              <strong>Filling this gap isn't just a technical requirement. It's a billion rands opportunity.</strong> Entrepreneurs who focus on ethical dataset creation, from soil metrics to medical imaging to language corpora, will power the next wave of homegrown AI innovation.
+            </p>
+            <p class="mt-4 text-xl text-center text-bantu-accent font-bold">
+              Africa doesn't need to catch up. It needs to build AI in its own image.
+            </p>
+          </div>
+
+          <!-- Section 3: Renewable Energy -->
+          <h2 class="flex items-center gap-3 mt-12">
+            <i data-lucide="sun" class="w-8 h-8 text-green-500"></i>
+            3. Renewable Energy: Powering the Digital Leapfrog
+          </h2>
+
+          <h3 class="text-2xl font-bold text-white">Current State & Applications</h3>
+
+          <p>
+            The stability of power grids remains one of the greatest systemic challenges across the continent. Yet, this deficiency has inadvertently spurred world-leading innovation in decentralized renewable energy, primarily solar.
+          </p>
+
+          <div class="grid md:grid-cols-2 gap-6 my-8">
+            <div class="bg-gradient-to-br from-green-500/5 to-bantu-dark rounded-xl p-6 border border-green-500/30">
+              <h4 class="text-lg font-bold text-white mb-3 flex items-center">
+                <i data-lucide="zap" class="w-5 h-5 mr-2 text-green-500"></i>
+                Microgrids and Off-Grid Solutions
+              </h4>
+              <p>
+                Companies are successfully deploying solar home systems and micro-grids that serve remote villages and smaller communities, bypassing unreliable national grids entirely. This isn't just about lights; it's about powering the devices needed to access education, commerce, and, crucially, digital content.
+              </p>
+            </div>
+
+            <div class="bg-gradient-to-br from-bantu-primary/5 to-bantu-dark rounded-xl p-6 border border-bantu-primary/30">
+              <h4 class="text-lg font-bold text-white mb-3 flex items-center">
+                <i data-lucide="cloud" class="w-5 h-5 mr-2 text-bantu-primary"></i>
+                Sustainable Infrastructure
+              </h4>
+              <p>
+                For content distribution, the shift to green energy is a moral and commercial imperative. Cloud hosting centers and CDNs powered by renewable energy ensure sustainability while also offering a more predictable power supply for essential services like video streaming.
+              </p>
+            </div>
+          </div>
+
+          <p class="text-lg">
+            This transition ensures that the cost of digital access is lowered, empowering more people to become both consumers and creators. The widespread adoption of micro-solar is directly enabling the mobile-first content boom.
+          </p>
+
+          <!-- Challenges and Opportunities Table -->
+          <div class="mt-12 overflow-hidden rounded-xl border border-bantu-primary/30">
+            <div class="bg-bantu-primary/10 px-6 py-4 border-b border-bantu-primary/30">
+              <h3 class="text-2xl font-bold text-white">The Road Ahead: Challenges and Opportunities</h3>
+              <p class="text-bantu-text/70">
+                While the potential is revolutionary, the path is not without hurdles. Venture Capital firms like Partech and Naspers Foundry are keenly focused on mitigating these challenges to unlock growth:
+              </p>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="w-full">
+                <thead class="bg-bantu-dark/50">
+                  <tr>
+                    <th class="py-3 px-6 text-left font-bold text-white border-r border-bantu-text/20">Challenge</th>
+                    <th class="py-3 px-6 text-left font-bold text-white">Opportunity for Growth</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr class="border-b border-bantu-text/10">
+                    <td class="py-4 px-6 border-r border-bantu-text/20">
+                      <strong>Infrastructure and Connectivity</strong>
+                    </td>
+                    <td class="py-4 px-6">
+                      Investment in mobile broadband expansion and localized, green energy powered data centers.
+                    </td>
+                  </tr>
+                  <tr class="border-b border-bantu-text/10">
+                    <td class="py-4 px-6 border-r border-bantu-text/20">
+                      <strong>Talent Gap</strong>
+                    </td>
+                    <td class="py-4 px-6">
+                      Focus on EdTech solutions (many delivered via streaming) that teach AI, blockchain development, and engineering skills.
+                    </td>
+                  </tr>
+                  <tr class="border-b border-bantu-text/10">
+                    <td class="py-4 px-6 border-r border-bantu-text/20">
+                      <strong>Regulation and Policy</strong>
+                    </td>
+                    <td class="py-4 px-6">
+                      Advocacy for common, innovation friendly regulatory frameworks across borders to facilitate scale (e.g., standardizing digital ID laws).
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="py-4 px-6 border-r border-bantu-text/20">
+                      <strong>Access to Capital</strong>
+                    </td>
+                    <td class="py-4 px-6">
+                      Targeting seed funding for local innovators who understand the specific cultural and infrastructural context.
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Conclusion -->
+          <div class="mt-16 p-8 rounded-2xl bg-gradient-to-r from-bantu-primary/20 to-bantu-accent/20 border border-bantu-primary/40">
+            <h2 class="text-3xl font-bold text-white mb-6 text-center">Conclusion: The Legacy We Build Together</h2>
+            
+            <p class="text-lg mb-6">
+              The convergence of Blockchain, AI, and Renewable Energy is not just about technology; it's about empowerment. It ensures secure ownership for farmers, intelligent access for patients, and reliable power for the next generation of content creators.
+            </p>
+
+            <div class="bg-black/30 p-6 rounded-xl border border-bantu-accent/30 my-8">
+              <p class="text-center text-xl font-bold text-white mb-4">
+                At Bantu Stream Connect, we are focused on this intersection.
+              </p>
+              <p class="text-center text-lg">
+                We are utilizing this triple-threat of innovation to create a platform that is secure, sustainable, and economically rewarding. A platform where the creator always comes first.
+              </p>
+            </div>
+
+            <p class="text-center text-2xl font-bold text-bantu-accent mt-8 mb-4">
+              The technology is ready, the market is hungry, and the talent is undeniable.
+            </p>
+            <p class="text-center text-xl">
+              This is the risk that becomes legacy. Join us in building the digital future, the African way.
+            </p>
+          </div>
+
+          <!-- About BSC -->
+          <div class="mt-12 p-6 rounded-xl bg-bantu-dark border border-bantu-text/20">
+            <div class="flex flex-col md:flex-row items-center gap-6">
+              <img src="assets/bsc-logo.png" alt="Bantu Stream Connect Logo" class="h-16 w-auto">
+              <div>
+                <h4 class="text-lg font-bold text-white mb-2">About Bantu Stream Connect</h4>
+                <p class="text-bantu-text/70">
+                  Bantu Stream Connect is a South African "all-in-one streaming + social + creator-first ecosystem" built to empower African filmmakers, musicians, podcasters, teachers, Content creators and storytellers. We believe the African way is all in the DNA.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Share & Navigation -->
+          <div class="mt-12 pt-8 border-t border-bantu-text/20">
+            <div class="flex flex-col sm:flex-row justify-between items-center gap-6">
+              <!-- Share Buttons -->
+              <div class="flex items-center gap-4">
+                <span class="text-bantu-text/70">Share this insight:</span>
+                <div class="flex gap-3">
+                  <button class="p-2 rounded-lg bg-blue-500/10 hover:bg-blue-500/20 transition">
+                    <i data-lucide="twitter" class="w-5 h-5 text-blue-400"></i>
+                  </button>
+                  <button class="p-2 rounded-lg bg-blue-700/10 hover:bg-blue-700/20 transition">
+                    <i data-lucide="facebook" class="w-5 h-5 text-blue-500"></i>
+                  </button>
+                  <button class="p-2 rounded-lg bg-pink-500/10 hover:bg-pink-500/20 transition">
+                    <i data-lucide="instagram" class="w-5 h-5 text-pink-500"></i>
+                  </button>
+                  <button class="p-2 rounded-lg bg-blue-400/10 hover:bg-blue-400/20 transition">
+                    <i data-lucide="linkedin" class="w-5 h-5 text-blue-300"></i>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Back to Blog -->
+              <a href="blog.html" class="inline-flex items-center text-bantu-accent font-semibold hover:underline">
+                <i data-lucide="arrow-left" class="w-4 h-4 mr-2"></i>
+                Back to All Insights
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </article>
+
+  <!-- Footer -->
+  <footer class="bg-black bg-opacity-80 text-gray-400">
+    <div class="container mx-auto px-4 sm:px-6 lg:px-8 text-center py-8">
+      <img src="assets/bsc-logo.png" alt="BSC Logo" class="h-12 mx-auto mb-4">
+      <p class="mb-4">© 2025 Bantu Stream Connect. All rights reserved.</p>
+      <div class="flex justify-center gap-6 mb-4 flex-wrap">
+        <a href="#" class="hover:text-blue-500 transition">Privacy Policy</a>
+        <a href="#" class="hover:text-blue-500 transition">Terms of Service</a>
+        <a href="#" class="hover:text-blue-500 transition">Contact Us</a>
+      </div>
+      <p>Made with ❤️ in South Africa</p>
+    </div>
+  </footer>
+
+  <!-- Initialize Lucide Icons -->
+  <script>
+    lucide.createIcons();
+    
+    // Add smooth scrolling for internal links
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+      anchor.addEventListener('click', function (e) {
+        e.preventDefault();
+        const target = document.querySelector(this.getAttribute('href'));
+        if (target) {
+          target.scrollIntoView({
+            behavior: 'smooth',
+            block: 'start'
+          });
+        }
+      });
+    });
+  </script>
+</body>
+</html>
