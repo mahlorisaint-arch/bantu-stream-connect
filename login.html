@@ -13,6 +13,9 @@
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
+    <!-- Supabase JS SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
     <style>
         /* Color Theme (from Flutter app) */
         :root {
@@ -23,10 +26,11 @@
             --bantu-blue: #1D4ED8;
             --warm-gold: #F59E0B;
             --error-color: #EF4444;
-            --glow-blue-1: #00A3FF;
-            --glow-blue-2: #0066FF;
-            --glow-purple: #8B5CF6;
-            --glow-pink: #EC4899;
+            --success-color: #10B981;
+            --glow-cycle-1: #00A3FF;
+            --glow-cycle-2: #0066FF;
+            --glow-cycle-3: #8B5CF6;
+            --glow-cycle-4: #EC4899;
         }
         
         * {
@@ -83,6 +87,60 @@
             overflow: hidden;
         }
         
+        .glow-cycle {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(60px);
+            opacity: 0.1;
+            animation: float 8s infinite ease-in-out;
+        }
+        
+        .glow-1 {
+            width: 400px;
+            height: 400px;
+            background: var(--glow-cycle-1);
+            top: 10%;
+            left: 5%;
+            animation-delay: 0s;
+        }
+        
+        .glow-2 {
+            width: 300px;
+            height: 300px;
+            background: var(--glow-cycle-2);
+            top: 60%;
+            right: 10%;
+            animation-delay: 2s;
+        }
+        
+        .glow-3 {
+            width: 350px;
+            height: 350px;
+            background: var(--glow-cycle-3);
+            bottom: 10%;
+            left: 20%;
+            animation-delay: 4s;
+        }
+        
+        .glow-4 {
+            width: 250px;
+            height: 250px;
+            background: var(--glow-cycle-4);
+            top: 20%;
+            right: 20%;
+            animation-delay: 6s;
+        }
+        
+        @keyframes float {
+            0%, 100% {
+                transform: translateY(0) scale(1);
+            }
+            50% {
+                transform: translateY(-20px) scale(1.05);
+            }
+        }
+        
+        /* Glow Rings Animation */
         .glow-ring {
             position: absolute;
             border-radius: 50%;
@@ -97,7 +155,7 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            border-color: var(--glow-blue-1);
+            border-color: var(--glow-cycle-1);
             animation: pulse 15s infinite alternate;
         }
         
@@ -107,7 +165,7 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            border-color: var(--glow-purple);
+            border-color: var(--glow-cycle-3);
             animation: pulse 20s infinite alternate-reverse;
         }
         
@@ -117,7 +175,7 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            border-color: var(--glow-pink);
+            border-color: var(--glow-cycle-4);
             animation: pulse 25s infinite alternate;
         }
         
@@ -310,6 +368,17 @@
             transform: none;
         }
         
+        .btn-pulse {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, var(--bantu-blue) 0%, var(--warm-gold) 100%);
+            border-radius: 28px;
+            animation: pulse 1.5s infinite;
+        }
+        
         .submit-btn-loading {
             display: inline-block;
             width: 20px;
@@ -427,11 +496,12 @@
             gap: 10px;
             animation: slideIn 0.3s ease;
             box-shadow: 0 10px 25px rgba(239, 68, 68, 0.3);
+            min-width: 300px;
         }
         
         .toast.success {
-            background: var(--bantu-blue);
-            box-shadow: 0 10px 25px rgba(29, 78, 216, 0.3);
+            background: var(--success-color);
+            box-shadow: 0 10px 25px rgba(16, 185, 129, 0.3);
         }
         
         @keyframes slideIn {
@@ -481,6 +551,7 @@
             align-items: center;
             justify-content: center;
             z-index: 1000;
+            backdrop-filter: blur(5px);
         }
         
         .modal {
@@ -490,6 +561,7 @@
             max-width: 400px;
             width: 90%;
             border: 1px solid rgba(245, 158, 11, 0.3);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
         }
         
         .modal-header {
@@ -550,6 +622,11 @@
             background: #1e40af;
         }
         
+        .modal-btn-submit:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        
         /* Responsive */
         @media (max-width: 480px) {
             .glass-content {
@@ -577,6 +654,13 @@
             .form-input {
                 padding: 16px 20px 16px 50px;
             }
+            
+            .toast {
+                min-width: 250px;
+                left: 20px;
+                right: 20px;
+                top: 20px;
+            }
         }
     </style>
 </head>
@@ -589,6 +673,11 @@
 
     <!-- Animated Background -->
     <div class="animated-bg">
+        <div class="glow-cycle glow-1"></div>
+        <div class="glow-cycle glow-2"></div>
+        <div class="glow-cycle glow-3"></div>
+        <div class="glow-cycle glow-4"></div>
+        
         <div class="glow-ring ring-1"></div>
         <div class="glow-ring ring-2"></div>
         <div class="glow-ring ring-3"></div>
@@ -648,6 +737,7 @@
                     <button type="submit" id="submit-btn" class="submit-btn">
                         <span id="btn-text">Login</span>
                         <div id="btn-loading" class="submit-btn-loading" style="display: none;"></div>
+                        <div id="btn-pulse" class="btn-pulse" style="display: none;"></div>
                     </button>
                 </form>
 
@@ -681,46 +771,60 @@
     <div id="forgot-modal" class="modal-overlay">
         <div class="modal">
             <div class="modal-header">
-                <i class="fas fa-lock-reset" style="color: var(--warm-gold);"></i>
+                <i class="fas fa-lock-reset" style="color: var(--warm-gold); font-size: 24px;"></i>
                 <h3 class="modal-title">Reset Password</h3>
             </div>
             <div class="modal-body">
                 <p class="modal-text">
                     Enter the email address linked to your account. We'll send you a link to reset your password.
                 </p>
-                <input type="email" id="reset-email" class="form-input" placeholder="Enter your email" style="padding-left: 20px;">
+                <div class="form-group">
+                    <i class="fas fa-envelope input-icon"></i>
+                    <input type="email" id="reset-email" class="form-input" placeholder="Enter your email" style="padding-left: 50px;">
+                </div>
                 <div id="reset-error" class="error-message" style="margin-top: 10px;"></div>
             </div>
             <div class="modal-actions">
                 <button id="modal-cancel" class="modal-btn modal-btn-cancel">Cancel</button>
-                <button id="modal-submit" class="modal-btn modal-btn-submit">Send Reset Link</button>
+                <button id="modal-submit" class="modal-btn modal-btn-submit">
+                    <span id="modal-submit-text">Send Reset Link</span>
+                    <div id="modal-submit-loading" class="submit-btn-loading" style="display: none; margin-left: 8px;"></div>
+                </button>
             </div>
         </div>
     </div>
 
-    <!-- Import Auth Manager -->
-    <script src="auth.js"></script>
-
-    <!-- Login JavaScript -->
     <script>
+        // Initialize Supabase client
+        const SUPABASE_URL = 'https://ydnxqnbjoshvxteevemc.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U';
+
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+            auth: {
+                autoRefreshToken: true,
+                persistSession: true,
+                detectSessionInUrl: true
+            }
+        });
+
         // Wait for DOM to be ready
         document.addEventListener('DOMContentLoaded', async () => {
-            console.log('🔐 Login Screen Initializing...');
+            console.log('🔐 Bantu Connect Pulse - Login Screen');
+            console.log('Supabase Client:', supabase ? '✅ Initialized' : '❌ Failed');
             
-            // Check if already logged in
-            const isAuthenticated = await auth.initialize();
-            if (isAuthenticated) {
-                // Get redirect URL from URL parameters or default to index.html
-                const urlParams = new URLSearchParams(window.location.search);
-                const redirectTo = urlParams.get('redirect') || 'index.html';
-                window.location.href = redirectTo;
-                return;
-            }
-            
-            // Handle OAuth redirect from Google
-            if (window.location.hash.includes('access_token')) {
-                await handleOAuthRedirect();
-                return;
+            // Check for existing session
+            try {
+                const { data: { session }, error } = await supabase.auth.getSession();
+                if (error) throw error;
+                
+                if (session) {
+                    console.log('✅ User already logged in:', session.user.email);
+                    // Redirect to home page
+                    window.location.href = 'pulse-feed.html';
+                    return;
+                }
+            } catch (error) {
+                console.error('❌ Session check error:', error.message);
             }
             
             // Hide loading screen
@@ -731,6 +835,7 @@
             // State variables
             let isSignUpMode = false;
             let isLoading = false;
+            let isHoveringLogin = false;
             
             // DOM Elements
             const authForm = document.getElementById('auth-form');
@@ -742,6 +847,7 @@
             const submitBtn = document.getElementById('submit-btn');
             const btnText = document.getElementById('btn-text');
             const btnLoading = document.getElementById('btn-loading');
+            const btnPulse = document.getElementById('btn-pulse');
             const appSubtitle = document.getElementById('app-subtitle');
             const toggleText = document.getElementById('toggle-text');
             const toggleBtn = document.getElementById('toggle-btn');
@@ -751,6 +857,8 @@
             const resetEmailInput = document.getElementById('reset-email');
             const modalCancel = document.getElementById('modal-cancel');
             const modalSubmit = document.getElementById('modal-submit');
+            const modalSubmitText = document.getElementById('modal-submit-text');
+            const modalSubmitLoading = document.getElementById('modal-submit-loading');
             const resetError = document.getElementById('reset-error');
             
             // Error message elements
@@ -758,34 +866,28 @@
             const emailError = document.getElementById('email-error');
             const passwordError = document.getElementById('password-error');
             
-            // ✅ HANDLE OAUTH REDIRECT
-            async function handleOAuthRedirect() {
-                setLoading(true);
-                try {
-                    const success = await auth.handleAuthRedirect();
-                    if (success) {
-                        showToast('Google sign-in successful! Redirecting...', 'success');
-                        
-                        // Get redirect URL from URL parameters or default to index.html
-                        const urlParams = new URLSearchParams(window.location.search);
-                        const redirectTo = urlParams.get('redirect') || 'index.html';
-                        
-                        setTimeout(() => {
-                            window.location.href = redirectTo;
-                        }, 1000);
-                    } else {
-                        setLoading(false);
-                        showToast('Google sign-in failed. Please try again.', 'error');
-                        // Hide loading screen
-                        document.getElementById('loading').style.display = 'none';
-                    }
-                } catch (error) {
-                    setLoading(false);
-                    console.error('OAuth redirect error:', error);
-                    showToast('Google sign-in failed. Please try again.', 'error');
-                    // Hide loading screen
-                    document.getElementById('loading').style.display = 'none';
+            // ✅ ANIMATION FUNCTIONS
+            function startHoverPulse() {
+                if (!isHoveringLogin) {
+                    isHoveringLogin = true;
+                    btnPulse.style.display = 'block';
+                    animateButtonPulse();
                 }
+            }
+            
+            function stopHoverPulse() {
+                if (isHoveringLogin) {
+                    isHoveringLogin = false;
+                    btnPulse.style.display = 'none';
+                }
+            }
+            
+            function animateButtonPulse() {
+                if (!isHoveringLogin) return;
+                
+                const scale = 1 + (Math.sin(Date.now() / 500) * 0.05);
+                submitBtn.style.transform = `scale(${scale})`;
+                requestAnimationFrame(animateButtonPulse);
             }
             
             // ✅ TOGGLE BETWEEN LOGIN AND SIGN UP
@@ -806,7 +908,7 @@
                     btnText.textContent = 'Login';
                     toggleText.textContent = 'Don\'t have an account?';
                     toggleBtn.textContent = 'Sign Up';
-                    appSubtitle.textContent = "The African way — it's all in the DNA.";
+                    appSubtitle.textContent = "The African way, baba — it's all in the DNA.";
                     forgotPassword.style.display = 'block';
                 }
                 
@@ -820,10 +922,12 @@
                 fullNameError.style.display = 'none';
                 emailError.style.display = 'none';
                 passwordError.style.display = 'none';
+                resetError.style.display = 'none';
                 
                 fullNameInput.classList.remove('error');
                 emailInput.classList.remove('error');
                 passwordInput.classList.remove('error');
+                resetEmailInput.classList.remove('error');
             }
             
             // ✅ SHOW ERROR
@@ -841,12 +945,15 @@
                     <span>${message}</span>
                 `;
                 
-                document.getElementById('toast-container').appendChild(toast);
+                const container = document.getElementById('toast-container');
+                container.appendChild(toast);
                 
+                // Remove toast after 4 seconds
                 setTimeout(() => {
                     toast.style.opacity = '0';
+                    toast.style.transform = 'translateX(100%)';
                     setTimeout(() => toast.remove(), 300);
-                }, 3000);
+                }, 4000);
             }
             
             // ✅ SET LOADING STATE
@@ -861,6 +968,19 @@
                     submitBtn.disabled = false;
                     btnText.style.display = 'inline';
                     btnLoading.style.display = 'none';
+                }
+            }
+            
+            // ✅ SET MODAL LOADING STATE
+            function setModalLoading(loading) {
+                if (loading) {
+                    modalSubmit.disabled = true;
+                    modalSubmitText.style.display = 'none';
+                    modalSubmitLoading.style.display = 'inline-block';
+                } else {
+                    modalSubmit.disabled = false;
+                    modalSubmitText.style.display = 'inline';
+                    modalSubmitLoading.style.display = 'none';
                 }
             }
             
@@ -916,18 +1036,19 @@
                     const email = emailInput.value.trim();
                     const password = passwordInput.value;
                     
-                    const result = await auth.signInWithEmail(email, password);
+                    const { data, error } = await supabase.auth.signInWithPassword({
+                        email,
+                        password
+                    });
                     
-                    console.log('✅ Login successful:', result.user?.email);
+                    if (error) throw error;
+                    
+                    console.log('✅ Login successful:', data.user.email);
                     showToast('Login successful! Redirecting...', 'success');
                     
-                    // Get redirect URL from URL parameters or default to index.html
-                    const urlParams = new URLSearchParams(window.location.search);
-                    const redirectTo = urlParams.get('redirect') || 'index.html';
-                    
-                    // Redirect to appropriate page after successful login
+                    // Redirect to Pulse Feed after successful login
                     setTimeout(() => {
-                        window.location.href = redirectTo;
+                        window.location.href = 'pulse-feed.html';
                     }, 1000);
                     
                 } catch (error) {
@@ -941,9 +1062,9 @@
                     } else if (errorStr.includes('email not confirmed')) {
                         errorMessage = 'Please confirm your email before logging in.';
                     } else if (errorStr.includes('invalid login')) {
-                        errorMessage = 'Invalid email or password.';
-                    } else if (errorStr.includes('invalid grant')) {
-                        errorMessage = 'Invalid email or password.';
+                        errorMessage = 'Invalid email or password. Please check your credentials.';
+                    } else if (errorStr.includes('configuration')) {
+                        errorMessage = 'Service configuration issue. Please try again later.';
                     }
                     
                     showToast(errorMessage, 'error');
@@ -964,30 +1085,52 @@
                     const password = passwordInput.value;
                     const fullName = fullNameInput.value.trim() || email.split('@')[0];
                     
-                    // User data to store in Supabase
-                    const userData = {
-                        full_name: fullName,
-                        username: generateUsername(email),
-                        role: 'viewer'
-                    };
+                    const { data, error } = await supabase.auth.signUp({
+                        email,
+                        password,
+                        options: {
+                            data: {
+                                full_name: fullName,
+                                display_name: fullName,
+                                username: generateUsername(email)
+                            }
+                        }
+                    });
                     
-                    const result = await auth.signUp(email, password, userData);
+                    if (error) throw error;
                     
-                    console.log('✅ Sign up successful:', result.user?.email);
+                    console.log('✅ Sign up successful:', data.user?.email);
                     
-                    showToast(
-                        'Account created successfully! Welcome to Bantu Stream Connect.',
-                        'success'
-                    );
-                    
-                    // Get redirect URL from URL parameters or default to index.html
-                    const urlParams = new URLSearchParams(window.location.search);
-                    const redirectTo = urlParams.get('redirect') || 'index.html';
-                    
-                    // Redirect to appropriate page
-                    setTimeout(() => {
-                        window.location.href = redirectTo;
-                    }, 1500);
+                    // Check if email confirmation is required
+                    if (data.user?.identities?.length === 0) {
+                        showToast('This email is already registered. Please sign in instead.', 'error');
+                        
+                        // Switch to login mode
+                        isSignUpMode = false;
+                        fullNameGroup.style.display = 'none';
+                        btnText.textContent = 'Login';
+                        toggleText.textContent = 'Don\'t have an account?';
+                        toggleBtn.textContent = 'Sign Up';
+                        appSubtitle.textContent = "The African way, baba — it's all in the DNA.";
+                        forgotPassword.style.display = 'block';
+                        fullNameInput.value = '';
+                        
+                    } else if (data.user?.confirmation_sent) {
+                        showToast(
+                            'Account created successfully! Please check your email to confirm your account.',
+                            'success'
+                        );
+                    } else {
+                        showToast(
+                            'Account created successfully! Welcome to Bantu Stream Connect.',
+                            'success'
+                        );
+                        
+                        // Redirect to Pulse Feed
+                        setTimeout(() => {
+                            window.location.href = 'pulse-feed.html';
+                        }, 1500);
+                    }
                     
                 } catch (error) {
                     console.error('❌ Sign up error:', error);
@@ -1003,13 +1146,15 @@
                         btnText.textContent = 'Login';
                         toggleText.textContent = 'Don\'t have an account?';
                         toggleBtn.textContent = 'Sign Up';
-                        appSubtitle.textContent = "The African way — it's all in the DNA.";
+                        appSubtitle.textContent = "The African way, baba — it's all in the DNA.";
                         forgotPassword.style.display = 'block';
                         fullNameInput.value = '';
                     } else if (errorStr.includes('password')) {
-                        errorMessage = 'Password must be at least 6 characters.';
+                        errorMessage = 'Password must be at least 6 characters long.';
                     } else if (errorStr.includes('network')) {
-                        errorMessage = 'Network error. Please check your connection.';
+                        errorMessage = 'Network error. Please check your connection and try again.';
+                    } else if (errorStr.includes('configuration')) {
+                        errorMessage = 'Service configuration issue. Please try again later.';
                     } else if (errorStr.includes('database')) {
                         errorMessage = 'Account created but setup incomplete. Please try logging in.';
                     }
@@ -1031,14 +1176,23 @@
             // ✅ GOOGLE SIGN IN
             googleBtn.addEventListener('click', async () => {
                 try {
-                    // Get redirect URL from URL parameters or default to index.html
-                    const urlParams = new URLSearchParams(window.location.search);
-                    const redirectTo = urlParams.get('redirect') || 'index.html';
+                    console.log('🔄 Starting Google OAuth...');
                     
-                    // Google OAuth redirect
-                    const currentUrl = window.location.origin + window.location.pathname;
-                    const authUrl = `${auth.supabaseUrl}/auth/v1/authorize?provider=google&redirect_to=${encodeURIComponent(currentUrl + '?redirect=' + redirectTo)}`;
-                    window.location.href = authUrl;
+                    const { data, error } = await supabase.auth.signInWithOAuth({
+                        provider: 'google',
+                        options: {
+                            redirectTo: `${window.location.origin}/auth-callback.html`,
+                            queryParams: {
+                                access_type: 'offline',
+                                prompt: 'consent'
+                            }
+                        }
+                    });
+                    
+                    if (error) throw error;
+                    
+                    console.log('🔗 Google OAuth flow started...');
+                    
                 } catch (error) {
                     console.error('❌ Google sign in error:', error);
                     showToast('Google sign-in failed. Please try again.', 'error');
@@ -1050,12 +1204,12 @@
                 e.preventDefault();
                 forgotModal.style.display = 'flex';
                 resetEmailInput.value = emailInput.value.trim(); // Pre-fill with email if available
+                resetEmailInput.focus();
             });
             
             modalCancel.addEventListener('click', () => {
                 forgotModal.style.display = 'none';
-                resetError.style.display = 'none';
-                resetEmailInput.classList.remove('error');
+                clearErrors();
                 resetEmailInput.value = '';
             });
             
@@ -1063,28 +1217,29 @@
                 const email = resetEmailInput.value.trim();
                 
                 if (!email) {
-                    resetError.textContent = 'Please enter your email';
-                    resetError.style.display = 'block';
+                    showError(resetError, 'Please enter your email');
                     resetEmailInput.classList.add('error');
                     return;
                 }
                 
                 if (!/^[^@]+@[^@]+\.[^@]+$/.test(email)) {
-                    resetError.textContent = 'Please enter a valid email';
-                    resetError.style.display = 'block';
+                    showError(resetError, 'Please enter a valid email');
                     resetEmailInput.classList.add('error');
                     return;
                 }
                 
-                // Show loading state
-                modalSubmit.disabled = true;
-                modalSubmit.innerHTML = '<div class="submit-btn-loading" style="display: inline-block;"></div>';
+                setModalLoading(true);
                 
                 try {
-                    await auth.resetPassword(email);
+                    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+                        redirectTo: `${window.location.origin}/reset-password.html`,
+                    });
                     
-                    showToast('Password reset link sent! Check your email.', 'success');
+                    if (error) throw error;
+                    
+                    showToast('Password reset link sent! Check your email inbox and spam folder.', 'success');
                     forgotModal.style.display = 'none';
+                    resetEmailInput.value = '';
                     
                 } catch (error) {
                     console.error('❌ Password reset error:', error);
@@ -1095,18 +1250,18 @@
                     if (errorStr.includes('rate limit')) {
                         errorMessage = 'Too many attempts. Please try again in a few minutes.';
                     } else if (errorStr.includes('user not found')) {
-                        errorMessage = 'No account found with this email.';
+                        errorMessage = 'No account found with this email address.';
                     } else if (errorStr.includes('network')) {
                         errorMessage = 'Network error. Please check your connection.';
+                    } else if (errorStr.includes('email')) {
+                        errorMessage = 'Please ensure you enter a valid email address.';
                     }
                     
-                    resetError.textContent = errorMessage;
-                    resetError.style.display = 'block';
+                    showError(resetError, errorMessage);
+                    resetEmailInput.classList.add('error');
                     
                 } finally {
-                    // Reset button
-                    modalSubmit.disabled = false;
-                    modalSubmit.innerHTML = 'Send Reset Link';
+                    setModalLoading(false);
                 }
             });
             
@@ -1114,8 +1269,7 @@
             forgotModal.addEventListener('click', (e) => {
                 if (e.target === forgotModal) {
                     forgotModal.style.display = 'none';
-                    resetError.style.display = 'none';
-                    resetEmailInput.classList.remove('error');
+                    clearErrors();
                     resetEmailInput.value = '';
                 }
             });
@@ -1130,6 +1284,10 @@
                     await handleLogin();
                 }
             });
+            
+            // Hover effects for submit button
+            submitBtn.addEventListener('mouseenter', startHoverPulse);
+            submitBtn.addEventListener('mouseleave', stopHoverPulse);
             
             // Clear errors on input
             emailInput.addEventListener('input', () => {
@@ -1147,7 +1305,25 @@
                 fullNameInput.classList.remove('error');
             });
             
+            resetEmailInput.addEventListener('input', () => {
+                resetError.style.display = 'none';
+                resetEmailInput.classList.remove('error');
+            });
+            
             console.log('✅ Login screen ready');
+            
+            // Listen for auth state changes
+            supabase.auth.onAuthStateChange((event, session) => {
+                console.log('🔐 Auth state changed:', event);
+                
+                if (event === 'SIGNED_IN' && session) {
+                    console.log('👤 User signed in:', session.user.email);
+                }
+                
+                if (event === 'SIGNED_OUT') {
+                    console.log('👤 User signed out');
+                }
+            });
         });
     </script>
 </body>
