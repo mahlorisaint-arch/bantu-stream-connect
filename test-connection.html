@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Supabase Connection</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body {
+            background: #0A0E12;
+            color: white;
+            padding: 40px;
+            font-family: Arial, sans-serif;
+        }
+        .result {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 8px;
+        }
+        .success { background: #10B981; }
+        .error { background: #EF4444; }
+        .loading { color: #F59E0B; }
+    </style>
+</head>
+<body>
+    <h2>Testing Supabase Connection...</h2>
+    <div id="results"></div>
+    
+    <script>
+        async function testConnection() {
+            const SUPABASE_URL = 'https://ydnxqnbjoshvxteevemc.supabase.co';
+            const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U';
+            
+            const resultsDiv = document.getElementById('results');
+            
+            function log(message, type = 'info') {
+                const div = document.createElement('div');
+                div.className = `result ${type}`;
+                div.innerHTML = `${new Date().toLocaleTimeString()}: ${message}`;
+                resultsDiv.appendChild(div);
+            }
+            
+            log('Starting connection test...', 'loading');
+            
+            try {
+                // Test 1: Create Supabase client
+                log('Creating Supabase client...', 'loading');
+                const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                log('✅ Supabase client created', 'success');
+                
+                // Test 2: Check auth
+                log('Checking authentication...', 'loading');
+                const { data: { session }, error: authError } = await supabase.auth.getSession();
+                
+                if (authError) {
+                    log(`❌ Auth error: ${authError.message}`, 'error');
+                } else if (session) {
+                    log(`✅ User logged in: ${session.user.email}`, 'success');
+                } else {
+                    log('✅ No active session (expected for first visit)', 'success');
+                }
+                
+                // Test 3: Test database query
+                log('Testing database query...', 'loading');
+                const { data: tables, error: dbError } = await supabase
+                    .from('pulses')
+                    .select('count')
+                    .limit(1);
+                
+                if (dbError) {
+                    log(`❌ Database error: ${dbError.message}`, 'error');
+                } else {
+                    log(`✅ Database query successful`, 'success');
+                }
+                
+                log('🎉 All tests completed!', 'success');
+                
+            } catch (error) {
+                log(`❌ Critical error: ${error.message}`, 'error');
+                log(`Stack: ${error.stack}`, 'error');
+            }
+        }
+        
+        // Add a timeout
+        setTimeout(() => {
+            const resultsDiv = document.getElementById('results');
+            const div = document.createElement('div');
+            div.className = 'result error';
+            div.innerHTML = `${new Date().toLocaleTimeString()}: ⏰ Timeout - process took too long`;
+            resultsDiv.appendChild(div);
+        }, 10000);
+        
+        testConnection();
+    </script>
+</body>
+</html>
