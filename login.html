@@ -207,14 +207,6 @@
             animation: spin 1s linear infinite;
         }
         
-        /* Error Messages */
-        .error-message {
-            color: var(--error-color);
-            font-size: 14px;
-            margin-top: 5px;
-            display: none;
-        }
-        
         /* Toggle Link */
         .toggle-link {
             text-align: center;
@@ -324,18 +316,13 @@
 
     <script>
         // Configuration
-        const CONFIG = {
-            SUPABASE_URL: 'https://ydnxqnbjoshvxteevemc.supabase.co',
-            SUPABASE_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U',
-            MAX_LOADING_TIME: 10000, // 10 seconds max loading time
-            TIMEOUT_MESSAGE: 'Taking too long. Please check your connection and refresh the page.'
-        };
-
+        const SUPABASE_URL = 'https://ydnxqnbjoshvxteevemc.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U';
+        
         // Global variables
-        let supabase = null;
+        let supabaseClient = null;
         let isSignUpMode = false;
-        let isLoading = false;
-
+        
         // DOM Elements
         const loadingScreen = document.getElementById('loading');
         const loadingText = document.getElementById('loading-text');
@@ -364,8 +351,6 @@
 
         // ✅ SET LOADING STATE
         function setLoading(loading) {
-            isLoading = loading;
-            
             if (loading) {
                 submitBtn.disabled = true;
                 btnLoading.style.display = 'inline-block';
@@ -378,69 +363,47 @@
         }
 
         // ✅ INITIALIZE APP
-        async function initializeApp() {
+        function initializeApp() {
             console.log('🚀 Initializing Bantu Stream Connect...');
             
             try {
-                // Initialize Supabase with timeout
-                const initPromise = new Promise((resolve, reject) => {
-                    try {
-                        supabase = window.supabase.createClient(
-                            CONFIG.SUPABASE_URL, 
-                            CONFIG.SUPABASE_KEY,
-                            {
-                                auth: {
-                                    autoRefreshToken: true,
-                                    persistSession: true,
-                                    detectSessionInUrl: true
-                                }
-                            }
-                        );
-                        console.log('✅ Supabase client created');
-                        resolve();
-                    } catch (error) {
-                        reject(error);
-                    }
-                });
-                
-                // Add timeout to initialization
-                const timeoutPromise = new Promise((_, reject) => {
-                    setTimeout(() => reject(new Error('Initialization timeout')), 5000);
-                });
-                
-                await Promise.race([initPromise, timeoutPromise]);
-                
-                // Check for existing session (non-blocking)
-                setTimeout(async () => {
-                    try {
-                        const { data: { session }, error } = await supabase.auth.getSession();
-                        
-                        if (error) {
-                            console.warn('Session check warning:', error.message);
-                        } else if (session) {
-                            console.log('✅ User already logged in, redirecting...');
-                            window.location.href = 'pulse-feed.html';
-                            return;
+                // Create Supabase client
+                supabaseClient = window.supabase.createClient(
+                    SUPABASE_URL, 
+                    SUPABASE_KEY,
+                    {
+                        auth: {
+                            autoRefreshToken: true,
+                            persistSession: true,
+                            detectSessionInUrl: true
                         }
-                    } catch (error) {
-                        console.warn('Session check failed:', error.message);
-                        // Continue without redirect
                     }
-                }, 1000);
+                );
                 
-                // Success - show main content
-                showMainContent();
+                console.log('✅ Supabase client created');
+                
+                // Check for existing session
+                supabaseClient.auth.getSession().then(({ data: { session }, error }) => {
+                    if (error) {
+                        console.warn('Session check warning:', error.message);
+                    } else if (session) {
+                        console.log('✅ User already logged in, redirecting...');
+                        window.location.href = 'pulse-feed.html';
+                        return;
+                    }
+                    
+                    // Success - show main content
+                    showMainContent();
+                }).catch(error => {
+                    console.warn('Session check failed:', error.message);
+                    // Still show main content
+                    showMainContent();
+                });
                 
             } catch (error) {
                 console.error('❌ Initialization failed:', error);
-                
-                if (error.message.includes('timeout')) {
-                    loadingText.textContent = CONFIG.TIMEOUT_MESSAGE;
-                    showToast('Connection timeout. Please check your internet connection.', 'error');
-                } else {
-                    loadingText.textContent = 'Failed to initialize. Please refresh.';
-                    showToast('Initialization error: ' + error.message, 'error');
-                }
+                loadingText.textContent = 'Failed to initialize. Please refresh.';
+                showToast('Initialization error: ' + error.message, 'error');
                 
                 // Still show main content but with error state
                 setTimeout(showMainContent, 2000);
@@ -482,7 +445,7 @@
             try {
                 if (isSignUpMode) {
                     // Sign Up
-                    const { data, error } = await supabase.auth.signUp({
+                    const { data, error } = await supabaseClient.auth.signUp({
                         email,
                         password,
                         options: {
@@ -530,7 +493,7 @@
 
         // ✅ HANDLE LOGIN
         async function handleLogin(email, password) {
-            const { data, error } = await supabase.auth.signInWithPassword({
+            const { data, error } = await supabaseClient.auth.signInWithPassword({
                 email,
                 password
             });
@@ -568,7 +531,7 @@
             // Toggle button
             toggleBtn.addEventListener('click', toggleAuthMode);
             
-            // Clear errors on input
+            // Clear toast on input
             emailInput.addEventListener('input', () => {
                 if (toast.style.display === 'block') {
                     toast.style.display = 'none';
@@ -587,10 +550,10 @@
             setTimeout(() => {
                 if (loadingScreen.style.display !== 'none') {
                     console.warn('⏰ Loading timeout reached');
-                    loadingText.textContent = CONFIG.TIMEOUT_MESSAGE;
+                    loadingText.textContent = 'Taking too long. Please check your connection and refresh.';
                     showToast('Loading is taking too long. Please refresh.', 'error');
                 }
-            }, CONFIG.MAX_LOADING_TIME);
+            }, 10000);
         }
 
         // ✅ INITIALIZE WHEN DOM IS READY
