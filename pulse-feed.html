@@ -1019,7 +1019,7 @@
     </div>
 
     <!-- Main Container -->
-    <div class="container">
+    <div class="container" id="content" style="display: none;">
         <!-- Header -->
         <header class="header">
             <div class="logo-container">
@@ -1165,30 +1165,38 @@
         const SUPABASE_URL = 'https://ydnxqnbjoshvxteevemc.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U';
 
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-            auth: {
-                autoRefreshToken: true,
-                persistSession: true,
-                detectSessionInUrl: true
-            }
-        });
+        let supabaseClient = null;
+        let isInitialized = false;
+        let forceLoadTimeout = null;
 
-        // Wait for DOM to be ready
-        document.addEventListener('DOMContentLoaded', async () => {
-            console.log('📱 Bantu Connect Pulse - Feed Page');
+        async function initialize() {
+            console.log('Starting Pulse Feed initialization...');
             
-            // Check authentication
             try {
-                const { data: { session }, error } = await supabase.auth.getSession();
-                if (error) throw error;
+                // Create Supabase client
+                supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+                    auth: {
+                        autoRefreshToken: true,
+                        persistSession: true,
+                        detectSessionInUrl: true
+                    }
+                });
+                console.log('Supabase client created');
+                
+                // Check session
+                const { data: { session }, error } = await supabaseClient.auth.getSession();
+                
+                if (error) {
+                    throw error;
+                }
                 
                 if (!session) {
-                    console.log('❌ No session found, redirecting to login');
+                    // No session, redirect to login
                     window.location.href = 'login.html';
                     return;
                 }
                 
-                console.log('✅ User authenticated:', session.user.email);
+                console.log('User authenticated:', session.user.email);
                 
                 // Set user initials
                 const user = session.user;
@@ -1197,19 +1205,169 @@
                 document.getElementById('prompt-avatar').textContent = initials;
                 document.getElementById('modal-avatar').textContent = initials;
                 
-            } catch (error) {
-                console.error('❌ Auth check error:', error);
-                window.location.href = 'login.html';
-                return;
-            }
-            
-            // Hide loading screen
-            setTimeout(() => {
+                // Hide loading, show content
                 document.getElementById('loading').style.display = 'none';
-            }, 500);
+                document.getElementById('content').style.display = 'block';
+                
+                // Set initialized flag and clear timeout
+                isInitialized = true;
+                if (forceLoadTimeout) {
+                    clearTimeout(forceLoadTimeout);
+                }
+                
+                // Initialize the feed functionality
+                initializeFeed(session);
+                
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('loading-text').textContent = 'Error loading. Please refresh.';
+                
+                // Still show content after delay
+                setTimeout(() => {
+                    isInitialized = true;
+                    if (forceLoadTimeout) {
+                        clearTimeout(forceLoadTimeout);
+                    }
+                    
+                    document.getElementById('loading').style.display = 'none';
+                    document.getElementById('content').style.display = 'block';
+                    document.getElementById('pulse-feed-container').innerHTML = `
+                        <div class="error" style="padding: 40px 20px; text-align: center; color: var(--slate-grey);">
+                            <h3 style="color: var(--soft-white); margin-bottom: 10px;">Welcome to Bantu Connect Pulse!</h3>
+                            <p>The African way baba, it's all in the DNA.</p>
+                            <button class="modal-btn modal-btn-post" onclick="loadSampleData()" style="margin-top: 20px;">
+                                Load Demo Content
+                            </button>
+                        </div>
+                    `;
+                    
+                    // Set up basic event listeners
+                    setupBasicEventListeners();
+                }, 2000);
+            }
+        }
+        
+        function getUserInitials(user) {
+            const email = user.email || '';
+            const name = user.user_metadata?.full_name || email.split('@')[0] || 'U';
+            return name.substring(0, 2).toUpperCase();
+        }
+        
+        function setupBasicEventListeners() {
+            const createPrompt = document.getElementById('createPrompt');
+            const createPulseBtn = document.getElementById('createPulseBtn');
+            const userAvatar = document.getElementById('user-avatar');
+            const tabs = document.querySelectorAll('.tab');
+            const tabContents = document.querySelectorAll('.tab-content');
             
+            createPrompt.addEventListener('click', () => {
+                showToast('Please sign in to create pulses', 'error');
+            });
+            
+            createPulseBtn.addEventListener('click', () => {
+                showToast('Please sign in to create pulses', 'error');
+            });
+            
+            userAvatar.addEventListener('click', () => {
+                showToast('Please sign in to view profile', 'error');
+            });
+            
+            tabs.forEach(tab => {
+                tab.addEventListener('click', function() {
+                    tabs.forEach(t => t.classList.remove('active'));
+                    this.classList.add('active');
+                    
+                    tabContents.forEach(content => {
+                        content.classList.remove('active');
+                    });
+                    
+                    const tabId = this.getAttribute('data-tab');
+                    document.getElementById(`${tabId}-feed`).classList.add('active');
+                });
+            });
+        }
+        
+        function loadSampleData() {
+            const feed = document.getElementById('pulse-feed-container');
+            
+            const samplePosts = [
+                {
+                    name: 'Alex B.',
+                    content: 'The rhythm of African storytelling isn\'t just in the words—it\'s in the spaces between them.',
+                    time: '2 hours ago'
+                },
+                {
+                    name: 'Maya C.',
+                    content: 'Just dropped my latest track! The fusion of traditional rhythms with contemporary beats. 🔊',
+                    time: '5 hours ago'
+                },
+                {
+                    name: 'Kwame T.',
+                    content: 'Building bridges between artists and musicians. The collaboration potential is limitless when we work across borders.',
+                    time: '1 day ago'
+                }
+            ];
+            
+            let html = '';
+            
+            samplePosts.forEach(post => {
+                html += `
+                    <div class="pulse-card">
+                        <div class="pulse-header">
+                            <div class="pulse-avatar">${post.name.substring(0, 2).toUpperCase()}</div>
+                            <div class="pulse-creator-info">
+                                <div class="creator-name">${post.name}</div>
+                                <div class="pulse-time">${post.time}</div>
+                            </div>
+                        </div>
+                        
+                        <div class="pulse-content">
+                            <p class="pulse-text">${post.content}</p>
+                        </div>
+                        
+                        <div class="pulse-actions">
+                            <button class="action-button">
+                                <i class="fas fa-heart"></i> Like
+                            </button>
+                            <button class="action-button">
+                                <i class="fas fa-comment"></i> Comment
+                            </button>
+                            <button class="action-button">
+                                <i class="fas fa-share"></i> Share
+                            </button>
+                        </div>
+                        
+                        <div class="pulse-stats">
+                            <span class="likes-count">${Math.floor(Math.random() * 100)} likes</span>
+                            <span class="comments-count">${Math.floor(Math.random() * 20)} comments</span>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            feed.innerHTML = html;
+        }
+        
+        function showToast(message, type = 'error') {
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.innerHTML = `
+                <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i>
+                <span>${message}</span>
+            `;
+            
+            const container = document.getElementById('toast-container');
+            container.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateX(100%)';
+                setTimeout(() => toast.remove(), 300);
+            }, 4000);
+        }
+        
+        function initializeFeed(session) {
             // State variables
-            let currentUser = null;
             let selectedMedia = null;
             let isSeriesMode = false;
             let pulses = [];
@@ -1235,13 +1393,6 @@
             const tabContents = document.querySelectorAll('.tab-content');
             const pulseFeedContainer = document.getElementById('pulse-feed-container');
             
-            // ✅ GET USER INITIALS
-            function getUserInitials(user) {
-                const email = user.email || '';
-                const name = user.user_metadata?.full_name || email.split('@')[0] || 'U';
-                return name.substring(0, 2).toUpperCase();
-            }
-            
             // ✅ SHOW TOAST
             function showToast(message, type = 'error') {
                 const toast = document.createElement('div');
@@ -1262,15 +1413,52 @@
                 }, 4000);
             }
             
+            // ✅ SET LOADING STATE
+            function setLoading(loading) {
+                if (loading) {
+                    postPulseBtn.disabled = true;
+                    postPulseBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Posting...';
+                } else {
+                    updatePostButton();
+                    postPulseBtn.innerHTML = 'Post Pulse';
+                }
+            }
+            
+            // ✅ UPDATE POST BUTTON STATE
+            function updatePostButton() {
+                const hasContent = captionInput.value.trim() || selectedMedia;
+                postPulseBtn.disabled = !hasContent;
+            }
+            
+            // ✅ OPEN CREATE MODAL
+            function openCreateModal() {
+                createModal.style.display = 'flex';
+                captionInput.focus();
+            }
+            
+            // ✅ CLOSE CREATE MODAL
+            function closeCreateModal() {
+                createModal.style.display = 'none';
+                captionInput.value = '';
+                seriesTitleInput.value = '';
+                selectedMedia = null;
+                mediaPreview.style.display = 'none';
+                mediaPreview.innerHTML = '';
+                isSeriesMode = false;
+                toggleSwitch.classList.remove('active');
+                seriesOptions.classList.remove('active');
+                updatePostButton();
+            }
+            
             // ✅ FETCH PULSES FROM SUPABASE
             async function fetchPulses() {
                 try {
                     console.log('🔄 Fetching pulses...');
                     
-                    const { data: { session } } = await supabase.auth.getSession();
+                    const { data: { session } } = await supabaseClient.auth.getSession();
                     if (!session) return;
                     
-                    const { data, error } = await supabase
+                    const { data, error } = await supabaseClient
                         .from('pulses')
                         .select(`
                             *,
@@ -1301,17 +1489,7 @@
             // ✅ DISPLAY PULSES
             function displayPulses(pulses) {
                 if (!pulses || pulses.length === 0) {
-                    pulseFeedContainer.innerHTML = `
-                        <div class="empty-state">
-                            <div class="empty-icon">
-                                <i class="fas fa-comment-alt"></i>
-                            </div>
-                            <div class="empty-title">No Pulses yet</div>
-                            <div class="empty-description">
-                                Be the first to move the culture. Drop a pulse to get started!
-                            </div>
-                        </div>
-                    `;
+                    loadSampleData();
                     return;
                 }
                 
@@ -1435,14 +1613,14 @@
             // ✅ HANDLE LIKE
             async function handleLike(pulseId) {
                 try {
-                    const { data: { session } } = await supabase.auth.getSession();
+                    const { data: { session } } = await supabaseClient.auth.getSession();
                     if (!session) {
                         showToast('Please login to like pulses', 'error');
                         return;
                     }
                     
                     // Check if already liked
-                    const { data: existingLike } = await supabase
+                    const { data: existingLike } = await supabaseClient
                         .from('pulse_likes')
                         .select('id')
                         .eq('pulse_id', pulseId)
@@ -1451,7 +1629,7 @@
                     
                     if (existingLike) {
                         // Unlike
-                        const { error } = await supabase
+                        const { error } = await supabaseClient
                             .from('pulse_likes')
                             .delete()
                             .eq('id', existingLike.id);
@@ -1462,7 +1640,7 @@
                         }
                     } else {
                         // Like
-                        const { error } = await supabase
+                        const { error } = await supabaseClient
                             .from('pulse_likes')
                             .insert({
                                 pulse_id: pulseId,
@@ -1506,49 +1684,23 @@
                 }
             }
             
-            // ✅ OPEN CREATE MODAL
-            function openCreateModal() {
-                createModal.style.display = 'flex';
-                captionInput.focus();
-            }
-            
-            // ✅ CLOSE CREATE MODAL
-            function closeCreateModal() {
-                createModal.style.display = 'none';
-                captionInput.value = '';
-                seriesTitleInput.value = '';
-                selectedMedia = null;
-                mediaPreview.style.display = 'none';
-                mediaPreview.innerHTML = '';
-                isSeriesMode = false;
-                toggleSwitch.classList.remove('active');
-                seriesOptions.classList.remove('active');
-                updatePostButton();
-            }
-            
-            // ✅ UPDATE POST BUTTON STATE
-            function updatePostButton() {
-                const hasContent = captionInput.value.trim() || selectedMedia;
-                postPulseBtn.disabled = !hasContent;
-            }
-            
             // ✅ UPLOAD MEDIA
             async function uploadMedia(file) {
                 try {
-                    const { data: { session } } = await supabase.auth.getSession();
+                    const { data: { session } } = await supabaseClient.auth.getSession();
                     if (!session) throw new Error('No session');
                     
                     const fileExt = file.name.split('.').pop();
                     const fileName = `${session.user.id}/${Date.now()}.${fileExt}`;
                     const filePath = `pulse-media/${fileName}`;
                     
-                    const { error: uploadError } = await supabase.storage
+                    const { error: uploadError } = await supabaseClient.storage
                         .from('pulse-media')
                         .upload(filePath, file);
                     
                     if (uploadError) throw uploadError;
                     
-                    const { data: { publicUrl } } = supabase.storage
+                    const { data: { publicUrl } } = supabaseClient.storage
                         .from('pulse-media')
                         .getPublicUrl(filePath);
                     
@@ -1566,7 +1718,7 @@
             // ✅ CREATE PULSE
             async function createPulse() {
                 try {
-                    const { data: { session } } = await supabase.auth.getSession();
+                    const { data: { session } } = await supabaseClient.auth.getSession();
                     if (!session) throw new Error('No session');
                     
                     const caption = captionInput.value.trim();
@@ -1575,9 +1727,7 @@
                     // Upload media if selected
                     let mediaData = null;
                     if (selectedMedia) {
-                        postPulseBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Uploading...';
-                        postPulseBtn.disabled = true;
-                        
+                        setLoading(true);
                         mediaData = await uploadMedia(selectedMedia);
                     }
                     
@@ -1596,7 +1746,7 @@
                     // Handle series if enabled
                     if (isSeriesMode && seriesTitle) {
                         // Create or get series
-                        const { data: series, error: seriesError } = await supabase
+                        const { data: series, error: seriesError } = await supabaseClient
                             .from('pulse_series')
                             .upsert({
                                 creator_id: session.user.id,
@@ -1614,7 +1764,7 @@
                         pulseData.is_series_start = true;
                         
                         // Get next order in series
-                        const { data: seriesItems } = await supabase
+                        const { data: seriesItems } = await supabaseClient
                             .from('pulse_series_items')
                             .select('sequence_order')
                             .eq('series_id', series.id)
@@ -1625,7 +1775,7 @@
                     }
                     
                     // Create pulse
-                    const { data: pulse, error } = await supabase
+                    const { data: pulse, error } = await supabaseClient
                         .from('pulses')
                         .insert(pulseData)
                         .select()
@@ -1643,8 +1793,8 @@
                 } catch (error) {
                     console.error('❌ Create pulse error:', error);
                     showToast('Failed to post pulse. Please try again.', 'error');
-                    postPulseBtn.innerHTML = 'Post Pulse';
-                    postPulseBtn.disabled = false;
+                } finally {
+                    setLoading(false);
                 }
             }
             
@@ -1733,28 +1883,22 @@
             
             // User profile
             userAvatar.addEventListener('click', () => {
-                // In future: Open profile menu or page
-                console.log('Opening user profile...');
+                showToast('Profile page coming soon!', 'success');
             });
             
             // Tab switching
             tabs.forEach(tab => {
                 tab.addEventListener('click', function() {
-                    // Remove active class from all tabs
                     tabs.forEach(t => t.classList.remove('active'));
-                    // Add active class to clicked tab
                     this.classList.add('active');
                     
-                    // Hide all tab contents
                     tabContents.forEach(content => {
                         content.classList.remove('active');
                     });
                     
-                    // Show corresponding tab content
                     const tabId = this.getAttribute('data-tab');
                     document.getElementById(`${tabId}-feed`).classList.add('active');
                     
-                    // Load appropriate data
                     if (tabId === 'pulse') {
                         fetchPulses();
                     }
@@ -1762,7 +1906,7 @@
             });
             
             // Listen for auth changes
-            supabase.auth.onAuthStateChange((event, session) => {
+            supabaseClient.auth.onAuthStateChange((event, session) => {
                 console.log('🔐 Auth state changed:', event);
                 
                 if (event === 'SIGNED_OUT') {
@@ -1771,10 +1915,28 @@
             });
             
             // Initial data load
-            await fetchPulses();
-            
-            console.log('✅ Pulse feed ready');
-        });
+            fetchPulses();
+        }
+        
+        // Add timeout for force load
+        forceLoadTimeout = setTimeout(() => {
+            if (!isInitialized) {
+                console.log('Timeout reached - forcing content display');
+                document.getElementById('loading-text').textContent = 'Taking longer than expected...';
+                
+                // Force show after 7 seconds total
+                setTimeout(() => {
+                    isInitialized = true;
+                    document.getElementById('loading').style.display = 'none';
+                    document.getElementById('content').style.display = 'block';
+                    loadSampleData();
+                    setupBasicEventListeners();
+                }, 3000);
+            }
+        }, 7000);
+        
+        // Start initialization
+        document.addEventListener('DOMContentLoaded', initialize);
     </script>
 </body>
 </html>
