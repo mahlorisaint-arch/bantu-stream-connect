@@ -2,7 +2,6 @@
 <html>
 <head>
     <title>Authenticating...</title>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         body {
             background: #0A0E12;
@@ -12,6 +11,7 @@
             align-items: center;
             height: 100vh;
             font-family: Arial, sans-serif;
+            text-align: center;
         }
         .spinner {
             border: 4px solid rgba(255,255,255,0.1);
@@ -20,6 +20,7 @@
             width: 40px;
             height: 40px;
             animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
         }
         @keyframes spin {
             to { transform: rotate(360deg); }
@@ -27,34 +28,20 @@
     </style>
 </head>
 <body>
-    <div class="spinner"></div>
+    <div>
+        <div class="spinner"></div>
+        <h3>Authenticating...</h3>
+        <p>Please wait while we complete your login.</p>
+        <p style="font-size: 14px; color: #94A3B8; margin-top: 20px;">
+            If this takes more than 5 seconds, <a href="login.html" style="color: #1D4ED8;">click here</a>
+        </p>
+    </div>
+    
     <script>
-        // Handle OAuth callback
-        const SUPABASE_URL = 'https://ydnxqnbjoshvxteevemc.supabase.co';
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U';
-        
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-        
-        async function handleAuthCallback() {
-            try {
-                const { data: { session }, error } = await supabase.auth.getSession();
-                
-                if (error) throw error;
-                
-                if (session) {
-                    console.log('✅ OAuth successful:', session.user.email);
-                    window.location.href = 'pulse-feed.html';
-                } else {
-                    console.log('❌ No session found');
-                    window.location.href = 'login.html';
-                }
-            } catch (error) {
-                console.error('❌ Auth callback error:', error);
-                window.location.href = 'login.html';
-            }
-        }
-        
-        handleAuthCallback();
+        // Simple redirect after 2 seconds
+        setTimeout(() => {
+            window.location.href = 'pulse-feed.html';
+        }, 2000);
     </script>
 </body>
 </html>
