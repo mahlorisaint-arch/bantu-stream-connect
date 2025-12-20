@@ -1393,6 +1393,46 @@
             const tabContents = document.querySelectorAll('.tab-content');
             const pulseFeedContainer = document.getElementById('pulse-feed-container');
             
+            // ✅ HELPER: Ensure user profile exists
+            async function ensureUserProfile(userId) {
+                try {
+                    const { data: { session } } = await supabaseClient.auth.getSession();
+                    if (!session) return null;
+                    
+                    // Check if profile exists
+                    const { data: existingProfile } = await supabaseClient
+                        .from('user_profiles')
+                        .select('*')
+                        .eq('id', userId)
+                        .single();
+                    
+                    if (!existingProfile) {
+                        // Create a basic profile
+                        const { data: newProfile, error } = await supabaseClient
+                            .from('user_profiles')
+                            .upsert({
+                                id: userId,
+                                email: session.user.email,
+                                full_name: session.user.user_metadata?.full_name || session.user.email.split('@')[0],
+                                username: session.user.user_metadata?.username || session.user.email.split('@')[0],
+                                role: 'creator',
+                                created_at: new Date().toISOString(),
+                                updated_at: new Date().toISOString()
+                            })
+                            .select()
+                            .single();
+                        
+                        if (error) throw error;
+                        return newProfile;
+                    }
+                    
+                    return existingProfile;
+                } catch (error) {
+                    console.warn('⚠️ Profile check error:', error);
+                    return null;
+                }
+            }
+            
             // ✅ SHOW TOAST
             function showToast(message, type = 'error') {
                 const toast = document.createElement('div');
@@ -1450,7 +1490,7 @@
                 updatePostButton();
             }
             
-            // ✅ FETCH PULSES FROM SUPABASE
+            // ✅ FIXED: FETCH PULSES FROM SUPABASE
             async function fetchPulses() {
                 try {
                     console.log('🔄 Fetching pulses...');
@@ -1458,21 +1498,64 @@
                     const { data: { session } } = await supabaseClient.auth.getSession();
                     if (!session) return;
                     
+                    // ✅ FIX: Join with user_profiles table instead of auth.users
                     const { data, error } = await supabaseClient
                         .from('pulses')
                         .select(`
                             *,
-                            user:user_id (
-                                id,
-                                email,
-                                user_metadata
+                            user_profiles!inner (
+                                full_name,
+                                username,
+                                avatar_url,
+                                role,
+                                email
                             )
                         `)
                         .eq('deleted_at', null)
                         .order('created_at', { ascending: false })
                         .limit(20);
                     
-                    if (error) throw error;
+                    if (error) {
+                        console.error('❌ Supabase query error:', error);
+                        
+                        // Fallback: Try a simpler approach
+                        try {
+                            console.log('🔄 Trying alternative query...');
+                            const { data: pulsesData } = await supabaseClient
+                                .from('pulses')
+                                .select('*')
+                                .eq('deleted_at', null)
+                                .order('created_at', { ascending: false })
+                                .limit(20);
+                            
+                            if (pulsesData) {
+                                // Manually fetch user profiles
+                                const userIds = [...new Set(pulsesData.map(p => p.user_id))];
+                                const { data: profilesData } = await supabaseClient
+                                    .from('user_profiles')
+                                    .select('*')
+                                    .in('id', userIds);
+                                
+                                // Combine the data
+                                const combinedData = pulsesData.map(pulse => {
+                                    const profile = profilesData?.find(p => p.id === pulse.user_id);
+                                    return {
+                                        ...pulse,
+                                        user_profiles: profile || null
+                                    };
+                                });
+                                
+                                console.log(`✅ Fetched ${combinedData.length} pulses (fallback method)`);
+                                pulses = combinedData;
+                                displayPulses(pulses);
+                                return;
+                            }
+                        } catch (fallbackError) {
+                            console.error('❌ Fallback also failed:', fallbackError);
+                        }
+                        
+                        throw error;
+                    }
                     
                     console.log(`✅ Fetched ${data?.length || 0} pulses`);
                     pulses = data || [];
@@ -1482,7 +1565,8 @@
                     
                 } catch (error) {
                     console.error('❌ Error fetching pulses:', error);
-                    showToast('Failed to load pulses. Please try again.', 'error');
+                    showToast('Failed to load pulses. Using demo data.', 'error');
+                    loadSampleData();
                 }
             }
             
@@ -1501,11 +1585,14 @@
                 });
             }
             
-            // ✅ CREATE PULSE CARD ELEMENT
+            // ✅ FIXED: CREATE PULSE CARD ELEMENT
             function createPulseCard(pulse) {
-                const user = pulse.user || {};
-                const metadata = user.user_metadata || {};
-                const fullName = metadata.full_name || user.email?.split('@')[0] || 'User';
+                // ✅ FIX: Get user info from user_profiles join
+                const profile = pulse.user_profiles || {};
+                const fullName = profile.full_name || profile.email?.split('@')[0] || 'User';
+                const username = profile.username || '';
+                const avatarUrl = profile.avatar_url;
+                const role = profile.role || '';
                 const initials = fullName.substring(0, 2).toUpperCase();
                 const timeAgo = getTimeAgo(new Date(pulse.created_at));
                 
@@ -1519,11 +1606,16 @@
                 
                 card.innerHTML = `
                     <div class="pulse-header">
-                        <div class="pulse-avatar">${initials}</div>
+                        <div class="pulse-avatar" style="${avatarUrl ? `background-image: url('${avatarUrl}'); background-size: cover;` : ''}">
+                            ${avatarUrl ? '' : initials}
+                        </div>
                         <div class="pulse-creator-info">
-                            <div class="creator-name">${fullName}</div>
-                            ${pulse.is_featured ? '<span class="creator-badge">Featured</span>' : ''}
-                            <div class="pulse-time">${timeAgo}</div>
+                            <div class="creator-name">
+                                ${fullName}
+                                ${role === 'creator' ? '<span class="creator-badge">Creator</span>' : ''}
+                                ${role === 'admin' ? '<span class="creator-badge" style="background: rgba(239, 68, 68, 0.2); color: var(--error-color); border-color: rgba(239, 68, 68, 0.3);">Admin</span>' : ''}
+                            </div>
+                            <div class="pulse-time">${username ? `@${username} • ` : ''}${timeAgo}</div>
                         </div>
                     </div>
                     
@@ -1721,6 +1813,9 @@
                     const { data: { session } } = await supabaseClient.auth.getSession();
                     if (!session) throw new Error('No session');
                     
+                    // Ensure user profile exists
+                    await ensureUserProfile(session.user.id);
+                    
                     const caption = captionInput.value.trim();
                     const seriesTitle = seriesTitleInput.value.trim();
                     
@@ -1730,6 +1825,13 @@
                         setLoading(true);
                         mediaData = await uploadMedia(selectedMedia);
                     }
+                    
+                    // Get user profile for display info
+                    const { data: profile } = await supabaseClient
+                        .from('user_profiles')
+                        .select('full_name, username, avatar_url, role')
+                        .eq('id', session.user.id)
+                        .single();
                     
                     // Prepare pulse data
                     const pulseData = {
