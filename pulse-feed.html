@@ -182,9 +182,11 @@
             box-shadow: 0 0 32px rgba(29, 78, 216, 0.3);
         }
         
-        .logo-icon i {
-            color: var(--soft-white);
-            font-size: 20px;
+        .logo-icon img {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
         }
         
         .logo-text {
@@ -1024,7 +1026,7 @@
         <header class="header">
             <div class="logo-container">
                 <div class="logo-icon">
-                    <i class="fas fa-play"></i>
+                    <img src="assets/icon/pulse.png" alt="Bantu Connect Pulse">
                 </div>
                 <div class="logo-text">BANTU CONNECT PULSE</div>
             </div>
@@ -1168,6 +1170,7 @@
         let supabaseClient = null;
         let isInitialized = false;
         let forceLoadTimeout = null;
+        let currentUser = null;
 
         async function initialize() {
             console.log('Starting Pulse Feed initialization...');
@@ -1197,6 +1200,7 @@
                 }
                 
                 console.log('User authenticated:', session.user.email);
+                currentUser = session.user;
                 
                 // Set user initials
                 const user = session.user;
@@ -1492,40 +1496,62 @@
             
             // ✅ FIXED: FETCH PULSES FROM SUPABASE
             async function fetchPulses() {
-    try {
-        console.log('🔄 Fetching pulses...');
-        
-        // ✅ Use the view instead of trying to join manually
-        const { data, error } = await supabaseClient
-            .from('pulses_with_user_details')
-            .select('*')
-            .limit(20);
-        
-        if (error) throw error;
-        
-        console.log(`✅ Fetched ${data?.length || 0} pulses`);
-        pulses = data || [];
-        
-        // Format for display
-        const formattedData = pulses.map(pulse => ({
-            ...pulse,
-            user_profiles: {
-                full_name: pulse.full_name,
-                username: pulse.username,
-                avatar_url: pulse.avatar_url,
-                role: pulse.role,
-                email: pulse.email
+                try {
+                    console.log('🔄 Fetching pulses...');
+                    
+                    const { data: { session } } = await supabaseClient.auth.getSession();
+                    if (!session) return;
+                    
+                    // Simple query without joins
+                    const { data: pulsesData, error } = await supabaseClient
+                        .from('pulses')
+                        .select('*')
+                        .eq('deleted_at', null)
+                        .order('created_at', { ascending: false })
+                        .limit(20);
+                    
+                    if (error) {
+                        console.error('❌ Error fetching pulses:', error);
+                        throw error;
+                    }
+                    
+                    console.log(`✅ Fetched ${pulsesData?.length || 0} pulses`);
+                    
+                    // Fetch user profiles separately
+                    if (pulsesData && pulsesData.length > 0) {
+                        const userIds = [...new Set(pulsesData.map(p => p.user_id))];
+                        const { data: profilesData } = await supabaseClient
+                            .from('user_profiles')
+                            .select('*')
+                            .in('id', userIds);
+                        
+                        // Combine data manually
+                        const combinedData = pulsesData.map(pulse => {
+                            const profile = profilesData?.find(p => p.id === pulse.user_id);
+                            return {
+                                ...pulse,
+                                user_profiles: profile || {
+                                    full_name: 'User',
+                                    username: 'user',
+                                    avatar_url: null,
+                                    role: 'user'
+                                }
+                            };
+                        });
+                        
+                        pulses = combinedData;
+                        displayPulses(pulses);
+                    } else {
+                        pulses = [];
+                        displayPulses(pulses);
+                    }
+                    
+                } catch (error) {
+                    console.error('❌ Error fetching pulses:', error);
+                    showToast('Failed to load pulses. Showing demo data.', 'error');
+                    loadSampleData();
+                }
             }
-        }));
-        
-        displayPulses(formattedData);
-        
-    } catch (error) {
-        console.error('❌ Error fetching pulses:', error);
-        showToast('Failed to load pulses. Showing demo data.', 'error');
-        loadSampleData();
-    }
-}
             
             // ✅ DISPLAY PULSES
             function displayPulses(pulses) {
@@ -1544,99 +1570,105 @@
             
             // ✅ FIXED: CREATE PULSE CARD ELEMENT
             function createPulseCard(pulse) {
-    // ✅ Get user info from combined data
-    const profile = pulse.user_profiles || {};
-    const fullName = profile.full_name || profile.email?.split('@')[0] || 'User';
-    const username = profile.username || '';
-    const avatarUrl = profile.avatar_url;
-    const role = profile.role || '';
-    const initials = fullName.substring(0, 2).toUpperCase();
-    const timeAgo = getTimeAgo(new Date(pulse.created_at));
-    
-    const isSeries = pulse.series_id && pulse.series_order;
-    const hasMedia = pulse.media_url;
-    const mediaType = pulse.media_type;
-    
-    const card = document.createElement('div');
-    card.className = 'pulse-card';
-    card.dataset.pulseId = pulse.id;
-    
-    card.innerHTML = `
-        <div class="pulse-header">
-            <div class="pulse-avatar" style="${avatarUrl ? `background-image: url('${avatarUrl}'); background-size: cover;` : ''}">
-                ${avatarUrl ? '' : initials}
-            </div>
-            <div class="pulse-creator-info">
-                <div class="creator-name">
-                    ${fullName}
-                    ${role === 'creator' ? '<span class="creator-badge">Creator</span>' : ''}
-                    ${role === 'admin' ? '<span class="creator-badge" style="background: rgba(239, 68, 68, 0.2); color: var(--error-color); border-color: rgba(239, 68, 68, 0.3);">Admin</span>' : ''}
-                </div>
-                <div class="pulse-time">${username ? `@${username} • ` : ''}${timeAgo}</div>
-            </div>
-        </div>
-        
-        ${isSeries ? `
-            <div class="pulse-series-label">
-                PULSE SERIES · Part ${pulse.series_order}
-            </div>
-        ` : ''}
-        
-        <div class="pulse-content">
-            ${pulse.caption ? `<p class="pulse-text">${pulse.caption}</p>` : ''}
-            
-            ${hasMedia ? `
-                <div class="pulse-media-container">
-                    ${mediaType === 'video' ? `
-                        <video class="vertical-video" controls>
-                            <source src="${pulse.media_url}" type="video/mp4">
-                            Your browser does not support the video tag.
-                        </video>
-                    ` : `
-                        <img src="${pulse.media_url}" alt="Pulse image" style="width:100%; border-radius:12px;">
-                    `}
-                </div>
-            ` : ''}
-            
-            ${pulse.linked_content_id ? `
-                <div class="linked-content">
-                    <div class="linked-content-label">Linked content</div>
-                    <div class="linked-content-card">
-                        <div class="content-thumbnail"></div>
-                        <div class="content-info">
-                            <h4>${pulse.linked_content_type || 'Content'}</h4>
-                            <p>Tap to watch or listen</p>
+                // Get user info from combined data
+                const profile = pulse.user_profiles || {};
+                const fullName = profile.full_name || profile.email?.split('@')[0] || 'User';
+                const username = profile.username || '';
+                const avatarUrl = profile.avatar_url;
+                const role = profile.role || '';
+                const initials = fullName.substring(0, 2).toUpperCase();
+                const timeAgo = getTimeAgo(new Date(pulse.created_at));
+                
+                const isSeries = pulse.series_id && pulse.series_order;
+                const hasMedia = pulse.media_url;
+                const mediaType = pulse.media_type;
+                
+                const card = document.createElement('div');
+                card.className = 'pulse-card';
+                card.dataset.pulseId = pulse.id;
+                
+                card.innerHTML = `
+                    <div class="pulse-header">
+                        <div class="pulse-avatar" style="${avatarUrl ? `background-image: url('${avatarUrl}'); background-size: cover;` : ''}">
+                            ${avatarUrl ? '' : initials}
+                        </div>
+                        <div class="pulse-creator-info">
+                            <div class="creator-name">
+                                ${fullName}
+                                ${role === 'creator' ? '<span class="creator-badge">Creator</span>' : ''}
+                                ${role === 'admin' ? '<span class="creator-badge" style="background: rgba(239, 68, 68, 0.2); color: var(--error-color); border-color: rgba(239, 68, 68, 0.3);">Admin</span>' : ''}
+                            </div>
+                            <div class="pulse-time">${username ? `@${username} • ` : ''}${timeAgo}</div>
                         </div>
                     </div>
-                </div>
-            ` : ''}
-        </div>
-        
-        <div class="pulse-actions">
-            <button class="action-button like" data-pulse-id="${pulse.id}">
-                <i class="fas fa-heart"></i> ${pulse.likes_count || 0}
-            </button>
-            <button class="action-button" data-pulse-id="${pulse.id}">
-                <i class="fas fa-comment"></i> ${pulse.comments_count || 0}
-            </button>
-            <button class="action-button" data-pulse-id="${pulse.id}">
-                <i class="fas fa-share"></i> ${pulse.shares_count || 0}
-            </button>
-        </div>
-        
-        <div class="pulse-stats">
-            <span class="likes-count">${pulse.likes_count || 0} likes</span>
-            <span class="comments-count">${pulse.comments_count || 0} comments</span>
-            <span class="shares-count">${pulse.shares_count || 0} shares</span>
-        </div>
-    `;
-    
-    // Add event listeners
-    const likeBtn = card.querySelector('.like');
-    likeBtn.addEventListener('click', () => handleLike(pulse.id));
-    
-    return card;
-}
+                    
+                    ${isSeries ? `
+                        <div class="pulse-series-label">
+                            PULSE SERIES · Part ${pulse.series_order}
+                        </div>
+                    ` : ''}
+                    
+                    <div class="pulse-content">
+                        ${pulse.caption ? `<p class="pulse-text">${pulse.caption}</p>` : ''}
+                        
+                        ${hasMedia ? `
+                            <div class="pulse-media-container">
+                                ${mediaType === 'video' ? `
+                                    <video class="vertical-video" controls>
+                                        <source src="${pulse.media_url}" type="video/mp4">
+                                        Your browser does not support the video tag.
+                                    </video>
+                                ` : `
+                                    <img src="${pulse.media_url}" alt="Pulse image" style="width:100%; border-radius:12px;">
+                                `}
+                            </div>
+                        ` : ''}
+                        
+                        ${pulse.linked_content_id ? `
+                            <div class="linked-content">
+                                <div class="linked-content-label">Linked content</div>
+                                <div class="linked-content-card">
+                                    <div class="content-thumbnail"></div>
+                                    <div class="content-info">
+                                        <h4>${pulse.linked_content_type || 'Content'}</h4>
+                                        <p>Tap to watch or listen</p>
+                                    </div>
+                                </div>
+                            </div>
+                        ` : ''}
+                    </div>
+                    
+                    <div class="pulse-actions">
+                        <button class="action-button like" data-pulse-id="${pulse.id}">
+                            <i class="fas fa-heart"></i> ${pulse.likes_count || 0}
+                        </button>
+                        <button class="action-button comment-btn" data-pulse-id="${pulse.id}">
+                            <i class="fas fa-comment"></i> ${pulse.comments_count || 0}
+                        </button>
+                        <button class="action-button share-btn" data-pulse-id="${pulse.id}">
+                            <i class="fas fa-share"></i> ${pulse.shares_count || 0}
+                        </button>
+                    </div>
+                    
+                    <div class="pulse-stats">
+                        <span class="likes-count">${pulse.likes_count || 0} likes</span>
+                        <span class="comments-count">${pulse.comments_count || 0} comments</span>
+                        <span class="shares-count">${pulse.shares_count || 0} shares</span>
+                    </div>
+                `;
+                
+                // Add event listeners for actions
+                const likeBtn = card.querySelector('.like');
+                likeBtn.addEventListener('click', () => handleLike(pulse.id));
+                
+                const commentBtn = card.querySelector('.comment-btn');
+                commentBtn.addEventListener('click', () => handleComment(pulse.id));
+                
+                const shareBtn = card.querySelector('.share-btn');
+                shareBtn.addEventListener('click', () => handleShare(pulse.id));
+                
+                return card;
+            }
             
             // ✅ GET TIME AGO
             function getTimeAgo(date) {
@@ -1658,6 +1690,211 @@
                 if (interval > 1) return Math.floor(interval) + ' minutes ago';
                 
                 return Math.floor(seconds) + ' seconds ago';
+            }
+            
+            // ✅ FIXED: UPLOAD MEDIA FUNCTION
+            async function uploadMedia(file) {
+                try {
+                    const { data: { session } } = await supabaseClient.auth.getSession();
+                    if (!session) throw new Error('No session');
+                    
+                    const fileExt = file.name.split('.').pop();
+                    const fileName = `${session.user.id}/${Date.now()}.${fileExt}`;
+                    const filePath = `${fileName}`;
+                    
+                    console.log('📤 Uploading file:', {
+                        bucket: 'pulse-media',
+                        path: filePath,
+                        size: file.size,
+                        type: file.type
+                    });
+                    
+                    const { error: uploadError } = await supabaseClient.storage
+                        .from('pulse-media')
+                        .upload(filePath, file, {
+                            cacheControl: '3600',
+                            upsert: false
+                        });
+                    
+                    if (uploadError) {
+                        console.error('❌ Storage upload error:', uploadError);
+                        
+                        // If bucket doesn't exist or has RLS issues, show specific message
+                        if (uploadError.message.includes('bucket') || uploadError.message.includes('policy')) {
+                            throw new Error('Storage configuration issue. Please check bucket policies.');
+                        }
+                        throw uploadError;
+                    }
+                    
+                    // Get public URL
+                    const { data: { publicUrl } } = supabaseClient.storage
+                        .from('pulse-media')
+                        .getPublicUrl(filePath);
+                    
+                    console.log('✅ File uploaded successfully:', publicUrl);
+                    
+                    return {
+                        url: publicUrl,
+                        type: file.type.startsWith('video/') ? 'video' : 'image'
+                    };
+                    
+                } catch (error) {
+                    console.error('❌ Upload error:', error);
+                    throw new Error(`Failed to upload media: ${error.message}`);
+                }
+            }
+            
+            // ✅ CREATE PULSE
+            async function createPulse() {
+                let seriesData = null;
+                
+                try {
+                    const { data: { session } } = await supabaseClient.auth.getSession();
+                    if (!session) throw new Error('No session');
+                    
+                    // Ensure user profile exists
+                    await ensureUserProfile(session.user.id);
+                    
+                    const caption = captionInput.value.trim();
+                    const seriesTitle = seriesTitleInput.value.trim();
+                    
+                    // Upload media if selected
+                    let mediaData = null;
+                    if (selectedMedia) {
+                        setLoading(true);
+                        mediaData = await uploadMedia(selectedMedia);
+                    }
+                    
+                    // Get user profile for display info
+                    const { data: profile } = await supabaseClient
+                        .from('user_profiles')
+                        .select('full_name, username, avatar_url, role')
+                        .eq('id', session.user.id)
+                        .single();
+                    
+                    // Prepare pulse data
+                    const pulseData = {
+                        user_id: session.user.id,
+                        caption: caption || null,
+                        media_url: mediaData?.url || null,
+                        media_type: mediaData?.type || 'none',
+                        aspect_ratio: '9:16',
+                        likes_count: 0,
+                        comments_count: 0,
+                        shares_count: 0
+                    };
+                    
+                    // ✅ FIXED: Handle series creation
+                    if (isSeriesMode && seriesTitle) {
+                        try {
+                            // First, check if a series with this title already exists for this user
+                            const { data: existingSeries } = await supabaseClient
+                                .from('pulse_series')
+                                .select('id, total_parts')
+                                .eq('creator_id', session.user.id)
+                                .eq('title', seriesTitle)
+                                .single();
+                            
+                            let seriesId;
+                            
+                            if (existingSeries) {
+                                // Use existing series
+                                seriesId = existingSeries.id;
+                                pulseData.is_series_start = false;
+                                
+                                // Update total parts count
+                                await supabaseClient
+                                    .from('pulse_series')
+                                    .update({
+                                        total_parts: (existingSeries.total_parts || 0) + 1,
+                                        updated_at: new Date().toISOString()
+                                    })
+                                    .eq('id', seriesId);
+                                
+                            } else {
+                                // Create new series
+                                const { data: newSeries, error: seriesError } = await supabaseClient
+                                    .from('pulse_series')
+                                    .insert({
+                                        creator_id: session.user.id,
+                                        title: seriesTitle,
+                                        description: `A new pulse series by ${profile?.full_name || session.user.email}`,
+                                        total_parts: 1,
+                                        current_part: 1,
+                                        created_at: new Date().toISOString(),
+                                        updated_at: new Date().toISOString()
+                                    })
+                                    .select()
+                                    .single();
+                                
+                                if (seriesError) {
+                                    console.error('❌ Series creation error:', seriesError);
+                                    // Continue without series if there's an error
+                                } else {
+                                    seriesId = newSeries.id;
+                                    pulseData.is_series_start = true;
+                                }
+                            }
+                            
+                            if (seriesId) {
+                                pulseData.series_id = seriesId;
+                                
+                                // Get the next order in series
+                                const { data: seriesItems } = await supabaseClient
+                                    .from('pulse_series_items')
+                                    .select('sequence_order')
+                                    .eq('series_id', seriesId)
+                                    .order('sequence_order', { ascending: false })
+                                    .limit(1);
+                                
+                                const nextOrder = (seriesItems?.[0]?.sequence_order || 0) + 1;
+                                pulseData.series_order = nextOrder;
+                                
+                                // Store for later use
+                                seriesData = { seriesId, sequenceOrder: nextOrder };
+                            }
+                            
+                        } catch (seriesError) {
+                            console.warn('⚠️ Series creation skipped:', seriesError);
+                            // Don't fail the entire pulse creation if series fails
+                        }
+                    }
+                    
+                    // Create pulse
+                    const { data: pulse, error } = await supabaseClient
+                        .from('pulses')
+                        .insert(pulseData)
+                        .select()
+                        .single();
+                    
+                    if (error) throw error;
+                    
+                    console.log('✅ Pulse created:', pulse.id);
+                    
+                    // If we have series data, add the pulse to the series items
+                    if (seriesData) {
+                        await supabaseClient
+                            .from('pulse_series_items')
+                            .insert({
+                                series_id: seriesData.seriesId,
+                                pulse_id: pulse.id,
+                                sequence_order: seriesData.sequenceOrder,
+                                added_at: new Date().toISOString()
+                            });
+                    }
+                    
+                    showToast('Pulse posted successfully!', 'success');
+                    
+                    // Close modal and refresh feed
+                    closeCreateModal();
+                    setTimeout(() => fetchPulses(), 500);
+                    
+                } catch (error) {
+                    console.error('❌ Create pulse error:', error);
+                    showToast('Failed to post pulse. Please try again.', 'error');
+                } finally {
+                    setLoading(false);
+                }
             }
             
             // ✅ HANDLE LIKE
@@ -1734,128 +1971,435 @@
                 }
             }
             
-            // ✅ UPLOAD MEDIA
-            async function uploadMedia(file) {
+            // ✅ IMPLEMENT: HANDLE COMMENTS
+            async function handleComment(pulseId) {
                 try {
                     const { data: { session } } = await supabaseClient.auth.getSession();
-                    if (!session) throw new Error('No session');
+                    if (!session) {
+                        showToast('Please login to comment', 'error');
+                        return;
+                    }
                     
-                    const fileExt = file.name.split('.').pop();
-                    const fileName = `${session.user.id}/${Date.now()}.${fileExt}`;
-                    const filePath = `pulse-media/${fileName}`;
+                    // Get pulse details
+                    const { data: pulse } = await supabaseClient
+                        .from('pulses')
+                        .select('caption, user_id')
+                        .eq('id', pulseId)
+                        .single();
                     
-                    const { error: uploadError } = await supabaseClient.storage
-                        .from('pulse-media')
-                        .upload(filePath, file);
+                    if (!pulse) {
+                        showToast('Pulse not found', 'error');
+                        return;
+                    }
                     
-                    if (uploadError) throw uploadError;
-                    
-                    const { data: { publicUrl } } = supabaseClient.storage
-                        .from('pulse-media')
-                        .getPublicUrl(filePath);
-                    
-                    return {
-                        url: publicUrl,
-                        type: file.type.startsWith('video/') ? 'video' : 'image'
-                    };
+                    // Create comment modal
+                    createCommentModal(pulseId, pulse.caption || 'Untitled Pulse');
                     
                 } catch (error) {
-                    console.error('❌ Upload error:', error);
-                    throw new Error('Failed to upload media');
+                    console.error('❌ Comment error:', error);
+                    showToast('Failed to load comments', 'error');
                 }
             }
             
-            // ✅ CREATE PULSE
-            async function createPulse() {
+            // ✅ CREATE COMMENT MODAL
+            function createCommentModal(pulseId, pulseCaption) {
+                // Create modal HTML
+                const modalHTML = `
+                    <div class="modal-overlay" id="commentModal" style="display: flex;">
+                        <div class="create-modal" style="max-width: 500px; max-height: 80vh;">
+                            <div class="modal-header">
+                                <h3 class="modal-title">Comments</h3>
+                                <button class="close-modal" id="closeCommentModal">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                            <div class="modal-body">
+                                <div style="margin-bottom: 20px; padding-bottom: 10px; border-bottom: 1px solid var(--card-border);">
+                                    <p style="color: var(--soft-white); font-weight: 500;">${pulseCaption.substring(0, 100)}${pulseCaption.length > 100 ? '...' : ''}</p>
+                                </div>
+                                
+                                <div id="commentsList" style="max-height: 300px; overflow-y: auto; margin-bottom: 20px;">
+                                    <div style="text-align: center; padding: 20px; color: var(--slate-grey);">
+                                        <i class="fas fa-spinner fa-spin"></i> Loading comments...
+                                    </div>
+                                </div>
+                                
+                                <div class="create-form">
+                                    <div class="form-row">
+                                        <div class="pulse-avatar" id="commentUserAvatar">
+                                            ${getUserInitials(currentUser)}
+                                        </div>
+                                        <textarea 
+                                            class="caption-input" 
+                                            id="commentText" 
+                                            placeholder="Write a comment..."
+                                            maxlength="500"
+                                            style="min-height: 80px;"
+                                        ></textarea>
+                                    </div>
+                                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                                        <div style="font-size: 12px; color: var(--slate-grey);">
+                                            Press Enter to post, Shift+Enter for new line
+                                        </div>
+                                        <button class="modal-btn modal-btn-post" id="submitComment" style="padding: 8px 16px;">
+                                            Comment
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                // Add modal to body
+                document.body.insertAdjacentHTML('beforeend', modalHTML);
+                
+                // Load comments
+                loadComments(pulseId);
+                
+                // Setup event listeners
+                setupCommentModalEvents(pulseId);
+            }
+            
+            // ✅ LOAD COMMENTS
+            async function loadComments(pulseId) {
+                try {
+                    const { data: comments, error } = await supabaseClient
+                        .from('pulse_comments')
+                        .select(`
+                            *,
+                            user_profiles (
+                                full_name,
+                                username,
+                                avatar_url
+                            )
+                        `)
+                        .eq('pulse_id', pulseId)
+                        .eq('is_removed', false)
+                        .order('created_at', { ascending: true })
+                        .limit(50);
+                    
+                    const commentsList = document.getElementById('commentsList');
+                    
+                    if (error || !comments || comments.length === 0) {
+                        commentsList.innerHTML = `
+                            <div style="text-align: center; padding: 40px 20px; color: var(--slate-grey);">
+                                <i class="fas fa-comment" style="font-size: 48px; margin-bottom: 16px; opacity: 0.5;"></i>
+                                <h4 style="margin-bottom: 8px; color: var(--soft-white);">No comments yet</h4>
+                                <p>Be the first to comment on this pulse!</p>
+                            </div>
+                        `;
+                        return;
+                    }
+                    
+                    let commentsHTML = '';
+                    
+                    comments.forEach(comment => {
+                        const profile = comment.user_profiles || {};
+                        const fullName = profile.full_name || 'User';
+                        const username = profile.username || '';
+                        const avatarUrl = profile.avatar_url;
+                        const initials = fullName.substring(0, 2).toUpperCase();
+                        const timeAgo = getTimeAgo(new Date(comment.created_at));
+                        
+                        commentsHTML += `
+                            <div class="comment-item" style="padding: 12px 0; border-bottom: 1px solid rgba(148, 163, 184, 0.1);">
+                                <div style="display: flex; gap: 12px;">
+                                    <div class="pulse-avatar" style="width: 36px; height: 36px; font-size: 12px; ${avatarUrl ? `background-image: url('${avatarUrl}'); background-size: cover;` : ''}">
+                                        ${avatarUrl ? '' : initials}
+                                    </div>
+                                    <div style="flex: 1;">
+                                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                                            <span style="font-weight: 600; font-size: 14px; color: var(--soft-white);">${fullName}</span>
+                                            <span style="font-size: 12px; color: var(--slate-grey);">@${username}</span>
+                                            <span style="font-size: 11px; color: var(--slate-grey);">• ${timeAgo}</span>
+                                        </div>
+                                        <p style="font-size: 14px; color: var(--soft-white); line-height: 1.4; margin: 0;">${comment.comment_text}</p>
+                                        
+                                        ${comment.likes_count > 0 ? `
+                                            <div style="display: flex; align-items: center; gap: 6px; margin-top: 8px;">
+                                                <i class="fas fa-heart" style="color: #FF6B6B; font-size: 12px;"></i>
+                                                <span style="font-size: 12px; color: var(--slate-grey);">${comment.likes_count}</span>
+                                            </div>
+                                        ` : ''}
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    
+                    commentsList.innerHTML = commentsHTML;
+                    
+                } catch (error) {
+                    console.error('❌ Error loading comments:', error);
+                    document.getElementById('commentsList').innerHTML = `
+                        <div style="text-align: center; padding: 20px; color: var(--error-color);">
+                            Failed to load comments. Please try again.
+                        </div>
+                    `;
+                }
+            }
+            
+            // ✅ SETUP COMMENT MODAL EVENTS
+            function setupCommentModalEvents(pulseId) {
+                const commentModal = document.getElementById('commentModal');
+                const closeCommentModal = document.getElementById('closeCommentModal');
+                const commentText = document.getElementById('commentText');
+                const submitComment = document.getElementById('submitComment');
+                
+                // Close modal
+                closeCommentModal.addEventListener('click', () => {
+                    commentModal.remove();
+                });
+                
+                commentModal.addEventListener('click', (e) => {
+                    if (e.target === commentModal) {
+                        commentModal.remove();
+                    }
+                });
+                
+                // Submit comment
+                async function postComment() {
+                    const text = commentText.value.trim();
+                    if (!text) return;
+                    
+                    try {
+                        const { data: { session } } = await supabaseClient.auth.getSession();
+                        if (!session) throw new Error('No session');
+                        
+                        // Ensure user profile exists
+                        await ensureUserProfile(session.user.id);
+                        
+                        const { error } = await supabaseClient
+                            .from('pulse_comments')
+                            .insert({
+                                pulse_id: pulseId,
+                                user_id: session.user.id,
+                                comment_text: text,
+                                created_at: new Date().toISOString(),
+                                updated_at: new Date().toISOString()
+                            });
+                        
+                        if (error) throw error;
+                        
+                        // Clear input and reload comments
+                        commentText.value = '';
+                        showToast('Comment posted successfully!', 'success');
+                        
+                        // Refresh comments list
+                        loadComments(pulseId);
+                        
+                        // Update pulse comment count in the feed
+                        setTimeout(() => fetchPulses(), 1000);
+                        
+                    } catch (error) {
+                        console.error('❌ Error posting comment:', error);
+                        showToast('Failed to post comment. Please try again.', 'error');
+                    }
+                }
+                
+                // Event listeners
+                submitComment.addEventListener('click', postComment);
+                
+                commentText.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        postComment();
+                    }
+                });
+            }
+            
+            // ✅ IMPLEMENT: HANDLE SHARE
+            async function handleShare(pulseId) {
+                try {
+                    // Get pulse details for sharing
+                    const { data: pulse } = await supabaseClient
+                        .from('pulses')
+                        .select('caption, media_url')
+                        .eq('id', pulseId)
+                        .single();
+                    
+                    if (!pulse) {
+                        showToast('Pulse not found', 'error');
+                        return;
+                    }
+                    
+                    // Create share modal
+                    createShareModal(pulseId, pulse.caption, pulse.media_url);
+                    
+                } catch (error) {
+                    console.error('❌ Share error:', error);
+                    showToast('Failed to load share options', 'error');
+                }
+            }
+            
+            // ✅ CREATE SHARE MODAL
+            function createShareModal(pulseId, caption, mediaUrl) {
+                // Create modal HTML
+                const modalHTML = `
+                    <div class="modal-overlay" id="shareModal" style="display: flex;">
+                        <div class="create-modal" style="max-width: 400px;">
+                            <div class="modal-header">
+                                <h3 class="modal-title">Share Pulse</h3>
+                                <button class="close-modal" id="closeShareModal">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                            <div class="modal-body">
+                                <div style="text-align: center; margin-bottom: 24px;">
+                                    <div style="width: 60px; height: 60px; background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold)); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px;">
+                                        <i class="fas fa-share-alt" style="color: white; font-size: 24px;"></i>
+                                    </div>
+                                    <h4 style="color: var(--soft-white); margin-bottom: 8px;">Share this Pulse</h4>
+                                    <p style="color: var(--slate-grey); font-size: 14px;">
+                                        ${caption ? `"${caption.substring(0, 80)}${caption.length > 80 ? '...' : ''}"` : 'Share with your connections'}
+                                    </p>
+                                </div>
+                                
+                                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 24px;">
+                                    <button class="share-option" data-platform="internal" style="background: none; border: none; cursor: pointer;">
+                                        <div style="width: 60px; height: 60px; background: rgba(29, 78, 216, 0.1); border-radius: 12px; display: flex; align-items: center; justify-content: center; margin: 0 auto 8px;">
+                                            <i class="fas fa-users" style="color: var(--bantu-blue); font-size: 24px;"></i>
+                                        </div>
+                                        <span style="font-size: 12px; color: var(--soft-white);">Bantu Feed</span>
+                                    </button>
+                                    
+                                    <button class="share-option" data-platform="copy" style="background: none; border: none; cursor: pointer;">
+                                        <div style="width: 60px; height: 60px; background: rgba(148, 163, 184, 0.1); border-radius: 12px; display: flex; align-items: center; justify-content: center; margin: 0 auto 8px;">
+                                            <i class="fas fa-link" style="color: var(--slate-grey); font-size: 24px;"></i>
+                                        </div>
+                                        <span style="font-size: 12px; color: var(--soft-white);">Copy Link</span>
+                                    </button>
+                                    
+                                    <button class="share-option" data-platform="twitter" style="background: none; border: none; cursor: pointer;">
+                                        <div style="width: 60px; height: 60px; background: rgba(29, 161, 242, 0.1); border-radius: 12px; display: flex; align-items: center; justify-content: center; margin: 0 auto 8px;">
+                                            <i class="fab fa-twitter" style="color: #1DA1F2; font-size: 24px;"></i>
+                                        </div>
+                                        <span style="font-size: 12px; color: var(--soft-white);">Twitter</span>
+                                    </button>
+                                </div>
+                                
+                                <div style="border-top: 1px solid var(--card-border); padding-top: 16px;">
+                                    <div style="display: flex; align-items: center; gap: 12px; padding: 12px; background: rgba(10, 14, 18, 0.6); border-radius: 12px; cursor: pointer;">
+                                        <div style="width: 40px; height: 40px; background: rgba(245, 158, 11, 0.1); border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+                                            <i class="fas fa-plus" style="color: var(--warm-gold);"></i>
+                                        </div>
+                                        <div>
+                                            <div style="font-weight: 500; color: var(--soft-white);">Save to Collection</div>
+                                            <div style="font-size: 12px; color: var(--slate-grey);">Add to your saved pulses</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                // Add modal to body
+                document.body.insertAdjacentHTML('beforeend', modalHTML);
+                
+                // Setup event listeners
+                setupShareModalEvents(pulseId, caption);
+            }
+            
+            // ✅ SETUP SHARE MODAL EVENTS
+            function setupShareModalEvents(pulseId, caption) {
+                const shareModal = document.getElementById('shareModal');
+                const closeShareModal = document.getElementById('closeShareModal');
+                const shareOptions = document.querySelectorAll('.share-option');
+                
+                // Close modal
+                closeShareModal.addEventListener('click', () => {
+                    shareModal.remove();
+                });
+                
+                shareModal.addEventListener('click', (e) => {
+                    if (e.target === shareModal) {
+                        shareModal.remove();
+                    }
+                });
+                
+                // Handle share options
+                shareOptions.forEach(option => {
+                    option.addEventListener('click', async () => {
+                        const platform = option.dataset.platform;
+                        
+                        switch(platform) {
+                            case 'internal':
+                                await shareInternally(pulseId);
+                                break;
+                                
+                            case 'copy':
+                                copyShareLink(pulseId);
+                                break;
+                                
+                            case 'twitter':
+                                shareToTwitter(pulseId, caption);
+                                break;
+                        }
+                        
+                        // Close modal after sharing
+                        setTimeout(() => {
+                            shareModal.remove();
+                        }, 1000);
+                    });
+                });
+            }
+            
+            // ✅ SHARE INTERNALLY
+            async function shareInternally(pulseId) {
                 try {
                     const { data: { session } } = await supabaseClient.auth.getSession();
-                    if (!session) throw new Error('No session');
-                    
-                    // Ensure user profile exists
-                    await ensureUserProfile(session.user.id);
-                    
-                    const caption = captionInput.value.trim();
-                    const seriesTitle = seriesTitleInput.value.trim();
-                    
-                    // Upload media if selected
-                    let mediaData = null;
-                    if (selectedMedia) {
-                        setLoading(true);
-                        mediaData = await uploadMedia(selectedMedia);
+                    if (!session) {
+                        showToast('Please login to share', 'error');
+                        return;
                     }
                     
-                    // Get user profile for display info
-                    const { data: profile } = await supabaseClient
-                        .from('user_profiles')
-                        .select('full_name, username, avatar_url, role')
-                        .eq('id', session.user.id)
-                        .single();
-                    
-                    // Prepare pulse data
-                    const pulseData = {
-                        user_id: session.user.id,
-                        caption: caption || null,
-                        media_url: mediaData?.url || null,
-                        media_type: mediaData?.type || 'none',
-                        aspect_ratio: '9:16',
-                        likes_count: 0,
-                        comments_count: 0,
-                        shares_count: 0
-                    };
-                    
-                    // Handle series if enabled
-                    if (isSeriesMode && seriesTitle) {
-                        // Create or get series
-                        const { data: series, error: seriesError } = await supabaseClient
-                            .from('pulse_series')
-                            .upsert({
-                                creator_id: session.user.id,
-                                title: seriesTitle,
-                                updated_at: new Date().toISOString()
-                            }, {
-                                onConflict: 'creator_id,title'
-                            })
-                            .select()
-                            .single();
-                        
-                        if (seriesError) throw seriesError;
-                        
-                        pulseData.series_id = series.id;
-                        pulseData.is_series_start = true;
-                        
-                        // Get next order in series
-                        const { data: seriesItems } = await supabaseClient
-                            .from('pulse_series_items')
-                            .select('sequence_order')
-                            .eq('series_id', series.id)
-                            .order('sequence_order', { ascending: false })
-                            .limit(1);
-                        
-                        pulseData.series_order = (seriesItems?.[0]?.sequence_order || 0) + 1;
-                    }
-                    
-                    // Create pulse
-                    const { data: pulse, error } = await supabaseClient
-                        .from('pulses')
-                        .insert(pulseData)
-                        .select()
-                        .single();
+                    // Record the share in pulse_shares table
+                    const { error } = await supabaseClient
+                        .from('pulse_shares')
+                        .insert({
+                            pulse_id: pulseId,
+                            user_id: session.user.id,
+                            share_type: 'internal',
+                            shared_at: new Date().toISOString()
+                        });
                     
                     if (error) throw error;
                     
-                    console.log('✅ Pulse created:', pulse.id);
-                    showToast('Pulse posted successfully!', 'success');
+                    showToast('Shared to your Bantu feed!', 'success');
                     
-                    // Close modal and refresh feed
-                    closeCreateModal();
+                    // Refresh pulse to update share count
                     setTimeout(() => fetchPulses(), 500);
                     
                 } catch (error) {
-                    console.error('❌ Create pulse error:', error);
-                    showToast('Failed to post pulse. Please try again.', 'error');
-                } finally {
-                    setLoading(false);
+                    console.error('❌ Internal share error:', error);
+                    showToast('Failed to share internally', 'error');
                 }
+            }
+            
+            // ✅ COPY SHARE LINK
+            function copyShareLink(pulseId) {
+                const shareUrl = `${window.location.origin}/pulse/${pulseId}`;
+                
+                navigator.clipboard.writeText(shareUrl)
+                    .then(() => {
+                        showToast('Link copied to clipboard!', 'success');
+                    })
+                    .catch(err => {
+                        console.error('❌ Copy error:', err);
+                        showToast('Failed to copy link', 'error');
+                    });
+            }
+            
+            // ✅ SHARE TO TWITTER
+            function shareToTwitter(pulseId, caption) {
+                const shareText = encodeURIComponent(caption ? `${caption.substring(0, 100)}...` : 'Check out this pulse on Bantu Connect!');
+                const shareUrl = encodeURIComponent(`${window.location.origin}/pulse/${pulseId}`);
+                const twitterUrl = `https://twitter.com/intent/tweet?text=${shareText}&url=${shareUrl}&hashtags=BantuConnect`;
+                
+                window.open(twitterUrl, '_blank', 'width=550,height=420');
+                showToast('Opening Twitter...', 'success');
             }
             
             // ✅ EVENT LISTENERS
