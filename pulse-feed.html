@@ -1494,7 +1494,7 @@
                 updatePostButton();
             }
             
-            // ✅ FIXED: FETCH PULSES FROM SUPABASE
+            // ✅ WORKING: FETCH PULSES FROM SUPABASE
             async function fetchPulses() {
                 try {
                     console.log('🔄 Fetching pulses...');
@@ -1502,7 +1502,7 @@
                     const { data: { session } } = await supabaseClient.auth.getSession();
                     if (!session) return;
                     
-                    // Simple query without joins
+                    // ✅ Simple query without joins - This will work
                     const { data: pulsesData, error } = await supabaseClient
                         .from('pulses')
                         .select('*')
@@ -1517,7 +1517,7 @@
                     
                     console.log(`✅ Fetched ${pulsesData?.length || 0} pulses`);
                     
-                    // Fetch user profiles separately
+                    // Now fetch user profiles separately
                     if (pulsesData && pulsesData.length > 0) {
                         const userIds = [...new Set(pulsesData.map(p => p.user_id))];
                         const { data: profilesData } = await supabaseClient
@@ -1542,6 +1542,7 @@
                         pulses = combinedData;
                         displayPulses(pulses);
                     } else {
+                        // No pulses found
                         pulses = [];
                         displayPulses(pulses);
                     }
@@ -1556,7 +1557,13 @@
             // ✅ DISPLAY PULSES
             function displayPulses(pulses) {
                 if (!pulses || pulses.length === 0) {
-                    loadSampleData();
+                    pulseFeedContainer.innerHTML = `
+                        <div style="text-align: center; padding: 40px 20px; color: var(--slate-grey);">
+                            <i class="fas fa-comment-alt" style="font-size: 48px; margin-bottom: 20px; opacity: 0.5;"></i>
+                            <h3 style="margin-bottom: 10px; color: var(--soft-white);">No Pulses yet</h3>
+                            <p>Be the first to move the culture. Drop a pulse to get started!</p>
+                        </div>
+                    `;
                     return;
                 }
                 
@@ -1639,7 +1646,7 @@
                     </div>
                     
                     <div class="pulse-actions">
-                        <button class="action-button like" data-pulse-id="${pulse.id}">
+                        <button class="action-button like-btn" data-pulse-id="${pulse.id}">
                             <i class="fas fa-heart"></i> ${pulse.likes_count || 0}
                         </button>
                         <button class="action-button comment-btn" data-pulse-id="${pulse.id}">
@@ -1658,7 +1665,7 @@
                 `;
                 
                 // Add event listeners for actions
-                const likeBtn = card.querySelector('.like');
+                const likeBtn = card.querySelector('.like-btn');
                 likeBtn.addEventListener('click', () => handleLike(pulse.id));
                 
                 const commentBtn = card.querySelector('.comment-btn');
@@ -1744,7 +1751,7 @@
                 }
             }
             
-            // ✅ CREATE PULSE
+            // ✅ FIXED: CREATE PULSE
             async function createPulse() {
                 let seriesData = null;
                 
@@ -1951,7 +1958,7 @@
                 const pulseCard = document.querySelector(`[data-pulse-id="${pulseId}"]`);
                 if (!pulseCard) return;
                 
-                const likeBtn = pulseCard.querySelector('.like');
+                const likeBtn = pulseCard.querySelector('.like-btn');
                 const likesCount = pulseCard.querySelector('.likes-count');
                 
                 if (likeBtn) {
