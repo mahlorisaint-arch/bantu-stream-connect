@@ -1495,53 +1495,30 @@
     try {
         console.log('🔄 Fetching pulses...');
         
-        const { data: { session } } = await supabaseClient.auth.getSession();
-        if (!session) return;
-        
-        // ✅ SIMPLE QUERY WITHOUT JOINS - This will work
-        const { data: pulsesData, error } = await supabaseClient
-            .from('pulses')
+        // ✅ Use the view instead of trying to join manually
+        const { data, error } = await supabaseClient
+            .from('pulses_with_user_details')
             .select('*')
-            .eq('deleted_at', null)
-            .order('created_at', { ascending: false })
             .limit(20);
         
-        if (error) {
-            console.error('❌ Error fetching pulses:', error);
-            throw error;
-        }
+        if (error) throw error;
         
-        console.log(`✅ Fetched ${pulsesData?.length || 0} pulses`);
+        console.log(`✅ Fetched ${data?.length || 0} pulses`);
+        pulses = data || [];
         
-        // Now fetch user profiles separately
-        if (pulsesData && pulsesData.length > 0) {
-            const userIds = [...new Set(pulsesData.map(p => p.user_id))];
-            const { data: profilesData } = await supabaseClient
-                .from('user_profiles')
-                .select('*')
-                .in('id', userIds);
-            
-            // Combine data manually
-            const combinedData = pulsesData.map(pulse => {
-                const profile = profilesData?.find(p => p.id === pulse.user_id);
-                return {
-                    ...pulse,
-                    user_profiles: profile || {
-                        full_name: 'User',
-                        username: 'user',
-                        avatar_url: null,
-                        role: 'user'
-                    }
-                };
-            });
-            
-            pulses = combinedData;
-            displayPulses(pulses);
-        } else {
-            // No pulses found
-            pulses = [];
-            displayPulses(pulses);
-        }
+        // Format for display
+        const formattedData = pulses.map(pulse => ({
+            ...pulse,
+            user_profiles: {
+                full_name: pulse.full_name,
+                username: pulse.username,
+                avatar_url: pulse.avatar_url,
+                role: pulse.role,
+                email: pulse.email
+            }
+        }));
+        
+        displayPulses(formattedData);
         
     } catch (error) {
         console.error('❌ Error fetching pulses:', error);
@@ -1567,98 +1544,99 @@
             
             // ✅ FIXED: CREATE PULSE CARD ELEMENT
             function createPulseCard(pulse) {
-                // ✅ FIX: Get user info from user_profiles join
-                const profile = pulse.user_profiles || {};
-                const fullName = profile.full_name || profile.email?.split('@')[0] || 'User';
-                const username = profile.username || '';
-                const avatarUrl = profile.avatar_url;
-                const role = profile.role || '';
-                const initials = fullName.substring(0, 2).toUpperCase();
-                const timeAgo = getTimeAgo(new Date(pulse.created_at));
-                
-                const isSeries = pulse.series_id && pulse.series_order;
-                const hasMedia = pulse.media_url;
-                const mediaType = pulse.media_type;
-                
-                const card = document.createElement('div');
-                card.className = 'pulse-card';
-                card.dataset.pulseId = pulse.id;
-                
-                card.innerHTML = `
-                    <div class="pulse-header">
-                        <div class="pulse-avatar" style="${avatarUrl ? `background-image: url('${avatarUrl}'); background-size: cover;` : ''}">
-                            ${avatarUrl ? '' : initials}
+    // ✅ Get user info from combined data
+    const profile = pulse.user_profiles || {};
+    const fullName = profile.full_name || profile.email?.split('@')[0] || 'User';
+    const username = profile.username || '';
+    const avatarUrl = profile.avatar_url;
+    const role = profile.role || '';
+    const initials = fullName.substring(0, 2).toUpperCase();
+    const timeAgo = getTimeAgo(new Date(pulse.created_at));
+    
+    const isSeries = pulse.series_id && pulse.series_order;
+    const hasMedia = pulse.media_url;
+    const mediaType = pulse.media_type;
+    
+    const card = document.createElement('div');
+    card.className = 'pulse-card';
+    card.dataset.pulseId = pulse.id;
+    
+    card.innerHTML = `
+        <div class="pulse-header">
+            <div class="pulse-avatar" style="${avatarUrl ? `background-image: url('${avatarUrl}'); background-size: cover;` : ''}">
+                ${avatarUrl ? '' : initials}
+            </div>
+            <div class="pulse-creator-info">
+                <div class="creator-name">
+                    ${fullName}
+                    ${role === 'creator' ? '<span class="creator-badge">Creator</span>' : ''}
+                    ${role === 'admin' ? '<span class="creator-badge" style="background: rgba(239, 68, 68, 0.2); color: var(--error-color); border-color: rgba(239, 68, 68, 0.3);">Admin</span>' : ''}
+                </div>
+                <div class="pulse-time">${username ? `@${username} • ` : ''}${timeAgo}</div>
+            </div>
+        </div>
+        
+        ${isSeries ? `
+            <div class="pulse-series-label">
+                PULSE SERIES · Part ${pulse.series_order}
+            </div>
+        ` : ''}
+        
+        <div class="pulse-content">
+            ${pulse.caption ? `<p class="pulse-text">${pulse.caption}</p>` : ''}
+            
+            ${hasMedia ? `
+                <div class="pulse-media-container">
+                    ${mediaType === 'video' ? `
+                        <video class="vertical-video" controls>
+                            <source src="${pulse.media_url}" type="video/mp4">
+                            Your browser does not support the video tag.
+                        </video>
+                    ` : `
+                        <img src="${pulse.media_url}" alt="Pulse image" style="width:100%; border-radius:12px;">
+                    `}
+                </div>
+            ` : ''}
+            
+            ${pulse.linked_content_id ? `
+                <div class="linked-content">
+                    <div class="linked-content-label">Linked content</div>
+                    <div class="linked-content-card">
+                        <div class="content-thumbnail"></div>
+                        <div class="content-info">
+                            <h4>${pulse.linked_content_type || 'Content'}</h4>
+                            <p>Tap to watch or listen</p>
                         </div>
-                        <div class="pulse-creator-info">
-                            <div class="creator-name">
-                                ${fullName}
-                                ${role === 'creator' ? '<span class="creator-badge">Creator</span>' : ''}
-                                ${role === 'admin' ? '<span class="creator-badge" style="background: rgba(239, 68, 68, 0.2); color: var(--error-color); border-color: rgba(239, 68, 68, 0.3);">Admin</span>' : ''}
-                            </div>
-                            <div class="pulse-time">${username ? `@${username} • ` : ''}${timeAgo}</div>
-                        </div>
                     </div>
-                    
-                    ${isSeries ? `
-                        <div class="pulse-series-label">
-                            PULSE SERIES · Part ${pulse.series_order}
-                        </div>
-                    ` : ''}
-                    
-                    <div class="pulse-content">
-                        ${pulse.caption ? `<p class="pulse-text">${pulse.caption}</p>` : ''}
-                        
-                        ${hasMedia ? `
-                            <div class="pulse-media-container">
-                                ${mediaType === 'video' ? `
-                                    <video class="vertical-video" controls>
-                                        <source src="${pulse.media_url}" type="video/mp4">
-                                        Your browser does not support the video tag.
-                                    </video>
-                                ` : `
-                                    <img src="${pulse.media_url}" alt="Pulse image" style="width:100%; border-radius:12px;">
-                                `}
-                            </div>
-                        ` : ''}
-                        
-                        ${pulse.linked_content_id ? `
-                            <div class="linked-content">
-                                <div class="linked-content-label">Linked content</div>
-                                <div class="linked-content-card">
-                                    <div class="content-thumbnail"></div>
-                                    <div class="content-info">
-                                        <h4>${pulse.linked_content_type || 'Content'}</h4>
-                                        <p>Tap to watch or listen</p>
-                                    </div>
-                                </div>
-                            </div>
-                        ` : ''}
-                    </div>
-                    
-                    <div class="pulse-actions">
-                        <button class="action-button like" data-pulse-id="${pulse.id}">
-                            <i class="fas fa-heart"></i> Like
-                        </button>
-                        <button class="action-button" data-pulse-id="${pulse.id}">
-                            <i class="fas fa-comment"></i> Comment
-                        </button>
-                        <button class="action-button" data-pulse-id="${pulse.id}">
-                            <i class="fas fa-share"></i> Share
-                        </button>
-                    </div>
-                    
-                    <div class="pulse-stats">
-                        <span class="likes-count">${pulse.likes_count || 0} likes</span>
-                        <span class="comments-count">${pulse.comments_count || 0} comments</span>
-                    </div>
-                `;
-                
-                // Add event listeners for actions
-                const likeBtn = card.querySelector('.like');
-                likeBtn.addEventListener('click', () => handleLike(pulse.id));
-                
-                return card;
-            }
+                </div>
+            ` : ''}
+        </div>
+        
+        <div class="pulse-actions">
+            <button class="action-button like" data-pulse-id="${pulse.id}">
+                <i class="fas fa-heart"></i> ${pulse.likes_count || 0}
+            </button>
+            <button class="action-button" data-pulse-id="${pulse.id}">
+                <i class="fas fa-comment"></i> ${pulse.comments_count || 0}
+            </button>
+            <button class="action-button" data-pulse-id="${pulse.id}">
+                <i class="fas fa-share"></i> ${pulse.shares_count || 0}
+            </button>
+        </div>
+        
+        <div class="pulse-stats">
+            <span class="likes-count">${pulse.likes_count || 0} likes</span>
+            <span class="comments-count">${pulse.comments_count || 0} comments</span>
+            <span class="shares-count">${pulse.shares_count || 0} shares</span>
+        </div>
+    `;
+    
+    // Add event listeners
+    const likeBtn = card.querySelector('.like');
+    likeBtn.addEventListener('click', () => handleLike(pulse.id));
+    
+    return card;
+}
             
             // ✅ GET TIME AGO
             function getTimeAgo(date) {
