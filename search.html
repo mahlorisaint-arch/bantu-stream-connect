@@ -1,0 +1,2453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Explore - Bantu Connect Pulse</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Orbitron:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Supabase JS SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <style>
+        /* Color Theme - Same as other pages */
+        :root {
+            --deep-black: #0A0E12;
+            --deep-navy: #0F172A;
+            --soft-white: #F8FAFC;
+            --slate-grey: #94A3B8;
+            --bantu-blue: #1D4ED8;
+            --warm-gold: #F59E0B;
+            --error-color: #EF4444;
+            --success-color: #10B981;
+            --glow-cycle-1: #00A3FF;
+            --glow-cycle-2: #0066FF;
+            --glow-cycle-3: #8B5CF6;
+            --glow-cycle-4: #EC4899;
+            --card-bg: rgba(15, 23, 42, 0.6);
+            --card-border: rgba(148, 163, 184, 0.2);
+            --hover-overlay: rgba(255, 255, 255, 0.05);
+            --active-overlay: rgba(245, 158, 11, 0.1);
+            --indigo: #4F46E5;
+            --sa-green: #007749;
+            --sa-yellow: #FFB612;
+            --sa-red: #DE3831;
+            --sa-blue: #002395;
+            --sa-black: #000000;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--deep-black);
+            color: var(--soft-white);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        
+        /* Loading Screen */
+        .loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--deep-black);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 3px solid rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            border-top-color: var(--bantu-blue);
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        /* Animated Background */
+        .animated-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            overflow: hidden;
+        }
+        
+        .glow-cycle {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(60px);
+            opacity: 0.1;
+            animation: float 8s infinite ease-in-out;
+        }
+        
+        .glow-1 {
+            width: 400px;
+            height: 400px;
+            background: var(--glow-cycle-1);
+            top: 10%;
+            left: 5%;
+            animation-delay: 0s;
+        }
+        
+        .glow-2 {
+            width: 300px;
+            height: 300px;
+            background: var(--glow-cycle-2);
+            top: 60%;
+            right: 10%;
+            animation-delay: 2s;
+        }
+        
+        .glow-3 {
+            width: 350px;
+            height: 350px;
+            background: var(--glow-cycle-3);
+            bottom: 10%;
+            left: 20%;
+            animation-delay: 4s;
+        }
+        
+        .glow-4 {
+            width: 250px;
+            height: 250px;
+            background: var(--glow-cycle-4);
+            top: 20%;
+            right: 20%;
+            animation-delay: 6s;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0) scale(1); }
+            50% { transform: translateY(-20px) scale(1.05); }
+        }
+        
+        /* Main Container */
+        .container {
+            max-width: 720px;
+            margin: 0 auto;
+            padding: 24px;
+            position: relative;
+            z-index: 2;
+            padding-bottom: 80px;
+        }
+        
+        /* Header */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 0;
+            margin-bottom: 24px;
+            position: sticky;
+            top: 0;
+            background-color: rgba(10, 14, 18, 0.9);
+            backdrop-filter: blur(20px);
+            z-index: 100;
+            border-bottom: 1px solid var(--card-border);
+        }
+        
+        .logo-container {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+        }
+        
+        .logo-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 32px rgba(29, 78, 216, 0.3);
+            overflow: hidden;
+            background: transparent;
+        }
+        
+        .logo-icon img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+        
+        .logo-text {
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 700;
+            font-size: 16px;
+            background: linear-gradient(to right, var(--soft-white), var(--bantu-blue));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            letter-spacing: 0.5px;
+        }
+        
+        .user-section {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        
+        .user-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: all 0.3s ease;
+            font-weight: 600;
+            color: var(--soft-white);
+            font-size: 14px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .user-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 50%;
+            display: none;
+        }
+        
+        /* Search Bar */
+        .search-bar {
+            position: sticky;
+            top: 88px;
+            background: rgba(10, 14, 18, 0.9);
+            backdrop-filter: blur(20px);
+            z-index: 99;
+            padding: 16px 0;
+            margin-bottom: 24px;
+            border-bottom: 1px solid var(--card-border);
+        }
+        
+        .search-container {
+            position: relative;
+        }
+        
+        .search-input {
+            width: 100%;
+            padding: 14px 52px 14px 20px;
+            background: var(--card-bg);
+            border: 2px solid var(--card-border);
+            border-radius: 16px;
+            color: var(--soft-white);
+            font-family: 'Inter', sans-serif;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+        
+        .search-input:focus {
+            outline: none;
+            border-color: var(--indigo);
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+        }
+        
+        .search-input::placeholder {
+            color: var(--slate-grey);
+        }
+        
+        .search-icon {
+            position: absolute;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--slate-grey);
+            font-size: 18px;
+        }
+        
+        .search-clear {
+            position: absolute;
+            right: 48px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: var(--slate-grey);
+            font-size: 18px;
+            cursor: pointer;
+            display: none;
+        }
+        
+        .search-clear:hover {
+            color: var(--soft-white);
+        }
+        
+        .search-suggestions {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: var(--deep-navy);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            margin-top: 8px;
+            max-height: 300px;
+            overflow-y: auto;
+            display: none;
+            z-index: 1000;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        }
+        
+        .search-suggestions.active {
+            display: block;
+        }
+        
+        .suggestion-item {
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-bottom: 1px solid var(--card-border);
+        }
+        
+        .suggestion-item:last-child {
+            border-bottom: none;
+        }
+        
+        .suggestion-item:hover {
+            background: var(--hover-overlay);
+        }
+        
+        .suggestion-icon {
+            color: var(--indigo);
+            font-size: 14px;
+        }
+        
+        .recent-searches {
+            padding: 16px 0;
+        }
+        
+        .recent-title {
+            font-size: 14px;
+            color: var(--slate-grey);
+            margin-bottom: 12px;
+            padding: 0 20px;
+        }
+        
+        /* Explore Banner */
+        .explore-banner {
+            text-align: center;
+            padding: 32px 0;
+            margin-bottom: 24px;
+            border-bottom: 1px solid var(--card-border);
+        }
+        
+        .explore-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 32px;
+            font-weight: 700;
+            background: linear-gradient(to right, var(--soft-white), var(--indigo));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            margin-bottom: 12px;
+        }
+        
+        .explore-subline {
+            font-size: 16px;
+            color: var(--slate-grey);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        
+        .sa-flag {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+        
+        .sa-stripe {
+            width: 8px;
+            height: 16px;
+            border-radius: 2px;
+        }
+        
+        .sa-black { background: var(--sa-black); }
+        .sa-green { background: var(--sa-green); }
+        .sa-yellow { background: var(--sa-yellow); }
+        .sa-white { background: var(--soft-white); }
+        .sa-blue { background: var(--sa-blue); }
+        .sa-red { background: var(--sa-red); }
+        
+        /* Categories Section */
+        .categories-section {
+            margin-bottom: 32px;
+        }
+        
+        .section-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--soft-white);
+            margin-bottom: 16px;
+        }
+        
+        .categories-container {
+            position: relative;
+        }
+        
+        .categories-scroll {
+            display: flex;
+            gap: 12px;
+            overflow-x: auto;
+            padding: 8px 0;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+        
+        .categories-scroll::-webkit-scrollbar {
+            display: none;
+        }
+        
+        .category-chip {
+            padding: 10px 20px;
+            background: var(--card-bg);
+            border: 2px solid var(--card-border);
+            border-radius: 50px;
+            color: var(--slate-grey);
+            font-family: 'Inter', sans-serif;
+            font-weight: 500;
+            font-size: 14px;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.3s ease;
+            flex-shrink: 0;
+        }
+        
+        .category-chip:hover {
+            border-color: var(--indigo);
+            color: var(--soft-white);
+        }
+        
+        .category-chip.active {
+            background: var(--indigo);
+            border-color: var(--indigo);
+            color: var(--soft-white);
+        }
+        
+        /* Featured Series */
+        .featured-section {
+            margin-bottom: 32px;
+        }
+        
+        .featured-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+        
+        .series-scroll {
+            display: flex;
+            gap: 16px;
+            overflow-x: auto;
+            padding: 8px 0;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+        
+        .series-scroll::-webkit-scrollbar {
+            display: none;
+        }
+        
+        .series-card {
+            min-width: 280px;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            flex-shrink: 0;
+        }
+        
+        .series-card:hover {
+            transform: translateY(-4px);
+            border-color: var(--warm-gold);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+        
+        .series-cover {
+            width: 100%;
+            height: 180px;
+            background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .series-cover img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .series-badge {
+            position: absolute;
+            top: 12px;
+            left: 12px;
+            background: linear-gradient(135deg, var(--indigo), var(--bantu-blue));
+            color: white;
+            font-size: 10px;
+            font-weight: 600;
+            padding: 4px 10px;
+            border-radius: 12px;
+        }
+        
+        .series-progress {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: rgba(0, 0, 0, 0.3);
+        }
+        
+        .series-progress-fill {
+            height: 100%;
+            background: linear-gradient(to right, var(--sa-green), var(--sa-yellow));
+            transition: width 0.3s ease;
+        }
+        
+        .series-info {
+            padding: 16px;
+        }
+        
+        .series-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--soft-white);
+            margin-bottom: 6px;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        
+        .series-creator {
+            font-size: 13px;
+            color: var(--slate-grey);
+            margin-bottom: 8px;
+        }
+        
+        .series-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 12px;
+            color: var(--slate-grey);
+        }
+        
+        /* Search Results */
+        .results-section {
+            display: none;
+        }
+        
+        .results-section.active {
+            display: block;
+        }
+        
+        .results-tabs {
+            display: flex;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            overflow: hidden;
+            margin-bottom: 24px;
+        }
+        
+        .result-tab {
+            flex: 1;
+            padding: 14px;
+            border: none;
+            background: none;
+            color: var(--slate-grey);
+            font-family: 'Inter', sans-serif;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        
+        .result-tab:hover {
+            color: var(--soft-white);
+            background: var(--hover-overlay);
+        }
+        
+        .result-tab.active {
+            color: var(--soft-white);
+            background: linear-gradient(135deg, var(--indigo), var(--bantu-blue));
+        }
+        
+        .results-container {
+            display: none;
+        }
+        
+        .results-container.active {
+            display: block;
+        }
+        
+        /* Pulse Results */
+        .pulse-results {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+        }
+        
+        @media (max-width: 600px) {
+            .pulse-results {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .pulse-result-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .pulse-result-card:hover {
+            border-color: var(--indigo);
+            transform: translateY(-2px);
+        }
+        
+        .pulse-result-media {
+            width: 100%;
+            height: 200px;
+            background: linear-gradient(135deg, var(--deep-navy), var(--deep-black));
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .pulse-result-media img,
+        .pulse-result-media video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .pulse-result-info {
+            padding: 16px;
+        }
+        
+        .pulse-result-text {
+            font-size: 14px;
+            color: var(--soft-white);
+            margin-bottom: 12px;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            line-height: 1.4;
+        }
+        
+        .pulse-result-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 12px;
+            color: var(--slate-grey);
+        }
+        
+        /* Series Results */
+        .series-results {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+        }
+        
+        @media (max-width: 600px) {
+            .series-results {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .series-result-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            padding: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .series-result-card:hover {
+            border-color: var(--indigo);
+            transform: translateY(-2px);
+        }
+        
+        .series-result-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--soft-white);
+            margin-bottom: 8px;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        
+        .series-result-creator {
+            font-size: 13px;
+            color: var(--slate-grey);
+            margin-bottom: 12px;
+        }
+        
+        .series-result-stats {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            color: var(--slate-grey);
+        }
+        
+        .series-result-action {
+            text-align: center;
+            margin-top: 12px;
+            padding: 8px;
+            background: linear-gradient(135deg, var(--indigo), var(--bantu-blue));
+            border-radius: 8px;
+            color: var(--soft-white);
+            font-size: 13px;
+            font-weight: 600;
+        }
+        
+        /* Creator Results */
+        .creator-results {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+        }
+        
+        @media (max-width: 600px) {
+            .creator-results {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .creator-result-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            padding: 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .creator-result-card:hover {
+            border-color: var(--indigo);
+            transform: translateY(-2px);
+        }
+        
+        .creator-result-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            color: var(--soft-white);
+            flex-shrink: 0;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .creator-result-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 50%;
+        }
+        
+        .creator-result-info {
+            flex: 1;
+        }
+        
+        .creator-result-name {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--soft-white);
+            margin-bottom: 2px;
+        }
+        
+        .creator-result-handle {
+            font-size: 13px;
+            color: var(--slate-grey);
+            margin-bottom: 4px;
+        }
+        
+        .creator-result-bio {
+            font-size: 12px;
+            color: var(--slate-grey);
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            line-height: 1.4;
+        }
+        
+        .creator-result-action {
+            margin-top: 8px;
+        }
+        
+        .connect-btn {
+            padding: 6px 16px;
+            background: linear-gradient(135deg, var(--indigo), var(--bantu-blue));
+            border: none;
+            border-radius: 8px;
+            color: var(--soft-white);
+            font-family: 'Inter', sans-serif;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .connect-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+        }
+        
+        .connect-btn.connected {
+            background: linear-gradient(135deg, var(--success-color), var(--bantu-blue));
+        }
+        
+        /* Content Results */
+        .content-results {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+        }
+        
+        @media (max-width: 600px) {
+            .content-results {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .content-result-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            padding: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .content-result-card:hover {
+            border-color: var(--sa-green);
+            transform: translateY(-2px);
+        }
+        
+        .content-result-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            background: linear-gradient(135deg, var(--sa-green), var(--sa-blue));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 18px;
+            margin-bottom: 12px;
+        }
+        
+        .content-result-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--soft-white);
+            margin-bottom: 6px;
+        }
+        
+        .content-result-description {
+            font-size: 13px;
+            color: var(--slate-grey);
+            margin-bottom: 12px;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            line-height: 1.4;
+        }
+        
+        .content-result-action {
+            padding: 8px;
+            background: linear-gradient(135deg, var(--sa-green), var(--sa-blue));
+            border-radius: 8px;
+            color: var(--soft-white);
+            font-size: 13px;
+            font-weight: 600;
+            text-align: center;
+        }
+        
+        /* Topic View */
+        .topic-view {
+            display: none;
+        }
+        
+        .topic-view.active {
+            display: block;
+        }
+        
+        .topic-header {
+            text-align: center;
+            padding: 32px 0;
+            margin-bottom: 24px;
+            border-bottom: 1px solid var(--card-border);
+        }
+        
+        .topic-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 28px;
+            font-weight: 700;
+            background: linear-gradient(to right, var(--soft-white), var(--sa-yellow));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            margin-bottom: 12px;
+        }
+        
+        .topic-subline {
+            font-size: 16px;
+            color: var(--slate-grey);
+            max-width: 400px;
+            margin: 0 auto;
+        }
+        
+        /* Empty States */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--slate-grey);
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+        }
+        
+        .empty-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+        
+        .empty-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--soft-white);
+            margin-bottom: 8px;
+        }
+        
+        .empty-description {
+            font-size: 14px;
+            max-width: 300px;
+            margin: 0 auto;
+            line-height: 1.4;
+        }
+        
+        /* Toast Notifications */
+        .toast-container {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 2000;
+        }
+        
+        .toast {
+            background: var(--error-color);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            animation: slideUp 0.3s ease;
+            box-shadow: 0 10px 25px rgba(239, 68, 68, 0.3);
+            max-width: 90vw;
+        }
+        
+        .toast.success {
+            background: var(--success-color);
+            box-shadow: 0 10px 25px rgba(16, 185, 129, 0.3);
+        }
+        
+        @keyframes slideUp {
+            from {
+                transform: translate(-50%, 100%);
+                opacity: 0;
+            }
+            to {
+                transform: translate(-50%, 0);
+                opacity: 1;
+            }
+        }
+        
+        /* Bottom Navigation */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: var(--deep-black);
+            border-top: 1px solid var(--card-border);
+            display: flex;
+            padding: 12px 0;
+            z-index: 100;
+        }
+        
+        .nav-item {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            background: none;
+            border: none;
+            color: var(--slate-grey);
+            font-size: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .nav-item:hover {
+            color: var(--soft-white);
+        }
+        
+        .nav-item.active {
+            color: var(--bantu-blue);
+        }
+        
+        .nav-icon {
+            font-size: 20px;
+        }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: var(--deep-navy);
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: var(--bantu-blue);
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--warm-gold);
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .container {
+                padding: 16px;
+                max-width: 100%;
+            }
+            
+            .header, .search-bar {
+                padding-left: 16px;
+                padding-right: 16px;
+                margin-left: -16px;
+                margin-right: -16px;
+                width: calc(100% + 32px);
+            }
+            
+            .search-bar {
+                top: 72px;
+            }
+            
+            .explore-title {
+                font-size: 24px;
+            }
+            
+            .explore-subline {
+                font-size: 14px;
+            }
+            
+            .bottom-nav {
+                display: flex;
+            }
+        }
+        
+        @media (min-width: 769px) {
+            .bottom-nav {
+                display: none;
+            }
+        }
+        
+        /* Loading for sections */
+        .loading-shimmer {
+            background: linear-gradient(90deg, 
+                rgba(148, 163, 184, 0.1) 25%, 
+                rgba(148, 163, 184, 0.2) 50%, 
+                rgba(148, 163, 184, 0.1) 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+            border-radius: 8px;
+        }
+        
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading Screen -->
+    <div id="loading" class="loading-screen">
+        <div class="spinner"></div>
+        <div id="loading-text">Loading Explore...</div>
+    </div>
+
+    <!-- Animated Background -->
+    <div class="animated-bg">
+        <div class="glow-cycle glow-1"></div>
+        <div class="glow-cycle glow-2"></div>
+        <div class="glow-cycle glow-3"></div>
+        <div class="glow-cycle glow-4"></div>
+    </div>
+
+    <!-- Main Container -->
+    <div class="container" id="content" style="display: none;">
+        <!-- Header -->
+        <header class="header">
+            <div class="logo-container" onclick="window.location.href='pulse-feed.html'">
+                <div class="logo-icon">
+                    <svg width="32" height="32" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect width="40" height="40" rx="8" fill="#0F172A"/>
+                        <path d="M8 20 L12 16 L16 22 L20 18 L24 24 L28 20 L32 26" stroke="url(#pulse-gradient)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                        <circle cx="32" cy="26" r="3" fill="#F59E0B"/>
+                        <defs>
+                            <linearGradient id="pulse-gradient" x1="8" y1="20" x2="32" y2="26" gradientUnits="userSpaceOnUse">
+                                <stop stop-color="#1D4ED8"/>
+                                <stop offset="1" stop-color="#F59E0B"/>
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                </div>
+                <div class="logo-text">BANTU CONNECT PULSE</div>
+            </div>
+            
+            <div class="user-section">
+                <div class="user-avatar" id="user-avatar" onclick="window.location.href='profile.html'">
+                    <img id="user-avatar-img">
+                    <span id="avatar-initials">AB</span>
+                </div>
+            </div>
+        </header>
+        
+        <!-- Search Bar -->
+        <div class="search-bar">
+            <div class="search-container">
+                <input type="text" 
+                       class="search-input" 
+                       id="searchInput" 
+                       placeholder="Search Pulses, Series, Creators, or Topics">
+                <button class="search-clear" id="searchClear">
+                    <i class="fas fa-times"></i>
+                </button>
+                <div class="search-icon">
+                    <i class="fas fa-search"></i>
+                </div>
+                
+                <!-- Search Suggestions -->
+                <div class="search-suggestions" id="searchSuggestions">
+                    <div class="recent-searches" id="recentSearches">
+                        <div class="recent-title">Recent Searches</div>
+                        <div class="suggestion-item" data-search="Amapiano">
+                            <i class="fas fa-clock suggestion-icon"></i>
+                            <span>Amapiano</span>
+                        </div>
+                        <div class="suggestion-item" data-search="Kasi Stories">
+                            <i class="fas fa-clock suggestion-icon"></i>
+                            <span>Kasi Stories</span>
+                        </div>
+                    </div>
+                    <div class="suggestion-item" data-search="#MzansiBusiness">
+                        <i class="fas fa-hashtag suggestion-icon"></i>
+                        <span>#MzansiBusiness</span>
+                    </div>
+                    <div class="suggestion-item" data-search="@DJBlackCoffee">
+                        <i class="fas fa-user suggestion-icon"></i>
+                        <span>@DJBlackCoffee</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Explore Banner -->
+        <div class="explore-banner">
+            <h1 class="explore-title">Explore Pulse</h1>
+            <p class="explore-subline">
+                No DNA, just RSA 
+                <span class="sa-flag">
+                    <span class="sa-stripe sa-black"></span>
+                    <span class="sa-stripe sa-green"></span>
+                    <span class="sa-stripe sa-yellow"></span>
+                    <span class="sa-stripe sa-white"></span>
+                    <span class="sa-stripe sa-blue"></span>
+                    <span class="sa-stripe sa-red"></span>
+                </span>
+            </p>
+        </div>
+        
+        <!-- Categories Section -->
+        <div class="categories-section">
+            <h2 class="section-title">Discover by Category</h2>
+            <div class="categories-container">
+                <div class="categories-scroll" id="categoriesScroll">
+                    <!-- Categories will be loaded here -->
+                </div>
+            </div>
+        </div>
+        
+        <!-- Featured Series -->
+        <div class="featured-section">
+            <div class="featured-header">
+                <h2 class="section-title">Featured Series</h2>
+            </div>
+            <div class="series-scroll" id="seriesScroll">
+                <!-- Featured series will be loaded here -->
+            </div>
+        </div>
+        
+        <!-- Search Results -->
+        <div class="results-section" id="resultsSection">
+            <div class="results-tabs">
+                <button class="result-tab active" data-tab="pulses">
+                    <i class="fas fa-bolt"></i> Pulses
+                </button>
+                <button class="result-tab" data-tab="series">
+                    <i class="fas fa-layer-group"></i> Series
+                </button>
+                <button class="result-tab" data-tab="creators">
+                    <i class="fas fa-user"></i> Creators
+                </button>
+                <button class="result-tab" data-tab="content">
+                    <i class="fas fa-link"></i> Content
+                </button>
+            </div>
+            
+            <!-- Pulses Results -->
+            <div class="results-container active" id="pulsesResults">
+                <div class="pulse-results" id="pulseResultsGrid">
+                    <!-- Pulse results will be loaded here -->
+                </div>
+            </div>
+            
+            <!-- Series Results -->
+            <div class="results-container" id="seriesResults">
+                <div class="series-results" id="seriesResultsGrid">
+                    <!-- Series results will be loaded here -->
+                </div>
+            </div>
+            
+            <!-- Creator Results -->
+            <div class="results-container" id="creatorsResults">
+                <div class="creator-results" id="creatorResultsGrid">
+                    <!-- Creator results will be loaded here -->
+                </div>
+            </div>
+            
+            <!-- Content Results -->
+            <div class="results-container" id="contentResults">
+                <div class="content-results" id="contentResultsGrid">
+                    <!-- Content results will be loaded here -->
+                </div>
+            </div>
+        </div>
+        
+        <!-- Topic View -->
+        <div class="topic-view" id="topicView">
+            <div class="topic-header">
+                <h1 class="topic-title" id="topicTitle">#KasiStories</h1>
+                <p class="topic-subline" id="topicSubline">"Pulses shaping the township narrative."</p>
+            </div>
+            
+            <div class="pulse-results" id="topicResultsGrid">
+                <!-- Topic pulses will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Bottom Navigation -->
+    <div class="bottom-nav">
+        <button class="nav-item" onclick="window.location.href='pulse-feed.html'">
+            <i class="fas fa-home nav-icon"></i>
+            <span>Home</span>
+        </button>
+        <button class="nav-item active">
+            <i class="fas fa-search nav-icon"></i>
+            <span>Explore</span>
+        </button>
+        <button class="nav-item" onclick="window.location.href='profile.html'">
+            <i class="fas fa-user nav-icon"></i>
+            <span>Profile</span>
+        </button>
+        <button class="nav-item" onclick="window.location.href='saved.html'">
+            <i class="fas fa-bookmark nav-icon"></i>
+            <span>Saved</span>
+        </button>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <script>
+        // Initialize Supabase client
+        const SUPABASE_URL = 'https://ydnxqnbjoshvxteevemc.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U';
+
+        let supabaseClient = null;
+        let currentUserId = null;
+        let currentSearchTerm = '';
+        let currentTopic = '';
+        let searchTimeout = null;
+
+        // South African-rooted categories
+        const SA_CATEGORIES = [
+            { id: 'music', name: 'Music', icon: '🎵' },
+            { id: 'film', name: 'Film', icon: '🎬' },
+            { id: 'culture', name: 'Culture', icon: '🌍' },
+            { id: 'tech', name: 'Tech', icon: '💻' },
+            { id: 'education', name: 'Education', icon: '📚' },
+            { id: 'amapiano', name: 'Amapiano & Afro House', icon: '🎧', sa: true },
+            { id: 'kasi', name: 'Kasi Stories', icon: '🏘️', sa: true },
+            { id: 'business', name: 'Mzansi Business', icon: '💼', sa: true },
+            { id: 'fashion', name: 'Street Culture & Fashion', icon: '👕', sa: true },
+            { id: 'language', name: 'Xitsonga / isiZulu / isiXhosa', icon: '🗣️', sa: true },
+            { id: 'politics', name: 'SA Politics & Society', icon: '🏛️', sa: true },
+            { id: 'sports', name: 'Sports & Fan Culture', icon: '⚽', sa: true },
+            { id: 'township-tech', name: 'Township Tech', icon: '📱', sa: true },
+            { id: 'poetry', name: 'Spoken Word & Poetry', icon: '📜', sa: true },
+            { id: 'heritage', name: 'Heritage & History', icon: '🏺', sa: true }
+        ];
+
+        // Topic descriptions
+        const TOPIC_DESCRIPTIONS = {
+            'kasi': 'Pulses shaping the township narrative.',
+            'amapiano': 'The sound of South African youth culture.',
+            'business': 'Entrepreneurship in the Rainbow Nation.',
+            'fashion': 'Street style and cultural expression.',
+            'language': 'Preserving and celebrating indigenous languages.',
+            'politics': 'Conversations shaping our democracy.',
+            'sports': 'Passion, pride, and national unity.',
+            'township-tech': 'Innovation from the grassroots up.',
+            'poetry': 'Words that move and inspire generations.',
+            'heritage': 'Honoring our past, building our future.'
+        };
+
+        async function initialize() {
+            console.log('Starting Search/Explore initialization...');
+            
+            try {
+                // Create Supabase client
+                supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+                    auth: {
+                        autoRefreshToken: true,
+                        persistSession: true,
+                        detectSessionInUrl: true
+                    }
+                });
+                
+                // Check session
+                const { data: { session }, error } = await supabaseClient.auth.getSession();
+                
+                if (error) {
+                    throw error;
+                }
+                
+                if (!session) {
+                    // No session, redirect to login
+                    window.location.href = 'login.html';
+                    return;
+                }
+                
+                console.log('User authenticated:', session.user.email);
+                currentUserId = session.user.id;
+                
+                // Set user initials
+                const user = session.user;
+                const initials = getUserInitials(user);
+                document.getElementById('avatar-initials').textContent = initials;
+                
+                // Set user avatar if available
+                try {
+                    const { data: profile } = await supabaseClient
+                        .from('user_profiles')
+                        .select('avatar_url')
+                        .eq('id', user.id)
+                        .single();
+                    
+                    if (profile?.avatar_url) {
+                        const avatarImg = document.getElementById('user-avatar-img');
+                        avatarImg.src = profile.avatar_url;
+                        avatarImg.style.display = 'block';
+                        document.getElementById('avatar-initials').style.display = 'none';
+                    }
+                } catch (error) {
+                    console.log('No profile picture found, using initials');
+                }
+                
+                // Hide loading, show content
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('content').style.display = 'block';
+                
+                // Initialize categories
+                initializeCategories();
+                
+                // Load featured series
+                loadFeaturedSeries();
+                
+                // Initialize event listeners
+                initializeEventListeners();
+                
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('loading-text').textContent = 'Error loading explore. Please refresh.';
+                
+                // Still show content after delay
+                setTimeout(() => {
+                    document.getElementById('loading').style.display = 'none';
+                    document.getElementById('content').style.display = 'block';
+                    initializeEventListeners();
+                    initializeCategories();
+                    loadSampleData();
+                }, 2000);
+            }
+        }
+        
+        function getUserInitials(user) {
+            const email = user.email || '';
+            const name = user.user_metadata?.full_name || email.split('@')[0] || 'U';
+            return name.substring(0, 2).toUpperCase();
+        }
+        
+        function initializeCategories() {
+            const categoriesScroll = document.getElementById('categoriesScroll');
+            categoriesScroll.innerHTML = '';
+            
+            SA_CATEGORIES.forEach(category => {
+                const chip = document.createElement('div');
+                chip.className = 'category-chip';
+                if (category.sa) {
+                    chip.classList.add('sa-chip');
+                }
+                chip.dataset.categoryId = category.id;
+                chip.textContent = `${category.icon} ${category.name}`;
+                
+                chip.addEventListener('click', () => {
+                    // Remove active class from all chips
+                    document.querySelectorAll('.category-chip').forEach(c => {
+                        c.classList.remove('active');
+                    });
+                    
+                    // Add active class to clicked chip
+                    chip.classList.add('active');
+                    
+                    // If it's a South African category, show topic view
+                    if (category.sa) {
+                        showTopicView(category);
+                    } else {
+                        // For regular categories, search for that category
+                        performSearch(category.name, 'category');
+                    }
+                });
+                
+                categoriesScroll.appendChild(chip);
+            });
+        }
+        
+        function showTopicView(category) {
+            // Hide search results
+            document.getElementById('resultsSection').classList.remove('active');
+            
+            // Show topic view
+            const topicView = document.getElementById('topicView');
+            topicView.classList.add('active');
+            
+            // Set topic title and description
+            document.getElementById('topicTitle').textContent = `#${category.name.replace(/ & /g, '').replace(/ /g, '')}`;
+            
+            const description = TOPIC_DESCRIPTIONS[category.id] || `Pulses exploring ${category.name.toLowerCase()}.`;
+            document.getElementById('topicSubline').textContent = `"${description}"`;
+            
+            // Load topic pulses
+            loadTopicPulses(category.id);
+            
+            // Scroll to top
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+        
+        async function loadTopicPulses(categoryId) {
+            const topicResultsGrid = document.getElementById('topicResultsGrid');
+            
+            // Show loading state
+            topicResultsGrid.innerHTML = `
+                <div class="loading-shimmer" style="width: 100%; height: 200px; grid-column: 1/-1;"></div>
+                <div class="loading-shimmer" style="width: 100%; height: 200px;"></div>
+                <div class="loading-shimmer" style="width: 100%; height: 200px;"></div>
+            `;
+            
+            try {
+                // In a real app, you would query pulses by category/tag
+                // For now, we'll simulate with a delay
+                setTimeout(() => {
+                    // Show sample topic pulses
+                    topicResultsGrid.innerHTML = '';
+                    
+                    // Add some sample pulses
+                    for (let i = 0; i < 6; i++) {
+                        const pulseCard = createPulseResultCard({
+                            id: `topic-pulse-${i}`,
+                            caption: getTopicPulseCaption(categoryId, i),
+                            user_name: getTopicCreatorName(categoryId),
+                            username: getTopicUsername(categoryId),
+                            created_at: new Date(Date.now() - i * 3600000).toISOString(),
+                            likes_count: Math.floor(Math.random() * 50),
+                            comments_count: Math.floor(Math.random() * 20)
+                        });
+                        
+                        topicResultsGrid.appendChild(pulseCard);
+                    }
+                }, 1000);
+                
+            } catch (error) {
+                console.error('Error loading topic pulses:', error);
+                topicResultsGrid.innerHTML = `
+                    <div class="empty-state" style="grid-column: 1/-1;">
+                        <div class="empty-icon">
+                            <i class="fas fa-compass"></i>
+                        </div>
+                        <div class="empty-title">Could not load topic pulses</div>
+                        <div class="empty-description">Please try again later</div>
+                    </div>
+                `;
+            }
+        }
+        
+        function getTopicPulseCaption(categoryId, index) {
+            const captions = {
+                kasi: [
+                    "Growing up in Soweto taught me resilience in ways no book ever could.",
+                    "The sound of a township waking up is better than any alarm clock.",
+                    "Kasi entrepreneurship: Turning challenges into opportunities every day.",
+                    "Our streets tell stories of struggle, triumph, and community.",
+                    "Township vibes - where every corner has a story worth telling."
+                ],
+                amapiano: [
+                    "Amapiano isn't just music, it's a movement. Feel the vibration.",
+                    "From the townships to the world - the piano sound that conquered all.",
+                    "Creating amapiano in my bedroom studio, dreaming of global stages.",
+                    "The evolution of South African house music through amapiano's lens.",
+                    "When the piano keys drop, the whole nation starts moving."
+                ],
+                business: [
+                    "Building a tech startup from Khayelitsha to Silicon Valley.",
+                    "Mzansi entrepreneurship: Resourcefulness is our competitive advantage.",
+                    "The rise of black-owned businesses changing South Africa's economy.",
+                    "From spaza shop to e-commerce empire - the digital transformation.",
+                    "Investing in township economies: The future of SA business growth."
+                ]
+            };
+            
+            const defaultCaptions = [
+                "Exploring the depths of South African culture through storytelling.",
+                "Every pulse tells a story, every story shapes our identity.",
+                "The rhythm of our nation beats in every conversation.",
+                "From struggle to strength - the South African narrative continues.",
+                "Cultural preservation through digital storytelling."
+            ];
+            
+            const categoryCaptions = captions[categoryId] || defaultCaptions;
+            return categoryCaptions[index % categoryCaptions.length];
+        }
+        
+        function getTopicCreatorName(categoryId) {
+            const names = {
+                kasi: ['Thando Mokoena', 'Sipho Ndlovu', 'Lerato Khumalo', 'Bongani Zulu', 'Nomsa Dlamini'],
+                amapiano: ['DJ Kabza', 'Piano Queen', 'De Mthuda', 'Focalistic', 'DBN Gogo'],
+                business: ['Patrice Motsepe', 'Wendy Luhabe', 'Adrian Gore', 'Magda Wierzycka', 'Rapelang Rabana']
+            };
+            
+            const defaultNames = ['Cultural Curator', 'Story Weaver', 'Voice of SA', 'Digital Griot', 'Heritage Keeper'];
+            const categoryNames = names[categoryId] || defaultNames;
+            return categoryNames[Math.floor(Math.random() * categoryNames.length)];
+        }
+        
+        function getTopicUsername(categoryId) {
+            return getTopicCreatorName(categoryId).toLowerCase().replace(/\s+/g, '');
+        }
+        
+        async function loadFeaturedSeries() {
+            const seriesScroll = document.getElementById('seriesScroll');
+            
+            // Show loading state
+            seriesScroll.innerHTML = `
+                <div class="series-card loading-shimmer" style="min-width: 280px; height: 240px;"></div>
+                <div class="series-card loading-shimmer" style="min-width: 280px; height: 240px;"></div>
+                <div class="series-card loading-shimmer" style="min-width: 280px; height: 240px;"></div>
+            `;
+            
+            try {
+                // Fetch featured series from database
+                const { data: series, error } = await supabaseClient
+                    .from('pulse_series')
+                    .select(`
+                        *,
+                        user_profiles (
+                            full_name,
+                            username
+                        )
+                    `)
+                    .eq('is_featured', true)
+                    .eq('is_archived', false)
+                    .order('created_at', { ascending: false })
+                    .limit(5);
+                
+                if (error) throw error;
+                
+                seriesScroll.innerHTML = '';
+                
+                if (!series || series.length === 0) {
+                    seriesScroll.innerHTML = `
+                        <div class="empty-state" style="min-width: 280px; height: 240px; display: flex; flex-direction: column; justify-content: center;">
+                            <div class="empty-icon">
+                                <i class="fas fa-layer-group"></i>
+                            </div>
+                            <div class="empty-title">No Featured Series</div>
+                            <div class="empty-description">Check back soon</div>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                series.forEach(s => {
+                    const seriesCard = document.createElement('div');
+                    seriesCard.className = 'series-card';
+                    seriesCard.dataset.seriesId = s.id;
+                    
+                    const creatorName = s.user_profiles?.full_name || 'Creator';
+                    const progressPercentage = Math.min((s.current_part || 0) / (s.total_parts || 1) * 100, 100);
+                    
+                    seriesCard.innerHTML = `
+                        <div class="series-cover">
+                            ${s.cover_image_url ? `<img src="${s.cover_image_url}" alt="${s.title}">` : ''}
+                            <div class="series-badge">Featured</div>
+                            <div class="series-progress">
+                                <div class="series-progress-fill" style="width: ${progressPercentage}%"></div>
+                            </div>
+                        </div>
+                        <div class="series-info">
+                            <div class="series-title">${s.title || 'Untitled Series'}</div>
+                            <div class="series-creator">By ${creatorName}</div>
+                            <div class="series-meta">
+                                <span>${s.current_part || 0}/${s.total_parts || '∞'} parts</span>
+                                <span>${s.is_completed ? 'Completed' : 'Active'}</span>
+                            </div>
+                        </div>
+                    `;
+                    
+                    seriesCard.addEventListener('click', () => {
+                        viewSeries(s.id);
+                    });
+                    
+                    seriesScroll.appendChild(seriesCard);
+                });
+                
+            } catch (error) {
+                console.error('Error loading featured series:', error);
+                seriesScroll.innerHTML = `
+                    <div class="empty-state" style="min-width: 280px; height: 240px; display: flex; flex-direction: column; justify-content: center;">
+                        <div class="empty-icon">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </div>
+                        <div class="empty-title">Failed to load</div>
+                        <div class="empty-description">Please try again</div>
+                    </div>
+                `;
+            }
+        }
+        
+        function initializeEventListeners() {
+            // Search input
+            const searchInput = document.getElementById('searchInput');
+            const searchClear = document.getElementById('searchClear');
+            const searchSuggestions = document.getElementById('searchSuggestions');
+            
+            searchInput.addEventListener('input', function() {
+                const value = this.value.trim();
+                
+                // Show/hide clear button
+                if (value.length > 0) {
+                    searchClear.style.display = 'block';
+                } else {
+                    searchClear.style.display = 'none';
+                    searchSuggestions.classList.remove('active');
+                }
+                
+                // Show suggestions after 2 characters
+                if (value.length >= 2) {
+                    searchSuggestions.classList.add('active');
+                    updateSearchSuggestions(value);
+                } else if (value.length === 0) {
+                    searchSuggestions.classList.add('active');
+                } else {
+                    searchSuggestions.classList.remove('active');
+                }
+                
+                // Debounce search
+                clearTimeout(searchTimeout);
+                if (value.length >= 2) {
+                    searchTimeout = setTimeout(() => {
+                        performSearch(value, 'search');
+                    }, 500);
+                } else if (value.length === 0) {
+                    // Clear search results
+                    clearSearchResults();
+                }
+            });
+            
+            searchInput.addEventListener('focus', function() {
+                if (this.value.length === 0) {
+                    searchSuggestions.classList.add('active');
+                }
+            });
+            
+            // Clear search button
+            searchClear.addEventListener('click', function() {
+                searchInput.value = '';
+                searchClear.style.display = 'none';
+                searchSuggestions.classList.remove('active');
+                clearSearchResults();
+                searchInput.focus();
+            });
+            
+            // Search suggestion items
+            document.querySelectorAll('.suggestion-item').forEach(item => {
+                item.addEventListener('click', function() {
+                    const searchText = this.dataset.search;
+                    searchInput.value = searchText;
+                    searchClear.style.display = 'block';
+                    searchSuggestions.classList.remove('active');
+                    performSearch(searchText, 'search');
+                });
+            });
+            
+            // Close suggestions when clicking outside
+            document.addEventListener('click', function(event) {
+                if (!searchInput.contains(event.target) && !searchSuggestions.contains(event.target)) {
+                    searchSuggestions.classList.remove('active');
+                }
+            });
+            
+            // Results tabs
+            document.querySelectorAll('.result-tab').forEach(tab => {
+                tab.addEventListener('click', function() {
+                    const tabId = this.dataset.tab;
+                    
+                    // Update active tab
+                    document.querySelectorAll('.result-tab').forEach(t => {
+                        t.classList.remove('active');
+                    });
+                    this.classList.add('active');
+                    
+                    // Show corresponding results
+                    document.querySelectorAll('.results-container').forEach(container => {
+                        container.classList.remove('active');
+                    });
+                    document.getElementById(`${tabId}Results`).classList.add('active');
+                });
+            });
+            
+            // Listen for auth changes
+            supabaseClient.auth.onAuthStateChange((event, session) => {
+                console.log('🔐 Auth state changed:', event);
+                
+                if (event === 'SIGNED_OUT') {
+                    window.location.href = 'login.html';
+                }
+            });
+        }
+        
+        function updateSearchSuggestions(searchTerm) {
+            // In a real app, you would fetch suggestions from the server
+            // For now, we'll simulate with some sample suggestions
+            
+            const suggestions = document.getElementById('searchSuggestions');
+            const recentSection = document.getElementById('recentSearches');
+            
+            // Show recent searches if search is empty
+            if (searchTerm.length === 0) {
+                recentSection.style.display = 'block';
+                return;
+            }
+            
+            // Hide recent searches when typing
+            recentSection.style.display = 'none';
+            
+            // Clear existing suggestions (except recent searches section)
+            const existingSuggestions = suggestions.querySelectorAll('.suggestion-item:not([data-search])');
+            existingSuggestions.forEach(s => s.remove());
+            
+            // Add new suggestions based on search term
+            const sampleSuggestions = [
+                { type: 'hashtag', text: `#${searchTerm}` },
+                { type: 'creator', text: `@${searchTerm}` },
+                { type: 'pulse', text: `Pulses about ${searchTerm}` },
+                { type: 'series', text: `Series: ${searchTerm}` }
+            ];
+            
+            sampleSuggestions.forEach(suggestion => {
+                const item = document.createElement('div');
+                item.className = 'suggestion-item';
+                item.dataset.search = suggestion.text;
+                
+                let icon = 'fas fa-search';
+                if (suggestion.type === 'hashtag') icon = 'fas fa-hashtag';
+                if (suggestion.type === 'creator') icon = 'fas fa-user';
+                if (suggestion.type === 'series') icon = 'fas fa-layer-group';
+                
+                item.innerHTML = `
+                    <i class="${icon} suggestion-icon"></i>
+                    <span>${suggestion.text}</span>
+                `;
+                
+                item.addEventListener('click', function() {
+                    document.getElementById('searchInput').value = suggestion.text;
+                    document.getElementById('searchClear').style.display = 'block';
+                    suggestions.classList.remove('active');
+                    performSearch(suggestion.text, 'search');
+                });
+                
+                suggestions.appendChild(item);
+            });
+        }
+        
+        function performSearch(searchTerm, source) {
+            currentSearchTerm = searchTerm;
+            
+            // Hide topic view if active
+            document.getElementById('topicView').classList.remove('active');
+            
+            // Show search results section
+            document.getElementById('resultsSection').classList.add('active');
+            
+            // Reset all chips to inactive
+            document.querySelectorAll('.category-chip').forEach(chip => {
+                chip.classList.remove('active');
+            });
+            
+            // Scroll to results
+            document.getElementById('resultsSection').scrollIntoView({ behavior: 'smooth' });
+            
+            // Load search results
+            loadSearchResults(searchTerm, source);
+        }
+        
+        function clearSearchResults() {
+            currentSearchTerm = '';
+            
+            // Hide search results
+            document.getElementById('resultsSection').classList.remove('active');
+            
+            // Reset tabs
+            document.querySelectorAll('.result-tab').forEach((tab, index) => {
+                tab.classList.remove('active');
+                if (index === 0) tab.classList.add('active');
+            });
+            
+            // Reset results containers
+            document.querySelectorAll('.results-container').forEach((container, index) => {
+                container.classList.remove('active');
+                if (index === 0) container.classList.add('active');
+            });
+            
+            // Clear results grids
+            document.getElementById('pulseResultsGrid').innerHTML = '';
+            document.getElementById('seriesResultsGrid').innerHTML = '';
+            document.getElementById('creatorResultsGrid').innerHTML = '';
+            document.getElementById('contentResultsGrid').innerHTML = '';
+        }
+        
+        async function loadSearchResults(searchTerm, source) {
+            console.log(`Searching for: ${searchTerm} (source: ${source})`);
+            
+            // Show loading states
+            showLoadingStates();
+            
+            // Load each type of result
+            await Promise.all([
+                loadPulseResults(searchTerm),
+                loadSeriesResults(searchTerm),
+                loadCreatorResults(searchTerm),
+                loadContentResults(searchTerm)
+            ]);
+        }
+        
+        function showLoadingStates() {
+            // Pulse results loading
+            const pulseGrid = document.getElementById('pulseResultsGrid');
+            pulseGrid.innerHTML = `
+                <div class="loading-shimmer" style="width: 100%; height: 280px; grid-column: 1/-1;"></div>
+                <div class="loading-shimmer" style="width: 100%; height: 280px;"></div>
+                <div class="loading-shimmer" style="width: 100%; height: 280px;"></div>
+            `;
+            
+            // Series results loading
+            const seriesGrid = document.getElementById('seriesResultsGrid');
+            seriesGrid.innerHTML = `
+                <div class="loading-shimmer" style="width: 100%; height: 180px;"></div>
+                <div class="loading-shimmer" style="width: 100%; height: 180px;"></div>
+            `;
+            
+            // Creator results loading
+            const creatorGrid = document.getElementById('creatorResultsGrid');
+            creatorGrid.innerHTML = `
+                <div class="loading-shimmer" style="width: 100%; height: 120px;"></div>
+                <div class="loading-shimmer" style="width: 100%; height: 120px;"></div>
+            `;
+            
+            // Content results loading
+            const contentGrid = document.getElementById('contentResultsGrid');
+            contentGrid.innerHTML = `
+                <div class="loading-shimmer" style="width: 100%; height: 180px;"></div>
+                <div class="loading-shimmer" style="width: 100%; height: 180px;"></div>
+            `;
+        }
+        
+        async function loadPulseResults(searchTerm) {
+            const pulseGrid = document.getElementById('pulseResultsGrid');
+            
+            try {
+                // Search pulses by caption or hashtags
+                const { data: pulses, error } = await supabaseClient
+                    .from('pulses_with_user_details')
+                    .select('*')
+                    .or(`caption.ilike.%${searchTerm}%,hashtags.cs.{${searchTerm}}`)
+                    .is('deleted_at', null)
+                    .order('created_at', { ascending: false })
+                    .limit(12);
+                
+                if (error) throw error;
+                
+                pulseGrid.innerHTML = '';
+                
+                if (!pulses || pulses.length === 0) {
+                    pulseGrid.innerHTML = `
+                        <div class="empty-state" style="grid-column: 1/-1;">
+                            <div class="empty-icon">
+                                <i class="fas fa-search"></i>
+                            </div>
+                            <div class="empty-title">No Pulses Found</div>
+                            <div class="empty-description">Try different search terms or browse categories</div>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                pulses.forEach(pulse => {
+                    const pulseCard = createPulseResultCard(pulse);
+                    pulseGrid.appendChild(pulseCard);
+                });
+                
+            } catch (error) {
+                console.error('Error loading pulse results:', error);
+                pulseGrid.innerHTML = `
+                    <div class="empty-state" style="grid-column: 1/-1;">
+                        <div class="empty-icon">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </div>
+                        <div class="empty-title">Failed to load pulses</div>
+                        <div class="empty-description">Please try again</div>
+                    </div>
+                `;
+            }
+        }
+        
+        function createPulseResultCard(pulse) {
+            const card = document.createElement('div');
+            card.className = 'pulse-result-card';
+            card.dataset.pulseId = pulse.id;
+            
+            // Truncate caption for display
+            const caption = pulse.caption || '';
+            const truncatedCaption = caption.length > 120 ? caption.substring(0, 117) + '...' : caption;
+            
+            // Format time
+            const timeAgo = getTimeAgo(new Date(pulse.created_at));
+            
+            card.innerHTML = `
+                <div class="pulse-result-media">
+                    ${pulse.media_url ? 
+                        `<img src="${pulse.media_url}" alt="Pulse preview">` : 
+                        `<div style="display: flex; align-items: center; justify-content: center; height: 100%; color: var(--slate-grey);">
+                            <i class="fas fa-bolt" style="font-size: 48px; opacity: 0.3;"></i>
+                        </div>`
+                    }
+                </div>
+                <div class="pulse-result-info">
+                    <div class="pulse-result-text">${truncatedCaption}</div>
+                    <div class="pulse-result-meta">
+                        <span>@${pulse.username || 'user'}</span>
+                        <span>${timeAgo} · ${pulse.likes_count || 0} likes</span>
+                    </div>
+                </div>
+            `;
+            
+            card.addEventListener('click', () => {
+                viewPulse(pulse.id);
+            });
+            
+            return card;
+        }
+        
+        async function loadSeriesResults(searchTerm) {
+            const seriesGrid = document.getElementById('seriesResultsGrid');
+            
+            try {
+                // Search series by title or description
+                const { data: series, error } = await supabaseClient
+                    .from('pulse_series')
+                    .select(`
+                        *,
+                        user_profiles (
+                            full_name,
+                            username
+                        )
+                    `)
+                    .or(`title.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%`)
+                    .eq('is_archived', false)
+                    .order('created_at', { ascending: false })
+                    .limit(8);
+                
+                if (error) throw error;
+                
+                seriesGrid.innerHTML = '';
+                
+                if (!series || series.length === 0) {
+                    seriesGrid.innerHTML = `
+                        <div class="empty-state" style="grid-column: 1/-1;">
+                            <div class="empty-icon">
+                                <i class="fas fa-layer-group"></i>
+                            </div>
+                            <div class="empty-title">No Series Found</div>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                series.forEach(s => {
+                    const card = document.createElement('div');
+                    card.className = 'series-result-card';
+                    card.dataset.seriesId = s.id;
+                    
+                    const creatorName = s.user_profiles?.full_name || 'Creator';
+                    
+                    card.innerHTML = `
+                        <div class="series-result-title">${s.title || 'Untitled Series'}</div>
+                        <div class="series-result-creator">By ${creatorName}</div>
+                        <div class="series-result-stats">
+                            <span>${s.current_part || 0}/${s.total_parts || '∞'} parts</span>
+                            <span>${s.is_completed ? 'Completed' : 'In Progress'}</span>
+                        </div>
+                        <div class="series-result-action">View Series</div>
+                    `;
+                    
+                    card.addEventListener('click', () => {
+                        viewSeries(s.id);
+                    });
+                    
+                    seriesGrid.appendChild(card);
+                });
+                
+            } catch (error) {
+                console.error('Error loading series results:', error);
+                seriesGrid.innerHTML = `
+                    <div class="empty-state" style="grid-column: 1/-1;">
+                        <div class="empty-icon">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </div>
+                        <div class="empty-title">Failed to load series</div>
+                    </div>
+                `;
+            }
+        }
+        
+        async function loadCreatorResults(searchTerm) {
+            const creatorGrid = document.getElementById('creatorResultsGrid');
+            
+            try {
+                // Search creators by name or username
+                const { data: creators, error } = await supabaseClient
+                    .from('user_profiles')
+                    .select('*')
+                    .or(`full_name.ilike.%${searchTerm}%,username.ilike.%${searchTerm}%`)
+                    .limit(8);
+                
+                if (error) throw error;
+                
+                creatorGrid.innerHTML = '';
+                
+                if (!creators || creators.length === 0) {
+                    creatorGrid.innerHTML = `
+                        <div class="empty-state" style="grid-column: 1/-1;">
+                            <div class="empty-icon">
+                                <i class="fas fa-user"></i>
+                            </div>
+                            <div class="empty-title">No Creators Found</div>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                // Check which creators the current user is connected to
+                const { data: connections } = await supabaseClient
+                    .from('connectors')
+                    .select('connected_id')
+                    .eq('connector_id', currentUserId);
+                
+                const connectedIds = new Set(connections?.map(c => c.connected_id) || []);
+                
+                creators.forEach(creator => {
+                    const card = document.createElement('div');
+                    card.className = 'creator-result-card';
+                    card.dataset.creatorId = creator.id;
+                    
+                    const initials = getInitials(creator.full_name || creator.email || 'User');
+                    const isConnected = connectedIds.has(creator.id);
+                    
+                    card.innerHTML = `
+                        <div class="creator-result-avatar">
+                            ${creator.avatar_url ? 
+                                `<img src="${creator.avatar_url}" alt="${creator.full_name}">` : 
+                                initials
+                            }
+                        </div>
+                        <div class="creator-result-info">
+                            <div class="creator-result-name">${creator.full_name || 'User'}</div>
+                            <div class="creator-result-handle">@${creator.username || 'user'}</div>
+                            <div class="creator-result-bio">${creator.bio || 'Bantu Connect Pulse creator'}</div>
+                            <div class="creator-result-action">
+                                <button class="connect-btn ${isConnected ? 'connected' : ''}" 
+                                        data-creator-id="${creator.id}">
+                                    ${isConnected ? 'Connected' : 'Connect'}
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                    
+                    // Handle avatar click - view profile
+                    card.querySelector('.creator-result-avatar').addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        viewCreatorProfile(creator.id);
+                    });
+                    
+                    // Handle name click - view profile
+                    card.querySelector('.creator-result-name').addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        viewCreatorProfile(creator.id);
+                    });
+                    
+                    // Handle connect button
+                    const connectBtn = card.querySelector('.connect-btn');
+                    connectBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        handleConnect(creator.id, connectBtn);
+                    });
+                    
+                    // Handle card click - view profile
+                    card.addEventListener('click', () => {
+                        viewCreatorProfile(creator.id);
+                    });
+                    
+                    creatorGrid.appendChild(card);
+                });
+                
+            } catch (error) {
+                console.error('Error loading creator results:', error);
+                creatorGrid.innerHTML = `
+                    <div class="empty-state" style="grid-column: 1/-1;">
+                        <div class="empty-icon">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </div>
+                        <div class="empty-title">Failed to load creators</div>
+                    </div>
+                `;
+            }
+        }
+        
+        async function loadContentResults(searchTerm) {
+            const contentGrid = document.getElementById('contentResultsGrid');
+            
+            try {
+                // Search linked content
+                const { data: pulses, error } = await supabaseClient
+                    .from('pulses')
+                    .select('*')
+                    .not('linked_content_id', 'is', null)
+                    .or(`caption.ilike.%${searchTerm}%,linked_content_type.ilike.%${searchTerm}%`)
+                    .is('deleted_at', null)
+                    .order('created_at', { ascending: false })
+                    .limit(6);
+                
+                if (error) throw error;
+                
+                contentGrid.innerHTML = '';
+                
+                if (!pulses || pulses.length === 0) {
+                    contentGrid.innerHTML = `
+                        <div class="empty-state" style="grid-column: 1/-1;">
+                            <div class="empty-icon">
+                                <i class="fas fa-link"></i>
+                            </div>
+                            <div class="empty-title">No Linked Content Found</div>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                pulses.forEach(pulse => {
+                    const card = document.createElement('div');
+                    card.className = 'content-result-card';
+                    
+                    let icon = 'fas fa-link';
+                    let title = 'Linked Content';
+                    
+                    if (pulse.linked_content_type === 'music') {
+                        icon = 'fas fa-music';
+                        title = 'Music';
+                    } else if (pulse.linked_content_type === 'film') {
+                        icon = 'fas fa-film';
+                        title = 'Film';
+                    } else if (pulse.linked_content_type === 'podcast') {
+                        icon = 'fas fa-podcast';
+                        title = 'Podcast';
+                    }
+                    
+                    card.innerHTML = `
+                        <div class="content-result-icon">
+                            <i class="${icon}"></i>
+                        </div>
+                        <div class="content-result-title">${title}</div>
+                        <div class="content-result-description">
+                            ${pulse.caption || 'Linked content from Bantu Stream'}
+                        </div>
+                        <div class="content-result-action">▶ Watch on Bantu Stream</div>
+                    `;
+                    
+                    card.addEventListener('click', () => {
+                        viewLinkedContent(pulse.linked_content_id);
+                    });
+                    
+                    contentGrid.appendChild(card);
+                });
+                
+            } catch (error) {
+                console.error('Error loading content results:', error);
+                contentGrid.innerHTML = `
+                    <div class="empty-state" style="grid-column: 1/-1;">
+                        <div class="empty-icon">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </div>
+                        <div class="empty-title">Failed to load content</div>
+                    </div>
+                `;
+            }
+        }
+        
+        function getTimeAgo(date) {
+            const seconds = Math.floor((new Date() - date) / 1000);
+            
+            let interval = seconds / 31536000;
+            if (interval > 1) return Math.floor(interval) + ' years ago';
+            
+            interval = seconds / 2592000;
+            if (interval > 1) return Math.floor(interval) + ' months ago';
+            
+            interval = seconds / 86400;
+            if (interval > 1) return Math.floor(interval) + ' days ago';
+            
+            interval = seconds / 3600;
+            if (interval > 1) return Math.floor(interval) + ' hours ago';
+            
+            interval = seconds / 60;
+            if (interval > 1) return Math.floor(interval) + ' minutes ago';
+            
+            return Math.floor(seconds) + ' seconds ago';
+        }
+        
+        function getInitials(name) {
+            if (!name) return 'U';
+            return name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+        }
+        
+        async function handleConnect(creatorId, button) {
+            try {
+                const isConnected = button.classList.contains('connected');
+                
+                if (isConnected) {
+                    // Disconnect
+                    const { error } = await supabaseClient
+                        .from('connectors')
+                        .delete()
+                        .eq('connector_id', currentUserId)
+                        .eq('connected_id', creatorId);
+                    
+                    if (error) throw error;
+                    
+                    button.classList.remove('connected');
+                    button.textContent = 'Connect';
+                    showToast('Disconnected', 'success');
+                    
+                } else {
+                    // Connect
+                    const { error } = await supabaseClient
+                        .from('connectors')
+                        .insert({
+                            connector_id: currentUserId,
+                            connected_id: creatorId,
+                            connection_type: 'creator'
+                        });
+                    
+                    if (error) throw error;
+                    
+                    button.classList.add('connected');
+                    button.textContent = 'Connected';
+                    showToast('Connected successfully!', 'success');
+                }
+                
+            } catch (error) {
+                console.error('Error handling connection:', error);
+                showToast('Failed to update connection', 'error');
+            }
+        }
+        
+        function viewPulse(pulseId) {
+            window.location.href = `pulse-content-detail.html?id=${pulseId}`;
+        }
+        
+        function viewSeries(seriesId) {
+            // Open series in new tab or modal
+            showToast('Opening series...', 'success');
+            // In a real app: window.location.href = `series-detail.html?id=${seriesId}`;
+        }
+        
+        function viewCreatorProfile(creatorId) {
+            window.location.href = `profile.html?user_id=${creatorId}`;
+        }
+        
+        function viewLinkedContent(contentId) {
+            showToast('Opening content on Bantu Stream...', 'success');
+            // Implementation depends on your content system
+        }
+        
+        function showToast(message, type = 'error') {
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.innerHTML = `
+                <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i>
+                <span>${message}</span>
+            `;
+            
+            const container = document.getElementById('toast-container');
+            container.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                setTimeout(() => toast.remove(), 300);
+            }, 4000);
+        }
+        
+        function loadSampleData() {
+            // Load sample categories
+            initializeCategories();
+            
+            // Load sample featured series
+            const seriesScroll = document.getElementById('seriesScroll');
+            seriesScroll.innerHTML = '';
+            
+            const sampleSeries = [
+                { title: 'Amapiano Evolution', creator: 'DJ Kabza', parts: '4 of 6', status: 'Active' },
+                { title: 'Kasi Entrepreneurs', creator: 'Thando Mokoena', parts: '3 of 8', status: 'Active' },
+                { title: 'SA Heritage Stories', creator: 'Cultural Archive', parts: '6 of 6', status: 'Completed' }
+            ];
+            
+            sampleSeries.forEach(series => {
+                const seriesCard = document.createElement('div');
+                seriesCard.className = 'series-card';
+                
+                seriesCard.innerHTML = `
+                    <div class="series-cover">
+                        <div class="series-badge">Featured</div>
+                        <div class="series-progress">
+                            <div class="series-progress-fill" style="width: ${series.status === 'Completed' ? '100' : '66'}%"></div>
+                        </div>
+                    </div>
+                    <div class="series-info">
+                        <div class="series-title">${series.title}</div>
+                        <div class="series-creator">By ${series.creator}</div>
+                        <div class="series-meta">
+                            <span>${series.parts} parts</span>
+                            <span>${series.status}</span>
+                        </div>
+                    </div>
+                `;
+                
+                seriesScroll.appendChild(seriesCard);
+            });
+        }
+        
+        // Start initialization
+        document.addEventListener('DOMContentLoaded', initialize);
+    </script>
+</body>
+</html>
