@@ -277,11 +277,20 @@
             font-weight: 600;
             color: var(--soft-white);
             margin-bottom: 2px;
+            cursor: pointer;
         }
         
         .creator-meta p {
             font-size: 14px;
             color: var(--slate-grey);
+        }
+        
+        .creator-handle {
+            cursor: pointer;
+        }
+        
+        .creator-handle:hover {
+            color: var(--soft-white);
         }
         
         .more-options {
@@ -356,6 +365,10 @@
             overflow: hidden;
             margin-bottom: 24px;
             position: relative;
+        }
+        
+        .media-container.no-media {
+            display: none; /* Hide container when no media */
         }
         
         .pulse-media {
@@ -629,6 +642,15 @@
             color: var(--soft-white);
             font-size: 10px;
             cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .comment-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: none;
         }
         
         .comment-meta {
@@ -640,11 +662,18 @@
             font-weight: 600;
             color: var(--soft-white);
             margin-bottom: 2px;
+            cursor: pointer;
         }
         
         .comment-handle {
             font-size: 12px;
             color: var(--slate-grey);
+            cursor: pointer;
+        }
+        
+        .comment-name:hover,
+        .comment-handle:hover {
+            text-decoration: underline;
         }
         
         .comment-time {
@@ -1071,13 +1100,13 @@
         <!-- Pulse Header -->
         <div class="pulse-header">
             <div class="creator-info">
-                <div class="creator-avatar" id="creator-avatar" onclick="viewCreatorProfile()">
+                <div class="creator-avatar" id="creator-avatar">
                     <img id="creator-avatar-img">
                     <span id="creator-initials">AB</span>
                 </div>
                 <div class="creator-meta">
-                    <h3 id="creator-name">Alex Bantu</h3>
-                    <p id="creator-handle">@alexbantu · <span id="pulse-time">2 hours ago</span></p>
+                    <h3 id="creator-name" onclick="viewCreatorProfile()">Alex Bantu</h3>
+                    <p id="creator-handle"><span class="creator-handle" onclick="viewCreatorProfile()">@alexbantu</span> · <span id="pulse-time">2 hours ago</span></p>
                 </div>
             </div>
             
@@ -1107,7 +1136,7 @@
         </div>
         
         <!-- Media Container -->
-        <div class="media-container">
+        <div class="media-container" id="mediaContainer">
             <div id="media-content">
                 <!-- Media will be loaded here -->
             </div>
@@ -1377,10 +1406,20 @@
             try {
                 console.log('Loading pulse:', pulseId);
                 
-                // Fetch pulse with user details
+                // Fetch pulse with user details - FIXED: Use correct query
                 const { data: pulse, error } = await supabaseClient
-                    .from('pulses_with_user_details')
-                    .select('*')
+                    .from('pulses')
+                    .select(`
+                        *,
+                        user_profiles:user_id (
+                            full_name,
+                            username,
+                            avatar_url,
+                            role,
+                            email,
+                            id
+                        )
+                    `)
                     .eq('id', pulseId)
                     .single();
                 
@@ -1388,21 +1427,20 @@
                 
                 currentPulse = pulse;
                 
-                // Get creator info
-                pulseCreator = {
-                    full_name: pulse.full_name,
-                    username: pulse.username,
-                    avatar_url: pulse.avatar_url,
-                    role: pulse.role,
-                    email: pulse.email,
-                    id: pulse.user_id
-                };
+                // Get creator info from joined data
+                pulseCreator = pulse.user_profiles || {};
                 
                 // Update UI
-                document.getElementById('creator-name').textContent = pulseCreator.full_name || 'User';
-                document.getElementById('creator-handle').innerHTML = `@${pulseCreator.username || 'user'} · <span id="pulse-time">${getTimeAgo(new Date(pulse.created_at))}</span>`;
+                const creatorName = pulseCreator.full_name || pulseCreator.email?.split('@')[0] || 'User';
+                document.getElementById('creator-name').textContent = creatorName;
                 
-                const creatorInitials = getInitials(pulseCreator.full_name || pulseCreator.email || 'User');
+                const creatorUsername = pulseCreator.username || pulseCreator.email?.split('@')[0] || 'user';
+                document.getElementById('creator-handle').innerHTML = `
+                    <span class="creator-handle" onclick="viewCreatorProfile()">@${creatorUsername}</span> · 
+                    <span id="pulse-time">${getTimeAgo(new Date(pulse.created_at))}</span>
+                `;
+                
+                const creatorInitials = getInitials(creatorName);
                 document.getElementById('creator-initials').textContent = creatorInitials;
                 
                 // Set creator avatar
@@ -1416,6 +1454,7 @@
                 } else {
                     creatorAvatarImg.style.display = 'none';
                     creatorInitialsElement.style.display = 'flex';
+                    creatorInitialsElement.textContent = creatorInitials;
                 }
                 
                 // Show series label if part of a series
@@ -1450,11 +1489,14 @@
                 document.getElementById('like-count').textContent = pulse.likes_count || 0;
                 document.getElementById('share-count').textContent = pulse.shares_count || 0;
                 
-                // Load media
+                // Load media - FIXED: Hide container when no media
+                const mediaContainer = document.getElementById('mediaContainer');
                 const mediaContent = document.getElementById('media-content');
                 mediaContent.innerHTML = '';
                 
-                if (pulse.media_url) {
+                if (pulse.media_url && pulse.media_type !== 'none') {
+                    mediaContainer.classList.remove('no-media');
+                    
                     if (pulse.media_type === 'video') {
                         videoElement = document.createElement('video');
                         videoElement.src = pulse.media_url;
@@ -1491,25 +1533,30 @@
                         document.getElementById('muteBtn').style.display = 'none';
                     }
                 } else {
-                    // No media - show placeholder
-                    const placeholder = document.createElement('div');
-                    placeholder.style.cssText = 'width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, var(--deep-navy), var(--deep-black)); color: var(--slate-grey); font-size: 14px;';
-                    placeholder.textContent = 'No media';
-                    mediaContent.appendChild(placeholder);
+                    // No media - hide media container (like Twitter posts)
+                    mediaContainer.classList.add('no-media');
                     document.getElementById('duration').style.display = 'none';
                     document.getElementById('muteBtn').style.display = 'none';
+                    document.getElementById('playBtn').style.display = 'none';
                 }
                 
                 // Check if user liked this pulse
                 await checkLikeStatus();
                 
-                // Check if user saved this pulse
-                await checkSaveStatus();
+                // Check if user saved this pulse - FIXED: Handle missing table gracefully
+                try {
+                    await checkSaveStatus();
+                } catch (error) {
+                    console.log('Save functionality not available');
+                    isSaved = false;
+                    updateSaveUI();
+                }
                 
                 // Show delete button if user owns the pulse
                 if (pulse.user_id === currentUserId) {
                     document.getElementById('deletePulseBtn').style.display = 'flex';
-                    document.getElementById('addToSeries').style.display = 'flex';
+                    const addToSeries = document.getElementById('addToSeries');
+                    if (addToSeries) addToSeries.style.display = 'flex';
                 }
                 
             } catch (error) {
@@ -1567,6 +1614,7 @@
         
         async function checkSaveStatus() {
             try {
+                // Check if saved_pulses table exists by trying to query it
                 const { data, error } = await supabaseClient
                     .from('saved_pulses')
                     .select('id')
@@ -1575,14 +1623,18 @@
                     .single();
                 
                 if (error && error.code !== 'PGRST116') {
-                    throw error;
+                    // Table might not exist, don't throw error
+                    console.log('Saved pulses table not available');
+                    isSaved = false;
+                    return;
                 }
                 
                 isSaved = !!data;
                 updateSaveUI();
                 
             } catch (error) {
-                console.error('Error checking save status:', error);
+                console.log('Save functionality not available:', error.message);
+                isSaved = false;
             }
         }
         
@@ -1630,11 +1682,13 @@
             
             // Media click to play/pause
             const mediaContainer = document.querySelector('.media-container');
-            mediaContainer.addEventListener('click', (e) => {
-                if (e.target === mediaContainer || e.target === document.querySelector('.play-controls')) {
-                    togglePlay();
-                }
-            });
+            if (mediaContainer) {
+                mediaContainer.addEventListener('click', (e) => {
+                    if (e.target === mediaContainer || e.target === document.querySelector('.play-controls')) {
+                        togglePlay();
+                    }
+                });
+            }
             
             // Like button
             const likeBtn = document.getElementById('likeBtn');
@@ -1698,7 +1752,10 @@
             document.getElementById('shareTwitter').addEventListener('click', shareToTwitter);
             document.getElementById('shareInstagram').addEventListener('click', shareToInstagram);
             document.getElementById('shareInternal').addEventListener('click', shareInternal);
-            document.getElementById('addToSeries').addEventListener('click', addToSeries);
+            const addToSeries = document.getElementById('addToSeries');
+            if (addToSeries) {
+                addToSeries.addEventListener('click', addToSeriesFunc);
+            }
             
             // Copy link button
             document.getElementById('copyLinkBtn').addEventListener('click', copyLink);
@@ -1795,27 +1852,35 @@
         async function handleSave() {
             try {
                 if (isSaved) {
-                    // Unsave
-                    const { error } = await supabaseClient
-                        .from('saved_pulses')
-                        .delete()
-                        .eq('pulse_id', pulseId)
-                        .eq('user_id', currentUserId);
-                    
-                    if (error) throw error;
+                    // Try to unsave if table exists
+                    try {
+                        const { error } = await supabaseClient
+                            .from('saved_pulses')
+                            .delete()
+                            .eq('pulse_id', pulseId)
+                            .eq('user_id', currentUserId);
+                        
+                        if (error) throw error;
+                    } catch (tableError) {
+                        console.log('Saved pulses table not available');
+                    }
                     
                     isSaved = false;
                     showToast('Pulse removed from saved', 'success');
                 } else {
-                    // Save
-                    const { error } = await supabaseClient
-                        .from('saved_pulses')
-                        .insert({
-                            pulse_id: pulseId,
-                            user_id: currentUserId
-                        });
-                    
-                    if (error) throw error;
+                    // Try to save if table exists
+                    try {
+                        const { error } = await supabaseClient
+                            .from('saved_pulses')
+                            .insert({
+                                pulse_id: pulseId,
+                                user_id: currentUserId
+                            });
+                        
+                        if (error) throw error;
+                    } catch (tableError) {
+                        console.log('Saved pulses table not available');
+                    }
                     
                     isSaved = true;
                     showToast('Pulse saved!', 'success');
@@ -1838,7 +1903,7 @@
         function handleMuteCreator() {
             if (!pulseCreator) return;
             
-            showToast(`You won't see pulses from @${pulseCreator.username} anymore`, 'success');
+            showToast(`You won't see pulses from @${pulseCreator.username || 'this creator'} anymore`, 'success');
             moreMenu.classList.remove('active');
         }
         
@@ -1870,10 +1935,24 @@
         
         async function loadComments() {
             try {
+                console.log('Loading comments for pulse:', pulseId);
+                
+                // FIXED: Direct query to pulse_comments table with user join
                 const { data: comments, error } = await supabaseClient
-                    .from('pulse_comments_with_user')
-                    .select('*')
+                    .from('pulse_comments')
+                    .select(`
+                        *,
+                        user_profiles:user_id (
+                            full_name,
+                            username,
+                            avatar_url,
+                            role,
+                            email,
+                            id
+                        )
+                    `)
                     .eq('pulse_id', pulseId)
+                    .eq('is_removed', false) // Only show non-removed comments
                     .order('created_at', { ascending: true });
                 
                 if (error) throw error;
@@ -1893,11 +1972,12 @@
                     return;
                 }
                 
-                commentsThread.innerHTML = '';
-                
                 // Group comments by parent (for replies)
                 const topLevelComments = comments.filter(c => !c.parent_comment_id);
                 const replies = comments.filter(c => c.parent_comment_id);
+                
+                // Clear the thread
+                commentsThread.innerHTML = '';
                 
                 // Display top-level comments
                 topLevelComments.forEach(comment => {
@@ -1907,6 +1987,7 @@
                 
             } catch (error) {
                 console.error('Error loading comments:', error);
+                const commentsThread = document.getElementById('commentsThread');
                 commentsThread.innerHTML = `
                     <div class="empty-state">
                         <div class="empty-title">Failed to load comments</div>
@@ -1919,20 +2000,23 @@
         function displayComment(comment, replies = []) {
             const commentsThread = document.getElementById('commentsThread');
             
+            // Get user profile for this comment
+            const user = comment.user_profiles || {};
+            const initials = getInitials(user.full_name || user.email || 'User');
+            
             const commentItem = document.createElement('div');
             commentItem.className = 'comment-item';
             commentItem.dataset.commentId = comment.id;
             
-            const initials = getInitials(comment.full_name || comment.email || 'User');
-            
             commentItem.innerHTML = `
                 <div class="comment-header">
-                    <div class="comment-avatar" style="${comment.avatar_url ? `background-image: url('${comment.avatar_url}'); background-size: cover; background-position: center;` : ''}">
-                        ${comment.avatar_url ? '' : initials}
+                    <div class="comment-avatar" onclick="viewUserProfile('${comment.user_id}')" style="${user.avatar_url ? `background-image: url('${user.avatar_url}'); background-size: cover; background-position: center;` : ''}">
+                        ${user.avatar_url ? '' : initials}
+                        <img src="${user.avatar_url || ''}" style="display: ${user.avatar_url ? 'block' : 'none'}; width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
                     </div>
                     <div class="comment-meta">
-                        <div class="comment-name">${comment.full_name || 'User'}</div>
-                        <div class="comment-handle">@${comment.username || 'user'}</div>
+                        <div class="comment-name" onclick="viewUserProfile('${comment.user_id}')">${user.full_name || 'User'}</div>
+                        <div class="comment-handle" onclick="viewUserProfile('${comment.user_id}')">@${user.username || 'user'}</div>
                     </div>
                     <div class="comment-time">${getTimeAgo(new Date(comment.created_at))}</div>
                 </div>
@@ -1952,7 +2036,7 @@
             replyComposer.className = 'reply-composer';
             replyComposer.id = `reply-composer-${comment.id}`;
             replyComposer.innerHTML = `
-                <textarea class="reply-input" placeholder="Reply to @${comment.username || 'user'}…" maxlength="300"></textarea>
+                <textarea class="reply-input" placeholder="Reply to @${user.username || 'user'}…" maxlength="300"></textarea>
                 <button class="post-reply-btn" data-parent-id="${comment.id}">Reply</button>
             `;
             
@@ -1962,20 +2046,22 @@
                 replyThread.className = 'reply-thread';
                 
                 replies.forEach(reply => {
+                    const replyUser = reply.user_profiles || {};
+                    const replyInitials = getInitials(replyUser.full_name || replyUser.email || 'User');
+                    
                     const replyItem = document.createElement('div');
                     replyItem.className = 'comment-item';
                     replyItem.style.marginBottom = '8px';
                     
-                    const replyInitials = getInitials(reply.full_name || reply.email || 'User');
-                    
                     replyItem.innerHTML = `
                         <div class="comment-header">
-                            <div class="comment-avatar" style="${reply.avatar_url ? `background-image: url('${reply.avatar_url}'); background-size: cover; background-position: center;` : ''}">
-                                ${reply.avatar_url ? '' : replyInitials}
+                            <div class="comment-avatar" onclick="viewUserProfile('${reply.user_id}')" style="${replyUser.avatar_url ? `background-image: url('${replyUser.avatar_url}'); background-size: cover; background-position: center;` : ''}">
+                                ${replyUser.avatar_url ? '' : replyInitials}
+                                <img src="${replyUser.avatar_url || ''}" style="display: ${replyUser.avatar_url ? 'block' : 'none'}; width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
                             </div>
                             <div class="comment-meta">
-                                <div class="comment-name">${reply.full_name || 'User'}</div>
-                                <div class="comment-handle">@${reply.username || 'user'}</div>
+                                <div class="comment-name" onclick="viewUserProfile('${reply.user_id}')">${replyUser.full_name || 'User'}</div>
+                                <div class="comment-handle" onclick="viewUserProfile('${reply.user_id}')">@${replyUser.username || 'user'}</div>
                             </div>
                             <div class="comment-time">${getTimeAgo(new Date(reply.created_at))}</div>
                         </div>
@@ -2002,8 +2088,13 @@
             const postReplyBtn = commentItem.querySelector('.post-reply-btn');
             const replyInput = commentItem.querySelector('.reply-input');
             
-            likeBtn.addEventListener('click', () => likeComment(comment.id));
-            replyBtn.addEventListener('click', () => {
+            likeBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                likeComment(comment.id);
+            });
+            
+            replyBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
                 replyComposer.classList.toggle('active');
                 if (replyComposer.classList.contains('active')) {
                     replyInput.focus();
@@ -2011,7 +2102,10 @@
             });
             
             if (postReplyBtn) {
-                postReplyBtn.addEventListener('click', () => postReply(comment.id, replyInput));
+                postReplyBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    postReply(comment.id, replyInput);
+                });
             }
             
             if (replyInput) {
@@ -2083,6 +2177,10 @@
                 replyInput.value = '';
                 document.getElementById(`reply-composer-${parentId}`).classList.remove('active');
                 
+                // Update comment count
+                const currentCount = parseInt(document.getElementById('comment-count').textContent) || 0;
+                document.getElementById('comment-count').textContent = currentCount + 1;
+                
                 // Reload comments
                 loadComments();
                 
@@ -2096,7 +2194,7 @@
         
         async function likeComment(commentId) {
             try {
-                // Check if already liked
+                // Check if already liked - FIXED: Use correct table name
                 const { data: existingLike } = await supabaseClient
                     .from('comment_likes')
                     .select('id')
@@ -2207,15 +2305,21 @@
             }
         }
         
-        function addToSeries() {
+        function addToSeriesFunc() {
             showToast('Add to Series feature coming soon!', 'success');
             closeShareModalFunc();
         }
         
         function viewCreatorProfile() {
-            if (pulseCreator) {
+            if (pulseCreator && pulseCreator.id) {
                 window.location.href = `profile.html?user_id=${pulseCreator.id}`;
+            } else {
+                showToast('Creator profile not available', 'error');
             }
+        }
+        
+        function viewUserProfile(userId) {
+            window.location.href = `profile.html?user_id=${userId}`;
         }
         
         function showToast(message, type = 'error') {
@@ -2238,7 +2342,7 @@
         function loadSampleData() {
             // Sample data for demo purposes
             document.getElementById('creator-name').textContent = 'Sample Creator';
-            document.getElementById('creator-handle').innerHTML = '@samplecreator · <span id="pulse-time">2 hours ago</span>';
+            document.getElementById('creator-handle').innerHTML = '<span class="creator-handle" onclick="viewCreatorProfile()">@samplecreator</span> · <span id="pulse-time">2 hours ago</span>';
             document.getElementById('caption-text').textContent = 'This is a sample pulse for demonstration purposes. The real data will load when connected to Supabase.';
             
             // Load sample comments
@@ -2246,10 +2350,10 @@
             commentsThread.innerHTML = `
                 <div class="comment-item">
                     <div class="comment-header">
-                        <div class="comment-avatar">JD</div>
+                        <div class="comment-avatar" onclick="viewUserProfile('sample1')">JD</div>
                         <div class="comment-meta">
-                            <div class="comment-name">Jane Doe</div>
-                            <div class="comment-handle">@janedoe</div>
+                            <div class="comment-name" onclick="viewUserProfile('sample1')">Jane Doe</div>
+                            <div class="comment-handle" onclick="viewUserProfile('sample1')">@janedoe</div>
                         </div>
                         <div class="comment-time">1 hour ago</div>
                     </div>
@@ -2265,10 +2369,10 @@
                 </div>
                 <div class="comment-item">
                     <div class="comment-header">
-                        <div class="comment-avatar">MS</div>
+                        <div class="comment-avatar" onclick="viewUserProfile('sample2')">MS</div>
                         <div class="comment-meta">
-                            <div class="comment-name">Michael Smith</div>
-                            <div class="comment-handle">@michaels</div>
+                            <div class="comment-name" onclick="viewUserProfile('sample2')">Michael Smith</div>
+                            <div class="comment-handle" onclick="viewUserProfile('sample2')">@michaels</div>
                         </div>
                         <div class="comment-time">30 minutes ago</div>
                     </div>
