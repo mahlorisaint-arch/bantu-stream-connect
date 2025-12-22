@@ -1,0 +1,2292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pulse Detail - Bantu Connect Pulse</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Orbitron:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Supabase JS SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <style>
+        /* Color Theme - Same as pulse-feed.html */
+        :root {
+            --deep-black: #0A0E12;
+            --deep-navy: #0F172A;
+            --soft-white: #F8FAFC;
+            --slate-grey: #94A3B8;
+            --bantu-blue: #1D4ED8;
+            --warm-gold: #F59E0B;
+            --error-color: #EF4444;
+            --success-color: #10B981;
+            --glow-cycle-1: #00A3FF;
+            --glow-cycle-2: #0066FF;
+            --glow-cycle-3: #8B5CF6;
+            --glow-cycle-4: #EC4899;
+            --card-bg: rgba(15, 23, 42, 0.6);
+            --card-border: rgba(148, 163, 184, 0.2);
+            --hover-overlay: rgba(255, 255, 255, 0.05);
+            --active-overlay: rgba(245, 158, 11, 0.1);
+            --indigo: #4F46E5;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--deep-black);
+            color: var(--soft-white);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        
+        /* Loading Screen */
+        .loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--deep-black);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 3px solid rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            border-top-color: var(--bantu-blue);
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        /* Animated Background - Same as pulse-feed.html */
+        .animated-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            overflow: hidden;
+        }
+        
+        .glow-cycle {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(60px);
+            opacity: 0.1;
+            animation: float 8s infinite ease-in-out;
+        }
+        
+        .glow-1 {
+            width: 400px;
+            height: 400px;
+            background: var(--glow-cycle-1);
+            top: 10%;
+            left: 5%;
+            animation-delay: 0s;
+        }
+        
+        .glow-2 {
+            width: 300px;
+            height: 300px;
+            background: var(--glow-cycle-2);
+            top: 60%;
+            right: 10%;
+            animation-delay: 2s;
+        }
+        
+        .glow-3 {
+            width: 350px;
+            height: 350px;
+            background: var(--glow-cycle-3);
+            bottom: 10%;
+            left: 20%;
+            animation-delay: 4s;
+        }
+        
+        .glow-4 {
+            width: 250px;
+            height: 250px;
+            background: var(--glow-cycle-4);
+            top: 20%;
+            right: 20%;
+            animation-delay: 6s;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0) scale(1); }
+            50% { transform: translateY(-20px) scale(1.05); }
+        }
+        
+        /* Main Container */
+        .container {
+            max-width: 720px;
+            margin: 0 auto;
+            padding: 24px;
+            position: relative;
+            z-index: 2;
+            padding-bottom: 40px;
+        }
+        
+        /* Header */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 0;
+            margin-bottom: 24px;
+            position: sticky;
+            top: 0;
+            background-color: rgba(10, 14, 18, 0.9);
+            backdrop-filter: blur(20px);
+            z-index: 100;
+            border-bottom: 1px solid var(--card-border);
+        }
+        
+        .logo-container {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+        }
+        
+        .logo-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 32px rgba(29, 78, 216, 0.3);
+            overflow: hidden;
+            background: transparent;
+        }
+        
+        .logo-icon img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+        
+        .logo-text {
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 700;
+            font-size: 16px;
+            background: linear-gradient(to right, var(--soft-white), var(--bantu-blue));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            letter-spacing: 0.5px;
+        }
+        
+        .user-section {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        
+        .user-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: all 0.3s ease;
+            font-weight: 600;
+            color: var(--soft-white);
+            font-size: 14px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .user-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 50%;
+            display: none;
+        }
+        
+        /* Pulse Header */
+        .pulse-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 0;
+            margin-bottom: 24px;
+        }
+        
+        .creator-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .creator-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-weight: 600;
+            color: var(--soft-white);
+            font-size: 16px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .creator-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: none;
+        }
+        
+        .creator-meta h3 {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--soft-white);
+            margin-bottom: 2px;
+        }
+        
+        .creator-meta p {
+            font-size: 14px;
+            color: var(--slate-grey);
+        }
+        
+        .more-options {
+            position: relative;
+        }
+        
+        .more-btn {
+            background: none;
+            border: none;
+            color: var(--slate-grey);
+            font-size: 24px;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+        
+        .more-btn:hover {
+            color: var(--soft-white);
+            background: var(--hover-overlay);
+        }
+        
+        .more-menu {
+            position: absolute;
+            top: 40px;
+            right: 0;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            width: 200px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            display: none;
+            z-index: 1000;
+            overflow: hidden;
+        }
+        
+        .more-menu.active {
+            display: block;
+        }
+        
+        .menu-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 16px;
+            color: var(--soft-white);
+            background: none;
+            border: none;
+            width: 100%;
+            text-align: left;
+            font-family: 'Inter', sans-serif;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .menu-item:hover {
+            background: var(--hover-overlay);
+        }
+        
+        .menu-item.delete {
+            color: var(--error-color);
+            border-top: 1px solid var(--card-border);
+        }
+        
+        /* Media Container */
+        .media-container {
+            width: 100%;
+            aspect-ratio: 9/16;
+            background: black;
+            border-radius: 16px;
+            overflow: hidden;
+            margin-bottom: 24px;
+            position: relative;
+        }
+        
+        .pulse-media {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+        
+        .play-controls {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.2);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        .media-container:hover .play-controls {
+            opacity: 1;
+        }
+        
+        .play-btn {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.7);
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+        
+        .play-btn:hover {
+            transform: scale(1.1);
+            background: rgba(0, 0, 0, 0.9);
+        }
+        
+        .mute-btn {
+            position: absolute;
+            bottom: 16px;
+            right: 16px;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.7);
+            border: none;
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .duration {
+            position: absolute;
+            bottom: 16px;
+            left: 16px;
+            font-size: 12px;
+            color: white;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 4px 8px;
+            border-radius: 4px;
+        }
+        
+        /* Narrative Block */
+        .narrative-block {
+            margin-bottom: 24px;
+        }
+        
+        .series-label {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--indigo);
+            margin-bottom: 12px;
+            cursor: pointer;
+            display: inline-block;
+            padding: 4px 12px;
+            background: rgba(79, 70, 229, 0.1);
+            border-radius: 12px;
+        }
+        
+        .series-label:hover {
+            background: rgba(79, 70, 229, 0.2);
+        }
+        
+        .caption-text {
+            font-size: 16px;
+            line-height: 1.6;
+            color: var(--soft-white);
+            white-space: pre-line;
+        }
+        
+        /* Action Bar */
+        .action-bar {
+            display: flex;
+            align-items: center;
+            gap: 24px;
+            padding: 16px 0;
+            border-bottom: 1px solid var(--card-border);
+            margin-bottom: 24px;
+        }
+        
+        .action-btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: none;
+            border: none;
+            color: var(--slate-grey);
+            font-family: 'Inter', sans-serif;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+        
+        .action-btn:hover {
+            color: var(--soft-white);
+            background: var(--hover-overlay);
+        }
+        
+        .action-btn.liked {
+            color: var(--warm-gold);
+        }
+        
+        .action-btn i {
+            font-size: 18px;
+        }
+        
+        .action-count {
+            font-size: 13px;
+            color: var(--slate-grey);
+            margin-left: 4px;
+        }
+        
+        /* Comments Section */
+        .comments-section {
+            margin-top: 32px;
+        }
+        
+        .comments-header {
+            margin-bottom: 24px;
+        }
+        
+        .comments-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--soft-white);
+            margin-bottom: 4px;
+        }
+        
+        .comments-subtitle {
+            font-size: 14px;
+            color: var(--slate-grey);
+        }
+        
+        /* Comment Composer */
+        .comment-composer {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            margin-bottom: 32px;
+            padding: 16px;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+        }
+        
+        .composer-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            color: var(--soft-white);
+            font-size: 12px;
+            flex-shrink: 0;
+        }
+        
+        .composer-input {
+            flex: 1;
+            padding: 12px 16px;
+            background: rgba(10, 14, 18, 0.6);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            color: var(--soft-white);
+            font-family: 'Inter', sans-serif;
+            font-size: 14px;
+            resize: none;
+            min-height: 44px;
+            transition: border-color 0.3s ease;
+        }
+        
+        .composer-input:focus {
+            outline: none;
+            border-color: var(--warm-gold);
+        }
+        
+        .composer-input::placeholder {
+            color: var(--slate-grey);
+        }
+        
+        .post-comment-btn {
+            padding: 10px 20px;
+            background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+            border: none;
+            border-radius: 12px;
+            color: var(--soft-white);
+            font-family: 'Inter', sans-serif;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            flex-shrink: 0;
+        }
+        
+        .post-comment-btn:hover:not(:disabled) {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(29, 78, 216, 0.3);
+        }
+        
+        .post-comment-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        /* Comments Thread */
+        .comments-thread {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .comment-item {
+            padding: 16px;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+        }
+        
+        .comment-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+        
+        .comment-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            color: var(--soft-white);
+            font-size: 10px;
+            cursor: pointer;
+        }
+        
+        .comment-meta {
+            flex: 1;
+        }
+        
+        .comment-name {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--soft-white);
+            margin-bottom: 2px;
+        }
+        
+        .comment-handle {
+            font-size: 12px;
+            color: var(--slate-grey);
+        }
+        
+        .comment-time {
+            font-size: 11px;
+            color: var(--slate-grey);
+        }
+        
+        .comment-text {
+            font-size: 14px;
+            line-height: 1.5;
+            color: var(--soft-white);
+            margin-bottom: 12px;
+            white-space: pre-line;
+        }
+        
+        .comment-actions {
+            display: flex;
+            gap: 16px;
+        }
+        
+        .comment-action {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            background: none;
+            border: none;
+            color: var(--slate-grey);
+            font-size: 12px;
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 6px;
+            transition: all 0.3s ease;
+        }
+        
+        .comment-action:hover {
+            color: var(--soft-white);
+            background: var(--hover-overlay);
+        }
+        
+        .comment-action.liked {
+            color: var(--warm-gold);
+        }
+        
+        /* Reply Thread */
+        .reply-thread {
+            margin-left: 16px;
+            padding-left: 16px;
+            border-left: 1px solid rgba(148, 163, 184, 0.1);
+            margin-top: 12px;
+        }
+        
+        .reply-composer {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 12px;
+            padding: 8px;
+            background: rgba(10, 14, 18, 0.3);
+            border-radius: 12px;
+            display: none;
+        }
+        
+        .reply-composer.active {
+            display: flex;
+        }
+        
+        .reply-input {
+            flex: 1;
+            padding: 8px 12px;
+            background: transparent;
+            border: 1px solid var(--card-border);
+            border-radius: 8px;
+            color: var(--soft-white);
+            font-family: 'Inter', sans-serif;
+            font-size: 13px;
+            resize: none;
+            min-height: 36px;
+        }
+        
+        .reply-input:focus {
+            outline: none;
+            border-color: var(--warm-gold);
+        }
+        
+        .reply-input::placeholder {
+            color: var(--slate-grey);
+            font-size: 13px;
+        }
+        
+        .post-reply-btn {
+            padding: 6px 12px;
+            background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+            border: none;
+            border-radius: 8px;
+            color: var(--soft-white);
+            font-family: 'Inter', sans-serif;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+        
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--slate-grey);
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+        }
+        
+        .empty-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+        
+        .empty-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--soft-white);
+            margin-bottom: 8px;
+        }
+        
+        .empty-description {
+            font-size: 14px;
+            max-width: 300px;
+            margin: 0 auto;
+            line-height: 1.4;
+        }
+        
+        /* Share Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            backdrop-filter: blur(5px);
+        }
+        
+        .share-modal {
+            background: var(--deep-navy);
+            border-radius: 24px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            border: 1px solid var(--card-border);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        }
+        
+        .modal-header {
+            padding: 24px;
+            border-bottom: 1px solid var(--card-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .modal-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--soft-white);
+        }
+        
+        .close-modal {
+            background: none;
+            border: none;
+            color: var(--slate-grey);
+            font-size: 24px;
+            cursor: pointer;
+            transition: color 0.3s ease;
+        }
+        
+        .close-modal:hover {
+            color: var(--soft-white);
+        }
+        
+        .modal-body {
+            padding: 24px;
+        }
+        
+        .share-options {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+        
+        .share-option {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 16px;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .share-option:hover {
+            border-color: var(--bantu-blue);
+            background: rgba(29, 78, 216, 0.05);
+        }
+        
+        .share-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 18px;
+        }
+        
+        .share-text {
+            flex: 1;
+            color: var(--soft-white);
+            font-weight: 500;
+        }
+        
+        .share-description {
+            font-size: 12px;
+            color: var(--slate-grey);
+            margin-top: 2px;
+        }
+        
+        .copy-link-section {
+            background: rgba(10, 14, 18, 0.6);
+            border-radius: 12px;
+            padding: 16px;
+            margin-top: 24px;
+        }
+        
+        .copy-link-label {
+            font-size: 14px;
+            color: var(--slate-grey);
+            margin-bottom: 8px;
+        }
+        
+        .link-container {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .link-input {
+            flex: 1;
+            padding: 12px;
+            background: var(--deep-black);
+            border: 1px solid var(--card-border);
+            border-radius: 8px;
+            color: var(--soft-white);
+            font-family: 'Inter', sans-serif;
+            font-size: 14px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .copy-link-btn {
+            padding: 12px 20px;
+            background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+            border: none;
+            border-radius: 8px;
+            color: var(--soft-white);
+            font-family: 'Inter', sans-serif;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        
+        /* Toast Notifications */
+        .toast-container {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 2000;
+        }
+        
+        .toast {
+            background: var(--error-color);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            animation: slideUp 0.3s ease;
+            box-shadow: 0 10px 25px rgba(239, 68, 68, 0.3);
+            max-width: 90vw;
+        }
+        
+        .toast.success {
+            background: var(--success-color);
+            box-shadow: 0 10px 25px rgba(16, 185, 129, 0.3);
+        }
+        
+        @keyframes slideUp {
+            from {
+                transform: translate(-50%, 100%);
+                opacity: 0;
+            }
+            to {
+                transform: translate(-50%, 0);
+                opacity: 1;
+            }
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .container {
+                padding: 16px;
+                max-width: 100%;
+            }
+            
+            .media-container {
+                border-radius: 0;
+                margin-left: -16px;
+                margin-right: -16px;
+                width: calc(100% + 32px);
+            }
+            
+            .comment-composer {
+                flex-direction: column;
+            }
+            
+            .post-comment-btn {
+                align-self: flex-end;
+            }
+            
+            .share-modal {
+                width: 95%;
+            }
+        }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: var(--deep-navy);
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: var(--bantu-blue);
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--warm-gold);
+        }
+        
+        /* Pulse Icon for Tab */
+        .pulse-tab-icon {
+            width: 20px;
+            height: 20px;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .pulse-tab-icon svg {
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading Screen -->
+    <div id="loading" class="loading-screen">
+        <div class="spinner"></div>
+        <div id="loading-text">Loading Pulse...</div>
+    </div>
+
+    <!-- Animated Background -->
+    <div class="animated-bg">
+        <div class="glow-cycle glow-1"></div>
+        <div class="glow-cycle glow-2"></div>
+        <div class="glow-cycle glow-3"></div>
+        <div class="glow-cycle glow-4"></div>
+    </div>
+
+    <!-- Main Container -->
+    <div class="container" id="content" style="display: none;">
+        <!-- Header -->
+        <header class="header">
+            <div class="logo-container" onclick="window.location.href='pulse-feed.html'">
+                <div class="logo-icon">
+                    <svg width="32" height="32" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect width="40" height="40" rx="8" fill="#0F172A"/>
+                        <path d="M8 20 L12 16 L16 22 L20 18 L24 24 L28 20 L32 26" stroke="url(#pulse-gradient)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                        <circle cx="32" cy="26" r="3" fill="#F59E0B"/>
+                        <defs>
+                            <linearGradient id="pulse-gradient" x1="8" y1="20" x2="32" y2="26" gradientUnits="userSpaceOnUse">
+                                <stop stop-color="#1D4ED8"/>
+                                <stop offset="1" stop-color="#F59E0B"/>
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                </div>
+                <div class="logo-text">BANTU CONNECT PULSE</div>
+            </div>
+            
+            <div class="user-section">
+                <div class="user-avatar" id="user-avatar" onclick="window.location.href='profile.html'">
+                    <img id="user-avatar-img">
+                    <span id="avatar-initials">AB</span>
+                </div>
+            </div>
+        </header>
+        
+        <!-- Pulse Header -->
+        <div class="pulse-header">
+            <div class="creator-info">
+                <div class="creator-avatar" id="creator-avatar" onclick="viewCreatorProfile()">
+                    <img id="creator-avatar-img">
+                    <span id="creator-initials">AB</span>
+                </div>
+                <div class="creator-meta">
+                    <h3 id="creator-name">Alex Bantu</h3>
+                    <p id="creator-handle">@alexbantu · <span id="pulse-time">2 hours ago</span></p>
+                </div>
+            </div>
+            
+            <div class="more-options">
+                <button class="more-btn" id="moreBtn">
+                    <i class="fas fa-ellipsis-h"></i>
+                </button>
+                <div class="more-menu" id="moreMenu">
+                    <button class="menu-item" id="savePulseBtn">
+                        <i class="far fa-bookmark"></i>
+                        Save Pulse
+                    </button>
+                    <button class="menu-item" id="reportPulseBtn">
+                        <i class="far fa-flag"></i>
+                        Report
+                    </button>
+                    <button class="menu-item" id="muteCreatorBtn">
+                        <i class="fas fa-volume-mute"></i>
+                        Mute Creator
+                    </button>
+                    <button class="menu-item delete" id="deletePulseBtn" style="display: none;">
+                        <i class="fas fa-trash"></i>
+                        Delete Pulse
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Media Container -->
+        <div class="media-container">
+            <div id="media-content">
+                <!-- Media will be loaded here -->
+            </div>
+            <div class="play-controls">
+                <button class="play-btn" id="playBtn">
+                    <i class="fas fa-play"></i>
+                </button>
+            </div>
+            <div class="duration" id="duration">0:00</div>
+            <button class="mute-btn" id="muteBtn">
+                <i class="fas fa-volume-mute"></i>
+            </button>
+        </div>
+        
+        <!-- Narrative Block -->
+        <div class="narrative-block">
+            <div class="series-label" id="seriesLabel" style="display: none;">
+                PULSE SERIES · Part <span id="series-part">2</span> of <span id="series-total">5</span>
+            </div>
+            <div class="caption-text" id="caption-text">
+                The rhythm of African storytelling isn't just in the words—it's in the spaces between them. The moments of silence, the glances, the pauses that speak volumes. That's where the real magic happens.
+            </div>
+        </div>
+        
+        <!-- Action Bar -->
+        <div class="action-bar">
+            <button class="action-btn" id="commentBtn">
+                <i class="fas fa-comment"></i> <span id="comment-count">24</span>
+            </button>
+            <button class="action-btn" id="likeBtn">
+                <i class="fas fa-heart"></i> <span id="like-count">142</span>
+            </button>
+            <button class="action-btn" id="shareBtn">
+                <i class="fas fa-share"></i> <span id="share-count">8</span>
+            </button>
+        </div>
+        
+        <!-- Comments Section -->
+        <div class="comments-section">
+            <div class="comments-header">
+                <h3 class="comments-title">Conversation</h3>
+                <p class="comments-subtitle">Thoughts on this Pulse?</p>
+            </div>
+            
+            <!-- Comment Composer -->
+            <div class="comment-composer">
+                <div class="composer-avatar" id="composer-avatar">AB</div>
+                <textarea 
+                    class="composer-input" 
+                    id="commentInput" 
+                    placeholder="Add your voice…"
+                    maxlength="500"
+                    rows="2"
+                ></textarea>
+                <button class="post-comment-btn" id="postCommentBtn" disabled>Post</button>
+            </div>
+            
+            <!-- Comments Thread -->
+            <div class="comments-thread" id="commentsThread">
+                <!-- Comments will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- Share Modal -->
+    <div id="shareModal" class="modal-overlay">
+        <div class="share-modal">
+            <div class="modal-header">
+                <h3 class="modal-title">Share Pulse</h3>
+                <button class="close-modal" id="closeShareModal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="share-options">
+                    <div class="share-option" id="copyLinkOption">
+                        <div class="share-icon">
+                            <i class="fas fa-link"></i>
+                        </div>
+                        <div class="share-text">
+                            Copy link
+                            <div class="share-description">Share via any platform</div>
+                        </div>
+                    </div>
+                    
+                    <div class="share-option" id="shareWhatsApp">
+                        <div class="share-icon" style="background: linear-gradient(135deg, #25D366, #128C7E);">
+                            <i class="fab fa-whatsapp"></i>
+                        </div>
+                        <div class="share-text">
+                            Share on WhatsApp
+                            <div class="share-description">Send to contacts or groups</div>
+                        </div>
+                    </div>
+                    
+                    <div class="share-option" id="shareTwitter">
+                        <div class="share-icon" style="background: linear-gradient(135deg, #1DA1F2, #0d8bd9);">
+                            <i class="fab fa-twitter"></i>
+                        </div>
+                        <div class="share-text">
+                            Share on X
+                            <div class="share-description">Post to your followers</div>
+                        </div>
+                    </div>
+                    
+                    <div class="share-option" id="shareInstagram">
+                        <div class="share-icon" style="background: linear-gradient(135deg, #E1306C, #C13584);">
+                            <i class="fab fa-instagram"></i>
+                        </div>
+                        <div class="share-text">
+                            Share on Instagram
+                            <div class="share-description">Add to your story or post</div>
+                        </div>
+                    </div>
+                    
+                    <div class="share-option" id="shareInternal">
+                        <div class="share-icon">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div class="share-text">
+                            Share inside Bantu
+                            <div class="share-description">Send to Connectors</div>
+                        </div>
+                    </div>
+                    
+                    <div class="share-option" id="addToSeries" style="display: none;">
+                        <div class="share-icon">
+                            <i class="fas fa-layer-group"></i>
+                        </div>
+                        <div class="share-text">
+                            Add to Series
+                            <div class="share-description">Include in an existing series</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="copy-link-section">
+                    <div class="copy-link-label">Direct link to this Pulse</div>
+                    <div class="link-container">
+                        <input type="text" class="link-input" id="shareLink" readonly value="https://bantuconnect.pulse/id/12345">
+                        <button class="copy-link-btn" id="copyLinkBtn">Copy</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize Supabase client
+        const SUPABASE_URL = 'https://ydnxqnbjoshvxteevemc.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U';
+
+        let supabaseClient = null;
+        let currentUserId = null;
+        let pulseId = null;
+        let currentPulse = null;
+        let pulseCreator = null;
+        let isLiked = false;
+        let isSaved = false;
+        let isVideoPlaying = false;
+        let isMuted = true;
+        let videoElement = null;
+
+        async function initialize() {
+            console.log('Starting Pulse Detail initialization...');
+            
+            try {
+                // Create Supabase client
+                supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+                    auth: {
+                        autoRefreshToken: true,
+                        persistSession: true,
+                        detectSessionInUrl: true
+                    }
+                });
+                
+                // Check session
+                const { data: { session }, error } = await supabaseClient.auth.getSession();
+                
+                if (error) {
+                    throw error;
+                }
+                
+                if (!session) {
+                    // No session, redirect to login
+                    window.location.href = 'login.html';
+                    return;
+                }
+                
+                console.log('User authenticated:', session.user.email);
+                currentUserId = session.user.id;
+                
+                // Set user initials
+                const user = session.user;
+                const initials = getUserInitials(user);
+                document.getElementById('avatar-initials').textContent = initials;
+                document.getElementById('composer-avatar').textContent = initials;
+                
+                // Set user avatar if available
+                try {
+                    const { data: profile } = await supabaseClient
+                        .from('user_profiles')
+                        .select('avatar_url')
+                        .eq('id', user.id)
+                        .single();
+                    
+                    if (profile?.avatar_url) {
+                        const avatarImg = document.getElementById('user-avatar-img');
+                        avatarImg.src = profile.avatar_url;
+                        avatarImg.style.display = 'block';
+                        document.getElementById('avatar-initials').style.display = 'none';
+                    }
+                } catch (error) {
+                    console.log('No profile picture found, using initials');
+                }
+                
+                // Get pulse ID from URL
+                const urlParams = new URLSearchParams(window.location.search);
+                pulseId = urlParams.get('id');
+                
+                if (!pulseId) {
+                    showToast('No pulse ID specified', 'error');
+                    // Redirect to feed after delay
+                    setTimeout(() => {
+                        window.location.href = 'pulse-feed.html';
+                    }, 2000);
+                    return;
+                }
+                
+                // Load pulse data
+                await loadPulse();
+                
+                // Hide loading, show content
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('content').style.display = 'block';
+                
+                // Initialize event listeners
+                initializeEventListeners();
+                
+                // Load comments
+                loadComments();
+                
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('loading-text').textContent = 'Error loading pulse. Please refresh.';
+                
+                // Still show content after delay
+                setTimeout(() => {
+                    document.getElementById('loading').style.display = 'none';
+                    document.getElementById('content').style.display = 'block';
+                    initializeEventListeners();
+                    loadSampleData();
+                }, 2000);
+            }
+        }
+        
+        function getUserInitials(user) {
+            const email = user.email || '';
+            const name = user.user_metadata?.full_name || email.split('@')[0] || 'U';
+            return name.substring(0, 2).toUpperCase();
+        }
+        
+        async function loadPulse() {
+            try {
+                console.log('Loading pulse:', pulseId);
+                
+                // Fetch pulse with user details
+                const { data: pulse, error } = await supabaseClient
+                    .from('pulses_with_user_details')
+                    .select('*')
+                    .eq('id', pulseId)
+                    .single();
+                
+                if (error) throw error;
+                
+                currentPulse = pulse;
+                
+                // Get creator info
+                pulseCreator = {
+                    full_name: pulse.full_name,
+                    username: pulse.username,
+                    avatar_url: pulse.avatar_url,
+                    role: pulse.role,
+                    email: pulse.email,
+                    id: pulse.user_id
+                };
+                
+                // Update UI
+                document.getElementById('creator-name').textContent = pulseCreator.full_name || 'User';
+                document.getElementById('creator-handle').innerHTML = `@${pulseCreator.username || 'user'} · <span id="pulse-time">${getTimeAgo(new Date(pulse.created_at))}</span>`;
+                
+                const creatorInitials = getInitials(pulseCreator.full_name || pulseCreator.email || 'User');
+                document.getElementById('creator-initials').textContent = creatorInitials;
+                
+                // Set creator avatar
+                const creatorAvatarImg = document.getElementById('creator-avatar-img');
+                const creatorInitialsElement = document.getElementById('creator-initials');
+                
+                if (pulseCreator.avatar_url) {
+                    creatorAvatarImg.src = pulseCreator.avatar_url;
+                    creatorAvatarImg.style.display = 'block';
+                    creatorInitialsElement.style.display = 'none';
+                } else {
+                    creatorAvatarImg.style.display = 'none';
+                    creatorInitialsElement.style.display = 'flex';
+                }
+                
+                // Show series label if part of a series
+                if (pulse.series_id && pulse.series_order) {
+                    document.getElementById('seriesLabel').style.display = 'inline-block';
+                    document.getElementById('series-part').textContent = pulse.series_order;
+                    
+                    // Try to get total parts in series
+                    try {
+                        const { data: series } = await supabaseClient
+                            .from('pulse_series')
+                            .select('total_parts')
+                            .eq('id', pulse.series_id)
+                            .single();
+                        
+                        if (series?.total_parts) {
+                            document.getElementById('series-total').textContent = series.total_parts;
+                        } else {
+                            document.getElementById('series-total').textContent = '?';
+                        }
+                    } catch (error) {
+                        console.log('Could not fetch series details');
+                        document.getElementById('series-total').textContent = '?';
+                    }
+                }
+                
+                // Set caption
+                document.getElementById('caption-text').textContent = pulse.caption || '';
+                
+                // Set counts
+                document.getElementById('comment-count').textContent = pulse.comments_count || 0;
+                document.getElementById('like-count').textContent = pulse.likes_count || 0;
+                document.getElementById('share-count').textContent = pulse.shares_count || 0;
+                
+                // Load media
+                const mediaContent = document.getElementById('media-content');
+                mediaContent.innerHTML = '';
+                
+                if (pulse.media_url) {
+                    if (pulse.media_type === 'video') {
+                        videoElement = document.createElement('video');
+                        videoElement.src = pulse.media_url;
+                        videoElement.className = 'pulse-media';
+                        videoElement.muted = isMuted;
+                        videoElement.playsInline = true;
+                        videoElement.preload = 'metadata';
+                        videoElement.onloadedmetadata = function() {
+                            const duration = Math.floor(videoElement.duration);
+                            const minutes = Math.floor(duration / 60);
+                            const seconds = duration % 60;
+                            document.getElementById('duration').textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+                        };
+                        videoElement.onplay = function() {
+                            isVideoPlaying = true;
+                            document.getElementById('playBtn').innerHTML = '<i class="fas fa-pause"></i>';
+                        };
+                        videoElement.onpause = function() {
+                            isVideoPlaying = false;
+                            document.getElementById('playBtn').innerHTML = '<i class="fas fa-play"></i>';
+                        };
+                        videoElement.onended = function() {
+                            isVideoPlaying = false;
+                            document.getElementById('playBtn').innerHTML = '<i class="fas fa-play"></i>';
+                        };
+                        mediaContent.appendChild(videoElement);
+                    } else {
+                        const img = document.createElement('img');
+                        img.src = pulse.media_url;
+                        img.className = 'pulse-media';
+                        img.alt = 'Pulse image';
+                        mediaContent.appendChild(img);
+                        document.getElementById('duration').style.display = 'none';
+                        document.getElementById('muteBtn').style.display = 'none';
+                    }
+                } else {
+                    // No media - show placeholder
+                    const placeholder = document.createElement('div');
+                    placeholder.style.cssText = 'width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, var(--deep-navy), var(--deep-black)); color: var(--slate-grey); font-size: 14px;';
+                    placeholder.textContent = 'No media';
+                    mediaContent.appendChild(placeholder);
+                    document.getElementById('duration').style.display = 'none';
+                    document.getElementById('muteBtn').style.display = 'none';
+                }
+                
+                // Check if user liked this pulse
+                await checkLikeStatus();
+                
+                // Check if user saved this pulse
+                await checkSaveStatus();
+                
+                // Show delete button if user owns the pulse
+                if (pulse.user_id === currentUserId) {
+                    document.getElementById('deletePulseBtn').style.display = 'flex';
+                    document.getElementById('addToSeries').style.display = 'flex';
+                }
+                
+            } catch (error) {
+                console.error('Error loading pulse:', error);
+                showToast('Failed to load pulse', 'error');
+            }
+        }
+        
+        function getInitials(name) {
+            if (!name) return 'U';
+            return name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+        }
+        
+        function getTimeAgo(date) {
+            const seconds = Math.floor((new Date() - date) / 1000);
+            
+            let interval = seconds / 31536000;
+            if (interval > 1) return Math.floor(interval) + ' years ago';
+            
+            interval = seconds / 2592000;
+            if (interval > 1) return Math.floor(interval) + ' months ago';
+            
+            interval = seconds / 86400;
+            if (interval > 1) return Math.floor(interval) + ' days ago';
+            
+            interval = seconds / 3600;
+            if (interval > 1) return Math.floor(interval) + ' hours ago';
+            
+            interval = seconds / 60;
+            if (interval > 1) return Math.floor(interval) + ' minutes ago';
+            
+            return Math.floor(seconds) + ' seconds ago';
+        }
+        
+        async function checkLikeStatus() {
+            try {
+                const { data, error } = await supabaseClient
+                    .from('pulse_likes')
+                    .select('id')
+                    .eq('pulse_id', pulseId)
+                    .eq('user_id', currentUserId)
+                    .single();
+                
+                if (error && error.code !== 'PGRST116') { // PGRST116 is "no rows returned"
+                    throw error;
+                }
+                
+                isLiked = !!data;
+                updateLikeUI();
+                
+            } catch (error) {
+                console.error('Error checking like status:', error);
+            }
+        }
+        
+        async function checkSaveStatus() {
+            try {
+                const { data, error } = await supabaseClient
+                    .from('saved_pulses')
+                    .select('id')
+                    .eq('pulse_id', pulseId)
+                    .eq('user_id', currentUserId)
+                    .single();
+                
+                if (error && error.code !== 'PGRST116') {
+                    throw error;
+                }
+                
+                isSaved = !!data;
+                updateSaveUI();
+                
+            } catch (error) {
+                console.error('Error checking save status:', error);
+            }
+        }
+        
+        function updateLikeUI() {
+            const likeBtn = document.getElementById('likeBtn');
+            if (isLiked) {
+                likeBtn.classList.add('liked');
+            } else {
+                likeBtn.classList.remove('liked');
+            }
+        }
+        
+        function updateSaveUI() {
+            const saveBtn = document.getElementById('savePulseBtn');
+            if (isSaved) {
+                saveBtn.innerHTML = '<i class="fas fa-bookmark"></i> Unsave Pulse';
+            } else {
+                saveBtn.innerHTML = '<i class="far fa-bookmark"></i> Save Pulse';
+            }
+        }
+        
+        function initializeEventListeners() {
+            // More options menu
+            const moreBtn = document.getElementById('moreBtn');
+            const moreMenu = document.getElementById('moreMenu');
+            
+            moreBtn.addEventListener('click', () => {
+                moreMenu.classList.toggle('active');
+            });
+            
+            // Close menu when clicking outside
+            document.addEventListener('click', (e) => {
+                if (!moreBtn.contains(e.target) && !moreMenu.contains(e.target)) {
+                    moreMenu.classList.remove('active');
+                }
+            });
+            
+            // Play button
+            const playBtn = document.getElementById('playBtn');
+            playBtn.addEventListener('click', togglePlay);
+            
+            // Mute button
+            const muteBtn = document.getElementById('muteBtn');
+            muteBtn.addEventListener('click', toggleMute);
+            
+            // Media click to play/pause
+            const mediaContainer = document.querySelector('.media-container');
+            mediaContainer.addEventListener('click', (e) => {
+                if (e.target === mediaContainer || e.target === document.querySelector('.play-controls')) {
+                    togglePlay();
+                }
+            });
+            
+            // Like button
+            const likeBtn = document.getElementById('likeBtn');
+            likeBtn.addEventListener('click', handleLike);
+            
+            // Comment button (scroll to comment input)
+            const commentBtn = document.getElementById('commentBtn');
+            commentBtn.addEventListener('click', () => {
+                document.getElementById('commentInput').focus();
+            });
+            
+            // Share button
+            const shareBtn = document.getElementById('shareBtn');
+            shareBtn.addEventListener('click', openShareModal);
+            
+            // Save pulse button
+            const savePulseBtn = document.getElementById('savePulseBtn');
+            savePulseBtn.addEventListener('click', handleSave);
+            
+            // Report pulse button
+            const reportPulseBtn = document.getElementById('reportPulseBtn');
+            reportPulseBtn.addEventListener('click', handleReport);
+            
+            // Mute creator button
+            const muteCreatorBtn = document.getElementById('muteCreatorBtn');
+            muteCreatorBtn.addEventListener('click', handleMuteCreator);
+            
+            // Delete pulse button
+            const deletePulseBtn = document.getElementById('deletePulseBtn');
+            if (deletePulseBtn) {
+                deletePulseBtn.addEventListener('click', handleDelete);
+            }
+            
+            // Comment input
+            const commentInput = document.getElementById('commentInput');
+            const postCommentBtn = document.getElementById('postCommentBtn');
+            
+            commentInput.addEventListener('input', () => {
+                postCommentBtn.disabled = commentInput.value.trim().length === 0;
+            });
+            
+            commentInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    if (!postCommentBtn.disabled) {
+                        postComment();
+                    }
+                }
+            });
+            
+            // Post comment button
+            postCommentBtn.addEventListener('click', postComment);
+            
+            // Share modal
+            const closeShareModal = document.getElementById('closeShareModal');
+            closeShareModal.addEventListener('click', closeShareModalFunc);
+            
+            // Share options
+            document.getElementById('copyLinkOption').addEventListener('click', copyLink);
+            document.getElementById('shareWhatsApp').addEventListener('click', shareToWhatsApp);
+            document.getElementById('shareTwitter').addEventListener('click', shareToTwitter);
+            document.getElementById('shareInstagram').addEventListener('click', shareToInstagram);
+            document.getElementById('shareInternal').addEventListener('click', shareInternal);
+            document.getElementById('addToSeries').addEventListener('click', addToSeries);
+            
+            // Copy link button
+            document.getElementById('copyLinkBtn').addEventListener('click', copyLink);
+            
+            // Close modal when clicking outside
+            const shareModal = document.getElementById('shareModal');
+            shareModal.addEventListener('click', (e) => {
+                if (e.target === shareModal) {
+                    closeShareModalFunc();
+                }
+            });
+            
+            // Listen for auth changes
+            supabaseClient.auth.onAuthStateChange((event, session) => {
+                console.log('🔐 Auth state changed:', event);
+                
+                if (event === 'SIGNED_OUT') {
+                    window.location.href = 'login.html';
+                }
+            });
+        }
+        
+        function togglePlay() {
+            if (!videoElement) return;
+            
+            if (isVideoPlaying) {
+                videoElement.pause();
+            } else {
+                videoElement.play();
+            }
+        }
+        
+        function toggleMute() {
+            if (!videoElement) return;
+            
+            isMuted = !isMuted;
+            videoElement.muted = isMuted;
+            
+            const muteBtn = document.getElementById('muteBtn');
+            if (isMuted) {
+                muteBtn.innerHTML = '<i class="fas fa-volume-mute"></i>';
+            } else {
+                muteBtn.innerHTML = '<i class="fas fa-volume-up"></i>';
+            }
+        }
+        
+        async function handleLike() {
+            try {
+                if (isLiked) {
+                    // Unlike
+                    const { error } = await supabaseClient
+                        .from('pulse_likes')
+                        .delete()
+                        .eq('pulse_id', pulseId)
+                        .eq('user_id', currentUserId);
+                    
+                    if (error) throw error;
+                    
+                    isLiked = false;
+                    
+                    // Update pulse likes count
+                    const currentCount = parseInt(document.getElementById('like-count').textContent) || 0;
+                    document.getElementById('like-count').textContent = Math.max(0, currentCount - 1);
+                    
+                    showToast('Like removed', 'success');
+                } else {
+                    // Like
+                    const { error } = await supabaseClient
+                        .from('pulse_likes')
+                        .insert({
+                            pulse_id: pulseId,
+                            user_id: currentUserId
+                        });
+                    
+                    if (error) throw error;
+                    
+                    isLiked = true;
+                    
+                    // Update pulse likes count
+                    const currentCount = parseInt(document.getElementById('like-count').textContent) || 0;
+                    document.getElementById('like-count').textContent = currentCount + 1;
+                    
+                    showToast('Pulse liked!', 'success');
+                }
+                
+                updateLikeUI();
+                
+            } catch (error) {
+                console.error('Error handling like:', error);
+                showToast('Failed to like pulse', 'error');
+            }
+        }
+        
+        async function handleSave() {
+            try {
+                if (isSaved) {
+                    // Unsave
+                    const { error } = await supabaseClient
+                        .from('saved_pulses')
+                        .delete()
+                        .eq('pulse_id', pulseId)
+                        .eq('user_id', currentUserId);
+                    
+                    if (error) throw error;
+                    
+                    isSaved = false;
+                    showToast('Pulse removed from saved', 'success');
+                } else {
+                    // Save
+                    const { error } = await supabaseClient
+                        .from('saved_pulses')
+                        .insert({
+                            pulse_id: pulseId,
+                            user_id: currentUserId
+                        });
+                    
+                    if (error) throw error;
+                    
+                    isSaved = true;
+                    showToast('Pulse saved!', 'success');
+                }
+                
+                updateSaveUI();
+                moreMenu.classList.remove('active');
+                
+            } catch (error) {
+                console.error('Error handling save:', error);
+                showToast('Failed to save pulse', 'error');
+            }
+        }
+        
+        function handleReport() {
+            showToast('Report submitted. Our team will review this pulse.', 'success');
+            moreMenu.classList.remove('active');
+        }
+        
+        function handleMuteCreator() {
+            if (!pulseCreator) return;
+            
+            showToast(`You won't see pulses from @${pulseCreator.username} anymore`, 'success');
+            moreMenu.classList.remove('active');
+        }
+        
+        async function handleDelete() {
+            if (!confirm('Are you sure you want to delete this pulse? This action cannot be undone.')) {
+                return;
+            }
+            
+            try {
+                const { error } = await supabaseClient
+                    .from('pulses')
+                    .update({ deleted_at: new Date().toISOString() })
+                    .eq('id', pulseId);
+                
+                if (error) throw error;
+                
+                showToast('Pulse deleted successfully', 'success');
+                
+                // Redirect to feed after delay
+                setTimeout(() => {
+                    window.location.href = 'pulse-feed.html';
+                }, 1500);
+                
+            } catch (error) {
+                console.error('Error deleting pulse:', error);
+                showToast('Failed to delete pulse', 'error');
+            }
+        }
+        
+        async function loadComments() {
+            try {
+                const { data: comments, error } = await supabaseClient
+                    .from('pulse_comments_with_user')
+                    .select('*')
+                    .eq('pulse_id', pulseId)
+                    .order('created_at', { ascending: true });
+                
+                if (error) throw error;
+                
+                const commentsThread = document.getElementById('commentsThread');
+                
+                if (!comments || comments.length === 0) {
+                    commentsThread.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-icon">
+                                <i class="fas fa-comment-slash"></i>
+                            </div>
+                            <div class="empty-title">No replies yet</div>
+                            <div class="empty-description">Be the first to respond</div>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                commentsThread.innerHTML = '';
+                
+                // Group comments by parent (for replies)
+                const topLevelComments = comments.filter(c => !c.parent_comment_id);
+                const replies = comments.filter(c => c.parent_comment_id);
+                
+                // Display top-level comments
+                topLevelComments.forEach(comment => {
+                    const commentReplies = replies.filter(r => r.parent_comment_id === comment.id);
+                    displayComment(comment, commentReplies);
+                });
+                
+            } catch (error) {
+                console.error('Error loading comments:', error);
+                commentsThread.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-title">Failed to load comments</div>
+                        <div class="empty-description">Please try again later</div>
+                    </div>
+                `;
+            }
+        }
+        
+        function displayComment(comment, replies = []) {
+            const commentsThread = document.getElementById('commentsThread');
+            
+            const commentItem = document.createElement('div');
+            commentItem.className = 'comment-item';
+            commentItem.dataset.commentId = comment.id;
+            
+            const initials = getInitials(comment.full_name || comment.email || 'User');
+            
+            commentItem.innerHTML = `
+                <div class="comment-header">
+                    <div class="comment-avatar" style="${comment.avatar_url ? `background-image: url('${comment.avatar_url}'); background-size: cover; background-position: center;` : ''}">
+                        ${comment.avatar_url ? '' : initials}
+                    </div>
+                    <div class="comment-meta">
+                        <div class="comment-name">${comment.full_name || 'User'}</div>
+                        <div class="comment-handle">@${comment.username || 'user'}</div>
+                    </div>
+                    <div class="comment-time">${getTimeAgo(new Date(comment.created_at))}</div>
+                </div>
+                <div class="comment-text">${comment.comment_text || ''}</div>
+                <div class="comment-actions">
+                    <button class="comment-action like-comment-btn" data-comment-id="${comment.id}">
+                        <i class="fas fa-heart"></i> <span class="comment-like-count">${comment.likes_count || 0}</span>
+                    </button>
+                    <button class="comment-action reply-comment-btn" data-comment-id="${comment.id}">
+                        <i class="fas fa-reply"></i> Reply
+                    </button>
+                </div>
+            `;
+            
+            // Add reply composer (hidden by default)
+            const replyComposer = document.createElement('div');
+            replyComposer.className = 'reply-composer';
+            replyComposer.id = `reply-composer-${comment.id}`;
+            replyComposer.innerHTML = `
+                <textarea class="reply-input" placeholder="Reply to @${comment.username || 'user'}…" maxlength="300"></textarea>
+                <button class="post-reply-btn" data-parent-id="${comment.id}">Reply</button>
+            `;
+            
+            // Add replies if any
+            if (replies.length > 0) {
+                const replyThread = document.createElement('div');
+                replyThread.className = 'reply-thread';
+                
+                replies.forEach(reply => {
+                    const replyItem = document.createElement('div');
+                    replyItem.className = 'comment-item';
+                    replyItem.style.marginBottom = '8px';
+                    
+                    const replyInitials = getInitials(reply.full_name || reply.email || 'User');
+                    
+                    replyItem.innerHTML = `
+                        <div class="comment-header">
+                            <div class="comment-avatar" style="${reply.avatar_url ? `background-image: url('${reply.avatar_url}'); background-size: cover; background-position: center;` : ''}">
+                                ${reply.avatar_url ? '' : replyInitials}
+                            </div>
+                            <div class="comment-meta">
+                                <div class="comment-name">${reply.full_name || 'User'}</div>
+                                <div class="comment-handle">@${reply.username || 'user'}</div>
+                            </div>
+                            <div class="comment-time">${getTimeAgo(new Date(reply.created_at))}</div>
+                        </div>
+                        <div class="comment-text">${reply.comment_text || ''}</div>
+                        <div class="comment-actions">
+                            <button class="comment-action like-comment-btn" data-comment-id="${reply.id}">
+                                <i class="fas fa-heart"></i> <span class="comment-like-count">${reply.likes_count || 0}</span>
+                            </button>
+                        </div>
+                    `;
+                    
+                    replyThread.appendChild(replyItem);
+                });
+                
+                commentItem.appendChild(replyThread);
+            }
+            
+            commentItem.appendChild(replyComposer);
+            commentsThread.appendChild(commentItem);
+            
+            // Add event listeners for this comment
+            const likeBtn = commentItem.querySelector('.like-comment-btn');
+            const replyBtn = commentItem.querySelector('.reply-comment-btn');
+            const postReplyBtn = commentItem.querySelector('.post-reply-btn');
+            const replyInput = commentItem.querySelector('.reply-input');
+            
+            likeBtn.addEventListener('click', () => likeComment(comment.id));
+            replyBtn.addEventListener('click', () => {
+                replyComposer.classList.toggle('active');
+                if (replyComposer.classList.contains('active')) {
+                    replyInput.focus();
+                }
+            });
+            
+            if (postReplyBtn) {
+                postReplyBtn.addEventListener('click', () => postReply(comment.id, replyInput));
+            }
+            
+            if (replyInput) {
+                replyInput.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        postReply(comment.id, replyInput);
+                    }
+                });
+            }
+        }
+        
+        async function postComment() {
+            const commentInput = document.getElementById('commentInput');
+            const commentText = commentInput.value.trim();
+            
+            if (!commentText) return;
+            
+            try {
+                const { error } = await supabaseClient
+                    .from('pulse_comments')
+                    .insert({
+                        pulse_id: pulseId,
+                        user_id: currentUserId,
+                        comment_text: commentText,
+                        likes_count: 0
+                    });
+                
+                if (error) throw error;
+                
+                // Clear input
+                commentInput.value = '';
+                document.getElementById('postCommentBtn').disabled = true;
+                
+                // Update comment count
+                const currentCount = parseInt(document.getElementById('comment-count').textContent) || 0;
+                document.getElementById('comment-count').textContent = currentCount + 1;
+                
+                // Reload comments
+                loadComments();
+                
+                showToast('Comment posted!', 'success');
+                
+            } catch (error) {
+                console.error('Error posting comment:', error);
+                showToast('Failed to post comment', 'error');
+            }
+        }
+        
+        async function postReply(parentId, replyInput) {
+            const replyText = replyInput.value.trim();
+            
+            if (!replyText) return;
+            
+            try {
+                const { error } = await supabaseClient
+                    .from('pulse_comments')
+                    .insert({
+                        pulse_id: pulseId,
+                        user_id: currentUserId,
+                        comment_text: replyText,
+                        parent_comment_id: parentId,
+                        likes_count: 0
+                    });
+                
+                if (error) throw error;
+                
+                // Clear input and hide composer
+                replyInput.value = '';
+                document.getElementById(`reply-composer-${parentId}`).classList.remove('active');
+                
+                // Reload comments
+                loadComments();
+                
+                showToast('Reply posted!', 'success');
+                
+            } catch (error) {
+                console.error('Error posting reply:', error);
+                showToast('Failed to post reply', 'error');
+            }
+        }
+        
+        async function likeComment(commentId) {
+            try {
+                // Check if already liked
+                const { data: existingLike } = await supabaseClient
+                    .from('comment_likes')
+                    .select('id')
+                    .eq('comment_id', commentId)
+                    .eq('user_id', currentUserId)
+                    .single();
+                
+                if (existingLike) {
+                    // Unlike
+                    await supabaseClient
+                        .from('comment_likes')
+                        .delete()
+                        .eq('id', existingLike.id);
+                    
+                    // Update UI
+                    const likeBtn = document.querySelector(`[data-comment-id="${commentId}"] .like-comment-btn`);
+                    const likeCountElement = likeBtn.querySelector('.comment-like-count');
+                    const currentCount = parseInt(likeCountElement.textContent) || 0;
+                    likeCountElement.textContent = Math.max(0, currentCount - 1);
+                    likeBtn.classList.remove('liked');
+                    
+                } else {
+                    // Like
+                    await supabaseClient
+                        .from('comment_likes')
+                        .insert({
+                            comment_id: commentId,
+                            user_id: currentUserId
+                        });
+                    
+                    // Update UI
+                    const likeBtn = document.querySelector(`[data-comment-id="${commentId}"] .like-comment-btn`);
+                    const likeCountElement = likeBtn.querySelector('.comment-like-count');
+                    const currentCount = parseInt(likeCountElement.textContent) || 0;
+                    likeCountElement.textContent = currentCount + 1;
+                    likeBtn.classList.add('liked');
+                }
+                
+            } catch (error) {
+                console.error('Error liking comment:', error);
+                showToast('Failed to like comment', 'error');
+            }
+        }
+        
+        function openShareModal() {
+            // Set the share link
+            const shareLink = document.getElementById('shareLink');
+            shareLink.value = `${window.location.origin}/pulse-content-detail.html?id=${pulseId}`;
+            
+            document.getElementById('shareModal').style.display = 'flex';
+        }
+        
+        function closeShareModalFunc() {
+            document.getElementById('shareModal').style.display = 'none';
+        }
+        
+        function copyLink() {
+            const shareLink = document.getElementById('shareLink');
+            shareLink.select();
+            document.execCommand('copy');
+            
+            showToast('Pulse link copied', 'success');
+            closeShareModalFunc();
+        }
+        
+        function shareToWhatsApp() {
+            const text = `Check out this pulse on Bantu Connect Pulse!`;
+            const url = `${window.location.origin}/pulse-content-detail.html?id=${pulseId}`;
+            window.open(`https://wa.me/?text=${encodeURIComponent(text + ' ' + url)}`, '_blank');
+            closeShareModalFunc();
+        }
+        
+        function shareToTwitter() {
+            const text = `Check out this pulse on Bantu Connect Pulse!`;
+            const url = `${window.location.origin}/pulse-content-detail.html?id=${pulseId}`;
+            window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`, '_blank');
+            closeShareModalFunc();
+        }
+        
+        function shareToInstagram() {
+            showToast('Share to Instagram coming soon!', 'success');
+            closeShareModalFunc();
+        }
+        
+        async function shareInternal() {
+            try {
+                const { error } = await supabaseClient
+                    .from('pulse_shares')
+                    .insert({
+                        pulse_id: pulseId,
+                        user_id: currentUserId,
+                        share_type: 'internal',
+                        share_platform: 'internal'
+                    });
+                
+                if (error) throw error;
+                
+                // Update share count
+                const currentCount = parseInt(document.getElementById('share-count').textContent) || 0;
+                document.getElementById('share-count').textContent = currentCount + 1;
+                
+                showToast('Pulse shared internally!', 'success');
+                closeShareModalFunc();
+                
+            } catch (error) {
+                console.error('Error sharing internally:', error);
+                showToast('Failed to share pulse', 'error');
+            }
+        }
+        
+        function addToSeries() {
+            showToast('Add to Series feature coming soon!', 'success');
+            closeShareModalFunc();
+        }
+        
+        function viewCreatorProfile() {
+            if (pulseCreator) {
+                window.location.href = `profile.html?user_id=${pulseCreator.id}`;
+            }
+        }
+        
+        function showToast(message, type = 'error') {
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.innerHTML = `
+                <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i>
+                <span>${message}</span>
+            `;
+            
+            const container = document.getElementById('toast-container');
+            container.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                setTimeout(() => toast.remove(), 300);
+            }, 4000);
+        }
+        
+        function loadSampleData() {
+            // Sample data for demo purposes
+            document.getElementById('creator-name').textContent = 'Sample Creator';
+            document.getElementById('creator-handle').innerHTML = '@samplecreator · <span id="pulse-time">2 hours ago</span>';
+            document.getElementById('caption-text').textContent = 'This is a sample pulse for demonstration purposes. The real data will load when connected to Supabase.';
+            
+            // Load sample comments
+            const commentsThread = document.getElementById('commentsThread');
+            commentsThread.innerHTML = `
+                <div class="comment-item">
+                    <div class="comment-header">
+                        <div class="comment-avatar">JD</div>
+                        <div class="comment-meta">
+                            <div class="comment-name">Jane Doe</div>
+                            <div class="comment-handle">@janedoe</div>
+                        </div>
+                        <div class="comment-time">1 hour ago</div>
+                    </div>
+                    <div class="comment-text">Love this perspective! The spaces between words are indeed where the magic happens.</div>
+                    <div class="comment-actions">
+                        <button class="comment-action">
+                            <i class="fas fa-heart"></i> 3
+                        </button>
+                        <button class="comment-action">
+                            <i class="fas fa-reply"></i> Reply
+                        </button>
+                    </div>
+                </div>
+                <div class="comment-item">
+                    <div class="comment-header">
+                        <div class="comment-avatar">MS</div>
+                        <div class="comment-meta">
+                            <div class="comment-name">Michael Smith</div>
+                            <div class="comment-handle">@michaels</div>
+                        </div>
+                        <div class="comment-time">30 minutes ago</div>
+                    </div>
+                    <div class="comment-text">This resonates deeply with African oral tradition. The pauses carry ancestral wisdom.</div>
+                    <div class="comment-actions">
+                        <button class="comment-action">
+                            <i class="fas fa-heart"></i> 1
+                        </button>
+                        <button class="comment-action">
+                            <i class="fas fa-reply"></i> Reply
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+        
+        // Start initialization
+        document.addEventListener('DOMContentLoaded', initialize);
+    </script>
+</body>
+</html>
