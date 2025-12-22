@@ -283,6 +283,15 @@
             box-shadow: 0 4px 12px rgba(29, 78, 216, 0.3);
         }
         
+        .action-btn.connected {
+            background: linear-gradient(135deg, var(--success-color), var(--bantu-blue));
+            border: none;
+        }
+        
+        .action-btn.connected:hover {
+            background: linear-gradient(135deg, #0ea371, var(--bantu-blue));
+        }
+        
         /* Stats Row */
         .stats-row {
             display: flex;
@@ -335,6 +344,9 @@
             cursor: pointer;
             position: relative;
             transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
         
         .tab:hover {
@@ -392,6 +404,21 @@
             object-fit: cover;
         }
         
+        .pulse-content-preview {
+            width: 100%;
+            height: 100%;
+            padding: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, var(--deep-navy), var(--deep-black));
+            color: var(--soft-white);
+            font-size: 12px;
+            line-height: 1.4;
+            text-align: center;
+            overflow: hidden;
+        }
+        
         .pulse-overlay {
             position: absolute;
             top: 0;
@@ -419,6 +446,10 @@
             gap: 4px;
         }
         
+        .pulse-icon {
+            color: var(--warm-gold);
+        }
+        
         .series-badge {
             position: absolute;
             top: 8px;
@@ -430,6 +461,21 @@
             padding: 4px 8px;
             border-radius: 12px;
             z-index: 2;
+        }
+        
+        /* Custom Pulse Icon */
+        .pulse-tab-icon {
+            width: 20px;
+            height: 20px;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .pulse-tab-icon svg {
+            width: 100%;
+            height: 100%;
         }
         
         /* Series Grid */
@@ -910,6 +956,26 @@
             font-weight: 600;
             border: 1px solid rgba(245, 158, 11, 0.3);
         }
+        
+        /* Upload Cover Button */
+        .upload-cover-btn {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            border: none;
+            color: white;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+            display: none;
+            z-index: 10;
+        }
+        
+        .pulse-item:hover .upload-cover-btn {
+            display: block;
+        }
     </style>
 </head>
 <body>
@@ -925,7 +991,17 @@
         <header class="header">
             <div class="logo-container" onclick="window.location.href='pulse-feed.html'">
                 <div class="logo-icon">
-                    <img src="assets/icon/pulse.png" alt="Pulse">
+                    <svg width="32" height="32" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect width="40" height="40" rx="8" fill="#0F172A"/>
+                        <path d="M8 20 L12 16 L16 22 L20 18 L24 24 L28 20 L32 26" stroke="url(#pulse-gradient)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                        <circle cx="32" cy="26" r="3" fill="#F59E0B"/>
+                        <defs>
+                            <linearGradient id="pulse-gradient" x1="8" y1="20" x2="32" y2="26" gradientUnits="userSpaceOnUse">
+                                <stop stop-color="#1D4ED8"/>
+                                <stop offset="1" stop-color="#F59E0B"/>
+                            </linearGradient>
+                        </defs>
+                    </svg>
                 </div>
                 <div class="logo-text">PULSE</div>
             </div>
@@ -971,7 +1047,7 @@
                 <button class="action-btn primary" id="connectBtn">
                     <i class="fas fa-plus"></i> Connect
                 </button>
-                <button class="action-btn" id="messageBtn">
+                <button class="action-btn" id="messageBtn" style="display: none;">
                     <i class="far fa-envelope"></i> Message
                 </button>
                 <button class="action-btn" id="shareBtn">
@@ -982,16 +1058,16 @@
             <!-- Stats Row -->
             <div class="stats-row">
                 <div class="stat-item" onclick="viewPulses()">
-                    <div class="stat-value" id="statPulses">24</div>
+                    <div class="stat-value" id="statPulses">0</div>
                     <div class="stat-label">Pulses</div>
                 </div>
-                <div class="stat-item" onclick="viewSeries()">
-                    <div class="stat-value" id="statSeries">3</div>
+                <div class="stat-item" onclick="viewSeriesTab()">
+                    <div class="stat-value" id="statSeries">0</div>
                     <div class="stat-label">Series</div>
                 </div>
-                <div class="stat-item" onclick="viewConnections()">
-                    <div class="stat-value" id="statConnections">1.2K</div>
-                    <div class="stat-label">Connections</div>
+                <div class="stat-item" onclick="viewConnectors()">
+                    <div class="stat-value" id="statConnectors">0</div>
+                    <div class="stat-label">Connectors</div>
                 </div>
             </div>
         </div>
@@ -999,7 +1075,19 @@
         <!-- Content Tabs -->
         <div class="tabs-container">
             <button class="tab active" data-tab="pulse">
-                <i class="fas fa-play-circle"></i>
+                <div class="pulse-tab-icon">
+                    <svg width="20" height="20" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect width="40" height="40" rx="8" fill="#0F172A"/>
+                        <path d="M8 20 L12 16 L16 22 L20 18 L24 24 L28 20 L32 26" stroke="url(#pulse-tab-gradient)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                        <circle cx="32" cy="26" r="3" fill="#F59E0B"/>
+                        <defs>
+                            <linearGradient id="pulse-tab-gradient" x1="8" y1="20" x2="32" y2="26" gradientUnits="userSpaceOnUse">
+                                <stop stop-color="#1D4ED8"/>
+                                <stop offset="1" stop-color="#F59E0B"/>
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                </div>
             </button>
             <button class="tab" data-tab="series">
                 <i class="fas fa-layer-group"></i>
@@ -1107,6 +1195,7 @@
         let profileUserId = null;
         let currentUserProfile = null;
         let currentViewProfile = null;
+        let isConnected = false;
 
         async function initialize() {
             console.log('Starting Profile initialization...');
@@ -1151,6 +1240,11 @@
                 
                 // Load user profile
                 await loadUserProfile();
+                
+                // Check connection status
+                if (!isViewingOwnProfile) {
+                    await checkConnectionStatus();
+                }
                 
                 // Hide loading, show content
                 document.getElementById('loading').style.display = 'none';
@@ -1197,30 +1291,46 @@
                     document.getElementById('creator-badge').style.display = 'none';
                 }
                 
-                document.getElementById('profile-username').textContent = `@${profile.username}`;
+                document.getElementById('profile-username').textContent = profile.username ? `@${profile.username}` : '@user';
                 
                 // Truncate bio if too long
                 const bio = profile.bio || '';
                 const truncatedBio = bio.length > 120 ? bio.substring(0, 117) + '...' : bio;
                 document.getElementById('profile-bio').textContent = truncatedBio;
                 
-                const initials = getInitials(profile.full_name || profile.email);
+                const initials = getInitials(profile.full_name || profile.email || 'User');
                 document.getElementById('profile-avatar-initials').textContent = initials;
-                document.getElementById('profile-avatar').style.background = 
-                    profile.avatar_url ? `url('${profile.avatar_url}') center/cover` : 
-                    'linear-gradient(135deg, var(--bantu-blue), var(--warm-gold))';
+                
+                // Set profile avatar
+                const profileAvatarImg = document.getElementById('profile-avatar-img');
+                const profileAvatarInitials = document.getElementById('profile-avatar-initials');
+                
+                if (profile.avatar_url) {
+                    profileAvatarImg.src = profile.avatar_url;
+                    profileAvatarImg.style.display = 'block';
+                    profileAvatarInitials.style.display = 'none';
+                } else {
+                    profileAvatarImg.style.display = 'none';
+                    profileAvatarInitials.style.display = 'flex';
+                    profileAvatarInitials.textContent = initials;
+                }
                 
                 // Load current user's profile for header
                 if (isViewingOwnProfile) {
                     currentUserProfile = profile;
-                    const headerAvatar = document.getElementById('user-avatar-img');
+                    
+                    // Update header avatar
+                    const headerAvatarImg = document.getElementById('user-avatar-img');
                     const headerInitials = document.getElementById('avatar-initials');
                     
-                    headerInitials.textContent = initials;
                     if (profile.avatar_url) {
-                        headerAvatar.src = profile.avatar_url;
-                        headerAvatar.style.display = 'block';
+                        headerAvatarImg.src = profile.avatar_url;
+                        headerAvatarImg.style.display = 'block';
                         headerInitials.style.display = 'none';
+                    } else {
+                        headerAvatarImg.style.display = 'none';
+                        headerInitials.style.display = 'flex';
+                        headerInitials.textContent = initials;
                     }
                     
                     // Show edit button
@@ -1279,11 +1389,39 @@
                     document.getElementById('statSeries').textContent = series.length.toLocaleString();
                 }
                 
-                // Note: For connections count, you would query your connectors/followers table
-                // This is a placeholder
+                // Get connectors count
+                const { data: connectors, error: connectorsError } = await supabaseClient
+                    .from('connectors')
+                    .select('id', { count: 'exact' })
+                    .eq('connected_id', profileUserId);
+                
+                if (!connectorsError && connectors) {
+                    document.getElementById('statConnectors').textContent = connectors.length.toLocaleString();
+                }
                 
             } catch (error) {
                 console.error('Error loading stats:', error);
+            }
+        }
+        
+        async function checkConnectionStatus() {
+            try {
+                const { data, error } = await supabaseClient
+                    .from('connectors')
+                    .select('id')
+                    .eq('connector_id', currentUserId)
+                    .eq('connected_id', profileUserId)
+                    .single();
+                
+                if (error && error.code !== 'PGRST116') { // PGRST116 is "no rows returned"
+                    throw error;
+                }
+                
+                isConnected = !!data;
+                return isConnected;
+            } catch (error) {
+                console.error('Error checking connection status:', error);
+                return false;
             }
         }
         
@@ -1328,23 +1466,10 @@
             document.getElementById('saveEdit').addEventListener('click', saveProfile);
             
             // Share button
-            document.getElementById('shareBtn').addEventListener('click', () => {
-                if (navigator.share) {
-                    navigator.share({
-                        title: `Check out ${currentViewProfile.full_name}'s profile on Bantu Connect Pulse`,
-                        text: `Follow ${currentViewProfile.full_name} on Bantu Connect Pulse`,
-                        url: window.location.href
-                    });
-                } else {
-                    navigator.clipboard.writeText(window.location.href);
-                    showToast('Profile link copied to clipboard!', 'success');
-                }
-            });
+            document.getElementById('shareBtn').addEventListener('click', shareProfile);
             
-            // Message button
-            document.getElementById('messageBtn').addEventListener('click', () => {
-                showToast('Messaging feature coming soon!', 'success');
-            });
+            // Message button is hidden (per requirement 5)
+            document.getElementById('messageBtn').style.display = 'none';
             
             // Listen for auth changes
             supabaseClient.auth.onAuthStateChange((event, session) => {
@@ -1357,31 +1482,41 @@
         }
         
         async function setupConnectionButton() {
-            try {
-                // Check if current user is already connected to this profile
-                // This would query your connectors table
-                const isConnected = false; // Replace with actual check
-                
-                const connectBtn = document.getElementById('connectBtn');
-                if (isConnected) {
-                    connectBtn.innerHTML = '<i class="fas fa-check"></i> Connected';
-                    connectBtn.classList.add('connected');
-                    connectBtn.onclick = () => disconnect();
-                } else {
-                    connectBtn.innerHTML = '<i class="fas fa-plus"></i> Connect';
-                    connectBtn.classList.remove('connected');
-                    connectBtn.onclick = () => connect();
-                }
-            } catch (error) {
-                console.error('Error checking connection:', error);
+            const isConnected = await checkConnectionStatus();
+            const connectBtn = document.getElementById('connectBtn');
+            
+            if (isConnected) {
+                connectBtn.innerHTML = '<i class="fas fa-check"></i> Connected';
+                connectBtn.classList.add('connected');
+                connectBtn.classList.remove('primary');
+                connectBtn.onclick = () => disconnect();
+            } else {
+                connectBtn.innerHTML = '<i class="fas fa-plus"></i> Connect';
+                connectBtn.classList.remove('connected');
+                connectBtn.classList.add('primary');
+                connectBtn.onclick = () => connect();
             }
         }
         
         async function connect() {
             try {
-                // This would insert into your connectors table
-                showToast('Connected!', 'success');
+                const { error } = await supabaseClient
+                    .from('connectors')
+                    .insert({
+                        connector_id: currentUserId,
+                        connected_id: profileUserId,
+                        connection_type: 'creator'
+                    });
+                
+                if (error) throw error;
+                
+                showToast('Connected successfully!', 'success');
+                isConnected = true;
                 setupConnectionButton();
+                
+                // Update connectors count
+                await loadProfileStats();
+                
             } catch (error) {
                 console.error('Error connecting:', error);
                 showToast('Failed to connect', 'error');
@@ -1390,12 +1525,53 @@
         
         async function disconnect() {
             try {
-                // This would delete from your connectors table
+                const { error } = await supabaseClient
+                    .from('connectors')
+                    .delete()
+                    .eq('connector_id', currentUserId)
+                    .eq('connected_id', profileUserId);
+                
+                if (error) throw error;
+                
                 showToast('Disconnected', 'success');
+                isConnected = false;
                 setupConnectionButton();
+                
+                // Update connectors count
+                await loadProfileStats();
+                
             } catch (error) {
                 console.error('Error disconnecting:', error);
                 showToast('Failed to disconnect', 'error');
+            }
+        }
+        
+        async function shareProfile() {
+            const profileUrl = window.location.href;
+            const profileName = currentViewProfile?.full_name || 'User';
+            const profileUsername = currentViewProfile?.username ? `@${currentViewProfile.username}` : '';
+            
+            const shareData = {
+                title: `${profileName}'s Profile`,
+                text: `Check out ${profileName} ${profileUsername} on Bantu Connect Pulse!`,
+                url: profileUrl
+            };
+            
+            if (navigator.share) {
+                try {
+                    await navigator.share(shareData);
+                } catch (error) {
+                    console.log('Sharing cancelled:', error);
+                }
+            } else {
+                // Fallback: copy to clipboard
+                try {
+                    await navigator.clipboard.writeText(profileUrl);
+                    showToast('Profile link copied to clipboard!', 'success');
+                } catch (error) {
+                    console.error('Failed to copy:', error);
+                    showToast('Failed to share profile', 'error');
+                }
             }
         }
         
@@ -1417,7 +1593,11 @@
                     container.innerHTML = `
                         <div class="empty-state" style="grid-column: 1/-1; padding: 60px 20px;">
                             <div class="empty-icon">
-                                <i class="fas fa-play-circle"></i>
+                                <svg width="48" height="48" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <rect width="40" height="40" rx="8" fill="#0F172A"/>
+                                    <path d="M8 20 L12 16 L16 22 L20 18 L24 24 L28 20 L32 26" stroke="#4B5563" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                                    <circle cx="32" cy="26" r="3" fill="#4B5563"/>
+                                </svg>
                             </div>
                             <div class="empty-title">No Pulses Yet</div>
                             <div class="empty-description">
@@ -1433,28 +1613,32 @@
                 pulses.forEach(pulse => {
                     const pulseItem = document.createElement('div');
                     pulseItem.className = 'pulse-item';
+                    pulseItem.setAttribute('data-pulse-id', pulse.id);
                     
                     // Check if it's part of a series
+                    let seriesBadge = '';
                     if (pulse.series_id) {
-                        pulseItem.innerHTML = `
-                            <div class="series-badge">Series · Part ${pulse.series_order || 1}</div>
-                            <div class="pulse-overlay">
-                                <div class="pulse-stats">
-                                    <span><i class="fas fa-heart"></i> ${pulse.likes_count || 0}</span>
-                                    <span><i class="fas fa-comment"></i> ${pulse.comments_count || 0}</span>
-                                </div>
-                            </div>
-                        `;
-                    } else {
-                        pulseItem.innerHTML = `
-                            <div class="pulse-overlay">
-                                <div class="pulse-stats">
-                                    <span><i class="fas fa-heart"></i> ${pulse.likes_count || 0}</span>
-                                    <span><i class="fas fa-comment"></i> ${pulse.comments_count || 0}</span>
-                                </div>
-                            </div>
-                        `;
+                        seriesBadge = `<div class="series-badge">Series · Part ${pulse.series_order || 1}</div>`;
                     }
+                    
+                    // Add upload cover button for own profile
+                    let uploadButton = '';
+                    if (isViewingOwnProfile) {
+                        uploadButton = `<button class="upload-cover-btn" onclick="uploadPulseCover('${pulse.id}')">
+                            <i class="fas fa-camera"></i> Add Cover
+                        </button>`;
+                    }
+                    
+                    pulseItem.innerHTML = `
+                        ${seriesBadge}
+                        ${uploadButton}
+                        <div class="pulse-overlay">
+                            <div class="pulse-stats">
+                                <span class="pulse-icon"><i class="fas fa-heart"></i> ${pulse.likes_count || 0}</span>
+                                <span class="pulse-icon"><i class="fas fa-comment"></i> ${pulse.comments_count || 0}</span>
+                            </div>
+                        </div>
+                    `;
                     
                     // Add media if available
                     if (pulse.media_url) {
@@ -1463,13 +1647,28 @@
                             video.src = pulse.media_url;
                             video.muted = true;
                             video.playsInline = true;
+                            video.style.width = '100%';
+                            video.style.height = '100%';
+                            video.style.objectFit = 'cover';
                             pulseItem.prepend(video);
                         } else {
                             const img = document.createElement('img');
                             img.src = pulse.media_url;
                             img.alt = 'Pulse';
+                            img.style.width = '100%';
+                            img.style.height = '100%';
+                            img.style.objectFit = 'cover';
                             pulseItem.prepend(img);
                         }
+                    } else {
+                        // Show caption preview if no media
+                        const captionPreview = document.createElement('div');
+                        captionPreview.className = 'pulse-content-preview';
+                        const captionText = pulse.caption ? 
+                            (pulse.caption.length > 100 ? pulse.caption.substring(0, 97) + '...' : pulse.caption) :
+                            'No media';
+                        captionPreview.textContent = captionText;
+                        pulseItem.prepend(captionPreview);
                     }
                     
                     pulseItem.addEventListener('click', () => {
@@ -1482,6 +1681,65 @@
             } catch (error) {
                 console.error('Error loading pulses:', error);
                 showToast('Failed to load pulses', 'error');
+            }
+        }
+        
+        async function uploadPulseCover(pulseId) {
+            try {
+                // Create file input
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.accept = 'image/*';
+                input.onchange = async (e) => {
+                    const file = e.target.files[0];
+                    if (!file) return;
+                    
+                    // Validate file
+                    if (!file.type.startsWith('image/')) {
+                        showToast('Please select an image file', 'error');
+                        return;
+                    }
+                    
+                    if (file.size > 5 * 1024 * 1024) { // 5MB limit
+                        showToast('Image must be less than 5MB', 'error');
+                        return;
+                    }
+                    
+                    // Upload to Supabase storage
+                    const fileExt = file.name.split('.').pop();
+                    const fileName = `${pulseId}-${Date.now()}.${fileExt}`;
+                    const filePath = `pulse-covers/${fileName}`;
+                    
+                    const { error: uploadError } = await supabaseClient.storage
+                        .from('series-covers')
+                        .upload(filePath, file);
+                    
+                    if (uploadError) throw uploadError;
+                    
+                    // Get public URL
+                    const { data: { publicUrl } } = supabaseClient.storage
+                        .from('series-covers')
+                        .getPublicUrl(filePath);
+                    
+                    // Update pulse with cover image
+                    const { error: updateError } = await supabaseClient
+                        .from('pulses')
+                        .update({ media_url: publicUrl, media_type: 'image' })
+                        .eq('id', pulseId);
+                    
+                    if (updateError) throw updateError;
+                    
+                    showToast('Cover image uploaded successfully!', 'success');
+                    
+                    // Reload pulses
+                    loadPulses();
+                };
+                
+                input.click();
+                
+            } catch (error) {
+                console.error('Error uploading cover:', error);
+                showToast('Failed to upload cover image', 'error');
             }
         }
         
@@ -1518,6 +1776,7 @@
                 series.forEach(s => {
                     const seriesCard = document.createElement('div');
                     seriesCard.className = 'series-card';
+                    seriesCard.setAttribute('data-series-id', s.id);
                     seriesCard.innerHTML = `
                         <div class="series-cover">
                             ${s.cover_image_url ? `<img src="${s.cover_image_url}" alt="${s.title}">` : ''}
@@ -1653,18 +1912,19 @@
         }
         
         function viewPulse(pulseId) {
-            showToast('Opening pulse...', 'success');
-            // window.location.href = `pulse.html?id=${pulseId}`;
+            // Open pulse in new tab or modal
+            window.location.href = `pulse-detail.html?id=${pulseId}`;
         }
         
         function viewSeries(seriesId) {
-            showToast('Opening series...', 'success');
-            // window.location.href = `series.html?id=${seriesId}`;
+            // Open series in new tab or modal
+            window.location.href = `series-detail.html?id=${seriesId}`;
         }
         
         function viewLinkedContent(contentId) {
-            showToast('Opening content...', 'success');
             // Open linked content
+            showToast('Opening content...', 'success');
+            // Implementation depends on your content system
         }
         
         function viewPulses() {
@@ -1675,9 +1935,9 @@
             document.querySelector('.tab[data-tab="series"]').click();
         }
         
-        function viewConnections() {
-            showToast('Connections feature coming soon!', 'success');
-            // window.location.href = `connections.html?user_id=${profileUserId}`;
+        function viewConnectors() {
+            // Show connectors list
+            showToast('Connectors list feature coming soon!', 'success');
         }
         
         function showToast(message, type = 'error') {
