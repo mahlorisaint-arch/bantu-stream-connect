@@ -1271,94 +1271,115 @@
         }
         
         async function loadUserProfile() {
-            try {
-                // Load the profile being viewed
-                const { data: profile, error } = await supabaseClient
-                    .from('user_profiles')
-                    .select('*')
-                    .eq('id', profileUserId)
-                    .single();
-                
-                if (error) throw error;
-                
-                currentViewProfile = profile;
-                
-                // Update UI with profile data
-                document.getElementById('profile-name').textContent = profile.full_name || 'User';
-                if (profile.role === 'creator') {
-                    document.getElementById('creator-badge').style.display = 'inline-block';
-                } else {
-                    document.getElementById('creator-badge').style.display = 'none';
-                }
-                
-                document.getElementById('profile-username').textContent = profile.username ? `@${profile.username}` : '@user';
-                
-                // Truncate bio if too long
-                const bio = profile.bio || '';
-                const truncatedBio = bio.length > 120 ? bio.substring(0, 117) + '...' : bio;
-                document.getElementById('profile-bio').textContent = truncatedBio;
-                
-                const initials = getInitials(profile.full_name || profile.email || 'User');
-                document.getElementById('profile-avatar-initials').textContent = initials;
-                
-                // Set profile avatar
-                const profileAvatarImg = document.getElementById('profile-avatar-img');
-                const profileAvatarInitials = document.getElementById('profile-avatar-initials');
-                
-                if (profile.avatar_url) {
-                    profileAvatarImg.src = profile.avatar_url;
-                    profileAvatarImg.style.display = 'block';
-                    profileAvatarInitials.style.display = 'none';
-                } else {
-                    profileAvatarImg.style.display = 'none';
-                    profileAvatarInitials.style.display = 'flex';
-                    profileAvatarInitials.textContent = initials;
-                }
-                
-                // Load current user's profile for header
-                if (isViewingOwnProfile) {
-                    currentUserProfile = profile;
-                    
-                    // Update header avatar
-                    const headerAvatarImg = document.getElementById('user-avatar-img');
-                    const headerInitials = document.getElementById('avatar-initials');
-                    
-                    if (profile.avatar_url) {
-                        headerAvatarImg.src = profile.avatar_url;
-                        headerAvatarImg.style.display = 'block';
-                        headerInitials.style.display = 'none';
-                    } else {
-                        headerAvatarImg.style.display = 'none';
-                        headerInitials.style.display = 'flex';
-                        headerInitials.textContent = initials;
-                    }
-                    
-                    // Show edit button
-                    document.getElementById('profileEditBtn').style.display = 'block';
-                    
-                    // Update action buttons for owner
-                    const connectBtn = document.getElementById('connectBtn');
-                    connectBtn.innerHTML = '<i class="fas fa-cog"></i> Manage';
-                    connectBtn.onclick = () => {
-                        document.getElementById('editModal').style.display = 'flex';
-                        document.getElementById('editName').value = profile.full_name || '';
-                        document.getElementById('editUsername').value = profile.username || '';
-                        document.getElementById('editBio').value = profile.bio || '';
-                        document.getElementById('editAvatar').value = profile.avatar_url || '';
-                    };
-                } else {
-                    // Setup connection button for other users
-                    setupConnectionButton();
-                }
-                
-                // Load stats
-                await loadProfileStats();
-                
-            } catch (error) {
-                console.error('Error loading profile:', error);
-                showToast('Failed to load profile', 'error');
+    try {
+        // Load the profile being viewed
+        const { data: profile, error } = await supabaseClient
+            .from('user_profiles')
+            .select('*')
+            .eq('id', profileUserId)
+            .single();
+        
+        if (error) throw error;
+        
+        currentViewProfile = profile;
+        
+        // Update UI with profile data
+        const profileNameElement = document.getElementById('profile-name');
+        if (profileNameElement) {
+            profileNameElement.textContent = profile.full_name || 'User';
+        }
+        
+        const creatorBadge = document.getElementById('creator-badge');
+        if (creatorBadge) {
+            if (profile.role === 'creator') {
+                creatorBadge.style.display = 'inline-block';
+            } else {
+                creatorBadge.style.display = 'none';
             }
         }
+        
+        const profileUsernameElement = document.getElementById('profile-username');
+        if (profileUsernameElement) {
+            profileUsernameElement.textContent = profile.username ? `@${profile.username}` : '@user';
+        }
+        
+        // Truncate bio if too long
+        const bio = profile.bio || '';
+        const truncatedBio = bio.length > 120 ? bio.substring(0, 117) + '...' : bio;
+        const profileBioElement = document.getElementById('profile-bio');
+        if (profileBioElement) {
+            profileBioElement.textContent = truncatedBio;
+        }
+        
+        const initials = getInitials(profile.full_name || profile.email || 'User');
+        
+        // Set profile avatar - FIXED: Check if elements exist
+        const profileAvatarImg = document.getElementById('profile-avatar-img');
+        const profileAvatarInitials = document.getElementById('profile-avatar-initials');
+        
+        if (profileAvatarImg && profileAvatarInitials) {
+            if (profile.avatar_url) {
+                profileAvatarImg.src = profile.avatar_url;
+                profileAvatarImg.style.display = 'block';
+                profileAvatarInitials.style.display = 'none';
+            } else {
+                profileAvatarImg.style.display = 'none';
+                profileAvatarInitials.style.display = 'flex';
+                profileAvatarInitials.textContent = initials;
+            }
+        }
+        
+        // Load current user's profile for header
+        if (isViewingOwnProfile) {
+            currentUserProfile = profile;
+            
+            // Update header avatar - FIXED: Check if elements exist
+            const headerAvatarImg = document.getElementById('user-avatar-img');
+            const headerInitials = document.getElementById('avatar-initials');
+            
+            if (headerAvatarImg && headerInitials) {
+                if (profile.avatar_url) {
+                    headerAvatarImg.src = profile.avatar_url;
+                    headerAvatarImg.style.display = 'block';
+                    headerInitials.style.display = 'none';
+                } else {
+                    headerAvatarImg.style.display = 'none';
+                    headerInitials.style.display = 'flex';
+                    headerInitials.textContent = initials;
+                }
+            }
+            
+            // Show edit button
+            const profileEditBtn = document.getElementById('profileEditBtn');
+            if (profileEditBtn) {
+                profileEditBtn.style.display = 'block';
+            }
+            
+            // Update action buttons for owner
+            const connectBtn = document.getElementById('connectBtn');
+            if (connectBtn) {
+                connectBtn.innerHTML = '<i class="fas fa-cog"></i> Manage';
+                connectBtn.onclick = () => {
+                    document.getElementById('editModal').style.display = 'flex';
+                    document.getElementById('editName').value = profile.full_name || '';
+                    document.getElementById('editUsername').value = profile.username || '';
+                    document.getElementById('editBio').value = profile.bio || '';
+                    document.getElementById('editAvatar').value = profile.avatar_url || '';
+                };
+            }
+        } else {
+            // Setup connection button for other users
+            setupConnectionButton();
+        }
+        
+        // Load stats
+        await loadProfileStats();
+        
+    } catch (error) {
+        console.error('Error loading profile:', error);
+        showToast('Failed to load profile', 'error');
+    }
+}
         
         function getInitials(name) {
             if (!name) return 'U';
@@ -1426,60 +1447,87 @@
         }
         
         function initializeEventListeners() {
-            // Tabs
-            document.querySelectorAll('.tab').forEach(tab => {
-                tab.addEventListener('click', function() {
-                    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-                    this.classList.add('active');
-                    
-                    document.querySelectorAll('.tab-content').forEach(content => {
-                        content.classList.remove('active');
-                    });
-                    
-                    const tabId = this.getAttribute('data-tab');
-                    document.getElementById(`${tabId}-tab`).classList.add('active');
-                    
-                    // Load appropriate content
-                    if (tabId === 'pulse') {
-                        loadPulses();
-                    } else if (tabId === 'series') {
-                        loadSeries();
-                    } else if (tabId === 'links') {
-                        loadLinks();
-                    }
-                });
-            });
-            
-            // Edit modal
-            const closeEditModal = document.getElementById('closeEditModal');
-            const cancelEdit = document.getElementById('cancelEdit');
-            
-            closeEditModal.addEventListener('click', () => {
-                document.getElementById('editModal').style.display = 'none';
-            });
-            
-            cancelEdit.addEventListener('click', () => {
-                document.getElementById('editModal').style.display = 'none';
-            });
-            
-            // Save edit
-            document.getElementById('saveEdit').addEventListener('click', saveProfile);
-            
-            // Share button
-            document.getElementById('shareBtn').addEventListener('click', shareProfile);
-            
-            // Message button is hidden (per requirement 5)
-            document.getElementById('messageBtn').style.display = 'none';
-            
-            // Listen for auth changes
-            supabaseClient.auth.onAuthStateChange((event, session) => {
-                console.log('🔐 Auth state changed:', event);
+    // Tabs - FIXED: Add null check
+    const tabs = document.querySelectorAll('.tab');
+    if (tabs.length > 0) {
+        tabs.forEach(tab => {
+            tab.addEventListener('click', function() {
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                this.classList.add('active');
                 
-                if (event === 'SIGNED_OUT') {
-                    window.location.href = 'login.html';
+                document.querySelectorAll('.tab-content').forEach(content => {
+                    content.classList.remove('active');
+                });
+                
+                const tabId = this.getAttribute('data-tab');
+                const tabContent = document.getElementById(`${tabId}-tab`);
+                if (tabContent) {
+                    tabContent.classList.add('active');
+                }
+                
+                // Load appropriate content
+                if (tabId === 'pulse') {
+                    loadPulses();
+                } else if (tabId === 'series') {
+                    loadSeries();
+                } else if (tabId === 'links') {
+                    loadLinks();
                 }
             });
-        }
+        });
+    }
+    
+    // Edit modal
+    const closeEditModal = document.getElementById('closeEditModal');
+    const cancelEdit = document.getElementById('cancelEdit');
+    
+    if (closeEditModal) {
+        closeEditModal.addEventListener('click', () => {
+            const editModal = document.getElementById('editModal');
+            if (editModal) {
+                editModal.style.display = 'none';
+            }
+        });
+    }
+    
+    if (cancelEdit) {
+        cancelEdit.addEventListener('click', () => {
+            const editModal = document.getElementById('editModal');
+            if (editModal) {
+                editModal.style.display = 'none';
+            }
+        });
+    }
+    
+    // Save edit
+    const saveEditBtn = document.getElementById('saveEdit');
+    if (saveEditBtn) {
+        saveEditBtn.addEventListener('click', saveProfile);
+    }
+    
+    // Share button
+    const shareBtn = document.getElementById('shareBtn');
+    if (shareBtn) {
+        shareBtn.addEventListener('click', shareProfile);
+    }
+    
+    // Message button is hidden (per requirement 5)
+    const messageBtn = document.getElementById('messageBtn');
+    if (messageBtn) {
+        messageBtn.style.display = 'none';
+    }
+    
+    // Listen for auth changes
+    if (supabaseClient) {
+        supabaseClient.auth.onAuthStateChange((event, session) => {
+            console.log('🔐 Auth state changed:', event);
+            
+            if (event === 'SIGNED_OUT') {
+                window.location.href = 'login.html';
+            }
+        });
+    }
+}
         
         async function setupConnectionButton() {
             const isConnected = await checkConnectionStatus();
