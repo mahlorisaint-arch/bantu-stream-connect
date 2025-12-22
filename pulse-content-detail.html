@@ -247,6 +247,7 @@
             display: flex;
             align-items: center;
             gap: 12px;
+            cursor: pointer;
         }
         
         .creator-avatar {
@@ -283,14 +284,6 @@
         .creator-meta p {
             font-size: 14px;
             color: var(--slate-grey);
-        }
-        
-        .creator-handle {
-            cursor: pointer;
-        }
-        
-        .creator-handle:hover {
-            color: var(--soft-white);
         }
         
         .more-options {
@@ -356,7 +349,7 @@
             border-top: 1px solid var(--card-border);
         }
         
-        /* Media Container */
+        /* Media Container - UPDATED: Hidden by default */
         .media-container {
             width: 100%;
             aspect-ratio: 9/16;
@@ -365,10 +358,11 @@
             overflow: hidden;
             margin-bottom: 24px;
             position: relative;
+            display: none; /* Hidden by default */
         }
         
-        .media-container.no-media {
-            display: none; /* Hide container when no media */
+        .media-container.has-media {
+            display: block; /* Only show if there's media */
         }
         
         .pulse-media {
@@ -561,6 +555,16 @@
             color: var(--soft-white);
             font-size: 12px;
             flex-shrink: 0;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .composer-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 50%;
+            display: none;
         }
         
         .composer-input {
@@ -650,6 +654,7 @@
             width: 100%;
             height: 100%;
             object-fit: cover;
+            border-radius: 50%;
             display: none;
         }
         
@@ -668,12 +673,6 @@
         .comment-handle {
             font-size: 12px;
             color: var(--slate-grey);
-            cursor: pointer;
-        }
-        
-        .comment-name:hover,
-        .comment-handle:hover {
-            text-decoration: underline;
         }
         
         .comment-time {
@@ -999,7 +998,7 @@
                 max-width: 100%;
             }
             
-            .media-container {
+            .media-container.has-media {
                 border-radius: 0;
                 margin-left: -16px;
                 margin-right: -16px;
@@ -1099,14 +1098,14 @@
         
         <!-- Pulse Header -->
         <div class="pulse-header">
-            <div class="creator-info">
+            <div class="creator-info" onclick="viewCreatorProfile()">
                 <div class="creator-avatar" id="creator-avatar">
                     <img id="creator-avatar-img">
                     <span id="creator-initials">AB</span>
                 </div>
                 <div class="creator-meta">
-                    <h3 id="creator-name" onclick="viewCreatorProfile()">Alex Bantu</h3>
-                    <p id="creator-handle"><span class="creator-handle" onclick="viewCreatorProfile()">@alexbantu</span> · <span id="pulse-time">2 hours ago</span></p>
+                    <h3 id="creator-name">Alex Bantu</h3>
+                    <p id="creator-handle">@alexbantu · <span id="pulse-time">2 hours ago</span></p>
                 </div>
             </div>
             
@@ -1135,8 +1134,8 @@
             </div>
         </div>
         
-        <!-- Media Container -->
-        <div class="media-container" id="mediaContainer">
+        <!-- Media Container - Will be shown only if media exists -->
+        <div class="media-container">
             <div id="media-content">
                 <!-- Media will be loaded here -->
             </div>
@@ -1183,7 +1182,10 @@
             
             <!-- Comment Composer -->
             <div class="comment-composer">
-                <div class="composer-avatar" id="composer-avatar">AB</div>
+                <div class="composer-avatar" id="composer-avatar">
+                    <img id="composer-avatar-img">
+                    <span>AB</span>
+                </div>
                 <textarea 
                     class="composer-input" 
                     id="commentInput" 
@@ -1336,13 +1338,14 @@
                 const user = session.user;
                 const initials = getUserInitials(user);
                 document.getElementById('avatar-initials').textContent = initials;
-                document.getElementById('composer-avatar').textContent = initials;
+                const composerAvatar = document.getElementById('composer-avatar');
+                composerAvatar.querySelector('span').textContent = initials;
                 
                 // Set user avatar if available
                 try {
                     const { data: profile } = await supabaseClient
                         .from('user_profiles')
-                        .select('avatar_url')
+                        .select('avatar_url, full_name')
                         .eq('id', user.id)
                         .single();
                     
@@ -1351,6 +1354,12 @@
                         avatarImg.src = profile.avatar_url;
                         avatarImg.style.display = 'block';
                         document.getElementById('avatar-initials').style.display = 'none';
+                        
+                        // Also set composer avatar
+                        const composerImg = document.getElementById('composer-avatar-img');
+                        composerImg.src = profile.avatar_url;
+                        composerImg.style.display = 'block';
+                        composerAvatar.querySelector('span').style.display = 'none';
                     }
                 } catch (error) {
                     console.log('No profile picture found, using initials');
@@ -1386,12 +1395,11 @@
                 console.error('Error:', error);
                 document.getElementById('loading-text').textContent = 'Error loading pulse. Please refresh.';
                 
-                // Still show content after delay
+                // Don't load sample data on error - just show error
                 setTimeout(() => {
                     document.getElementById('loading').style.display = 'none';
                     document.getElementById('content').style.display = 'block';
                     initializeEventListeners();
-                    loadSampleData();
                 }, 2000);
             }
         }
@@ -1406,41 +1414,64 @@
             try {
                 console.log('Loading pulse:', pulseId);
                 
-                // Fetch pulse with user details - FIXED: Use correct query
+                // Fetch pulse with user details - use the correct table name
                 const { data: pulse, error } = await supabaseClient
-                    .from('pulses')
-                    .select(`
-                        *,
-                        user_profiles:user_id (
-                            full_name,
-                            username,
-                            avatar_url,
-                            role,
-                            email,
-                            id
-                        )
-                    `)
+                    .from('pulses_with_user_details')
+                    .select('*')
                     .eq('id', pulseId)
                     .single();
                 
-                if (error) throw error;
-                
-                currentPulse = pulse;
-                
-                // Get creator info from joined data
-                pulseCreator = pulse.user_profiles || {};
+                if (error) {
+                    console.error('Error fetching pulse:', error);
+                    // Try alternative table
+                    const { data: pulseAlt, error: errorAlt } = await supabaseClient
+                        .from('pulses')
+                        .select(`
+                            *,
+                            user_profiles (
+                                id,
+                                full_name,
+                                username,
+                                avatar_url,
+                                role,
+                                email
+                            )
+                        `)
+                        .eq('id', pulseId)
+                        .single();
+                    
+                    if (errorAlt) throw errorAlt;
+                    
+                    currentPulse = pulseAlt;
+                    
+                    // Extract creator info from user_profiles
+                    pulseCreator = {
+                        full_name: pulseAlt.user_profiles?.full_name || 'User',
+                        username: pulseAlt.user_profiles?.username || 'user',
+                        avatar_url: pulseAlt.user_profiles?.avatar_url,
+                        role: pulseAlt.user_profiles?.role,
+                        email: pulseAlt.user_profiles?.email,
+                        id: pulseAlt.user_id
+                    };
+                } else {
+                    currentPulse = pulse;
+                    
+                    // Get creator info
+                    pulseCreator = {
+                        full_name: pulse.full_name,
+                        username: pulse.username,
+                        avatar_url: pulse.avatar_url,
+                        role: pulse.role,
+                        email: pulse.email,
+                        id: pulse.user_id
+                    };
+                }
                 
                 // Update UI
-                const creatorName = pulseCreator.full_name || pulseCreator.email?.split('@')[0] || 'User';
-                document.getElementById('creator-name').textContent = creatorName;
+                document.getElementById('creator-name').textContent = pulseCreator.full_name || 'User';
+                document.getElementById('creator-handle').innerHTML = `@${pulseCreator.username || 'user'} · <span id="pulse-time">${getTimeAgo(new Date(currentPulse.created_at))}</span>`;
                 
-                const creatorUsername = pulseCreator.username || pulseCreator.email?.split('@')[0] || 'user';
-                document.getElementById('creator-handle').innerHTML = `
-                    <span class="creator-handle" onclick="viewCreatorProfile()">@${creatorUsername}</span> · 
-                    <span id="pulse-time">${getTimeAgo(new Date(pulse.created_at))}</span>
-                `;
-                
-                const creatorInitials = getInitials(creatorName);
+                const creatorInitials = getInitials(pulseCreator.full_name || pulseCreator.email || 'User');
                 document.getElementById('creator-initials').textContent = creatorInitials;
                 
                 // Set creator avatar
@@ -1454,20 +1485,19 @@
                 } else {
                     creatorAvatarImg.style.display = 'none';
                     creatorInitialsElement.style.display = 'flex';
-                    creatorInitialsElement.textContent = creatorInitials;
                 }
                 
                 // Show series label if part of a series
-                if (pulse.series_id && pulse.series_order) {
+                if (currentPulse.series_id && currentPulse.series_order) {
                     document.getElementById('seriesLabel').style.display = 'inline-block';
-                    document.getElementById('series-part').textContent = pulse.series_order;
+                    document.getElementById('series-part').textContent = currentPulse.series_order;
                     
                     // Try to get total parts in series
                     try {
                         const { data: series } = await supabaseClient
                             .from('pulse_series')
                             .select('total_parts')
-                            .eq('id', pulse.series_id)
+                            .eq('id', currentPulse.series_id)
                             .single();
                         
                         if (series?.total_parts) {
@@ -1482,24 +1512,24 @@
                 }
                 
                 // Set caption
-                document.getElementById('caption-text').textContent = pulse.caption || '';
+                document.getElementById('caption-text').textContent = currentPulse.caption || '';
                 
                 // Set counts
-                document.getElementById('comment-count').textContent = pulse.comments_count || 0;
-                document.getElementById('like-count').textContent = pulse.likes_count || 0;
-                document.getElementById('share-count').textContent = pulse.shares_count || 0;
+                document.getElementById('comment-count').textContent = currentPulse.comments_count || 0;
+                document.getElementById('like-count').textContent = currentPulse.likes_count || 0;
+                document.getElementById('share-count').textContent = currentPulse.shares_count || 0;
                 
-                // Load media - FIXED: Hide container when no media
-                const mediaContainer = document.getElementById('mediaContainer');
+                // Load media - FIX: Only show media container if media exists
+                const mediaContainer = document.querySelector('.media-container');
                 const mediaContent = document.getElementById('media-content');
                 mediaContent.innerHTML = '';
                 
-                if (pulse.media_url && pulse.media_type !== 'none') {
-                    mediaContainer.classList.remove('no-media');
+                if (currentPulse.media_url && currentPulse.media_url.trim() !== '') {
+                    mediaContainer.classList.add('has-media');
                     
-                    if (pulse.media_type === 'video') {
+                    if (currentPulse.media_type === 'video') {
                         videoElement = document.createElement('video');
-                        videoElement.src = pulse.media_url;
+                        videoElement.src = currentPulse.media_url;
                         videoElement.className = 'pulse-media';
                         videoElement.muted = isMuted;
                         videoElement.playsInline = true;
@@ -1525,7 +1555,7 @@
                         mediaContent.appendChild(videoElement);
                     } else {
                         const img = document.createElement('img');
-                        img.src = pulse.media_url;
+                        img.src = currentPulse.media_url;
                         img.className = 'pulse-media';
                         img.alt = 'Pulse image';
                         mediaContent.appendChild(img);
@@ -1533,30 +1563,22 @@
                         document.getElementById('muteBtn').style.display = 'none';
                     }
                 } else {
-                    // No media - hide media container (like Twitter posts)
-                    mediaContainer.classList.add('no-media');
+                    // No media - hide the media container completely
+                    mediaContainer.classList.remove('has-media');
                     document.getElementById('duration').style.display = 'none';
                     document.getElementById('muteBtn').style.display = 'none';
-                    document.getElementById('playBtn').style.display = 'none';
                 }
                 
                 // Check if user liked this pulse
                 await checkLikeStatus();
                 
-                // Check if user saved this pulse - FIXED: Handle missing table gracefully
-                try {
-                    await checkSaveStatus();
-                } catch (error) {
-                    console.log('Save functionality not available');
-                    isSaved = false;
-                    updateSaveUI();
-                }
+                // Check if user saved this pulse
+                await checkSaveStatus();
                 
                 // Show delete button if user owns the pulse
-                if (pulse.user_id === currentUserId) {
+                if (currentPulse.user_id === currentUserId) {
                     document.getElementById('deletePulseBtn').style.display = 'flex';
-                    const addToSeries = document.getElementById('addToSeries');
-                    if (addToSeries) addToSeries.style.display = 'flex';
+                    document.getElementById('addToSeries').style.display = 'flex';
                 }
                 
             } catch (error) {
@@ -1614,7 +1636,6 @@
         
         async function checkSaveStatus() {
             try {
-                // Check if saved_pulses table exists by trying to query it
                 const { data, error } = await supabaseClient
                     .from('saved_pulses')
                     .select('id')
@@ -1623,18 +1644,14 @@
                     .single();
                 
                 if (error && error.code !== 'PGRST116') {
-                    // Table might not exist, don't throw error
-                    console.log('Saved pulses table not available');
-                    isSaved = false;
-                    return;
+                    throw error;
                 }
                 
                 isSaved = !!data;
                 updateSaveUI();
                 
             } catch (error) {
-                console.log('Save functionality not available:', error.message);
-                isSaved = false;
+                console.error('Error checking save status:', error);
             }
         }
         
@@ -1682,13 +1699,11 @@
             
             // Media click to play/pause
             const mediaContainer = document.querySelector('.media-container');
-            if (mediaContainer) {
-                mediaContainer.addEventListener('click', (e) => {
-                    if (e.target === mediaContainer || e.target === document.querySelector('.play-controls')) {
-                        togglePlay();
-                    }
-                });
-            }
+            mediaContainer.addEventListener('click', (e) => {
+                if (e.target === mediaContainer || e.target === document.querySelector('.play-controls')) {
+                    togglePlay();
+                }
+            });
             
             // Like button
             const likeBtn = document.getElementById('likeBtn');
@@ -1752,10 +1767,7 @@
             document.getElementById('shareTwitter').addEventListener('click', shareToTwitter);
             document.getElementById('shareInstagram').addEventListener('click', shareToInstagram);
             document.getElementById('shareInternal').addEventListener('click', shareInternal);
-            const addToSeries = document.getElementById('addToSeries');
-            if (addToSeries) {
-                addToSeries.addEventListener('click', addToSeriesFunc);
-            }
+            document.getElementById('addToSeries').addEventListener('click', addToSeries);
             
             // Copy link button
             document.getElementById('copyLinkBtn').addEventListener('click', copyLink);
@@ -1852,42 +1864,34 @@
         async function handleSave() {
             try {
                 if (isSaved) {
-                    // Try to unsave if table exists
-                    try {
-                        const { error } = await supabaseClient
-                            .from('saved_pulses')
-                            .delete()
-                            .eq('pulse_id', pulseId)
-                            .eq('user_id', currentUserId);
-                        
-                        if (error) throw error;
-                    } catch (tableError) {
-                        console.log('Saved pulses table not available');
-                    }
+                    // Unsave
+                    const { error } = await supabaseClient
+                        .from('saved_pulses')
+                        .delete()
+                        .eq('pulse_id', pulseId)
+                        .eq('user_id', currentUserId);
+                    
+                    if (error) throw error;
                     
                     isSaved = false;
                     showToast('Pulse removed from saved', 'success');
                 } else {
-                    // Try to save if table exists
-                    try {
-                        const { error } = await supabaseClient
-                            .from('saved_pulses')
-                            .insert({
-                                pulse_id: pulseId,
-                                user_id: currentUserId
-                            });
-                        
-                        if (error) throw error;
-                    } catch (tableError) {
-                        console.log('Saved pulses table not available');
-                    }
+                    // Save
+                    const { error } = await supabaseClient
+                        .from('saved_pulses')
+                        .insert({
+                            pulse_id: pulseId,
+                            user_id: currentUserId
+                        });
+                    
+                    if (error) throw error;
                     
                     isSaved = true;
                     showToast('Pulse saved!', 'success');
                 }
                 
                 updateSaveUI();
-                moreMenu.classList.remove('active');
+                document.getElementById('moreMenu').classList.remove('active');
                 
             } catch (error) {
                 console.error('Error handling save:', error);
@@ -1897,14 +1901,14 @@
         
         function handleReport() {
             showToast('Report submitted. Our team will review this pulse.', 'success');
-            moreMenu.classList.remove('active');
+            document.getElementById('moreMenu').classList.remove('active');
         }
         
         function handleMuteCreator() {
             if (!pulseCreator) return;
             
-            showToast(`You won't see pulses from @${pulseCreator.username || 'this creator'} anymore`, 'success');
-            moreMenu.classList.remove('active');
+            showToast(`You won't see pulses from @${pulseCreator.username} anymore`, 'success');
+            document.getElementById('moreMenu').classList.remove('active');
         }
         
         async function handleDelete() {
@@ -1937,25 +1941,18 @@
             try {
                 console.log('Loading comments for pulse:', pulseId);
                 
-                // FIXED: Direct query to pulse_comments table with user join
-                const { data: comments, error } = await supabaseClient
+                // FIRST: Get all comments for this pulse
+                const { data: comments, error: commentsError } = await supabaseClient
                     .from('pulse_comments')
-                    .select(`
-                        *,
-                        user_profiles:user_id (
-                            full_name,
-                            username,
-                            avatar_url,
-                            role,
-                            email,
-                            id
-                        )
-                    `)
+                    .select('*')
                     .eq('pulse_id', pulseId)
-                    .eq('is_removed', false) // Only show non-removed comments
+                    .eq('is_removed', false)
                     .order('created_at', { ascending: true });
                 
-                if (error) throw error;
+                if (commentsError) {
+                    console.error('Error loading comments:', commentsError);
+                    throw commentsError;
+                }
                 
                 const commentsThread = document.getElementById('commentsThread');
                 
@@ -1972,17 +1969,54 @@
                     return;
                 }
                 
+                // SECOND: Get user profiles for all comment authors
+                const userIds = [...new Set(comments.map(comment => comment.user_id))];
+                console.log('User IDs for comments:', userIds);
+                
+                let userProfiles = [];
+                try {
+                    const { data: profiles, error: profilesError } = await supabaseClient
+                        .from('user_profiles')
+                        .select('*')
+                        .in('id', userIds);
+                    
+                    if (profilesError) {
+                        console.error('Error loading user profiles:', profilesError);
+                        // Try creators table as fallback
+                        const { data: creators, error: creatorsError } = await supabaseClient
+                            .from('creators')
+                            .select('*')
+                            .in('id', userIds);
+                        
+                        if (creatorsError) throw creatorsError;
+                        userProfiles = creators || [];
+                    } else {
+                        userProfiles = profiles || [];
+                    }
+                } catch (profileError) {
+                    console.error('Error loading user data:', profileError);
+                    // If we can't load profiles, we'll use auth user data as fallback
+                }
+                
+                // Create a map of user_id to profile
+                const userMap = {};
+                userProfiles.forEach(profile => {
+                    userMap[profile.id] = profile;
+                });
+                
+                // THIRD: Display comments
+                commentsThread.innerHTML = '';
+                
                 // Group comments by parent (for replies)
                 const topLevelComments = comments.filter(c => !c.parent_comment_id);
                 const replies = comments.filter(c => c.parent_comment_id);
                 
-                // Clear the thread
-                commentsThread.innerHTML = '';
+                console.log('Top level comments:', topLevelComments.length, 'Replies:', replies.length);
                 
                 // Display top-level comments
                 topLevelComments.forEach(comment => {
                     const commentReplies = replies.filter(r => r.parent_comment_id === comment.id);
-                    displayComment(comment, commentReplies);
+                    displayComment(comment, commentReplies, userMap);
                 });
                 
             } catch (error) {
@@ -1997,26 +2031,28 @@
             }
         }
         
-        function displayComment(comment, replies = []) {
+        function displayComment(comment, replies = [], userMap = {}) {
             const commentsThread = document.getElementById('commentsThread');
-            
-            // Get user profile for this comment
-            const user = comment.user_profiles || {};
-            const initials = getInitials(user.full_name || user.email || 'User');
             
             const commentItem = document.createElement('div');
             commentItem.className = 'comment-item';
             commentItem.dataset.commentId = comment.id;
             
+            // Get user data
+            const userProfile = userMap[comment.user_id] || {};
+            const initials = getInitials(userProfile.full_name || userProfile.email || comment.user_id.substring(0, 2) || 'U');
+            const avatarUrl = userProfile.avatar_url;
+            const username = userProfile.username || 'user';
+            const fullName = userProfile.full_name || 'User';
+            
             commentItem.innerHTML = `
                 <div class="comment-header">
-                    <div class="comment-avatar" onclick="viewUserProfile('${comment.user_id}')" style="${user.avatar_url ? `background-image: url('${user.avatar_url}'); background-size: cover; background-position: center;` : ''}">
-                        ${user.avatar_url ? '' : initials}
-                        <img src="${user.avatar_url || ''}" style="display: ${user.avatar_url ? 'block' : 'none'}; width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
+                    <div class="comment-avatar" onclick="viewUserProfile('${comment.user_id}')" style="${avatarUrl ? `background-image: url('${avatarUrl}'); background-size: cover; background-position: center;` : ''}">
+                        ${avatarUrl ? '' : initials}
                     </div>
                     <div class="comment-meta">
-                        <div class="comment-name" onclick="viewUserProfile('${comment.user_id}')">${user.full_name || 'User'}</div>
-                        <div class="comment-handle" onclick="viewUserProfile('${comment.user_id}')">@${user.username || 'user'}</div>
+                        <div class="comment-name" onclick="viewUserProfile('${comment.user_id}')">${fullName}</div>
+                        <div class="comment-handle">@${username}</div>
                     </div>
                     <div class="comment-time">${getTimeAgo(new Date(comment.created_at))}</div>
                 </div>
@@ -2036,7 +2072,7 @@
             replyComposer.className = 'reply-composer';
             replyComposer.id = `reply-composer-${comment.id}`;
             replyComposer.innerHTML = `
-                <textarea class="reply-input" placeholder="Reply to @${user.username || 'user'}…" maxlength="300"></textarea>
+                <textarea class="reply-input" placeholder="Reply to @${username}…" maxlength="300"></textarea>
                 <button class="post-reply-btn" data-parent-id="${comment.id}">Reply</button>
             `;
             
@@ -2046,8 +2082,11 @@
                 replyThread.className = 'reply-thread';
                 
                 replies.forEach(reply => {
-                    const replyUser = reply.user_profiles || {};
-                    const replyInitials = getInitials(replyUser.full_name || replyUser.email || 'User');
+                    const replyUserProfile = userMap[reply.user_id] || {};
+                    const replyInitials = getInitials(replyUserProfile.full_name || replyUserProfile.email || reply.user_id.substring(0, 2) || 'U');
+                    const replyAvatarUrl = replyUserProfile.avatar_url;
+                    const replyUsername = replyUserProfile.username || 'user';
+                    const replyFullName = replyUserProfile.full_name || 'User';
                     
                     const replyItem = document.createElement('div');
                     replyItem.className = 'comment-item';
@@ -2055,13 +2094,12 @@
                     
                     replyItem.innerHTML = `
                         <div class="comment-header">
-                            <div class="comment-avatar" onclick="viewUserProfile('${reply.user_id}')" style="${replyUser.avatar_url ? `background-image: url('${replyUser.avatar_url}'); background-size: cover; background-position: center;` : ''}">
-                                ${replyUser.avatar_url ? '' : replyInitials}
-                                <img src="${replyUser.avatar_url || ''}" style="display: ${replyUser.avatar_url ? 'block' : 'none'}; width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
+                            <div class="comment-avatar" onclick="viewUserProfile('${reply.user_id}')" style="${replyAvatarUrl ? `background-image: url('${replyAvatarUrl}'); background-size: cover; background-position: center;` : ''}">
+                                ${replyAvatarUrl ? '' : replyInitials}
                             </div>
                             <div class="comment-meta">
-                                <div class="comment-name" onclick="viewUserProfile('${reply.user_id}')">${replyUser.full_name || 'User'}</div>
-                                <div class="comment-handle" onclick="viewUserProfile('${reply.user_id}')">@${replyUser.username || 'user'}</div>
+                                <div class="comment-name" onclick="viewUserProfile('${reply.user_id}')">${replyFullName}</div>
+                                <div class="comment-handle">@${replyUsername}</div>
                             </div>
                             <div class="comment-time">${getTimeAgo(new Date(reply.created_at))}</div>
                         </div>
@@ -2088,13 +2126,8 @@
             const postReplyBtn = commentItem.querySelector('.post-reply-btn');
             const replyInput = commentItem.querySelector('.reply-input');
             
-            likeBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                likeComment(comment.id);
-            });
-            
-            replyBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
+            likeBtn.addEventListener('click', () => likeComment(comment.id));
+            replyBtn.addEventListener('click', () => {
                 replyComposer.classList.toggle('active');
                 if (replyComposer.classList.contains('active')) {
                     replyInput.focus();
@@ -2102,10 +2135,7 @@
             });
             
             if (postReplyBtn) {
-                postReplyBtn.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    postReply(comment.id, replyInput);
-                });
+                postReplyBtn.addEventListener('click', () => postReply(comment.id, replyInput));
             }
             
             if (replyInput) {
@@ -2131,7 +2161,8 @@
                         pulse_id: pulseId,
                         user_id: currentUserId,
                         comment_text: commentText,
-                        likes_count: 0
+                        likes_count: 0,
+                        is_removed: false
                     });
                 
                 if (error) throw error;
@@ -2168,7 +2199,8 @@
                         user_id: currentUserId,
                         comment_text: replyText,
                         parent_comment_id: parentId,
-                        likes_count: 0
+                        likes_count: 0,
+                        is_removed: false
                     });
                 
                 if (error) throw error;
@@ -2176,10 +2208,6 @@
                 // Clear input and hide composer
                 replyInput.value = '';
                 document.getElementById(`reply-composer-${parentId}`).classList.remove('active');
-                
-                // Update comment count
-                const currentCount = parseInt(document.getElementById('comment-count').textContent) || 0;
-                document.getElementById('comment-count').textContent = currentCount + 1;
                 
                 // Reload comments
                 loadComments();
@@ -2194,7 +2222,7 @@
         
         async function likeComment(commentId) {
             try {
-                // Check if already liked - FIXED: Use correct table name
+                // Check if already liked
                 const { data: existingLike } = await supabaseClient
                     .from('comment_likes')
                     .select('id')
@@ -2209,12 +2237,22 @@
                         .delete()
                         .eq('id', existingLike.id);
                     
+                    // Update comment likes count in database
+                    await supabaseClient
+                        .from('pulse_comments')
+                        .update({ 
+                            likes_count: supabaseClient.raw('GREATEST(likes_count - 1, 0)') 
+                        })
+                        .eq('id', commentId);
+                    
                     // Update UI
                     const likeBtn = document.querySelector(`[data-comment-id="${commentId}"] .like-comment-btn`);
-                    const likeCountElement = likeBtn.querySelector('.comment-like-count');
-                    const currentCount = parseInt(likeCountElement.textContent) || 0;
-                    likeCountElement.textContent = Math.max(0, currentCount - 1);
-                    likeBtn.classList.remove('liked');
+                    if (likeBtn) {
+                        const likeCountElement = likeBtn.querySelector('.comment-like-count');
+                        const currentCount = parseInt(likeCountElement.textContent) || 0;
+                        likeCountElement.textContent = Math.max(0, currentCount - 1);
+                        likeBtn.classList.remove('liked');
+                    }
                     
                 } else {
                     // Like
@@ -2225,12 +2263,22 @@
                             user_id: currentUserId
                         });
                     
+                    // Update comment likes count in database
+                    await supabaseClient
+                        .from('pulse_comments')
+                        .update({ 
+                            likes_count: supabaseClient.raw('likes_count + 1') 
+                        })
+                        .eq('id', commentId);
+                    
                     // Update UI
                     const likeBtn = document.querySelector(`[data-comment-id="${commentId}"] .like-comment-btn`);
-                    const likeCountElement = likeBtn.querySelector('.comment-like-count');
-                    const currentCount = parseInt(likeCountElement.textContent) || 0;
-                    likeCountElement.textContent = currentCount + 1;
-                    likeBtn.classList.add('liked');
+                    if (likeBtn) {
+                        const likeCountElement = likeBtn.querySelector('.comment-like-count');
+                        const currentCount = parseInt(likeCountElement.textContent) || 0;
+                        likeCountElement.textContent = currentCount + 1;
+                        likeBtn.classList.add('liked');
+                    }
                 }
                 
             } catch (error) {
@@ -2305,16 +2353,14 @@
             }
         }
         
-        function addToSeriesFunc() {
+        function addToSeries() {
             showToast('Add to Series feature coming soon!', 'success');
             closeShareModalFunc();
         }
         
         function viewCreatorProfile() {
-            if (pulseCreator && pulseCreator.id) {
+            if (pulseCreator) {
                 window.location.href = `profile.html?user_id=${pulseCreator.id}`;
-            } else {
-                showToast('Creator profile not available', 'error');
             }
         }
         
@@ -2337,56 +2383,6 @@
                 toast.style.opacity = '0';
                 setTimeout(() => toast.remove(), 300);
             }, 4000);
-        }
-        
-        function loadSampleData() {
-            // Sample data for demo purposes
-            document.getElementById('creator-name').textContent = 'Sample Creator';
-            document.getElementById('creator-handle').innerHTML = '<span class="creator-handle" onclick="viewCreatorProfile()">@samplecreator</span> · <span id="pulse-time">2 hours ago</span>';
-            document.getElementById('caption-text').textContent = 'This is a sample pulse for demonstration purposes. The real data will load when connected to Supabase.';
-            
-            // Load sample comments
-            const commentsThread = document.getElementById('commentsThread');
-            commentsThread.innerHTML = `
-                <div class="comment-item">
-                    <div class="comment-header">
-                        <div class="comment-avatar" onclick="viewUserProfile('sample1')">JD</div>
-                        <div class="comment-meta">
-                            <div class="comment-name" onclick="viewUserProfile('sample1')">Jane Doe</div>
-                            <div class="comment-handle" onclick="viewUserProfile('sample1')">@janedoe</div>
-                        </div>
-                        <div class="comment-time">1 hour ago</div>
-                    </div>
-                    <div class="comment-text">Love this perspective! The spaces between words are indeed where the magic happens.</div>
-                    <div class="comment-actions">
-                        <button class="comment-action">
-                            <i class="fas fa-heart"></i> 3
-                        </button>
-                        <button class="comment-action">
-                            <i class="fas fa-reply"></i> Reply
-                        </button>
-                    </div>
-                </div>
-                <div class="comment-item">
-                    <div class="comment-header">
-                        <div class="comment-avatar" onclick="viewUserProfile('sample2')">MS</div>
-                        <div class="comment-meta">
-                            <div class="comment-name" onclick="viewUserProfile('sample2')">Michael Smith</div>
-                            <div class="comment-handle" onclick="viewUserProfile('sample2')">@michaels</div>
-                        </div>
-                        <div class="comment-time">30 minutes ago</div>
-                    </div>
-                    <div class="comment-text">This resonates deeply with African oral tradition. The pauses carry ancestral wisdom.</div>
-                    <div class="comment-actions">
-                        <button class="comment-action">
-                            <i class="fas fa-heart"></i> 1
-                        </button>
-                        <button class="comment-action">
-                            <i class="fas fa-reply"></i> Reply
-                        </button>
-                    </div>
-                </div>
-            `;
         }
         
         // Start initialization
