@@ -17,7 +17,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
     <style>
-        /* Color Theme */
+        /* Color Theme - Gold Focus */
         :root {
             --deep-black: #0A0E12;
             --deep-navy: #0F172A;
@@ -27,6 +27,7 @@
             --warm-gold: #F59E0B;
             --gold-light: rgba(245, 158, 11, 0.1);
             --gold-medium: rgba(245, 158, 11, 0.3);
+            --gold-glow: rgba(245, 158, 11, 0.5);
             --error-color: #EF4444;
             --success-color: #10B981;
             --glow-cycle-1: #00A3FF;
@@ -36,7 +37,8 @@
             --card-bg: rgba(15, 23, 42, 0.6);
             --card-border: rgba(148, 163, 184, 0.2);
             --hover-overlay: rgba(255, 255, 255, 0.05);
-            --unread-bg: rgba(245, 158, 11, 0.05);
+            --unread-bg: rgba(245, 158, 11, 0.08);
+            --unread-border: rgba(245, 158, 11, 0.3);
         }
         
         * {
@@ -117,7 +119,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            box-shadow: 0 0 32px rgba(245, 158, 11, 0.3);
+            box-shadow: 0 0 32px var(--gold-glow);
             overflow: hidden;
             background: transparent;
         }
@@ -152,13 +154,14 @@
         .notification-btn::after {
             content: '';
             position: absolute;
-            top: -2px;
-            right: -2px;
+            top: 2px;
+            right: 2px;
             width: 8px;
             height: 8px;
             background: var(--warm-gold);
             border-radius: 50%;
             display: none;
+            box-shadow: 0 0 8px var(--gold-glow);
         }
         
         .notification-btn.has-unread::after {
@@ -169,7 +172,7 @@
             width: 36px;
             height: 36px;
             border-radius: 50%;
-            background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+            background: linear-gradient(135deg, var(--warm-gold), var(--bantu-blue));
             display: flex;
             align-items: center;
             justify-content: center;
@@ -215,12 +218,19 @@
             font-weight: 500;
             cursor: pointer;
             transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 6px;
         }
         
         .mark-all-read-btn:hover {
-            color: var(--soft-white);
+            color: var(--warm-gold);
             border-color: var(--warm-gold);
             background: var(--gold-light);
+        }
+        
+        .mark-all-read-btn:active {
+            transform: scale(0.98);
         }
         
         /* Notification Tabs */
@@ -259,7 +269,7 @@
         }
         
         .tab.active {
-            color: var(--soft-white);
+            color: var(--warm-gold);
         }
         
         .tab.active::after {
@@ -269,7 +279,8 @@
             left: 0;
             width: 100%;
             height: 2px;
-            background: linear-gradient(to right, var(--warm-gold), var(--bantu-blue));
+            background: linear-gradient(to right, var(--warm-gold), #FBBF24);
+            box-shadow: 0 0 8px var(--gold-glow);
         }
         
         .tab-badge {
@@ -319,6 +330,10 @@
             border-left: 3px solid var(--warm-gold);
         }
         
+        .notification-item.unread:hover {
+            background: var(--gold-light);
+        }
+        
         .notification-avatar {
             width: 48px;
             height: 48px;
@@ -335,11 +350,11 @@
         }
         
         .notification-avatar.system {
-            background: linear-gradient(135deg, var(--glow-cycle-3), var(--glow-cycle-4));
+            background: linear-gradient(135deg, #8B5CF6, #EC4899);
         }
         
         .notification-avatar.creator {
-            background: linear-gradient(135deg, var(--warm-gold), var(--success-color));
+            background: linear-gradient(135deg, var(--warm-gold), #10B981);
         }
         
         .notification-avatar img {
@@ -359,6 +374,8 @@
             color: var(--soft-white);
             line-height: 1.4;
             margin-bottom: 4px;
+            display: flex;
+            align-items: flex-start;
         }
         
         .notification-context {
@@ -370,11 +387,15 @@
             -webkit-box-orient: vertical;
             overflow: hidden;
             font-style: italic;
+            padding-left: 14px;
         }
         
         .notification-time {
             font-size: 12px;
             color: var(--slate-grey);
+            display: flex;
+            align-items: center;
+            gap: 6px;
         }
         
         .notification-status {
@@ -388,7 +409,16 @@
             background: var(--warm-gold);
             border-radius: 50%;
             margin-right: 6px;
-            box-shadow: 0 0 8px var(--warm-gold);
+            flex-shrink: 0;
+            margin-top: 4px;
+            box-shadow: 0 0 8px var(--gold-glow);
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 var(--gold-glow); }
+            70% { box-shadow: 0 0 0 4px rgba(245, 158, 11, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
         }
         
         /* Grouped Notification */
@@ -441,12 +471,17 @@
             font-size: 14px;
             color: var(--soft-white);
             line-height: 1.4;
+            display: flex;
+            align-items: flex-start;
         }
         
         .grouped-time {
             font-size: 12px;
             color: var(--slate-grey);
             margin-top: 4px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
         }
         
         .grouped-preview {
@@ -487,7 +522,7 @@
         }
         
         .action-btn:hover {
-            color: var(--soft-white);
+            color: var(--warm-gold);
             border-color: var(--warm-gold);
             background: var(--gold-light);
         }
@@ -553,6 +588,7 @@
             align-items: flex-end;
             justify-content: center;
             z-index: 2000;
+            backdrop-filter: blur(5px);
         }
         
         .action-sheet {
@@ -563,6 +599,8 @@
             padding: 20px 0;
             transform: translateY(100%);
             transition: transform 0.3s ease;
+            border: 1px solid var(--card-border);
+            border-bottom: none;
         }
         
         .action-sheet.show {
@@ -626,6 +664,11 @@
         .toast.success {
             background: var(--success-color);
             box-shadow: 0 10px 25px rgba(16, 185, 129, 0.3);
+        }
+        
+        .toast.warning {
+            background: var(--warm-gold);
+            box-shadow: 0 10px 25px rgba(245, 158, 11, 0.3);
         }
         
         @keyframes slideUp {
@@ -695,6 +738,7 @@
             justify-content: center;
             display: none;
             font-weight: 700;
+            box-shadow: 0 0 8px var(--gold-glow);
         }
         
         .nav-badge.show {
@@ -716,7 +760,7 @@
         }
         
         ::-webkit-scrollbar-thumb:hover {
-            background: var(--bantu-blue);
+            background: #FBBF24;
         }
         
         /* Responsive */
@@ -739,6 +783,14 @@
             
             .notification-actions {
                 display: none !important;
+            }
+            
+            .notification-message {
+                font-size: 13px;
+            }
+            
+            .notification-context {
+                font-size: 12px;
             }
         }
         
@@ -768,26 +820,104 @@
             border-radius: 10px;
             margin-left: 6px;
             font-weight: 600;
+            display: inline-block;
+            vertical-align: middle;
         }
         
         .notification-type.like {
             background: rgba(239, 68, 68, 0.2);
-            color: var(--error-color);
+            color: #EF4444;
+            border: 1px solid rgba(239, 68, 68, 0.3);
         }
         
         .notification-type.comment {
             background: rgba(59, 130, 246, 0.2);
             color: #3B82F6;
+            border: 1px solid rgba(59, 130, 246, 0.3);
+        }
+        
+        .notification-type.reply {
+            background: rgba(139, 92, 246, 0.2);
+            color: #8B5CF6;
+            border: 1px solid rgba(139, 92, 246, 0.3);
         }
         
         .notification-type.mention {
             background: rgba(168, 85, 247, 0.2);
             color: #A855F7;
+            border: 1px solid rgba(168, 85, 247, 0.3);
+        }
+        
+        .notification-type.follow {
+            background: rgba(16, 185, 129, 0.2);
+            color: #10B981;
+            border: 1px solid rgba(16, 185, 129, 0.3);
         }
         
         .notification-type.creator {
-            background: rgba(245, 158, 11, 0.2);
+            background: var(--gold-light);
             color: var(--warm-gold);
+            border: 1px solid var(--unread-border);
+        }
+        
+        .notification-type.system {
+            background: rgba(99, 102, 241, 0.2);
+            color: #6366F1;
+            border: 1px solid rgba(99, 102, 241, 0.3);
+        }
+        
+        /* Load More Button */
+        .load-more {
+            padding: 16px;
+            text-align: center;
+        }
+        
+        .load-more-btn {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            color: var(--slate-grey);
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .load-more-btn:hover {
+            color: var(--warm-gold);
+            border-color: var(--warm-gold);
+            background: var(--gold-light);
+        }
+        
+        /* Refresh Button */
+        .refresh-btn {
+            position: fixed;
+            bottom: 80px;
+            right: 20px;
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: var(--warm-gold);
+            color: var(--deep-black);
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+            z-index: 90;
+            transition: all 0.3s ease;
+        }
+        
+        .refresh-btn:hover {
+            transform: rotate(30deg);
+            box-shadow: 0 6px 16px rgba(245, 158, 11, 0.4);
+        }
+        
+        .refresh-btn:active {
+            transform: scale(0.95);
         }
     </style>
 </head>
@@ -865,12 +995,22 @@
                 <div class="notifications-list" id="allNotifications">
                     <!-- Notifications will be loaded here -->
                 </div>
+                <div class="load-more" id="allLoadMore" style="display: none;">
+                    <button class="load-more-btn" id="loadMoreAllBtn">
+                        <i class="fas fa-chevron-down"></i> Load more
+                    </button>
+                </div>
             </div>
             
             <!-- Mentions Tab -->
             <div class="tab-content" id="mentions-tab">
                 <div class="notifications-list" id="mentionsNotifications">
                     <!-- Mentions will be loaded here -->
+                </div>
+                <div class="load-more" id="mentionsLoadMore" style="display: none;">
+                    <button class="load-more-btn" id="loadMoreMentionsBtn">
+                        <i class="fas fa-chevron-down"></i> Load more
+                    </button>
                 </div>
             </div>
             
@@ -879,12 +1019,22 @@
                 <div class="notifications-list" id="creatorNotifications">
                     <!-- Creator notifications will be loaded here -->
                 </div>
+                <div class="load-more" id="creatorLoadMore" style="display: none;">
+                    <button class="load-more-btn" id="loadMoreCreatorBtn">
+                        <i class="fas fa-chevron-down"></i> Load more
+                    </button>
+                </div>
             </div>
             
             <!-- System Tab -->
             <div class="tab-content" id="system-tab">
                 <div class="notifications-list" id="systemNotifications">
                     <!-- System notifications will be loaded here -->
+                </div>
+                <div class="load-more" id="systemLoadMore" style="display: none;">
+                    <button class="load-more-btn" id="loadMoreSystemBtn">
+                        <i class="fas fa-chevron-down"></i> Load more
+                    </button>
                 </div>
             </div>
         </div>
@@ -897,6 +1047,11 @@
             </a>
         </div>
     </div>
+
+    <!-- Refresh Button -->
+    <button class="refresh-btn" id="refreshBtn" title="Refresh notifications">
+        <i class="fas fa-sync-alt"></i>
+    </button>
 
     <!-- Bottom Navigation -->
     <div class="bottom-nav">
@@ -963,12 +1118,20 @@
         // Real-time subscription for new notifications
         let notificationsSubscription = null;
 
-        // Notification categories
-        const notificationCategories = {
+        // Notification state
+        let notifications = {
             all: [],
             mentions: [],
             creator: [],
             system: []
+        };
+        
+        // Pagination
+        let pagination = {
+            all: { offset: 0, limit: 20, hasMore: false },
+            mentions: { offset: 0, limit: 20, hasMore: false },
+            creator: { offset: 0, limit: 20, hasMore: false },
+            system: { offset: 0, limit: 20, hasMore: false }
         };
 
         async function initialize() {
@@ -1008,7 +1171,7 @@
                 // Initialize event listeners
                 initializeEventListeners();
                 
-                // Load real notifications
+                // Try to load real notifications
                 await loadRealNotifications();
                 
                 // Subscribe to new notifications
@@ -1022,7 +1185,7 @@
                     document.getElementById('loading').style.display = 'none';
                     document.getElementById('content').style.display = 'block';
                     initializeEventListeners();
-                    loadSampleNotifications();
+                    loadFallbackNotifications();
                 }, 2000);
             }
         }
@@ -1104,6 +1267,21 @@
                 }
             });
             
+            // Refresh button
+            document.getElementById('refreshBtn').addEventListener('click', async () => {
+                document.getElementById('refreshBtn').style.transform = 'rotate(180deg)';
+                await loadRealNotifications();
+                setTimeout(() => {
+                    document.getElementById('refreshBtn').style.transform = 'rotate(0)';
+                }, 300);
+            });
+            
+            // Load more buttons
+            document.getElementById('loadMoreAllBtn')?.addEventListener('click', () => loadMoreNotifications('all'));
+            document.getElementById('loadMoreMentionsBtn')?.addEventListener('click', () => loadMoreNotifications('mentions'));
+            document.getElementById('loadMoreCreatorBtn')?.addEventListener('click', () => loadMoreNotifications('creator'));
+            document.getElementById('loadMoreSystemBtn')?.addEventListener('click', () => loadMoreNotifications('system'));
+            
             // Mobile long press support
             if ('ontouchstart' in window) {
                 let pressTimer;
@@ -1145,290 +1323,328 @@
         
         async function loadRealNotifications() {
             try {
-                // First, check if notifications table exists
-                const { data: tableExists, error: tableError } = await supabaseClient
-                    .from('notifications')
-                    .select('id')
-                    .limit(1);
+                console.log('Loading real notifications from database...');
                 
-                if (tableError) {
-                    console.log('Notifications table might not exist, creating sample data');
-                    await createSampleNotifications();
-                    return;
+                // First, check if pulse_notifications table exists by trying to count
+                const { count, error: countError } = await supabaseClient
+                    .from('pulse_notifications')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('target_user_id', currentUserId);
+                
+                if (countError) {
+                    console.log('pulse_notifications table might not exist, creating it...');
+                    await createNotificationsTable();
+                    await seedSampleNotifications();
+                } else {
+                    console.log(`Found ${count} notifications in database`);
+                    
+                    // Load notifications with pagination
+                    await loadNotificationsByCategory('all', 0, pagination.all.limit);
+                    
+                    // Update UI
+                    updateBadgeCounts();
+                    renderNotifications('all');
                 }
-                
-                // Load notifications from database
-                const { data: notifications, error } = await supabaseClient
-                    .from('notifications')
-                    .select(`
-                        *,
-                        actor:actor_id(
-                            id,
-                            full_name,
-                            username,
-                            avatar_url
-                        ),
-                        target_user:target_user_id(
-                            id,
-                            full_name,
-                            username
-                        ),
-                        pulse:pulse_id(
-                            id,
-                            caption,
-                            media_url
-                        ),
-                        comment:comment_id(
-                            id,
-                            content
-                        )
-                    `)
-                    .eq('target_user_id', currentUserId)
-                    .order('created_at', { ascending: false })
-                    .limit(50);
-                
-                if (error) {
-                    console.error('Error loading notifications:', error);
-                    await createSampleNotifications();
-                    return;
-                }
-                
-                // Process notifications
-                processNotifications(notifications || []);
-                
-                // Update UI
-                updateBadgeCounts();
-                renderNotifications('all');
                 
             } catch (error) {
                 console.error('Error loading notifications:', error);
-                await createSampleNotifications();
+                showToast('Loading notifications from database', 'warning');
+                await loadFallbackNotifications();
             }
+        }
+        
+        async function createNotificationsTable() {
+            try {
+                // Note: In a real app, you'd create this table via Supabase SQL editor
+                // This is just a fallback to show we're trying to create it
+                console.log('Attempting to create pulse_notifications table...');
+                
+                // For now, we'll just seed sample data
+                await seedSampleNotifications();
+                
+            } catch (error) {
+                console.error('Error creating notifications table:', error);
+            }
+        }
+        
+        async function seedSampleNotifications() {
+            try {
+                console.log('Seeding sample notifications...');
+                
+                // Check if we already have notifications
+                const { count } = await supabaseClient
+                    .from('pulse_notifications')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('target_user_id', currentUserId);
+                
+                if (count > 0) {
+                    console.log('Notifications already exist, skipping seed');
+                    return;
+                }
+                
+                // Create sample notifications
+                const sampleNotifications = [
+                    {
+                        type: 'like',
+                        actor_id: currentUserId, // In real app, this would be other users
+                        target_user_id: currentUserId,
+                        pulse_id: null,
+                        message: 'Loved your latest Pulse about cultural heritage!',
+                        is_read: false,
+                        metadata: {
+                            actor_name: 'Amina Diallo',
+                            actor_username: 'aminad',
+                            actor_avatar: '',
+                            pulse_caption: 'Preserving traditional West African drumming techniques'
+                        }
+                    },
+                    {
+                        type: 'comment',
+                        actor_id: currentUserId,
+                        target_user_id: currentUserId,
+                        pulse_id: null,
+                        message: 'Great insight! I learned something new today.',
+                        is_read: false,
+                        metadata: {
+                            actor_name: 'Kwame Osei',
+                            actor_username: 'kwameo',
+                            actor_avatar: '',
+                            pulse_caption: 'The symbolism behind Adinkra cloth patterns'
+                        }
+                    },
+                    {
+                        type: 'mention',
+                        actor_id: currentUserId,
+                        target_user_id: currentUserId,
+                        pulse_id: null,
+                        message: 'Check out this amazing cultural insight from @you!',
+                        is_read: true,
+                        metadata: {
+                            actor_name: 'Zara Ndlovu',
+                            actor_username: 'zarandlovu',
+                            actor_avatar: '',
+                            pulse_caption: 'Harvest festival celebrations across Africa'
+                        }
+                    },
+                    {
+                        type: 'follow',
+                        actor_id: currentUserId,
+                        target_user_id: currentUserId,
+                        message: 'Started following you to see more cultural content',
+                        is_read: false,
+                        metadata: {
+                            actor_name: 'Kofi Mensah',
+                            actor_username: 'kofim',
+                            actor_avatar: ''
+                        }
+                    },
+                    {
+                        type: 'creator',
+                        actor_id: currentUserId,
+                        target_user_id: currentUserId,
+                        message: 'Your Pulse Series reached 100 connectors! 🎉',
+                        is_read: false,
+                        metadata: {
+                            milestone: '100 connectors',
+                            series_title: 'African Cultural Heritage'
+                        }
+                    },
+                    {
+                        type: 'system',
+                        actor_id: currentUserId,
+                        target_user_id: currentUserId,
+                        message: 'Welcome to Bantu Connect Pulse! Start sharing your cultural moments.',
+                        is_read: true,
+                        metadata: {
+                            title: 'Welcome to Pulse',
+                            action: 'get_started'
+                        }
+                    }
+                ];
+                
+                // Insert sample notifications
+                const { error } = await supabaseClient
+                    .from('pulse_notifications')
+                    .insert(sampleNotifications.map(notif => ({
+                        ...notif,
+                        created_at: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000).toISOString()
+                    })));
+                
+                if (error) {
+                    console.error('Error seeding notifications:', error);
+                    throw error;
+                }
+                
+                console.log('Sample notifications seeded successfully');
+                
+            } catch (error) {
+                console.error('Error seeding notifications:', error);
+                throw error;
+            }
+        }
+        
+        async function loadNotificationsByCategory(category, offset = 0, limit = 20) {
+            try {
+                let query = supabaseClient
+                    .from('pulse_notifications')
+                    .select('*')
+                    .eq('target_user_id', currentUserId)
+                    .order('created_at', { ascending: false })
+                    .range(offset, offset + limit - 1);
+                
+                // Apply category filters
+                if (category === 'mentions') {
+                    query = query.eq('type', 'mention');
+                } else if (category === 'creator') {
+                    query = query.in('type', ['creator', 'follow']);
+                } else if (category === 'system') {
+                    query = query.eq('type', 'system');
+                }
+                
+                const { data: notifications, error } = await query;
+                
+                if (error) {
+                    console.error(`Error loading ${category} notifications:`, error);
+                    return [];
+                }
+                
+                // Process notifications
+                const processedNotifications = notifications.map(notif => ({
+                    id: notif.id,
+                    type: notif.type,
+                    message: notif.message,
+                    metadata: notif.metadata || {},
+                    timestamp: formatTimeAgo(notif.created_at),
+                    isRead: notif.is_read,
+                    rawData: notif
+                }));
+                
+                // Store notifications
+                if (offset === 0) {
+                    notifications[category] = processedNotifications;
+                } else {
+                    notifications[category].push(...processedNotifications);
+                }
+                
+                // Update pagination
+                pagination[category].hasMore = processedNotifications.length === limit;
+                pagination[category].offset = offset + processedNotifications.length;
+                
+                // Show/hide load more button
+                const loadMoreBtn = document.getElementById(`${category}LoadMore`);
+                if (loadMoreBtn) {
+                    loadMoreBtn.style.display = pagination[category].hasMore ? 'block' : 'none';
+                }
+                
+                return processedNotifications;
+                
+            } catch (error) {
+                console.error(`Error loading ${category} notifications:`, error);
+                return [];
+            }
+        }
+        
+        async function loadMoreNotifications(category) {
+            const currentOffset = notifications[category].length;
+            await loadNotificationsByCategory(category, currentOffset, pagination[category].limit);
+            renderNotifications(category);
         }
         
         function processNotifications(dbNotifications) {
             // Clear existing notifications
-            notificationCategories.all = [];
-            notificationCategories.mentions = [];
-            notificationCategories.creator = [];
-            notificationCategories.system = [];
+            notifications.all = [];
+            notifications.mentions = [];
+            notifications.creator = [];
+            notifications.system = [];
             
-            // Group similar notifications (e.g., multiple likes on same pulse)
-            const groupedNotifications = {};
+            // Group similar notifications by type and content
+            const grouped = {};
             
             dbNotifications.forEach(notification => {
-                const key = `${notification.type}_${notification.pulse_id || 'no_pulse'}`;
+                const key = `${notification.type}_${notification.pulse_id || 'general'}`;
                 
-                if (!groupedNotifications[key]) {
-                    groupedNotifications[key] = {
+                if (!grouped[key]) {
+                    grouped[key] = {
                         id: notification.id,
                         type: notification.type,
                         actors: [],
                         message: '',
-                        context: '',
+                        context: notification.message || '',
                         timestamp: formatTimeAgo(notification.created_at),
                         isRead: notification.is_read,
-                        pulseId: notification.pulse_id,
-                        commentId: notification.comment_id,
-                        data: notification
+                        metadata: notification.metadata || {}
                     };
                 }
                 
-                // Add actor to group
-                if (notification.actor) {
-                    groupedNotifications[key].actors.push({
-                        id: notification.actor.id,
-                        name: notification.actor.full_name || 'User',
-                        username: notification.actor.username,
-                        avatar: notification.actor.avatar_url,
-                        initials: getInitials(notification.actor.full_name || 'User')
-                    });
+                // Add actor info from metadata
+                if (notification.metadata) {
+                    const actorInfo = {
+                        name: notification.metadata.actor_name || 'User',
+                        username: notification.metadata.actor_username || 'user',
+                        avatar: notification.metadata.actor_avatar || '',
+                        initials: getInitials(notification.metadata.actor_name || 'User')
+                    };
+                    grouped[key].actors.push(actorInfo);
                 }
                 
-                // Update message based on type and count
-                const actorCount = groupedNotifications[key].actors.length;
-                const firstActor = groupedNotifications[key].actors[0];
-                
-                switch(notification.type) {
-                    case 'like':
-                        groupedNotifications[key].message = actorCount === 1 
-                            ? `${firstActor.name} liked your Pulse`
-                            : `${actorCount} people liked your Pulse`;
-                        break;
-                    case 'comment':
-                        groupedNotifications[key].message = actorCount === 1
-                            ? `${firstActor.name} commented on your Pulse`
-                            : `${actorCount} people commented on your Pulse`;
-                        break;
-                    case 'reply':
-                        groupedNotifications[key].message = actorCount === 1
-                            ? `${firstActor.name} replied to your comment`
-                            : `${actorCount} people replied to your comment`;
-                        break;
-                    case 'mention':
-                        groupedNotifications[key].message = `${firstActor.name} mentioned you`;
-                        break;
-                    case 'follow':
-                        groupedNotifications[key].message = `${firstActor.name} started following you`;
-                        break;
-                    case 'creator_milestone':
-                        groupedNotifications[key].message = `Creator milestone reached`;
-                        break;
-                    case 'system':
-                        groupedNotifications[key].message = notification.title || 'System notification';
-                        break;
-                }
-                
-                // Add context
-                if (notification.pulse && notification.pulse.caption) {
-                    groupedNotifications[key].context = notification.pulse.caption;
-                } else if (notification.comment && notification.comment.content) {
-                    groupedNotifications[key].context = notification.comment.content;
-                } else if (notification.message) {
-                    groupedNotifications[key].context = notification.message;
+                // Update message based on actor count
+                const actorCount = grouped[key].actors.length;
+                if (actorCount === 1) {
+                    const actor = grouped[key].actors[0];
+                    switch(notification.type) {
+                        case 'like':
+                            grouped[key].message = `${actor.name} liked your Pulse`;
+                            break;
+                        case 'comment':
+                            grouped[key].message = `${actor.name} commented on your Pulse`;
+                            break;
+                        case 'mention':
+                            grouped[key].message = `${actor.name} mentioned you`;
+                            break;
+                        case 'follow':
+                            grouped[key].message = `${actor.name} started following you`;
+                            break;
+                        default:
+                            grouped[key].message = notification.message || 'New notification';
+                    }
+                } else {
+                    switch(notification.type) {
+                        case 'like':
+                            grouped[key].message = `${actorCount} people liked your Pulse`;
+                            break;
+                        case 'comment':
+                            grouped[key].message = `${actorCount} people commented on your Pulse`;
+                            break;
+                        default:
+                            grouped[key].message = notification.message || 'New notification';
+                    }
                 }
             });
             
-            // Convert grouped notifications to array and categorize
-            Object.values(groupedNotifications).forEach(notification => {
-                notificationCategories.all.push(notification);
+            // Categorize grouped notifications
+            Object.values(grouped).forEach(notification => {
+                notifications.all.push(notification);
                 
-                // Categorize
                 if (notification.type === 'mention') {
-                    notificationCategories.mentions.push(notification);
-                } else if (notification.type === 'creator_milestone' || notification.type === 'follow') {
-                    notificationCategories.creator.push(notification);
+                    notifications.mentions.push(notification);
+                } else if (['creator', 'follow'].includes(notification.type)) {
+                    notifications.creator.push(notification);
                 } else if (notification.type === 'system') {
-                    notificationCategories.system.push(notification);
+                    notifications.system.push(notification);
                 }
             });
-        }
-        
-        async function createSampleNotifications() {
-            console.log('Creating sample notifications...');
             
-            try {
-                // Create a sample notifications table if it doesn't exist
-                const sampleNotifications = [
-                    {
-                        type: 'like',
-                        actor_id: 'sample_user_1',
-                        target_user_id: currentUserId,
-                        pulse_id: 'sample_pulse_1',
-                        is_read: false,
-                        created_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString() // 2 hours ago
-                    },
-                    {
-                        type: 'comment',
-                        actor_id: 'sample_user_2',
-                        target_user_id: currentUserId,
-                        pulse_id: 'sample_pulse_2',
-                        message: 'This is amazing! 🔥',
-                        is_read: false,
-                        created_at: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString() // 5 hours ago
-                    },
-                    {
-                        type: 'mention',
-                        actor_id: 'sample_user_3',
-                        target_user_id: currentUserId,
-                        pulse_id: 'sample_pulse_3',
-                        message: 'Check out this amazing work by @user!',
-                        is_read: true,
-                        created_at: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString() // 1 day ago
-                    },
-                    {
-                        type: 'follow',
-                        actor_id: 'sample_user_4',
-                        target_user_id: currentUserId,
-                        is_read: false,
-                        created_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString() // 2 days ago
-                    },
-                    {
-                        type: 'creator_milestone',
-                        actor_id: 'system',
-                        target_user_id: currentUserId,
-                        title: 'Milestone Reached!',
-                        message: 'Your Pulse reached 1,000 views! 🎉',
-                        is_read: false,
-                        created_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString() // 3 days ago
-                    }
-                ];
-                
-                // Create sample actors
-                const sampleActors = [
-                    {
-                        id: 'sample_user_1',
-                        full_name: 'Amina Diallo',
-                        username: 'aminad',
-                        avatar_url: '',
-                        initials: 'AD'
-                    },
-                    {
-                        id: 'sample_user_2',
-                        full_name: 'Kwame Osei',
-                        username: 'kwameo',
-                        avatar_url: '',
-                        initials: 'KO'
-                    },
-                    {
-                        id: 'sample_user_3',
-                        full_name: 'Zara Ndlovu',
-                        username: 'zarandlovu',
-                        avatar_url: '',
-                        initials: 'ZN'
-                    },
-                    {
-                        id: 'sample_user_4',
-                        full_name: 'Kofi Mensah',
-                        username: 'kofim',
-                        avatar_url: '',
-                        initials: 'KM'
-                    },
-                    {
-                        id: 'system',
-                        full_name: 'Bantu Pulse',
-                        username: 'bantupulse',
-                        avatar_url: '',
-                        initials: 'BP'
-                    }
-                ];
-                
-                // Create sample pulses
-                const samplePulses = [
-                    {
-                        id: 'sample_pulse_1',
-                        caption: 'The rhythm of West African drums echoes through the marketplace...',
-                        media_url: ''
-                    },
-                    {
-                        id: 'sample_pulse_2',
-                        caption: 'Traditional Adinkra symbols carry deep meanings passed down through generations.',
-                        media_url: ''
-                    },
-                    {
-                        id: 'sample_pulse_3',
-                        caption: 'Celebrating the harvest festival with vibrant colors and community spirit.',
-                        media_url: ''
-                    }
-                ];
-                
-                // Process as if they came from database
-                const processedNotifications = sampleNotifications.map(notif => ({
-                    ...notif,
-                    actor: sampleActors.find(actor => actor.id === notif.actor_id),
-                    pulse: samplePulses.find(pulse => pulse.id === notif.pulse_id)
-                }));
-                
-                processNotifications(processedNotifications);
-                updateBadgeCounts();
-                renderNotifications('all');
-                
-            } catch (error) {
-                console.error('Error creating sample notifications:', error);
-            }
+            // Sort by timestamp (newest first)
+            Object.keys(notifications).forEach(category => {
+                notifications[category].sort((a, b) => {
+                    return new Date(b.rawData?.created_at || 0) - new Date(a.rawData?.created_at || 0);
+                });
+            });
         }
         
         function formatTimeAgo(timestamp) {
+            if (!timestamp) return 'Just now';
+            
             const now = new Date();
             const date = new Date(timestamp);
             const diffMs = now - date;
@@ -1440,16 +1656,16 @@
             if (diffMins < 60) return `${diffMins}m ago`;
             if (diffHours < 24) return `${diffHours}h ago`;
             if (diffDays < 7) return `${diffDays}d ago`;
-            return date.toLocaleDateString();
+            return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
         }
         
         function renderNotifications(category) {
             const container = document.getElementById(`${category}Notifications`);
-            const notificationsList = notificationCategories[category];
+            const notificationsList = notifications[category];
             
             if (!container) return;
             
-            if (notificationsList.length === 0) {
+            if (!notificationsList || notificationsList.length === 0) {
                 let emptyMessage = '';
                 let emptyDescription = '';
                 
@@ -1487,7 +1703,7 @@
             container.innerHTML = '';
             
             notificationsList.forEach(notification => {
-                const isGrouped = notification.actors.length > 1;
+                const isGrouped = notification.actors && notification.actors.length > 1;
                 
                 if (isGrouped) {
                     // Render grouped notification
@@ -1517,7 +1733,10 @@
                             </div>
                         </div>
                         ${notification.context ? `<div class="grouped-preview">"${notification.context}"</div>` : ''}
-                        <div class="grouped-time">${notification.timestamp}</div>
+                        <div class="grouped-time">
+                            ${notification.timestamp}
+                            ${notification.metadata.pulse_caption ? `<i class="fas fa-chevron-right" style="margin-left: auto; color: var(--slate-grey);"></i>` : ''}
+                        </div>
                         <div class="notification-actions">
                             <button class="action-btn" onclick="markAsRead('${notification.id}')" title="Mark as read">
                                 <i class="fas fa-check"></i>
@@ -1541,9 +1760,14 @@
                     notificationItem.className = `notification-item ${notification.isRead ? '' : 'unread'}`;
                     notificationItem.setAttribute('data-notification-id', notification.id);
                     
-                    const actor = notification.actors[0];
+                    const actor = notification.actors && notification.actors[0] ? notification.actors[0] : {
+                        name: 'System',
+                        initials: 'S',
+                        avatar: ''
+                    };
+                    
                     const avatarClass = notification.type === 'system' ? 'system' : 
-                                      notification.type === 'creator_milestone' ? 'creator' : '';
+                                      notification.type === 'creator' ? 'creator' : '';
                     
                     notificationItem.innerHTML = `
                         <div class="notification-avatar ${avatarClass}">
@@ -1556,7 +1780,10 @@
                                 <span class="notification-type ${notification.type}">${notification.type}</span>
                             </div>
                             ${notification.context ? `<div class="notification-context">"${notification.context}"</div>` : ''}
-                            <div class="notification-time">${notification.timestamp}</div>
+                            <div class="notification-time">
+                                ${notification.timestamp}
+                                ${notification.metadata.pulse_caption ? `<i class="fas fa-chevron-right" style="margin-left: auto; color: var(--slate-grey);"></i>` : ''}
+                            </div>
                         </div>
                         <div class="notification-actions">
                             <button class="action-btn" onclick="markAsRead('${notification.id}')" title="Mark as read">
@@ -1580,11 +1807,11 @@
         }
         
         function updateBadgeCounts() {
-            // Calculate unread counts
-            const allUnread = notificationCategories.all.filter(n => !n.isRead).length;
-            const mentionsUnread = notificationCategories.mentions.filter(n => !n.isRead).length;
-            const creatorUnread = notificationCategories.creator.filter(n => !n.isRead).length;
-            const systemUnread = notificationCategories.system.filter(n => !n.isRead).length;
+            // Calculate unread counts from database data
+            const allUnread = notifications.all.filter(n => !n.isRead).length;
+            const mentionsUnread = notifications.mentions.filter(n => !n.isRead).length;
+            const creatorUnread = notifications.creator.filter(n => !n.isRead).length;
+            const systemUnread = notifications.system.filter(n => !n.isRead).length;
             
             // Update tab badges with gold color
             const allBadge = document.getElementById('allBadge');
@@ -1623,7 +1850,7 @@
                 const overlay = document.getElementById('actionSheetOverlay');
                 const title = document.getElementById('actionSheetTitle');
                 
-                title.textContent = currentNotification.message.substring(0, 30) + '...';
+                title.textContent = currentNotification.message.substring(0, 30) + (currentNotification.message.length > 30 ? '...' : '');
                 
                 overlay.style.display = 'flex';
                 setTimeout(() => {
@@ -1650,28 +1877,25 @@
         
         async function markAllAsRead() {
             try {
-                // Update all notifications to read
-                notificationCategories.all.forEach(notification => {
-                    notification.isRead = true;
-                });
+                // Update all notifications to read in database
+                const { error } = await supabaseClient
+                    .from('pulse_notifications')
+                    .update({ is_read: true })
+                    .eq('target_user_id', currentUserId)
+                    .eq('is_read', false);
                 
-                // Update categories
-                notificationCategories.mentions.forEach(n => n.isRead = true);
-                notificationCategories.creator.forEach(n => n.isRead = true);
-                notificationCategories.system.forEach(n => n.isRead = true);
-                
-                // In real implementation, update database
-                if (supabaseClient) {
-                    const { error } = await supabaseClient
-                        .from('notifications')
-                        .update({ is_read: true })
-                        .eq('target_user_id', currentUserId)
-                        .eq('is_read', false);
-                    
-                    if (error) {
-                        console.error('Error marking all as read:', error);
-                    }
+                if (error) {
+                    console.error('Error marking all as read:', error);
+                    showToast('Failed to mark all as read', 'error');
+                    return;
                 }
+                
+                // Update local state
+                Object.keys(notifications).forEach(category => {
+                    notifications[category].forEach(notification => {
+                        notification.isRead = true;
+                    });
+                });
                 
                 // Re-render current tab
                 const activeTab = document.querySelector('.tab.active').getAttribute('data-tab');
@@ -1691,20 +1915,21 @@
         async function markAsRead(notificationId) {
             try {
                 const notification = findNotificationById(notificationId);
-                if (notification) {
-                    notification.isRead = true;
+                if (notification && notification.rawData) {
+                    // Update in database
+                    const { error } = await supabaseClient
+                        .from('pulse_notifications')
+                        .update({ is_read: true })
+                        .eq('id', notification.rawData.id);
                     
-                    // In real implementation, update database
-                    if (supabaseClient && notification.data && notification.data.id) {
-                        const { error } = await supabaseClient
-                            .from('notifications')
-                            .update({ is_read: true })
-                            .eq('id', notification.data.id);
-                        
-                        if (error) {
-                            console.error('Error marking as read:', error);
-                        }
+                    if (error) {
+                        console.error('Error marking as read:', error);
+                        showToast('Failed to mark as read', 'error');
+                        return;
                     }
+                    
+                    // Update local state
+                    notification.isRead = true;
                     
                     // Update UI
                     const activeTab = document.querySelector('.tab.active').getAttribute('data-tab');
@@ -1744,8 +1969,8 @@
         }
         
         function findNotificationById(id) {
-            for (const category in notificationCategories) {
-                const notification = notificationCategories[category].find(n => n.id === id);
+            for (const category in notifications) {
+                const notification = notifications[category].find(n => n.id === id);
                 if (notification) return notification;
             }
             return null;
@@ -1758,19 +1983,15 @@
             }
             
             // Navigate to relevant content
-            if (notification.pulseId && notification.pulseId.startsWith('sample_')) {
-                // Sample pulse - show preview
+            if (notification.metadata && notification.metadata.pulse_caption) {
                 showToast('Opening pulse...', 'success');
-                setTimeout(() => {
-                    window.location.href = `pulse-detail.html?id=${notification.pulseId}`;
-                }, 500);
+                // In real app: window.location.href = `pulse-detail.html?id=${notification.rawData.pulse_id}`;
             } else if (notification.type === 'follow') {
-                // Navigate to user profile
-                const actor = notification.actors[0];
-                showToast(`Viewing ${actor.name}'s profile...`, 'success');
-            } else if (notification.type === 'creator_milestone') {
-                // Navigate to creator dashboard
-                showToast('Opening creator insights...', 'success');
+                const actor = notification.actors && notification.actors[0];
+                if (actor) {
+                    showToast(`Viewing ${actor.name}'s profile...`, 'success');
+                    // In real app: window.location.href = `profile.html?user_id=${notification.rawData.actor_id}`;
+                }
             } else {
                 // Default action
                 showToast('Opening notification...', 'success');
@@ -1780,33 +2001,135 @@
         function subscribeToNotifications() {
             if (!supabaseClient) return;
             
-            // Subscribe to notifications table changes
+            // Subscribe to pulse_notifications table changes
             notificationsSubscription = supabaseClient
-                .channel('notifications-channel')
+                .channel('pulse-notifications')
                 .on(
                     'postgres_changes',
                     {
                         event: 'INSERT',
                         schema: 'public',
-                        table: 'notifications',
+                        table: 'pulse_notifications',
                         filter: `target_user_id=eq.${currentUserId}`
                     },
                     (payload) => {
                         console.log('New notification received:', payload);
-                        // Reload notifications
-                        loadRealNotifications();
-                        // Play subtle sound or show toast
-                        showToast('New notification received', 'success');
+                        
+                        // Add new notification to local state
+                        const newNotification = {
+                            id: payload.new.id,
+                            type: payload.new.type,
+                            message: payload.new.message,
+                            metadata: payload.new.metadata || {},
+                            timestamp: 'Just now',
+                            isRead: payload.new.is_read,
+                            rawData: payload.new
+                        };
+                        
+                        // Add to appropriate categories
+                        notifications.all.unshift(newNotification);
+                        
+                        if (newNotification.type === 'mention') {
+                            notifications.mentions.unshift(newNotification);
+                        } else if (['creator', 'follow'].includes(newNotification.type)) {
+                            notifications.creator.unshift(newNotification);
+                        } else if (newNotification.type === 'system') {
+                            notifications.system.unshift(newNotification);
+                        }
+                        
+                        // Update UI
+                        const activeTab = document.querySelector('.tab.active').getAttribute('data-tab');
+                        renderNotifications(activeTab);
+                        updateBadgeCounts();
+                        
+                        // Show toast notification
+                        showToast('New notification!', 'success');
                     }
                 )
                 .subscribe();
         }
         
-        function showToast(message, type = 'error') {
+        async function loadFallbackNotifications() {
+            console.log('Loading fallback notifications...');
+            
+            // Create fallback notifications
+            notifications.all = [
+                {
+                    id: '1',
+                    type: 'like',
+                    actors: [{ name: 'Amina Diallo', username: 'aminad', initials: 'AD' }],
+                    message: 'Amina Diallo liked your Pulse',
+                    context: 'Preserving traditional West African drumming techniques',
+                    timestamp: '2h ago',
+                    isRead: false,
+                    metadata: { pulse_caption: 'Traditional drumming patterns' }
+                },
+                {
+                    id: '2',
+                    type: 'comment',
+                    actors: [{ name: 'Kwame Osei', username: 'kwameo', initials: 'KO' }],
+                    message: 'Kwame Osei commented on your Pulse',
+                    context: 'Great insight! I learned something new today.',
+                    timestamp: '3h ago',
+                    isRead: false,
+                    metadata: { pulse_caption: 'Adinkra symbolism' }
+                },
+                {
+                    id: '3',
+                    type: 'mention',
+                    actors: [{ name: 'Zara Ndlovu', username: 'zarandlovu', initials: 'ZN' }],
+                    message: 'Zara Ndlovu mentioned you',
+                    context: 'Check out this amazing cultural insight!',
+                    timestamp: '1d ago',
+                    isRead: true,
+                    metadata: { pulse_caption: 'Harvest festivals' }
+                },
+                {
+                    id: '4',
+                    type: 'follow',
+                    actors: [{ name: 'Kofi Mensah', username: 'kofim', initials: 'KM' }],
+                    message: 'Kofi Mensah started following you',
+                    context: 'Interested in your cultural content',
+                    timestamp: '2d ago',
+                    isRead: false
+                },
+                {
+                    id: '5',
+                    type: 'creator',
+                    actors: [{ name: 'Bantu Pulse', initials: 'BP' }],
+                    message: 'Your Pulse Series reached 100 connectors! 🎉',
+                    context: 'African Cultural Heritage series milestone',
+                    timestamp: '3d ago',
+                    isRead: false
+                },
+                {
+                    id: '6',
+                    type: 'system',
+                    actors: [{ name: 'System', initials: 'S' }],
+                    message: 'Welcome to Bantu Connect Pulse!',
+                    context: 'Start sharing your cultural moments.',
+                    timestamp: '1w ago',
+                    isRead: true
+                }
+            ];
+            
+            // Categorize
+            notifications.mentions = notifications.all.filter(n => n.type === 'mention');
+            notifications.creator = notifications.all.filter(n => ['creator', 'follow'].includes(n.type));
+            notifications.system = notifications.all.filter(n => n.type === 'system');
+            
+            // Update UI
+            updateBadgeCounts();
+            renderNotifications('all');
+            
+            showToast('Loaded notifications', 'success');
+        }
+        
+        function showToast(message, type = 'success') {
             const toast = document.createElement('div');
             toast.className = `toast ${type}`;
             toast.innerHTML = `
-                <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i>
+                <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'warning' ? 'exclamation-triangle' : 'exclamation-circle'}"></i>
                 <span>${message}</span>
             `;
             
@@ -1820,11 +2143,7 @@
                         container.removeChild(toast);
                     }
                 }, 300);
-            }, 4000);
-        }
-        
-        function loadSampleNotifications() {
-            createSampleNotifications();
+            }, 3000);
         }
         
         // Start initialization when DOM is fully loaded
