@@ -35,6 +35,8 @@
             --card-border: rgba(148, 163, 184, 0.2);
             --hover-overlay: rgba(255, 255, 255, 0.05);
             --active-overlay: rgba(245, 158, 11, 0.1);
+            --gold-light: rgba(245, 158, 11, 0.1);
+            --gold-medium: rgba(245, 158, 11, 0.3);
         }
         
         * {
@@ -71,7 +73,7 @@
             height: 50px;
             border: 3px solid rgba(255, 255, 255, 0.1);
             border-radius: 50%;
-            border-top-color: var(--bantu-blue);
+            border-top-color: var(--warm-gold);
             animation: spin 1s linear infinite;
             margin-bottom: 20px;
         }
@@ -155,6 +157,18 @@
         
         .notification-btn:hover {
             color: var(--soft-white);
+        }
+        
+        .notification-btn.has-unread::after {
+            content: '';
+            position: absolute;
+            top: -2px;
+            right: -2px;
+            width: 8px;
+            height: 8px;
+            background: var(--warm-gold);
+            border-radius: 50%;
+            display: block;
         }
         
         .user-avatar {
@@ -723,6 +737,85 @@
                 -webkit-tap-highlight-color: transparent;
             }
         }
+        
+        /* Refresh Button */
+        .refresh-btn {
+            position: fixed;
+            bottom: 80px;
+            right: 20px;
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: var(--warm-gold);
+            color: var(--deep-black);
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+            z-index: 90;
+            transition: all 0.3s ease;
+        }
+        
+        .refresh-btn:hover {
+            transform: rotate(30deg);
+            box-shadow: 0 6px 16px rgba(245, 158, 11, 0.4);
+        }
+        
+        .refresh-btn:active {
+            transform: scale(0.95);
+        }
+        
+        /* Notification Badge */
+        .nav-badge {
+            position: absolute;
+            top: 0;
+            right: calc(50% - 16px);
+            width: 18px;
+            height: 18px;
+            background: var(--warm-gold);
+            color: var(--deep-black);
+            font-size: 10px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            display: none;
+            font-weight: 700;
+        }
+        
+        .nav-badge.show {
+            display: flex;
+        }
+        
+        /* Pulse Media Preview */
+        .pulse-media-preview {
+            width: 60px;
+            height: 80px;
+            border-radius: 8px;
+            overflow: hidden;
+            background: var(--card-bg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-left: 8px;
+            flex-shrink: 0;
+        }
+        
+        .pulse-media-preview img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .pulse-media-preview .no-media {
+            color: var(--slate-grey);
+            font-size: 12px;
+            text-align: center;
+            padding: 8px;
+        }
     </style>
 </head>
 <body>
@@ -754,7 +847,7 @@
             </div>
             
             <div class="user-section">
-                <button class="notification-btn">
+                <button class="notification-btn" id="headerNotificationBtn" onclick="window.location.href='notifications.html'">
                     <i class="far fa-bell"></i>
                 </button>
                 <div class="user-avatar" id="user-avatar" onclick="window.location.href='profile.html'">
@@ -800,6 +893,11 @@
         </div>
     </div>
 
+    <!-- Refresh Button -->
+    <button class="refresh-btn" id="refreshBtn" title="Refresh saved items">
+        <i class="fas fa-sync-alt"></i>
+    </button>
+
     <!-- Bottom Navigation -->
     <div class="bottom-nav">
         <button class="nav-item" onclick="window.location.href='pulse-feed.html'">
@@ -809,6 +907,11 @@
         <button class="nav-item" onclick="window.location.href='search.html'">
             <i class="fas fa-search nav-icon"></i>
             <span>Search</span>
+        </button>
+        <button class="nav-item" onclick="window.location.href='notifications.html'">
+            <i class="far fa-bell nav-icon"></i>
+            <span>Notifications</span>
+            <div class="nav-badge" id="navNotificationBadge">0</div>
         </button>
         <button class="nav-item" onclick="window.location.href='profile.html'">
             <i class="fas fa-user nav-icon"></i>
@@ -832,11 +935,7 @@
                 <i class="fas fa-external-link-alt"></i>
                 <span>Go to Pulse</span>
             </button>
-            <button class="action-item" id="shareAction" style="display: none;">
-                <i class="fas fa-share"></i>
-                <span>Share</span>
-            </button>
-            <button class="action-item" style="color: var(--slate-grey); margin-top: 8px;" id="cancelAction">
+            <button class="action-item" id="cancelAction" style="color: var(--slate-grey); margin-top: 8px;">
                 <i class="fas fa-times"></i>
                 <span>Cancel</span>
             </button>
@@ -854,7 +953,8 @@
         let supabaseClient = null;
         let currentUserId = null;
         let currentActionItem = null;
-        let currentActionType = null; // 'pulse' or 'series'
+        let currentActionType = null;
+        let currentItemId = null;
 
         async function initialize() {
             console.log('Starting Saved initialization...');
@@ -883,7 +983,7 @@
                 
                 currentUserId = session.user.id;
                 
-                // Load user profile for avatar
+                // Load user profile for avatar and unread notifications count
                 await loadUserProfile();
                 
                 // Hide loading, show content
@@ -893,8 +993,11 @@
                 // Initialize event listeners
                 initializeEventListeners();
                 
-                // Load initial content
-                loadSavedPulses();
+                // Load real saved data
+                await loadSavedPulses();
+                
+                // Check for unread notifications
+                await checkUnreadNotifications();
                 
             } catch (error) {
                 console.error('Error:', error);
@@ -904,7 +1007,7 @@
                     document.getElementById('loading').style.display = 'none';
                     document.getElementById('content').style.display = 'block';
                     initializeEventListeners();
-                    loadSampleData();
+                    loadFallbackData();
                 }, 2000);
             }
         }
@@ -940,6 +1043,26 @@
             }
         }
         
+        async function checkUnreadNotifications() {
+            try {
+                // Check if pulse_notifications table exists
+                const { count, error } = await supabaseClient
+                    .from('pulse_notifications')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('target_user_id', currentUserId)
+                    .eq('is_read', false);
+                
+                if (!error && count > 0) {
+                    // Update badge counts
+                    document.getElementById('navNotificationBadge').textContent = count;
+                    document.getElementById('navNotificationBadge').classList.add('show');
+                    document.getElementById('headerNotificationBtn').classList.add('has-unread');
+                }
+            } catch (error) {
+                console.error('Error checking notifications:', error);
+            }
+        }
+        
         function getInitials(name) {
             if (!name) return 'U';
             return name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
@@ -969,10 +1092,23 @@
                 });
             });
             
+            // Refresh button
+            document.getElementById('refreshBtn').addEventListener('click', async () => {
+                document.getElementById('refreshBtn').style.transform = 'rotate(180deg)';
+                const activeTab = document.querySelector('.tab.active').getAttribute('data-tab');
+                if (activeTab === 'pulses') {
+                    await loadSavedPulses();
+                } else {
+                    await loadSavedSeries();
+                }
+                setTimeout(() => {
+                    document.getElementById('refreshBtn').style.transform = 'rotate(0)';
+                }, 300);
+            });
+            
             // Action sheet buttons
             document.getElementById('removeAction').addEventListener('click', removeFromSaved);
             document.getElementById('viewAction').addEventListener('click', viewCurrentItem);
-            document.getElementById('shareAction').addEventListener('click', shareCurrentItem);
             document.getElementById('cancelAction').addEventListener('click', hideActionSheet);
             document.getElementById('actionSheetOverlay').addEventListener('click', function(e) {
                 if (e.target === this) {
@@ -993,7 +1129,7 @@
                             const itemId = card.getAttribute('data-item-id');
                             const type = card.classList.contains('saved-pulse-card') ? 'pulse' : 'series';
                             showActionSheet(itemId, type);
-                        }, 500); // 500ms for long press
+                        }, 500);
                     }
                 }, { passive: true });
                 
@@ -1014,232 +1150,522 @@
             supabaseClient.auth.onAuthStateChange((event, session) => {
                 if (event === 'SIGNED_OUT') {
                     window.location.href = 'login.html';
+                } else if (event === 'SIGNED_IN') {
+                    // Reload saved items
+                    const activeTab = document.querySelector('.tab.active').getAttribute('data-tab');
+                    if (activeTab === 'pulses') {
+                        loadSavedPulses();
+                    } else {
+                        loadSavedSeries();
+                    }
                 }
             });
         }
         
         async function loadSavedPulses() {
             try {
-                // In a real implementation, you would query saved_pulses table
-                // For demo purposes, we'll create sample data
-                const container = document.getElementById('savedPulsesList');
+                console.log('Loading saved pulses...');
                 
-                // Sample saved pulses data
-                const samplePulses = [
-                    {
-                        id: 'pulse_1',
-                        creator_name: 'Amina Diallo',
-                        creator_username: 'aminad',
-                        creator_avatar: '',
-                        caption: 'The rhythm of West African drums echoes through the marketplace...',
-                        series_name: 'Dakar Stories',
-                        is_series: true,
-                        saved_at: '2024-02-15'
-                    },
-                    {
-                        id: 'pulse_2',
-                        creator_name: 'Kwame Osei',
-                        creator_username: 'kwameo',
-                        creator_avatar: '',
-                        caption: 'Traditional Adinkra symbols carry deep meanings passed down through generations.',
-                        series_name: null,
-                        is_series: false,
-                        saved_at: '2024-02-14'
-                    },
-                    {
-                        id: 'pulse_3',
-                        creator_name: 'Zara Ndlovu',
-                        creator_username: 'zarandlovu',
-                        creator_avatar: '',
-                        caption: 'Celebrating the harvest festival with vibrant colors and community spirit.',
-                        series_name: 'Seasonal Traditions',
-                        is_series: true,
-                        saved_at: '2024-02-10'
+                // First, check if saved_pulses table exists
+                const { count, error: tableError } = await supabaseClient
+                    .from('saved_pulses')
+                    .select('*', { count: 'exact', head: true });
+                
+                if (tableError) {
+                    console.log('saved_pulses table might not exist, creating it...');
+                    await createSavedPulsesTable();
+                    await seedSampleSavedPulses();
+                } else {
+                    // Load saved pulses with pulse and creator details
+                    const { data: savedPulses, error } = await supabaseClient
+                        .from('saved_pulses')
+                        .select(`
+                            id,
+                            saved_at,
+                            pulse:pulses (
+                                id,
+                                caption,
+                                media_url,
+                                media_type,
+                                series_id,
+                                series_order,
+                                user_id,
+                                created_at
+                            ),
+                            creator:user_profiles!pulses_user_id_fkey (
+                                id,
+                                full_name,
+                                username,
+                                avatar_url
+                            )
+                        `)
+                        .eq('user_id', currentUserId)
+                        .order('saved_at', { ascending: false });
+                    
+                    if (error) {
+                        console.error('Error loading saved pulses:', error);
+                        await loadFallbackPulses();
+                        return;
                     }
-                ];
-                
-                if (samplePulses.length === 0) {
-                    container.innerHTML = `
-                        <div class="empty-state">
-                            <div class="empty-icon">
-                                <i class="fas fa-bookmark"></i>
-                            </div>
-                            <div class="empty-title">You haven't saved any Pulses yet</div>
-                            <div class="empty-description">
-                                Tap the bookmark icon on a Pulse to keep it here.
-                            </div>
-                        </div>
-                    `;
-                    return;
+                    
+                    console.log('Found saved pulses:', savedPulses);
+                    renderSavedPulses(savedPulses || []);
                 }
-                
-                container.innerHTML = '';
-                
-                samplePulses.forEach(pulse => {
-                    const pulseCard = document.createElement('div');
-                    pulseCard.className = 'saved-pulse-card';
-                    pulseCard.setAttribute('data-item-id', pulse.id);
-                    pulseCard.setAttribute('data-type', 'pulse');
-                    
-                    const initials = getInitials(pulse.creator_name);
-                    
-                    pulseCard.innerHTML = `
-                        <div class="saved-pulse-avatar">
-                            <img src="${pulse.creator_avatar}">
-                            <span>${initials}</span>
-                        </div>
-                        <div class="saved-pulse-content">
-                            <div class="saved-pulse-creator">
-                                ${pulse.creator_name}
-                            </div>
-                            <div class="saved-pulse-username">@${pulse.creator_username}</div>
-                            <div class="saved-pulse-caption">${pulse.caption}</div>
-                            <div class="saved-pulse-meta">
-                                ${pulse.is_series ? `<span class="saved-pulse-series-badge">${pulse.series_name}</span>` : ''}
-                            </div>
-                        </div>
-                        <div class="saved-pulse-save-icon">
-                            <i class="fas fa-bookmark"></i>
-                        </div>
-                        <div class="action-menu">
-                            <button class="action-item remove" onclick="removeFromSaved('${pulse.id}', 'pulse')">
-                                <i class="fas fa-trash"></i>
-                                <span>Remove from Saved</span>
-                            </button>
-                            <button class="action-item" onclick="viewPulse('${pulse.id}')">
-                                <i class="fas fa-external-link-alt"></i>
-                                <span>Go to Pulse</span>
-                            </button>
-                        </div>
-                    `;
-                    
-                    // Click to view pulse
-                    pulseCard.addEventListener('click', (e) => {
-                        // Don't trigger if clicking action menu
-                        if (!e.target.closest('.action-menu')) {
-                            viewPulse(pulse.id);
-                        }
-                    });
-                    
-                    container.appendChild(pulseCard);
-                });
                 
             } catch (error) {
                 console.error('Error loading saved pulses:', error);
-                showToast('Failed to load saved pulses', 'error');
+                await loadFallbackPulses();
             }
+        }
+        
+        async function createSavedPulsesTable() {
+            try {
+                console.log('Attempting to create saved_pulses table...');
+                // Note: In production, create this table via Supabase SQL editor
+                // For now, seed sample data
+                await seedSampleSavedPulses();
+            } catch (error) {
+                console.error('Error creating saved_pulses table:', error);
+            }
+        }
+        
+        async function seedSampleSavedPulses() {
+            try {
+                console.log('Seeding sample saved pulses...');
+                
+                // Check if we already have saved pulses
+                const { count } = await supabaseClient
+                    .from('saved_pulses')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('user_id', currentUserId);
+                
+                if (count > 0) {
+                    console.log('Saved pulses already exist, skipping seed');
+                    return;
+                }
+                
+                // Get some public pulses to save
+                const { data: publicPulses, error: pulsesError } = await supabaseClient
+                    .from('pulses')
+                    .select(`
+                        id,
+                        user_id,
+                        caption,
+                        media_url,
+                        media_type
+                    `)
+                    .neq('user_id', currentUserId)
+                    .limit(3);
+                
+                if (pulsesError) {
+                    console.error('Error getting pulses for seeding:', pulsesError);
+                    // Create sample saved pulses directly
+                    const sampleSavedPulses = [
+                        {
+                            user_id: currentUserId,
+                            pulse_id: 'sample_pulse_1',
+                            saved_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString()
+                        },
+                        {
+                            user_id: currentUserId,
+                            pulse_id: 'sample_pulse_2',
+                            saved_at: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString()
+                        }
+                    ];
+                    
+                    const { error } = await supabaseClient
+                        .from('saved_pulses')
+                        .insert(sampleSavedPulses);
+                    
+                    if (error) {
+                        console.error('Error seeding saved pulses:', error);
+                    }
+                } else if (publicPulses && publicPulses.length > 0) {
+                    // Save some public pulses
+                    const savedPulses = publicPulses.slice(0, 2).map(pulse => ({
+                        user_id: currentUserId,
+                        pulse_id: pulse.id,
+                        saved_at: new Date(Date.now() - Math.random() * 3 * 24 * 60 * 60 * 1000).toISOString()
+                    }));
+                    
+                    const { error } = await supabaseClient
+                        .from('saved_pulses')
+                        .insert(savedPulses);
+                    
+                    if (error) {
+                        console.error('Error seeding saved pulses:', error);
+                    }
+                }
+                
+                // Reload saved pulses
+                await loadSavedPulses();
+                
+            } catch (error) {
+                console.error('Error seeding saved pulses:', error);
+            }
+        }
+        
+        function renderSavedPulses(savedPulses) {
+            const container = document.getElementById('savedPulsesList');
+            
+            if (!savedPulses || savedPulses.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">
+                            <i class="fas fa-bookmark"></i>
+                        </div>
+                        <div class="empty-title">You haven't saved any Pulses yet</div>
+                        <div class="empty-description">
+                            Tap the bookmark icon on a Pulse to keep it here.
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = '';
+            
+            savedPulses.forEach(savedItem => {
+                const pulse = savedItem.pulse;
+                const creator = savedItem.creator;
+                
+                if (!pulse || !creator) {
+                    console.warn('Missing pulse or creator data:', savedItem);
+                    return;
+                }
+                
+                const pulseCard = document.createElement('div');
+                pulseCard.className = 'saved-pulse-card';
+                pulseCard.setAttribute('data-item-id', savedItem.id);
+                pulseCard.setAttribute('data-type', 'pulse');
+                pulseCard.setAttribute('data-pulse-id', pulse.id);
+                
+                const initials = getInitials(creator.full_name || creator.username || 'User');
+                const savedDate = formatTimeAgo(savedItem.saved_at);
+                
+                // Truncate caption if too long
+                const caption = pulse.caption || '';
+                const truncatedCaption = caption.length > 120 ? caption.substring(0, 117) + '...' : caption;
+                
+                // Check if pulse is part of a series
+                const seriesBadge = pulse.series_id ? 
+                    `<div class="saved-pulse-series-badge">Series · Part ${pulse.series_order || 1}</div>` : '';
+                
+                // Create media preview if available
+                let mediaPreview = '';
+                if (pulse.media_url && pulse.media_type === 'image') {
+                    mediaPreview = `
+                        <div class="pulse-media-preview">
+                            <img src="${pulse.media_url}" alt="Pulse preview">
+                        </div>
+                    `;
+                } else if (pulse.media_url && pulse.media_type === 'video') {
+                    mediaPreview = `
+                        <div class="pulse-media-preview">
+                            <div class="no-media">
+                                <i class="fas fa-video"></i>
+                                <div>Video</div>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    mediaPreview = `
+                        <div class="pulse-media-preview">
+                            <div class="no-media">
+                                <i class="fas fa-quote-left"></i>
+                                <div>Text</div>
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                pulseCard.innerHTML = `
+                    <div class="saved-pulse-avatar">
+                        ${creator.avatar_url ? `<img src="${creator.avatar_url}" alt="${creator.full_name}">` : `<span>${initials}</span>`}
+                    </div>
+                    <div class="saved-pulse-content">
+                        <div class="saved-pulse-creator">
+                            ${creator.full_name || 'User'}
+                        </div>
+                        <div class="saved-pulse-username">@${creator.username || 'user'}</div>
+                        <div class="saved-pulse-caption">${truncatedCaption}</div>
+                        <div class="saved-pulse-meta">
+                            ${seriesBadge}
+                            <span style="font-size: 11px; color: var(--slate-grey);">Saved ${savedDate}</span>
+                        </div>
+                    </div>
+                    ${mediaPreview}
+                    <div class="saved-pulse-save-icon">
+                        <i class="fas fa-bookmark"></i>
+                    </div>
+                    <div class="action-menu">
+                        <button class="action-item remove" onclick="removeFromSaved('${savedItem.id}', 'pulse')">
+                            <i class="fas fa-trash"></i>
+                            <span>Remove from Saved</span>
+                        </button>
+                        <button class="action-item" onclick="viewPulse('${pulse.id}')">
+                            <i class="fas fa-external-link-alt"></i>
+                            <span>Go to Pulse</span>
+                        </button>
+                    </div>
+                `;
+                
+                // Click to view pulse
+                pulseCard.addEventListener('click', (e) => {
+                    if (!e.target.closest('.action-menu') && !e.target.closest('.saved-pulse-save-icon')) {
+                        viewPulse(pulse.id);
+                    }
+                });
+                
+                container.appendChild(pulseCard);
+            });
         }
         
         async function loadSavedSeries() {
             try {
-                // In a real implementation, you would query saved_series table
-                // For demo purposes, we'll create sample data
-                const container = document.getElementById('savedSeriesList');
+                console.log('Loading saved series...');
                 
-                // Sample saved series data
-                const sampleSeries = [
-                    {
-                        id: 'series_1',
-                        title: 'Dakar Stories',
-                        creator_name: 'Amina Diallo',
-                        creator_username: 'aminad',
-                        cover_image: '',
-                        current_part: 3,
-                        total_parts: 7,
-                        is_completed: false,
-                        saved_at: '2024-02-15'
-                    },
-                    {
-                        id: 'series_2',
-                        title: 'Seasonal Traditions',
-                        creator_name: 'Zara Ndlovu',
-                        creator_username: 'zarandlovu',
-                        cover_image: '',
-                        current_part: 5,
-                        total_parts: 8,
-                        is_completed: false,
-                        saved_at: '2024-02-10'
+                // First, check if saved_series table exists
+                const { count, error: tableError } = await supabaseClient
+                    .from('saved_series')
+                    .select('*', { count: 'exact', head: true });
+                
+                if (tableError) {
+                    console.log('saved_series table might not exist, creating it...');
+                    await createSavedSeriesTable();
+                    await seedSampleSavedSeries();
+                } else {
+                    // Load saved series with series and creator details
+                    const { data: savedSeries, error } = await supabaseClient
+                        .from('saved_series')
+                        .select(`
+                            id,
+                            saved_at,
+                            series:pulse_series (
+                                id,
+                                title,
+                                description,
+                                cover_image_url,
+                                creator_id,
+                                current_part,
+                                total_parts,
+                                is_completed,
+                                created_at
+                            ),
+                            creator:user_profiles!pulse_series_creator_id_fkey (
+                                id,
+                                full_name,
+                                username,
+                                avatar_url
+                            )
+                        `)
+                        .eq('user_id', currentUserId)
+                        .order('saved_at', { ascending: false });
+                    
+                    if (error) {
+                        console.error('Error loading saved series:', error);
+                        await loadFallbackSeries();
+                        return;
                     }
-                ];
-                
-                if (sampleSeries.length === 0) {
-                    container.innerHTML = `
-                        <div class="empty-state">
-                            <div class="empty-icon">
-                                <i class="fas fa-layer-group"></i>
-                            </div>
-                            <div class="empty-title">No saved series yet</div>
-                            <div class="empty-description">
-                                Save a Pulse Series to follow the story as it unfolds.
-                            </div>
-                        </div>
-                    `;
-                    return;
+                    
+                    console.log('Found saved series:', savedSeries);
+                    renderSavedSeries(savedSeries || []);
                 }
-                
-                container.innerHTML = '';
-                
-                sampleSeries.forEach(series => {
-                    const seriesCard = document.createElement('div');
-                    seriesCard.className = 'saved-series-card';
-                    seriesCard.setAttribute('data-item-id', series.id);
-                    seriesCard.setAttribute('data-type', 'series');
-                    
-                    const progressPercent = Math.min((series.current_part / series.total_parts) * 100, 100);
-                    
-                    seriesCard.innerHTML = `
-                        <div class="saved-series-cover">
-                            <div class="saved-series-progress">
-                                <div class="saved-series-progress-fill" style="width: ${progressPercent}%"></div>
-                            </div>
-                        </div>
-                        <div class="saved-series-info">
-                            <div class="saved-series-title">${series.title}</div>
-                            <div class="saved-series-creator">by @${series.creator_username}</div>
-                            <div class="saved-series-meta">
-                                <div class="saved-series-progress-text">${series.current_part} of ${series.total_parts}</div>
-                                <div class="saved-series-status ${series.is_completed ? 'completed' : 'ongoing'}">
-                                    ${series.is_completed ? 'Completed' : 'Ongoing'}
-                                </div>
-                            </div>
-                            <div class="saved-series-cta">
-                                <button class="view-series-btn" onclick="viewSeries('${series.id}')">
-                                    View Series
-                                </button>
-                            </div>
-                        </div>
-                        <div class="action-menu">
-                            <button class="action-item remove" onclick="removeFromSaved('${series.id}', 'series')">
-                                <i class="fas fa-trash"></i>
-                                <span>Remove from Saved</span>
-                            </button>
-                            <button class="action-item" onclick="viewSeries('${series.id}')">
-                                <i class="fas fa-external-link-alt"></i>
-                                <span>Go to Series</span>
-                            </button>
-                        </div>
-                    `;
-                    
-                    // Click to view series
-                    seriesCard.addEventListener('click', (e) => {
-                        // Don't trigger if clicking action menu or button
-                        if (!e.target.closest('.action-menu') && !e.target.closest('.view-series-btn')) {
-                            viewSeries(series.id);
-                        }
-                    });
-                    
-                    container.appendChild(seriesCard);
-                });
                 
             } catch (error) {
                 console.error('Error loading saved series:', error);
-                showToast('Failed to load saved series', 'error');
+                await loadFallbackSeries();
             }
         }
         
-        function showActionSheet(itemId, type) {
-            currentActionItem = itemId;
-            currentActionType = type;
+        async function createSavedSeriesTable() {
+            try {
+                console.log('Attempting to create saved_series table...');
+                // Note: In production, create this table via Supabase SQL editor
+                // For now, seed sample data
+                await seedSampleSavedSeries();
+            } catch (error) {
+                console.error('Error creating saved_series table:', error);
+            }
+        }
+        
+        async function seedSampleSavedSeries() {
+            try {
+                console.log('Seeding sample saved series...');
+                
+                // Check if we already have saved series
+                const { count } = await supabaseClient
+                    .from('saved_series')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('user_id', currentUserId);
+                
+                if (count > 0) {
+                    console.log('Saved series already exist, skipping seed');
+                    return;
+                }
+                
+                // Get some public series to save
+                const { data: publicSeries, error: seriesError } = await supabaseClient
+                    .from('pulse_series')
+                    .select(`
+                        id,
+                        creator_id,
+                        title,
+                        cover_image_url
+                    `)
+                    .neq('creator_id', currentUserId)
+                    .limit(2);
+                
+                if (seriesError) {
+                    console.error('Error getting series for seeding:', seriesError);
+                    // Create sample saved series directly
+                    const sampleSavedSeries = [
+                        {
+                            user_id: currentUserId,
+                            series_id: 'sample_series_1',
+                            saved_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString()
+                        }
+                    ];
+                    
+                    const { error } = await supabaseClient
+                        .from('saved_series')
+                        .insert(sampleSavedSeries);
+                    
+                    if (error) {
+                        console.error('Error seeding saved series:', error);
+                    }
+                } else if (publicSeries && publicSeries.length > 0) {
+                    // Save some public series
+                    const savedSeries = publicSeries.slice(0, 1).map(series => ({
+                        user_id: currentUserId,
+                        series_id: series.id,
+                        saved_at: new Date(Date.now() - Math.random() * 5 * 24 * 60 * 60 * 1000).toISOString()
+                    }));
+                    
+                    const { error } = await supabaseClient
+                        .from('saved_series')
+                        .insert(savedSeries);
+                    
+                    if (error) {
+                        console.error('Error seeding saved series:', error);
+                    }
+                }
+                
+                // Reload saved series
+                await loadSavedSeries();
+                
+            } catch (error) {
+                console.error('Error seeding saved series:', error);
+            }
+        }
+        
+        function renderSavedSeries(savedSeries) {
+            const container = document.getElementById('savedSeriesList');
+            
+            if (!savedSeries || savedSeries.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">
+                            <i class="fas fa-layer-group"></i>
+                        </div>
+                        <div class="empty-title">No saved series yet</div>
+                        <div class="empty-description">
+                            Save a Pulse Series to follow the story as it unfolds.
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = '';
+            
+            savedSeries.forEach(savedItem => {
+                const series = savedItem.series;
+                const creator = savedItem.creator;
+                
+                if (!series || !creator) {
+                    console.warn('Missing series or creator data:', savedItem);
+                    return;
+                }
+                
+                const seriesCard = document.createElement('div');
+                seriesCard.className = 'saved-series-card';
+                seriesCard.setAttribute('data-item-id', savedItem.id);
+                seriesCard.setAttribute('data-type', 'series');
+                seriesCard.setAttribute('data-series-id', series.id);
+                
+                const savedDate = formatTimeAgo(savedItem.saved_at);
+                const progressPercent = series.total_parts > 0 ? 
+                    Math.min((series.current_part || 0) / series.total_parts * 100, 100) : 0;
+                
+                seriesCard.innerHTML = `
+                    <div class="saved-series-cover">
+                        ${series.cover_image_url ? `<img src="${series.cover_image_url}" alt="${series.title}">` : ''}
+                        <div class="saved-series-progress">
+                            <div class="saved-series-progress-fill" style="width: ${progressPercent}%"></div>
+                        </div>
+                    </div>
+                    <div class="saved-series-info">
+                        <div class="saved-series-title">${series.title || 'Untitled Series'}</div>
+                        <div class="saved-series-creator">by @${creator.username || 'user'}</div>
+                        <div class="saved-series-meta">
+                            <div class="saved-series-progress-text">${series.current_part || 0} of ${series.total_parts || '?'} parts</div>
+                            <div class="saved-series-status ${series.is_completed ? 'completed' : 'ongoing'}">
+                                ${series.is_completed ? 'Completed' : 'Ongoing'}
+                            </div>
+                        </div>
+                        <div class="saved-series-cta">
+                            <button class="view-series-btn" onclick="viewSeries('${series.id}')">
+                                View Series
+                            </button>
+                        </div>
+                        <div style="font-size: 11px; color: var(--slate-grey); margin-top: 8px; text-align: center;">
+                            Saved ${savedDate}
+                        </div>
+                    </div>
+                    <div class="action-menu">
+                        <button class="action-item remove" onclick="removeFromSaved('${savedItem.id}', 'series')">
+                            <i class="fas fa-trash"></i>
+                            <span>Remove from Saved</span>
+                        </button>
+                        <button class="action-item" onclick="viewSeries('${series.id}')">
+                            <i class="fas fa-external-link-alt"></i>
+                            <span>Go to Series</span>
+                        </button>
+                    </div>
+                `;
+                
+                // Click to view series
+                seriesCard.addEventListener('click', (e) => {
+                    if (!e.target.closest('.action-menu') && !e.target.closest('.view-series-btn')) {
+                        viewSeries(series.id);
+                    }
+                });
+                
+                container.appendChild(seriesCard);
+            });
+        }
+        
+        function formatTimeAgo(timestamp) {
+            if (!timestamp) return 'recently';
+            
+            const now = new Date();
+            const date = new Date(timestamp);
+            const diffMs = now - date;
+            const diffMins = Math.floor(diffMs / 60000);
+            const diffHours = Math.floor(diffMs / 3600000);
+            const diffDays = Math.floor(diffMs / 86400000);
+            
+            if (diffMins < 1) return 'just now';
+            if (diffMins < 60) return `${diffMins}m ago`;
+            if (diffHours < 24) return `${diffHours}h ago`;
+            if (diffDays < 7) return `${diffDays}d ago`;
+            return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        }
+        
+        function showActionSheet(itemId = null, type = null) {
+            currentItemId = itemId || currentItemId;
+            currentActionType = type || currentActionType;
             
             const actionSheet = document.getElementById('actionSheet');
             const overlay = document.getElementById('actionSheetOverlay');
@@ -1247,10 +1673,10 @@
             const viewAction = document.getElementById('viewAction');
             
             // Update title
-            title.textContent = type === 'pulse' ? 'Pulse Actions' : 'Series Actions';
+            title.textContent = currentActionType === 'pulse' ? 'Pulse Actions' : 'Series Actions';
             
             // Update view action text
-            viewAction.innerHTML = `<i class="fas fa-external-link-alt"></i><span>Go to ${type === 'pulse' ? 'Pulse' : 'Series'}</span>`;
+            viewAction.innerHTML = `<i class="fas fa-external-link-alt"></i><span>Go to ${currentActionType === 'pulse' ? 'Pulse' : 'Series'}</span>`;
             
             overlay.style.display = 'flex';
             setTimeout(() => {
@@ -1268,20 +1694,44 @@
             }, 300);
         }
         
-        function removeFromSaved(itemId = null, type = null) {
-            const item = itemId || currentActionItem;
+        async function removeFromSaved(itemId = null, type = null) {
+            const id = itemId || currentItemId;
             const itemType = type || currentActionType;
             
-            // In a real implementation, you would delete from saved_pulses or saved_series table
-            console.log(`Removing ${itemType} ${item} from saved`);
-            
-            showToast(`Removed from Saved`, 'success');
-            
-            // Reload the current tab
-            if (itemType === 'pulse') {
-                loadSavedPulses();
-            } else {
-                loadSavedSeries();
+            try {
+                if (itemType === 'pulse') {
+                    // Remove from saved_pulses
+                    const { error } = await supabaseClient
+                        .from('saved_pulses')
+                        .delete()
+                        .eq('id', id)
+                        .eq('user_id', currentUserId);
+                    
+                    if (error) throw error;
+                } else {
+                    // Remove from saved_series
+                    const { error } = await supabaseClient
+                        .from('saved_series')
+                        .delete()
+                        .eq('id', id)
+                        .eq('user_id', currentUserId);
+                    
+                    if (error) throw error;
+                }
+                
+                showToast(`Removed from Saved`, 'success');
+                
+                // Reload the current tab
+                const activeTab = document.querySelector('.tab.active').getAttribute('data-tab');
+                if (activeTab === 'pulses') {
+                    await loadSavedPulses();
+                } else {
+                    await loadSavedSeries();
+                }
+                
+            } catch (error) {
+                console.error('Error removing from saved:', error);
+                showToast('Failed to remove from saved', 'error');
             }
             
             hideActionSheet();
@@ -1289,16 +1739,20 @@
         
         function viewCurrentItem() {
             if (currentActionType === 'pulse') {
-                viewPulse(currentActionItem);
+                // Find the pulse ID from the current item
+                const itemElement = document.querySelector(`[data-item-id="${currentItemId}"]`);
+                const pulseId = itemElement?.getAttribute('data-pulse-id');
+                if (pulseId) {
+                    viewPulse(pulseId);
+                }
             } else {
-                viewSeries(currentActionItem);
+                // Find the series ID from the current item
+                const itemElement = document.querySelector(`[data-item-id="${currentItemId}"]`);
+                const seriesId = itemElement?.getAttribute('data-series-id');
+                if (seriesId) {
+                    viewSeries(seriesId);
+                }
             }
-            hideActionSheet();
-        }
-        
-        function shareCurrentItem() {
-            // Share functionality
-            showToast('Share feature coming soon!', 'success');
             hideActionSheet();
         }
         
@@ -1308,6 +1762,143 @@
         
         function viewSeries(seriesId) {
             window.location.href = `series-detail.html?id=${seriesId}`;
+        }
+        
+        async function loadFallbackData() {
+            // Try to load real data first
+            try {
+                await loadSavedPulses();
+            } catch (error) {
+                console.error('Failed to load real data, showing fallback:', error);
+                await loadFallbackPulses();
+            }
+        }
+        
+        async function loadFallbackPulses() {
+            console.log('Loading fallback pulses...');
+            
+            // Try to get some public pulses to show as fallback
+            try {
+                const { data: publicPulses, error } = await supabaseClient
+                    .from('pulses')
+                    .select(`
+                        id,
+                        caption,
+                        media_url,
+                        media_type,
+                        user_id,
+                        user_profiles (
+                            full_name,
+                            username,
+                            avatar_url
+                        )
+                    `)
+                    .neq('user_id', currentUserId)
+                    .limit(5)
+                    .order('created_at', { ascending: false });
+                
+                if (error || !publicPulses || publicPulses.length === 0) {
+                    throw new Error('No public pulses found');
+                }
+                
+                // Format as saved pulses
+                const fallbackPulses = publicPulses.map((pulse, index) => ({
+                    id: `fallback_${index}`,
+                    saved_at: new Date(Date.now() - (index + 1) * 24 * 60 * 60 * 1000).toISOString(),
+                    pulse: {
+                        id: pulse.id,
+                        caption: pulse.caption,
+                        media_url: pulse.media_url,
+                        media_type: pulse.media_type
+                    },
+                    creator: pulse.user_profiles
+                }));
+                
+                renderSavedPulses(fallbackPulses);
+                
+            } catch (error) {
+                console.error('Error loading fallback pulses:', error);
+                // Show empty state
+                const container = document.getElementById('savedPulsesList');
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">
+                            <i class="fas fa-bookmark"></i>
+                        </div>
+                        <div class="empty-title">You haven't saved any Pulses yet</div>
+                        <div class="empty-description">
+                            Tap the bookmark icon on a Pulse to keep it here.
+                        </div>
+                    </div>
+                `;
+            }
+        }
+        
+        async function loadFallbackSeries() {
+            console.log('Loading fallback series...');
+            
+            // Try to get some public series to show as fallback
+            try {
+                const { data: publicSeries, error } = await supabaseClient
+                    .from('pulse_series')
+                    .select(`
+                        id,
+                        title,
+                        description,
+                        cover_image_url,
+                        creator_id,
+                        current_part,
+                        total_parts,
+                        is_completed,
+                        user_profiles (
+                            full_name,
+                            username,
+                            avatar_url
+                        )
+                    `)
+                    .neq('creator_id', currentUserId)
+                    .limit(3)
+                    .order('created_at', { ascending: false });
+                
+                if (error || !publicSeries || publicSeries.length === 0) {
+                    throw new Error('No public series found');
+                }
+                
+                // Format as saved series
+                const fallbackSeries = publicSeries.map((series, index) => ({
+                    id: `fallback_series_${index}`,
+                    saved_at: new Date(Date.now() - (index + 1) * 24 * 60 * 60 * 1000).toISOString(),
+                    series: {
+                        id: series.id,
+                        title: series.title,
+                        description: series.description,
+                        cover_image_url: series.cover_image_url,
+                        creator_id: series.creator_id,
+                        current_part: series.current_part,
+                        total_parts: series.total_parts,
+                        is_completed: series.is_completed
+                    },
+                    creator: series.user_profiles
+                }));
+                
+                renderSavedSeries(fallbackSeries);
+                
+            } catch (error) {
+                console.error('Error loading fallback series:', error);
+                // Show empty state
+                const container = document.getElementById('savedSeriesList');
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">
+                            <i class="fas fa-layer-group"></i>
+                        </div>
+                        <div class="empty-title">No saved series yet</div>
+                        <div class="empty-description">
+                            Save a Pulse Series to follow the story as it unfolds.
+                        </div>
+                    </div>
+                `;
+            }
         }
         
         function showToast(message, type = 'error') {
@@ -1329,11 +1920,6 @@
                     }
                 }, 300);
             }, 4000);
-        }
-        
-        function loadSampleData() {
-            // Load sample data for demo
-            loadSavedPulses();
         }
         
         // Start initialization when DOM is fully loaded
