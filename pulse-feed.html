@@ -1373,6 +1373,27 @@
                             <i class="fas fa-times"></i>
                         </button>
                     </div>
+                    
+                    <!-- Series Edit Section -->
+                    <div class="series-options" id="editSeriesOptions" style="display: none;">
+                        <input 
+                            type="text" 
+                            class="series-input" 
+                            id="editSeriesTitle" 
+                            placeholder="Edit series name"
+                        >
+                        <div class="toggle-description">
+                            Edit the title of your pulse series. This will update the name for all pulses in this series.
+                        </div>
+                        <div style="margin-top: 10px; display: flex; gap: 10px;">
+                            <button type="button" class="modal-btn modal-btn-cancel" id="removeFromSeries" style="font-size: 12px; padding: 8px 12px;">
+                                Remove from Series
+                            </button>
+                            <button type="button" class="modal-btn modal-btn-post" id="createNewSeries" style="font-size: 12px; padding: 8px 12px;">
+                                Move to New Series
+                            </button>
+                        </div>
+                    </div>
                 </form>
             </div>
             <div class="modal-footer">
@@ -1394,6 +1415,9 @@
         let currentSession = null;
         let editingPulseId = null;
         let editSelectedMedia = null;
+        let editingSeriesId = null;
+        let editingSeriesTitle = null;
+        let editingPulseData = null;
 
         async function initialize() {
             console.log('Starting Pulse Feed initialization...');
@@ -2159,7 +2183,7 @@
             window.location.href = `pulse-content-detail.html?id=${pulseId}`;
         }
         
-        // ✅ FIXED: HANDLE DELETE PULSE
+        // ✅ FIXED: HANDLE DELETE PULSE - UPDATED TO WORK WITH RLS
         async function handleDelete(pulseId) {
             if (!confirm('Are you sure you want to delete this pulse? This action cannot be undone.')) {
                 return;
@@ -2172,43 +2196,80 @@
                     return;
                 }
                 
-                // ✅ FIX: Add user_id check to match RLS policy
+                // First check if the pulse belongs to the user
+                const { data: pulse, error: fetchError } = await supabaseClient
+                    .from('pulses')
+                    .select('user_id, series_id')
+                    .eq('id', pulseId)
+                    .single();
+                
+                if (fetchError) {
+                    console.error('Error fetching pulse:', fetchError);
+                    showToast('Failed to fetch pulse details', 'error');
+                    return;
+                }
+                
+                if (pulse.user_id !== session.user.id) {
+                    showToast('You can only delete your own pulses', 'error');
+                    return;
+                }
+                
+                // Use a direct delete instead of soft delete to avoid RLS issues
+                // If you want soft delete, you need to add RLS policies in Supabase
                 const { error } = await supabaseClient
                     .from('pulses')
-                    .update({ deleted_at: new Date().toISOString() })
+                    .delete()
                     .eq('id', pulseId)
-                    .eq('user_id', session.user.id); // Add this line
+                    .eq('user_id', session.user.id); // Double check ownership
                 
-                if (error) throw error;
+                if (error) {
+                    console.error('Delete error:', error);
+                    
+                    // If delete fails, try soft delete as fallback
+                    const { error: softDeleteError } = await supabaseClient
+                        .from('pulses')
+                        .update({ deleted_at: new Date().toISOString() })
+                        .eq('id', pulseId)
+                        .eq('user_id', session.user.id);
+                    
+                    if (softDeleteError) {
+                        throw softDeleteError;
+                    }
+                }
                 
                 // Remove pulse from UI
                 const pulseCard = document.querySelector(`[data-pulse-id="${pulseId}"]`);
                 if (pulseCard) {
                     pulseCard.style.opacity = '0.5';
-                    setTimeout(() => pulseCard.remove(), 300);
+                    setTimeout(() => {
+                        pulseCard.style.transition = 'opacity 0.3s ease';
+                        pulseCard.style.opacity = '0';
+                        setTimeout(() => pulseCard.remove(), 300);
+                    }, 100);
                 }
                 
                 showToast('Pulse deleted successfully', 'success');
                 
             } catch (error) {
                 console.error('Error deleting pulse:', error);
-                showToast('Failed to delete pulse. You can only delete your own pulses.', 'error');
+                showToast('Failed to delete pulse. Please check RLS policies in Supabase.', 'error');
             }
         }
         
-        // ✅ HANDLE EDIT PULSE
+        // ✅ UPDATED: HANDLE EDIT PULSE WITH SERIES SUPPORT
         async function handleEdit(pulseId) {
             try {
-                // Fetch the pulse data
+                // Fetch the pulse data with series info
                 const { data: pulse, error } = await supabaseClient
                     .from('pulses')
-                    .select('*')
+                    .select('*, pulse_series(*)')
                     .eq('id', pulseId)
                     .single();
                 
                 if (error) throw error;
                 
                 editingPulseId = pulseId;
+                editingPulseData = pulse;
                 
                 // Populate edit modal
                 document.getElementById('editCaption').value = pulse.caption || '';
@@ -2236,6 +2297,100 @@
                         editMediaPreview.appendChild(img);
                     }
                     editMediaPreview.style.display = 'block';
+                }
+                
+                // Handle series editing
+                const editSeriesOptions = document.getElementById('editSeriesOptions');
+                if (pulse.series_id && pulse.pulse_series) {
+                    editingSeriesId = pulse.series_id;
+                    editingSeriesTitle = pulse.pulse_series.title || '';
+                    
+                    document.getElementById('editSeriesTitle').value = editingSeriesTitle;
+                    editSeriesOptions.style.display = 'block';
+                    
+                    // Add event listeners for series buttons
+                    document.getElementById('removeFromSeries').onclick = async () => {
+                        if (confirm('Remove this pulse from the series? It will become a standalone pulse.')) {
+                            try {
+                                const { error } = await supabaseClient
+                                    .from('pulses')
+                                    .update({ 
+                                        series_id: null,
+                                        series_order: null,
+                                        updated_at: new Date().toISOString()
+                                    })
+                                    .eq('id', pulseId);
+                                
+                                if (error) throw error;
+                                
+                                showToast('Pulse removed from series', 'success');
+                                editSeriesOptions.style.display = 'none';
+                                editingSeriesId = null;
+                                editingSeriesTitle = null;
+                                
+                                // Update local data
+                                editingPulseData.series_id = null;
+                                editingPulseData.series_order = null;
+                            } catch (error) {
+                                console.error('Error removing from series:', error);
+                                showToast('Failed to remove from series', 'error');
+                            }
+                        }
+                    };
+                    
+                    document.getElementById('createNewSeries').onclick = async () => {
+                        const newSeriesName = prompt('Enter new series name:');
+                        if (newSeriesName && newSeriesName.trim()) {
+                            try {
+                                // Create new series
+                                const { data: newSeries, error: seriesError } = await supabaseClient
+                                    .from('pulse_series')
+                                    .insert({
+                                        creator_id: currentUserId,
+                                        title: newSeriesName.trim(),
+                                        description: `Series moved from "${editingSeriesTitle}"`,
+                                        total_parts: 1,
+                                        current_part: 1,
+                                        is_completed: false,
+                                        is_archived: false,
+                                        followers_count: 0,
+                                        total_views: 0
+                                    })
+                                    .select()
+                                    .single();
+                                
+                                if (seriesError) throw seriesError;
+                                
+                                // Update pulse with new series
+                                const { error: updateError } = await supabaseClient
+                                    .from('pulses')
+                                    .update({ 
+                                        series_id: newSeries.id,
+                                        series_order: 1,
+                                        updated_at: new Date().toISOString()
+                                    })
+                                    .eq('id', pulseId);
+                                
+                                if (updateError) throw updateError;
+                                
+                                showToast('Pulse moved to new series', 'success');
+                                editingSeriesId = newSeries.id;
+                                editingSeriesTitle = newSeriesName.trim();
+                                document.getElementById('editSeriesTitle').value = editingSeriesTitle;
+                                
+                                // Update local data
+                                editingPulseData.series_id = newSeries.id;
+                                editingPulseData.series_order = 1;
+                            } catch (error) {
+                                console.error('Error creating new series:', error);
+                                showToast('Failed to create new series', 'error');
+                            }
+                        }
+                    };
+                } else {
+                    editSeriesOptions.style.display = 'none';
+                    editingSeriesId = null;
+                    editingSeriesTitle = null;
                 }
                 
                 // Show edit modal
@@ -2350,6 +2505,120 @@
             }
         }
         
+        // ✅ UPDATED: UPDATE PULSE WITH SERIES SUPPORT
+        async function updatePulse() {
+            try {
+                if (!editingPulseId) return;
+                
+                const caption = document.getElementById('editCaption').value.trim();
+                
+                // Upload new media if selected
+                let mediaData = null;
+                if (editSelectedMedia) {
+                    mediaData = await uploadMedia(editSelectedMedia);
+                }
+                
+                // Prepare update data
+                const updateData = {
+                    caption: caption || null,
+                    updated_at: new Date().toISOString()
+                };
+                
+                // Only update media if new media was uploaded
+                if (mediaData) {
+                    updateData.media_url = mediaData.url;
+                    updateData.media_type = mediaData.type;
+                }
+                
+                // Update series title if it has changed
+                const editSeriesTitle = document.getElementById('editSeriesTitle').value.trim();
+                if (editingSeriesId && editSeriesTitle !== editingSeriesTitle) {
+                    try {
+                        await supabaseClient
+                            .from('pulse_series')
+                            .update({ 
+                                title: editSeriesTitle,
+                                updated_at: new Date().toISOString()
+                            })
+                            .eq('id', editingSeriesId);
+                        
+                        editingSeriesTitle = editSeriesTitle;
+                    } catch (seriesError) {
+                        console.error('Error updating series title:', seriesError);
+                        // Don't fail the whole update if series title update fails
+                    }
+                }
+                
+                // Update pulse
+                const { error } = await supabaseClient
+                    .from('pulses')
+                    .update(updateData)
+                    .eq('id', editingPulseId);
+                
+                if (error) throw error;
+                
+                console.log('✅ Pulse updated:', editingPulseId);
+                showToast('Pulse updated successfully!', 'success');
+                
+                // Close modal and refresh feed
+                closeEditModalFunc();
+                setTimeout(() => fetchPulses(), 500);
+                
+            } catch (error) {
+                console.error('❌ Update pulse error:', error);
+                showToast('Failed to update pulse. Please try again.', 'error');
+            }
+        }
+        
+        // ✅ UPLOAD MEDIA FUNCTION
+        async function uploadMedia(file) {
+            try {
+                const { data: { session } } = await supabaseClient.auth.getSession();
+                if (!session) throw new Error('No session');
+                
+                const fileExt = file.name.split('.').pop();
+                const fileName = `${session.user.id}/${Date.now()}.${fileExt}`;
+                const filePath = `pulse-media/${fileName}`;
+                
+                const { error: uploadError } = await supabaseClient.storage
+                    .from('pulse-media')
+                    .upload(filePath, file);
+                
+                if (uploadError) throw uploadError;
+                
+                const { data: { publicUrl } } = supabaseClient.storage
+                    .from('pulse-media')
+                    .getPublicUrl(filePath);
+                
+                return {
+                    url: publicUrl,
+                    type: file.type.startsWith('video/') ? 'video' : 'image'
+                };
+                
+            } catch (error) {
+                console.error('❌ Upload error:', error);
+                throw new Error('Failed to upload media');
+            }
+        }
+        
+        // ✅ CLOSE EDIT MODAL FUNCTION
+        function closeEditModalFunc() {
+            document.getElementById('editModal').style.display = 'none';
+            document.getElementById('editCaption').value = '';
+            editSelectedMedia = null;
+            editingPulseId = null;
+            editingSeriesId = null;
+            editingSeriesTitle = null;
+            editingPulseData = null;
+            
+            const editMediaPreview = document.getElementById('editMediaPreview');
+            editMediaPreview.style.display = 'none';
+            editMediaPreview.innerHTML = '';
+            
+            document.getElementById('editSeriesOptions').style.display = 'none';
+            document.getElementById('editSeriesTitle').value = '';
+        }
+        
         function initializeFeed(session) {
             // State variables
             let selectedMedia = null;
@@ -2385,7 +2654,6 @@
             const editMediaInput = document.getElementById('editMediaInput');
             const editMediaPreview = document.getElementById('editMediaPreview');
             const editRemoveMedia = document.getElementById('editRemoveMedia');
-            const editCaptionInput = document.getElementById('editCaption');
             const updatePulseBtn = document.getElementById('updatePulse');
             
             // ✅ HELPER: Ensure user profile exists
@@ -2463,16 +2731,6 @@
                 toggleSwitch.classList.remove('active');
                 seriesOptions.classList.remove('active');
                 updatePostButton();
-            }
-            
-            // ✅ CLOSE EDIT MODAL
-            function closeEditModalFunc() {
-                editModal.style.display = 'none';
-                editCaptionInput.value = '';
-                editSelectedMedia = null;
-                editMediaPreview.style.display = 'none';
-                editMediaPreview.innerHTML = '';
-                editingPulseId = null;
             }
             
             // ✅ UPDATED: FETCH PULSES FROM SUPABASE WITH LIKE STATUS
@@ -2700,83 +2958,6 @@
                 }
                 
                 return card;
-            }
-            
-            // ✅ UPLOAD MEDIA
-            async function uploadMedia(file) {
-                try {
-                    const { data: { session } } = await supabaseClient.auth.getSession();
-                    if (!session) throw new Error('No session');
-                    
-                    const fileExt = file.name.split('.').pop();
-                    const fileName = `${session.user.id}/${Date.now()}.${fileExt}`;
-                    const filePath = `pulse-media/${fileName}`;
-                    
-                    const { error: uploadError } = await supabaseClient.storage
-                        .from('pulse-media')
-                        .upload(filePath, file);
-                    
-                    if (uploadError) throw uploadError;
-                    
-                    const { data: { publicUrl } } = supabaseClient.storage
-                        .from('pulse-media')
-                        .getPublicUrl(filePath);
-                    
-                    return {
-                        url: publicUrl,
-                        type: file.type.startsWith('video/') ? 'video' : 'image'
-                    };
-                    
-                } catch (error) {
-                    console.error('❌ Upload error:', error);
-                    throw new Error('Failed to upload media');
-                }
-            }
-            
-            // ✅ UPDATE PULSE
-            async function updatePulse() {
-                try {
-                    if (!editingPulseId) return;
-                    
-                    const caption = editCaptionInput.value.trim();
-                    
-                    // Upload new media if selected
-                    let mediaData = null;
-                    if (editSelectedMedia) {
-                        mediaData = await uploadMedia(editSelectedMedia);
-                    }
-                    
-                    // Prepare update data
-                    const updateData = {
-                        caption: caption || null,
-                        updated_at: new Date().toISOString()
-                    };
-                    
-                    // Only update media if new media was uploaded
-                    if (mediaData) {
-                        updateData.media_url = mediaData.url;
-                        updateData.media_type = mediaData.type;
-                    }
-                    
-                    // Update pulse
-                    const { error } = await supabaseClient
-                        .from('pulses')
-                        .update(updateData)
-                        .eq('id', editingPulseId);
-                    
-                    if (error) throw error;
-                    
-                    console.log('✅ Pulse updated:', editingPulseId);
-                    showToast('Pulse updated successfully!', 'success');
-                    
-                    // Close modal and refresh feed
-                    closeEditModalFunc();
-                    setTimeout(() => fetchPulses(), 500);
-                    
-                } catch (error) {
-                    console.error('❌ Update pulse error:', error);
-                    showToast('Failed to update pulse. Please try again.', 'error');
-                }
             }
             
             // ✅ CREATE PULSE (with series handling)
