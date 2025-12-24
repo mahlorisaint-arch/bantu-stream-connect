@@ -36,6 +36,8 @@
             --hover-overlay: rgba(255, 255, 255, 0.05);
             --active-overlay: rgba(245, 158, 11, 0.1);
             --indigo: #4F46E5;
+            --gold-glow: rgba(245, 158, 11, 0.3);
+            --blue-glow: rgba(29, 78, 216, 0.3);
         }
         
         * {
@@ -148,7 +150,7 @@
             padding: 24px;
             position: relative;
             z-index: 2;
-            padding-bottom: 40px;
+            padding-bottom: 120px; /* Space for bottom nav */
         }
         
         /* Header */
@@ -234,13 +236,45 @@
             display: none;
         }
         
+        /* Pulse Post Container - Glassmorphism with Gold Glow */
+        .pulse-post-container {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 24px;
+            padding: 0;
+            margin-bottom: 24px;
+            position: relative;
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        
+        .pulse-post-container::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            background: linear-gradient(45deg, var(--warm-gold), var(--bantu-blue), var(--warm-gold));
+            border-radius: 26px;
+            z-index: -1;
+            opacity: 0.3;
+            animation: pulse-glow 2s infinite alternate;
+        }
+        
+        @keyframes pulse-glow {
+            0% { opacity: 0.2; }
+            100% { opacity: 0.4; }
+        }
+        
         /* Pulse Header */
         .pulse-header {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 16px 0;
-            margin-bottom: 24px;
+            padding: 20px;
+            padding-bottom: 0;
         }
         
         .creator-info {
@@ -349,20 +383,20 @@
             border-top: 1px solid var(--card-border);
         }
         
-        /* Media Container - UPDATED: Hidden by default */
+        /* Media Container - Updated Video Player */
         .media-container {
             width: 100%;
             aspect-ratio: 9/16;
             background: black;
-            border-radius: 16px;
+            border-radius: 0;
             overflow: hidden;
-            margin-bottom: 24px;
+            margin-bottom: 20px;
             position: relative;
-            display: none; /* Hidden by default */
+            display: none;
         }
         
         .media-container.has-media {
-            display: block; /* Only show if there's media */
+            display: block;
         }
         
         .pulse-media {
@@ -372,90 +406,130 @@
             display: block;
         }
         
-        .play-controls {
+        /* Custom Video Controls - Glassmorphism */
+        .video-controls-overlay {
             position: absolute;
-            top: 0;
+            bottom: 0;
             left: 0;
-            width: 100%;
-            height: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: rgba(0, 0, 0, 0.2);
+            right: 0;
+            background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
+            padding: 20px;
             opacity: 0;
             transition: opacity 0.3s ease;
+            backdrop-filter: blur(10px);
         }
         
-        .media-container:hover .play-controls {
+        .media-container:hover .video-controls-overlay {
             opacity: 1;
         }
         
-        .play-btn {
-            width: 60px;
-            height: 60px;
-            border-radius: 50%;
-            background: rgba(0, 0, 0, 0.7);
-            border: none;
-            color: white;
-            font-size: 24px;
+        .video-progress {
+            width: 100%;
+            height: 4px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 2px;
+            margin-bottom: 15px;
+            position: relative;
             cursor: pointer;
+        }
+        
+        .video-progress-filled {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 100%;
+            background: var(--warm-gold);
+            border-radius: 2px;
+            width: 0%;
+        }
+        
+        .video-controls {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .video-left-controls,
+        .video-right-controls {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .video-control-btn {
+            background: rgba(15, 23, 42, 0.7);
+            border: 1px solid rgba(245, 158, 11, 0.3);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
             display: flex;
             align-items: center;
             justify-content: center;
+            color: var(--warm-gold);
+            font-size: 16px;
+            cursor: pointer;
             transition: all 0.3s ease;
+            backdrop-filter: blur(5px);
         }
         
-        .play-btn:hover {
+        .video-control-btn:hover {
+            background: rgba(245, 158, 11, 0.2);
             transform: scale(1.1);
-            background: rgba(0, 0, 0, 0.9);
         }
         
-        .mute-btn {
-            position: absolute;
-            bottom: 16px;
-            right: 16px;
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            background: rgba(0, 0, 0, 0.7);
-            border: none;
-            color: white;
-            cursor: pointer;
+        .video-time {
+            color: var(--warm-gold);
+            font-size: 14px;
+            font-weight: 500;
+            min-width: 100px;
+            text-align: center;
+        }
+        
+        .video-volume {
             display: flex;
             align-items: center;
-            justify-content: center;
+            gap: 8px;
         }
         
-        .duration {
+        .volume-slider {
+            width: 80px;
+            height: 4px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 2px;
+            position: relative;
+            cursor: pointer;
+        }
+        
+        .volume-slider-filled {
             position: absolute;
-            bottom: 16px;
-            left: 16px;
-            font-size: 12px;
-            color: white;
-            background: rgba(0, 0, 0, 0.7);
-            padding: 4px 8px;
-            border-radius: 4px;
+            top: 0;
+            left: 0;
+            height: 100%;
+            background: var(--warm-gold);
+            border-radius: 2px;
+            width: 50%;
         }
         
         /* Narrative Block */
         .narrative-block {
-            margin-bottom: 24px;
+            padding: 0 20px 20px;
         }
         
         .series-label {
             font-size: 13px;
             font-weight: 600;
-            color: var(--indigo);
+            color: var(--warm-gold);
             margin-bottom: 12px;
             cursor: pointer;
             display: inline-block;
             padding: 4px 12px;
-            background: rgba(79, 70, 229, 0.1);
+            background: rgba(245, 158, 11, 0.1);
             border-radius: 12px;
+            border: 1px solid rgba(245, 158, 11, 0.2);
         }
         
         .series-label:hover {
-            background: rgba(79, 70, 229, 0.2);
+            background: rgba(245, 158, 11, 0.2);
         }
         
         .caption-text {
@@ -470,9 +544,8 @@
             display: flex;
             align-items: center;
             gap: 24px;
-            padding: 16px 0;
-            border-bottom: 1px solid var(--card-border);
-            margin-bottom: 24px;
+            padding: 16px 20px;
+            border-top: 1px solid var(--card-border);
         }
         
         .action-btn {
@@ -510,9 +583,19 @@
             margin-left: 4px;
         }
         
-        /* Comments Section */
-        .comments-section {
+        /* Comments Section Container */
+        .comments-section-container {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 24px;
+            padding: 24px;
             margin-top: 32px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+        }
+        
+        .comments-section {
+            margin-top: 0;
         }
         
         .comments-header {
@@ -538,7 +621,7 @@
             gap: 12px;
             margin-bottom: 32px;
             padding: 16px;
-            background: var(--card-bg);
+            background: rgba(10, 14, 18, 0.6);
             border: 1px solid var(--card-border);
             border-radius: 16px;
         }
@@ -622,9 +705,10 @@
         
         .comment-item {
             padding: 16px;
-            background: var(--card-bg);
+            background: rgba(10, 14, 18, 0.4);
             border: 1px solid var(--card-border);
             border-radius: 16px;
+            position: relative;
         }
         
         .comment-header {
@@ -714,6 +798,72 @@
         
         .comment-action.liked {
             color: var(--warm-gold);
+        }
+        
+        /* Comment Edit/Delete Options */
+        .comment-options {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+        }
+        
+        .comment-options-btn {
+            background: none;
+            border: none;
+            color: var(--slate-grey);
+            font-size: 14px;
+            cursor: pointer;
+            padding: 4px;
+            border-radius: 4px;
+            transition: all 0.3s ease;
+        }
+        
+        .comment-options-btn:hover {
+            color: var(--soft-white);
+            background: var(--hover-overlay);
+        }
+        
+        .comment-options-menu {
+            position: absolute;
+            top: 25px;
+            right: 0;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 8px;
+            width: 120px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            display: none;
+            z-index: 100;
+            overflow: hidden;
+        }
+        
+        .comment-options-menu.active {
+            display: block;
+        }
+        
+        .comment-option-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            color: var(--soft-white);
+            background: none;
+            border: none;
+            width: 100%;
+            text-align: left;
+            font-family: 'Inter', sans-serif;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .comment-option-item:hover {
+            background: var(--hover-overlay);
+        }
+        
+        .comment-option-item.delete {
+            color: var(--error-color);
+            border-top: 1px solid var(--card-border);
         }
         
         /* Reply Thread */
@@ -955,7 +1105,7 @@
         /* Toast Notifications */
         .toast-container {
             position: fixed;
-            bottom: 20px;
+            bottom: 80px;
             left: 50%;
             transform: translateX(-50%);
             z-index: 2000;
@@ -991,11 +1141,52 @@
             }
         }
         
+        /* Bottom Navigation */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: var(--deep-black);
+            border-top: 1px solid var(--card-border);
+            display: flex;
+            padding: 12px 0;
+            z-index: 100;
+        }
+        
+        .nav-item {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            background: none;
+            border: none;
+            color: var(--slate-grey);
+            font-size: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .nav-item:hover {
+            color: var(--soft-white);
+        }
+        
+        .nav-item.active {
+            color: var(--bantu-blue);
+        }
+        
+        .nav-icon {
+            font-size: 20px;
+        }
+        
         /* Responsive */
         @media (max-width: 768px) {
             .container {
                 padding: 16px;
                 max-width: 100%;
+                padding-bottom: 100px;
             }
             
             .media-container.has-media {
@@ -1016,6 +1207,10 @@
             .share-modal {
                 width: 95%;
             }
+            
+            .pulse-post-container {
+                border-radius: 16px;
+            }
         }
         
         /* Custom Scrollbar */
@@ -1034,21 +1229,6 @@
         
         ::-webkit-scrollbar-thumb:hover {
             background: var(--warm-gold);
-        }
-        
-        /* Pulse Icon for Tab */
-        .pulse-tab-icon {
-            width: 20px;
-            height: 20px;
-            position: relative;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        
-        .pulse-tab-icon svg {
-            width: 100%;
-            height: 100%;
         }
     </style>
 </head>
@@ -1096,111 +1276,153 @@
             </div>
         </header>
         
-        <!-- Pulse Header -->
-        <div class="pulse-header">
-            <div class="creator-info" onclick="viewCreatorProfile()">
-                <div class="creator-avatar" id="creator-avatar">
-                    <img id="creator-avatar-img">
-                    <span id="creator-initials">AB</span>
+        <!-- Pulse Post Container -->
+        <div class="pulse-post-container">
+            <!-- Pulse Header -->
+            <div class="pulse-header">
+                <div class="creator-info" onclick="viewCreatorProfile()">
+                    <div class="creator-avatar" id="creator-avatar">
+                        <img id="creator-avatar-img">
+                        <span id="creator-initials">AB</span>
+                    </div>
+                    <div class="creator-meta">
+                        <h3 id="creator-name">Alex Bantu</h3>
+                        <p id="creator-handle">@alexbantu · <span id="pulse-time">2 hours ago</span></p>
+                    </div>
                 </div>
-                <div class="creator-meta">
-                    <h3 id="creator-name">Alex Bantu</h3>
-                    <p id="creator-handle">@alexbantu · <span id="pulse-time">2 hours ago</span></p>
+                
+                <div class="more-options">
+                    <button class="more-btn" id="moreBtn">
+                        <i class="fas fa-ellipsis-h"></i>
+                    </button>
+                    <div class="more-menu" id="moreMenu">
+                        <button class="menu-item" id="savePulseBtn">
+                            <i class="far fa-bookmark"></i>
+                            Save Pulse
+                        </button>
+                        <button class="menu-item" id="reportPulseBtn">
+                            <i class="far fa-flag"></i>
+                            Report
+                        </button>
+                        <button class="menu-item" id="muteCreatorBtn">
+                            <i class="fas fa-volume-mute"></i>
+                            Mute Creator
+                        </button>
+                        <button class="menu-item delete" id="deletePulseBtn" style="display: none;">
+                            <i class="fas fa-trash"></i>
+                            Delete Pulse
+                        </button>
+                    </div>
                 </div>
             </div>
             
-            <div class="more-options">
-                <button class="more-btn" id="moreBtn">
-                    <i class="fas fa-ellipsis-h"></i>
+            <!-- Media Container -->
+            <div class="media-container">
+                <div id="media-content">
+                    <!-- Media will be loaded here -->
+                </div>
+                
+                <!-- Custom Video Controls -->
+                <div class="video-controls-overlay">
+                    <div class="video-progress" id="videoProgress">
+                        <div class="video-progress-filled" id="videoProgressFilled"></div>
+                    </div>
+                    <div class="video-controls">
+                        <div class="video-left-controls">
+                            <button class="video-control-btn" id="playPauseBtn">
+                                <i class="fas fa-play"></i>
+                            </button>
+                            <div class="video-time" id="currentTime">0:00</div>
+                        </div>
+                        <div class="video-right-controls">
+                            <div class="video-volume">
+                                <button class="video-control-btn" id="muteBtn">
+                                    <i class="fas fa-volume-mute"></i>
+                                </button>
+                                <div class="volume-slider" id="volumeSlider">
+                                    <div class="volume-slider-filled" id="volumeSliderFilled"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Narrative Block -->
+            <div class="narrative-block">
+                <div class="series-label" id="seriesLabel" style="display: none;">
+                    PULSE SERIES · Part <span id="series-part">2</span> of <span id="series-total">5</span>
+                </div>
+                <div class="caption-text" id="caption-text">
+                    The rhythm of African storytelling isn't just in the words—it's in the spaces between them. The moments of silence, the glances, the pauses that speak volumes. That's where the real magic happens.
+                </div>
+            </div>
+            
+            <!-- Action Bar -->
+            <div class="action-bar">
+                <button class="action-btn" id="commentBtn">
+                    <i class="fas fa-comment"></i> <span id="comment-count">24</span>
                 </button>
-                <div class="more-menu" id="moreMenu">
-                    <button class="menu-item" id="savePulseBtn">
-                        <i class="far fa-bookmark"></i>
-                        Save Pulse
-                    </button>
-                    <button class="menu-item" id="reportPulseBtn">
-                        <i class="far fa-flag"></i>
-                        Report
-                    </button>
-                    <button class="menu-item" id="muteCreatorBtn">
-                        <i class="fas fa-volume-mute"></i>
-                        Mute Creator
-                    </button>
-                    <button class="menu-item delete" id="deletePulseBtn" style="display: none;">
-                        <i class="fas fa-trash"></i>
-                        Delete Pulse
-                    </button>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Media Container - Will be shown only if media exists -->
-        <div class="media-container">
-            <div id="media-content">
-                <!-- Media will be loaded here -->
-            </div>
-            <div class="play-controls">
-                <button class="play-btn" id="playBtn">
-                    <i class="fas fa-play"></i>
+                <button class="action-btn" id="likeBtn">
+                    <i class="fas fa-heart"></i> <span id="like-count">142</span>
+                </button>
+                <button class="action-btn" id="shareBtn">
+                    <i class="fas fa-share"></i> <span id="share-count">8</span>
                 </button>
             </div>
-            <div class="duration" id="duration">0:00</div>
-            <button class="mute-btn" id="muteBtn">
-                <i class="fas fa-volume-mute"></i>
-            </button>
         </div>
         
-        <!-- Narrative Block -->
-        <div class="narrative-block">
-            <div class="series-label" id="seriesLabel" style="display: none;">
-                PULSE SERIES · Part <span id="series-part">2</span> of <span id="series-total">5</span>
-            </div>
-            <div class="caption-text" id="caption-text">
-                The rhythm of African storytelling isn't just in the words—it's in the spaces between them. The moments of silence, the glances, the pauses that speak volumes. That's where the real magic happens.
-            </div>
-        </div>
-        
-        <!-- Action Bar -->
-        <div class="action-bar">
-            <button class="action-btn" id="commentBtn">
-                <i class="fas fa-comment"></i> <span id="comment-count">24</span>
-            </button>
-            <button class="action-btn" id="likeBtn">
-                <i class="fas fa-heart"></i> <span id="like-count">142</span>
-            </button>
-            <button class="action-btn" id="shareBtn">
-                <i class="fas fa-share"></i> <span id="share-count">8</span>
-            </button>
-        </div>
-        
-        <!-- Comments Section -->
-        <div class="comments-section">
-            <div class="comments-header">
-                <h3 class="comments-title">Conversation</h3>
-                <p class="comments-subtitle">Thoughts on this Pulse?</p>
-            </div>
-            
-            <!-- Comment Composer -->
-            <div class="comment-composer">
-                <div class="composer-avatar" id="composer-avatar">
-                    <img id="composer-avatar-img">
-                    <span>AB</span>
+        <!-- Comments Section Container -->
+        <div class="comments-section-container">
+            <!-- Comments Section -->
+            <div class="comments-section">
+                <div class="comments-header">
+                    <h3 class="comments-title">Conversation</h3>
+                    <p class="comments-subtitle">Thoughts on this Pulse?</p>
                 </div>
-                <textarea 
-                    class="composer-input" 
-                    id="commentInput" 
-                    placeholder="Add your voice…"
-                    maxlength="500"
-                    rows="2"
-                ></textarea>
-                <button class="post-comment-btn" id="postCommentBtn" disabled>Post</button>
-            </div>
-            
-            <!-- Comments Thread -->
-            <div class="comments-thread" id="commentsThread">
-                <!-- Comments will be loaded here -->
+                
+                <!-- Comment Composer -->
+                <div class="comment-composer">
+                    <div class="composer-avatar" id="composer-avatar">
+                        <img id="composer-avatar-img">
+                        <span>AB</span>
+                    </div>
+                    <textarea 
+                        class="composer-input" 
+                        id="commentInput" 
+                        placeholder="Add your voice…"
+                        maxlength="500"
+                        rows="2"
+                    ></textarea>
+                    <button class="post-comment-btn" id="postCommentBtn" disabled>Post</button>
+                </div>
+                
+                <!-- Comments Thread -->
+                <div class="comments-thread" id="commentsThread">
+                    <!-- Comments will be loaded here -->
+                </div>
             </div>
         </div>
+    </div>
+
+    <!-- Bottom Navigation -->
+    <div class="bottom-nav">
+        <button class="nav-item" onclick="window.location.href='pulse-feed.html'">
+            <i class="fas fa-home nav-icon"></i>
+            <span>Home</span>
+        </button>
+        <button class="nav-item" onclick="window.location.href='search.html'">
+            <i class="fas fa-search nav-icon"></i>
+            <span>Search</span>
+        </button>
+        <button class="nav-item" onclick="window.location.href='saved.html'">
+            <i class="fas fa-bookmark nav-icon"></i>
+            <span>Saved</span>
+        </button>
+        <button class="nav-item" onclick="window.location.href='profile.html'">
+            <i class="fas fa-user nav-icon"></i>
+            <span>Profile</span>
+        </button>
     </div>
 
     <!-- Toast Container -->
@@ -1289,6 +1511,31 @@
         </div>
     </div>
 
+    <!-- Edit Comment Modal -->
+    <div id="editCommentModal" class="modal-overlay">
+        <div class="share-modal" style="max-width: 500px;">
+            <div class="modal-header">
+                <h3 class="modal-title">Edit Comment</h3>
+                <button class="close-modal" id="closeEditCommentModal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <textarea 
+                    class="composer-input" 
+                    id="editCommentInput" 
+                    placeholder="Edit your comment..."
+                    maxlength="500"
+                    rows="4"
+                ></textarea>
+                <div class="modal-footer" style="padding: 0; margin-top: 20px; border: none;">
+                    <button class="modal-btn modal-btn-cancel" id="cancelEditComment">Cancel</button>
+                    <button class="modal-btn modal-btn-post" id="saveEditComment">Save Changes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
         // Initialize Supabase client
         const SUPABASE_URL = 'https://ydnxqnbjoshvxteevemc.supabase.co';
@@ -1301,9 +1548,12 @@
         let pulseCreator = null;
         let isLiked = false;
         let isSaved = false;
-        let isVideoPlaying = false;
-        let isMuted = true;
         let videoElement = null;
+        let isPlaying = false;
+        let isMuted = false;
+        let volume = 1;
+        let editingCommentId = null;
+        let editingReplyId = null;
 
         async function initialize() {
             console.log('Starting Pulse Detail initialization...');
@@ -1395,7 +1645,6 @@
                 console.error('Error:', error);
                 document.getElementById('loading-text').textContent = 'Error loading pulse. Please refresh.';
                 
-                // Don't load sample data on error - just show error
                 setTimeout(() => {
                     document.getElementById('loading').style.display = 'none';
                     document.getElementById('content').style.display = 'block';
@@ -1414,7 +1663,7 @@
             try {
                 console.log('Loading pulse:', pulseId);
                 
-                // Fetch pulse with user details - use the correct table name
+                // Fetch pulse with user details
                 const { data: pulse, error } = await supabaseClient
                     .from('pulses_with_user_details')
                     .select('*')
@@ -1519,7 +1768,7 @@
                 document.getElementById('like-count').textContent = currentPulse.likes_count || 0;
                 document.getElementById('share-count').textContent = currentPulse.shares_count || 0;
                 
-                // Load media - FIX: Only show media container if media exists
+                // Load media
                 const mediaContainer = document.querySelector('.media-container');
                 const mediaContent = document.getElementById('media-content');
                 mediaContent.innerHTML = '';
@@ -1531,42 +1780,48 @@
                         videoElement = document.createElement('video');
                         videoElement.src = currentPulse.media_url;
                         videoElement.className = 'pulse-media';
-                        videoElement.muted = isMuted;
+                        videoElement.muted = false; // Start with sound on
                         videoElement.playsInline = true;
-                        videoElement.preload = 'metadata';
-                        videoElement.onloadedmetadata = function() {
-                            const duration = Math.floor(videoElement.duration);
-                            const minutes = Math.floor(duration / 60);
-                            const seconds = duration % 60;
-                            document.getElementById('duration').textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
-                        };
-                        videoElement.onplay = function() {
-                            isVideoPlaying = true;
-                            document.getElementById('playBtn').innerHTML = '<i class="fas fa-pause"></i>';
-                        };
-                        videoElement.onpause = function() {
-                            isVideoPlaying = false;
-                            document.getElementById('playBtn').innerHTML = '<i class="fas fa-play"></i>';
-                        };
-                        videoElement.onended = function() {
-                            isVideoPlaying = false;
-                            document.getElementById('playBtn').innerHTML = '<i class="fas fa-play"></i>';
-                        };
+                        videoElement.preload = 'auto';
+                        videoElement.autoplay = true; // Auto-play enabled
+                        
+                        // Video event listeners
+                        videoElement.addEventListener('loadedmetadata', function() {
+                            updateVideoTime();
+                            document.getElementById('volumeSliderFilled').style.width = (volume * 100) + '%';
+                        });
+                        
+                        videoElement.addEventListener('timeupdate', updateVideoTime);
+                        videoElement.addEventListener('play', () => {
+                            isPlaying = true;
+                            document.getElementById('playPauseBtn').innerHTML = '<i class="fas fa-pause"></i>';
+                        });
+                        videoElement.addEventListener('pause', () => {
+                            isPlaying = false;
+                            document.getElementById('playPauseBtn').innerHTML = '<i class="fas fa-play"></i>';
+                        });
+                        videoElement.addEventListener('ended', () => {
+                            isPlaying = false;
+                            document.getElementById('playPauseBtn').innerHTML = '<i class="fas fa-play"></i>';
+                        });
+                        
                         mediaContent.appendChild(videoElement);
+                        
+                        // Start playing
+                        videoElement.play().catch(e => {
+                            console.log('Autoplay prevented:', e);
+                            // Show play button if autoplay is blocked
+                        });
                     } else {
                         const img = document.createElement('img');
                         img.src = currentPulse.media_url;
                         img.className = 'pulse-media';
                         img.alt = 'Pulse image';
                         mediaContent.appendChild(img);
-                        document.getElementById('duration').style.display = 'none';
-                        document.getElementById('muteBtn').style.display = 'none';
+                        document.querySelector('.video-controls-overlay').style.display = 'none';
                     }
                 } else {
-                    // No media - hide the media container completely
                     mediaContainer.classList.remove('has-media');
-                    document.getElementById('duration').style.display = 'none';
-                    document.getElementById('muteBtn').style.display = 'none';
                 }
                 
                 // Check if user liked this pulse
@@ -1585,6 +1840,29 @@
                 console.error('Error loading pulse:', error);
                 showToast('Failed to load pulse', 'error');
             }
+        }
+        
+        function updateVideoTime() {
+            if (!videoElement) return;
+            
+            const current = videoElement.currentTime;
+            const duration = videoElement.duration;
+            
+            // Update progress bar
+            const progressPercent = (current / duration) * 100;
+            document.getElementById('videoProgressFilled').style.width = progressPercent + '%';
+            
+            // Update time display
+            const currentFormatted = formatTime(current);
+            const durationFormatted = formatTime(duration);
+            document.getElementById('currentTime').textContent = `${currentFormatted} / ${durationFormatted}`;
+        }
+        
+        function formatTime(seconds) {
+            if (isNaN(seconds)) return '0:00';
+            const mins = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            return `${mins}:${secs.toString().padStart(2, '0')}`;
         }
         
         function getInitials(name) {
@@ -1622,7 +1900,7 @@
                     .eq('user_id', currentUserId)
                     .single();
                 
-                if (error && error.code !== 'PGRST116') { // PGRST116 is "no rows returned"
+                if (error && error.code !== 'PGRST116') {
                     throw error;
                 }
                 
@@ -1689,21 +1967,65 @@
                 }
             });
             
-            // Play button
-            const playBtn = document.getElementById('playBtn');
-            playBtn.addEventListener('click', togglePlay);
-            
-            // Mute button
+            // Video controls
+            const playPauseBtn = document.getElementById('playPauseBtn');
             const muteBtn = document.getElementById('muteBtn');
-            muteBtn.addEventListener('click', toggleMute);
+            const videoProgress = document.getElementById('videoProgress');
+            const volumeSlider = document.getElementById('volumeSlider');
+            
+            if (playPauseBtn) {
+                playPauseBtn.addEventListener('click', () => {
+                    if (videoElement) {
+                        if (isPlaying) {
+                            videoElement.pause();
+                        } else {
+                            videoElement.play();
+                        }
+                    }
+                });
+            }
+            
+            if (muteBtn) {
+                muteBtn.addEventListener('click', () => {
+                    if (videoElement) {
+                        videoElement.muted = !videoElement.muted;
+                        isMuted = videoElement.muted;
+                        muteBtn.innerHTML = isMuted ? '<i class="fas fa-volume-mute"></i>' : '<i class="fas fa-volume-up"></i>';
+                    }
+                });
+            }
+            
+            if (videoProgress && videoElement) {
+                videoProgress.addEventListener('click', (e) => {
+                    const rect = videoProgress.getBoundingClientRect();
+                    const pos = (e.clientX - rect.left) / rect.width;
+                    videoElement.currentTime = pos * videoElement.duration;
+                });
+            }
+            
+            if (volumeSlider && videoElement) {
+                volumeSlider.addEventListener('click', (e) => {
+                    const rect = volumeSlider.getBoundingClientRect();
+                    const pos = (e.clientX - rect.left) / rect.width;
+                    volume = Math.max(0, Math.min(1, pos));
+                    videoElement.volume = volume;
+                    document.getElementById('volumeSliderFilled').style.width = (volume * 100) + '%';
+                });
+            }
             
             // Media click to play/pause
             const mediaContainer = document.querySelector('.media-container');
-            mediaContainer.addEventListener('click', (e) => {
-                if (e.target === mediaContainer || e.target === document.querySelector('.play-controls')) {
-                    togglePlay();
-                }
-            });
+            if (mediaContainer && videoElement) {
+                mediaContainer.addEventListener('click', (e) => {
+                    if (e.target === mediaContainer || e.target.classList.contains('video-controls-overlay')) {
+                        if (isPlaying) {
+                            videoElement.pause();
+                        } else {
+                            videoElement.play();
+                        }
+                    }
+                });
+            }
             
             // Like button
             const likeBtn = document.getElementById('likeBtn');
@@ -1780,6 +2102,22 @@
                 }
             });
             
+            // Edit comment modal
+            const closeEditCommentModal = document.getElementById('closeEditCommentModal');
+            const cancelEditComment = document.getElementById('cancelEditComment');
+            const saveEditComment = document.getElementById('saveEditComment');
+            
+            closeEditCommentModal.addEventListener('click', closeEditCommentModalFunc);
+            cancelEditComment.addEventListener('click', closeEditCommentModalFunc);
+            saveEditComment.addEventListener('click', saveEditedComment);
+            
+            const editCommentModal = document.getElementById('editCommentModal');
+            editCommentModal.addEventListener('click', (e) => {
+                if (e.target === editCommentModal) {
+                    closeEditCommentModalFunc();
+                }
+            });
+            
             // Listen for auth changes
             supabaseClient.auth.onAuthStateChange((event, session) => {
                 console.log('🔐 Auth state changed:', event);
@@ -1788,30 +2126,6 @@
                     window.location.href = 'login.html';
                 }
             });
-        }
-        
-        function togglePlay() {
-            if (!videoElement) return;
-            
-            if (isVideoPlaying) {
-                videoElement.pause();
-            } else {
-                videoElement.play();
-            }
-        }
-        
-        function toggleMute() {
-            if (!videoElement) return;
-            
-            isMuted = !isMuted;
-            videoElement.muted = isMuted;
-            
-            const muteBtn = document.getElementById('muteBtn');
-            if (isMuted) {
-                muteBtn.innerHTML = '<i class="fas fa-volume-mute"></i>';
-            } else {
-                muteBtn.innerHTML = '<i class="fas fa-volume-up"></i>';
-            }
         }
         
         async function handleLike() {
@@ -1904,11 +2218,25 @@
             document.getElementById('moreMenu').classList.remove('active');
         }
         
-        function handleMuteCreator() {
+        async function handleMuteCreator() {
             if (!pulseCreator) return;
             
-            showToast(`You won't see pulses from @${pulseCreator.username} anymore`, 'success');
-            document.getElementById('moreMenu').classList.remove('active');
+            try {
+                // Create muted_creators table if it doesn't exist
+                // For now, we'll use localStorage as a fallback
+                const mutedCreators = JSON.parse(localStorage.getItem('muted_creators') || '[]');
+                if (!mutedCreators.includes(pulseCreator.id)) {
+                    mutedCreators.push(pulseCreator.id);
+                    localStorage.setItem('muted_creators', JSON.stringify(mutedCreators));
+                }
+                
+                showToast(`You won't see pulses from @${pulseCreator.username} anymore`, 'success');
+                document.getElementById('moreMenu').classList.remove('active');
+                
+            } catch (error) {
+                console.error('Error muting creator:', error);
+                showToast('Failed to mute creator', 'error');
+            }
         }
         
         async function handleDelete() {
@@ -1917,12 +2245,26 @@
             }
             
             try {
-                const { error } = await supabaseClient
-                    .from('pulses')
-                    .update({ deleted_at: new Date().toISOString() })
-                    .eq('id', pulseId);
-                
-                if (error) throw error;
+                // Check if pulse is part of a series
+                if (currentPulse.series_id) {
+                    const { error: seriesError } = await supabaseClient
+                        .from('pulses')
+                        .update({ 
+                            deleted_at: new Date().toISOString(),
+                            series_id: null,
+                            series_order: null
+                        })
+                        .eq('id', pulseId);
+                    
+                    if (seriesError) throw seriesError;
+                } else {
+                    const { error } = await supabaseClient
+                        .from('pulses')
+                        .update({ deleted_at: new Date().toISOString() })
+                        .eq('id', pulseId);
+                    
+                    if (error) throw error;
+                }
                 
                 showToast('Pulse deleted successfully', 'success');
                 
@@ -1941,7 +2283,7 @@
             try {
                 console.log('Loading comments for pulse:', pulseId);
                 
-                // FIRST: Get all comments for this pulse
+                // Get all comments for this pulse
                 const { data: comments, error: commentsError } = await supabaseClient
                     .from('pulse_comments')
                     .select('*')
@@ -1969,9 +2311,8 @@
                     return;
                 }
                 
-                // SECOND: Get user profiles for all comment authors
+                // Get user profiles for all comment authors
                 const userIds = [...new Set(comments.map(comment => comment.user_id))];
-                console.log('User IDs for comments:', userIds);
                 
                 let userProfiles = [];
                 try {
@@ -1982,20 +2323,11 @@
                     
                     if (profilesError) {
                         console.error('Error loading user profiles:', profilesError);
-                        // Try creators table as fallback
-                        const { data: creators, error: creatorsError } = await supabaseClient
-                            .from('creators')
-                            .select('*')
-                            .in('id', userIds);
-                        
-                        if (creatorsError) throw creatorsError;
-                        userProfiles = creators || [];
                     } else {
                         userProfiles = profiles || [];
                     }
                 } catch (profileError) {
                     console.error('Error loading user data:', profileError);
-                    // If we can't load profiles, we'll use auth user data as fallback
                 }
                 
                 // Create a map of user_id to profile
@@ -2004,7 +2336,25 @@
                     userMap[profile.id] = profile;
                 });
                 
-                // THIRD: Display comments
+                // Get comment likes for current user
+                const commentIds = comments.map(c => c.id);
+                let userCommentLikes = [];
+                
+                try {
+                    const { data: likes } = await supabaseClient
+                        .from('comment_likes')
+                        .select('comment_id')
+                        .eq('user_id', currentUserId)
+                        .in('comment_id', commentIds);
+                    
+                    userCommentLikes = likes || [];
+                } catch (likeError) {
+                    console.error('Error loading comment likes:', likeError);
+                }
+                
+                const likedCommentIds = new Set(userCommentLikes.map(like => like.comment_id));
+                
+                // Display comments
                 commentsThread.innerHTML = '';
                 
                 // Group comments by parent (for replies)
@@ -2016,7 +2366,7 @@
                 // Display top-level comments
                 topLevelComments.forEach(comment => {
                     const commentReplies = replies.filter(r => r.parent_comment_id === comment.id);
-                    displayComment(comment, commentReplies, userMap);
+                    displayComment(comment, commentReplies, userMap, likedCommentIds);
                 });
                 
             } catch (error) {
@@ -2031,7 +2381,7 @@
             }
         }
         
-        function displayComment(comment, replies = [], userMap = {}) {
+        function displayComment(comment, replies = [], userMap = {}, likedCommentIds = new Set()) {
             const commentsThread = document.getElementById('commentsThread');
             
             const commentItem = document.createElement('div');
@@ -2044,6 +2394,8 @@
             const avatarUrl = userProfile.avatar_url;
             const username = userProfile.username || 'user';
             const fullName = userProfile.full_name || 'User';
+            const isCommentOwner = comment.user_id === currentUserId;
+            const isLiked = likedCommentIds.has(comment.id);
             
             commentItem.innerHTML = `
                 <div class="comment-header">
@@ -2058,7 +2410,7 @@
                 </div>
                 <div class="comment-text">${comment.comment_text || ''}</div>
                 <div class="comment-actions">
-                    <button class="comment-action like-comment-btn" data-comment-id="${comment.id}">
+                    <button class="comment-action like-comment-btn ${isLiked ? 'liked' : ''}" data-comment-id="${comment.id}">
                         <i class="fas fa-heart"></i> <span class="comment-like-count">${comment.likes_count || 0}</span>
                     </button>
                     <button class="comment-action reply-comment-btn" data-comment-id="${comment.id}">
@@ -2066,6 +2418,26 @@
                     </button>
                 </div>
             `;
+            
+            // Add edit/delete options for comment owner
+            if (isCommentOwner) {
+                const optionsDiv = document.createElement('div');
+                optionsDiv.className = 'comment-options';
+                optionsDiv.innerHTML = `
+                    <button class="comment-options-btn" data-comment-id="${comment.id}">
+                        <i class="fas fa-ellipsis-h"></i>
+                    </button>
+                    <div class="comment-options-menu" id="comment-options-${comment.id}">
+                        <button class="comment-option-item edit-comment-btn" data-comment-id="${comment.id}">
+                            <i class="fas fa-edit"></i> Edit
+                        </button>
+                        <button class="comment-option-item delete delete-comment-btn" data-comment-id="${comment.id}">
+                            <i class="fas fa-trash"></i> Delete
+                        </button>
+                    </div>
+                `;
+                commentItem.appendChild(optionsDiv);
+            }
             
             // Add reply composer (hidden by default)
             const replyComposer = document.createElement('div');
@@ -2087,10 +2459,13 @@
                     const replyAvatarUrl = replyUserProfile.avatar_url;
                     const replyUsername = replyUserProfile.username || 'user';
                     const replyFullName = replyUserProfile.full_name || 'User';
+                    const isReplyOwner = reply.user_id === currentUserId;
+                    const isReplyLiked = likedCommentIds.has(reply.id);
                     
                     const replyItem = document.createElement('div');
                     replyItem.className = 'comment-item';
                     replyItem.style.marginBottom = '8px';
+                    replyItem.dataset.commentId = reply.id;
                     
                     replyItem.innerHTML = `
                         <div class="comment-header">
@@ -2105,11 +2480,31 @@
                         </div>
                         <div class="comment-text">${reply.comment_text || ''}</div>
                         <div class="comment-actions">
-                            <button class="comment-action like-comment-btn" data-comment-id="${reply.id}">
+                            <button class="comment-action like-comment-btn ${isReplyLiked ? 'liked' : ''}" data-comment-id="${reply.id}">
                                 <i class="fas fa-heart"></i> <span class="comment-like-count">${reply.likes_count || 0}</span>
                             </button>
                         </div>
                     `;
+                    
+                    // Add edit/delete options for reply owner
+                    if (isReplyOwner) {
+                        const replyOptionsDiv = document.createElement('div');
+                        replyOptionsDiv.className = 'comment-options';
+                        replyOptionsDiv.innerHTML = `
+                            <button class="comment-options-btn" data-comment-id="${reply.id}">
+                                <i class="fas fa-ellipsis-h"></i>
+                            </button>
+                            <div class="comment-options-menu" id="comment-options-${reply.id}">
+                                <button class="comment-option-item edit-comment-btn" data-comment-id="${reply.id}">
+                                    <i class="fas fa-edit"></i> Edit
+                                </button>
+                                <button class="comment-option-item delete delete-comment-btn" data-comment-id="${reply.id}">
+                                    <i class="fas fa-trash"></i> Delete
+                                </button>
+                            </div>
+                        `;
+                        replyItem.appendChild(replyOptionsDiv);
+                    }
                     
                     replyThread.appendChild(replyItem);
                 });
@@ -2143,6 +2538,29 @@
                     if (e.key === 'Enter' && !e.shiftKey) {
                         e.preventDefault();
                         postReply(comment.id, replyInput);
+                    }
+                });
+            }
+            
+            // Add event listeners for edit/delete buttons
+            if (isCommentOwner) {
+                const optionsBtn = commentItem.querySelector('.comment-options-btn');
+                const optionsMenu = commentItem.querySelector(`#comment-options-${comment.id}`);
+                const editBtn = commentItem.querySelector('.edit-comment-btn');
+                const deleteBtn = commentItem.querySelector('.delete-comment-btn');
+                
+                optionsBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    optionsMenu.classList.toggle('active');
+                });
+                
+                editBtn.addEventListener('click', () => editComment(comment.id, comment.comment_text));
+                deleteBtn.addEventListener('click', () => deleteComment(comment.id));
+                
+                // Close menu when clicking outside
+                document.addEventListener('click', (e) => {
+                    if (!optionsBtn.contains(e.target) && !optionsMenu.contains(e.target)) {
+                        optionsMenu.classList.remove('active');
                     }
                 });
             }
@@ -2237,11 +2655,11 @@
                         .delete()
                         .eq('id', existingLike.id);
                     
-                    // Update comment likes count in database
+                    // Update comment likes count
                     await supabaseClient
                         .from('pulse_comments')
                         .update({ 
-                            likes_count: supabaseClient.raw('GREATEST(likes_count - 1, 0)') 
+                            likes_count: supabaseClient.rpc('decrement', { x: 1 })
                         })
                         .eq('id', commentId);
                     
@@ -2263,11 +2681,11 @@
                             user_id: currentUserId
                         });
                     
-                    // Update comment likes count in database
+                    // Update comment likes count
                     await supabaseClient
                         .from('pulse_comments')
                         .update({ 
-                            likes_count: supabaseClient.raw('likes_count + 1') 
+                            likes_count: supabaseClient.rpc('increment', { x: 1 })
                         })
                         .eq('id', commentId);
                     
@@ -2283,8 +2701,116 @@
                 
             } catch (error) {
                 console.error('Error liking comment:', error);
-                showToast('Failed to like comment', 'error');
+                // Try alternative method
+                try {
+                    // Get current count
+                    const { data: comment } = await supabaseClient
+                        .from('pulse_comments')
+                        .select('likes_count')
+                        .eq('id', commentId)
+                        .single();
+                    
+                    const currentLikes = comment?.likes_count || 0;
+                    
+                    // Check if already liked (simple approach)
+                    const likeBtn = document.querySelector(`[data-comment-id="${commentId}"] .like-comment-btn`);
+                    if (likeBtn && likeBtn.classList.contains('liked')) {
+                        // Unlike
+                        const newCount = Math.max(0, currentLikes - 1);
+                        await supabaseClient
+                            .from('pulse_comments')
+                            .update({ likes_count: newCount })
+                            .eq('id', commentId);
+                        
+                        const likeCountElement = likeBtn.querySelector('.comment-like-count');
+                        likeCountElement.textContent = newCount;
+                        likeBtn.classList.remove('liked');
+                    } else {
+                        // Like
+                        const newCount = currentLikes + 1;
+                        await supabaseClient
+                            .from('pulse_comments')
+                            .update({ likes_count: newCount })
+                            .eq('id', commentId);
+                        
+                        const likeCountElement = likeBtn.querySelector('.comment-like-count');
+                        likeCountElement.textContent = newCount;
+                        likeBtn.classList.add('liked');
+                    }
+                } catch (fallbackError) {
+                    console.error('Fallback error:', fallbackError);
+                    showToast('Failed to like comment', 'error');
+                }
             }
+        }
+        
+        function editComment(commentId, currentText) {
+            editingCommentId = commentId;
+            document.getElementById('editCommentInput').value = currentText;
+            document.getElementById('editCommentModal').style.display = 'flex';
+        }
+        
+        async function saveEditedComment() {
+            if (!editingCommentId) return;
+            
+            const newText = document.getElementById('editCommentInput').value.trim();
+            
+            if (!newText) {
+                showToast('Comment cannot be empty', 'error');
+                return;
+            }
+            
+            try {
+                const { error } = await supabaseClient
+                    .from('pulse_comments')
+                    .update({
+                        comment_text: newText,
+                        is_edited: true,
+                        edited_at: new Date().toISOString()
+                    })
+                    .eq('id', editingCommentId);
+                
+                if (error) throw error;
+                
+                closeEditCommentModalFunc();
+                loadComments();
+                showToast('Comment updated', 'success');
+                
+            } catch (error) {
+                console.error('Error updating comment:', error);
+                showToast('Failed to update comment', 'error');
+            }
+        }
+        
+        async function deleteComment(commentId) {
+            if (!confirm('Are you sure you want to delete this comment?')) {
+                return;
+            }
+            
+            try {
+                const { error } = await supabaseClient
+                    .from('pulse_comments')
+                    .update({
+                        is_removed: true,
+                        removed_reason: 'User deleted'
+                    })
+                    .eq('id', commentId);
+                
+                if (error) throw error;
+                
+                loadComments();
+                showToast('Comment deleted', 'success');
+                
+            } catch (error) {
+                console.error('Error deleting comment:', error);
+                showToast('Failed to delete comment', 'error');
+            }
+        }
+        
+        function closeEditCommentModalFunc() {
+            editingCommentId = null;
+            document.getElementById('editCommentModal').style.display = 'none';
+            document.getElementById('editCommentInput').value = '';
         }
         
         function openShareModal() {
