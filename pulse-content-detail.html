@@ -340,6 +340,7 @@
             background: var(--hover-overlay);
         }
         
+        /* FIX: Scrollable more menu */
         .more-menu {
             position: absolute;
             top: 40px;
@@ -348,10 +349,11 @@
             border: 1px solid var(--card-border);
             border-radius: 12px;
             width: 200px;
+            max-height: 300px; /* FIX: Added max-height */
+            overflow-y: auto; /* FIX: Added scrollbar */
             box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
             display: none;
             z-index: 1000;
-            overflow: hidden;
         }
         
         .more-menu.active {
@@ -1102,6 +1104,46 @@
             cursor: pointer;
         }
         
+        /* Edit Comment Modal */
+        .modal-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-family: 'Inter', sans-serif;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .modal-btn-cancel {
+            background: var(--card-bg);
+            color: var(--slate-grey);
+            border: 1px solid var(--card-border);
+        }
+        
+        .modal-btn-cancel:hover {
+            background: var(--hover-overlay);
+            color: var(--soft-white);
+        }
+        
+        .modal-btn-post {
+            background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+            color: var(--soft-white);
+            margin-left: 10px;
+        }
+        
+        .modal-btn-post:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(29, 78, 216, 0.3);
+        }
+        
+        .modal-footer {
+            padding: 20px 0 0;
+            border-top: 1px solid var(--card-border);
+            display: flex;
+            justify-content: flex-end;
+        }
+        
         /* Toast Notifications */
         .toast-container {
             position: fixed;
@@ -1210,6 +1252,11 @@
             
             .pulse-post-container {
                 border-radius: 16px;
+            }
+            
+            .more-menu {
+                width: 180px;
+                max-height: 250px;
             }
         }
         
@@ -1528,7 +1575,7 @@
                     maxlength="500"
                     rows="4"
                 ></textarea>
-                <div class="modal-footer" style="padding: 0; margin-top: 20px; border: none;">
+                <div class="modal-footer">
                     <button class="modal-btn modal-btn-cancel" id="cancelEditComment">Cancel</button>
                     <button class="modal-btn modal-btn-post" id="saveEditComment">Save Changes</button>
                 </div>
@@ -2336,13 +2383,13 @@
                     userMap[profile.id] = profile;
                 });
                 
-                // Get comment likes for current user
+                // Get comment likes for current user - USING pulse_comments_likes table
                 const commentIds = comments.map(c => c.id);
                 let userCommentLikes = [];
                 
                 try {
                     const { data: likes } = await supabaseClient
-                        .from('comment_likes')
+                        .from('pulse_comments_likes')  // Fixed: Changed to pulse_comments_likes
                         .select('comment_id')
                         .eq('user_id', currentUserId)
                         .in('comment_id', commentIds);
@@ -2406,7 +2453,7 @@
                         <div class="comment-name" onclick="viewUserProfile('${comment.user_id}')">${fullName}</div>
                         <div class="comment-handle">@${username}</div>
                     </div>
-                    <div class="comment-time">${getTimeAgo(new Date(comment.created_at))}</div>
+                    <div class="comment-time">${getTimeAgo(new Date(comment.created_at))}${comment.is_edited ? ' (edited)' : ''}</div>
                 </div>
                 <div class="comment-text">${comment.comment_text || ''}</div>
                 <div class="comment-actions">
@@ -2476,7 +2523,7 @@
                                 <div class="comment-name" onclick="viewUserProfile('${reply.user_id}')">${replyFullName}</div>
                                 <div class="comment-handle">@${replyUsername}</div>
                             </div>
-                            <div class="comment-time">${getTimeAgo(new Date(reply.created_at))}</div>
+                            <div class="comment-time">${getTimeAgo(new Date(reply.created_at))}${reply.is_edited ? ' (edited)' : ''}</div>
                         </div>
                         <div class="comment-text">${reply.comment_text || ''}</div>
                         <div class="comment-actions">
@@ -2495,10 +2542,10 @@
                                 <i class="fas fa-ellipsis-h"></i>
                             </button>
                             <div class="comment-options-menu" id="comment-options-${reply.id}">
-                                <button class="comment-option-item edit-comment-btn" data-comment-id="${reply.id}">
+                                <button class="comment-option-item edit-comment-btn" data-comment-id="${reply.id}" data-is-reply="true">
                                     <i class="fas fa-edit"></i> Edit
                                 </button>
-                                <button class="comment-option-item delete delete-comment-btn" data-comment-id="${reply.id}">
+                                <button class="comment-option-item delete delete-comment-btn" data-comment-id="${reply.id}" data-is-reply="true">
                                     <i class="fas fa-trash"></i> Delete
                                 </button>
                             </div>
@@ -2554,8 +2601,8 @@
                     optionsMenu.classList.toggle('active');
                 });
                 
-                editBtn.addEventListener('click', () => editComment(comment.id, comment.comment_text));
-                deleteBtn.addEventListener('click', () => deleteComment(comment.id));
+                editBtn.addEventListener('click', () => editComment(comment.id, comment.comment_text, false));
+                deleteBtn.addEventListener('click', () => deleteComment(comment.id, false));
                 
                 // Close menu when clicking outside
                 document.addEventListener('click', (e) => {
@@ -2564,6 +2611,35 @@
                     }
                 });
             }
+            
+            // Add event listeners for reply edit/delete buttons
+            const replyEditButtons = commentItem.querySelectorAll('.edit-comment-btn[data-is-reply="true"]');
+            const replyDeleteButtons = commentItem.querySelectorAll('.delete-comment-btn[data-is-reply="true"]');
+            
+            replyEditButtons.forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const replyId = e.target.closest('[data-comment-id]').dataset.commentId;
+                    const replyText = e.target.closest('.comment-item').querySelector('.comment-text').textContent;
+                    editComment(replyId, replyText, true);
+                });
+            });
+            
+            replyDeleteButtons.forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const replyId = e.target.closest('[data-comment-id]').dataset.commentId;
+                    deleteComment(replyId, true);
+                });
+            });
+            
+            // Add event listeners for reply like buttons
+            const replyLikeButtons = commentItem.querySelectorAll('.like-comment-btn[data-comment-id]');
+            replyLikeButtons.forEach(btn => {
+                if (!btn.hasAttribute('data-listener-added')) {
+                    const replyId = btn.dataset.commentId;
+                    btn.addEventListener('click', () => likeComment(replyId));
+                    btn.setAttribute('data-listener-added', 'true');
+                }
+            });
         }
         
         async function postComment() {
@@ -2640,112 +2716,207 @@
         
         async function likeComment(commentId) {
             try {
-                // Check if already liked
-                const { data: existingLike } = await supabaseClient
-                    .from('comment_likes')
+                console.log('Attempting to like comment:', commentId);
+                
+                // First, check if the user already liked this comment
+                const { data: existingLike, error: checkError } = await supabaseClient
+                    .from('pulse_comments_likes')  // Fixed: Changed to pulse_comments_likes
                     .select('id')
                     .eq('comment_id', commentId)
                     .eq('user_id', currentUserId)
-                    .single();
+                    .maybeSingle();
                 
-                if (existingLike) {
-                    // Unlike
-                    await supabaseClient
-                        .from('comment_likes')
+                if (checkError && checkError.code !== 'PGRST116') {
+                    console.error('Error checking existing like:', checkError);
+                    throw checkError;
+                }
+                
+                const alreadyLiked = !!existingLike;
+                console.log('Already liked:', alreadyLiked, 'Like data:', existingLike);
+                
+                if (alreadyLiked) {
+                    // UNLIKE: Delete the like record
+                    const { error: deleteError } = await supabaseClient
+                        .from('pulse_comments_likes')  // Fixed: Changed to pulse_comments_likes
                         .delete()
                         .eq('id', existingLike.id);
                     
-                    // Update comment likes count
-                    await supabaseClient
-                        .from('pulse_comments')
-                        .update({ 
-                            likes_count: supabaseClient.rpc('decrement', { x: 1 })
-                        })
-                        .eq('id', commentId);
-                    
-                    // Update UI
-                    const likeBtn = document.querySelector(`[data-comment-id="${commentId}"] .like-comment-btn`);
-                    if (likeBtn) {
-                        const likeCountElement = likeBtn.querySelector('.comment-like-count');
-                        const currentCount = parseInt(likeCountElement.textContent) || 0;
-                        likeCountElement.textContent = Math.max(0, currentCount - 1);
-                        likeBtn.classList.remove('liked');
+                    if (deleteError) {
+                        console.error('Error deleting like:', deleteError);
+                        throw deleteError;
                     }
                     
-                } else {
-                    // Like
-                    await supabaseClient
-                        .from('comment_likes')
-                        .insert({
-                            comment_id: commentId,
-                            user_id: currentUserId
-                        });
+                    // Get current likes count safely
+                    const { data: commentData } = await supabaseClient
+                        .from('pulse_comments')
+                        .select('likes_count')
+                        .eq('id', commentId)
+                        .single()
+                        .catch(() => ({ data: { likes_count: 0 } }));
                     
-                    // Update comment likes count
-                    await supabaseClient
+                    const currentLikes = commentData?.likes_count || 0;
+                    const newLikesCount = Math.max(0, currentLikes - 1);
+                    
+                    // Update comment likes count directly (not using RPC)
+                    const { error: updateError } = await supabaseClient
                         .from('pulse_comments')
                         .update({ 
-                            likes_count: supabaseClient.rpc('increment', { x: 1 })
+                            likes_count: newLikesCount,
+                            updated_at: new Date().toISOString()
                         })
                         .eq('id', commentId);
                     
+                    if (updateError) {
+                        console.error('Error updating comment likes:', updateError);
+                        // Don't throw, just update UI with our calculation
+                    }
+                    
+                    // Update UI immediately
+                    updateCommentLikeUI(commentId, newLikesCount, false);
+                    showToast('Like removed', 'success');
+                    
+                } else {
+                    // LIKE: Insert new like record
+                    const { data: newLike, error: insertError } = await supabaseClient
+                        .from('pulse_comments_likes')  // Fixed: Changed to pulse_comments_likes
+                        .insert({
+                            comment_id: commentId,
+                            user_id: currentUserId,
+                            created_at: new Date().toISOString()
+                        })
+                        .select()
+                        .single();
+                    
+                    if (insertError) {
+                        // Handle unique constraint violation (409 error)
+                        if (insertError.code === '23505') {
+                            console.log('Like already exists, fetching existing like...');
+                            // Try to fetch the existing like
+                            const { data: existing } = await supabaseClient
+                                .from('pulse_comments_likes')  // Fixed: Changed to pulse_comments_likes
+                                .select('id')
+                                .eq('comment_id', commentId)
+                                .eq('user_id', currentUserId)
+                                .single();
+                            
+                            if (existing) {
+                                // Update UI as liked
+                                await updateCommentLikeCount(commentId, 1);
+                                updateCommentLikeUI(commentId, null, true); // null will trigger fetch
+                                showToast('Comment liked!', 'success');
+                                return;
+                            }
+                        }
+                        console.error('Error inserting like:', insertError);
+                        throw insertError;
+                    }
+                    
+                    // Update comment likes count
+                    await updateCommentLikeCount(commentId, 1);
+                    
                     // Update UI
-                    const likeBtn = document.querySelector(`[data-comment-id="${commentId}"] .like-comment-btn`);
-                    if (likeBtn) {
-                        const likeCountElement = likeBtn.querySelector('.comment-like-count');
-                        const currentCount = parseInt(likeCountElement.textContent) || 0;
+                    updateCommentLikeUI(commentId, null, true); // null will trigger fetch
+                    showToast('Comment liked!', 'success');
+                }
+                
+            } catch (error) {
+                console.error('Error in likeComment:', error);
+                
+                // Fallback: Update UI based on current state
+                const likeBtn = document.querySelector(`[data-comment-id="${commentId}"] .like-comment-btn`);
+                if (likeBtn) {
+                    const wasLiked = likeBtn.classList.contains('liked');
+                    const likeCountElement = likeBtn.querySelector('.comment-like-count');
+                    const currentCount = parseInt(likeCountElement.textContent) || 0;
+                    
+                    if (wasLiked) {
+                        // Was liked, now unliking
+                        likeCountElement.textContent = Math.max(0, currentCount - 1);
+                        likeBtn.classList.remove('liked');
+                    } else {
+                        // Was not liked, now liking
                         likeCountElement.textContent = currentCount + 1;
                         likeBtn.classList.add('liked');
                     }
                 }
                 
+                showToast('Failed to update like. Please refresh.', 'error');
+            }
+        }
+        
+        async function updateCommentLikeCount(commentId, change) {
+            try {
+                // Get current count
+                const { data: comment } = await supabaseClient
+                    .from('pulse_comments')
+                    .select('likes_count')
+                    .eq('id', commentId)
+                    .single();
+                
+                const currentLikes = comment?.likes_count || 0;
+                const newLikesCount = Math.max(0, currentLikes + change);
+                
+                // Update directly
+                const { error } = await supabaseClient
+                    .from('pulse_comments')
+                    .update({ 
+                        likes_count: newLikesCount,
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('id', commentId);
+                
+                if (error) throw error;
+                
+                return newLikesCount;
+                
             } catch (error) {
-                console.error('Error liking comment:', error);
-                // Try alternative method
+                console.error('Error updating comment like count:', error);
+                throw error;
+            }
+        }
+        
+        async function updateCommentLikeUI(commentId, likesCount = null, isLiked = null) {
+            const likeBtn = document.querySelector(`[data-comment-id="${commentId}"] .like-comment-btn`);
+            if (!likeBtn) return;
+            
+            // If likesCount is not provided, fetch it
+            if (likesCount === null) {
                 try {
-                    // Get current count
                     const { data: comment } = await supabaseClient
                         .from('pulse_comments')
                         .select('likes_count')
                         .eq('id', commentId)
                         .single();
                     
-                    const currentLikes = comment?.likes_count || 0;
-                    
-                    // Check if already liked (simple approach)
-                    const likeBtn = document.querySelector(`[data-comment-id="${commentId}"] .like-comment-btn`);
-                    if (likeBtn && likeBtn.classList.contains('liked')) {
-                        // Unlike
-                        const newCount = Math.max(0, currentLikes - 1);
-                        await supabaseClient
-                            .from('pulse_comments')
-                            .update({ likes_count: newCount })
-                            .eq('id', commentId);
-                        
-                        const likeCountElement = likeBtn.querySelector('.comment-like-count');
-                        likeCountElement.textContent = newCount;
-                        likeBtn.classList.remove('liked');
-                    } else {
-                        // Like
-                        const newCount = currentLikes + 1;
-                        await supabaseClient
-                            .from('pulse_comments')
-                            .update({ likes_count: newCount })
-                            .eq('id', commentId);
-                        
-                        const likeCountElement = likeBtn.querySelector('.comment-like-count');
-                        likeCountElement.textContent = newCount;
-                        likeBtn.classList.add('liked');
-                    }
-                } catch (fallbackError) {
-                    console.error('Fallback error:', fallbackError);
-                    showToast('Failed to like comment', 'error');
+                    likesCount = comment?.likes_count || 0;
+                } catch (error) {
+                    console.error('Error fetching comment likes count:', error);
+                    const likeCountElement = likeBtn.querySelector('.comment-like-count');
+                    likesCount = parseInt(likeCountElement.textContent) || 0;
                 }
+            }
+            
+            // If isLiked is not provided, check current state
+            if (isLiked === null) {
+                isLiked = likeBtn.classList.contains('liked');
+            }
+            
+            // Update UI
+            const likeCountElement = likeBtn.querySelector('.comment-like-count');
+            if (likeCountElement) {
+                likeCountElement.textContent = likesCount;
+            }
+            
+            if (isLiked) {
+                likeBtn.classList.add('liked');
+            } else {
+                likeBtn.classList.remove('liked');
             }
         }
         
-        function editComment(commentId, currentText) {
+        function editComment(commentId, currentText, isReply = false) {
             editingCommentId = commentId;
+            editingReplyId = isReply ? commentId : null;
             document.getElementById('editCommentInput').value = currentText;
             document.getElementById('editCommentModal').style.display = 'flex';
         }
@@ -2766,15 +2937,16 @@
                     .update({
                         comment_text: newText,
                         is_edited: true,
-                        edited_at: new Date().toISOString()
+                        edited_at: new Date().toISOString(),
+                        updated_at: new Date().toISOString()
                     })
                     .eq('id', editingCommentId);
                 
                 if (error) throw error;
                 
                 closeEditCommentModalFunc();
-                loadComments();
-                showToast('Comment updated', 'success');
+                loadComments(); // Reload to show updated text and "edited" badge
+                showToast(editingReplyId ? 'Reply updated' : 'Comment updated', 'success');
                 
             } catch (error) {
                 console.error('Error updating comment:', error);
@@ -2782,8 +2954,8 @@
             }
         }
         
-        async function deleteComment(commentId) {
-            if (!confirm('Are you sure you want to delete this comment?')) {
+        async function deleteComment(commentId, isReply = false) {
+            if (!confirm(`Are you sure you want to delete this ${isReply ? 'reply' : 'comment'}?`)) {
                 return;
             }
             
@@ -2792,23 +2964,25 @@
                     .from('pulse_comments')
                     .update({
                         is_removed: true,
-                        removed_reason: 'User deleted'
+                        removed_reason: 'User deleted',
+                        updated_at: new Date().toISOString()
                     })
                     .eq('id', commentId);
                 
                 if (error) throw error;
                 
                 loadComments();
-                showToast('Comment deleted', 'success');
+                showToast(`${isReply ? 'Reply' : 'Comment'} deleted`, 'success');
                 
             } catch (error) {
                 console.error('Error deleting comment:', error);
-                showToast('Failed to delete comment', 'error');
+                showToast(`Failed to delete ${isReply ? 'reply' : 'comment'}`, 'error');
             }
         }
         
         function closeEditCommentModalFunc() {
             editingCommentId = null;
+            editingReplyId = null;
             document.getElementById('editCommentModal').style.display = 'none';
             document.getElementById('editCommentInput').value = '';
         }
