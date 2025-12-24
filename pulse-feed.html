@@ -643,11 +643,11 @@
         }
         
         .action-button.liked {
-            color: #FF6B6B;
+            color: var(--warm-gold) !important;
         }
         
         .action-button.liked:hover {
-            color: #FF5252;
+            color: #FFD700 !important;
         }
         
         /* Pulse Stats */
@@ -1179,7 +1179,7 @@
             <div class="user-section">
                 <button class="notification-btn">
                     <i class="far fa-bell"></i>
-                    <span class="notification-badge" style="display: none;">3</span>
+                    <span class="notification-badge" style="display: none;">0</span>
                 </button>
                 <div class="user-avatar" id="user-avatar">
                     <img id="user-avatar-img">
@@ -1278,7 +1278,10 @@
             <div class="modal-body">
                 <form class="create-form" id="createForm">
                     <div class="form-row">
-                        <div class="pulse-avatar" id="modal-avatar">AB</div>
+                        <div class="pulse-avatar" id="modal-avatar">
+                            <img id="modal-avatar-img">
+                            <span>AB</span>
+                        </div>
                         <textarea 
                             class="caption-input" 
                             id="caption" 
@@ -1343,7 +1346,10 @@
             <div class="modal-body">
                 <form class="create-form" id="editForm">
                     <div class="form-row">
-                        <div class="pulse-avatar" id="edit-modal-avatar">AB</div>
+                        <div class="pulse-avatar" id="edit-modal-avatar">
+                            <img id="edit-modal-avatar-img">
+                            <span>AB</span>
+                        </div>
                         <textarea 
                             class="caption-input" 
                             id="editCaption" 
@@ -1420,48 +1426,11 @@
                 currentUserId = session.user.id;
                 currentSession = session;
                 
-                // Set user initials
-                const user = session.user;
-                const initials = getUserInitials(user);
-                document.getElementById('avatar-initials').textContent = initials;
-                document.getElementById('prompt-avatar').querySelector('span').textContent = initials;
-                document.getElementById('modal-avatar').textContent = initials;
-                document.getElementById('edit-modal-avatar').textContent = initials;
+                // Load user profile with avatar
+                await loadUserProfile();
                 
-                // Fetch user profile to get avatar
-                try {
-                    const { data: profile } = await supabaseClient
-                        .from('user_profiles')
-                        .select('avatar_url')
-                        .eq('id', user.id)
-                        .single();
-                    
-                    if (profile?.avatar_url) {
-                        const avatarImg = document.getElementById('user-avatar-img');
-                        avatarImg.src = profile.avatar_url;
-                        avatarImg.style.display = 'block';
-                        document.getElementById('avatar-initials').style.display = 'none';
-                        
-                        // Also update prompt avatar if it exists
-                        const promptAvatarImg = document.getElementById('prompt-avatar-img');
-                        if (!promptAvatarImg) {
-                            // Add image to prompt avatar
-                            const promptAvatar = document.getElementById('prompt-avatar');
-                            const img = document.createElement('img');
-                            img.id = 'prompt-avatar-img';
-                            img.src = profile.avatar_url;
-                            img.style.cssText = 'width: 100%; height: 100%; border-radius: 50%; object-fit: cover;';
-                            promptAvatar.innerHTML = '';
-                            promptAvatar.appendChild(img);
-                        } else {
-                            promptAvatarImg.src = profile.avatar_url;
-                            promptAvatarImg.style.display = 'block';
-                            document.getElementById('prompt-avatar').querySelector('span').style.display = 'none';
-                        }
-                    }
-                } catch (error) {
-                    console.log('No profile picture found, using initials');
-                }
+                // Fetch notifications
+                await fetchNotifications();
                 
                 // Hide loading, show content
                 document.getElementById('loading').style.display = 'none';
@@ -1509,6 +1478,139 @@
             const email = user.email || '';
             const name = user.user_metadata?.full_name || email.split('@')[0] || 'U';
             return name.substring(0, 2).toUpperCase();
+        }
+        
+        // ✅ OPTIMIZED: LOAD USER PROFILE WITH AVATAR
+        async function loadUserProfile() {
+            try {
+                const { data: { session } } = await supabaseClient.auth.getSession();
+                if (!session) return;
+                
+                // Fetch user profile with avatar
+                const { data: profile } = await supabaseClient
+                    .from('user_profiles')
+                    .select('avatar_url, full_name, email')
+                    .eq('id', session.user.id)
+                    .single();
+                
+                if (!profile) {
+                    // Create a basic profile if it doesn't exist
+                    const { data: newProfile, error } = await supabaseClient
+                        .from('user_profiles')
+                        .upsert({
+                            id: session.user.id,
+                            email: session.user.email,
+                            full_name: session.user.user_metadata?.full_name || session.user.email.split('@')[0],
+                            username: session.user.user_metadata?.username || session.user.email.split('@')[0],
+                            role: 'creator',
+                            created_at: new Date().toISOString(),
+                            updated_at: new Date().toISOString()
+                        })
+                        .select()
+                        .single();
+                    
+                    if (error) throw error;
+                    
+                    // Use the new profile
+                    profile = newProfile;
+                }
+                
+                const initials = getUserInitials(profile);
+                const avatarImgSrc = profile.avatar_url;
+                
+                // Function to update avatar elements efficiently
+                const updateAvatar = (containerId, imgId, initialsId) => {
+                    const container = document.getElementById(containerId);
+                    const img = document.getElementById(imgId);
+                    const initialsEl = document.getElementById(initialsId);
+                    
+                    if (!container) return;
+                    
+                    if (avatarImgSrc) {
+                        // Preload image for better performance
+                        const preloadImg = new Image();
+                        preloadImg.src = avatarImgSrc;
+                        
+                        preloadImg.onload = () => {
+                            if (img) {
+                                img.src = avatarImgSrc;
+                                img.style.display = 'block';
+                            }
+                            if (initialsEl) initialsEl.style.display = 'none';
+                        };
+                        
+                        preloadImg.onerror = () => {
+                            // If image fails to load, show initials
+                            if (initialsEl) {
+                                initialsEl.style.display = 'flex';
+                                initialsEl.textContent = initials;
+                            }
+                            if (img) img.style.display = 'none';
+                        };
+                    } else {
+                        // No avatar, show initials
+                        if (initialsEl) {
+                            initialsEl.style.display = 'flex';
+                            initialsEl.textContent = initials;
+                        }
+                        if (img) img.style.display = 'none';
+                    }
+                };
+                
+                // Update all avatar places
+                updateAvatar('user-avatar', 'user-avatar-img', 'avatar-initials');
+                
+                // Update prompt avatar
+                const promptAvatar = document.getElementById('prompt-avatar');
+                if (promptAvatar) {
+                    const promptImg = document.getElementById('prompt-avatar-img');
+                    const promptInitials = promptAvatar.querySelector('span');
+                    
+                    if (avatarImgSrc) {
+                        if (!promptImg) {
+                            const img = document.createElement('img');
+                            img.id = 'prompt-avatar-img';
+                            img.style.cssText = 'width: 100%; height: 100%; border-radius: 50%; object-fit: cover;';
+                            promptAvatar.appendChild(img);
+                            img.src = avatarImgSrc;
+                            promptInitials.style.display = 'none';
+                        } else {
+                            promptImg.src = avatarImgSrc;
+                            promptImg.style.display = 'block';
+                            promptInitials.style.display = 'none';
+                        }
+                    } else {
+                        promptInitials.textContent = initials;
+                        promptInitials.style.display = 'flex';
+                        if (promptImg) promptImg.style.display = 'none';
+                    }
+                }
+                
+                // Update modal avatars
+                updateAvatar('modal-avatar', 'modal-avatar-img', 'modal-avatar-initials');
+                updateAvatar('edit-modal-avatar', 'edit-modal-avatar-img', 'edit-modal-avatar-initials');
+                
+                // Prefetch the profile image for better performance
+                if (avatarImgSrc) {
+                    const link = document.createElement('link');
+                    link.rel = 'preload';
+                    link.as = 'image';
+                    link.href = avatarImgSrc;
+                    document.head.appendChild(link);
+                }
+                
+            } catch (error) {
+                console.log('Error loading user profile:', error);
+                // Fallback to initials
+                const { data: { session } } = await supabaseClient.auth.getSession();
+                if (session) {
+                    const initials = getUserInitials(session.user);
+                    document.getElementById('avatar-initials').textContent = initials;
+                    document.getElementById('prompt-avatar').querySelector('span').textContent = initials;
+                    document.getElementById('modal-avatar').querySelector('span').textContent = initials;
+                    document.getElementById('edit-modal-avatar').querySelector('span').textContent = initials;
+                }
+            }
         }
         
         function setupBasicEventListeners() {
@@ -1757,6 +1859,24 @@
                     if (!error) {
                         updateLikeUI(pulseId, true);
                         showToast('Pulse liked!', 'success');
+                        
+                        // ✅ Create notification for pulse creator (if not liking own pulse)
+                        const { data: pulse } = await supabaseClient
+                            .from('pulses')
+                            .select('user_id')
+                            .eq('id', pulseId)
+                            .single();
+                        
+                        if (pulse && pulse.user_id !== session.user.id) {
+                            await createNotification(
+                                'like',
+                                session.user.id,
+                                pulse.user_id,
+                                pulseId,
+                                null,
+                                `${session.user.email.split('@')[0]} liked your pulse`
+                            );
+                        }
                     }
                 }
                 
@@ -1771,17 +1891,20 @@
             const pulseCard = document.querySelector(`[data-pulse-id="${pulseId}"]`);
             if (!pulseCard) return;
             
-            const likeBtn = pulseCard.querySelector('.fa-heart').parentElement;
+            const likeBtn = pulseCard.querySelector('.like-btn');
+            const likeIcon = pulseCard.querySelector('.fa-heart');
             const likesCount = pulseCard.querySelector('.likes-count');
             
             if (likeBtn) {
                 if (isLiked) {
                     likeBtn.classList.add('liked');
+                    likeIcon.style.color = 'var(--warm-gold)';
                     const currentText = likeBtn.textContent.trim();
                     const currentCount = parseInt(currentText.match(/\d+/)?.[0]) || 0;
-                    likeBtn.innerHTML = `<i class="fas fa-heart"></i> ${currentCount + 1}`;
+                    likeBtn.innerHTML = `<i class="fas fa-heart" style="color: var(--warm-gold);"></i> ${currentCount + 1}`;
                 } else {
                     likeBtn.classList.remove('liked');
+                    likeIcon.style.color = '';
                     const currentText = likeBtn.textContent.trim();
                     const currentCount = parseInt(currentText.match(/\d+/)?.[0]) || 0;
                     likeBtn.innerHTML = `<i class="fas fa-heart"></i> ${Math.max(0, currentCount - 1)}`;
@@ -2036,6 +2159,43 @@
             window.location.href = `pulse-content-detail.html?id=${pulseId}`;
         }
         
+        // ✅ FIXED: HANDLE DELETE PULSE
+        async function handleDelete(pulseId) {
+            if (!confirm('Are you sure you want to delete this pulse? This action cannot be undone.')) {
+                return;
+            }
+            
+            try {
+                const { data: { session } } = await supabaseClient.auth.getSession();
+                if (!session) {
+                    showToast('Please login to delete pulses', 'error');
+                    return;
+                }
+                
+                // ✅ FIX: Add user_id check to match RLS policy
+                const { error } = await supabaseClient
+                    .from('pulses')
+                    .update({ deleted_at: new Date().toISOString() })
+                    .eq('id', pulseId)
+                    .eq('user_id', session.user.id); // Add this line
+                
+                if (error) throw error;
+                
+                // Remove pulse from UI
+                const pulseCard = document.querySelector(`[data-pulse-id="${pulseId}"]`);
+                if (pulseCard) {
+                    pulseCard.style.opacity = '0.5';
+                    setTimeout(() => pulseCard.remove(), 300);
+                }
+                
+                showToast('Pulse deleted successfully', 'success');
+                
+            } catch (error) {
+                console.error('Error deleting pulse:', error);
+                showToast('Failed to delete pulse. You can only delete your own pulses.', 'error');
+            }
+        }
+        
         // ✅ HANDLE EDIT PULSE
         async function handleEdit(pulseId) {
             try {
@@ -2087,31 +2247,106 @@
             }
         }
         
-        // ✅ HANDLE DELETE PULSE
-        async function handleDelete(pulseId) {
-            if (!confirm('Are you sure you want to delete this pulse? This action cannot be undone.')) {
-                return;
-            }
-            
+        // ✅ NEW: FETCH NOTIFICATIONS
+        async function fetchNotifications() {
             try {
-                const { error } = await supabaseClient
-                    .from('pulses')
-                    .update({ deleted_at: new Date().toISOString() })
-                    .eq('id', pulseId);
+                const { data: { session } } = await supabaseClient.auth.getSession();
+                if (!session) return;
+                
+                // Fetch unread notifications for current user
+                const { data: notifications, error } = await supabaseClient
+                    .from('pulse_notifications')
+                    .select('*')
+                    .eq('target_user_id', session.user.id)
+                    .eq('is_read', false)
+                    .order('created_at', { ascending: false })
+                    .limit(10);
                 
                 if (error) throw error;
                 
-                // Remove pulse from UI
-                const pulseCard = document.querySelector(`[data-pulse-id="${pulseId}"]`);
-                if (pulseCard) {
-                    pulseCard.remove();
+                // Update notification badge and icon
+                const notificationBadge = document.querySelector('.notification-badge');
+                const notificationBtn = document.querySelector('.notification-btn i');
+                
+                if (notifications && notifications.length > 0) {
+                    // Show badge with count
+                    notificationBadge.textContent = notifications.length > 9 ? '9+' : notifications.length.toString();
+                    notificationBadge.style.display = 'flex';
+                    
+                    // Change icon color to gold
+                    notificationBtn.style.color = 'var(--warm-gold)';
+                    notificationBtn.classList.remove('far');
+                    notificationBtn.classList.add('fas');
+                } else {
+                    // Hide badge
+                    notificationBadge.style.display = 'none';
+                    
+                    // Reset icon
+                    notificationBtn.style.color = '';
+                    notificationBtn.classList.remove('fas');
+                    notificationBtn.classList.add('far');
                 }
                 
-                showToast('Pulse deleted successfully', 'success');
+                // Set up notification button click
+                const notificationButton = document.querySelector('.notification-btn');
+                notificationButton.onclick = () => {
+                    window.location.href = 'notifications.html';
+                };
                 
             } catch (error) {
-                console.error('Error deleting pulse:', error);
-                showToast('Failed to delete pulse', 'error');
+                console.error('Error fetching notifications:', error);
+            }
+        }
+        
+        // ✅ NEW: CREATE NOTIFICATION FUNCTION
+        async function createNotification(type, actorId, targetUserId, pulseId, commentId, message) {
+            try {
+                const { error } = await supabaseClient
+                    .from('pulse_notifications')
+                    .insert({
+                        type: type,
+                        actor_id: actorId,
+                        target_user_id: targetUserId,
+                        pulse_id: pulseId,
+                        comment_id: commentId,
+                        message: message,
+                        is_read: false
+                    });
+                
+                if (error) throw error;
+                
+                // Update notification badge immediately
+                await fetchNotifications();
+                
+            } catch (error) {
+                console.error('Error creating notification:', error);
+            }
+        }
+        
+        // ✅ NEW: CHECK IF USER HAS LIKED EACH PULSE
+        async function checkUserLikes(pulseIds) {
+            try {
+                const { data: { session } } = await supabaseClient.auth.getSession();
+                if (!session) return new Set();
+                
+                const { data: userLikes, error } = await supabaseClient
+                    .from('pulse_likes')
+                    .select('pulse_id')
+                    .in('pulse_id', pulseIds)
+                    .eq('user_id', session.user.id);
+                
+                if (error) throw error;
+                
+                // Create a Set of liked pulse IDs for quick lookup
+                const likedPulses = new Set();
+                if (userLikes) {
+                    userLikes.forEach(like => likedPulses.add(like.pulse_id));
+                }
+                
+                return likedPulses;
+            } catch (error) {
+                console.error('Error checking user likes:', error);
+                return new Set();
             }
         }
         
@@ -2240,12 +2475,12 @@
                 editingPulseId = null;
             }
             
-            // ✅ FIXED: FETCH PULSES FROM SUPABASE
+            // ✅ UPDATED: FETCH PULSES FROM SUPABASE WITH LIKE STATUS
             async function fetchPulses() {
                 try {
                     console.log('🔄 Fetching pulses...');
                     
-                    // ✅ Use the view instead of trying to join manually
+                    // Use the view instead of trying to join manually
                     const { data, error } = await supabaseClient
                         .from('pulses_with_user_details')
                         .select('*')
@@ -2256,6 +2491,10 @@
                     
                     console.log(`✅ Fetched ${data?.length || 0} pulses`);
                     pulses = data || [];
+                    
+                    // Check which pulses the current user has liked
+                    const pulseIds = pulses.map(p => p.id);
+                    const likedPulses = await checkUserLikes(pulseIds);
                     
                     // Format for display
                     const formattedData = pulses.map(pulse => ({
@@ -2269,7 +2508,7 @@
                         }
                     }));
                     
-                    displayPulses(formattedData);
+                    displayPulses(formattedData, likedPulses);
                     
                 } catch (error) {
                     console.error('❌ Error fetching pulses:', error);
@@ -2278,8 +2517,8 @@
                 }
             }
             
-            // ✅ DISPLAY PULSES
-            function displayPulses(pulses) {
+            // ✅ UPDATED: DISPLAY PULSES WITH LIKE STATUS
+            function displayPulses(pulses, likedPulses) {
                 if (!pulses || pulses.length === 0) {
                     loadSampleData();
                     return;
@@ -2288,14 +2527,14 @@
                 pulseFeedContainer.innerHTML = '';
                 
                 pulses.forEach(pulse => {
-                    const pulseCard = createPulseCard(pulse);
+                    const pulseCard = createPulseCard(pulse, likedPulses);
                     pulseFeedContainer.appendChild(pulseCard);
                 });
             }
             
-            // ✅ FIXED: CREATE PULSE CARD ELEMENT
-            function createPulseCard(pulse) {
-                // ✅ Get user info from combined data
+            // ✅ UPDATED: CREATE PULSE CARD ELEMENT WITH LIKE STATE
+            function createPulseCard(pulse, likedPulses) {
+                // Get user info from combined data
                 const profile = pulse.user_profiles || {};
                 const fullName = profile.full_name || profile.email?.split('@')[0] || 'User';
                 const username = profile.username || '';
@@ -2308,6 +2547,7 @@
                 const hasMedia = pulse.media_url;
                 const mediaType = pulse.media_type;
                 const isOwnPulse = pulse.user_id === currentUserId;
+                const isLiked = likedPulses.has(pulse.id);
                 
                 const card = document.createElement('div');
                 card.className = 'pulse-card';
@@ -2394,8 +2634,8 @@
                     </div>
                     
                     <div class="pulse-actions">
-                        <button class="action-button like-btn" data-pulse-id="${pulse.id}">
-                            <i class="fas fa-heart"></i> ${pulse.likes_count || 0}
+                        <button class="action-button like-btn ${isLiked ? 'liked' : ''}" data-pulse-id="${pulse.id}">
+                            <i class="fas fa-heart" ${isLiked ? 'style="color: var(--warm-gold);"' : ''}></i> ${pulse.likes_count || 0}
                         </button>
                         <button class="action-button comment-btn" data-pulse-id="${pulse.id}">
                             <i class="fas fa-comment"></i> ${pulse.comments_count || 0}
