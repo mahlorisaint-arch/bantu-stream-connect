@@ -35,6 +35,9 @@
             --card-border: rgba(148, 163, 184, 0.2);
             --hover-overlay: rgba(255, 255, 255, 0.05);
             --active-overlay: rgba(245, 158, 11, 0.1);
+            --indigo: #4F46E5;
+            --gold-glow: rgba(245, 158, 11, 0.3);
+            --blue-glow: rgba(29, 78, 216, 0.3);
         }
         
         * {
@@ -376,7 +379,7 @@
             border-radius: 16px;
             overflow: hidden;
             transition: all 0.3s ease;
-            cursor: pointer; /* Add cursor pointer for clickable card */
+            cursor: pointer;
         }
         
         .pulse-card:hover {
@@ -390,7 +393,7 @@
             align-items: center;
             padding: 20px;
             padding-bottom: 0;
-            position: relative; /* For positioning the more options button */
+            position: relative;
         }
         
         .pulse-avatar {
@@ -597,22 +600,134 @@
             color: var(--soft-white);
         }
         
-        /* Media Container */
-        .pulse-media-container {
-            border-radius: 12px;
+        /* UPDATED: EXACT Video Player from pulse-content-detail.html */
+        .media-container {
+            width: 100%;
+            aspect-ratio: 9/16;
+            background: black;
+            border-radius: 0;
             overflow: hidden;
-            margin-bottom: 16px;
+            margin-bottom: 20px;
             position: relative;
-            background-color: var(--deep-black);
+            display: none;
         }
         
-        .vertical-video {
+        .media-container.has-media {
+            display: block;
+        }
+        
+        .pulse-media {
             width: 100%;
-            max-height: 600px;
+            height: 100%;
             object-fit: cover;
             display: block;
         }
         
+        /* Custom Video Controls - Glassmorphism (EXACT from pulse-content-detail.html) */
+        .video-controls-overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
+            padding: 20px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+        
+        .media-container:hover .video-controls-overlay {
+            opacity: 1;
+        }
+        
+        .video-progress {
+            width: 100%;
+            height: 4px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 2px;
+            margin-bottom: 15px;
+            position: relative;
+            cursor: pointer;
+        }
+        
+        .video-progress-filled {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 100%;
+            background: var(--warm-gold);
+            border-radius: 2px;
+            width: 0%;
+        }
+        
+        .video-controls {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .video-left-controls,
+        .video-right-controls {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .video-control-btn {
+            background: rgba(15, 23, 42, 0.7);
+            border: 1px solid rgba(245, 158, 11, 0.3);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--warm-gold);
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(5px);
+        }
+        
+        .video-control-btn:hover {
+            background: rgba(245, 158, 11, 0.2);
+            transform: scale(1.1);
+        }
+        
+        .video-time {
+            color: var(--warm-gold);
+            font-size: 14px;
+            font-weight: 500;
+            min-width: 100px;
+            text-align: center;
+        }
+        
+        .video-volume {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .volume-slider {
+            width: 80px;
+            height: 4px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 2px;
+            position: relative;
+            cursor: pointer;
+        }
+        
+        .volume-slider-filled {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 100%;
+            background: var(--warm-gold);
+            border-radius: 2px;
+            width: 50%;
+        }
+        
+        /* Image Placeholder */
         .image-placeholder {
             width: 100%;
             aspect-ratio: 9/16;
@@ -1189,6 +1304,13 @@
                 right: 20px;
                 top: 20px;
             }
+            
+            /* Mobile video player adjustments */
+            .media-container.has-media {
+                margin-left: -12px;
+                margin-right: -12px;
+                width: calc(100% + 24px);
+            }
         }
         
         /* Custom Scrollbar */
@@ -1479,6 +1601,7 @@
         let editingSeriesTitle = null;
         let editingPulseData = null;
         let userConnections = new Set(); // Store connected user IDs
+        let videoPlayers = new Map(); // Store video player instances
 
         async function initialize() {
             console.log('Starting Pulse Feed initialization...');
@@ -2801,6 +2924,147 @@
             document.getElementById('editSeriesTitle').value = '';
         }
         
+        // ✅ NEW: Initialize video player for pulse feed
+        function initializeVideoPlayer(videoElement, controlsContainer) {
+            if (!videoElement || !controlsContainer) return;
+            
+            const videoId = videoElement.dataset.videoId || `video-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+            videoElement.id = videoId;
+            
+            const playPauseBtn = controlsContainer.querySelector('.play-pause-btn');
+            const muteBtn = controlsContainer.querySelector('.mute-btn');
+            const videoProgress = controlsContainer.querySelector('.video-progress');
+            const videoProgressFilled = controlsContainer.querySelector('.video-progress-filled');
+            const volumeSlider = controlsContainer.querySelector('.volume-slider');
+            const volumeSliderFilled = controlsContainer.querySelector('.volume-slider-filled');
+            const videoTime = controlsContainer.querySelector('.video-time');
+            const mediaContainer = controlsContainer.closest('.media-container');
+            
+            // Format time function
+            function formatTime(seconds) {
+                if (isNaN(seconds)) return '0:00';
+                const mins = Math.floor(seconds / 60);
+                const secs = Math.floor(seconds % 60);
+                return `${mins}:${secs.toString().padStart(2, '0')}`;
+            }
+            
+            // Update time display
+            function updateTimeDisplay() {
+                if (!videoElement.duration) return;
+                const current = formatTime(videoElement.currentTime);
+                const duration = formatTime(videoElement.duration);
+                videoTime.textContent = `${current} / ${duration}`;
+                
+                // Update progress bar
+                const progressPercent = (videoElement.currentTime / videoElement.duration) * 100;
+                videoProgressFilled.style.width = `${progressPercent}%`;
+            }
+            
+            // Set initial volume
+            videoElement.volume = 0.7;
+            volumeSliderFilled.style.width = '70%';
+            
+            // Play/Pause functionality
+            playPauseBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (videoElement.paused) {
+                    videoElement.play();
+                    playPauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
+                } else {
+                    videoElement.pause();
+                    playPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
+                }
+            });
+            
+            // Video events
+            videoElement.addEventListener('play', () => {
+                playPauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
+            });
+            
+            videoElement.addEventListener('pause', () => {
+                playPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
+            });
+            
+            videoElement.addEventListener('timeupdate', updateTimeDisplay);
+            
+            videoElement.addEventListener('loadedmetadata', () => {
+                updateTimeDisplay();
+            });
+            
+            // Click on video to play/pause
+            mediaContainer.addEventListener('click', (e) => {
+                if (e.target === mediaContainer || e.target.classList.contains('video-controls-overlay')) {
+                    if (videoElement.paused) {
+                        videoElement.play();
+                        playPauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
+                    } else {
+                        videoElement.pause();
+                        playPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
+                    }
+                }
+            });
+            
+            // Progress bar click
+            videoProgress.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const rect = videoProgress.getBoundingClientRect();
+                const pos = (e.clientX - rect.left) / rect.width;
+                videoElement.currentTime = pos * videoElement.duration;
+                updateTimeDisplay();
+            });
+            
+            // Mute/unmute
+            muteBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                videoElement.muted = !videoElement.muted;
+                muteBtn.innerHTML = videoElement.muted ? 
+                    '<i class="fas fa-volume-mute"></i>' : 
+                    '<i class="fas fa-volume-up"></i>';
+            });
+            
+            // Volume slider
+            volumeSlider.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const rect = volumeSlider.getBoundingClientRect();
+                const pos = (e.clientX - rect.left) / rect.width;
+                const volume = Math.max(0, Math.min(1, pos));
+                videoElement.volume = volume;
+                videoElement.muted = volume === 0;
+                volumeSliderFilled.style.width = `${volume * 100}%`;
+                muteBtn.innerHTML = volume === 0 ? 
+                    '<i class="fas fa-volume-mute"></i>' : 
+                    '<i class="fas fa-volume-up"></i>';
+            });
+            
+            // Show controls on hover
+            mediaContainer.addEventListener('mouseenter', () => {
+                const controls = controlsContainer.querySelector('.video-controls-overlay');
+                if (controls) {
+                    controls.style.opacity = '1';
+                }
+            });
+            
+            mediaContainer.addEventListener('mouseleave', () => {
+                const controls = controlsContainer.querySelector('.video-controls-overlay');
+                if (controls && !videoElement.paused) {
+                    controls.style.opacity = '0';
+                }
+            });
+            
+            // Store video player reference
+            videoPlayers.set(videoId, {
+                video: videoElement,
+                controls: controlsContainer,
+                playPauseBtn,
+                muteBtn,
+                videoProgress,
+                videoProgressFilled,
+                volumeSlider,
+                volumeSliderFilled,
+                videoTime
+            });
+        }
+        
         function initializeFeed(session) {
             // State variables
             let selectedMedia = null;
@@ -2972,7 +3236,7 @@
                 });
             }
             
-            // ✅ UPDATED: CREATE PULSE CARD ELEMENT WITH LIKE STATE AND CONNECT BUTTON
+            // ✅ UPDATED: CREATE PULSE CARD ELEMENT WITH EXACT VIDEO PLAYER FROM pulse-content-detail.html
             function createPulseCard(pulse, likedPulses) {
                 // Get user info from combined data
                 const profile = pulse.user_profiles || {};
@@ -3036,6 +3300,50 @@
                     `;
                 }
                 
+                // UPDATED: EXACT Video player HTML from pulse-content-detail.html
+                let mediaHTML = '';
+                if (hasMedia) {
+                    if (mediaType === 'video') {
+                        mediaHTML = `
+                            <div class="media-container has-media">
+                                <video class="pulse-media" data-video-id="video-${pulse.id}" preload="metadata" playsinline>
+                                    <source src="${pulse.media_url}" type="video/mp4">
+                                    Your browser does not support the video tag.
+                                </video>
+                                <div class="video-controls-overlay">
+                                    <div class="video-progress">
+                                        <div class="video-progress-filled"></div>
+                                    </div>
+                                    <div class="video-controls">
+                                        <div class="video-left-controls">
+                                            <button class="video-control-btn play-pause-btn">
+                                                <i class="fas fa-play"></i>
+                                            </button>
+                                            <div class="video-time">0:00 / 0:00</div>
+                                        </div>
+                                        <div class="video-right-controls">
+                                            <div class="video-volume">
+                                                <button class="video-control-btn mute-btn">
+                                                    <i class="fas fa-volume-up"></i>
+                                                </button>
+                                                <div class="volume-slider">
+                                                    <div class="volume-slider-filled"></div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    } else {
+                        mediaHTML = `
+                            <div class="media-container has-media">
+                                <img src="${pulse.media_url}" alt="Pulse image" class="pulse-media">
+                            </div>
+                        `;
+                    }
+                }
+                
                 card.innerHTML = `
                     <div class="pulse-header">
                         <div class="pulse-avatar" style="${avatarUrl ? `background-image: url('${avatarUrl}'); background-size: cover; background-position: center;` : ''}">
@@ -3062,18 +3370,7 @@
                     <div class="pulse-content">
                         ${pulse.caption ? `<p class="pulse-text">${pulse.caption}</p>` : ''}
                         
-                        ${hasMedia ? `
-                            <div class="pulse-media-container">
-                                ${mediaType === 'video' ? `
-                                    <video class="vertical-video" controls>
-                                        <source src="${pulse.media_url}" type="video/mp4">
-                                        Your browser does not support the video tag.
-                                    </video>
-                                ` : `
-                                    <img src="${pulse.media_url}" alt="Pulse image" style="width:100%; border-radius:12px;">
-                                `}
-                            </div>
-                        ` : ''}
+                        ${mediaHTML}
                         
                         ${pulse.linked_content_id ? `
                             <div class="linked-content">
@@ -3107,6 +3404,17 @@
                         <span class="shares-count">${pulse.shares_count || 0} shares</span>
                     </div>
                 `;
+                
+                // Initialize video controls if video exists
+                if (hasMedia && mediaType === 'video') {
+                    setTimeout(() => {
+                        const videoElement = card.querySelector('video');
+                        const mediaContainer = card.querySelector('.media-container');
+                        if (videoElement && mediaContainer) {
+                            initializeVideoPlayer(videoElement, mediaContainer);
+                        }
+                    }, 100);
+                }
                 
                 // Add event listeners
                 const likeBtn = card.querySelector('.like-btn');
