@@ -1584,631 +1584,440 @@
     </div>
 
     <script>
-        // Initialize Supabase client
-        const SUPABASE_URL = 'https://ydnxqnbjoshvxteevemc.supabase.co';
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U';
+    // Initialize Supabase client
+    const SUPABASE_URL = 'https://ydnxqnbjoshvxteevemc.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U';
 
-        let supabaseClient = null;
-        let currentUserId = null;
-        let pulseId = null;
-        let currentPulse = null;
-        let pulseCreator = null;
-        let isLiked = false;
-        let isSaved = false;
-        let videoElement = null;
-        let isPlaying = false;
-        let isMuted = false;
-        let volume = 1;
-        let editingCommentId = null;
-        let editingReplyId = null;
-        let isProcessingLike = {}; // Track like processing to prevent multiple clicks
+    let supabaseClient = null;
+    let currentUserId = null;
+    let pulseId = null;
+    let currentPulse = null;
+    let pulseCreator = null;
+    let isLiked = false;
+    let isSaved = false;
+    let videoElement = null;
+    let isPlaying = false;
+    let isMuted = false;
+    let volume = 1;
+    let editingCommentId = null;
+    let editingReplyId = null;
+    let isProcessingLike = {}; // Track like processing to prevent multiple clicks
 
-        async function initialize() {
-            console.log('Starting Pulse Detail initialization...');
+    async function initialize() {
+        console.log('Starting Pulse Detail initialization...');
+        
+        try {
+            // Create Supabase client with better error handling
+            supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+                auth: {
+                    autoRefreshToken: true,
+                    persistSession: true,
+                    detectSessionInUrl: false
+                },
+                global: {
+                    headers: {
+                        'apikey': SUPABASE_ANON_KEY
+                    }
+                }
+            });
             
-            try {
-                // Create Supabase client
-                supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-                    auth: {
-                        autoRefreshToken: true,
-                        persistSession: true,
-                        detectSessionInUrl: true
-                    }
-                });
-                
-                // Check session
-                const { data: { session }, error } = await supabaseClient.auth.getSession();
-                
-                if (error) {
-                    throw error;
-                }
-                
-                if (!session) {
-                    // No session, redirect to login
-                    window.location.href = 'login.html';
-                    return;
-                }
-                
-                console.log('User authenticated:', session.user.email);
-                currentUserId = session.user.id;
-                
-                // Set user initials
-                const user = session.user;
-                const initials = getUserInitials(user);
-                document.getElementById('avatar-initials').textContent = initials;
-                const composerAvatar = document.getElementById('composer-avatar');
-                composerAvatar.querySelector('span').textContent = initials;
-                
-                // Set user avatar if available
-                try {
-                    const { data: profile } = await supabaseClient
-                        .from('user_profiles')
-                        .select('avatar_url, full_name')
-                        .eq('id', user.id)
-                        .single();
-                    
-                    if (profile?.avatar_url) {
-                        const avatarImg = document.getElementById('user-avatar-img');
-                        avatarImg.src = profile.avatar_url;
-                        avatarImg.style.display = 'block';
-                        document.getElementById('avatar-initials').style.display = 'none';
-                        
-                        // Also set composer avatar
-                        const composerImg = document.getElementById('composer-avatar-img');
-                        composerImg.src = profile.avatar_url;
-                        composerImg.style.display = 'block';
-                        composerAvatar.querySelector('span').style.display = 'none';
-                    }
-                } catch (error) {
-                    console.log('No profile picture found, using initials');
-                }
-                
-                // Get pulse ID from URL
-                const urlParams = new URLSearchParams(window.location.search);
-                pulseId = urlParams.get('id');
-                
-                if (!pulseId) {
-                    showToast('No pulse ID specified', 'error');
-                    // Redirect to feed after delay
-                    setTimeout(() => {
-                        window.location.href = 'pulse-feed.html';
-                    }, 2000);
-                    return;
-                }
-                
-                // Load pulse data
-                await loadPulse();
-                
-                // Hide loading, show content
+            // Check session
+            const { data: { session }, error: sessionError } = await supabaseClient.auth.getSession();
+            
+            if (sessionError) {
+                console.error('Session error:', sessionError);
+                throw sessionError;
+            }
+            
+            if (!session) {
+                // No session, redirect to login
+                window.location.href = 'login.html';
+                return;
+            }
+            
+            console.log('User authenticated:', session.user.email);
+            currentUserId = session.user.id;
+            
+            // Set user initials
+            const user = session.user;
+            const initials = getUserInitials(user);
+            document.getElementById('avatar-initials').textContent = initials;
+            const composerAvatar = document.getElementById('composer-avatar');
+            composerAvatar.querySelector('span').textContent = initials;
+            
+            // Get pulse ID from URL
+            const urlParams = new URLSearchParams(window.location.search);
+            pulseId = urlParams.get('id');
+            
+            if (!pulseId) {
+                showToast('No pulse ID specified', 'error');
+                // Redirect to feed after delay
+                setTimeout(() => {
+                    window.location.href = 'pulse-feed.html';
+                }, 2000);
+                return;
+            }
+            
+            // Load pulse data
+            await loadPulse();
+            
+            // Hide loading, show content
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('content').style.display = 'block';
+            
+            // Initialize event listeners
+            initializeEventListeners();
+            
+            // Load comments
+            loadComments();
+            
+        } catch (error) {
+            console.error('Error:', error);
+            document.getElementById('loading-text').textContent = 'Error loading pulse. Please refresh.';
+            
+            setTimeout(() => {
                 document.getElementById('loading').style.display = 'none';
                 document.getElementById('content').style.display = 'block';
-                
-                // Initialize event listeners
                 initializeEventListeners();
-                
-                // Load comments
-                loadComments();
-                
-            } catch (error) {
-                console.error('Error:', error);
-                document.getElementById('loading-text').textContent = 'Error loading pulse. Please refresh.';
-                
-                setTimeout(() => {
-                    document.getElementById('loading').style.display = 'none';
-                    document.getElementById('content').style.display = 'block';
-                    initializeEventListeners();
-                }, 2000);
-            }
+            }, 2000);
         }
-        
-        function getUserInitials(user) {
-            const email = user.email || '';
-            const name = user.user_metadata?.full_name || email.split('@')[0] || 'U';
-            return name.substring(0, 2).toUpperCase();
-        }
-        
-        async function loadPulse() {
-            try {
-                console.log('Loading pulse:', pulseId);
-                
-                // Fetch pulse with user details
-                const { data: pulse, error } = await supabaseClient
-                    .from('pulses_with_user_details')
-                    .select('*')
+    }
+    
+    function getUserInitials(user) {
+        if (!user) return 'U';
+        const email = user.email || '';
+        const name = user.user_metadata?.full_name || email.split('@')[0] || 'U';
+        return name.substring(0, 2).toUpperCase();
+    }
+    
+    async function loadPulse() {
+        try {
+            console.log('Loading pulse:', pulseId);
+            
+            // Fetch pulse with user details
+            const { data: pulse, error } = await supabaseClient
+                .from('pulses_with_user_details')
+                .select('*')
+                .eq('id', pulseId)
+                .single();
+            
+            if (error) {
+                console.error('Error fetching pulse from view:', error);
+                // Try alternative: join manually
+                const { data: pulseAlt, error: errorAlt } = await supabaseClient
+                    .from('pulses')
+                    .select(`
+                        *,
+                        user_profiles!inner (
+                            id,
+                            full_name,
+                            username,
+                            avatar_url,
+                            role,
+                            email
+                        )
+                    `)
                     .eq('id', pulseId)
                     .single();
                 
-                if (error) {
-                    console.error('Error fetching pulse:', error);
-                    // Try alternative table
-                    const { data: pulseAlt, error: errorAlt } = await supabaseClient
+                if (errorAlt) {
+                    console.error('Error fetching pulse with join:', errorAlt);
+                    // Last resort: fetch separately
+                    const { data: pulseData } = await supabaseClient
                         .from('pulses')
-                        .select(`
-                            *,
-                            user_profiles (
-                                id,
-                                full_name,
-                                username,
-                                avatar_url,
-                                role,
-                                email
-                            )
-                        `)
+                        .select('*')
                         .eq('id', pulseId)
                         .single();
                     
-                    if (errorAlt) throw errorAlt;
+                    if (!pulseData) throw new Error('Pulse not found');
                     
+                    currentPulse = pulseData;
+                    
+                    // Get creator info separately
+                    const { data: creatorData } = await supabaseClient
+                        .from('user_profiles')
+                        .select('*')
+                        .eq('id', pulseData.user_id)
+                        .single();
+                    
+                    pulseCreator = creatorData || {
+                        full_name: 'Unknown User',
+                        username: 'unknown',
+                        avatar_url: null,
+                        role: 'user',
+                        email: 'unknown@example.com',
+                        id: pulseData.user_id
+                    };
+                } else {
                     currentPulse = pulseAlt;
-                    
-                    // Extract creator info from user_profiles
                     pulseCreator = {
-                        full_name: pulseAlt.user_profiles?.full_name || 'User',
-                        username: pulseAlt.user_profiles?.username || 'user',
-                        avatar_url: pulseAlt.user_profiles?.avatar_url,
-                        role: pulseAlt.user_profiles?.role,
-                        email: pulseAlt.user_profiles?.email,
+                        full_name: pulseAlt.user_profiles.full_name,
+                        username: pulseAlt.user_profiles.username,
+                        avatar_url: pulseAlt.user_profiles.avatar_url,
+                        role: pulseAlt.user_profiles.role,
+                        email: pulseAlt.user_profiles.email,
                         id: pulseAlt.user_id
                     };
-                } else {
-                    currentPulse = pulse;
-                    
-                    // Get creator info
-                    pulseCreator = {
-                        full_name: pulse.full_name,
-                        username: pulse.username,
-                        avatar_url: pulse.avatar_url,
-                        role: pulse.role,
-                        email: pulse.email,
-                        id: pulse.user_id
-                    };
                 }
+            } else {
+                currentPulse = pulse;
+                pulseCreator = {
+                    full_name: pulse.full_name,
+                    username: pulse.username,
+                    avatar_url: pulse.avatar_url,
+                    role: pulse.role,
+                    email: pulse.email,
+                    id: pulse.user_id
+                };
+            }
+            
+            // Update UI
+            document.getElementById('creator-name').textContent = pulseCreator.full_name || 'User';
+            document.getElementById('creator-handle').innerHTML = `@${pulseCreator.username || 'user'} · <span id="pulse-time">${getTimeAgo(new Date(currentPulse.created_at))}</span>`;
+            
+            const creatorInitials = getInitials(pulseCreator.full_name || pulseCreator.email || 'User');
+            document.getElementById('creator-initials').textContent = creatorInitials;
+            
+            // Set creator avatar
+            const creatorAvatarImg = document.getElementById('creator-avatar-img');
+            const creatorInitialsElement = document.getElementById('creator-initials');
+            
+            if (pulseCreator.avatar_url) {
+                creatorAvatarImg.src = pulseCreator.avatar_url;
+                creatorAvatarImg.style.display = 'block';
+                creatorInitialsElement.style.display = 'none';
+            } else {
+                creatorAvatarImg.style.display = 'none';
+                creatorInitialsElement.style.display = 'flex';
+            }
+            
+            // Show series label if part of a series
+            if (currentPulse.series_id && currentPulse.series_order) {
+                document.getElementById('seriesLabel').style.display = 'inline-block';
+                document.getElementById('series-part').textContent = currentPulse.series_order;
                 
-                // Update UI
-                document.getElementById('creator-name').textContent = pulseCreator.full_name || 'User';
-                document.getElementById('creator-handle').innerHTML = `@${pulseCreator.username || 'user'} · <span id="pulse-time">${getTimeAgo(new Date(currentPulse.created_at))}</span>`;
-                
-                const creatorInitials = getInitials(pulseCreator.full_name || pulseCreator.email || 'User');
-                document.getElementById('creator-initials').textContent = creatorInitials;
-                
-                // Set creator avatar
-                const creatorAvatarImg = document.getElementById('creator-avatar-img');
-                const creatorInitialsElement = document.getElementById('creator-initials');
-                
-                if (pulseCreator.avatar_url) {
-                    creatorAvatarImg.src = pulseCreator.avatar_url;
-                    creatorAvatarImg.style.display = 'block';
-                    creatorInitialsElement.style.display = 'none';
-                } else {
-                    creatorAvatarImg.style.display = 'none';
-                    creatorInitialsElement.style.display = 'flex';
-                }
-                
-                // Show series label if part of a series
-                if (currentPulse.series_id && currentPulse.series_order) {
-                    document.getElementById('seriesLabel').style.display = 'inline-block';
-                    document.getElementById('series-part').textContent = currentPulse.series_order;
+                // Try to get total parts in series
+                try {
+                    const { data: series } = await supabaseClient
+                        .from('pulse_series')
+                        .select('total_parts')
+                        .eq('id', currentPulse.series_id)
+                        .single();
                     
-                    // Try to get total parts in series
-                    try {
-                        const { data: series } = await supabaseClient
-                            .from('pulse_series')
-                            .select('total_parts')
-                            .eq('id', currentPulse.series_id)
-                            .single();
-                        
-                        if (series?.total_parts) {
-                            document.getElementById('series-total').textContent = series.total_parts;
-                        } else {
-                            document.getElementById('series-total').textContent = '?';
-                        }
-                    } catch (error) {
-                        console.log('Could not fetch series details');
+                    if (series?.total_parts) {
+                        document.getElementById('series-total').textContent = series.total_parts;
+                    } else {
                         document.getElementById('series-total').textContent = '?';
                     }
+                } catch (error) {
+                    console.log('Could not fetch series details');
+                    document.getElementById('series-total').textContent = '?';
                 }
+            }
+            
+            // Set caption
+            document.getElementById('caption-text').textContent = currentPulse.caption || '';
+            
+            // Set counts
+            document.getElementById('comment-count').textContent = currentPulse.comments_count || 0;
+            document.getElementById('like-count').textContent = currentPulse.likes_count || 0;
+            document.getElementById('share-count').textContent = currentPulse.shares_count || 0;
+            
+            // Load media
+            const mediaContainer = document.querySelector('.media-container');
+            const mediaContent = document.getElementById('media-content');
+            mediaContent.innerHTML = '';
+            
+            if (currentPulse.media_url && currentPulse.media_url.trim() !== '') {
+                mediaContainer.classList.add('has-media');
                 
-                // Set caption
-                document.getElementById('caption-text').textContent = currentPulse.caption || '';
-                
-                // Set counts
-                document.getElementById('comment-count').textContent = currentPulse.comments_count || 0;
-                document.getElementById('like-count').textContent = currentPulse.likes_count || 0;
-                document.getElementById('share-count').textContent = currentPulse.shares_count || 0;
-                
-                // Load media
-                const mediaContainer = document.querySelector('.media-container');
-                const mediaContent = document.getElementById('media-content');
-                mediaContent.innerHTML = '';
-                
-                if (currentPulse.media_url && currentPulse.media_url.trim() !== '') {
-                    mediaContainer.classList.add('has-media');
+                if (currentPulse.media_type === 'video') {
+                    videoElement = document.createElement('video');
+                    videoElement.src = currentPulse.media_url;
+                    videoElement.className = 'pulse-media';
+                    videoElement.muted = false; // Start with sound on
+                    videoElement.playsInline = true;
+                    videoElement.preload = 'auto';
+                    videoElement.autoplay = true; // Auto-play enabled
                     
-                    if (currentPulse.media_type === 'video') {
-                        videoElement = document.createElement('video');
-                        videoElement.src = currentPulse.media_url;
-                        videoElement.className = 'pulse-media';
-                        videoElement.muted = false; // Start with sound on
-                        videoElement.playsInline = true;
-                        videoElement.preload = 'auto';
-                        videoElement.autoplay = true; // Auto-play enabled
-                        
-                        // Video event listeners
-                        videoElement.addEventListener('loadedmetadata', function() {
-                            updateVideoTime();
-                            document.getElementById('volumeSliderFilled').style.width = (volume * 100) + '%';
+                    // Video event listeners
+                    videoElement.addEventListener('loadedmetadata', function() {
+                        updateVideoTime();
+                        document.getElementById('volumeSliderFilled').style.width = (volume * 100) + '%';
+                    });
+                    
+                    videoElement.addEventListener('timeupdate', updateVideoTime);
+                    videoElement.addEventListener('play', () => {
+                        isPlaying = true;
+                        document.getElementById('playPauseBtn').innerHTML = '<i class="fas fa-pause"></i>';
+                    });
+                    videoElement.addEventListener('pause', () => {
+                        isPlaying = false;
+                        document.getElementById('playPauseBtn').innerHTML = '<i class="fas fa-play"></i>';
+                    });
+                    videoElement.addEventListener('ended', () => {
+                        isPlaying = false;
+                        document.getElementById('playPauseBtn').innerHTML = '<i class="fas fa-play"></i>';
+                    });
+                    
+                    mediaContent.appendChild(videoElement);
+                    
+                    // Start playing with user interaction fallback
+                    const playPromise = videoElement.play();
+                    if (playPromise !== undefined) {
+                        playPromise.catch(e => {
+                            console.log('Autoplay prevented, waiting for user interaction');
                         });
-                        
-                        videoElement.addEventListener('timeupdate', updateVideoTime);
-                        videoElement.addEventListener('play', () => {
-                            isPlaying = true;
-                            document.getElementById('playPauseBtn').innerHTML = '<i class="fas fa-pause"></i>';
-                        });
-                        videoElement.addEventListener('pause', () => {
-                            isPlaying = false;
-                            document.getElementById('playPauseBtn').innerHTML = '<i class="fas fa-play"></i>';
-                        });
-                        videoElement.addEventListener('ended', () => {
-                            isPlaying = false;
-                            document.getElementById('playPauseBtn').innerHTML = '<i class="fas fa-play"></i>';
-                        });
-                        
-                        mediaContent.appendChild(videoElement);
-                        
-                        // Start playing with user interaction fallback
-                        const playPromise = videoElement.play();
-                        if (playPromise !== undefined) {
-                            playPromise.catch(e => {
-                                console.log('Autoplay prevented, waiting for user interaction');
-                            });
-                        }
-                    } else {
-                        const img = document.createElement('img');
-                        img.src = currentPulse.media_url;
-                        img.className = 'pulse-media';
-                        img.alt = 'Pulse image';
-                        mediaContent.appendChild(img);
-                        document.querySelector('.video-controls-overlay').style.display = 'none';
                     }
                 } else {
-                    mediaContainer.classList.remove('has-media');
+                    const img = document.createElement('img');
+                    img.src = currentPulse.media_url;
+                    img.className = 'pulse-media';
+                    img.alt = 'Pulse image';
+                    mediaContent.appendChild(img);
+                    document.querySelector('.video-controls-overlay').style.display = 'none';
                 }
-                
-                // Check if user liked this pulse
-                await checkLikeStatus();
-                
-                // Check if user saved this pulse
-                await checkSaveStatus();
-                
-                // Show delete button if user owns the pulse
-                if (currentPulse.user_id === currentUserId) {
-                    document.getElementById('deletePulseBtn').style.display = 'flex';
-                    document.getElementById('addToSeries').style.display = 'flex';
-                }
-                
-            } catch (error) {
-                console.error('Error loading pulse:', error);
-                showToast('Failed to load pulse', 'error');
+            } else {
+                mediaContainer.classList.remove('has-media');
             }
+            
+            // Check if user liked this pulse
+            await checkLikeStatus();
+            
+            // Check if user saved this pulse
+            await checkSaveStatus();
+            
+            // Show delete button if user owns the pulse
+            if (currentPulse.user_id === currentUserId) {
+                document.getElementById('deletePulseBtn').style.display = 'flex';
+                document.getElementById('addToSeries').style.display = 'flex';
+            }
+            
+        } catch (error) {
+            console.error('Error loading pulse:', error);
+            showToast('Failed to load pulse', 'error');
         }
-        
-        function updateVideoTime() {
-            if (!videoElement) return;
+    }
+    
+    async function checkLikeStatus() {
+        try {
+            // Check if pulse_likes table exists, otherwise use a fallback
+            const { data, error } = await supabaseClient
+                .from('pulse_likes')
+                .select('id')
+                .eq('pulse_id', pulseId)
+                .eq('user_id', currentUserId)
+                .maybeSingle(); // Use maybeSingle to avoid error if no record
             
-            const current = videoElement.currentTime;
-            const duration = videoElement.duration;
-            
-            // Update progress bar
-            const progressPercent = (current / duration) * 100;
-            document.getElementById('videoProgressFilled').style.width = progressPercent + '%';
-            
-            // Update time display
-            const currentFormatted = formatTime(current);
-            const durationFormatted = formatTime(duration);
-            document.getElementById('currentTime').textContent = `${currentFormatted} / ${durationFormatted}`;
-        }
-        
-        function formatTime(seconds) {
-            if (isNaN(seconds)) return '0:00';
-            const mins = Math.floor(seconds / 60);
-            const secs = Math.floor(seconds % 60);
-            return `${mins}:${secs.toString().padStart(2, '0')}`;
-        }
-        
-        function getInitials(name) {
-            if (!name) return 'U';
-            return name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
-        }
-        
-        function getTimeAgo(date) {
-            const seconds = Math.floor((new Date() - date) / 1000);
-            
-            let interval = seconds / 31536000;
-            if (interval > 1) return Math.floor(interval) + ' years ago';
-            
-            interval = seconds / 2592000;
-            if (interval > 1) return Math.floor(interval) + ' months ago';
-            
-            interval = seconds / 86400;
-            if (interval > 1) return Math.floor(interval) + ' days ago';
-            
-            interval = seconds / 3600;
-            if (interval > 1) return Math.floor(interval) + ' hours ago';
-            
-            interval = seconds / 60;
-            if (interval > 1) return Math.floor(interval) + ' minutes ago';
-            
-            return Math.floor(seconds) + ' seconds ago';
-        }
-        
-        async function checkLikeStatus() {
-            try {
-                const { data, error } = await supabaseClient
-                    .from('pulse_likes')
-                    .select('id')
-                    .eq('pulse_id', pulseId)
-                    .eq('user_id', currentUserId)
-                    .single();
-                
-                if (error && error.code !== 'PGRST116') {
-                    throw error;
-                }
-                
+            if (error && error.code !== 'PGRST116') {
+                // Table might not exist, check if we need to create it
+                console.log('Like table might not exist, using fallback');
+                isLiked = false;
+            } else {
                 isLiked = !!data;
-                updateLikeUI();
-                
-            } catch (error) {
-                console.error('Error checking like status:', error);
             }
+            
+            updateLikeUI();
+            
+        } catch (error) {
+            console.error('Error checking like status:', error);
+            isLiked = false;
+            updateLikeUI();
         }
-        
-        async function checkSaveStatus() {
-            try {
-                const { data, error } = await supabaseClient
-                    .from('saved_pulses')
-                    .select('id')
-                    .eq('pulse_id', pulseId)
-                    .eq('user_id', currentUserId)
-                    .single();
-                
-                if (error && error.code !== 'PGRST116') {
-                    throw error;
-                }
-                
+    }
+    
+    async function checkSaveStatus() {
+        try {
+            const { data, error } = await supabaseClient
+                .from('saved_pulses')
+                .select('id')
+                .eq('pulse_id', pulseId)
+                .eq('user_id', currentUserId)
+                .maybeSingle();
+            
+            if (error && error.code !== 'PGRST116') {
+                console.log('Saved pulses table might not exist');
+                isSaved = false;
+            } else {
                 isSaved = !!data;
-                updateSaveUI();
-                
-            } catch (error) {
-                console.error('Error checking save status:', error);
             }
+            
+            updateSaveUI();
+            
+        } catch (error) {
+            console.error('Error checking save status:', error);
+            isSaved = false;
+            updateSaveUI();
         }
-        
-        function updateLikeUI() {
-            const likeBtn = document.getElementById('likeBtn');
+    }
+    
+    async function handleLike() {
+        try {
+            // Check if pulse_likes table exists by attempting to create it
             if (isLiked) {
-                likeBtn.classList.add('liked');
-            } else {
-                likeBtn.classList.remove('liked');
-            }
-        }
-        
-        function updateSaveUI() {
-            const saveBtn = document.getElementById('savePulseBtn');
-            if (isSaved) {
-                saveBtn.innerHTML = '<i class="fas fa-bookmark"></i> Unsave Pulse';
-            } else {
-                saveBtn.innerHTML = '<i class="far fa-bookmark"></i> Save Pulse';
-            }
-        }
-        
-        function initializeEventListeners() {
-            // More options menu
-            const moreBtn = document.getElementById('moreBtn');
-            const moreMenu = document.getElementById('moreMenu');
-            
-            moreBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                moreMenu.classList.toggle('active');
-            });
-            
-            // Close menu when clicking outside
-            document.addEventListener('click', (e) => {
-                if (!moreBtn.contains(e.target) && !moreMenu.contains(e.target)) {
-                    moreMenu.classList.remove('active');
-                }
-            });
-            
-            // Video controls
-            const playPauseBtn = document.getElementById('playPauseBtn');
-            const muteBtn = document.getElementById('muteBtn');
-            const videoProgress = document.getElementById('videoProgress');
-            const volumeSlider = document.getElementById('volumeSlider');
-            
-            if (playPauseBtn) {
-                playPauseBtn.addEventListener('click', () => {
-                    if (videoElement) {
-                        if (isPlaying) {
-                            videoElement.pause();
-                        } else {
-                            videoElement.play();
-                        }
-                    }
-                });
-            }
-            
-            if (muteBtn) {
-                muteBtn.addEventListener('click', () => {
-                    if (videoElement) {
-                        videoElement.muted = !videoElement.muted;
-                        isMuted = videoElement.muted;
-                        muteBtn.innerHTML = isMuted ? '<i class="fas fa-volume-mute"></i>' : '<i class="fas fa-volume-up"></i>';
-                    }
-                });
-            }
-            
-            if (videoProgress && videoElement) {
-                videoProgress.addEventListener('click', (e) => {
-                    const rect = videoProgress.getBoundingClientRect();
-                    const pos = (e.clientX - rect.left) / rect.width;
-                    videoElement.currentTime = pos * videoElement.duration;
-                });
-            }
-            
-            if (volumeSlider && videoElement) {
-                volumeSlider.addEventListener('click', (e) => {
-                    const rect = volumeSlider.getBoundingClientRect();
-                    const pos = (e.clientX - rect.left) / rect.width;
-                    volume = Math.max(0, Math.min(1, pos));
-                    videoElement.volume = volume;
-                    document.getElementById('volumeSliderFilled').style.width = (volume * 100) + '%';
-                });
-            }
-            
-            // Media click to play/pause
-            const mediaContainer = document.querySelector('.media-container');
-            if (mediaContainer && videoElement) {
-                mediaContainer.addEventListener('click', (e) => {
-                    if (e.target === mediaContainer || e.target.classList.contains('video-controls-overlay')) {
-                        if (isPlaying) {
-                            videoElement.pause();
-                        } else {
-                            videoElement.play();
-                        }
-                    }
-                });
-            }
-            
-            // Like button
-            const likeBtn = document.getElementById('likeBtn');
-            likeBtn.addEventListener('click', handleLike);
-            
-            // Comment button (scroll to comment input)
-            const commentBtn = document.getElementById('commentBtn');
-            commentBtn.addEventListener('click', () => {
-                document.getElementById('commentInput').focus();
-            });
-            
-            // Share button
-            const shareBtn = document.getElementById('shareBtn');
-            shareBtn.addEventListener('click', openShareModal);
-            
-            // Save pulse button
-            const savePulseBtn = document.getElementById('savePulseBtn');
-            savePulseBtn.addEventListener('click', handleSave);
-            
-            // Report pulse button
-            const reportPulseBtn = document.getElementById('reportPulseBtn');
-            reportPulseBtn.addEventListener('click', handleReport);
-            
-            // Mute creator button
-            const muteCreatorBtn = document.getElementById('muteCreatorBtn');
-            muteCreatorBtn.addEventListener('click', handleMuteCreator);
-            
-            // Delete pulse button
-            const deletePulseBtn = document.getElementById('deletePulseBtn');
-            if (deletePulseBtn) {
-                deletePulseBtn.addEventListener('click', handleDelete);
-            }
-            
-            // Comment input
-            const commentInput = document.getElementById('commentInput');
-            const postCommentBtn = document.getElementById('postCommentBtn');
-            
-            commentInput.addEventListener('input', () => {
-                postCommentBtn.disabled = commentInput.value.trim().length === 0;
-            });
-            
-            commentInput.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    if (!postCommentBtn.disabled) {
-                        postComment();
-                    }
-                }
-            });
-            
-            // Post comment button
-            postCommentBtn.addEventListener('click', postComment);
-            
-            // Share modal
-            const closeShareModal = document.getElementById('closeShareModal');
-            closeShareModal.addEventListener('click', closeShareModalFunc);
-            
-            // Share options
-            document.getElementById('copyLinkOption').addEventListener('click', copyLink);
-            document.getElementById('shareWhatsApp').addEventListener('click', shareToWhatsApp);
-            document.getElementById('shareTwitter').addEventListener('click', shareToTwitter);
-            document.getElementById('shareInstagram').addEventListener('click', shareToInstagram);
-            document.getElementById('shareInternal').addEventListener('click', shareInternal);
-            document.getElementById('addToSeries').addEventListener('click', addToSeries);
-            
-            // Copy link button
-            document.getElementById('copyLinkBtn').addEventListener('click', copyLink);
-            
-            // Close modal when clicking outside
-            const shareModal = document.getElementById('shareModal');
-            shareModal.addEventListener('click', (e) => {
-                if (e.target === shareModal) {
-                    closeShareModalFunc();
-                }
-            });
-            
-            // Edit comment modal
-            const closeEditCommentModal = document.getElementById('closeEditCommentModal');
-            const cancelEditComment = document.getElementById('cancelEditComment');
-            const saveEditComment = document.getElementById('saveEditComment');
-            
-            closeEditCommentModal.addEventListener('click', closeEditCommentModalFunc);
-            cancelEditComment.addEventListener('click', closeEditCommentModalFunc);
-            saveEditComment.addEventListener('click', saveEditedComment);
-            
-            const editCommentModal = document.getElementById('editCommentModal');
-            editCommentModal.addEventListener('click', (e) => {
-                if (e.target === editCommentModal) {
-                    closeEditCommentModalFunc();
-                }
-            });
-            
-            // Listen for auth changes
-            supabaseClient.auth.onAuthStateChange((event, session) => {
-                console.log('🔐 Auth state changed:', event);
+                // Unlike - try to delete from pulse_likes
+                const { error } = await supabaseClient
+                    .from('pulse_likes')
+                    .delete()
+                    .eq('pulse_id', pulseId)
+                    .eq('user_id', currentUserId);
                 
-                if (event === 'SIGNED_OUT') {
-                    window.location.href = 'login.html';
-                }
-            });
-        }
-        
-        async function handleLike() {
-            try {
-                if (isLiked) {
-                    // Unlike
-                    const { error } = await supabaseClient
-                        .from('pulse_likes')
-                        .delete()
-                        .eq('pulse_id', pulseId)
-                        .eq('user_id', currentUserId);
-                    
-                    if (error) throw error;
-                    
+                if (error) {
+                    // Table might not exist, just update local state
+                    console.log('Could not unlike (table might not exist):', error);
+                } else {
                     isLiked = false;
                     
-                    // Update pulse likes count
+                    // Update pulse likes count in pulses table
                     const currentCount = parseInt(document.getElementById('like-count').textContent) || 0;
-                    document.getElementById('like-count').textContent = Math.max(0, currentCount - 1);
+                    const newCount = Math.max(0, currentCount - 1);
+                    
+                    const { error: updateError } = await supabaseClient
+                        .from('pulses')
+                        .update({ 
+                            likes_count: newCount,
+                            updated_at: new Date().toISOString()
+                        })
+                        .eq('id', pulseId);
+                    
+                    if (!updateError) {
+                        document.getElementById('like-count').textContent = newCount;
+                    }
                     
                     showToast('Like removed', 'success');
+                }
+            } else {
+                // Like - try to insert into pulse_likes
+                const { error } = await supabaseClient
+                    .from('pulse_likes')
+                    .insert({
+                        pulse_id: pulseId,
+                        user_id: currentUserId,
+                        created_at: new Date().toISOString()
+                    });
+                
+                if (error) {
+                    // Table might not exist, just update pulses table directly
+                    console.log('Could not like (table might not exist):', error);
+                    
+                    // Update pulses table directly
+                    const currentCount = parseInt(document.getElementById('like-count').textContent) || 0;
+                    const newCount = currentCount + 1;
+                    
+                    const { error: updateError } = await supabaseClient
+                        .from('pulses')
+                        .update({ 
+                            likes_count: newCount,
+                            updated_at: new Date().toISOString()
+                        })
+                        .eq('id', pulseId);
+                    
+                    if (!updateError) {
+                        document.getElementById('like-count').textContent = newCount;
+                        isLiked = true;
+                        showToast('Pulse liked!', 'success');
+                    }
                 } else {
-                    // Like
-                    const { error } = await supabaseClient
-                        .from('pulse_likes')
-                        .insert({
-                            pulse_id: pulseId,
-                            user_id: currentUserId
-                        });
-                    
-                    if (error) throw error;
-                    
                     isLiked = true;
                     
                     // Update pulse likes count
@@ -2217,947 +2026,184 @@
                     
                     showToast('Pulse liked!', 'success');
                 }
-                
-                updateLikeUI();
-                
-            } catch (error) {
-                console.error('Error handling like:', error);
-                showToast('Failed to like pulse', 'error');
-            }
-        }
-        
-        async function handleSave() {
-            try {
-                if (isSaved) {
-                    // Unsave
-                    const { error } = await supabaseClient
-                        .from('saved_pulses')
-                        .delete()
-                        .eq('pulse_id', pulseId)
-                        .eq('user_id', currentUserId);
-                    
-                    if (error) throw error;
-                    
-                    isSaved = false;
-                    showToast('Pulse removed from saved', 'success');
-                } else {
-                    // Save
-                    const { error } = await supabaseClient
-                        .from('saved_pulses')
-                        .insert({
-                            pulse_id: pulseId,
-                            user_id: currentUserId
-                        });
-                    
-                    if (error) throw error;
-                    
-                    isSaved = true;
-                    showToast('Pulse saved!', 'success');
-                }
-                
-                updateSaveUI();
-                document.getElementById('moreMenu').classList.remove('active');
-                
-            } catch (error) {
-                console.error('Error handling save:', error);
-                showToast('Failed to save pulse', 'error');
-            }
-        }
-        
-        function handleReport() {
-            showToast('Report submitted. Our team will review this pulse.', 'success');
-            document.getElementById('moreMenu').classList.remove('active');
-        }
-        
-        async function handleMuteCreator() {
-            if (!pulseCreator) return;
-            
-            try {
-                // Create muted_creators table if it doesn't exist
-                // For now, we'll use localStorage as a fallback
-                const mutedCreators = JSON.parse(localStorage.getItem('muted_creators') || '[]');
-                if (!mutedCreators.includes(pulseCreator.id)) {
-                    mutedCreators.push(pulseCreator.id);
-                    localStorage.setItem('muted_creators', JSON.stringify(mutedCreators));
-                }
-                
-                showToast(`You won't see pulses from @${pulseCreator.username} anymore`, 'success');
-                document.getElementById('moreMenu').classList.remove('active');
-                
-            } catch (error) {
-                console.error('Error muting creator:', error);
-                showToast('Failed to mute creator', 'error');
-            }
-        }
-        
-        async function handleDelete() {
-            if (!confirm('Are you sure you want to PERMANENTLY delete this pulse? This action cannot be undone.')) {
-                return;
             }
             
-            try {
-                // PERMANENT DELETE: Delete the pulse permanently
-                const { error } = await supabaseClient
+            updateLikeUI();
+            
+        } catch (error) {
+            console.error('Error handling like:', error);
+            showToast('Failed to like pulse', 'error');
+        }
+    }
+    
+    async function handleDelete() {
+        if (!confirm('Are you sure you want to PERMANENTLY delete this pulse? This action cannot be undone.')) {
+            return;
+        }
+        
+        try {
+            console.log('Attempting to delete pulse:', pulseId, 'User:', currentUserId);
+            
+            // First, try to delete the pulse directly
+            const { error } = await supabaseClient
+                .from('pulses')
+                .delete()
+                .eq('id', pulseId);
+            
+            if (error) {
+                console.error('Direct delete failed:', error);
+                
+                // If direct delete fails, try to mark as deleted
+                const { error: updateError } = await supabaseClient
                     .from('pulses')
-                    .delete()
+                    .update({ 
+                        deleted_at: new Date().toISOString(),
+                        caption: '[Deleted]',
+                        media_url: null,
+                        media_type: null
+                    })
                     .eq('id', pulseId);
                 
-                if (error) {
-                    // Try alternative method if RLS blocks delete
-                    console.log('Direct delete failed, trying alternative method...');
-                    
-                    // Try to update with a special admin function or use RPC
-                    const { error: updateError } = await supabaseClient
-                        .from('pulses')
-                        .update({ 
-                            deleted_at: new Date().toISOString(),
-                            is_removed: true
-                        })
-                        .eq('id', pulseId);
-                    
-                    if (updateError) throw updateError;
-                }
-                
-                showToast('Pulse deleted permanently', 'success');
-                
-                // Redirect to feed after delay
-                setTimeout(() => {
-                    window.location.href = 'pulse-feed.html';
-                }, 1500);
-                
-            } catch (error) {
-                console.error('Error deleting pulse:', error);
-                showToast('Failed to delete pulse. Please check RLS policies.', 'error');
-            }
-        }
-        
-        async function loadComments() {
-            try {
-                console.log('Loading comments for pulse:', pulseId);
-                
-                // Get all comments for this pulse (including non-removed ones)
-                const { data: comments, error: commentsError } = await supabaseClient
-                    .from('pulse_comments')
-                    .select('*')
-                    .eq('pulse_id', pulseId)
-                    .is('is_removed', false) // Use is() instead of eq() for null check
-                    .order('created_at', { ascending: true });
-                
-                if (commentsError) {
-                    console.error('Error loading comments:', commentsError);
-                    throw commentsError;
-                }
-                
-                const commentsThread = document.getElementById('commentsThread');
-                
-                if (!comments || comments.length === 0) {
-                    commentsThread.innerHTML = `
-                        <div class="empty-state">
-                            <div class="empty-icon">
-                                <i class="fas fa-comment-slash"></i>
-                            </div>
-                            <div class="empty-title">No replies yet</div>
-                            <div class="empty-description">Be the first to respond</div>
-                        </div>
-                    `;
-                    return;
-                }
-                
-                // Get user profiles for all comment authors
-                const userIds = [...new Set(comments.map(comment => comment.user_id))];
-                
-                let userProfiles = [];
-                try {
-                    const { data: profiles, error: profilesError } = await supabaseClient
-                        .from('user_profiles')
-                        .select('*')
-                        .in('id', userIds);
-                    
-                    if (profilesError) {
-                        console.error('Error loading user profiles:', profilesError);
-                    } else {
-                        userProfiles = profiles || [];
-                    }
-                } catch (profileError) {
-                    console.error('Error loading user data:', profileError);
-                }
-                
-                // Create a map of user_id to profile
-                const userMap = {};
-                userProfiles.forEach(profile => {
-                    userMap[profile.id] = profile;
-                });
-                
-                // Get comment likes for current user - USING pulse_comments_likes table
-                const commentIds = comments.map(c => c.id);
-                let userCommentLikes = [];
-                
-                try {
-                    // Only fetch if there are comments
-                    if (commentIds.length > 0) {
-                        const { data: likes } = await supabaseClient
-                            .from('pulse_comments_likes')
-                            .select('comment_id')
-                            .eq('user_id', currentUserId)
-                            .in('comment_id', commentIds);
-                        
-                        userCommentLikes = likes || [];
-                    }
-                } catch (likeError) {
-                    console.error('Error loading comment likes:', likeError);
-                }
-                
-                const likedCommentIds = new Set(userCommentLikes.map(like => like.comment_id));
-                
-                // Display comments
-                commentsThread.innerHTML = '';
-                
-                // Group comments by parent (for replies)
-                const topLevelComments = comments.filter(c => !c.parent_comment_id);
-                const replies = comments.filter(c => c.parent_comment_id);
-                
-                console.log('Top level comments:', topLevelComments.length, 'Replies:', replies.length);
-                
-                // Display top-level comments
-                topLevelComments.forEach(comment => {
-                    const commentReplies = replies.filter(r => r.parent_comment_id === comment.id);
-                    displayComment(comment, commentReplies, userMap, likedCommentIds);
-                });
-                
-            } catch (error) {
-                console.error('Error loading comments:', error);
-                const commentsThread = document.getElementById('commentsThread');
-                commentsThread.innerHTML = `
-                    <div class="empty-state">
-                        <div class="empty-title">Failed to load comments</div>
-                        <div class="empty-description">Please try again later</div>
-                    </div>
-                `;
-            }
-        }
-        
-        function displayComment(comment, replies = [], userMap = {}, likedCommentIds = new Set()) {
-            const commentsThread = document.getElementById('commentsThread');
-            
-            const commentItem = document.createElement('div');
-            commentItem.className = 'comment-item';
-            commentItem.dataset.commentId = comment.id;
-            
-            // Get user data
-            const userProfile = userMap[comment.user_id] || {};
-            const initials = getInitials(userProfile.full_name || userProfile.email || comment.user_id.substring(0, 2) || 'U');
-            const avatarUrl = userProfile.avatar_url;
-            const username = userProfile.username || 'user';
-            const fullName = userProfile.full_name || 'User';
-            const isCommentOwner = comment.user_id === currentUserId;
-            const isLiked = likedCommentIds.has(comment.id);
-            
-            commentItem.innerHTML = `
-                <div class="comment-header">
-                    <div class="comment-avatar" onclick="viewUserProfile('${comment.user_id}')" style="${avatarUrl ? `background-image: url('${avatarUrl}'); background-size: cover; background-position: center;` : ''}">
-                        ${avatarUrl ? '' : initials}
-                    </div>
-                    <div class="comment-meta">
-                        <div class="comment-name" onclick="viewUserProfile('${comment.user_id}')">${fullName}</div>
-                        <div class="comment-handle">@${username}</div>
-                    </div>
-                    <div class="comment-time">${getTimeAgo(new Date(comment.created_at))}${comment.is_edited ? ' (edited)' : ''}</div>
-                </div>
-                <div class="comment-text">${comment.comment_text || ''}</div>
-                <div class="comment-actions">
-                    <button class="comment-action like-comment-btn ${isLiked ? 'liked' : ''}" data-comment-id="${comment.id}">
-                        <i class="fas fa-heart"></i> <span class="comment-like-count">${comment.likes_count || 0}</span>
-                    </button>
-                    <button class="comment-action reply-comment-btn" data-comment-id="${comment.id}">
-                        <i class="fas fa-reply"></i> Reply
-                    </button>
-                </div>
-            `;
-            
-            // Add edit/delete options for comment owner
-            if (isCommentOwner) {
-                const optionsDiv = document.createElement('div');
-                optionsDiv.className = 'comment-options';
-                optionsDiv.innerHTML = `
-                    <button class="comment-options-btn" data-comment-id="${comment.id}">
-                        <i class="fas fa-ellipsis-h"></i>
-                    </button>
-                    <div class="comment-options-menu" id="comment-options-${comment.id}">
-                        <button class="comment-option-item edit-comment-btn" data-comment-id="${comment.id}">
-                            <i class="fas fa-edit"></i> Edit
-                        </button>
-                        <button class="comment-option-item delete delete-comment-btn" data-comment-id="${comment.id}">
-                            <i class="fas fa-trash"></i> Delete
-                        </button>
-                    </div>
-                `;
-                commentItem.appendChild(optionsDiv);
-            }
-            
-            // Add reply composer (hidden by default)
-            const replyComposer = document.createElement('div');
-            replyComposer.className = 'reply-composer';
-            replyComposer.id = `reply-composer-${comment.id}`;
-            replyComposer.innerHTML = `
-                <textarea class="reply-input" placeholder="Reply to @${username}…" maxlength="300"></textarea>
-                <button class="post-reply-btn" data-parent-id="${comment.id}">Reply</button>
-            `;
-            
-            // Add replies if any
-            if (replies.length > 0) {
-                const replyThread = document.createElement('div');
-                replyThread.className = 'reply-thread';
-                
-                replies.forEach(reply => {
-                    const replyUserProfile = userMap[reply.user_id] || {};
-                    const replyInitials = getInitials(replyUserProfile.full_name || replyUserProfile.email || reply.user_id.substring(0, 2) || 'U');
-                    const replyAvatarUrl = replyUserProfile.avatar_url;
-                    const replyUsername = replyUserProfile.username || 'user';
-                    const replyFullName = replyUserProfile.full_name || 'User';
-                    const isReplyOwner = reply.user_id === currentUserId;
-                    const isReplyLiked = likedCommentIds.has(reply.id);
-                    
-                    const replyItem = document.createElement('div');
-                    replyItem.className = 'comment-item';
-                    replyItem.style.marginBottom = '8px';
-                    replyItem.dataset.commentId = reply.id;
-                    
-                    replyItem.innerHTML = `
-                        <div class="comment-header">
-                            <div class="comment-avatar" onclick="viewUserProfile('${reply.user_id}')" style="${replyAvatarUrl ? `background-image: url('${replyAvatarUrl}'); background-size: cover; background-position: center;` : ''}">
-                                ${replyAvatarUrl ? '' : replyInitials}
-                            </div>
-                            <div class="comment-meta">
-                                <div class="comment-name" onclick="viewUserProfile('${reply.user_id}')">${replyFullName}</div>
-                                <div class="comment-handle">@${replyUsername}</div>
-                            </div>
-                            <div class="comment-time">${getTimeAgo(new Date(reply.created_at))}${reply.is_edited ? ' (edited)' : ''}</div>
-                        </div>
-                        <div class="comment-text">${reply.comment_text || ''}</div>
-                        <div class="comment-actions">
-                            <button class="comment-action like-comment-btn ${isReplyLiked ? 'liked' : ''}" data-comment-id="${reply.id}">
-                                <i class="fas fa-heart"></i> <span class="comment-like-count">${reply.likes_count || 0}</span>
-                            </button>
-                        </div>
-                    `;
-                    
-                    // Add edit/delete options for reply owner - FIXED: Now properly showing
-                    if (isReplyOwner) {
-                        const replyOptionsDiv = document.createElement('div');
-                        replyOptionsDiv.className = 'comment-options';
-                        replyOptionsDiv.innerHTML = `
-                            <button class="comment-options-btn" data-comment-id="${reply.id}">
-                                <i class="fas fa-ellipsis-h"></i>
-                            </button>
-                            <div class="comment-options-menu" id="comment-options-${reply.id}">
-                                <button class="comment-option-item edit-comment-btn" data-comment-id="${reply.id}" data-is-reply="true">
-                                    <i class="fas fa-edit"></i> Edit
-                                </button>
-                                <button class="comment-option-item delete delete-comment-btn" data-comment-id="${reply.id}" data-is-reply="true">
-                                    <i class="fas fa-trash"></i> Delete
-                                </button>
-                            </div>
-                        `;
-                        replyItem.appendChild(replyOptionsDiv);
-                    }
-                    
-                    replyThread.appendChild(replyItem);
-                });
-                
-                commentItem.appendChild(replyThread);
-            }
-            
-            commentItem.appendChild(replyComposer);
-            commentsThread.appendChild(commentItem);
-            
-            // Add event listeners for this comment with proper click handling
-            const likeBtn = commentItem.querySelector('.like-comment-btn');
-            const replyBtn = commentItem.querySelector('.reply-comment-btn');
-            const postReplyBtn = commentItem.querySelector('.post-reply-btn');
-            const replyInput = commentItem.querySelector('.reply-input');
-            
-            // FIXED: Prevent multiple click events
-            likeBtn.addEventListener('click', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                likeComment(comment.id, likeBtn);
-            });
-            
-            replyBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                replyComposer.classList.toggle('active');
-                if (replyComposer.classList.contains('active')) {
-                    replyInput.focus();
-                }
-            });
-            
-            if (postReplyBtn) {
-                postReplyBtn.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    postReply(comment.id, replyInput);
-                });
-            }
-            
-            if (replyInput) {
-                replyInput.addEventListener('keydown', (e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                        e.preventDefault();
-                        postReply(comment.id, replyInput);
-                    }
-                });
-            }
-            
-            // Add event listeners for edit/delete buttons
-            if (isCommentOwner) {
-                const optionsBtn = commentItem.querySelector('.comment-options-btn');
-                const optionsMenu = commentItem.querySelector(`#comment-options-${comment.id}`);
-                const editBtn = commentItem.querySelector('.edit-comment-btn');
-                const deleteBtn = commentItem.querySelector('.delete-comment-btn');
-                
-                optionsBtn.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    optionsMenu.classList.toggle('active');
-                });
-                
-                editBtn.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    editComment(comment.id, comment.comment_text, false);
-                });
-                
-                deleteBtn.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    deleteComment(comment.id, false);
-                });
-                
-                // Close menu when clicking outside
-                document.addEventListener('click', (e) => {
-                    if (!optionsBtn.contains(e.target) && !optionsMenu.contains(e.target)) {
-                        optionsMenu.classList.remove('active');
-                    }
-                });
-            }
-            
-            // Add event listeners for reply edit/delete buttons
-            const replyEditButtons = commentItem.querySelectorAll('.edit-comment-btn[data-is-reply="true"]');
-            const replyDeleteButtons = commentItem.querySelectorAll('.delete-comment-btn[data-is-reply="true"]');
-            
-            replyEditButtons.forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    const replyId = e.currentTarget.getAttribute('data-comment-id');
-                    const replyText = e.currentTarget.closest('.comment-item').querySelector('.comment-text').textContent;
-                    editComment(replyId, replyText, true);
-                });
-            });
-            
-            replyDeleteButtons.forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    const replyId = e.currentTarget.getAttribute('data-comment-id');
-                    deleteComment(replyId, true);
-                });
-            });
-            
-            // Add event listeners for reply like buttons with proper click handling
-            const replyLikeButtons = commentItem.querySelectorAll('.like-comment-btn[data-comment-id]');
-            replyLikeButtons.forEach(btn => {
-                if (!btn.hasAttribute('data-listener-added')) {
-                    const replyId = btn.dataset.commentId;
-                    btn.addEventListener('click', (e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        likeComment(replyId, btn);
-                    });
-                    btn.setAttribute('data-listener-added', 'true');
-                }
-            });
-        }
-        
-        async function postComment() {
-            const commentInput = document.getElementById('commentInput');
-            const commentText = commentInput.value.trim();
-            
-            if (!commentText) return;
-            
-            try {
-                const { error } = await supabaseClient
-                    .from('pulse_comments')
-                    .insert({
-                        pulse_id: pulseId,
-                        user_id: currentUserId,
-                        comment_text: commentText,
-                        likes_count: 0
-                    });
-                
-                if (error) throw error;
-                
-                // Clear input
-                commentInput.value = '';
-                document.getElementById('postCommentBtn').disabled = true;
-                
-                // Update comment count
-                const currentCount = parseInt(document.getElementById('comment-count').textContent) || 0;
-                document.getElementById('comment-count').textContent = currentCount + 1;
-                
-                // Reload comments
-                loadComments();
-                
-                showToast('Comment posted!', 'success');
-                
-            } catch (error) {
-                console.error('Error posting comment:', error);
-                showToast('Failed to post comment', 'error');
-            }
-        }
-        
-        async function postReply(parentId, replyInput) {
-            const replyText = replyInput.value.trim();
-            
-            if (!replyText) return;
-            
-            try {
-                const { error } = await supabaseClient
-                    .from('pulse_comments')
-                    .insert({
-                        pulse_id: pulseId,
-                        user_id: currentUserId,
-                        comment_text: replyText,
-                        parent_comment_id: parentId,
-                        likes_count: 0
-                    });
-                
-                if (error) throw error;
-                
-                // Clear input and hide composer
-                replyInput.value = '';
-                document.getElementById(`reply-composer-${parentId}`).classList.remove('active');
-                
-                // Reload comments
-                loadComments();
-                
-                showToast('Reply posted!', 'success');
-                
-            } catch (error) {
-                console.error('Error posting reply:', error);
-                showToast('Failed to post reply', 'error');
-            }
-        }
-        
-        // FIXED: Added proper click prevention and button disabling
-        async function likeComment(commentId, buttonElement) {
-            // Prevent multiple clicks
-            if (isProcessingLike[commentId]) {
-                console.log('Like already processing for comment:', commentId);
-                return;
-            }
-            
-            // Disable button immediately
-            if (buttonElement) {
-                buttonElement.disabled = true;
-                buttonElement.style.opacity = '0.7';
-                buttonElement.style.cursor = 'wait';
-            }
-            
-            isProcessingLike[commentId] = true;
-            
-            try {
-                console.log('Attempting to like comment:', commentId);
-                
-                // First, check if the user already liked this comment
-                const { data: existingLike, error: checkError } = await supabaseClient
-                    .from('pulse_comments_likes')
-                    .select('id')
-                    .eq('comment_id', commentId)
-                    .eq('user_id', currentUserId)
-                    .maybeSingle();
-                
-                if (checkError && checkError.code !== 'PGRST116') {
-                    console.error('Error checking existing like:', checkError);
-                    throw checkError;
-                }
-                
-                const alreadyLiked = !!existingLike;
-                console.log('Already liked:', alreadyLiked, 'Like data:', existingLike);
-                
-                if (alreadyLiked) {
-                    // UNLIKE: Delete the like record
-                    const { error: deleteError } = await supabaseClient
-                        .from('pulse_comments_likes')
-                        .delete()
-                        .eq('id', existingLike.id);
-                    
-                    if (deleteError) {
-                        console.error('Error deleting like:', deleteError);
-                        throw deleteError;
-                    }
-                    
-                    // Get current likes count safely
-                    const { data: commentData } = await supabaseClient
-                        .from('pulse_comments')
-                        .select('likes_count')
-                        .eq('id', commentId)
-                        .single()
-                        .catch(() => ({ data: { likes_count: 0 } }));
-                    
-                    const currentLikes = commentData?.likes_count || 0;
-                    const newLikesCount = Math.max(0, currentLikes - 1);
-                    
-                    // Update comment likes count directly
-                    const { error: updateError } = await supabaseClient
-                        .from('pulse_comments')
-                        .update({ 
-                            likes_count: newLikesCount,
-                            updated_at: new Date().toISOString()
-                        })
-                        .eq('id', commentId);
-                    
-                    if (updateError) {
-                        console.error('Error updating comment likes:', updateError);
-                        // Don't throw, just update UI with our calculation
-                    }
-                    
-                    // Update UI immediately
-                    updateCommentLikeUI(commentId, newLikesCount, false, buttonElement);
-                    showToast('Like removed', 'success');
-                    
+                if (updateError) {
+                    console.error('Mark as deleted also failed:', updateError);
+                    throw updateError;
                 } else {
-                    // LIKE: Insert new like record
-                    const { data: newLike, error: insertError } = await supabaseClient
-                        .from('pulse_comments_likes')
-                        .insert({
-                            comment_id: commentId,
-                            user_id: currentUserId,
-                            created_at: new Date().toISOString()
-                        })
-                        .select()
-                        .single();
-                    
-                    if (insertError) {
-                        // Handle unique constraint violation (409 error)
-                        if (insertError.code === '23505') {
-                            console.log('Like already exists, fetching existing like...');
-                            // Try to fetch the existing like
-                            const { data: existing } = await supabaseClient
-                                .from('pulse_comments_likes')
-                                .select('id')
-                                .eq('comment_id', commentId)
-                                .eq('user_id', currentUserId)
-                                .single();
-                            
-                            if (existing) {
-                                // Update UI as liked
-                                await updateCommentLikeCount(commentId, 1);
-                                updateCommentLikeUI(commentId, null, true, buttonElement);
-                                showToast('Comment liked!', 'success');
-                                return;
-                            }
-                        }
-                        console.error('Error inserting like:', insertError);
-                        throw insertError;
-                    }
-                    
-                    // Update comment likes count
-                    await updateCommentLikeCount(commentId, 1);
-                    
-                    // Update UI
-                    updateCommentLikeUI(commentId, null, true, buttonElement);
-                    showToast('Comment liked!', 'success');
+                    showToast('Pulse marked as deleted', 'success');
                 }
-                
-            } catch (error) {
-                console.error('Error in likeComment:', error);
-                
-                // Fallback: Update UI based on current state
-                const likeBtn = buttonElement || document.querySelector(`[data-comment-id="${commentId}"] .like-comment-btn`);
-                if (likeBtn) {
-                    const wasLiked = likeBtn.classList.contains('liked');
-                    const likeCountElement = likeBtn.querySelector('.comment-like-count');
-                    const currentCount = parseInt(likeCountElement.textContent) || 0;
-                    
-                    if (wasLiked) {
-                        // Was liked, now unliking
-                        likeCountElement.textContent = Math.max(0, currentCount - 1);
-                        likeBtn.classList.remove('liked');
-                    } else {
-                        // Was not liked, now liking
-                        likeCountElement.textContent = currentCount + 1;
-                        likeBtn.classList.add('liked');
-                    }
-                }
-                
-                showToast('Failed to update like. Please refresh.', 'error');
-            } finally {
-                // Re-enable button
-                isProcessingLike[commentId] = false;
-                if (buttonElement) {
-                    buttonElement.disabled = false;
-                    buttonElement.style.opacity = '1';
-                    buttonElement.style.cursor = 'pointer';
-                }
+            } else {
+                showToast('Pulse deleted permanently', 'success');
+            }
+            
+            // Redirect to feed after delay
+            setTimeout(() => {
+                window.location.href = 'pulse-feed.html';
+            }, 1500);
+            
+        } catch (error) {
+            console.error('Error deleting pulse:', error);
+            
+            // Check if it's an RLS policy error
+            if (error.message && error.message.includes('policy')) {
+                showToast('Permission denied. Check RLS policies for DELETE on pulses table.', 'error');
+            } else {
+                showToast('Failed to delete pulse: ' + error.message, 'error');
             }
         }
+    }
+    
+    async function deleteComment(commentId, isReply = false) {
+        if (!confirm(`Are you sure you want to PERMANENTLY delete this ${isReply ? 'reply' : 'comment'}? This action cannot be undone.`)) {
+            return;
+        }
         
-        async function updateCommentLikeCount(commentId, change) {
-            try {
-                // Get current count
-                const { data: comment } = await supabaseClient
-                    .from('pulse_comments')
-                    .select('likes_count')
-                    .eq('id', commentId)
-                    .single();
+        try {
+            console.log('Attempting to delete comment:', commentId, 'User:', currentUserId);
+            
+            // First, try to delete the comment directly
+            const { error } = await supabaseClient
+                .from('pulse_comments')
+                .delete()
+                .eq('id', commentId);
+            
+            if (error) {
+                console.error('Direct delete failed:', error);
                 
-                const currentLikes = comment?.likes_count || 0;
-                const newLikesCount = Math.max(0, currentLikes + change);
-                
-                // Update directly
-                const { error } = await supabaseClient
+                // If direct delete fails, try to mark as removed
+                const { error: updateError } = await supabaseClient
                     .from('pulse_comments')
                     .update({ 
-                        likes_count: newLikesCount,
+                        is_removed: true,
+                        removed_reason: 'User deleted',
+                        comment_text: '[Comment deleted]',
                         updated_at: new Date().toISOString()
                     })
                     .eq('id', commentId);
                 
-                if (error) throw error;
-                
-                return newLikesCount;
-                
-            } catch (error) {
-                console.error('Error updating comment like count:', error);
-                throw error;
-            }
-        }
-        
-        async function updateCommentLikeUI(commentId, likesCount = null, isLiked = null, buttonElement = null) {
-            const likeBtn = buttonElement || document.querySelector(`[data-comment-id="${commentId}"] .like-comment-btn`);
-            if (!likeBtn) return;
-            
-            // If likesCount is not provided, fetch it
-            if (likesCount === null) {
-                try {
-                    const { data: comment } = await supabaseClient
-                        .from('pulse_comments')
-                        .select('likes_count')
-                        .eq('id', commentId)
-                        .single();
-                    
-                    likesCount = comment?.likes_count || 0;
-                } catch (error) {
-                    console.error('Error fetching comment likes count:', error);
-                    const likeCountElement = likeBtn.querySelector('.comment-like-count');
-                    likesCount = parseInt(likeCountElement.textContent) || 0;
+                if (updateError) {
+                    console.error('Mark as removed also failed:', updateError);
+                    throw updateError;
+                } else {
+                    showToast(`${isReply ? 'Reply' : 'Comment'} marked as deleted`, 'success');
                 }
-            }
-            
-            // If isLiked is not provided, check current state
-            if (isLiked === null) {
-                isLiked = likeBtn.classList.contains('liked');
-            }
-            
-            // Update UI
-            const likeCountElement = likeBtn.querySelector('.comment-like-count');
-            if (likeCountElement) {
-                likeCountElement.textContent = likesCount;
-            }
-            
-            if (isLiked) {
-                likeBtn.classList.add('liked');
             } else {
-                likeBtn.classList.remove('liked');
-            }
-        }
-        
-        function editComment(commentId, currentText, isReply = false) {
-            editingCommentId = commentId;
-            editingReplyId = isReply ? commentId : null;
-            document.getElementById('editCommentInput').value = currentText;
-            document.getElementById('editCommentModal').style.display = 'flex';
-        }
-        
-        async function saveEditedComment() {
-            if (!editingCommentId) return;
-            
-            const newText = document.getElementById('editCommentInput').value.trim();
-            
-            if (!newText) {
-                showToast('Comment cannot be empty', 'error');
-                return;
-            }
-            
-            try {
-                const { error } = await supabaseClient
-                    .from('pulse_comments')
-                    .update({
-                        comment_text: newText,
-                        is_edited: true,
-                        edited_at: new Date().toISOString(),
-                        updated_at: new Date().toISOString()
-                    })
-                    .eq('id', editingCommentId);
-                
-                if (error) throw error;
-                
-                closeEditCommentModalFunc();
-                loadComments(); // Reload to show updated text and "edited" badge
-                showToast(editingReplyId ? 'Reply updated' : 'Comment updated', 'success');
-                
-            } catch (error) {
-                console.error('Error updating comment:', error);
-                showToast('Failed to update comment. Please check RLS policies.', 'error');
-            }
-        }
-        
-        async function deleteComment(commentId, isReply = false) {
-            if (!confirm(`Are you sure you want to PERMANENTLY delete this ${isReply ? 'reply' : 'comment'}? This action cannot be undone.`)) {
-                return;
-            }
-            
-            try {
-                // PERMANENT DELETE: Delete the comment permanently
-                const { error } = await supabaseClient
-                    .from('pulse_comments')
-                    .delete()
-                    .eq('id', commentId);
-                
-                if (error) {
-                    // Try alternative method if RLS blocks delete
-                    console.log('Direct delete failed, trying alternative method...');
-                    
-                    // Try to update with a special admin function or use RPC
-                    const { error: updateError } = await supabaseClient
-                        .from('pulse_comments')
-                        .update({ 
-                            is_removed: true,
-                            removed_reason: 'User deleted',
-                            updated_at: new Date().toISOString()
-                        })
-                        .eq('id', commentId);
-                    
-                    if (updateError) throw updateError;
-                }
-                
-                loadComments();
                 showToast(`${isReply ? 'Reply' : 'Comment'} deleted permanently`, 'success');
-                
-            } catch (error) {
-                console.error('Error deleting comment:', error);
-                showToast(`Failed to delete ${isReply ? 'reply' : 'comment'}. Please check RLS policies.`, 'error');
+            }
+            
+            // Update comment count on the pulse
+            const currentCount = parseInt(document.getElementById('comment-count').textContent) || 0;
+            document.getElementById('comment-count').textContent = Math.max(0, currentCount - 1);
+            
+            // Remove the comment from UI immediately
+            const commentElement = document.querySelector(`[data-comment-id="${commentId}"]`);
+            if (commentElement) {
+                commentElement.remove();
+            }
+            
+            // Check if comments thread is now empty
+            const commentsThread = document.getElementById('commentsThread');
+            if (commentsThread.children.length === 0) {
+                commentsThread.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">
+                            <i class="fas fa-comment-slash"></i>
+                        </div>
+                        <div class="empty-title">No replies yet</div>
+                        <div class="empty-description">Be the first to respond</div>
+                    </div>
+                `;
+            }
+            
+        } catch (error) {
+            console.error('Error deleting comment:', error);
+            
+            // Check if it's an RLS policy error
+            if (error.message && error.message.includes('policy')) {
+                showToast(`Permission denied. Check RLS policies for DELETE on pulse_comments table.`, 'error');
+            } else {
+                showToast(`Failed to delete ${isReply ? 'reply' : 'comment'}: ${error.message}`, 'error');
             }
         }
-        
-        function closeEditCommentModalFunc() {
-            editingCommentId = null;
-            editingReplyId = null;
-            document.getElementById('editCommentModal').style.display = 'none';
-            document.getElementById('editCommentInput').value = '';
+    }
+    
+    // Update the getTimeAgo function to handle edge cases
+    function getTimeAgo(date) {
+        if (!date || isNaN(new Date(date).getTime())) {
+            return 'just now';
         }
         
-        function openShareModal() {
-            // Set the share link
-            const shareLink = document.getElementById('shareLink');
-            shareLink.value = `${window.location.origin}/pulse-content-detail.html?id=${pulseId}`;
-            
-            document.getElementById('shareModal').style.display = 'flex';
-        }
+        const now = new Date();
+        const then = new Date(date);
+        const seconds = Math.floor((now - then) / 1000);
         
-        function closeShareModalFunc() {
-            document.getElementById('shareModal').style.display = 'none';
-        }
+        if (seconds < 30) return 'just now';
+        if (seconds < 60) return seconds + ' seconds ago';
         
-        function copyLink() {
-            const shareLink = document.getElementById('shareLink');
-            shareLink.select();
-            document.execCommand('copy');
-            
-            showToast('Pulse link copied', 'success');
-            closeShareModalFunc();
-        }
+        const minutes = Math.floor(seconds / 60);
+        if (minutes < 2) return 'a minute ago';
+        if (minutes < 60) return minutes + ' minutes ago';
         
-        function shareToWhatsApp() {
-            const text = `Check out this pulse on Bantu Connect Pulse!`;
-            const url = `${window.location.origin}/pulse-content-detail.html?id=${pulseId}`;
-            window.open(`https://wa.me/?text=${encodeURIComponent(text + ' ' + url)}`, '_blank');
-            closeShareModalFunc();
-        }
+        const hours = Math.floor(minutes / 60);
+        if (hours < 2) return 'an hour ago';
+        if (hours < 24) return hours + ' hours ago';
         
-        function shareToTwitter() {
-            const text = `Check out this pulse on Bantu Connect Pulse!`;
-            const url = `${window.location.origin}/pulse-content-detail.html?id=${pulseId}`;
-            window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`, '_blank');
-            closeShareModalFunc();
-        }
+        const days = Math.floor(hours / 24);
+        if (days < 2) return 'yesterday';
+        if (days < 30) return days + ' days ago';
         
-        function shareToInstagram() {
-            showToast('Share to Instagram coming soon!', 'success');
-            closeShareModalFunc();
-        }
+        const months = Math.floor(days / 30);
+        if (months < 2) return 'a month ago';
+        if (months < 12) return months + ' months ago';
         
-        async function shareInternal() {
-            try {
-                const { error } = await supabaseClient
-                    .from('pulse_shares')
-                    .insert({
-                        pulse_id: pulseId,
-                        user_id: currentUserId,
-                        share_type: 'internal',
-                        share_platform: 'internal'
-                    });
-                
-                if (error) throw error;
-                
-                // Update share count
-                const currentCount = parseInt(document.getElementById('share-count').textContent) || 0;
-                document.getElementById('share-count').textContent = currentCount + 1;
-                
-                showToast('Pulse shared internally!', 'success');
-                closeShareModalFunc();
-                
-            } catch (error) {
-                console.error('Error sharing internally:', error);
-                showToast('Failed to share pulse', 'error');
-            }
-        }
-        
-        function addToSeries() {
-            showToast('Add to Series feature coming soon!', 'success');
-            closeShareModalFunc();
-        }
-        
-        function viewCreatorProfile() {
-            if (pulseCreator) {
-                window.location.href = `profile.html?user_id=${pulseCreator.id}`;
-            }
-        }
-        
-        function viewUserProfile(userId) {
-            window.location.href = `profile.html?user_id=${userId}`;
-        }
-        
-        function showToast(message, type = 'error') {
-            const toast = document.createElement('div');
-            toast.className = `toast ${type}`;
-            toast.innerHTML = `
-                <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i>
-                <span>${message}</span>
-            `;
-            
-            const container = document.getElementById('toast-container');
-            container.appendChild(toast);
-            
-            setTimeout(() => {
-                toast.style.opacity = '0';
-                setTimeout(() => toast.remove(), 300);
-            }, 4000);
-        }
-        
-        // Start initialization
-        document.addEventListener('DOMContentLoaded', initialize);
-    </script>
+        const years = Math.floor(months / 12);
+        if (years < 2) return 'a year ago';
+        return years + ' years ago';
+    }
+    
+    // Initialize when DOM is loaded
+    document.addEventListener('DOMContentLoaded', function() {
+        // Add a small delay to ensure everything is ready
+        setTimeout(initialize, 100);
+    });
+</script>
 </body>
 </html>
