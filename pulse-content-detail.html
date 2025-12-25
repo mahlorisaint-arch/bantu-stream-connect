@@ -739,9 +739,8 @@
         .comment-avatar img {
             width: 100%;
             height: 100%;
-            object-fit: cover;
             border-radius: 50%;
-            display: none;
+            object-fit: cover;
         }
         
         .comment-meta {
@@ -1277,6 +1276,17 @@
         ::-webkit-scrollbar-thumb:hover {
             background: var(--warm-gold);
         }
+        
+        /* Avatar images */
+        .comment-avatar img,
+        .creator-avatar img,
+        .user-avatar img,
+        .composer-avatar img {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+        }
     </style>
 </head>
 <body>
@@ -1645,6 +1655,37 @@
                 const composerAvatar = document.getElementById('composer-avatar');
                 composerAvatar.querySelector('span').textContent = initials;
                 
+                // FIXED: Get user profile with avatar
+                try {
+                    const { data: profile, error: profileError } = await supabaseClient
+                        .from('user_profiles')
+                        .select('avatar_url, full_name, username')
+                        .eq('id', user.id)
+                        .single();
+                    
+                    if (!profileError && profile?.avatar_url) {
+                        // Set user avatar in header
+                        const avatarImg = document.getElementById('user-avatar-img');
+                        avatarImg.src = profile.avatar_url;
+                        avatarImg.style.display = 'block';
+                        avatarImg.alt = profile.full_name || profile.username || 'User';
+                        document.getElementById('avatar-initials').style.display = 'none';
+                        
+                        // Set composer avatar
+                        const composerImg = document.getElementById('composer-avatar-img');
+                        composerImg.src = profile.avatar_url;
+                        composerImg.style.display = 'block';
+                        composerImg.alt = profile.full_name || profile.username || 'User';
+                        composerAvatar.querySelector('span').style.display = 'none';
+                        
+                        console.log('Profile picture loaded for user');
+                    } else {
+                        console.log('No profile picture found, using initials');
+                    }
+                } catch (error) {
+                    console.error('Error loading user profile:', error);
+                }
+                
                 // Get pulse ID from URL
                 const urlParams = new URLSearchParams(window.location.search);
                 pulseId = urlParams.get('id');
@@ -1778,13 +1819,14 @@
                 const creatorInitials = getInitials(pulseCreator.full_name || pulseCreator.email || 'User');
                 document.getElementById('creator-initials').textContent = creatorInitials;
                 
-                // Set creator avatar
+                // FIXED: Set creator avatar properly
                 const creatorAvatarImg = document.getElementById('creator-avatar-img');
                 const creatorInitialsElement = document.getElementById('creator-initials');
                 
                 if (pulseCreator.avatar_url) {
                     creatorAvatarImg.src = pulseCreator.avatar_url;
                     creatorAvatarImg.style.display = 'block';
+                    creatorAvatarImg.alt = pulseCreator.full_name || pulseCreator.username || 'Creator';
                     creatorInitialsElement.style.display = 'none';
                 } else {
                     creatorAvatarImg.style.display = 'none';
@@ -2587,6 +2629,7 @@
             }
         }
         
+        // FIXED: Updated to properly show profile pictures in comments
         function displayComment(comment, replies = [], userMap = {}, likedCommentIds = new Set()) {
             const commentsThread = document.getElementById('commentsThread');
             
@@ -2603,10 +2646,11 @@
             const isCommentOwner = comment.user_id === currentUserId;
             const isLiked = likedCommentIds.has(comment.id);
             
+            // FIXED: Use img tag for avatar instead of background image
             commentItem.innerHTML = `
                 <div class="comment-header">
-                    <div class="comment-avatar" onclick="viewUserProfile('${comment.user_id}')" style="${avatarUrl ? `background-image: url('${avatarUrl}'); background-size: cover; background-position: center;` : ''}">
-                        ${avatarUrl ? '' : initials}
+                    <div class="comment-avatar" onclick="viewUserProfile('${comment.user_id}')">
+                        ${avatarUrl ? `<img src="${avatarUrl}" alt="${fullName}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">` : initials}
                     </div>
                     <div class="comment-meta">
                         <div class="comment-name" onclick="viewUserProfile('${comment.user_id}')">${fullName}</div>
@@ -2673,10 +2717,11 @@
                     replyItem.style.marginBottom = '8px';
                     replyItem.dataset.commentId = reply.id;
                     
+                    // FIXED: Use img tag for reply avatar too
                     replyItem.innerHTML = `
                         <div class="comment-header">
-                            <div class="comment-avatar" onclick="viewUserProfile('${reply.user_id}')" style="${replyAvatarUrl ? `background-image: url('${replyAvatarUrl}'); background-size: cover; background-position: center;` : ''}">
-                                ${replyAvatarUrl ? '' : replyInitials}
+                            <div class="comment-avatar" onclick="viewUserProfile('${reply.user_id}')">
+                                ${replyAvatarUrl ? `<img src="${replyAvatarUrl}" alt="${replyFullName}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">` : replyInitials}
                             </div>
                             <div class="comment-meta">
                                 <div class="comment-name" onclick="viewUserProfile('${reply.user_id}')">${replyFullName}</div>
@@ -2692,7 +2737,7 @@
                         </div>
                     `;
                     
-                    // Add edit/delete options for reply owner - FIXED: Now properly showing
+                    // Add edit/delete options for reply owner
                     if (isReplyOwner) {
                         const replyOptionsDiv = document.createElement('div');
                         replyOptionsDiv.className = 'comment-options';
@@ -2878,33 +2923,11 @@
                         throw deleteError;
                     }
                     
-                    // Get current likes count safely
-                    const { data: commentData } = await supabaseClient
-                        .from('pulse_comments')
-                        .select('likes_count')
-                        .eq('id', commentId)
-                        .single()
-                        .catch(() => ({ data: { likes_count: 0 } }));
+                    // Get current likes count after deletion (trigger will update it)
+                    setTimeout(async () => {
+                        await updateCommentLikeUI(commentId, null, false, buttonElement);
+                    }, 100);
                     
-                    const currentLikes = commentData?.likes_count || 0;
-                    const newLikesCount = Math.max(0, currentLikes - 1);
-                    
-                    // Update comment likes count directly
-                    const { error: updateError } = await supabaseClient
-                        .from('pulse_comments')
-                        .update({ 
-                            likes_count: newLikesCount,
-                            updated_at: new Date().toISOString()
-                        })
-                        .eq('id', commentId);
-                    
-                    if (updateError) {
-                        console.error('Error updating comment likes:', updateError);
-                        // Don't throw, just update UI with our calculation
-                    }
-                    
-                    // Update UI immediately
-                    updateCommentLikeUI(commentId, newLikesCount, false, buttonElement);
                     showToast('Like removed', 'success');
                     
                 } else {
@@ -2933,8 +2956,9 @@
                             
                             if (existing) {
                                 // Update UI as liked
-                                await updateCommentLikeCount(commentId, 1);
-                                updateCommentLikeUI(commentId, null, true, buttonElement);
+                                setTimeout(async () => {
+                                    await updateCommentLikeUI(commentId, null, true, buttonElement);
+                                }, 100);
                                 showToast('Comment liked!', 'success');
                                 return;
                             }
@@ -2943,11 +2967,11 @@
                         throw insertError;
                     }
                     
-                    // Update comment likes count
-                    await updateCommentLikeCount(commentId, 1);
+                    // Update UI after trigger updates the count
+                    setTimeout(async () => {
+                        await updateCommentLikeUI(commentId, null, true, buttonElement);
+                    }, 100);
                     
-                    // Update UI
-                    updateCommentLikeUI(commentId, null, true, buttonElement);
                     showToast('Comment liked!', 'success');
                 }
                 
@@ -2974,54 +2998,29 @@
                 
                 showToast('Failed to update like. Please refresh.', 'error');
             } finally {
-                // Re-enable button
-                isProcessingLike[commentId] = false;
-                if (buttonElement) {
-                    buttonElement.disabled = false;
-                    buttonElement.style.opacity = '1';
-                    buttonElement.style.cursor = 'pointer';
-                }
+                // Re-enable button after a short delay
+                setTimeout(() => {
+                    isProcessingLike[commentId] = false;
+                    if (buttonElement) {
+                        buttonElement.disabled = false;
+                        buttonElement.style.opacity = '1';
+                        buttonElement.style.cursor = 'pointer';
+                    }
+                }, 300);
             }
         }
         
-        async function updateCommentLikeCount(commentId, change) {
-            try {
-                // Get current count
-                const { data: comment } = await supabaseClient
-                    .from('pulse_comments')
-                    .select('likes_count')
-                    .eq('id', commentId)
-                    .single();
-                
-                const currentLikes = comment?.likes_count || 0;
-                const newLikesCount = Math.max(0, currentLikes + change);
-                
-                // Update directly
-                const { error } = await supabaseClient
-                    .from('pulse_comments')
-                    .update({ 
-                        likes_count: newLikesCount,
-                        updated_at: new Date().toISOString()
-                    })
-                    .eq('id', commentId);
-                
-                if (error) throw error;
-                
-                return newLikesCount;
-                
-            } catch (error) {
-                console.error('Error updating comment like count:', error);
-                throw error;
-            }
-        }
-        
+        // FIXED: Update the updateCommentLikeUI function to handle the trigger-based updates
         async function updateCommentLikeUI(commentId, likesCount = null, isLiked = null, buttonElement = null) {
             const likeBtn = buttonElement || document.querySelector(`[data-comment-id="${commentId}"] .like-comment-btn`);
             if (!likeBtn) return;
             
-            // If likesCount is not provided, fetch it
+            // If likesCount is not provided, fetch it from the database (after trigger update)
             if (likesCount === null) {
                 try {
+                    // Wait a bit for the trigger to update
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                    
                     const { data: comment } = await supabaseClient
                         .from('pulse_comments')
                         .select('likes_count')
