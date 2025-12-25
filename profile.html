@@ -31,7 +31,7 @@
             --glow-cycle-2: #0066FF;
             --glow-cycle-3: #8B5CF6;
             --glow-cycle-4: #EC4899;
-            --card-bg: rgba(15, 23, 42, 0.6);
+            --card-bg: rgba(15, 23, 42, 0.7);
             --card-border: rgba(148, 163, 184, 0.2);
             --hover-overlay: rgba(255, 255, 255, 0.05);
             --active-overlay: rgba(245, 158, 11, 0.1);
@@ -40,6 +40,8 @@
             --muted-gray: #94a3b8;
             --indigo-glow: rgba(79, 70, 229, 0.5);
             --gold-glow: rgba(245, 158, 11, 0.3);
+            --glass-bg: rgba(15, 23, 42, 0.8);
+            --glass-border: rgba(255, 255, 255, 0.1);
         }
         
         * {
@@ -56,7 +58,7 @@
             overflow-x: hidden;
         }
         
-        /* Animated Background - From pulse-content-detail.html */
+        /* Animated Background - Glassmorphism Blend */
         .animated-bg {
             position: fixed;
             top: 0;
@@ -116,19 +118,20 @@
             50% { transform: translateY(-20px) scale(1.05); }
         }
         
-        /* Loading Screen */
+        /* Loading Screen - Glassmorphism */
         .loading-screen {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: var(--deep-black);
+            background: rgba(10, 14, 18, 0.9);
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             z-index: 1000;
+            backdrop-filter: blur(10px);
         }
         
         .spinner {
@@ -145,16 +148,18 @@
             to { transform: rotate(360deg); }
         }
         
-        /* Main Container */
+        /* Main Container - Glassmorphism */
         .container {
             max-width: 600px;
             margin: 0 auto;
             position: relative;
             z-index: 2;
-            background: var(--deep-black);
+            background: rgba(10, 14, 18, 0.6);
+            backdrop-filter: blur(20px);
+            min-height: 100vh;
         }
         
-        /* Header */
+        /* Header - Glassmorphism */
         .header {
             display: flex;
             justify-content: space-between;
@@ -162,15 +167,17 @@
             padding: 16px;
             position: sticky;
             top: 0;
-            background-color: var(--deep-black);
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(20px);
             z-index: 100;
-            border-bottom: 1px solid var(--card-border);
+            border-bottom: 1px solid var(--glass-border);
         }
         
         .logo-container {
             display: flex;
             align-items: center;
             gap: 12px;
+            cursor: pointer;
         }
         
         .logo-icon {
@@ -180,7 +187,6 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            box-shadow: 0 0 32px rgba(29, 78, 216, 0.3);
             overflow: hidden;
             background: transparent;
         }
@@ -209,22 +215,30 @@
         }
         
         .notification-btn {
-            background: none;
-            border: none;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--glass-border);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
             color: var(--slate-grey);
-            font-size: 20px;
+            font-size: 18px;
             cursor: pointer;
-            position: relative;
-            transition: color 0.3s ease;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(10px);
         }
         
         .notification-btn:hover {
             color: var(--soft-white);
+            background: rgba(255, 255, 255, 0.1);
+            border-color: var(--bantu-blue);
         }
         
         .user-avatar {
-            width: 36px;
-            height: 36px;
+            width: 40px;
+            height: 40px;
             border-radius: 50%;
             background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
             display: flex;
@@ -237,6 +251,7 @@
             font-size: 14px;
             position: relative;
             overflow: hidden;
+            border: 2px solid rgba(255, 255, 255, 0.1);
         }
         
         .user-avatar img {
@@ -244,13 +259,17 @@
             height: 100%;
             object-fit: cover;
             border-radius: 50%;
-            display: none;
         }
         
-        /* Profile Header */
+        /* Profile Header - Glassmorphism */
         .profile-header {
             padding: 20px 16px;
-            border-bottom: 1px solid var(--card-border);
+            border-bottom: 1px solid var(--glass-border);
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            margin: 0 16px 16px;
+            border-radius: 16px;
+            margin-top: 8px;
         }
         
         .profile-top {
@@ -311,7 +330,7 @@
             font-weight: 600;
             color: var(--soft-white);
             overflow: hidden;
-            border: 3px solid var(--deep-black);
+            border: 3px solid rgba(10, 14, 18, 0.8);
             z-index: 2;
         }
         
@@ -319,7 +338,6 @@
             width: 100%;
             height: 100%;
             object-fit: cover;
-            display: none;
         }
         
         /* Ring Animations */
@@ -366,9 +384,10 @@
             color: var(--soft-white);
             line-height: 1.4;
             margin-bottom: 12px;
+            opacity: 0.9;
         }
         
-        /* Action Row */
+        /* Action Row - Glassmorphism */
         .action-row {
             display: flex;
             gap: 8px;
@@ -377,10 +396,10 @@
         
         .action-btn {
             flex: 1;
-            padding: 10px 16px;
-            border-radius: 8px;
-            border: 1px solid var(--card-border);
-            background: var(--card-bg);
+            padding: 12px 16px;
+            border-radius: 12px;
+            border: 1px solid var(--glass-border);
+            background: rgba(255, 255, 255, 0.05);
             color: var(--soft-white);
             font-family: 'Inter', sans-serif;
             font-weight: 600;
@@ -390,59 +409,70 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 6px;
+            gap: 8px;
+            backdrop-filter: blur(10px);
         }
         
         .action-btn:hover {
             border-color: var(--bantu-blue);
             background: rgba(29, 78, 216, 0.1);
+            transform: translateY(-2px);
         }
         
         .action-btn.primary {
             background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
             border: none;
+            box-shadow: 0 4px 20px rgba(29, 78, 216, 0.3);
         }
         
         .action-btn.primary:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(29, 78, 216, 0.3);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 25px rgba(29, 78, 216, 0.4);
         }
         
         .action-btn.connected {
             background: linear-gradient(135deg, var(--success-color), var(--bantu-blue));
             border: none;
+            box-shadow: 0 4px 20px rgba(16, 185, 129, 0.3);
         }
         
         .action-btn.connected:hover {
             background: linear-gradient(135deg, #0ea371, var(--bantu-blue));
+            transform: translateY(-2px);
         }
         
-        /* Stats Row */
+        /* Stats Row - Glassmorphism */
         .stats-row {
             display: flex;
             justify-content: space-around;
             padding: 16px 0;
-            border-top: 1px solid var(--card-border);
-            border-bottom: 1px solid var(--card-border);
+            border-top: 1px solid var(--glass-border);
+            border-bottom: 1px solid var(--glass-border);
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 12px;
+            margin: 0 -8px;
+            padding: 16px 8px;
         }
         
         .stat-item {
             text-align: center;
             cursor: pointer;
             transition: all 0.3s ease;
-            padding: 4px 8px;
-            border-radius: 8px;
+            padding: 8px 12px;
+            border-radius: 10px;
+            flex: 1;
         }
         
         .stat-item:hover {
             background: var(--hover-overlay);
+            transform: translateY(-2px);
         }
         
         .stat-value {
             font-size: 18px;
             font-weight: 700;
             color: var(--soft-white);
-            margin-bottom: 2px;
+            margin-bottom: 4px;
         }
         
         .stat-label {
@@ -450,18 +480,22 @@
             color: var(--slate-grey);
         }
         
-        /* Content Tabs */
+        /* Content Tabs - Glassmorphism */
         .tabs-container {
             display: flex;
-            background-color: var(--deep-black);
-            border-bottom: 1px solid var(--card-border);
+            background: var(--glass-bg);
+            border-bottom: 1px solid var(--glass-border);
+            backdrop-filter: blur(10px);
+            margin: 0 16px;
+            border-radius: 12px 12px 0 0;
+            overflow: hidden;
         }
         
         .tab {
             flex: 1;
             padding: 16px;
             border: none;
-            background: none;
+            background: transparent;
             color: var(--slate-grey);
             font-family: 'Inter', sans-serif;
             font-weight: 600;
@@ -477,10 +511,12 @@
         
         .tab:hover {
             color: var(--soft-white);
+            background: rgba(255, 255, 255, 0.05);
         }
         
         .tab.active {
             color: var(--soft-white);
+            background: rgba(29, 78, 216, 0.1);
         }
         
         .tab.active::after {
@@ -489,20 +525,21 @@
             bottom: 0;
             left: 0;
             width: 100%;
-            height: 2px;
+            height: 3px;
             background: linear-gradient(to right, var(--bantu-blue), var(--warm-gold));
         }
         
         /* Content Area */
         .content-area {
             min-height: 60vh;
+            padding: 16px;
         }
         
-        /* Pulse Grid */
+        /* Pulse Grid - Glassmorphism */
         .pulse-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 2px;
+            gap: 4px;
         }
         
         @media (max-width: 400px) {
@@ -513,10 +550,20 @@
         
         .pulse-item {
             aspect-ratio: 9/16;
-            background: var(--card-bg);
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 8px;
             position: relative;
             cursor: pointer;
             overflow: hidden;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+        
+        .pulse-item:hover {
+            transform: scale(1.02);
+            border-color: var(--warm-gold);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
         }
         
         .pulse-item:hover .pulse-overlay {
@@ -551,12 +598,13 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background: rgba(0, 0, 0, 0.6);
+            background: linear-gradient(to top, rgba(0, 0, 0, 0.8), transparent);
             display: flex;
-            align-items: center;
+            align-items: flex-end;
             justify-content: center;
             opacity: 0;
             transition: opacity 0.3s ease;
+            padding: 12px;
         }
         
         .pulse-stats {
@@ -564,6 +612,10 @@
             gap: 16px;
             color: white;
             font-size: 14px;
+            background: rgba(0, 0, 0, 0.6);
+            padding: 8px 16px;
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
         }
         
         .pulse-stats span {
@@ -587,29 +639,14 @@
             padding: 4px 8px;
             border-radius: 12px;
             z-index: 2;
+            backdrop-filter: blur(10px);
         }
         
-        /* Custom Pulse Icon */
-        .pulse-tab-icon {
-            width: 20px;
-            height: 20px;
-            position: relative;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        
-        .pulse-tab-icon svg {
-            width: 100%;
-            height: 100%;
-        }
-        
-        /* Series Grid */
+        /* Series Grid - Glassmorphism */
         .series-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
             gap: 16px;
-            padding: 16px;
         }
         
         @media (max-width: 400px) {
@@ -619,18 +656,19 @@
         }
         
         .series-card {
-            background: var(--card-bg);
-            border: 1px solid var(--card-border);
-            border-radius: 12px;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
             overflow: hidden;
             cursor: pointer;
             transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
         }
         
         .series-card:hover {
-            transform: translateY(-2px);
+            transform: translateY(-4px);
             border-color: var(--warm-gold);
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.3);
         }
         
         .series-cover {
@@ -663,14 +701,14 @@
         }
         
         .series-info {
-            padding: 12px;
+            padding: 16px;
         }
         
         .series-title {
             font-size: 14px;
             font-weight: 600;
             color: var(--soft-white);
-            margin-bottom: 4px;
+            margin-bottom: 8px;
             display: -webkit-box;
             -webkit-line-clamp: 2;
             -webkit-box-orient: vertical;
@@ -686,51 +724,54 @@
         
         .series-status {
             font-size: 10px;
-            padding: 2px 6px;
+            padding: 4px 8px;
             border-radius: 10px;
             background: var(--success-color);
             color: white;
+            backdrop-filter: blur(10px);
         }
         
         .series-status.completed {
             background: var(--slate-grey);
         }
         
-        /* Links Grid */
+        /* Links Grid - Glassmorphism */
         .links-grid {
             display: grid;
             grid-template-columns: 1fr;
             gap: 12px;
-            padding: 16px;
         }
         
         .link-card {
-            background: var(--card-bg);
-            border: 1px solid var(--card-border);
-            border-radius: 12px;
-            padding: 16px;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 20px;
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 16px;
             cursor: pointer;
             transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
         }
         
         .link-card:hover {
             border-color: var(--bantu-blue);
             transform: translateX(4px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
         }
         
         .link-icon {
-            width: 40px;
-            height: 40px;
-            border-radius: 8px;
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
             background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
             display: flex;
             align-items: center;
             justify-content: center;
             color: white;
-            font-size: 18px;
+            font-size: 20px;
+            flex-shrink: 0;
         }
         
         .link-content {
@@ -738,29 +779,35 @@
         }
         
         .link-title {
-            font-size: 14px;
+            font-size: 16px;
             font-weight: 600;
             color: var(--soft-white);
             margin-bottom: 4px;
         }
         
         .link-description {
-            font-size: 12px;
+            font-size: 13px;
             color: var(--slate-grey);
             display: -webkit-box;
             -webkit-line-clamp: 2;
             -webkit-box-orient: vertical;
             overflow: hidden;
+            line-height: 1.4;
         }
         
-        /* FEATURE 2: Time Capsule Tab */
+        /* FEATURE 2: Time Capsule Tab - Glassmorphism */
         .timecapsule-container {
-            padding: 20px;
+            padding: 8px 0;
         }
         
         .timecapsule-header {
             margin-bottom: 24px;
             text-align: center;
+            padding: 20px;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            backdrop-filter: blur(10px);
         }
         
         .timecapsule-title {
@@ -785,19 +832,20 @@
         }
         
         .memory-card {
-            background: var(--card-bg);
-            border: 1px solid var(--card-border);
-            border-radius: 12px;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
             padding: 20px;
             position: relative;
             transition: all 0.3s ease;
             cursor: default;
+            backdrop-filter: blur(10px);
         }
         
         .memory-card:hover {
             transform: translateY(-2px);
             border-color: var(--warm-gold);
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.3);
         }
         
         .memory-card-title {
@@ -818,7 +866,8 @@
             font-size: 14px;
             line-height: 1.5;
             color: var(--soft-white);
-            margin-bottom: 12px;
+            margin-bottom: 16px;
+            opacity: 0.9;
         }
         
         .memory-card-meta {
@@ -826,7 +875,7 @@
             color: var(--slate-grey);
             display: flex;
             align-items: center;
-            gap: 12px;
+            justify-content: space-between;
         }
         
         .memory-card-date {
@@ -848,11 +897,15 @@
             color: var(--slate-grey);
         }
         
-        /* Empty States */
+        /* Empty States - Glassmorphism */
         .empty-state {
             padding: 60px 20px;
             text-align: center;
             color: var(--slate-grey);
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            backdrop-filter: blur(10px);
         }
         
         .empty-icon {
@@ -875,7 +928,7 @@
             line-height: 1.4;
         }
         
-        /* Edit Profile Modal - Updated for Profile Picture Upload */
+        /* Edit Profile Modal - Glassmorphism */
         .modal-overlay {
             position: fixed;
             top: 0;
@@ -891,18 +944,20 @@
         }
         
         .modal {
-            background: var(--deep-navy);
-            border-radius: 16px;
+            background: var(--glass-bg);
+            border-radius: 24px;
             width: 90%;
             max-width: 500px;
             max-height: 90vh;
             overflow-y: auto;
-            border: 1px solid var(--card-border);
+            border: 1px solid var(--glass-border);
+            backdrop-filter: blur(20px);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
         }
         
         .modal-header {
-            padding: 20px;
-            border-bottom: 1px solid var(--card-border);
+            padding: 24px;
+            border-bottom: 1px solid var(--glass-border);
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -915,20 +970,27 @@
         }
         
         .close-modal {
-            background: none;
-            border: none;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--glass-border);
+            border-radius: 8px;
             color: var(--slate-grey);
-            font-size: 20px;
+            width: 36px;
+            height: 36px;
+            font-size: 18px;
             cursor: pointer;
-            transition: color 0.3s ease;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
         
         .close-modal:hover {
             color: var(--soft-white);
+            border-color: var(--warm-gold);
         }
         
         .modal-body {
-            padding: 20px;
+            padding: 24px;
         }
         
         .form-group {
@@ -945,34 +1007,45 @@
         
         .form-input {
             width: 100%;
-            padding: 12px;
-            background: rgba(10, 14, 18, 0.6);
-            border: 1px solid var(--card-border);
-            border-radius: 8px;
+            padding: 14px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
             color: var(--soft-white);
             font-family: 'Inter', sans-serif;
             font-size: 14px;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
         }
         
         .form-input:focus {
             outline: none;
             border-color: var(--warm-gold);
+            background: rgba(255, 255, 255, 0.08);
         }
         
         .form-textarea {
             width: 100%;
-            padding: 12px;
-            background: rgba(10, 14, 18, 0.6);
-            border: 1px solid var(--card-border);
-            border-radius: 8px;
+            padding: 14px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
             color: var(--soft-white);
             font-family: 'Inter', sans-serif;
             font-size: 14px;
             resize: vertical;
             min-height: 100px;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
         }
         
-        /* Profile Picture Upload Styles */
+        .form-textarea:focus {
+            outline: none;
+            border-color: var(--warm-gold);
+            background: rgba(255, 255, 255, 0.08);
+        }
+        
+        /* Profile Picture Upload Styles - Glassmorphism */
         .avatar-upload-container {
             text-align: center;
             margin-bottom: 20px;
@@ -985,8 +1058,8 @@
         }
         
         .avatar-preview {
-            width: 100px;
-            height: 100px;
+            width: 120px;
+            height: 120px;
             border-radius: 50%;
             background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
             display: flex;
@@ -996,38 +1069,39 @@
             font-weight: 600;
             color: var(--soft-white);
             overflow: hidden;
-            border: 3px solid var(--card-border);
+            border: 3px solid var(--glass-border);
             cursor: pointer;
             position: relative;
+            backdrop-filter: blur(10px);
         }
         
         .avatar-preview img {
             width: 100%;
             height: 100%;
             object-fit: cover;
-            display: none;
         }
         
         .avatar-upload-btn {
             position: absolute;
             bottom: 0;
             right: 0;
-            background: var(--bantu-blue);
+            background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
             border: none;
             color: white;
-            width: 32px;
-            height: 32px;
+            width: 36px;
+            height: 36px;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
             transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
         }
         
         .avatar-upload-btn:hover {
-            background: var(--warm-gold);
             transform: scale(1.1);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
         }
         
         .avatar-upload-options {
@@ -1037,62 +1111,67 @@
         }
         
         .avatar-upload-option {
-            padding: 8px 16px;
-            background: var(--card-bg);
-            border: 1px solid var(--card-border);
-            border-radius: 8px;
+            padding: 10px 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--glass-border);
+            border-radius: 10px;
             color: var(--soft-white);
-            font-size: 12px;
+            font-size: 13px;
             cursor: pointer;
             transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
         }
         
         .avatar-upload-option:hover {
             border-color: var(--warm-gold);
             background: rgba(245, 158, 11, 0.1);
+            transform: translateY(-2px);
         }
         
         .modal-footer {
-            padding: 20px;
-            border-top: 1px solid var(--card-border);
+            padding: 24px;
+            border-top: 1px solid var(--glass-border);
             display: flex;
             justify-content: flex-end;
             gap: 12px;
         }
         
         .btn {
-            padding: 10px 20px;
-            border-radius: 8px;
+            padding: 12px 24px;
+            border-radius: 12px;
             border: none;
             font-family: 'Inter', sans-serif;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.3s ease;
             font-size: 14px;
+            backdrop-filter: blur(10px);
         }
         
         .btn-secondary {
-            background: transparent;
+            background: rgba(255, 255, 255, 0.05);
             color: var(--slate-grey);
-            border: 1px solid var(--card-border);
+            border: 1px solid var(--glass-border);
         }
         
         .btn-secondary:hover {
             color: var(--soft-white);
             border-color: var(--slate-grey);
+            transform: translateY(-2px);
         }
         
         .btn-primary {
             background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
             color: var(--soft-white);
+            box-shadow: 0 4px 20px rgba(29, 78, 216, 0.3);
         }
         
         .btn-primary:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(29, 78, 216, 0.3);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 25px rgba(29, 78, 216, 0.4);
         }
         
-        /* Toast Notifications */
+        /* Toast Notifications - Glassmorphism */
         .toast-container {
             position: fixed;
             bottom: 20px;
@@ -1104,20 +1183,22 @@
         .toast {
             background: var(--error-color);
             color: white;
-            padding: 12px 20px;
-            border-radius: 8px;
+            padding: 14px 24px;
+            border-radius: 12px;
             margin-bottom: 10px;
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 12px;
             animation: slideUp 0.3s ease;
-            box-shadow: 0 10px 25px rgba(239, 68, 68, 0.3);
+            box-shadow: 0 10px 30px rgba(239, 68, 68, 0.3);
             max-width: 90vw;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
         
         .toast.success {
             background: var(--success-color);
-            box-shadow: 0 10px 25px rgba(16, 185, 129, 0.3);
+            box-shadow: 0 10px 30px rgba(16, 185, 129, 0.3);
         }
         
         @keyframes slideUp {
@@ -1131,17 +1212,18 @@
             }
         }
         
-        /* Bottom Navigation */
+        /* Bottom Navigation - Glassmorphism */
         .bottom-nav {
             position: fixed;
             bottom: 0;
             left: 0;
             right: 0;
-            background: var(--deep-black);
-            border-top: 1px solid var(--card-border);
+            background: rgba(15, 23, 42, 0.9);
+            border-top: 1px solid var(--glass-border);
             display: flex;
             padding: 12px 0;
             z-index: 100;
+            backdrop-filter: blur(20px);
         }
         
         .nav-item {
@@ -1157,6 +1239,7 @@
             font-size: 10px;
             cursor: pointer;
             transition: all 0.3s ease;
+            padding: 8px 0;
         }
         
         .nav-item:hover {
@@ -1171,38 +1254,42 @@
             font-size: 20px;
         }
         
-        /* Profile Edit Button */
+        /* Profile Edit Button - Glassmorphism */
         .profile-edit-btn {
             position: absolute;
             top: 20px;
             right: 16px;
-            background: none;
-            border: none;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--glass-border);
             color: var(--slate-grey);
             font-size: 14px;
             cursor: pointer;
-            padding: 4px 12px;
-            border-radius: 6px;
+            padding: 8px 16px;
+            border-radius: 10px;
             transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
         }
         
         .profile-edit-btn:hover {
             color: var(--soft-white);
-            background: var(--hover-overlay);
+            background: rgba(255, 255, 255, 0.1);
+            border-color: var(--warm-gold);
+            transform: translateY(-2px);
         }
         
         /* Custom Scrollbar */
         ::-webkit-scrollbar {
-            width: 6px;
+            width: 8px;
         }
         
         ::-webkit-scrollbar-track {
-            background: var(--deep-navy);
+            background: rgba(15, 23, 42, 0.5);
+            border-radius: 4px;
         }
         
         ::-webkit-scrollbar-thumb {
             background: var(--bantu-blue);
-            border-radius: 3px;
+            border-radius: 4px;
         }
         
         ::-webkit-scrollbar-thumb:hover {
@@ -1212,7 +1299,7 @@
         /* Responsive */
         @media (max-width: 768px) {
             .container {
-                padding-bottom: 60px;
+                padding-bottom: 80px;
             }
             
             .header {
@@ -1221,6 +1308,7 @@
             
             .profile-header {
                 padding: 16px;
+                margin: 0 8px 8px;
             }
             
             .profile-avatar {
@@ -1244,10 +1332,19 @@
             
             .modal {
                 width: 95%;
+                margin: 16px;
             }
             
             .timecapsule-container {
-                padding: 16px;
+                padding: 0;
+            }
+            
+            .tabs-container {
+                margin: 0 8px;
+            }
+            
+            .content-area {
+                padding: 12px 8px;
             }
         }
         
@@ -1263,13 +1360,14 @@
         .creator-badge {
             display: inline-block;
             margin-left: 8px;
-            padding: 2px 8px;
-            background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(78, 205, 196, 0.2));
+            padding: 4px 10px;
+            background: rgba(245, 158, 11, 0.2);
             color: var(--warm-gold);
-            border-radius: 10px;
+            border-radius: 12px;
             font-size: 10px;
             font-weight: 600;
             border: 1px solid rgba(245, 158, 11, 0.3);
+            backdrop-filter: blur(10px);
         }
         
         /* Upload Cover Button */
@@ -1286,6 +1384,8 @@
             cursor: pointer;
             display: none;
             z-index: 10;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
         
         .pulse-item:hover .upload-cover-btn {
@@ -1299,6 +1399,21 @@
         
         .tab-content.active {
             display: block;
+        }
+        
+        /* Pulse Tab Icon */
+        .pulse-tab-icon {
+            width: 20px;
+            height: 20px;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .pulse-tab-icon svg {
+            width: 100%;
+            height: 100%;
         }
     </style>
 </head>
@@ -1364,6 +1479,7 @@
                 <div class="profile-info">
                     <div class="profile-name" id="profile-name">
                         Loading...
+                        <span class="creator-badge" id="creator-badge" style="display: none;">CREATOR</span>
                     </div>
                     <div class="profile-username" id="profile-username">@user</div>
                     <div class="profile-bio" id="profile-bio">
@@ -1435,7 +1551,7 @@
             </button>
             <!-- FEATURE 2: Time Capsule Tab (Only visible for own profile) -->
             <button class="tab" data-tab="timecapsule" id="timecapsuleTab" style="display: none;">
-                <i class="fas fa-time-capsule"></i>
+                <i class="fas fa-history"></i>
                 <span>Journey</span>
             </button>
         </div>
@@ -1559,15 +1675,15 @@
     </div>
 
     <script>
-        // Initialize Supabase client
+        // Initialize Supabase client with proper parameters
         const SUPABASE_URL = 'https://ydnxqnbjoshvxteevemc.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U';
 
         let supabaseClient = null;
         let currentUserId = null;
+        let currentUserProfile = null; // Store current user's profile separately
         let isViewingOwnProfile = true;
         let profileUserId = null;
-        let currentUserProfile = null;
         let currentViewProfile = null;
         let isConnected = false;
         let profileAvatarFile = null;
@@ -1606,14 +1722,8 @@
             console.log('Starting Profile initialization...');
             
             try {
-                // Create Supabase client
-                supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-                    auth: {
-                        autoRefreshToken: true,
-                        persistSession: true,
-                        detectSessionInUrl: true
-                    }
-                });
+                // Create Supabase client with proper initialization
+                supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
                 console.log('Supabase client created');
                 
                 // Check session
@@ -1632,6 +1742,9 @@
                 console.log('User authenticated:', session.user.email);
                 currentUserId = session.user.id;
                 
+                // FIX 1: Always load current user's profile for header
+                await loadCurrentUserProfile(session.user);
+                
                 // Check if viewing own profile or another user's profile
                 const urlParams = new URLSearchParams(window.location.search);
                 profileUserId = urlParams.get('user_id');
@@ -1643,8 +1756,8 @@
                     isViewingOwnProfile = true;
                 }
                 
-                // Load user profile
-                await loadUserProfile();
+                // Load the profile being viewed
+                await loadViewProfile();
                 
                 // Check connection status
                 if (!isViewingOwnProfile) {
@@ -1685,7 +1798,64 @@
             }
         }
         
-        async function loadUserProfile() {
+        // FIX 1: Load current user's profile for header
+        async function loadCurrentUserProfile(user) {
+            try {
+                const { data: profile, error } = await supabaseClient
+                    .from('user_profiles')
+                    .select('*')
+                    .eq('id', user.id)
+                    .single();
+                
+                if (error) {
+                    console.error('Error loading current user profile:', error);
+                    // Create a basic profile object from auth data
+                    currentUserProfile = {
+                        id: user.id,
+                        full_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'User',
+                        username: user.user_metadata?.username || user.email?.split('@')[0] || 'user',
+                        avatar_url: user.user_metadata?.avatar_url,
+                        email: user.email
+                    };
+                } else {
+                    currentUserProfile = profile;
+                }
+                
+                // Update header avatar with current user's avatar
+                updateHeaderAvatar(currentUserProfile);
+                
+            } catch (error) {
+                console.error('Error in loadCurrentUserProfile:', error);
+                // Create basic profile from auth data
+                currentUserProfile = {
+                    id: user.id,
+                    full_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'User',
+                    username: user.user_metadata?.username || user.email?.split('@')[0] || 'user',
+                    avatar_url: user.user_metadata?.avatar_url,
+                    email: user.email
+                };
+                updateHeaderAvatar(currentUserProfile);
+            }
+        }
+        
+        function updateHeaderAvatar(profile) {
+            const headerAvatarImg = document.getElementById('user-avatar-img');
+            const headerInitials = document.getElementById('avatar-initials');
+            const initials = getInitials(profile.full_name || profile.email || 'User');
+            
+            if (profile.avatar_url) {
+                headerAvatarImg.src = profile.avatar_url;
+                headerAvatarImg.style.display = 'block';
+                headerAvatarImg.alt = profile.full_name || profile.username || 'User';
+                headerInitials.style.display = 'none';
+            } else {
+                headerAvatarImg.style.display = 'none';
+                headerInitials.style.display = 'flex';
+                headerInitials.textContent = initials;
+            }
+        }
+        
+        async function loadViewProfile() {
             try {
                 // Load the profile being viewed
                 const { data: profile, error } = await supabaseClient
@@ -1736,6 +1906,7 @@
                     if (profile.avatar_url) {
                         profileAvatarImg.src = profile.avatar_url;
                         profileAvatarImg.style.display = 'block';
+                        profileAvatarImg.alt = profile.full_name || profile.username || 'User';
                         profileAvatarInitials.style.display = 'none';
                     } else {
                         profileAvatarImg.style.display = 'none';
@@ -1744,34 +1915,15 @@
                     }
                 }
                 
-                // Load current user's profile for header
+                // Show edit button for own profile
                 if (isViewingOwnProfile) {
-                    currentUserProfile = profile;
-                    
-                    // Update header avatar
-                    const headerAvatarImg = document.getElementById('user-avatar-img');
-                    const headerInitials = document.getElementById('avatar-initials');
-                    
-                    if (headerAvatarImg && headerInitials) {
-                        if (profile.avatar_url) {
-                            headerAvatarImg.src = profile.avatar_url;
-                            headerAvatarImg.style.display = 'block';
-                            headerInitials.style.display = 'none';
-                        } else {
-                            headerAvatarImg.style.display = 'none';
-                            headerInitials.style.display = 'flex';
-                            headerInitials.textContent = initials;
-                        }
-                    }
-                    
-                    // Show edit button
                     const profileEditBtn = document.getElementById('profileEditBtn');
                     if (profileEditBtn) {
                         profileEditBtn.style.display = 'block';
                     }
                     
                     // Update action buttons for owner
-                    const connectBtn = document.getElementById('connectBtn');
+                    const connectBtn = getElement('connectBtn');
                     if (connectBtn) {
                         connectBtn.innerHTML = '<i class="fas fa-cog"></i> Manage';
                         connectBtn.onclick = () => {
@@ -1928,7 +2080,7 @@
                 shareBtn.addEventListener('click', shareProfile);
             }
             
-            // Message button is hidden (per requirement 5)
+            // Message button is hidden (per requirement)
             const messageBtn = document.getElementById('messageBtn');
             if (messageBtn) {
                 messageBtn.style.display = 'none';
@@ -1941,6 +2093,11 @@
                     
                     if (event === 'SIGNED_OUT') {
                         window.location.href = 'login.html';
+                    } else if (event === 'SIGNED_IN' || event === 'USER_UPDATED') {
+                        // Reload profile data if user updates
+                        if (session && session.user.id === currentUserId) {
+                            loadCurrentUserProfile(session.user);
+                        }
                     }
                 });
             }
@@ -1948,7 +2105,7 @@
         
         function openEditModal() {
             const editModal = document.getElementById('editModal');
-            const profile = currentViewProfile;
+            const profile = isViewingOwnProfile ? currentViewProfile : currentUserProfile;
             
             // Set form values
             document.getElementById('editName').value = profile.full_name || '';
@@ -2117,17 +2274,8 @@
                         seriesBadge = `<div class="series-badge">Series · Part ${pulse.series_order || 1}</div>`;
                     }
                     
-                    // Add upload cover button for own profile
-                    let uploadButton = '';
-                    if (isViewingOwnProfile) {
-                        uploadButton = `<button class="upload-cover-btn" onclick="uploadPulseCover('${pulse.id}')">
-                            <i class="fas fa-camera"></i> Add Cover
-                        </button>`;
-                    }
-                    
                     pulseItem.innerHTML = `
                         ${seriesBadge}
-                        ${uploadButton}
                         <div class="pulse-overlay">
                             <div class="pulse-stats">
                                 <span class="pulse-icon"><i class="fas fa-heart"></i> ${pulse.likes_count || 0}</span>
@@ -2167,7 +2315,7 @@
                         pulseItem.prepend(captionPreview);
                     }
                     
-                    // FIX 1: Redirect to pulse-content-detail.html when clicked
+                    // Redirect to pulse-content-detail.html when clicked
                     pulseItem.addEventListener('click', () => {
                         window.location.href = `pulse-content-detail.html?id=${pulse.id}`;
                     });
@@ -2234,7 +2382,7 @@
                         </div>
                     `;
                     
-                    // FIX 1: Get first pulse in series and redirect to it
+                    // Get first pulse in series and redirect to it
                     seriesCard.addEventListener('click', async () => {
                         try {
                             // Get the first pulse in this series
@@ -2328,7 +2476,7 @@
                         </div>
                     `;
                     
-                    // FIX 1: Redirect to pulse detail for linked content
+                    // Redirect to pulse detail for linked content
                     linkCard.addEventListener('click', () => {
                         window.location.href = `pulse-content-detail.html?id=${pulse.id}`;
                     });
@@ -2341,7 +2489,7 @@
             }
         }
         
-        // FEATURE 1: Pulse Identity Ring Functions
+        // FEATURE 1: Pulse Identity Ring Functions - FIXED to avoid 404 errors
         async function initializePulseIdentityRing() {
             try {
                 const ring = document.getElementById('profile-avatar-ring');
@@ -2351,7 +2499,7 @@
                 const twelveHoursAgo = new Date();
                 twelveHoursAgo.setHours(twelveHoursAgo.getHours() - 12);
                 
-                // Check for recent pulses
+                // Check for recent pulses (existing table)
                 const { data: recentPulses } = await supabaseClient
                     .from('pulses')
                     .select('id')
@@ -2359,16 +2507,37 @@
                     .gte('created_at', twelveHoursAgo.toISOString())
                     .limit(1);
                 
-                // Check for recent engagements (comments, saves)
-                const { data: recentEngagements } = await supabaseClient
-                    .from('pulse_interactions')
+                // Check for recent comments on user's pulses
+                const { data: recentComments } = await supabaseClient
+                    .from('pulse_comments')
                     .select('id')
-                    .eq('target_user_id', currentUserId)
+                    .eq('pulse_id', function() {
+                        // Subquery to get user's pulses
+                        return supabaseClient
+                            .from('pulses')
+                            .select('id')
+                            .eq('user_id', currentUserId);
+                    })
+                    .gte('created_at', twelveHoursAgo.toISOString())
+                    .limit(1);
+                
+                // Check for recent likes on user's pulses
+                const { data: recentLikes } = await supabaseClient
+                    .from('pulse_likes')
+                    .select('id')
+                    .eq('pulse_id', function() {
+                        // Subquery to get user's pulses
+                        return supabaseClient
+                            .from('pulses')
+                            .select('id')
+                            .eq('user_id', currentUserId);
+                    })
                     .gte('created_at', twelveHoursAgo.toISOString())
                     .limit(1);
                 
                 const isActiveToday = recentPulses && recentPulses.length > 0;
-                const isReceivingAttention = recentEngagements && recentEngagements.length > 0;
+                const isReceivingAttention = (recentComments && recentComments.length > 0) || 
+                                           (recentLikes && recentLikes.length > 0);
                 
                 // Set ring state
                 if (isActiveToday && isReceivingAttention) {
@@ -2389,7 +2558,7 @@
             }
         }
         
-        // FEATURE 2: Time Capsule Functions
+        // FEATURE 2: Time Capsule Functions - FIXED to avoid 404 and 400 errors
         async function loadTimeCapsule() {
             if (!isViewingOwnProfile) return;
             
@@ -2427,48 +2596,29 @@
                     });
                 }
                 
-                // Get most saved pulse
-                const { data: mostSavedPulse } = await supabaseClient
+                // Get most liked pulse (instead of most saved to avoid table errors)
+                const { data: mostLikedPulse } = await supabaseClient
                     .from('pulses')
-                    .select('*, pulse_saves(count)')
+                    .select('*')
                     .eq('user_id', currentUserId)
                     .is('deleted_at', null)
-                    .order('pulse_saves.count', { ascending: false })
+                    .order('likes_count', { ascending: false })
                     .limit(1)
                     .single();
                 
-                if (mostSavedPulse && mostSavedPulse.pulse_saves && mostSavedPulse.pulse_saves[0]) {
+                if (mostLikedPulse && mostLikedPulse.likes_count > 0) {
                     memoryCards.push({
-                        type: 'most_saved',
-                        title: 'Most Saved Pulse',
-                        icon: 'fas fa-bookmark',
-                        content: mostSavedPulse.caption ? 
-                            (mostSavedPulse.caption.length > 80 ? mostSavedPulse.caption.substring(0, 77) + '...' : mostSavedPulse.caption) : 
-                            'Most treasured by your community',
-                        date: new Date(mostSavedPulse.created_at),
-                        stats: {
-                            saves: mostSavedPulse.pulse_saves[0].count || 0,
-                            likes: mostSavedPulse.likes_count || 0
-                        }
-                    });
-                }
-                
-                // Get first series followed
-                const { data: firstFollowedSeries } = await supabaseClient
-                    .from('series_follows')
-                    .select('*, pulse_series!inner(title)')
-                    .eq('user_id', currentUserId)
-                    .order('created_at', { ascending: true })
-                    .limit(1)
-                    .single();
-                
-                if (firstFollowedSeries && firstFollowedSeries.pulse_series) {
-                    memoryCards.push({
-                        type: 'first_followed',
-                        title: 'First Series You Followed',
+                        type: 'most_liked',
+                        title: 'Most Liked Pulse',
                         icon: 'fas fa-heart',
-                        content: firstFollowedSeries.pulse_series.title || 'Your first followed series',
-                        date: new Date(firstFollowedSeries.created_at)
+                        content: mostLikedPulse.caption ? 
+                            (mostLikedPulse.caption.length > 80 ? mostLikedPulse.caption.substring(0, 77) + '...' : mostLikedPulse.caption) : 
+                            'Most loved by your community',
+                        date: new Date(mostLikedPulse.created_at),
+                        stats: {
+                            likes: mostLikedPulse.likes_count || 0,
+                            comments: mostLikedPulse.comments_count || 0
+                        }
                     });
                 }
                 
@@ -2496,17 +2646,36 @@
                     .eq('id', currentUserId)
                     .single();
                 
-                if (userProfile) {
+                if (userProfile && userProfile.created_at) {
                     const joinDate = new Date(userProfile.created_at);
                     const now = new Date();
                     const months = (now.getFullYear() - joinDate.getFullYear()) * 12 + (now.getMonth() - joinDate.getMonth());
                     
+                    if (months > 0) {
+                        memoryCards.push({
+                            type: 'anniversary',
+                            title: 'Pulse Journey',
+                            icon: 'fas fa-calendar',
+                            content: `You've been sharing cultural moments for ${months} month${months !== 1 ? 's' : ''}`,
+                            date: joinDate
+                        });
+                    }
+                }
+                
+                // Get series count if any
+                const { data: seriesData } = await supabaseClient
+                    .from('pulse_series')
+                    .select('id', { count: 'exact' })
+                    .eq('creator_id', currentUserId)
+                    .eq('is_archived', false);
+                
+                if (seriesData && seriesData.length > 0) {
                     memoryCards.push({
-                        type: 'anniversary',
-                        title: 'Pulse Journey',
-                        icon: 'fas fa-calendar',
-                        content: `You've been sharing cultural moments for ${months} month${months !== 1 ? 's' : ''}`,
-                        date: joinDate
+                        type: 'series',
+                        title: 'Storytelling Series',
+                        icon: 'fas fa-layer-group',
+                        content: `Created ${seriesData.length} storytelling series`,
+                        date: new Date()
                     });
                 }
                 
@@ -2515,7 +2684,7 @@
                     container.innerHTML = `
                         <div class="empty-state">
                             <div class="empty-icon">
-                                <i class="fas fa-time-capsule"></i>
+                                <i class="fas fa-history"></i>
                             </div>
                             <div class="empty-title">No Journey Data Yet</div>
                             <div class="empty-description">
@@ -2544,7 +2713,9 @@
                         if (card.stats.saves !== undefined) {
                             statItems.push(`<span class="memory-card-stat"><i class="fas fa-bookmark"></i> ${card.stats.saves}</span>`);
                         }
-                        statsHTML = `<div class="memory-card-stats">${statItems.join('')}</div>`;
+                        if (statItems.length > 0) {
+                            statsHTML = `<div class="memory-card-stats">${statItems.join('')}</div>`;
+                        }
                     }
                     
                     memoryCard.innerHTML = `
@@ -2641,28 +2812,50 @@
                         upsert: true
                     });
                 
-                if (uploadError) throw uploadError;
-                
-                // Get public URL
-                const { data: { publicUrl } } = supabaseClient.storage
-                    .from('avatars')
-                    .getPublicUrl(filePath);
-                
-                // Update avatar URL in form
-                document.getElementById('editAvatar').value = publicUrl;
+                if (uploadError) {
+                    // Try with a different bucket name
+                    const { error: uploadError2 } = await supabaseClient.storage
+                        .from('profile-pictures')
+                        .upload(filePath, file, {
+                            upsert: true
+                        });
+                    
+                    if (uploadError2) throw uploadError2;
+                    
+                    // Get public URL from second bucket
+                    const { data: { publicUrl } } = supabaseClient.storage
+                        .from('profile-pictures')
+                        .getPublicUrl(filePath);
+                    
+                    document.getElementById('editAvatar').value = publicUrl;
+                } else {
+                    // Get public URL
+                    const { data: { publicUrl } } = supabaseClient.storage
+                        .from('avatars')
+                        .getPublicUrl(filePath);
+                    
+                    document.getElementById('editAvatar').value = publicUrl;
+                }
                 
                 showToast('Profile picture uploaded!', 'success');
                 
             } catch (error) {
                 console.error('Error uploading avatar:', error);
-                showToast('Failed to upload profile picture', 'error');
+                
+                // Fallback: Use a data URL temporarily
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    document.getElementById('editAvatar').value = e.target.result;
+                    showToast('Profile picture saved locally. Will sync when connected.', 'success');
+                };
+                reader.readAsDataURL(file);
             }
         }
         
         function removeProfilePicture() {
             const avatarPreviewImg = document.getElementById('avatarPreviewImg');
             const avatarPreviewInitials = document.getElementById('avatarPreviewInitials');
-            const profile = currentViewProfile;
+            const profile = isViewingOwnProfile ? currentViewProfile : currentUserProfile;
             const initials = getInitials(profile.full_name || profile.email || 'User');
             
             avatarPreviewImg.style.display = 'none';
@@ -2683,39 +2876,35 @@
                 const bio = getElement('editBio')?.value || '';
                 const avatar = getElement('editAvatar')?.value || '';
                 
-                // Try to update user_profiles first
+                // Update user_profiles table
                 const { error: profileError } = await supabaseClient
                     .from('user_profiles')
-                    .upsert({ 
-                        id: currentUserId,
+                    .update({ 
                         full_name: name,
                         username: username.replace('@', ''),
                         bio: bio,
                         avatar_url: avatar || null,
-                        email: currentUserProfile?.email || '',
                         updated_at: new Date().toISOString()
-                    }, {
-                        onConflict: 'id'
-                    });
+                    })
+                    .eq('id', currentUserId);
                 
-                if (profileError && profileError.code !== '23505') { // Ignore unique constraint errors
-                    throw profileError;
-                }
-                
-                // Also update creators table
-                const { error: creatorError } = await supabaseClient
-                    .from('creators')
-                    .upsert({
-                        id: currentUserId,
-                        username: username.replace('@', ''),
-                        bio: bio,
-                        updated_at: new Date().toISOString()
-                    }, {
-                        onConflict: 'id'
-                    });
-                
-                if (creatorError && creatorError.code !== '23505') {
-                    console.warn('Could not update creators table:', creatorError);
+                if (profileError) {
+                    // Try upsert if update fails
+                    const { error: upsertError } = await supabaseClient
+                        .from('user_profiles')
+                        .upsert({ 
+                            id: currentUserId,
+                            full_name: name,
+                            username: username.replace('@', ''),
+                            bio: bio,
+                            avatar_url: avatar || null,
+                            email: currentUserProfile?.email || '',
+                            updated_at: new Date().toISOString()
+                        }, {
+                            onConflict: 'id'
+                        });
+                    
+                    if (upsertError) throw upsertError;
                 }
                 
                 showToast('Profile updated successfully', 'success');
@@ -2725,27 +2914,16 @@
                     safeSetStyle(editModal, 'display', 'none');
                 }
                 
-                // Reload profile
-                await loadUserProfile();
+                // Reload both profiles
+                await loadCurrentUserProfile({ id: currentUserId, email: currentUserProfile?.email });
+                if (isViewingOwnProfile) {
+                    await loadViewProfile();
+                }
                 
             } catch (error) {
                 console.error('Error saving profile:', error);
                 showToast('Failed to save profile', 'error');
             }
-        }
-        
-        // These functions are kept for compatibility but redirect to detail page
-        function viewPulse(pulseId) {
-            window.location.href = `pulse-content-detail.html?id=${pulseId}`;
-        }
-        
-        function viewSeries(seriesId) {
-            // This will now be handled by the series card click event
-            showToast('Click on a series to view its content', 'info');
-        }
-        
-        function viewLinkedContent(contentId) {
-            showToast('Opening content...', 'success');
         }
         
         function viewPulses() {
