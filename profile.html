@@ -35,6 +35,11 @@
             --card-border: rgba(148, 163, 184, 0.2);
             --hover-overlay: rgba(255, 255, 255, 0.05);
             --active-overlay: rgba(245, 158, 11, 0.1);
+            --deep-indigo: #4F46E5;
+            --subtle-gold: #F59E0B;
+            --muted-gray: #94a3b8;
+            --indigo-glow: rgba(79, 70, 229, 0.5);
+            --gold-glow: rgba(245, 158, 11, 0.3);
         }
         
         * {
@@ -49,6 +54,66 @@
             color: var(--soft-white);
             min-height: 100vh;
             overflow-x: hidden;
+        }
+        
+        /* Animated Background - From pulse-content-detail.html */
+        .animated-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            overflow: hidden;
+        }
+        
+        .glow-cycle {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(60px);
+            opacity: 0.1;
+            animation: float 8s infinite ease-in-out;
+        }
+        
+        .glow-1 {
+            width: 400px;
+            height: 400px;
+            background: var(--glow-cycle-1);
+            top: 10%;
+            left: 5%;
+            animation-delay: 0s;
+        }
+        
+        .glow-2 {
+            width: 300px;
+            height: 300px;
+            background: var(--glow-cycle-2);
+            top: 60%;
+            right: 10%;
+            animation-delay: 2s;
+        }
+        
+        .glow-3 {
+            width: 350px;
+            height: 350px;
+            background: var(--glow-cycle-3);
+            bottom: 10%;
+            left: 20%;
+            animation-delay: 4s;
+        }
+        
+        .glow-4 {
+            width: 250px;
+            height: 250px;
+            background: var(--glow-cycle-4);
+            top: 20%;
+            right: 20%;
+            animation-delay: 6s;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0) scale(1); }
+            50% { transform: translateY(-20px) scale(1.05); }
         }
         
         /* Loading Screen */
@@ -195,7 +260,46 @@
             margin-bottom: 16px;
         }
         
+        /* FEATURE 1: Pulse Identity Ring - Updated Profile Avatar with Ring */
+        .profile-avatar-container {
+            position: relative;
+            width: 86px;
+            height: 86px;
+            flex-shrink: 0;
+        }
+        
+        .profile-avatar-ring {
+            position: absolute;
+            top: -3px;
+            left: -3px;
+            width: 86px;
+            height: 86px;
+            border-radius: 50%;
+            border: 3px solid var(--deep-indigo);
+            animation: pulse-ring 4s infinite ease-in-out;
+            z-index: 1;
+        }
+        
+        /* Ring States */
+        .profile-avatar-ring.active-today {
+            border-color: var(--deep-indigo);
+            box-shadow: 0 0 20px var(--indigo-glow);
+            animation: pulse-ring 2s infinite ease-in-out;
+        }
+        
+        .profile-avatar-ring.receiving-attention {
+            border-color: var(--deep-indigo);
+            animation: gold-ripple 3s infinite;
+        }
+        
+        .profile-avatar-ring.inactive {
+            border-color: var(--muted-gray);
+            animation: none;
+            box-shadow: none;
+        }
+        
         .profile-avatar {
+            position: relative;
             width: 80px;
             height: 80px;
             border-radius: 50%;
@@ -206,10 +310,9 @@
             font-size: 28px;
             font-weight: 600;
             color: var(--soft-white);
-            flex-shrink: 0;
-            position: relative;
             overflow: hidden;
             border: 3px solid var(--deep-black);
+            z-index: 2;
         }
         
         .profile-avatar img {
@@ -217,6 +320,28 @@
             height: 100%;
             object-fit: cover;
             display: none;
+        }
+        
+        /* Ring Animations */
+        @keyframes pulse-ring {
+            0% { box-shadow: 0 0 0 0 var(--indigo-glow); }
+            50% { box-shadow: 0 0 0 10px rgba(79, 70, 229, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(79, 70, 229, 0); }
+        }
+        
+        @keyframes gold-ripple {
+            0% { 
+                box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.4),
+                           inset 0 0 0 0 rgba(245, 158, 11, 0.1);
+            }
+            50% { 
+                box-shadow: 0 0 0 8px rgba(245, 158, 11, 0),
+                           inset 0 0 0 4px rgba(245, 158, 11, 0.1);
+            }
+            100% { 
+                box-shadow: 0 0 0 0 rgba(245, 158, 11, 0),
+                           inset 0 0 0 0 rgba(245, 158, 11, 0);
+            }
         }
         
         .profile-info {
@@ -347,6 +472,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            gap: 8px;
         }
         
         .tab:hover {
@@ -627,6 +753,101 @@
             overflow: hidden;
         }
         
+        /* FEATURE 2: Time Capsule Tab */
+        .timecapsule-container {
+            padding: 20px;
+        }
+        
+        .timecapsule-header {
+            margin-bottom: 24px;
+            text-align: center;
+        }
+        
+        .timecapsule-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--soft-white);
+            margin-bottom: 8px;
+        }
+        
+        .timecapsule-subtitle {
+            font-size: 14px;
+            color: var(--slate-grey);
+            max-width: 400px;
+            margin: 0 auto;
+            line-height: 1.4;
+        }
+        
+        .memory-cards-container {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+        
+        .memory-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            padding: 20px;
+            position: relative;
+            transition: all 0.3s ease;
+            cursor: default;
+        }
+        
+        .memory-card:hover {
+            transform: translateY(-2px);
+            border-color: var(--warm-gold);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+        }
+        
+        .memory-card-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--subtle-gold);
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .memory-card-title i {
+            font-size: 14px;
+        }
+        
+        .memory-card-content {
+            font-size: 14px;
+            line-height: 1.5;
+            color: var(--soft-white);
+            margin-bottom: 12px;
+        }
+        
+        .memory-card-meta {
+            font-size: 12px;
+            color: var(--slate-grey);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .memory-card-date {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        
+        .memory-card-stats {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .memory-card-stat {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            color: var(--slate-grey);
+        }
+        
         /* Empty States */
         .empty-state {
             padding: 60px 20px;
@@ -654,7 +875,7 @@
             line-height: 1.4;
         }
         
-        /* Edit Profile Modal */
+        /* Edit Profile Modal - Updated for Profile Picture Upload */
         .modal-overlay {
             position: fixed;
             top: 0;
@@ -749,6 +970,86 @@
             font-size: 14px;
             resize: vertical;
             min-height: 100px;
+        }
+        
+        /* Profile Picture Upload Styles */
+        .avatar-upload-container {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        .avatar-preview-container {
+            position: relative;
+            display: inline-block;
+            margin-bottom: 16px;
+        }
+        
+        .avatar-preview {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 36px;
+            font-weight: 600;
+            color: var(--soft-white);
+            overflow: hidden;
+            border: 3px solid var(--card-border);
+            cursor: pointer;
+            position: relative;
+        }
+        
+        .avatar-preview img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: none;
+        }
+        
+        .avatar-upload-btn {
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            background: var(--bantu-blue);
+            border: none;
+            color: white;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .avatar-upload-btn:hover {
+            background: var(--warm-gold);
+            transform: scale(1.1);
+        }
+        
+        .avatar-upload-options {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+        }
+        
+        .avatar-upload-option {
+            padding: 8px 16px;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 8px;
+            color: var(--soft-white);
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .avatar-upload-option:hover {
+            border-color: var(--warm-gold);
+            background: rgba(245, 158, 11, 0.1);
         }
         
         .modal-footer {
@@ -927,12 +1228,26 @@
                 height: 70px;
             }
             
+            .profile-avatar-container {
+                width: 76px;
+                height: 76px;
+            }
+            
+            .profile-avatar-ring {
+                width: 76px;
+                height: 76px;
+            }
+            
             .profile-name {
                 font-size: 18px;
             }
             
             .modal {
                 width: 95%;
+            }
+            
+            .timecapsule-container {
+                padding: 16px;
             }
         }
         
@@ -976,9 +1291,26 @@
         .pulse-item:hover .upload-cover-btn {
             display: block;
         }
+        
+        /* Tab Content */
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
     </style>
 </head>
 <body>
+    <!-- Animated Background -->
+    <div class="animated-bg">
+        <div class="glow-cycle glow-1"></div>
+        <div class="glow-cycle glow-2"></div>
+        <div class="glow-cycle glow-3"></div>
+        <div class="glow-cycle glow-4"></div>
+    </div>
+
     <!-- Loading Screen -->
     <div id="loading" class="loading-screen">
         <div class="spinner"></div>
@@ -1020,9 +1352,13 @@
         <!-- Profile Header -->
         <div class="profile-header">
             <div class="profile-top">
-                <div class="profile-avatar" id="profile-avatar">
-                    <img id="profile-avatar-img">
-                    <span id="profile-avatar-initials">AB</span>
+                <!-- FEATURE 1: Pulse Identity Ring Container -->
+                <div class="profile-avatar-container">
+                    <div class="profile-avatar-ring" id="profile-avatar-ring"></div>
+                    <div class="profile-avatar" id="profile-avatar">
+                        <img id="profile-avatar-img">
+                        <span id="profile-avatar-initials">AB</span>
+                    </div>
                 </div>
                 
                 <div class="profile-info">
@@ -1087,12 +1423,20 @@
                         </defs>
                     </svg>
                 </div>
+                <span>Pulses</span>
             </button>
             <button class="tab" data-tab="series">
                 <i class="fas fa-layer-group"></i>
+                <span>Series</span>
             </button>
             <button class="tab" data-tab="links">
                 <i class="fas fa-link"></i>
+                <span>Links</span>
+            </button>
+            <!-- FEATURE 2: Time Capsule Tab (Only visible for own profile) -->
+            <button class="tab" data-tab="timecapsule" id="timecapsuleTab" style="display: none;">
+                <i class="fas fa-time-capsule"></i>
+                <span>Journey</span>
             </button>
         </div>
         
@@ -1116,6 +1460,19 @@
             <div class="tab-content" id="links-tab">
                 <div class="links-grid" id="linksGrid">
                     <!-- Links will be loaded here -->
+                </div>
+            </div>
+            
+            <!-- FEATURE 2: Time Capsule Tab -->
+            <div class="tab-content" id="timecapsule-tab">
+                <div class="timecapsule-container">
+                    <div class="timecapsule-header">
+                        <h2 class="timecapsule-title">Your Pulse Journey</h2>
+                        <p class="timecapsule-subtitle">A personal archive of your cultural moments and milestones</p>
+                    </div>
+                    <div class="memory-cards-container" id="memoryCardsContainer">
+                        <!-- Memory cards will be loaded here -->
+                    </div>
                 </div>
             </div>
         </div>
@@ -1144,7 +1501,7 @@
     <!-- Toast Container -->
     <div id="toast-container" class="toast-container"></div>
 
-    <!-- Edit Profile Modal -->
+    <!-- Edit Profile Modal with Profile Picture Upload -->
     <div id="editModal" class="modal-overlay">
         <div class="modal">
             <div class="modal-header">
@@ -1154,6 +1511,26 @@
                 </button>
             </div>
             <div class="modal-body">
+                <div class="avatar-upload-container">
+                    <div class="avatar-preview-container">
+                        <div class="avatar-preview" id="avatarPreview" onclick="triggerAvatarUpload()">
+                            <img id="avatarPreviewImg">
+                            <span id="avatarPreviewInitials">AB</span>
+                        </div>
+                        <button class="avatar-upload-btn" onclick="triggerAvatarUpload()">
+                            <i class="fas fa-camera"></i>
+                        </button>
+                    </div>
+                    <div class="avatar-upload-options">
+                        <button class="avatar-upload-option" onclick="triggerAvatarUpload()">
+                            <i class="fas fa-upload"></i> Upload
+                        </button>
+                        <button class="avatar-upload-option" onclick="removeProfilePicture()">
+                            <i class="fas fa-trash"></i> Remove
+                        </button>
+                    </div>
+                </div>
+                
                 <form id="editForm">
                     <div class="form-group">
                         <label class="form-label">Display Name</label>
@@ -1170,10 +1547,8 @@
                         <textarea class="form-textarea" id="editBio" placeholder="Tell your story... (max 120 characters)" maxlength="120"></textarea>
                     </div>
                     
-                    <div class="form-group">
-                        <label class="form-label">Profile Picture URL</label>
-                        <input type="text" class="form-input" id="editAvatar" placeholder="https://example.com/avatar.jpg">
-                    </div>
+                    <!-- Hidden input for avatar URL (will be set after upload) -->
+                    <input type="hidden" id="editAvatar" value="">
                 </form>
             </div>
             <div class="modal-footer">
@@ -1195,6 +1570,7 @@
         let currentUserProfile = null;
         let currentViewProfile = null;
         let isConnected = false;
+        let profileAvatarFile = null;
 
         // Helper function to safely get element
         function getElement(id) {
@@ -1285,6 +1661,16 @@
                 // Load initial content
                 loadPulses();
                 
+                // FEATURE 1: Initialize Pulse Identity Ring
+                if (isViewingOwnProfile) {
+                    initializePulseIdentityRing();
+                }
+                
+                // FEATURE 2: Show Time Capsule tab for own profile
+                if (isViewingOwnProfile) {
+                    document.getElementById('timecapsuleTab').style.display = 'flex';
+                }
+                
             } catch (error) {
                 console.error('Error:', error);
                 safeSetText(getElement('loading-text'), 'Error loading profile. Please refresh.');
@@ -1300,115 +1686,112 @@
         }
         
         async function loadUserProfile() {
-    try {
-        // Load the profile being viewed
-        const { data: profile, error } = await supabaseClient
-            .from('user_profiles')
-            .select('*')
-            .eq('id', profileUserId)
-            .single();
-        
-        if (error) throw error;
-        
-        currentViewProfile = profile;
-        
-        // Update UI with profile data
-        const profileNameElement = document.getElementById('profile-name');
-        if (profileNameElement) {
-            profileNameElement.textContent = profile.full_name || 'User';
-        }
-        
-        const creatorBadge = document.getElementById('creator-badge');
-        if (creatorBadge) {
-            if (profile.role === 'creator') {
-                creatorBadge.style.display = 'inline-block';
-            } else {
-                creatorBadge.style.display = 'none';
-            }
-        }
-        
-        const profileUsernameElement = document.getElementById('profile-username');
-        if (profileUsernameElement) {
-            profileUsernameElement.textContent = profile.username ? `@${profile.username}` : '@user';
-        }
-        
-        // Truncate bio if too long
-        const bio = profile.bio || '';
-        const truncatedBio = bio.length > 120 ? bio.substring(0, 117) + '...' : bio;
-        const profileBioElement = document.getElementById('profile-bio');
-        if (profileBioElement) {
-            profileBioElement.textContent = truncatedBio;
-        }
-        
-        const initials = getInitials(profile.full_name || profile.email || 'User');
-        
-        // Set profile avatar - FIXED: Check if elements exist
-        const profileAvatarImg = document.getElementById('profile-avatar-img');
-        const profileAvatarInitials = document.getElementById('profile-avatar-initials');
-        
-        if (profileAvatarImg && profileAvatarInitials) {
-            if (profile.avatar_url) {
-                profileAvatarImg.src = profile.avatar_url;
-                profileAvatarImg.style.display = 'block';
-                profileAvatarInitials.style.display = 'none';
-            } else {
-                profileAvatarImg.style.display = 'none';
-                profileAvatarInitials.style.display = 'flex';
-                profileAvatarInitials.textContent = initials;
-            }
-        }
-        
-        // Load current user's profile for header
-        if (isViewingOwnProfile) {
-            currentUserProfile = profile;
-            
-            // Update header avatar - FIXED: Check if elements exist
-            const headerAvatarImg = document.getElementById('user-avatar-img');
-            const headerInitials = document.getElementById('avatar-initials');
-            
-            if (headerAvatarImg && headerInitials) {
-                if (profile.avatar_url) {
-                    headerAvatarImg.src = profile.avatar_url;
-                    headerAvatarImg.style.display = 'block';
-                    headerInitials.style.display = 'none';
-                } else {
-                    headerAvatarImg.style.display = 'none';
-                    headerInitials.style.display = 'flex';
-                    headerInitials.textContent = initials;
+            try {
+                // Load the profile being viewed
+                const { data: profile, error } = await supabaseClient
+                    .from('user_profiles')
+                    .select('*')
+                    .eq('id', profileUserId)
+                    .single();
+                
+                if (error) throw error;
+                
+                currentViewProfile = profile;
+                
+                // Update UI with profile data
+                const profileNameElement = document.getElementById('profile-name');
+                if (profileNameElement) {
+                    profileNameElement.textContent = profile.full_name || 'User';
                 }
+                
+                const creatorBadge = document.getElementById('creator-badge');
+                if (creatorBadge) {
+                    if (profile.role === 'creator') {
+                        creatorBadge.style.display = 'inline-block';
+                    } else {
+                        creatorBadge.style.display = 'none';
+                    }
+                }
+                
+                const profileUsernameElement = document.getElementById('profile-username');
+                if (profileUsernameElement) {
+                    profileUsernameElement.textContent = profile.username ? `@${profile.username}` : '@user';
+                }
+                
+                // Truncate bio if too long
+                const bio = profile.bio || '';
+                const truncatedBio = bio.length > 120 ? bio.substring(0, 117) + '...' : bio;
+                const profileBioElement = document.getElementById('profile-bio');
+                if (profileBioElement) {
+                    profileBioElement.textContent = truncatedBio;
+                }
+                
+                const initials = getInitials(profile.full_name || profile.email || 'User');
+                
+                // Set profile avatar
+                const profileAvatarImg = document.getElementById('profile-avatar-img');
+                const profileAvatarInitials = document.getElementById('profile-avatar-initials');
+                
+                if (profileAvatarImg && profileAvatarInitials) {
+                    if (profile.avatar_url) {
+                        profileAvatarImg.src = profile.avatar_url;
+                        profileAvatarImg.style.display = 'block';
+                        profileAvatarInitials.style.display = 'none';
+                    } else {
+                        profileAvatarImg.style.display = 'none';
+                        profileAvatarInitials.style.display = 'flex';
+                        profileAvatarInitials.textContent = initials;
+                    }
+                }
+                
+                // Load current user's profile for header
+                if (isViewingOwnProfile) {
+                    currentUserProfile = profile;
+                    
+                    // Update header avatar
+                    const headerAvatarImg = document.getElementById('user-avatar-img');
+                    const headerInitials = document.getElementById('avatar-initials');
+                    
+                    if (headerAvatarImg && headerInitials) {
+                        if (profile.avatar_url) {
+                            headerAvatarImg.src = profile.avatar_url;
+                            headerAvatarImg.style.display = 'block';
+                            headerInitials.style.display = 'none';
+                        } else {
+                            headerAvatarImg.style.display = 'none';
+                            headerInitials.style.display = 'flex';
+                            headerInitials.textContent = initials;
+                        }
+                    }
+                    
+                    // Show edit button
+                    const profileEditBtn = document.getElementById('profileEditBtn');
+                    if (profileEditBtn) {
+                        profileEditBtn.style.display = 'block';
+                    }
+                    
+                    // Update action buttons for owner
+                    const connectBtn = document.getElementById('connectBtn');
+                    if (connectBtn) {
+                        connectBtn.innerHTML = '<i class="fas fa-cog"></i> Manage';
+                        connectBtn.onclick = () => {
+                            openEditModal();
+                        };
+                    }
+                } else {
+                    // Setup connection button for other users
+                    setupConnectionButton();
+                }
+                
+                // Load stats
+                await loadProfileStats();
+                
+            } catch (error) {
+                console.error('Error loading profile:', error);
+                showToast('Failed to load profile', 'error');
             }
-            
-            // Show edit button
-            const profileEditBtn = document.getElementById('profileEditBtn');
-            if (profileEditBtn) {
-                profileEditBtn.style.display = 'block';
-            }
-            
-            // Update action buttons for owner
-            const connectBtn = document.getElementById('connectBtn');
-            if (connectBtn) {
-                connectBtn.innerHTML = '<i class="fas fa-cog"></i> Manage';
-                connectBtn.onclick = () => {
-                    document.getElementById('editModal').style.display = 'flex';
-                    document.getElementById('editName').value = profile.full_name || '';
-                    document.getElementById('editUsername').value = profile.username || '';
-                    document.getElementById('editBio').value = profile.bio || '';
-                    document.getElementById('editAvatar').value = profile.avatar_url || '';
-                };
-            }
-        } else {
-            // Setup connection button for other users
-            setupConnectionButton();
         }
         
-        // Load stats
-        await loadProfileStats();
-        
-    } catch (error) {
-        console.error('Error loading profile:', error);
-        showToast('Failed to load profile', 'error');
-    }
-}
         function getInitials(name) {
             if (!name) return 'U';
             return name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
@@ -1479,87 +1862,117 @@
         }
         
         function initializeEventListeners() {
-    // Tabs - FIXED: Add null check
-    const tabs = document.querySelectorAll('.tab');
-    if (tabs.length > 0) {
-        tabs.forEach(tab => {
-            tab.addEventListener('click', function() {
-                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-                this.classList.add('active');
-                
-                document.querySelectorAll('.tab-content').forEach(content => {
-                    content.classList.remove('active');
+            // Tabs
+            const tabs = document.querySelectorAll('.tab');
+            if (tabs.length > 0) {
+                tabs.forEach(tab => {
+                    tab.addEventListener('click', function() {
+                        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                        this.classList.add('active');
+                        
+                        document.querySelectorAll('.tab-content').forEach(content => {
+                            content.classList.remove('active');
+                        });
+                        
+                        const tabId = this.getAttribute('data-tab');
+                        const tabContent = document.getElementById(`${tabId}-tab`);
+                        if (tabContent) {
+                            tabContent.classList.add('active');
+                        }
+                        
+                        // Load appropriate content
+                        if (tabId === 'pulse') {
+                            loadPulses();
+                        } else if (tabId === 'series') {
+                            loadSeries();
+                        } else if (tabId === 'links') {
+                            loadLinks();
+                        } else if (tabId === 'timecapsule') {
+                            loadTimeCapsule();
+                        }
+                    });
                 });
-                
-                const tabId = this.getAttribute('data-tab');
-                const tabContent = document.getElementById(`${tabId}-tab`);
-                if (tabContent) {
-                    tabContent.classList.add('active');
-                }
-                
-                // Load appropriate content
-                if (tabId === 'pulse') {
-                    loadPulses();
-                } else if (tabId === 'series') {
-                    loadSeries();
-                } else if (tabId === 'links') {
-                    loadLinks();
-                }
-            });
-        });
-    }
-    
-    // Edit modal
-    const closeEditModal = document.getElementById('closeEditModal');
-    const cancelEdit = document.getElementById('cancelEdit');
-    
-    if (closeEditModal) {
-        closeEditModal.addEventListener('click', () => {
-            const editModal = document.getElementById('editModal');
-            if (editModal) {
-                editModal.style.display = 'none';
             }
-        });
-    }
-    
-    if (cancelEdit) {
-        cancelEdit.addEventListener('click', () => {
-            const editModal = document.getElementById('editModal');
-            if (editModal) {
-                editModal.style.display = 'none';
-            }
-        });
-    }
-    
-    // Save edit
-    const saveEditBtn = document.getElementById('saveEdit');
-    if (saveEditBtn) {
-        saveEditBtn.addEventListener('click', saveProfile);
-    }
-    
-    // Share button
-    const shareBtn = document.getElementById('shareBtn');
-    if (shareBtn) {
-        shareBtn.addEventListener('click', shareProfile);
-    }
-    
-    // Message button is hidden (per requirement 5)
-    const messageBtn = document.getElementById('messageBtn');
-    if (messageBtn) {
-        messageBtn.style.display = 'none';
-    }
-    
-    // Listen for auth changes
-    if (supabaseClient) {
-        supabaseClient.auth.onAuthStateChange((event, session) => {
-            console.log('🔐 Auth state changed:', event);
             
-            if (event === 'SIGNED_OUT') {
-                window.location.href = 'login.html';
+            // Edit modal
+            const closeEditModal = document.getElementById('closeEditModal');
+            const cancelEdit = document.getElementById('cancelEdit');
+            
+            if (closeEditModal) {
+                closeEditModal.addEventListener('click', () => {
+                    const editModal = document.getElementById('editModal');
+                    if (editModal) {
+                        editModal.style.display = 'none';
+                    }
+                });
             }
-        });
-    }
-}
+            
+            if (cancelEdit) {
+                cancelEdit.addEventListener('click', () => {
+                    const editModal = document.getElementById('editModal');
+                    if (editModal) {
+                        editModal.style.display = 'none';
+                    }
+                });
+            }
+            
+            // Save edit
+            const saveEditBtn = document.getElementById('saveEdit');
+            if (saveEditBtn) {
+                saveEditBtn.addEventListener('click', saveProfile);
+            }
+            
+            // Share button
+            const shareBtn = document.getElementById('shareBtn');
+            if (shareBtn) {
+                shareBtn.addEventListener('click', shareProfile);
+            }
+            
+            // Message button is hidden (per requirement 5)
+            const messageBtn = document.getElementById('messageBtn');
+            if (messageBtn) {
+                messageBtn.style.display = 'none';
+            }
+            
+            // Listen for auth changes
+            if (supabaseClient) {
+                supabaseClient.auth.onAuthStateChange((event, session) => {
+                    console.log('🔐 Auth state changed:', event);
+                    
+                    if (event === 'SIGNED_OUT') {
+                        window.location.href = 'login.html';
+                    }
+                });
+            }
+        }
+        
+        function openEditModal() {
+            const editModal = document.getElementById('editModal');
+            const profile = currentViewProfile;
+            
+            // Set form values
+            document.getElementById('editName').value = profile.full_name || '';
+            document.getElementById('editUsername').value = profile.username || '';
+            document.getElementById('editBio').value = profile.bio || '';
+            document.getElementById('editAvatar').value = profile.avatar_url || '';
+            
+            // Set avatar preview
+            const avatarPreviewImg = document.getElementById('avatarPreviewImg');
+            const avatarPreviewInitials = document.getElementById('avatarPreviewInitials');
+            
+            if (profile.avatar_url) {
+                avatarPreviewImg.src = profile.avatar_url;
+                avatarPreviewImg.style.display = 'block';
+                avatarPreviewInitials.style.display = 'none';
+            } else {
+                const initials = getInitials(profile.full_name || profile.email || 'User');
+                avatarPreviewImg.style.display = 'none';
+                avatarPreviewInitials.style.display = 'flex';
+                avatarPreviewInitials.textContent = initials;
+            }
+            
+            editModal.style.display = 'flex';
+        }
         
         async function setupConnectionButton() {
             const isConnected = await checkConnectionStatus();
@@ -1754,8 +2167,9 @@
                         pulseItem.prepend(captionPreview);
                     }
                     
+                    // FIX 1: Redirect to pulse-content-detail.html when clicked
                     pulseItem.addEventListener('click', () => {
-                        viewPulse(pulse.id);
+                        window.location.href = `pulse-content-detail.html?id=${pulse.id}`;
                     });
                     
                     container.appendChild(pulseItem);
@@ -1764,65 +2178,6 @@
             } catch (error) {
                 console.error('Error loading pulses:', error);
                 showToast('Failed to load pulses', 'error');
-            }
-        }
-        
-        async function uploadPulseCover(pulseId) {
-            try {
-                // Create file input
-                const input = document.createElement('input');
-                input.type = 'file';
-                input.accept = 'image/*';
-                input.onchange = async (e) => {
-                    const file = e.target.files[0];
-                    if (!file) return;
-                    
-                    // Validate file
-                    if (!file.type.startsWith('image/')) {
-                        showToast('Please select an image file', 'error');
-                        return;
-                    }
-                    
-                    if (file.size > 5 * 1024 * 1024) { // 5MB limit
-                        showToast('Image must be less than 5MB', 'error');
-                        return;
-                    }
-                    
-                    // Upload to Supabase storage
-                    const fileExt = file.name.split('.').pop();
-                    const fileName = `${pulseId}-${Date.now()}.${fileExt}`;
-                    const filePath = `pulse-covers/${fileName}`;
-                    
-                    const { error: uploadError } = await supabaseClient.storage
-                        .from('series-covers')
-                        .upload(filePath, file);
-                    
-                    if (uploadError) throw uploadError;
-                    
-                    // Get public URL
-                    const { data: { publicUrl } } = supabaseClient.storage
-                        .from('series-covers')
-                        .getPublicUrl(filePath);
-                    
-                    // Update pulse with cover image
-                    const { error: updateError } = await supabaseClient
-                        .from('pulses')
-                        .update({ media_url: publicUrl, media_type: 'image' })
-                        .eq('id', pulseId);
-                    
-                    if (updateError) throw updateError;
-                    
-                    showToast('Cover image uploaded successfully!', 'success');
-                    
-                    // Reload pulses
-                    loadPulses();
-                };
-                
-                input.click();
-                
-            } catch (error) {
-                console.error('Error uploading cover:', error);
-                showToast('Failed to upload cover image', 'error');
             }
         }
         
@@ -1879,8 +2234,29 @@
                         </div>
                     `;
                     
-                    seriesCard.addEventListener('click', () => {
-                        viewSeries(s.id);
+                    // FIX 1: Get first pulse in series and redirect to it
+                    seriesCard.addEventListener('click', async () => {
+                        try {
+                            // Get the first pulse in this series
+                            const { data: firstPulse, error: pulseError } = await supabaseClient
+                                .from('pulses')
+                                .select('id')
+                                .eq('series_id', s.id)
+                                .order('series_order', { ascending: true })
+                                .limit(1)
+                                .single();
+                            
+                            if (pulseError || !firstPulse) {
+                                showToast('No pulses in this series yet', 'error');
+                                return;
+                            }
+                            
+                            // Redirect to the first pulse detail
+                            window.location.href = `pulse-content-detail.html?id=${firstPulse.id}`;
+                        } catch (error) {
+                            console.error('Error loading series pulse:', error);
+                            showToast('Could not open series', 'error');
+                        }
                     });
                     
                     container.appendChild(seriesCard);
@@ -1952,8 +2328,9 @@
                         </div>
                     `;
                     
+                    // FIX 1: Redirect to pulse detail for linked content
                     linkCard.addEventListener('click', () => {
-                        viewLinkedContent(pulse.linked_content_id);
+                        window.location.href = `pulse-content-detail.html?id=${pulse.id}`;
                     });
                     
                     container.appendChild(linkCard);
@@ -1962,6 +2339,341 @@
             } catch (error) {
                 console.error('Error loading links:', error);
             }
+        }
+        
+        // FEATURE 1: Pulse Identity Ring Functions
+        async function initializePulseIdentityRing() {
+            try {
+                const ring = document.getElementById('profile-avatar-ring');
+                if (!ring) return;
+                
+                // Check user activity in the last 12 hours
+                const twelveHoursAgo = new Date();
+                twelveHoursAgo.setHours(twelveHoursAgo.getHours() - 12);
+                
+                // Check for recent pulses
+                const { data: recentPulses } = await supabaseClient
+                    .from('pulses')
+                    .select('id')
+                    .eq('user_id', currentUserId)
+                    .gte('created_at', twelveHoursAgo.toISOString())
+                    .limit(1);
+                
+                // Check for recent engagements (comments, saves)
+                const { data: recentEngagements } = await supabaseClient
+                    .from('pulse_interactions')
+                    .select('id')
+                    .eq('target_user_id', currentUserId)
+                    .gte('created_at', twelveHoursAgo.toISOString())
+                    .limit(1);
+                
+                const isActiveToday = recentPulses && recentPulses.length > 0;
+                const isReceivingAttention = recentEngagements && recentEngagements.length > 0;
+                
+                // Set ring state
+                if (isActiveToday && isReceivingAttention) {
+                    ring.className = 'profile-avatar-ring receiving-attention';
+                } else if (isActiveToday) {
+                    ring.className = 'profile-avatar-ring active-today';
+                } else {
+                    ring.className = 'profile-avatar-ring inactive';
+                }
+                
+            } catch (error) {
+                console.error('Error initializing pulse identity ring:', error);
+                // Default to inactive state
+                const ring = document.getElementById('profile-avatar-ring');
+                if (ring) {
+                    ring.className = 'profile-avatar-ring inactive';
+                }
+            }
+        }
+        
+        // FEATURE 2: Time Capsule Functions
+        async function loadTimeCapsule() {
+            if (!isViewingOwnProfile) return;
+            
+            try {
+                const container = document.getElementById('memoryCardsContainer');
+                if (!container) return;
+                
+                container.innerHTML = '<div class="empty-state"><div class="spinner" style="margin: 0 auto 20px;"></div><div>Loading your journey...</div></div>';
+                
+                const memoryCards = [];
+                
+                // Get user's first pulse
+                const { data: firstPulse } = await supabaseClient
+                    .from('pulses')
+                    .select('*')
+                    .eq('user_id', currentUserId)
+                    .is('deleted_at', null)
+                    .order('created_at', { ascending: true })
+                    .limit(1)
+                    .single();
+                
+                if (firstPulse) {
+                    memoryCards.push({
+                        type: 'first_pulse',
+                        title: 'Your First Pulse',
+                        icon: 'fas fa-star',
+                        content: firstPulse.caption ? 
+                            (firstPulse.caption.length > 80 ? firstPulse.caption.substring(0, 77) + '...' : firstPulse.caption) : 
+                            'Your very first cultural moment',
+                        date: new Date(firstPulse.created_at),
+                        stats: {
+                            likes: firstPulse.likes_count || 0,
+                            comments: firstPulse.comments_count || 0
+                        }
+                    });
+                }
+                
+                // Get most saved pulse
+                const { data: mostSavedPulse } = await supabaseClient
+                    .from('pulses')
+                    .select('*, pulse_saves(count)')
+                    .eq('user_id', currentUserId)
+                    .is('deleted_at', null)
+                    .order('pulse_saves.count', { ascending: false })
+                    .limit(1)
+                    .single();
+                
+                if (mostSavedPulse && mostSavedPulse.pulse_saves && mostSavedPulse.pulse_saves[0]) {
+                    memoryCards.push({
+                        type: 'most_saved',
+                        title: 'Most Saved Pulse',
+                        icon: 'fas fa-bookmark',
+                        content: mostSavedPulse.caption ? 
+                            (mostSavedPulse.caption.length > 80 ? mostSavedPulse.caption.substring(0, 77) + '...' : mostSavedPulse.caption) : 
+                            'Most treasured by your community',
+                        date: new Date(mostSavedPulse.created_at),
+                        stats: {
+                            saves: mostSavedPulse.pulse_saves[0].count || 0,
+                            likes: mostSavedPulse.likes_count || 0
+                        }
+                    });
+                }
+                
+                // Get first series followed
+                const { data: firstFollowedSeries } = await supabaseClient
+                    .from('series_follows')
+                    .select('*, pulse_series!inner(title)')
+                    .eq('user_id', currentUserId)
+                    .order('created_at', { ascending: true })
+                    .limit(1)
+                    .single();
+                
+                if (firstFollowedSeries && firstFollowedSeries.pulse_series) {
+                    memoryCards.push({
+                        type: 'first_followed',
+                        title: 'First Series You Followed',
+                        icon: 'fas fa-heart',
+                        content: firstFollowedSeries.pulse_series.title || 'Your first followed series',
+                        date: new Date(firstFollowedSeries.created_at)
+                    });
+                }
+                
+                // Get total pulses count
+                const { data: pulsesCountData } = await supabaseClient
+                    .from('pulses')
+                    .select('id', { count: 'exact' })
+                    .eq('user_id', currentUserId)
+                    .is('deleted_at', null);
+                
+                if (pulsesCountData) {
+                    memoryCards.push({
+                        type: 'milestone',
+                        title: 'Cultural Moments Shared',
+                        icon: 'fas fa-mountain',
+                        content: `You've shared ${pulsesCountData.length || 0} pulses with your community`,
+                        date: new Date()
+                    });
+                }
+                
+                // Get join date
+                const { data: userProfile } = await supabaseClient
+                    .from('user_profiles')
+                    .select('created_at')
+                    .eq('id', currentUserId)
+                    .single();
+                
+                if (userProfile) {
+                    const joinDate = new Date(userProfile.created_at);
+                    const now = new Date();
+                    const months = (now.getFullYear() - joinDate.getFullYear()) * 12 + (now.getMonth() - joinDate.getMonth());
+                    
+                    memoryCards.push({
+                        type: 'anniversary',
+                        title: 'Pulse Journey',
+                        icon: 'fas fa-calendar',
+                        content: `You've been sharing cultural moments for ${months} month${months !== 1 ? 's' : ''}`,
+                        date: joinDate
+                    });
+                }
+                
+                // Display memory cards
+                if (memoryCards.length === 0) {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-icon">
+                                <i class="fas fa-time-capsule"></i>
+                            </div>
+                            <div class="empty-title">No Journey Data Yet</div>
+                            <div class="empty-description">
+                                Start creating pulses to build your personal archive!
+                            </div>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                container.innerHTML = '';
+                
+                memoryCards.forEach(card => {
+                    const memoryCard = document.createElement('div');
+                    memoryCard.className = 'memory-card';
+                    
+                    let statsHTML = '';
+                    if (card.stats) {
+                        const statItems = [];
+                        if (card.stats.likes !== undefined) {
+                            statItems.push(`<span class="memory-card-stat"><i class="fas fa-heart"></i> ${card.stats.likes}</span>`);
+                        }
+                        if (card.stats.comments !== undefined) {
+                            statItems.push(`<span class="memory-card-stat"><i class="fas fa-comment"></i> ${card.stats.comments}</span>`);
+                        }
+                        if (card.stats.saves !== undefined) {
+                            statItems.push(`<span class="memory-card-stat"><i class="fas fa-bookmark"></i> ${card.stats.saves}</span>`);
+                        }
+                        statsHTML = `<div class="memory-card-stats">${statItems.join('')}</div>`;
+                    }
+                    
+                    memoryCard.innerHTML = `
+                        <div class="memory-card-title">
+                            <i class="${card.icon}"></i>
+                            ${card.title}
+                        </div>
+                        <div class="memory-card-content">
+                            ${card.content}
+                        </div>
+                        <div class="memory-card-meta">
+                            <span class="memory-card-date">
+                                <i class="far fa-calendar"></i>
+                                ${card.date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
+                            </span>
+                            ${statsHTML}
+                        </div>
+                    `;
+                    
+                    container.appendChild(memoryCard);
+                });
+                
+            } catch (error) {
+                console.error('Error loading time capsule:', error);
+                const container = document.getElementById('memoryCardsContainer');
+                if (container) {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-title">Couldn't Load Journey</div>
+                            <div class="empty-description">
+                                Please try again later
+                            </div>
+                        </div>
+                    `;
+                }
+            }
+        }
+        
+        // Profile Picture Upload Functions
+        function triggerAvatarUpload() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'image/*';
+            input.onchange = handleAvatarUpload;
+            input.click();
+        }
+        
+        async function handleAvatarUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            // Validate file
+            if (!file.type.startsWith('image/')) {
+                showToast('Please select an image file', 'error');
+                return;
+            }
+            
+            if (file.size > 5 * 1024 * 1024) { // 5MB limit
+                showToast('Image must be less than 5MB', 'error');
+                return;
+            }
+            
+            // Show preview
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const avatarPreviewImg = document.getElementById('avatarPreviewImg');
+                const avatarPreviewInitials = document.getElementById('avatarPreviewInitials');
+                
+                avatarPreviewImg.src = e.target.result;
+                avatarPreviewImg.style.display = 'block';
+                avatarPreviewInitials.style.display = 'none';
+                
+                // Store file for upload
+                profileAvatarFile = file;
+                
+                // Upload to Supabase
+                uploadAvatarToSupabase(file);
+            };
+            reader.readAsDataURL(file);
+        }
+        
+        async function uploadAvatarToSupabase(file) {
+            try {
+                showToast('Uploading profile picture...', 'success');
+                
+                // Upload to Supabase storage
+                const fileExt = file.name.split('.').pop();
+                const fileName = `${currentUserId}-${Date.now()}.${fileExt}`;
+                const filePath = `profile-avatars/${fileName}`;
+                
+                const { error: uploadError } = await supabaseClient.storage
+                    .from('avatars')
+                    .upload(filePath, file, {
+                        upsert: true
+                    });
+                
+                if (uploadError) throw uploadError;
+                
+                // Get public URL
+                const { data: { publicUrl } } = supabaseClient.storage
+                    .from('avatars')
+                    .getPublicUrl(filePath);
+                
+                // Update avatar URL in form
+                document.getElementById('editAvatar').value = publicUrl;
+                
+                showToast('Profile picture uploaded!', 'success');
+                
+            } catch (error) {
+                console.error('Error uploading avatar:', error);
+                showToast('Failed to upload profile picture', 'error');
+            }
+        }
+        
+        function removeProfilePicture() {
+            const avatarPreviewImg = document.getElementById('avatarPreviewImg');
+            const avatarPreviewInitials = document.getElementById('avatarPreviewInitials');
+            const profile = currentViewProfile;
+            const initials = getInitials(profile.full_name || profile.email || 'User');
+            
+            avatarPreviewImg.style.display = 'none';
+            avatarPreviewInitials.style.display = 'flex';
+            avatarPreviewInitials.textContent = initials;
+            
+            // Clear avatar URL
+            document.getElementById('editAvatar').value = '';
+            profileAvatarFile = null;
+            
+            showToast('Profile picture removed', 'success');
         }
         
         async function saveProfile() {
@@ -2022,20 +2734,18 @@
             }
         }
         
+        // These functions are kept for compatibility but redirect to detail page
         function viewPulse(pulseId) {
-            // Open pulse in new tab or modal
-            window.location.href = `pulse-detail.html?id=${pulseId}`;
+            window.location.href = `pulse-content-detail.html?id=${pulseId}`;
         }
         
         function viewSeries(seriesId) {
-            // Open series in new tab or modal
-            window.location.href = `series-detail.html?id=${seriesId}`;
+            // This will now be handled by the series card click event
+            showToast('Click on a series to view its content', 'info');
         }
         
         function viewLinkedContent(contentId) {
-            // Open linked content
             showToast('Opening content...', 'success');
-            // Implementation depends on your content system
         }
         
         function viewPulses() {
@@ -2053,7 +2763,6 @@
         }
         
         function viewConnectors() {
-            // Show connectors list
             showToast('Connectors list feature coming soon!', 'success');
         }
         
