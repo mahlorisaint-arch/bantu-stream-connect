@@ -451,6 +451,65 @@
             margin-top: 4px;
         }
         
+        /* Connect Button - Gold outline circle */
+        .pulse-connect-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: transparent;
+            border: 2px solid var(--warm-gold);
+            color: var(--warm-gold);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-left: 8px;
+            font-size: 16px;
+            position: relative;
+            z-index: 10;
+        }
+        
+        .pulse-connect-btn:hover {
+            background: rgba(245, 158, 11, 0.1);
+            transform: scale(1.1);
+        }
+        
+        .pulse-connect-btn.connected {
+            border-color: var(--success-color);
+            color: var(--success-color);
+            background: rgba(16, 185, 129, 0.1);
+        }
+        
+        .pulse-connect-btn.connecting {
+            animation: connectPulse 0.6s ease;
+            border-color: var(--bantu-blue);
+            color: var(--bantu-blue);
+        }
+        
+        @keyframes connectPulse {
+            0% {
+                transform: scale(1);
+                border-color: var(--warm-gold);
+                color: var(--warm-gold);
+            }
+            33% {
+                transform: scale(1.2);
+                border-color: var(--bantu-blue);
+                color: var(--bantu-blue);
+            }
+            66% {
+                transform: scale(1.1);
+                border-color: var(--bantu-blue);
+                color: var(--bantu-blue);
+            }
+            100% {
+                transform: scale(1);
+                border-color: var(--success-color);
+                color: var(--success-color);
+            }
+        }
+        
         /* More options button for user's own pulses */
         .pulse-more-options {
             position: absolute;
@@ -464,6 +523,7 @@
             padding: 8px;
             border-radius: 8px;
             transition: all 0.3s ease;
+            z-index: 10;
         }
         
         .pulse-more-options:hover {
@@ -1418,6 +1478,7 @@
         let editingSeriesId = null;
         let editingSeriesTitle = null;
         let editingPulseData = null;
+        let userConnections = new Set(); // Store connected user IDs
 
         async function initialize() {
             console.log('Starting Pulse Feed initialization...');
@@ -1452,6 +1513,9 @@
                 
                 // Load user profile with avatar
                 await loadUserProfile();
+                
+                // Fetch user connections
+                await fetchUserConnections();
                 
                 // Fetch notifications
                 await fetchNotifications();
@@ -1634,6 +1698,124 @@
                     document.getElementById('modal-avatar').querySelector('span').textContent = initials;
                     document.getElementById('edit-modal-avatar').querySelector('span').textContent = initials;
                 }
+            }
+        }
+        
+        // ✅ NEW: FETCH USER CONNECTIONS
+        async function fetchUserConnections() {
+            try {
+                const { data: { session } } = await supabaseClient.auth.getSession();
+                if (!session) return;
+                
+                // Fetch connections where current user is the connector
+                const { data: connections, error } = await supabaseClient
+                    .from('connectors')
+                    .select('connected_id')
+                    .eq('connector_id', session.user.id);
+                
+                if (error) {
+                    console.error('Error fetching connections:', error);
+                    return;
+                }
+                
+                // Store connected user IDs in a Set for quick lookup
+                userConnections = new Set();
+                if (connections) {
+                    connections.forEach(connection => {
+                        userConnections.add(connection.connected_id);
+                    });
+                }
+                
+                console.log('User connections loaded:', userConnections.size);
+                
+            } catch (error) {
+                console.error('Error loading user connections:', error);
+            }
+        }
+        
+        // ✅ NEW: HANDLE CONNECT BUTTON CLICK
+        async function handleConnect(pulseCreatorId, connectBtn) {
+            try {
+                const { data: { session } } = await supabaseClient.auth.getSession();
+                if (!session) {
+                    showToast('Please login to connect with creators', 'error');
+                    return;
+                }
+                
+                // Don't allow connecting to yourself
+                if (pulseCreatorId === session.user.id) {
+                    showToast('You cannot connect with yourself', 'error');
+                    return;
+                }
+                
+                // Check if already connected
+                const isConnected = userConnections.has(pulseCreatorId);
+                
+                // Add connecting animation
+                connectBtn.classList.add('connecting');
+                connectBtn.disabled = true;
+                
+                if (isConnected) {
+                    // Disconnect: Delete the connection
+                    const { error } = await supabaseClient
+                        .from('connectors')
+                        .delete()
+                        .eq('connector_id', session.user.id)
+                        .eq('connected_id', pulseCreatorId);
+                    
+                    if (error) throw error;
+                    
+                    // Remove from local connections
+                    userConnections.delete(pulseCreatorId);
+                    
+                    // Update button state after animation
+                    setTimeout(() => {
+                        connectBtn.classList.remove('connected');
+                        connectBtn.classList.remove('connecting');
+                        connectBtn.innerHTML = '<i class="fas fa-user-plus"></i>';
+                        connectBtn.disabled = false;
+                    }, 600);
+                    
+                    showToast('Disconnected from creator', 'success');
+                } else {
+                    // Connect: Create new connection
+                    const { error } = await supabaseClient
+                        .from('connectors')
+                        .insert({
+                            connector_id: session.user.id,
+                            connected_id: pulseCreatorId,
+                            connection_type: 'creator',
+                            created_at: new Date().toISOString()
+                        });
+                    
+                    if (error) {
+                        // Check if it's a duplicate error (23505)
+                        if (error.code === '23505') {
+                            // Already connected, just update UI
+                            userConnections.add(pulseCreatorId);
+                        } else {
+                            throw error;
+                        }
+                    } else {
+                        userConnections.add(pulseCreatorId);
+                    }
+                    
+                    // Update button state after animation
+                    setTimeout(() => {
+                        connectBtn.classList.add('connected');
+                        connectBtn.classList.remove('connecting');
+                        connectBtn.innerHTML = '<i class="fas fa-user-check"></i>';
+                        connectBtn.disabled = false;
+                    }, 600);
+                    
+                    showToast('Connected with creator!', 'success');
+                }
+                
+            } catch (error) {
+                console.error('Error handling connection:', error);
+                connectBtn.classList.remove('connecting');
+                connectBtn.disabled = false;
+                showToast('Failed to update connection', 'error');
             }
         }
         
@@ -2185,7 +2367,7 @@
         
         // ✅ FIXED: HANDLE DELETE PULSE - UPDATED TO WORK WITH RLS
         async function handleDelete(pulseId) {
-            if (!confirm('Are you sure you want to delete this pulse? This action cannot be undone.')) {
+            if (!confirm('Are you sure you want to PERMANENTLY delete this pulse? This action cannot be undone.')) {
                 return;
             }
             
@@ -2790,7 +2972,7 @@
                 });
             }
             
-            // ✅ UPDATED: CREATE PULSE CARD ELEMENT WITH LIKE STATE
+            // ✅ UPDATED: CREATE PULSE CARD ELEMENT WITH LIKE STATE AND CONNECT BUTTON
             function createPulseCard(pulse, likedPulses) {
                 // Get user info from combined data
                 const profile = pulse.user_profiles || {};
@@ -2806,6 +2988,7 @@
                 const mediaType = pulse.media_type;
                 const isOwnPulse = pulse.user_id === currentUserId;
                 const isLiked = likedPulses.has(pulse.id);
+                const isConnected = userConnections.has(pulse.user_id);
                 
                 const card = document.createElement('div');
                 card.className = 'pulse-card';
@@ -2813,12 +2996,26 @@
                 
                 // Add click event to view pulse detail
                 card.addEventListener('click', (e) => {
-                    // Don't trigger if clicking on action buttons or more options
-                    if (!e.target.closest('.action-button') && !e.target.closest('.pulse-more-options') && 
+                    // Don't trigger if clicking on action buttons, connect button, or more options
+                    if (!e.target.closest('.action-button') && 
+                        !e.target.closest('.pulse-connect-btn') &&
+                        !e.target.closest('.pulse-more-options') && 
                         !e.target.closest('.pulse-options-menu')) {
                         viewPulseDetail(pulse.id);
                     }
                 });
+                
+                // Create connect button HTML (only if not own pulse)
+                let connectBtnHTML = '';
+                if (!isOwnPulse) {
+                    const connectIcon = isConnected ? 'fa-user-check' : 'fa-user-plus';
+                    const connectClass = isConnected ? 'connected' : '';
+                    connectBtnHTML = `
+                        <button class="pulse-connect-btn ${connectClass}" data-creator-id="${pulse.user_id}">
+                            <i class="fas ${connectIcon}"></i>
+                        </button>
+                    `;
+                }
                 
                 let moreOptionsHTML = '';
                 if (isOwnPulse) {
@@ -2852,6 +3049,7 @@
                             </div>
                             <div class="pulse-time">${username ? `@${username} • ` : ''}${timeAgo}</div>
                         </div>
+                        ${connectBtnHTML}
                         ${moreOptionsHTML}
                     </div>
                     
@@ -2918,6 +3116,16 @@
                 likeBtn.addEventListener('click', (e) => handleLike(pulse.id, e));
                 commentBtn.addEventListener('click', (e) => handleComment(pulse.id, e));
                 shareBtn.addEventListener('click', (e) => handleShare(pulse.id, e));
+                
+                // Add event listener for connect button if it exists
+                const connectBtn = card.querySelector('.pulse-connect-btn');
+                if (connectBtn) {
+                    connectBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        const creatorId = connectBtn.getAttribute('data-creator-id');
+                        handleConnect(creatorId, connectBtn);
+                    });
+                }
                 
                 // Add event listeners for more options if it's the user's own pulse
                 if (isOwnPulse) {
