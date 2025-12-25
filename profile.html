@@ -441,6 +441,33 @@
             transform: translateY(-2px);
         }
         
+        /* Log Out Button - Glassmorphism */
+        .logout-btn {
+            position: absolute;
+            top: 20px;
+            right: 16px;
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: var(--error-color);
+            font-size: 14px;
+            cursor: pointer;
+            padding: 8px 16px;
+            border-radius: 10px;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .logout-btn:hover {
+            color: white;
+            background: rgba(239, 68, 68, 0.3);
+            border-color: var(--error-color);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(239, 68, 68, 0.2);
+        }
+        
         /* Stats Row - Glassmorphism */
         .stats-row {
             display: flex;
@@ -1254,29 +1281,6 @@
             font-size: 20px;
         }
         
-        /* Profile Edit Button - Glassmorphism */
-        .profile-edit-btn {
-            position: absolute;
-            top: 20px;
-            right: 16px;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid var(--glass-border);
-            color: var(--slate-grey);
-            font-size: 14px;
-            cursor: pointer;
-            padding: 8px 16px;
-            border-radius: 10px;
-            transition: all 0.3s ease;
-            backdrop-filter: blur(10px);
-        }
-        
-        .profile-edit-btn:hover {
-            color: var(--soft-white);
-            background: rgba(255, 255, 255, 0.1);
-            border-color: var(--warm-gold);
-            transform: translateY(-2px);
-        }
-        
         /* Custom Scrollbar */
         ::-webkit-scrollbar {
             width: 8px;
@@ -1328,6 +1332,13 @@
             
             .profile-name {
                 font-size: 18px;
+            }
+            
+            .logout-btn {
+                top: 16px;
+                right: 12px;
+                padding: 6px 12px;
+                font-size: 13px;
             }
             
             .modal {
@@ -1488,9 +1499,9 @@
                 </div>
             </div>
             
-            <!-- Edit Button (Owner Only) -->
-            <button class="profile-edit-btn" id="profileEditBtn" style="display: none;">
-                <i class="fas fa-edit"></i> Edit
+            <!-- Log Out Button (Owner Only) - Changed from Edit to Log Out -->
+            <button class="logout-btn" id="logoutBtn" style="display: none;">
+                <i class="fas fa-sign-out-alt"></i> Log Out
             </button>
             
             <!-- Action Row -->
@@ -1915,14 +1926,14 @@
                     }
                 }
                 
-                // Show edit button for own profile
+                // Show log out button for own profile
                 if (isViewingOwnProfile) {
-                    const profileEditBtn = document.getElementById('profileEditBtn');
-                    if (profileEditBtn) {
-                        profileEditBtn.style.display = 'block';
+                    const logoutBtn = document.getElementById('logoutBtn');
+                    if (logoutBtn) {
+                        logoutBtn.style.display = 'flex';
                     }
                     
-                    // Update action buttons for owner
+                    // Update action buttons for owner - Manage button opens edit modal
                     const connectBtn = getElement('connectBtn');
                     if (connectBtn) {
                         connectBtn.innerHTML = '<i class="fas fa-cog"></i> Manage';
@@ -2046,6 +2057,12 @@
                 });
             }
             
+            // Log Out button
+            const logoutBtn = document.getElementById('logoutBtn');
+            if (logoutBtn) {
+                logoutBtn.addEventListener('click', handleLogout);
+            }
+            
             // Edit modal
             const closeEditModal = document.getElementById('closeEditModal');
             const cancelEdit = document.getElementById('cancelEdit');
@@ -2100,6 +2117,50 @@
                         }
                     }
                 });
+            }
+        }
+        
+        // Log Out Function
+        async function handleLogout() {
+            try {
+                // Show confirmation dialog
+                if (!confirm('Are you sure you want to log out?')) {
+                    return;
+                }
+                
+                // Show loading state
+                const logoutBtn = document.getElementById('logoutBtn');
+                if (logoutBtn) {
+                    logoutBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Logging out...';
+                    logoutBtn.disabled = true;
+                }
+                
+                // Sign out from Supabase
+                const { error } = await supabaseClient.auth.signOut();
+                
+                if (error) {
+                    throw error;
+                }
+                
+                // Show success message
+                showToast('Successfully logged out!', 'success');
+                
+                // Redirect to login page after a short delay
+                setTimeout(() => {
+                    window.location.href = 'login.html';
+                }, 1500);
+                
+            } catch (error) {
+                console.error('Error logging out:', error);
+                
+                // Reset logout button
+                const logoutBtn = document.getElementById('logoutBtn');
+                if (logoutBtn) {
+                    logoutBtn.innerHTML = '<i class="fas fa-sign-out-alt"></i> Log Out';
+                    logoutBtn.disabled = false;
+                }
+                
+                showToast('Failed to log out. Please try again.', 'error');
             }
         }
         
@@ -2973,9 +3034,9 @@
             safeSetText(getElement('profile-username'), '@sampleuser');
             
             if (isViewingOwnProfile) {
-                const editBtn = getElement('profileEditBtn');
-                if (editBtn) {
-                    safeSetStyle(editBtn, 'display', 'block');
+                const logoutBtn = getElement('logoutBtn');
+                if (logoutBtn) {
+                    logoutBtn.style.display = 'flex';
                 }
             }
             
