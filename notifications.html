@@ -39,6 +39,9 @@
             --hover-overlay: rgba(255, 255, 255, 0.05);
             --unread-bg: rgba(245, 158, 11, 0.08);
             --unread-border: rgba(245, 158, 11, 0.3);
+            --soft-indigo: rgba(79, 70, 229, 0.1);
+            --indigo-border: rgba(79, 70, 229, 0.3);
+            --indigo-glow: rgba(79, 70, 229, 0.2);
         }
         
         * {
@@ -308,6 +311,149 @@
         .notifications-list {
             display: flex;
             flex-direction: column;
+        }
+        
+        /* Founder Welcome Notification (Pinned at top) */
+        .founder-welcome-notification {
+            background: var(--soft-indigo);
+            border-bottom: 1px solid var(--card-border);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            border-left: 3px solid #4F46E5;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+        
+        .founder-welcome-notification:hover {
+            background: rgba(79, 70, 229, 0.15);
+        }
+        
+        .founder-welcome-notification.unread {
+            background: rgba(79, 70, 229, 0.2);
+            border-left: 3px solid #6366F1;
+            box-shadow: inset 0 0 20px rgba(99, 102, 241, 0.1);
+        }
+        
+        .founder-welcome-content {
+            padding: 24px 20px;
+        }
+        
+        .founder-header {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+        
+        .founder-avatar {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #4F46E5, #7C3AED);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--soft-white);
+            font-weight: 600;
+            overflow: hidden;
+            position: relative;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 0 20px rgba(99, 102, 241, 0.3);
+        }
+        
+        .founder-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 50%;
+        }
+        
+        .founder-info {
+            flex: 1;
+        }
+        
+        .founder-name {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--soft-white);
+            margin-bottom: 4px;
+        }
+        
+        .founder-title {
+            font-size: 12px;
+            color: var(--slate-grey);
+            font-style: italic;
+        }
+        
+        .founder-message {
+            margin-bottom: 20px;
+        }
+        
+        .founder-message-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--soft-white);
+            margin-bottom: 12px;
+            line-height: 1.3;
+        }
+        
+        .founder-message-text {
+            font-size: 14px;
+            color: var(--soft-white);
+            line-height: 1.6;
+            margin-bottom: 12px;
+            opacity: 0.9;
+        }
+        
+        .founder-signature {
+            font-size: 14px;
+            color: var(--soft-white);
+            margin-top: 20px;
+            padding-top: 16px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            font-style: italic;
+        }
+        
+        .founder-signature-name {
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        
+        .founder-signature-title {
+            font-size: 12px;
+            color: var(--slate-grey);
+        }
+        
+        .founder-notification-meta {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: 16px;
+            font-size: 12px;
+            color: var(--slate-grey);
+        }
+        
+        .founder-notification-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .founder-unread-dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            background: #6366F1;
+            border-radius: 50%;
+            box-shadow: 0 0 8px rgba(99, 102, 241, 0.5);
+            animation: pulse-indigo 2s infinite;
+        }
+        
+        @keyframes pulse-indigo {
+            0% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.4); }
+            70% { box-shadow: 0 0 0 4px rgba(99, 102, 241, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0); }
         }
         
         /* Notification Item */
@@ -777,6 +923,19 @@
                 padding: 16px;
             }
             
+            .founder-welcome-content {
+                padding: 20px 16px;
+            }
+            
+            .founder-avatar {
+                width: 48px;
+                height: 48px;
+            }
+            
+            .founder-message-title {
+                font-size: 18px;
+            }
+            
             .notification-item {
                 padding: 12px;
             }
@@ -797,7 +956,8 @@
         /* Mobile Touch Actions */
         @media (hover: none) and (pointer: coarse) {
             .notification-item,
-            .grouped-notification {
+            .grouped-notification,
+            .founder-welcome-notification {
                 -webkit-tap-highlight-color: transparent;
             }
         }
@@ -919,6 +1079,260 @@
         .refresh-btn:active {
             transform: scale(0.95);
         }
+        
+        /* Hologram Hub Modal */
+        .hologram-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(10, 14, 18, 0.95);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 3000;
+            padding: 20px;
+        }
+        
+        .hologram-container {
+            width: 100%;
+            max-width: 800px;
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid rgba(99, 102, 241, 0.3);
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5),
+                        0 0 100px rgba(99, 102, 241, 0.2),
+                        inset 0 0 20px rgba(99, 102, 241, 0.1);
+            position: relative;
+            animation: hologramAppear 0.5s ease-out;
+        }
+        
+        @keyframes hologramAppear {
+            from {
+                opacity: 0;
+                transform: translateY(20px) scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+        
+        .hologram-header {
+            background: linear-gradient(90deg, rgba(15, 23, 42, 0.9), rgba(30, 64, 175, 0.2), rgba(15, 23, 42, 0.9));
+            padding: 30px;
+            text-align: center;
+            border-bottom: 1px solid rgba(99, 102, 241, 0.2);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .hologram-header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #6366F1, #8B5CF6, #EC4899, #6366F1, transparent);
+            animation: scanLine 3s linear infinite;
+        }
+        
+        @keyframes scanLine {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+        
+        .hologram-title {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--soft-white);
+            margin-bottom: 8px;
+            background: linear-gradient(90deg, #6366F1, #8B5CF6, #EC4899);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            font-family: 'Orbitron', sans-serif;
+            letter-spacing: 1px;
+        }
+        
+        .hologram-subtitle {
+            font-size: 14px;
+            color: var(--slate-grey);
+            font-style: italic;
+        }
+        
+        .hologram-content {
+            padding: 40px;
+            max-height: 70vh;
+            overflow-y: auto;
+        }
+        
+        .hologram-message-container {
+            background: rgba(15, 23, 42, 0.6);
+            border-radius: 16px;
+            padding: 30px;
+            border: 1px solid rgba(99, 102, 241, 0.2);
+            margin-bottom: 30px;
+            position: relative;
+        }
+        
+        .hologram-message-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            border-radius: 16px;
+            background: linear-gradient(45deg, transparent, rgba(99, 102, 241, 0.05), transparent);
+            pointer-events: none;
+        }
+        
+        .hologram-message-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--soft-white);
+            margin-bottom: 20px;
+            text-align: center;
+            line-height: 1.3;
+        }
+        
+        .hologram-message-text {
+            font-size: 16px;
+            color: var(--soft-white);
+            line-height: 1.7;
+            margin-bottom: 20px;
+            opacity: 0.9;
+        }
+        
+        .hologram-message-text.highlight {
+            background: rgba(99, 102, 241, 0.1);
+            padding: 15px;
+            border-radius: 10px;
+            border-left: 3px solid #6366F1;
+            margin: 20px 0;
+            font-style: italic;
+        }
+        
+        .hologram-signature {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(99, 102, 241, 0.3);
+            text-align: right;
+        }
+        
+        .hologram-signature-name {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--soft-white);
+            margin-bottom: 4px;
+        }
+        
+        .hologram-signature-title {
+            font-size: 14px;
+            color: var(--slate-grey);
+            font-style: italic;
+        }
+        
+        .hologram-footer {
+            padding: 30px;
+            text-align: center;
+            border-top: 1px solid rgba(99, 102, 241, 0.2);
+            background: rgba(15, 23, 42, 0.6);
+        }
+        
+        .hologram-close-btn {
+            background: linear-gradient(135deg, #6366F1, #4F46E5);
+            color: white;
+            border: none;
+            padding: 12px 40px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 4px 20px rgba(99, 102, 241, 0.3);
+        }
+        
+        .hologram-close-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 25px rgba(99, 102, 241, 0.4);
+        }
+        
+        .hologram-close-btn:active {
+            transform: translateY(0);
+        }
+        
+        /* Founder Info in Hologram */
+        .hologram-founder-info {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid rgba(99, 102, 241, 0.2);
+        }
+        
+        .hologram-founder-avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #4F46E5, #7C3AED);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 0 30px rgba(99, 102, 241, 0.4);
+        }
+        
+        .hologram-founder-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 50%;
+        }
+        
+        .hologram-founder-details {
+            flex: 1;
+        }
+        
+        .hologram-founder-name {
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--soft-white);
+            margin-bottom: 4px;
+        }
+        
+        .hologram-founder-role {
+            font-size: 14px;
+            color: var(--slate-grey);
+            margin-bottom: 8px;
+        }
+        
+        .hologram-founder-bio {
+            font-size: 14px;
+            color: var(--slate-grey);
+            line-height: 1.5;
+            font-style: italic;
+        }
+        
+        /* Tab Content */
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
     </style>
 </head>
 <body>
@@ -993,7 +1407,8 @@
             <!-- All Notifications Tab -->
             <div class="tab-content active" id="all-tab">
                 <div class="notifications-list" id="allNotifications">
-                    <!-- Notifications will be loaded here -->
+                    <!-- Founder Welcome Notification (will be inserted here) -->
+                    <!-- Other notifications will be loaded below -->
                 </div>
                 <div class="load-more" id="allLoadMore" style="display: none;">
                     <button class="load-more-btn" id="loadMoreAllBtn">
@@ -1101,6 +1516,60 @@
         </div>
     </div>
 
+    <!-- Hologram Hub Modal for Founder Message -->
+    <div id="hologramOverlay" class="hologram-overlay">
+        <div class="hologram-container">
+            <div class="hologram-header">
+                <h2 class="hologram-title">FOUNDER'S WELCOME</h2>
+                <div class="hologram-subtitle">Direct from the Founder's Hub</div>
+            </div>
+            
+            <div class="hologram-content">
+                <div class="hologram-founder-info">
+                    <div class="hologram-founder-avatar">
+                        <img id="hologramFounderAvatar" src="" alt="Founder">
+                    </div>
+                    <div class="hologram-founder-details">
+                        <div class="hologram-founder-name" id="hologramFounderName">Mahlori Mhlanga</div>
+                        <div class="hologram-founder-role" id="hologramFounderRole">Founder, Bantu Stream Connect & Pulse</div>
+                        <div class="hologram-founder-bio" id="hologramFounderBio">I create. There's beauty in creation and balance...</div>
+                    </div>
+                </div>
+                
+                <div class="hologram-message-container">
+                    <h3 class="hologram-message-title" id="hologramMessageTitle">Welcome to Bantu Connect Pulse 🇿🇦</h3>
+                    
+                    <div class="hologram-message-text">
+                        This platform was built with one belief at its core:<br>
+                        <strong>African stories deserve their own rhythm, space, and future.</strong>
+                    </div>
+                    
+                    <div class="hologram-message-text highlight">
+                        Whether you're here to create, discover, or connect.<br>
+                        <strong>You are part of something we're building together.</strong>
+                    </div>
+                    
+                    <div class="hologram-message-text">
+                        Thank you for being here from the beginning.<br>
+                        Your journey with us matters, and every story you share helps shape our collective narrative.
+                    </div>
+                    
+                    <div class="hologram-signature">
+                        <div class="hologram-signature-name" id="hologramSignatureName">Mahlori Mhlanga</div>
+                        <div class="hologram-signature-title" id="hologramSignatureTitle">Founder, Bantu Stream Connect & Pulse</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="hologram-footer">
+                <button class="hologram-close-btn" id="hologramCloseBtn">
+                    <i class="fas fa-times"></i>
+                    Close Hologram
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Toast Container -->
     <div id="toast-container" class="toast-container"></div>
 
@@ -1115,6 +1584,20 @@
         let currentNotificationId = null;
         let currentNotification = null;
         
+        // Founder details
+        const FOUNDER_ID = "328e3030-0d40-455e-9eb1-436ec98afd8b";
+        const FOUNDER_DETAILS = {
+            id: "328e3030-0d40-455e-9eb1-436ec98afd8b",
+            email: "mahlorisaint@gmail.com",
+            full_name: "Mahlori Mhlanga",
+            username: "mahlorisaint_34571",
+            role: "creator",
+            avatar_url: "https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/profile-pictures/328e3030-0d40-455e-9eb1-436ec98afd8b/profile/avatar_1762698232398",
+            created_at: "2025-12-21 10:38:31.67+00",
+            updated_at: "2025-12-22 11:18:13.022577+00",
+            bio: "I create. There's beauty in creation and balance..."
+        };
+
         // Real-time subscription for new notifications
         let notificationsSubscription = null;
 
@@ -1125,6 +1608,9 @@
             creator: [],
             system: []
         };
+        
+        // Founder welcome notification state
+        let founderWelcomeNotification = null;
         
         // Pagination
         let pagination = {
@@ -1163,6 +1649,9 @@
                 
                 // Load user profile
                 await loadUserProfile();
+                
+                // Check and create founder welcome notification
+                await checkAndCreateFounderWelcomeNotification();
                 
                 // Hide loading, show content
                 document.getElementById('loading').style.display = 'none';
@@ -1219,6 +1708,74 @@
                 
             } catch (error) {
                 console.error('Error loading user profile:', error);
+            }
+        }
+        
+        async function checkAndCreateFounderWelcomeNotification() {
+            try {
+                console.log('Checking for founder welcome notification...');
+                
+                // Check if user has already received the founder welcome notification
+                const { data: existingNotifications, error } = await supabaseClient
+                    .from('pulse_notifications')
+                    .select('*')
+                    .eq('target_user_id', currentUserId)
+                    .eq('type', 'founder_welcome')
+                    .eq('actor_id', FOUNDER_ID);
+                
+                if (error) {
+                    console.error('Error checking founder welcome notification:', error);
+                    return;
+                }
+                
+                if (existingNotifications && existingNotifications.length === 0) {
+                    console.log('Creating founder welcome notification...');
+                    
+                    // Create founder welcome notification
+                    const welcomeMessage = `Welcome to Bantu Connect Pulse 🇿🇦
+
+This platform was built with one belief at its core:
+African stories deserve their own rhythm, space, and future.
+
+Whether you're here to create, discover, or connect. You are part of something we're building together.
+
+Thank you for being here from the beginning.
+
+Mahlori Mhlanga
+Founder, Bantu Stream Connect & Pulse`;
+                    
+                    const { error: insertError } = await supabaseClient
+                        .from('pulse_notifications')
+                        .insert({
+                            type: 'founder_welcome',
+                            actor_id: FOUNDER_ID,
+                            target_user_id: currentUserId,
+                            message: 'Welcome to Bantu Connect Pulse',
+                            is_read: false,
+                            metadata: {
+                                title: 'Welcome to Bantu Connect Pulse',
+                                message: welcomeMessage,
+                                founder_name: FOUNDER_DETAILS.full_name,
+                                founder_username: FOUNDER_DETAILS.username,
+                                founder_avatar: FOUNDER_DETAILS.avatar_url,
+                                founder_bio: FOUNDER_DETAILS.bio,
+                                is_founder_message: true,
+                                priority: 'high'
+                            },
+                            created_at: new Date().toISOString()
+                        });
+                    
+                    if (insertError) {
+                        console.error('Error creating founder welcome notification:', insertError);
+                    } else {
+                        console.log('Founder welcome notification created successfully');
+                    }
+                } else {
+                    console.log('Founder welcome notification already exists');
+                }
+                
+            } catch (error) {
+                console.error('Error in founder welcome notification:', error);
             }
         }
         
@@ -1282,16 +1839,24 @@
             document.getElementById('loadMoreCreatorBtn')?.addEventListener('click', () => loadMoreNotifications('creator'));
             document.getElementById('loadMoreSystemBtn')?.addEventListener('click', () => loadMoreNotifications('system'));
             
+            // Hologram modal
+            document.getElementById('hologramCloseBtn').addEventListener('click', closeHologramModal);
+            document.getElementById('hologramOverlay').addEventListener('click', function(e) {
+                if (e.target === this) {
+                    closeHologramModal();
+                }
+            });
+            
             // Mobile long press support
             if ('ontouchstart' in window) {
                 let pressTimer;
                 
                 document.addEventListener('touchstart', function(e) {
-                    const item = e.target.closest('.notification-item, .grouped-notification');
+                    const item = e.target.closest('.notification-item, .grouped-notification, .founder-welcome-notification');
                     if (item) {
                         pressTimer = setTimeout(() => {
                             const notificationId = item.getAttribute('data-notification-id');
-                            const notification = findNotificationById(notificationId);
+                            const notification = findNotificationById(notificationId) || founderWelcomeNotification;
                             if (notification) {
                                 currentNotification = notification;
                                 currentNotificationId = notificationId;
@@ -1338,7 +1903,10 @@
                 } else {
                     console.log(`Found ${count} notifications in database`);
                     
-                    // Load notifications with pagination
+                    // Load founder welcome notification separately
+                    await loadFounderWelcomeNotification();
+                    
+                    // Load other notifications with pagination
                     await loadNotificationsByCategory('all', 0, pagination.all.limit);
                     
                     // Update UI
@@ -1350,6 +1918,45 @@
                 console.error('Error loading notifications:', error);
                 showToast('Loading notifications from database', 'warning');
                 await loadFallbackNotifications();
+            }
+        }
+        
+        async function loadFounderWelcomeNotification() {
+            try {
+                const { data: notifications, error } = await supabaseClient
+                    .from('pulse_notifications')
+                    .select('*')
+                    .eq('target_user_id', currentUserId)
+                    .eq('type', 'founder_welcome')
+                    .eq('actor_id', FOUNDER_ID)
+                    .order('created_at', { ascending: false })
+                    .limit(1);
+                
+                if (error) {
+                    console.error('Error loading founder welcome notification:', error);
+                    return;
+                }
+                
+                if (notifications && notifications.length > 0) {
+                    const notification = notifications[0];
+                    
+                    founderWelcomeNotification = {
+                        id: notification.id,
+                        type: 'founder_welcome',
+                        message: notification.message,
+                        metadata: notification.metadata || {},
+                        timestamp: formatTimeAgo(notification.created_at),
+                        isRead: notification.is_read,
+                        rawData: notification,
+                        isFounderMessage: true,
+                        priority: 'high'
+                    };
+                    
+                    console.log('Founder welcome notification loaded:', founderWelcomeNotification);
+                }
+                
+            } catch (error) {
+                console.error('Error loading founder welcome notification:', error);
             }
         }
         
@@ -1382,7 +1989,7 @@
                     return;
                 }
                 
-                // Create sample notifications
+                // Create sample notifications (excluding founder welcome which is created separately)
                 const sampleNotifications = [
                     {
                         type: 'like',
@@ -1448,17 +2055,6 @@
                             milestone: '100 connectors',
                             series_title: 'African Cultural Heritage'
                         }
-                    },
-                    {
-                        type: 'system',
-                        actor_id: currentUserId,
-                        target_user_id: currentUserId,
-                        message: 'Welcome to Bantu Connect Pulse! Start sharing your cultural moments.',
-                        is_read: true,
-                        metadata: {
-                            title: 'Welcome to Pulse',
-                            action: 'get_started'
-                        }
                     }
                 ];
                 
@@ -1489,6 +2085,7 @@
                     .from('pulse_notifications')
                     .select('*')
                     .eq('target_user_id', currentUserId)
+                    .neq('type', 'founder_welcome') // Exclude founder welcome from regular queries
                     .order('created_at', { ascending: false })
                     .range(offset, offset + limit - 1);
                 
@@ -1551,7 +2148,7 @@
         }
         
         function processNotifications(dbNotifications) {
-            // Clear existing notifications
+            // Clear existing notifications (except founder welcome)
             notifications.all = [];
             notifications.mentions = [];
             notifications.creator = [];
@@ -1665,43 +2262,51 @@
             
             if (!container) return;
             
+            container.innerHTML = '';
+            
+            // Add founder welcome notification at the top for "all" and "system" tabs
+            if ((category === 'all' || category === 'system') && founderWelcomeNotification) {
+                renderFounderWelcomeNotification(container);
+            }
+            
             if (!notificationsList || notificationsList.length === 0) {
-                let emptyMessage = '';
-                let emptyDescription = '';
-                
-                switch(category) {
-                    case 'all':
-                        emptyMessage = "You're all caught up.";
-                        emptyDescription = "New activity will appear here.";
-                        break;
-                    case 'mentions':
-                        emptyMessage = "No mentions yet";
-                        emptyDescription = "When someone mentions you, it will appear here.";
-                        break;
-                    case 'creator':
-                        emptyMessage = "No creator notifications";
-                        emptyDescription = "Creator updates will appear here.";
-                        break;
-                    case 'system':
-                        emptyMessage = "No system notifications";
-                        emptyDescription = "Platform updates will appear here.";
-                        break;
+                if (category !== 'all' && category !== 'system' && !founderWelcomeNotification) {
+                    let emptyMessage = '';
+                    let emptyDescription = '';
+                    
+                    switch(category) {
+                        case 'mentions':
+                            emptyMessage = "No mentions yet";
+                            emptyDescription = "When someone mentions you, it will appear here.";
+                            break;
+                        case 'creator':
+                            emptyMessage = "No creator notifications";
+                            emptyDescription = "Creator updates will appear here.";
+                            break;
+                        case 'system':
+                            if (!founderWelcomeNotification) {
+                                emptyMessage = "No system notifications";
+                                emptyDescription = "Platform updates will appear here.";
+                            }
+                            break;
+                    }
+                    
+                    if (emptyMessage) {
+                        container.innerHTML += `
+                            <div class="empty-state">
+                                <div class="empty-icon">
+                                    <i class="far fa-bell"></i>
+                                </div>
+                                <div class="empty-title">${emptyMessage}</div>
+                                <div class="empty-description">${emptyDescription}</div>
+                            </div>
+                        `;
+                    }
                 }
-                
-                container.innerHTML = `
-                    <div class="empty-state">
-                        <div class="empty-icon">
-                            <i class="far fa-bell"></i>
-                        </div>
-                        <div class="empty-title">${emptyMessage}</div>
-                        <div class="empty-description">${emptyDescription}</div>
-                    </div>
-                `;
                 return;
             }
             
-            container.innerHTML = '';
-            
+            // Render other notifications
             notificationsList.forEach(notification => {
                 const isGrouped = notification.actors && notification.actors.length > 1;
                 
@@ -1738,10 +2343,10 @@
                             ${notification.metadata.pulse_caption ? `<i class="fas fa-chevron-right" style="margin-left: auto; color: var(--slate-grey);"></i>` : ''}
                         </div>
                         <div class="notification-actions">
-                            <button class="action-btn" onclick="markAsRead('${notification.id}')" title="Mark as read">
+                            <button class="action-btn" onclick="event.stopPropagation(); markAsRead('${notification.id}')" title="Mark as read">
                                 <i class="fas fa-check"></i>
                             </button>
-                            <button class="action-btn" onclick="showActionSheetForNotification('${notification.id}')" title="More actions">
+                            <button class="action-btn" onclick="event.stopPropagation(); showActionSheetForNotification('${notification.id}')" title="More actions">
                                 <i class="fas fa-ellipsis-h"></i>
                             </button>
                         </div>
@@ -1786,10 +2391,10 @@
                             </div>
                         </div>
                         <div class="notification-actions">
-                            <button class="action-btn" onclick="markAsRead('${notification.id}')" title="Mark as read">
+                            <button class="action-btn" onclick="event.stopPropagation(); markAsRead('${notification.id}')" title="Mark as read">
                                 <i class="fas fa-check"></i>
                             </button>
-                            <button class="action-btn" onclick="showActionSheetForNotification('${notification.id}')" title="More actions">
+                            <button class="action-btn" onclick="event.stopPropagation(); showActionSheetForNotification('${notification.id}')" title="More actions">
                                 <i class="fas fa-ellipsis-h"></i>
                             </button>
                         </div>
@@ -1806,12 +2411,94 @@
             });
         }
         
+        function renderFounderWelcomeNotification(container) {
+            if (!founderWelcomeNotification) return;
+            
+            const founderNotification = document.createElement('div');
+            founderNotification.className = `founder-welcome-notification ${founderWelcomeNotification.isRead ? '' : 'unread'}`;
+            founderNotification.setAttribute('data-notification-id', founderWelcomeNotification.id);
+            founderNotification.setAttribute('data-founders-notification', 'true');
+            
+            const initials = getInitials(FOUNDER_DETAILS.full_name);
+            
+            founderNotification.innerHTML = `
+                <div class="founder-welcome-content">
+                    <div class="founder-header">
+                        <div class="founder-avatar">
+                            ${FOUNDER_DETAILS.avatar_url ? `<img src="${FOUNDER_DETAILS.avatar_url}" alt="${FOUNDER_DETAILS.full_name}" onerror="this.style.display='none'; this.parentElement.innerHTML='<span>${initials}</span>';">` : `<span>${initials}</span>`}
+                        </div>
+                        <div class="founder-info">
+                            <div class="founder-name">${FOUNDER_DETAILS.full_name}</div>
+                            <div class="founder-title">Founder, Bantu Stream Connect & Pulse</div>
+                        </div>
+                    </div>
+                    
+                    <div class="founder-message">
+                        <h3 class="founder-message-title">Welcome to Bantu Connect Pulse 🇿🇦</h3>
+                        <p class="founder-message-text">
+                            This platform was built with one belief at its core:<br>
+                            <strong>African stories deserve their own rhythm, space, and future.</strong>
+                        </p>
+                        <p class="founder-message-text">
+                            Whether you're here to create, discover, or connect.<br>
+                            <strong>You are part of something we're building together.</strong>
+                        </p>
+                        <p class="founder-message-text">
+                            Thank you for being here from the beginning.
+                        </p>
+                    </div>
+                    
+                    <div class="founder-signature">
+                        <div class="founder-signature-name">${FOUNDER_DETAILS.full_name}</div>
+                        <div class="founder-signature-title">Founder, Bantu Stream Connect & Pulse</div>
+                    </div>
+                    
+                    <div class="founder-notification-meta">
+                        <div class="founder-notification-status">
+                            ${!founderWelcomeNotification.isRead ? '<span class="founder-unread-dot"></span> New message from Founder' : 'Message from Founder'}
+                        </div>
+                        <div class="founder-notification-time">${founderWelcomeNotification.timestamp}</div>
+                    </div>
+                </div>
+            `;
+            
+            founderNotification.addEventListener('click', () => {
+                viewFounderWelcomeNotification();
+            });
+            
+            // Insert at the beginning
+            container.insertBefore(founderNotification, container.firstChild);
+        }
+        
         function updateBadgeCounts() {
-            // Calculate unread counts from database data
-            const allUnread = notifications.all.filter(n => !n.isRead).length;
-            const mentionsUnread = notifications.mentions.filter(n => !n.isRead).length;
-            const creatorUnread = notifications.creator.filter(n => !n.isRead).length;
-            const systemUnread = notifications.system.filter(n => !n.isRead).length;
+            // Calculate unread counts
+            let allUnread = 0;
+            let mentionsUnread = 0;
+            let creatorUnread = 0;
+            let systemUnread = 0;
+            
+            // Count founder welcome notification if unread
+            if (founderWelcomeNotification && !founderWelcomeNotification.isRead) {
+                allUnread++;
+                systemUnread++;
+            }
+            
+            // Count regular notifications
+            notifications.all.forEach(n => {
+                if (!n.isRead) allUnread++;
+            });
+            
+            notifications.mentions.forEach(n => {
+                if (!n.isRead) mentionsUnread++;
+            });
+            
+            notifications.creator.forEach(n => {
+                if (!n.isRead) creatorUnread++;
+            });
+            
+            notifications.system.forEach(n => {
+                if (!n.isRead) systemUnread++;
+            });
             
             // Update tab badges with gold color
             const allBadge = document.getElementById('allBadge');
@@ -1877,7 +2564,12 @@
         
         async function markAllAsRead() {
             try {
-                // Update all notifications to read in database
+                // Mark founder welcome notification as read
+                if (founderWelcomeNotification && !founderWelcomeNotification.isRead) {
+                    await markFounderNotificationAsRead();
+                }
+                
+                // Update all other notifications to read in database
                 const { error } = await supabaseClient
                     .from('pulse_notifications')
                     .update({ is_read: true })
@@ -1890,7 +2582,7 @@
                     return;
                 }
                 
-                // Update local state
+                // Update local state for regular notifications
                 Object.keys(notifications).forEach(category => {
                     notifications[category].forEach(notification => {
                         notification.isRead = true;
@@ -1944,9 +2636,46 @@
             }
         }
         
+        async function markFounderNotificationAsRead() {
+            try {
+                if (founderWelcomeNotification && founderWelcomeNotification.rawData) {
+                    // Update in database
+                    const { error } = await supabaseClient
+                        .from('pulse_notifications')
+                        .update({ is_read: true })
+                        .eq('id', founderWelcomeNotification.rawData.id);
+                    
+                    if (error) {
+                        console.error('Error marking founder notification as read:', error);
+                        return;
+                    }
+                    
+                    // Update local state
+                    founderWelcomeNotification.isRead = true;
+                    
+                    console.log('Founder welcome notification marked as read');
+                }
+            } catch (error) {
+                console.error('Error marking founder notification as read:', error);
+            }
+        }
+        
         function markCurrentAsRead() {
             if (currentNotificationId) {
-                markAsRead(currentNotificationId);
+                // Check if it's the founder notification
+                if (currentNotification && currentNotification.isFounderMessage) {
+                    markFounderNotificationAsRead();
+                    // Update UI
+                    if (founderWelcomeNotification) {
+                        founderWelcomeNotification.isRead = true;
+                    }
+                    const activeTab = document.querySelector('.tab.active').getAttribute('data-tab');
+                    renderNotifications(activeTab);
+                    updateBadgeCounts();
+                    showToast('Marked as read', 'success');
+                } else {
+                    markAsRead(currentNotificationId);
+                }
                 hideActionSheet();
             }
         }
@@ -1998,6 +2727,47 @@
             }
         }
         
+        function viewFounderWelcomeNotification() {
+            // Mark as read when viewed
+            if (founderWelcomeNotification && !founderWelcomeNotification.isRead) {
+                markFounderNotificationAsRead();
+                // Update UI immediately
+                founderWelcomeNotification.isRead = true;
+                updateBadgeCounts();
+                const activeTab = document.querySelector('.tab.active').getAttribute('data-tab');
+                renderNotifications(activeTab);
+            }
+            
+            // Show hologram modal
+            showHologramModal();
+        }
+        
+        function showHologramModal() {
+            // Set founder details in hologram
+            document.getElementById('hologramFounderAvatar').src = FOUNDER_DETAILS.avatar_url;
+            document.getElementById('hologramFounderName').textContent = FOUNDER_DETAILS.full_name;
+            document.getElementById('hologramFounderRole').textContent = 'Founder, Bantu Stream Connect & Pulse';
+            document.getElementById('hologramFounderBio').textContent = FOUNDER_DETAILS.bio;
+            document.getElementById('hologramMessageTitle').textContent = 'Welcome to Bantu Connect Pulse 🇿🇦';
+            document.getElementById('hologramSignatureName').textContent = FOUNDER_DETAILS.full_name;
+            document.getElementById('hologramSignatureTitle').textContent = 'Founder, Bantu Stream Connect & Pulse';
+            
+            // Show modal
+            const modal = document.getElementById('hologramOverlay');
+            modal.style.display = 'flex';
+            
+            // Prevent body scroll
+            document.body.style.overflow = 'hidden';
+        }
+        
+        function closeHologramModal() {
+            const modal = document.getElementById('hologramOverlay');
+            modal.style.display = 'none';
+            
+            // Restore body scroll
+            document.body.style.overflow = '';
+        }
+        
         function subscribeToNotifications() {
             if (!supabaseClient) return;
             
@@ -2012,29 +2782,35 @@
                         table: 'pulse_notifications',
                         filter: `target_user_id=eq.${currentUserId}`
                     },
-                    (payload) => {
+                    async (payload) => {
                         console.log('New notification received:', payload);
                         
-                        // Add new notification to local state
-                        const newNotification = {
-                            id: payload.new.id,
-                            type: payload.new.type,
-                            message: payload.new.message,
-                            metadata: payload.new.metadata || {},
-                            timestamp: 'Just now',
-                            isRead: payload.new.is_read,
-                            rawData: payload.new
-                        };
-                        
-                        // Add to appropriate categories
-                        notifications.all.unshift(newNotification);
-                        
-                        if (newNotification.type === 'mention') {
-                            notifications.mentions.unshift(newNotification);
-                        } else if (['creator', 'follow'].includes(newNotification.type)) {
-                            notifications.creator.unshift(newNotification);
-                        } else if (newNotification.type === 'system') {
-                            notifications.system.unshift(newNotification);
+                        // Check if it's a founder welcome notification
+                        if (payload.new.type === 'founder_welcome' && payload.new.actor_id === FOUNDER_ID) {
+                            // Reload founder welcome notification
+                            await loadFounderWelcomeNotification();
+                        } else {
+                            // Add new notification to local state
+                            const newNotification = {
+                                id: payload.new.id,
+                                type: payload.new.type,
+                                message: payload.new.message,
+                                metadata: payload.new.metadata || {},
+                                timestamp: 'Just now',
+                                isRead: payload.new.is_read,
+                                rawData: payload.new
+                            };
+                            
+                            // Add to appropriate categories
+                            notifications.all.unshift(newNotification);
+                            
+                            if (newNotification.type === 'mention') {
+                                notifications.mentions.unshift(newNotification);
+                            } else if (['creator', 'follow'].includes(newNotification.type)) {
+                                notifications.creator.unshift(newNotification);
+                            } else if (newNotification.type === 'system') {
+                                notifications.system.unshift(newNotification);
+                            }
                         }
                         
                         // Update UI
@@ -2051,6 +2827,37 @@
         
         async function loadFallbackNotifications() {
             console.log('Loading fallback notifications...');
+            
+            // Create founder welcome notification fallback
+            founderWelcomeNotification = {
+                id: 'founder_welcome_1',
+                type: 'founder_welcome',
+                message: 'Welcome to Bantu Connect Pulse',
+                metadata: {
+                    title: 'Welcome to Bantu Connect Pulse',
+                    message: `Welcome to Bantu Connect Pulse 🇿🇦
+
+This platform was built with one belief at its core:
+African stories deserve their own rhythm, space, and future.
+
+Whether you're here to create, discover, or connect. You are part of something we're building together.
+
+Thank you for being here from the beginning.
+
+Mahlori Mhlanga
+Founder, Bantu Stream Connect & Pulse`,
+                    founder_name: FOUNDER_DETAILS.full_name,
+                    founder_username: FOUNDER_DETAILS.username,
+                    founder_avatar: FOUNDER_DETAILS.avatar_url,
+                    founder_bio: FOUNDER_DETAILS.bio,
+                    is_founder_message: true,
+                    priority: 'high'
+                },
+                timestamp: 'Just now',
+                isRead: false,
+                isFounderMessage: true,
+                priority: 'high'
+            };
             
             // Create fallback notifications
             notifications.all = [
@@ -2101,22 +2908,13 @@
                     context: 'African Cultural Heritage series milestone',
                     timestamp: '3d ago',
                     isRead: false
-                },
-                {
-                    id: '6',
-                    type: 'system',
-                    actors: [{ name: 'System', initials: 'S' }],
-                    message: 'Welcome to Bantu Connect Pulse!',
-                    context: 'Start sharing your cultural moments.',
-                    timestamp: '1w ago',
-                    isRead: true
                 }
             ];
             
             // Categorize
             notifications.mentions = notifications.all.filter(n => n.type === 'mention');
             notifications.creator = notifications.all.filter(n => ['creator', 'follow'].includes(n.type));
-            notifications.system = notifications.all.filter(n => n.type === 'system');
+            notifications.system = []; // System tab will only show founder welcome
             
             // Update UI
             updateBadgeCounts();
