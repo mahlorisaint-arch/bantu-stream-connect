@@ -1501,17 +1501,17 @@
                             <i class="fas fa-trash"></i>
                             <span>Remove from Saved</span>
                         </button>
-                        <button class="action-item" onclick="event.stopPropagation(); viewPulse('${pulse.id}')">
+                        <button class="action-item" onclick="event.stopPropagation(); viewPulseContent('${pulse.id}')">
                             <i class="fas fa-external-link-alt"></i>
                             <span>Go to Pulse</span>
                         </button>
                     </div>
                 `;
                 
-                // Click to view pulse
+                // Click to view pulse content
                 pulseCard.addEventListener('click', (e) => {
                     if (!e.target.closest('.action-menu') && !e.target.closest('.saved-pulse-save-icon') && !e.target.closest('.action-item')) {
-                        viewPulse(pulse.id);
+                        viewPulseContent(pulse.id);
                     }
                 });
                 
@@ -1744,7 +1744,7 @@
                             </div>
                         </div>
                         <div class="saved-series-cta">
-                            <button class="view-series-btn" onclick="event.stopPropagation(); viewSeries('${series.id}')">
+                            <button class="view-series-btn" onclick="event.stopPropagation(); viewSeriesContent('${series.id}')">
                                 View Series
                             </button>
                         </div>
@@ -1757,17 +1757,17 @@
                             <i class="fas fa-trash"></i>
                             <span>Remove from Saved</span>
                         </button>
-                        <button class="action-item" onclick="event.stopPropagation(); viewSeries('${series.id}')">
+                        <button class="action-item" onclick="event.stopPropagation(); viewSeriesContent('${series.id}')">
                             <i class="fas fa-external-link-alt"></i>
                             <span>Go to Series</span>
                         </button>
                     </div>
                 `;
                 
-                // Click to view series
+                // Click to view series content
                 seriesCard.addEventListener('click', (e) => {
                     if (!e.target.closest('.action-menu') && !e.target.closest('.view-series-btn') && !e.target.closest('.action-item')) {
-                        viewSeries(series.id);
+                        viewSeriesContent(series.id);
                     }
                 });
                 
@@ -1887,25 +1887,27 @@
                 const itemElement = document.querySelector(`[data-item-id="${currentItemId}"]`);
                 const pulseId = itemElement?.getAttribute('data-pulse-id');
                 if (pulseId) {
-                    viewPulse(pulseId);
+                    viewPulseContent(pulseId);
                 }
             } else {
                 // Find the series ID from the current item
                 const itemElement = document.querySelector(`[data-item-id="${currentItemId}"]`);
                 const seriesId = itemElement?.getAttribute('data-series-id');
                 if (seriesId) {
-                    viewSeries(seriesId);
+                    viewSeriesContent(seriesId);
                 }
             }
             hideActionSheet();
         }
         
-        function viewPulse(pulseId) {
-            window.location.href = `pulse-detail.html?id=${pulseId}`;
+        // Updated function to redirect to pulse-content-detail.html for pulses
+        function viewPulseContent(pulseId) {
+            window.location.href = `pulse-content-detail.html?pulse_id=${pulseId}`;
         }
         
-        function viewSeries(seriesId) {
-            window.location.href = `series-detail.html?id=${seriesId}`;
+        // Updated function to redirect to pulse-content-detail.html for series
+        function viewSeriesContent(seriesId) {
+            window.location.href = `pulse-content-detail.html?series_id=${seriesId}`;
         }
         
         async function loadFallbackData() {
