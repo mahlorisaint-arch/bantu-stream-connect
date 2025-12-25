@@ -17,7 +17,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
     <style>
-        /* Color Theme */
+        /* Color Theme - Updated to match pulse-feed exactly */
         :root {
             --deep-black: #0A0E12;
             --deep-navy: #0F172A;
@@ -31,12 +31,14 @@
             --glow-cycle-2: #0066FF;
             --glow-cycle-3: #8B5CF6;
             --glow-cycle-4: #EC4899;
-            --card-bg: rgba(15, 23, 42, 0.6);
-            --card-border: rgba(148, 163, 184, 0.2);
-            --hover-overlay: rgba(255, 255, 255, 0.05);
+            --card-bg: rgba(15, 23, 42, 0.8);
+            --card-border: rgba(148, 163, 184, 0.1);
+            --hover-overlay: rgba(255, 255, 255, 0.03);
             --active-overlay: rgba(245, 158, 11, 0.1);
             --gold-light: rgba(245, 158, 11, 0.1);
             --gold-medium: rgba(245, 158, 11, 0.3);
+            --deep-indigo: #1E40AF;
+            --amber-gold: #F59E0B;
         }
         
         * {
@@ -51,6 +53,10 @@
             color: var(--soft-white);
             min-height: 100vh;
             overflow-x: hidden;
+            background-image: 
+                radial-gradient(circle at 20% 30%, rgba(29, 78, 216, 0.05) 0%, transparent 50%),
+                radial-gradient(circle at 80% 70%, rgba(245, 158, 11, 0.05) 0%, transparent 50%),
+                radial-gradient(circle at 40% 80%, rgba(139, 92, 246, 0.03) 0%, transparent 50%);
         }
         
         /* Loading Screen */
@@ -88,7 +94,7 @@
             margin: 0 auto;
             position: relative;
             z-index: 2;
-            background: var(--deep-black);
+            background: transparent;
         }
         
         /* Header */
@@ -99,7 +105,9 @@
             padding: 16px;
             position: sticky;
             top: 0;
-            background-color: var(--deep-black);
+            background-color: rgba(10, 14, 18, 0.95);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
             z-index: 100;
             border-bottom: 1px solid var(--card-border);
         }
@@ -108,24 +116,19 @@
             display: flex;
             align-items: center;
             gap: 12px;
+            cursor: pointer;
         }
         
         .logo-icon {
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
             display: flex;
             align-items: center;
             justify-content: center;
-            box-shadow: 0 0 32px rgba(29, 78, 216, 0.3);
+            background: var(--deep-navy);
+            border: 1px solid rgba(148, 163, 184, 0.1);
             overflow: hidden;
-            background: transparent;
-        }
-        
-        .logo-icon img {
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
         }
         
         .logo-text {
@@ -153,10 +156,18 @@
             cursor: pointer;
             position: relative;
             transition: color 0.3s ease;
+            background: rgba(148, 163, 184, 0.1);
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
         
         .notification-btn:hover {
             color: var(--soft-white);
+            background: rgba(148, 163, 184, 0.15);
         }
         
         .notification-btn.has-unread::after {
@@ -186,6 +197,7 @@
             font-size: 14px;
             position: relative;
             overflow: hidden;
+            border: 2px solid rgba(255, 255, 255, 0.1);
         }
         
         .user-avatar img {
@@ -218,7 +230,9 @@
         /* Content Tabs */
         .tabs-container {
             display: flex;
-            background-color: var(--deep-black);
+            background-color: rgba(10, 14, 18, 0.95);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
             border-bottom: 1px solid var(--card-border);
         }
         
@@ -242,6 +256,7 @@
         
         .tab:hover {
             color: var(--soft-white);
+            background: rgba(255, 255, 255, 0.02);
         }
         
         .tab.active {
@@ -256,6 +271,15 @@
             width: 100%;
             height: 2px;
             background: linear-gradient(to right, var(--bantu-blue), var(--warm-gold));
+        }
+        
+        /* Tab Icons */
+        .tab-icon {
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
         
         /* Content Area */
@@ -282,12 +306,15 @@
             cursor: pointer;
             transition: all 0.3s ease;
             position: relative;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
         }
         
         .saved-pulse-card:hover {
-            border-color: var(--bantu-blue);
+            border-color: rgba(29, 78, 216, 0.3);
             background: rgba(29, 78, 216, 0.05);
             transform: translateX(4px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
         }
         
         .saved-pulse-avatar {
@@ -303,13 +330,14 @@
             font-weight: 600;
             overflow: hidden;
             position: relative;
+            border: 2px solid rgba(255, 255, 255, 0.1);
         }
         
         .saved-pulse-avatar img {
             width: 100%;
             height: 100%;
             object-fit: cover;
-            display: none;
+            border-radius: 50%;
         }
         
         .saved-pulse-content {
@@ -390,12 +418,14 @@
             overflow: hidden;
             cursor: pointer;
             transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
         }
         
         .saved-series-card:hover {
             transform: translateY(-2px);
-            border-color: var(--warm-gold);
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+            border-color: rgba(245, 158, 11, 0.3);
+            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.25);
         }
         
         .saved-series-cover {
@@ -544,6 +574,8 @@
             min-width: 160px;
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
             z-index: 10;
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
         }
         
         .saved-pulse-card:hover .action-menu,
@@ -597,6 +629,8 @@
             padding: 20px 0;
             transform: translateY(100%);
             transition: transform 0.3s ease;
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
         }
         
         .action-sheet.show {
@@ -634,7 +668,9 @@
             bottom: 0;
             left: 0;
             right: 0;
-            background: var(--deep-black);
+            background: rgba(10, 14, 18, 0.95);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
             border-top: 1px solid var(--card-border);
             display: flex;
             padding: 12px 0;
@@ -671,7 +707,7 @@
         /* Toast Notifications */
         .toast-container {
             position: fixed;
-            bottom: 20px;
+            bottom: 80px;
             left: 50%;
             transform: translateX(-50%);
             z-index: 2000;
@@ -689,10 +725,12 @@
             animation: slideUp 0.3s ease;
             box-shadow: 0 10px 25px rgba(239, 68, 68, 0.3);
             max-width: 90vw;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
         }
         
         .toast.success {
-            background: var(--success-color);
+            background: rgba(16, 185, 129, 0.9);
             box-shadow: 0 10px 25px rgba(16, 185, 129, 0.3);
         }
         
@@ -757,6 +795,8 @@
             box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
             z-index: 90;
             transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
         }
         
         .refresh-btn:hover {
@@ -796,12 +836,13 @@
             height: 80px;
             border-radius: 8px;
             overflow: hidden;
-            background: var(--card-bg);
+            background: rgba(15, 23, 42, 0.6);
             display: flex;
             align-items: center;
             justify-content: center;
             margin-left: 8px;
             flex-shrink: 0;
+            border: 1px solid var(--card-border);
         }
         
         .pulse-media-preview img {
@@ -815,6 +856,15 @@
             font-size: 12px;
             text-align: center;
             padding: 8px;
+        }
+        
+        /* Tab Content */
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
         }
     </style>
 </head>
@@ -831,13 +881,18 @@
         <header class="header">
             <div class="logo-container" onclick="window.location.href='pulse-feed.html'">
                 <div class="logo-icon">
-                    <svg width="32" height="32" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <rect width="40" height="40" rx="8" fill="#0F172A"/>
-                        <path d="M8 20 L12 16 L16 22 L20 18 L24 24 L28 20 L32 26" stroke="url(#pulse-gradient)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-                        <circle cx="32" cy="26" r="3" fill="#F59E0B"/>
+                    <!-- New Pulse Icon with 40px radius and gradient path -->
+                    <svg width="40" height="40" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect width="200" height="200" rx="40" fill="#0F172A"/>
+                        <path d="M40 100 L80 60 L100 130 L120 90 L140 150 L160 100 L180 130" 
+                              stroke="url(#pulseGradient)" 
+                              stroke-width="10" 
+                              stroke-linecap="round" 
+                              stroke-linejoin="round"/>
+                        <circle cx="180" cy="130" r="8" fill="#F59E0B"/>
                         <defs>
-                            <linearGradient id="pulse-gradient" x1="8" y1="20" x2="32" y2="26" gradientUnits="userSpaceOnUse">
-                                <stop stop-color="#1D4ED8"/>
+                            <linearGradient id="pulseGradient" x1="40" y1="100" x2="180" y2="130" gradientUnits="userSpaceOnUse">
+                                <stop stop-color="#1E40AF"/>
                                 <stop offset="1" stop-color="#F59E0B"/>
                             </linearGradient>
                         </defs>
@@ -866,11 +921,45 @@
         <!-- Content Tabs -->
         <div class="tabs-container">
             <button class="tab active" data-tab="pulses">
-                <i class="fas fa-wave-square"></i>
+                <div class="tab-icon">
+                    <!-- New Pulse Icon for tab -->
+                    <svg width="20" height="20" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect width="100" height="100" rx="20" fill="#0F172A"/>
+                        <path d="M20 50 L40 30 L50 65 L60 45 L70 75 L80 50 L90 65" 
+                              stroke="url(#pulseTabGradient)" 
+                              stroke-width="5" 
+                              stroke-linecap="round" 
+                              stroke-linejoin="round"/>
+                        <circle cx="90" cy="65" r="4" fill="#F59E0B"/>
+                        <defs>
+                            <linearGradient id="pulseTabGradient" x1="20" y1="50" x2="90" y2="65" gradientUnits="userSpaceOnUse">
+                                <stop stop-color="#1E40AF"/>
+                                <stop offset="1" stop-color="#F59E0B"/>
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                </div>
                 <span>Pulses</span>
             </button>
             <button class="tab" data-tab="series">
-                <i class="fas fa-layer-group"></i>
+                <div class="tab-icon">
+                    <!-- New Series Icon with three layers -->
+                    <svg width="20" height="20" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect width="100" height="100" rx="20" fill="#0F172A"/>
+                        <!-- Bottom layer (gold) -->
+                        <rect x="20" y="55" width="60" height="15" rx="4" fill="#F59E0B"/>
+                        <!-- Middle layer (gold to blue gradient) -->
+                        <rect x="20" y="35" width="60" height="15" rx="4" fill="url(#seriesGradient)"/>
+                        <!-- Top layer (blue) -->
+                        <rect x="20" y="15" width="60" height="15" rx="4" fill="#1D4ED8"/>
+                        <defs>
+                            <linearGradient id="seriesGradient" x1="20" y1="42.5" x2="80" y2="42.5" gradientUnits="userSpaceOnUse">
+                                <stop offset="0" stop-color="#F59E0B"/>
+                                <stop offset="1" stop-color="#1D4ED8"/>
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                </div>
                 <span>Series</span>
             </button>
         </div>
@@ -982,6 +1071,7 @@
                 }
                 
                 currentUserId = session.user.id;
+                console.log('User ID:', currentUserId);
                 
                 // Load user profile for avatar and unread notifications count
                 await loadUserProfile();
@@ -1166,51 +1256,49 @@
             try {
                 console.log('Loading saved pulses...');
                 
-                // First, check if saved_pulses table exists
-                const { count, error: tableError } = await supabaseClient
+                // Load saved pulses with correct joins
+                const { data: savedPulses, error } = await supabaseClient
                     .from('saved_pulses')
-                    .select('*', { count: 'exact', head: true });
-                
-                if (tableError) {
-                    console.log('saved_pulses table might not exist, creating it...');
-                    await createSavedPulsesTable();
-                    await seedSampleSavedPulses();
-                } else {
-                    // Load saved pulses with pulse and creator details
-                    const { data: savedPulses, error } = await supabaseClient
-                        .from('saved_pulses')
-                        .select(`
+                    .select(`
+                        id,
+                        saved_at,
+                        pulse:pulses (
                             id,
-                            saved_at,
-                            pulse:pulses (
-                                id,
-                                caption,
-                                media_url,
-                                media_type,
-                                series_id,
-                                series_order,
-                                user_id,
-                                created_at
-                            ),
-                            creator:user_profiles!pulses_user_id_fkey (
-                                id,
-                                full_name,
-                                username,
-                                avatar_url
-                            )
-                        `)
-                        .eq('user_id', currentUserId)
-                        .order('saved_at', { ascending: false });
-                    
-                    if (error) {
-                        console.error('Error loading saved pulses:', error);
-                        await loadFallbackPulses();
-                        return;
-                    }
-                    
-                    console.log('Found saved pulses:', savedPulses);
-                    renderSavedPulses(savedPulses || []);
+                            caption,
+                            media_url,
+                            media_type,
+                            series_id,
+                            series_order,
+                            user_id,
+                            created_at
+                        ),
+                        user_profiles!saved_pulses_user_id_fkey (
+                            id,
+                            full_name,
+                            username,
+                            avatar_url
+                        )
+                    `)
+                    .eq('user_id', currentUserId)
+                    .order('saved_at', { ascending: false });
+                
+                if (error) {
+                    console.error('Error loading saved pulses:', error);
+                    // Try alternative query structure
+                    await loadSavedPulsesAlternative();
+                    return;
                 }
+                
+                console.log('Found saved pulses:', savedPulses);
+                
+                if (!savedPulses || savedPulses.length === 0) {
+                    await loadFallbackPulses();
+                    return;
+                }
+                
+                // Process and render saved pulses
+                const processedPulses = await processSavedPulses(savedPulses);
+                renderSavedPulses(processedPulses);
                 
             } catch (error) {
                 console.error('Error loading saved pulses:', error);
@@ -1218,108 +1306,118 @@
             }
         }
         
-        async function createSavedPulsesTable() {
+        async function loadSavedPulsesAlternative() {
             try {
-                console.log('Attempting to create saved_pulses table...');
-                // Note: In production, create this table via Supabase SQL editor
-                // For now, seed sample data
-                await seedSampleSavedPulses();
-            } catch (error) {
-                console.error('Error creating saved_pulses table:', error);
-            }
-        }
-        
-        async function seedSampleSavedPulses() {
-            try {
-                console.log('Seeding sample saved pulses...');
+                console.log('Trying alternative query for saved pulses...');
                 
-                // Check if we already have saved pulses
-                const { count } = await supabaseClient
+                // Try a simpler query first - just get saved pulse IDs
+                const { data: savedItems, error } = await supabaseClient
                     .from('saved_pulses')
-                    .select('*', { count: 'exact', head: true })
-                    .eq('user_id', currentUserId);
+                    .select('pulse_id, saved_at')
+                    .eq('user_id', currentUserId)
+                    .order('saved_at', { ascending: false });
                 
-                if (count > 0) {
-                    console.log('Saved pulses already exist, skipping seed');
+                if (error) throw error;
+                
+                if (!savedItems || savedItems.length === 0) {
+                    renderEmptyPulses();
                     return;
                 }
                 
-                // Get some public pulses to save
-                const { data: publicPulses, error: pulsesError } = await supabaseClient
+                // Get pulse details for each saved pulse
+                const pulseIds = savedItems.map(item => item.pulse_id);
+                const { data: pulses, error: pulsesError } = await supabaseClient
                     .from('pulses')
                     .select(`
                         id,
-                        user_id,
                         caption,
                         media_url,
-                        media_type
+                        media_type,
+                        series_id,
+                        series_order,
+                        user_id,
+                        created_at,
+                        user_profiles (
+                            full_name,
+                            username,
+                            avatar_url
+                        )
                     `)
-                    .neq('user_id', currentUserId)
-                    .limit(3);
+                    .in('id', pulseIds);
                 
-                if (pulsesError) {
-                    console.error('Error getting pulses for seeding:', pulsesError);
-                    // Create sample saved pulses directly
-                    const sampleSavedPulses = [
-                        {
-                            user_id: currentUserId,
-                            pulse_id: 'sample_pulse_1',
-                            saved_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString()
+                if (pulsesError) throw pulsesError;
+                
+                // Combine saved_at with pulse data
+                const processedPulses = pulses.map(pulse => {
+                    const savedItem = savedItems.find(item => item.pulse_id === pulse.id);
+                    return {
+                        id: savedItem.pulse_id + '_saved',
+                        saved_at: savedItem.saved_at,
+                        pulse: {
+                            id: pulse.id,
+                            caption: pulse.caption,
+                            media_url: pulse.media_url,
+                            media_type: pulse.media_type,
+                            series_id: pulse.series_id,
+                            series_order: pulse.series_order,
+                            user_id: pulse.user_id,
+                            created_at: pulse.created_at
                         },
-                        {
-                            user_id: currentUserId,
-                            pulse_id: 'sample_pulse_2',
-                            saved_at: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString()
-                        }
-                    ];
-                    
-                    const { error } = await supabaseClient
-                        .from('saved_pulses')
-                        .insert(sampleSavedPulses);
-                    
-                    if (error) {
-                        console.error('Error seeding saved pulses:', error);
-                    }
-                } else if (publicPulses && publicPulses.length > 0) {
-                    // Save some public pulses
-                    const savedPulses = publicPulses.slice(0, 2).map(pulse => ({
-                        user_id: currentUserId,
-                        pulse_id: pulse.id,
-                        saved_at: new Date(Date.now() - Math.random() * 3 * 24 * 60 * 60 * 1000).toISOString()
-                    }));
-                    
-                    const { error } = await supabaseClient
-                        .from('saved_pulses')
-                        .insert(savedPulses);
-                    
-                    if (error) {
-                        console.error('Error seeding saved pulses:', error);
+                        user_profiles: pulse.user_profiles
+                    };
+                });
+                
+                renderSavedPulses(processedPulses);
+                
+            } catch (error) {
+                console.error('Error in alternative query:', error);
+                await loadFallbackPulses();
+            }
+        }
+        
+        async function processSavedPulses(savedPulses) {
+            const processedPulses = [];
+            
+            for (const savedItem of savedPulses) {
+                if (!savedItem.pulse) continue;
+                
+                // Get creator information
+                let creatorInfo = savedItem.user_profiles;
+                
+                // If creator info not in the query result, fetch it separately
+                if (!creatorInfo) {
+                    try {
+                        const { data: creator } = await supabaseClient
+                            .from('user_profiles')
+                            .select('full_name, username, avatar_url')
+                            .eq('id', savedItem.pulse.user_id)
+                            .single();
+                        
+                        creatorInfo = creator;
+                    } catch (error) {
+                        console.error('Error fetching creator info:', error);
+                        creatorInfo = {
+                            full_name: 'Unknown User',
+                            username: 'unknown',
+                            avatar_url: null
+                        };
                     }
                 }
                 
-                // Reload saved pulses
-                await loadSavedPulses();
-                
-            } catch (error) {
-                console.error('Error seeding saved pulses:', error);
+                processedPulses.push({
+                    ...savedItem,
+                    creator: creatorInfo
+                });
             }
+            
+            return processedPulses;
         }
         
         function renderSavedPulses(savedPulses) {
             const container = document.getElementById('savedPulsesList');
             
             if (!savedPulses || savedPulses.length === 0) {
-                container.innerHTML = `
-                    <div class="empty-state">
-                        <div class="empty-icon">
-                            <i class="fas fa-bookmark"></i>
-                        </div>
-                        <div class="empty-title">You haven't saved any Pulses yet</div>
-                        <div class="empty-description">
-                            Tap the bookmark icon on a Pulse to keep it here.
-                        </div>
-                    </div>
-                `;
+                renderEmptyPulses();
                 return;
             }
             
@@ -1327,7 +1425,7 @@
             
             savedPulses.forEach(savedItem => {
                 const pulse = savedItem.pulse;
-                const creator = savedItem.creator;
+                const creator = savedItem.creator || savedItem.user_profiles;
                 
                 if (!pulse || !creator) {
                     console.warn('Missing pulse or creator data:', savedItem);
@@ -1356,7 +1454,7 @@
                 if (pulse.media_url && pulse.media_type === 'image') {
                     mediaPreview = `
                         <div class="pulse-media-preview">
-                            <img src="${pulse.media_url}" alt="Pulse preview">
+                            <img src="${pulse.media_url}" alt="Pulse preview" onerror="this.style.display='none'; this.parentElement.innerHTML='<div class=\"no-media\"><i class=\"fas fa-image\"></i><div>Image</div></div>';">
                         </div>
                     `;
                 } else if (pulse.media_url && pulse.media_type === 'video') {
@@ -1381,7 +1479,7 @@
                 
                 pulseCard.innerHTML = `
                     <div class="saved-pulse-avatar">
-                        ${creator.avatar_url ? `<img src="${creator.avatar_url}" alt="${creator.full_name}">` : `<span>${initials}</span>`}
+                        ${creator.avatar_url ? `<img src="${creator.avatar_url}" alt="${creator.full_name}" onerror="this.style.display='none'; this.parentElement.innerHTML='<span>${initials}</span>';">` : `<span>${initials}</span>`}
                     </div>
                     <div class="saved-pulse-content">
                         <div class="saved-pulse-creator">
@@ -1399,11 +1497,11 @@
                         <i class="fas fa-bookmark"></i>
                     </div>
                     <div class="action-menu">
-                        <button class="action-item remove" onclick="removeFromSaved('${savedItem.id}', 'pulse')">
+                        <button class="action-item remove" onclick="event.stopPropagation(); removeFromSaved('${savedItem.id}', 'pulse')">
                             <i class="fas fa-trash"></i>
                             <span>Remove from Saved</span>
                         </button>
-                        <button class="action-item" onclick="viewPulse('${pulse.id}')">
+                        <button class="action-item" onclick="event.stopPropagation(); viewPulse('${pulse.id}')">
                             <i class="fas fa-external-link-alt"></i>
                             <span>Go to Pulse</span>
                         </button>
@@ -1412,7 +1510,7 @@
                 
                 // Click to view pulse
                 pulseCard.addEventListener('click', (e) => {
-                    if (!e.target.closest('.action-menu') && !e.target.closest('.saved-pulse-save-icon')) {
+                    if (!e.target.closest('.action-menu') && !e.target.closest('.saved-pulse-save-icon') && !e.target.closest('.action-item')) {
                         viewPulse(pulse.id);
                     }
                 });
@@ -1421,159 +1519,190 @@
             });
         }
         
+        function renderEmptyPulses() {
+            const container = document.getElementById('savedPulsesList');
+            container.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-icon">
+                        <i class="fas fa-bookmark"></i>
+                    </div>
+                    <div class="empty-title">You haven't saved any Pulses yet</div>
+                    <div class="empty-description">
+                        Tap the bookmark icon on a Pulse to keep it here.
+                    </div>
+                </div>
+            `;
+        }
+        
         async function loadSavedSeries() {
             try {
                 console.log('Loading saved series...');
                 
-                // First, check if saved_series table exists
-                const { count, error: tableError } = await supabaseClient
+                // Load saved series with correct joins
+                const { data: savedSeries, error } = await supabaseClient
                     .from('saved_series')
-                    .select('*', { count: 'exact', head: true });
-                
-                if (tableError) {
-                    console.log('saved_series table might not exist, creating it...');
-                    await createSavedSeriesTable();
-                    await seedSampleSavedSeries();
-                } else {
-                    // Load saved series with series and creator details
-                    const { data: savedSeries, error } = await supabaseClient
-                        .from('saved_series')
-                        .select(`
+                    .select(`
+                        id,
+                        saved_at,
+                        series:pulse_series (
                             id,
-                            saved_at,
-                            series:pulse_series (
-                                id,
-                                title,
-                                description,
-                                cover_image_url,
-                                creator_id,
-                                current_part,
-                                total_parts,
-                                is_completed,
-                                created_at
-                            ),
-                            creator:user_profiles!pulse_series_creator_id_fkey (
-                                id,
-                                full_name,
-                                username,
-                                avatar_url
-                            )
-                        `)
-                        .eq('user_id', currentUserId)
-                        .order('saved_at', { ascending: false });
-                    
-                    if (error) {
-                        console.error('Error loading saved series:', error);
-                        await loadFallbackSeries();
-                        return;
-                    }
-                    
-                    console.log('Found saved series:', savedSeries);
-                    renderSavedSeries(savedSeries || []);
-                }
+                            title,
+                            description,
+                            cover_image_url,
+                            creator_id,
+                            current_part,
+                            total_parts,
+                            is_completed,
+                            created_at
+                        ),
+                        user_profiles!saved_series_user_id_fkey (
+                            id,
+                            full_name,
+                            username,
+                            avatar_url
+                        )
+                    `)
+                    .eq('user_id', currentUserId)
+                    .order('saved_at', { ascending: false });
                 
-            } catch (error) {
-                console.error('Error loading saved series:', error);
-                await loadFallbackSeries();
-            }
-        }
-        
-        async function createSavedSeriesTable() {
-            try {
-                console.log('Attempting to create saved_series table...');
-                // Note: In production, create this table via Supabase SQL editor
-                // For now, seed sample data
-                await seedSampleSavedSeries();
-            } catch (error) {
-                console.error('Error creating saved_series table:', error);
-            }
-        }
-        
-        async function seedSampleSavedSeries() {
-            try {
-                console.log('Seeding sample saved series...');
-                
-                // Check if we already have saved series
-                const { count } = await supabaseClient
-                    .from('saved_series')
-                    .select('*', { count: 'exact', head: true })
-                    .eq('user_id', currentUserId);
-                
-                if (count > 0) {
-                    console.log('Saved series already exist, skipping seed');
+                if (error) {
+                    console.error('Error loading saved series:', error);
+                    // Try alternative query structure
+                    await loadSavedSeriesAlternative();
                     return;
                 }
                 
-                // Get some public series to save
-                const { data: publicSeries, error: seriesError } = await supabaseClient
+                console.log('Found saved series:', savedSeries);
+                
+                if (!savedSeries || savedSeries.length === 0) {
+                    renderEmptySeries();
+                    return;
+                }
+                
+                // Process and render saved series
+                const processedSeries = await processSavedSeries(savedSeries);
+                renderSavedSeries(processedSeries);
+                
+            } catch (error) {
+                console.error('Error loading saved series:', error);
+                renderEmptySeries();
+            }
+        }
+        
+        async function loadSavedSeriesAlternative() {
+            try {
+                console.log('Trying alternative query for saved series...');
+                
+                // Try a simpler query first - just get saved series IDs
+                const { data: savedItems, error } = await supabaseClient
+                    .from('saved_series')
+                    .select('series_id, saved_at')
+                    .eq('user_id', currentUserId)
+                    .order('saved_at', { ascending: false });
+                
+                if (error) throw error;
+                
+                if (!savedItems || savedItems.length === 0) {
+                    renderEmptySeries();
+                    return;
+                }
+                
+                // Get series details for each saved series
+                const seriesIds = savedItems.map(item => item.series_id);
+                const { data: series, error: seriesError } = await supabaseClient
                     .from('pulse_series')
                     .select(`
                         id,
-                        creator_id,
                         title,
-                        cover_image_url
+                        description,
+                        cover_image_url,
+                        creator_id,
+                        current_part,
+                        total_parts,
+                        is_completed,
+                        created_at,
+                        user_profiles (
+                            full_name,
+                            username,
+                            avatar_url
+                        )
                     `)
-                    .neq('creator_id', currentUserId)
-                    .limit(2);
+                    .in('id', seriesIds);
                 
-                if (seriesError) {
-                    console.error('Error getting series for seeding:', seriesError);
-                    // Create sample saved series directly
-                    const sampleSavedSeries = [
-                        {
-                            user_id: currentUserId,
-                            series_id: 'sample_series_1',
-                            saved_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString()
-                        }
-                    ];
-                    
-                    const { error } = await supabaseClient
-                        .from('saved_series')
-                        .insert(sampleSavedSeries);
-                    
-                    if (error) {
-                        console.error('Error seeding saved series:', error);
-                    }
-                } else if (publicSeries && publicSeries.length > 0) {
-                    // Save some public series
-                    const savedSeries = publicSeries.slice(0, 1).map(series => ({
-                        user_id: currentUserId,
-                        series_id: series.id,
-                        saved_at: new Date(Date.now() - Math.random() * 5 * 24 * 60 * 60 * 1000).toISOString()
-                    }));
-                    
-                    const { error } = await supabaseClient
-                        .from('saved_series')
-                        .insert(savedSeries);
-                    
-                    if (error) {
-                        console.error('Error seeding saved series:', error);
+                if (seriesError) throw seriesError;
+                
+                // Combine saved_at with series data
+                const processedSeries = series.map(s => {
+                    const savedItem = savedItems.find(item => item.series_id === s.id);
+                    return {
+                        id: savedItem.series_id + '_saved',
+                        saved_at: savedItem.saved_at,
+                        series: {
+                            id: s.id,
+                            title: s.title,
+                            description: s.description,
+                            cover_image_url: s.cover_image_url,
+                            creator_id: s.creator_id,
+                            current_part: s.current_part,
+                            total_parts: s.total_parts,
+                            is_completed: s.is_completed,
+                            created_at: s.created_at
+                        },
+                        user_profiles: s.user_profiles
+                    };
+                });
+                
+                renderSavedSeries(processedSeries);
+                
+            } catch (error) {
+                console.error('Error in alternative query:', error);
+                renderEmptySeries();
+            }
+        }
+        
+        async function processSavedSeries(savedSeries) {
+            const processedSeries = [];
+            
+            for (const savedItem of savedSeries) {
+                if (!savedItem.series) continue;
+                
+                // Get creator information
+                let creatorInfo = savedItem.user_profiles;
+                
+                // If creator info not in the query result, fetch it separately
+                if (!creatorInfo) {
+                    try {
+                        const { data: creator } = await supabaseClient
+                            .from('user_profiles')
+                            .select('full_name, username, avatar_url')
+                            .eq('id', savedItem.series.creator_id)
+                            .single();
+                        
+                        creatorInfo = creator;
+                    } catch (error) {
+                        console.error('Error fetching creator info:', error);
+                        creatorInfo = {
+                            full_name: 'Unknown Creator',
+                            username: 'unknown',
+                            avatar_url: null
+                        };
                     }
                 }
                 
-                // Reload saved series
-                await loadSavedSeries();
-                
-            } catch (error) {
-                console.error('Error seeding saved series:', error);
+                processedSeries.push({
+                    ...savedItem,
+                    creator: creatorInfo
+                });
             }
+            
+            return processedSeries;
         }
         
         function renderSavedSeries(savedSeries) {
             const container = document.getElementById('savedSeriesList');
             
             if (!savedSeries || savedSeries.length === 0) {
-                container.innerHTML = `
-                    <div class="empty-state">
-                        <div class="empty-icon">
-                            <i class="fas fa-layer-group"></i>
-                        </div>
-                        <div class="empty-title">No saved series yet</div>
-                        <div class="empty-description">
-                            Save a Pulse Series to follow the story as it unfolds.
-                        </div>
-                    </div>
-                `;
+                renderEmptySeries();
                 return;
             }
             
@@ -1581,7 +1710,7 @@
             
             savedSeries.forEach(savedItem => {
                 const series = savedItem.series;
-                const creator = savedItem.creator;
+                const creator = savedItem.creator || savedItem.user_profiles;
                 
                 if (!series || !creator) {
                     console.warn('Missing series or creator data:', savedItem);
@@ -1600,7 +1729,7 @@
                 
                 seriesCard.innerHTML = `
                     <div class="saved-series-cover">
-                        ${series.cover_image_url ? `<img src="${series.cover_image_url}" alt="${series.title}">` : ''}
+                        ${series.cover_image_url ? `<img src="${series.cover_image_url}" alt="${series.title}" onerror="this.style.display='none';">` : ''}
                         <div class="saved-series-progress">
                             <div class="saved-series-progress-fill" style="width: ${progressPercent}%"></div>
                         </div>
@@ -1615,7 +1744,7 @@
                             </div>
                         </div>
                         <div class="saved-series-cta">
-                            <button class="view-series-btn" onclick="viewSeries('${series.id}')">
+                            <button class="view-series-btn" onclick="event.stopPropagation(); viewSeries('${series.id}')">
                                 View Series
                             </button>
                         </div>
@@ -1624,11 +1753,11 @@
                         </div>
                     </div>
                     <div class="action-menu">
-                        <button class="action-item remove" onclick="removeFromSaved('${savedItem.id}', 'series')">
+                        <button class="action-item remove" onclick="event.stopPropagation(); removeFromSaved('${savedItem.id}', 'series')">
                             <i class="fas fa-trash"></i>
                             <span>Remove from Saved</span>
                         </button>
-                        <button class="action-item" onclick="viewSeries('${series.id}')">
+                        <button class="action-item" onclick="event.stopPropagation(); viewSeries('${series.id}')">
                             <i class="fas fa-external-link-alt"></i>
                             <span>Go to Series</span>
                         </button>
@@ -1637,13 +1766,28 @@
                 
                 // Click to view series
                 seriesCard.addEventListener('click', (e) => {
-                    if (!e.target.closest('.action-menu') && !e.target.closest('.view-series-btn')) {
+                    if (!e.target.closest('.action-menu') && !e.target.closest('.view-series-btn') && !e.target.closest('.action-item')) {
                         viewSeries(series.id);
                     }
                 });
                 
                 container.appendChild(seriesCard);
             });
+        }
+        
+        function renderEmptySeries() {
+            const container = document.getElementById('savedSeriesList');
+            container.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-icon">
+                        <i class="fas fa-layer-group"></i>
+                    </div>
+                    <div class="empty-title">No saved series yet</div>
+                    <div class="empty-description">
+                        Save a Pulse Series to follow the story as it unfolds.
+                    </div>
+                </div>
+            `;
         }
         
         function formatTimeAgo(timestamp) {
@@ -1776,129 +1920,12 @@
         
         async function loadFallbackPulses() {
             console.log('Loading fallback pulses...');
-            
-            // Try to get some public pulses to show as fallback
-            try {
-                const { data: publicPulses, error } = await supabaseClient
-                    .from('pulses')
-                    .select(`
-                        id,
-                        caption,
-                        media_url,
-                        media_type,
-                        user_id,
-                        user_profiles (
-                            full_name,
-                            username,
-                            avatar_url
-                        )
-                    `)
-                    .neq('user_id', currentUserId)
-                    .limit(5)
-                    .order('created_at', { ascending: false });
-                
-                if (error || !publicPulses || publicPulses.length === 0) {
-                    throw new Error('No public pulses found');
-                }
-                
-                // Format as saved pulses
-                const fallbackPulses = publicPulses.map((pulse, index) => ({
-                    id: `fallback_${index}`,
-                    saved_at: new Date(Date.now() - (index + 1) * 24 * 60 * 60 * 1000).toISOString(),
-                    pulse: {
-                        id: pulse.id,
-                        caption: pulse.caption,
-                        media_url: pulse.media_url,
-                        media_type: pulse.media_type
-                    },
-                    creator: pulse.user_profiles
-                }));
-                
-                renderSavedPulses(fallbackPulses);
-                
-            } catch (error) {
-                console.error('Error loading fallback pulses:', error);
-                // Show empty state
-                const container = document.getElementById('savedPulsesList');
-                container.innerHTML = `
-                    <div class="empty-state">
-                        <div class="empty-icon">
-                            <i class="fas fa-bookmark"></i>
-                        </div>
-                        <div class="empty-title">You haven't saved any Pulses yet</div>
-                        <div class="empty-description">
-                            Tap the bookmark icon on a Pulse to keep it here.
-                        </div>
-                    </div>
-                `;
-            }
+            renderEmptyPulses();
         }
         
         async function loadFallbackSeries() {
             console.log('Loading fallback series...');
-            
-            // Try to get some public series to show as fallback
-            try {
-                const { data: publicSeries, error } = await supabaseClient
-                    .from('pulse_series')
-                    .select(`
-                        id,
-                        title,
-                        description,
-                        cover_image_url,
-                        creator_id,
-                        current_part,
-                        total_parts,
-                        is_completed,
-                        user_profiles (
-                            full_name,
-                            username,
-                            avatar_url
-                        )
-                    `)
-                    .neq('creator_id', currentUserId)
-                    .limit(3)
-                    .order('created_at', { ascending: false });
-                
-                if (error || !publicSeries || publicSeries.length === 0) {
-                    throw new Error('No public series found');
-                }
-                
-                // Format as saved series
-                const fallbackSeries = publicSeries.map((series, index) => ({
-                    id: `fallback_series_${index}`,
-                    saved_at: new Date(Date.now() - (index + 1) * 24 * 60 * 60 * 1000).toISOString(),
-                    series: {
-                        id: series.id,
-                        title: series.title,
-                        description: series.description,
-                        cover_image_url: series.cover_image_url,
-                        creator_id: series.creator_id,
-                        current_part: series.current_part,
-                        total_parts: series.total_parts,
-                        is_completed: series.is_completed
-                    },
-                    creator: series.user_profiles
-                }));
-                
-                renderSavedSeries(fallbackSeries);
-                
-            } catch (error) {
-                console.error('Error loading fallback series:', error);
-                // Show empty state
-                const container = document.getElementById('savedSeriesList');
-                container.innerHTML = `
-                    <div class="empty-state">
-                        <div class="empty-icon">
-                            <i class="fas fa-layer-group"></i>
-                        </div>
-                        <div class="empty-title">No saved series yet</div>
-                        <div class="empty-description">
-                            Save a Pulse Series to follow the story as it unfolds.
-                        </div>
-                    </div>
-                `;
-            }
+            renderEmptySeries();
         }
         
         function showToast(message, type = 'error') {
