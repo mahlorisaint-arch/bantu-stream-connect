@@ -1751,7 +1751,252 @@
         // NEW: Real-time subscription for likes
         let realtimeSubscription = null;
 
-        // ✅ UPDATED INITIALIZE FUNCTION (from your second update)
+        // ✅ FIXED: MOVE createPulseCard FUNCTION TO GLOBAL SCOPE
+        function createPulseCard(pulse, likedPulses) {
+            // Get user info - handle missing profiles gracefully
+            const profile = pulse.user_profiles || {};
+            const fullName = profile.full_name || 'User';
+            const username = profile.username || '';
+            const avatarUrl = profile.avatar_url;
+            const role = profile.role || 'user';
+            const initials = fullName.substring(0, 2).toUpperCase();
+            const timeAgo = getTimeAgo(new Date(pulse.created_at));
+            
+            const isSeries = pulse.series_id && pulse.series_order;
+            const hasMedia = pulse.media_url;
+            const mediaType = pulse.media_type;
+            const isOwnPulse = pulse.user_id === currentUserId;
+            const isLiked = likedPulses.has(pulse.id);
+            const isConnected = userConnections.has(pulse.user_id);
+            
+            // Get counts from pulse data
+            const likesCount = pulse.likes_count || 0;
+            const commentsCount = pulse.comments_count || 0;
+            const sharesCount = pulse.shares_count || 0;
+            
+            const card = document.createElement('div');
+            card.className = 'pulse-card';
+            card.dataset.pulseId = pulse.id;
+            
+            // Add click event to view pulse detail
+            card.addEventListener('click', (e) => {
+                // Don't trigger if clicking on action buttons, connect button, or more options
+                if (!e.target.closest('.action-button') && 
+                    !e.target.closest('.pulse-connect-btn') &&
+                    !e.target.closest('.pulse-more-options') && 
+                    !e.target.closest('.pulse-options-menu')) {
+                    viewPulseDetail(pulse.id);
+                }
+            });
+            
+            // Create connect button HTML (only if not own pulse)
+            let connectBtnHTML = '';
+            if (!isOwnPulse) {
+                const connectIcon = isConnected ? 'fa-user-check' : 'fa-user-plus';
+                const connectClass = isConnected ? 'connected' : '';
+                connectBtnHTML = `
+                    <button class="pulse-connect-btn ${connectClass}" data-creator-id="${pulse.user_id}">
+                        <i class="fas ${connectIcon}"></i>
+                    </button>
+                `;
+            }
+            
+            let moreOptionsHTML = '';
+            if (isOwnPulse) {
+                moreOptionsHTML = `
+                    <button class="pulse-more-options" data-pulse-id="${pulse.id}">
+                        <i class="fas fa-ellipsis-h"></i>
+                    </button>
+                    <div class="pulse-options-menu" id="options-menu-${pulse.id}">
+                        <button class="pulse-option-item edit-option" data-pulse-id="${pulse.id}">
+                            <i class="fas fa-edit"></i>
+                            Edit
+                        </button>
+                        <button class="pulse-option-item delete delete-option" data-pulse-id="${pulse.id}">
+                            <i class="fas fa-trash"></i>
+                            Delete
+                        </button>
+                    </div>
+                `;
+            }
+            
+            // Media HTML
+            let mediaHTML = '';
+            if (hasMedia) {
+                if (mediaType === 'video') {
+                    mediaHTML = `
+                        <div class="media-container has-media">
+                            <video class="pulse-media" data-video-id="video-${pulse.id}" preload="metadata" playsinline>
+                                <source src="${pulse.media_url}" type="video/mp4">
+                                Your browser does not support the video tag.
+                            </video>
+                            <div class="video-controls-overlay">
+                                <div class="video-progress">
+                                    <div class="video-progress-filled"></div>
+                                </div>
+                                <div class="video-controls">
+                                    <div class="video-left-controls">
+                                        <button class="video-control-btn play-pause-btn">
+                                            <i class="fas fa-play"></i>
+                                        </button>
+                                        <div class="video-time">0:00 / 0:00</div>
+                                    </div>
+                                    <div class="video-right-controls">
+                                        <div class="video-volume">
+                                            <button class="video-control-btn mute-btn">
+                                                <i class="fas fa-volume-up"></i>
+                                            </button>
+                                            <div class="volume-slider">
+                                                <div class="volume-slider-filled"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    mediaHTML = `
+                        <div class="media-container has-media">
+                            <img src="${pulse.media_url}" alt="Pulse image" class="pulse-media">
+                        </div>
+                    `;
+                }
+            }
+            
+            card.innerHTML = `
+                <div class="pulse-header">
+                    <div class="pulse-avatar" style="${avatarUrl ? `background-image: url('${avatarUrl}'); background-size: cover; background-position: center;` : ''}">
+                        ${avatarUrl ? '' : initials}
+                    </div>
+                    <div class="pulse-creator-info">
+                        <div class="creator-name">
+                            ${fullName}
+                            ${role === 'creator' ? '<span class="creator-badge">Creator</span>' : ''}
+                            ${role === 'admin' ? '<span class="creator-badge" style="background: rgba(239, 68, 68, 0.2); color: var(--error-color); border-color: rgba(239, 68, 68, 0.3);">Admin</span>' : ''}
+                        </div>
+                        <div class="pulse-time">${username ? `@${username} • ` : ''}${timeAgo}</div>
+                    </div>
+                    ${connectBtnHTML}
+                    ${moreOptionsHTML}
+                </div>
+                
+                ${isSeries ? `
+                    <div class="pulse-series-label">
+                        PULSE SERIES · Part ${pulse.series_order}
+                    </div>
+                ` : ''}
+                
+                <div class="pulse-content">
+                    ${pulse.caption ? `<p class="pulse-text">${pulse.caption}</p>` : ''}
+                    
+                    ${mediaHTML}
+                    
+                    ${pulse.linked_content_id ? `
+                        <div class="linked-content">
+                            <div class="linked-content-label">Linked content</div>
+                            <div class="linked-content-card">
+                                <div class="content-thumbnail"></div>
+                                <div class="content-info">
+                                    <h4>${pulse.linked_content_type || 'Content'}</h4>
+                                    <p>Tap to watch or listen</p>
+                                </div>
+                            </div>
+                        </div>
+                    ` : ''}
+                </div>
+                
+                <div class="pulse-actions">
+                    <button class="action-button like-btn ${isLiked ? 'liked' : ''}" data-pulse-id="${pulse.id}">
+                        <i class="fas fa-heart" ${isLiked ? 'style="color: var(--warm-gold);"' : ''}></i> ${likesCount}
+                    </button>
+                    <button class="action-button comment-btn" data-pulse-id="${pulse.id}">
+                        <i class="fas fa-comment"></i> ${commentsCount}
+                    </button>
+                    <button class="action-button share-btn" data-pulse-id="${pulse.id}">
+                        <i class="fas fa-share"></i> ${sharesCount}
+                    </button>
+                </div>
+                
+                <div class="pulse-stats">
+                    <span class="likes-count">${likesCount} likes</span>
+                    <span class="comments-count">${commentsCount} comments</span>
+                    <span class="shares-count">${sharesCount} shares</span>
+                </div>
+            `;
+            
+            // Initialize video controls if video exists
+            if (hasMedia && mediaType === 'video') {
+                setTimeout(() => {
+                    const videoElement = card.querySelector('video');
+                    const mediaContainer = card.querySelector('.media-container');
+                    if (videoElement && mediaContainer) {
+                        initializeVideoPlayer(videoElement, mediaContainer);
+                    }
+                }, 100);
+            }
+            
+            // Add event listeners
+            const likeBtn = card.querySelector('.like-btn');
+            const commentBtn = card.querySelector('.comment-btn');
+            const shareBtn = card.querySelector('.share-btn');
+            
+            likeBtn.addEventListener('click', (e) => handleLike(pulse.id, e));
+            commentBtn.addEventListener('click', (e) => handleComment(pulse.id, e));
+            shareBtn.addEventListener('click', (e) => handleShare(pulse.id, e));
+            
+            // Add event listener for connect button if it exists
+            const connectBtn = card.querySelector('.pulse-connect-btn');
+            if (connectBtn) {
+                connectBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const creatorId = connectBtn.getAttribute('data-creator-id');
+                    handleConnect(creatorId, connectBtn);
+                });
+            }
+            
+            // Add event listeners for more options if it's the user's own pulse
+            if (isOwnPulse) {
+                const moreOptionsBtn = card.querySelector('.pulse-more-options');
+                const optionsMenu = card.querySelector(`#options-menu-${pulse.id}`);
+                const editOption = card.querySelector('.edit-option');
+                const deleteOption = card.querySelector('.delete-option');
+                
+                moreOptionsBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    // Close any other open menus
+                    document.querySelectorAll('.pulse-options-menu').forEach(menu => {
+                        if (menu !== optionsMenu) {
+                            menu.classList.remove('active');
+                        }
+                    });
+                    optionsMenu.classList.toggle('active');
+                });
+                
+                editOption.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    optionsMenu.classList.remove('active');
+                    handleEdit(pulse.id);
+                });
+                
+                deleteOption.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    optionsMenu.classList.remove('active');
+                    handleDelete(pulse.id);
+                });
+                
+                // Close menu when clicking outside
+                document.addEventListener('click', (e) => {
+                    if (!moreOptionsBtn.contains(e.target) && !optionsMenu.contains(e.target)) {
+                        optionsMenu.classList.remove('active');
+                    }
+                });
+            }
+            
+            return card;
+        }
+
+        // ✅ UPDATED INITIALIZE FUNCTION
         async function initialize() {
             console.log('Starting Pulse Feed initialization...');
             
@@ -3353,7 +3598,7 @@
             }, 300);
         }
         
-        // ✅ UPDATED: LOAD DAILY PULSE MOMENT - FIXED QUERY (from your first update)
+        // ✅ UPDATED: LOAD DAILY PULSE MOMENT - FIXED QUERY
         async function loadDailyPulseMoment() {
             try {
                 const { data: { session } } = await supabaseClient.auth.getSession();
@@ -3398,7 +3643,7 @@
             }
         }
         
-        // ✅ NEW: Create Daily Pulse Card
+        // ✅ FIXED: Create Daily Pulse Card - NOW USES GLOBAL createPulseCard FUNCTION
         function createDailyPulseCard(pulse, likedPulses) {
             const regularCard = createPulseCard(pulse, likedPulses);
             
@@ -3530,7 +3775,7 @@
             }
         }
         
-        // ✅ NEW: SHOW EMPTY STATE INSTEAD OF DEMO DATA (from your first update)
+        // ✅ NEW: SHOW EMPTY STATE INSTEAD OF DEMO DATA
         function showEmptyState() {
             const feed = document.getElementById('pulse-feed-container');
             feed.innerHTML = `
@@ -3549,7 +3794,7 @@
             `;
         }
         
-        // ✅ NEW: OPEN CREATE MODAL FUNCTION (for empty state button) (from your first update)
+        // ✅ NEW: OPEN CREATE MODAL FUNCTION (for empty state button)
         function openCreateModal() {
             document.getElementById('createModal').style.display = 'flex';
             document.getElementById('caption').focus();
@@ -3673,7 +3918,7 @@
                 updatePostButton();
             }
             
-            // ✅ UPDATED: FETCH PULSES FUNCTION (from your first update)
+            // ✅ UPDATED: FETCH PULSES FUNCTION
             async function fetchPulses() {
                 try {
                     console.log('🔄 Fetching pulses...');
@@ -3741,7 +3986,7 @@
                 }
             }
             
-            // ✅ UPDATED: DISPLAY PULSES - HANDLE EMPTY STATE (from your first update)
+            // ✅ UPDATED: DISPLAY PULSES - HANDLE EMPTY STATE
             function displayPulses(pulses, likedPulses) {
                 const pulseFeedContainer = document.getElementById('pulse-feed-container');
                 
@@ -3781,251 +4026,6 @@
                     const dailyPulseCard = createDailyPulseCard(dailyPulseData, likedPulses);
                     pulseFeedContainer.appendChild(dailyPulseCard);
                 }
-            }
-            
-            // ✅ UPDATED: CREATE PULSE CARD - HANDLE MISSING PROFILES (from your first update)
-            function createPulseCard(pulse, likedPulses) {
-                // Get user info - handle missing profiles gracefully
-                const profile = pulse.user_profiles || {};
-                const fullName = profile.full_name || 'User';
-                const username = profile.username || '';
-                const avatarUrl = profile.avatar_url;
-                const role = profile.role || 'user';
-                const initials = fullName.substring(0, 2).toUpperCase();
-                const timeAgo = getTimeAgo(new Date(pulse.created_at));
-                
-                const isSeries = pulse.series_id && pulse.series_order;
-                const hasMedia = pulse.media_url;
-                const mediaType = pulse.media_type;
-                const isOwnPulse = pulse.user_id === currentUserId;
-                const isLiked = likedPulses.has(pulse.id);
-                const isConnected = userConnections.has(pulse.user_id);
-                
-                // Get counts from pulse data
-                const likesCount = pulse.likes_count || 0;
-                const commentsCount = pulse.comments_count || 0;
-                const sharesCount = pulse.shares_count || 0;
-                
-                const card = document.createElement('div');
-                card.className = 'pulse-card';
-                card.dataset.pulseId = pulse.id;
-                
-                // Add click event to view pulse detail
-                card.addEventListener('click', (e) => {
-                    // Don't trigger if clicking on action buttons, connect button, or more options
-                    if (!e.target.closest('.action-button') && 
-                        !e.target.closest('.pulse-connect-btn') &&
-                        !e.target.closest('.pulse-more-options') && 
-                        !e.target.closest('.pulse-options-menu')) {
-                        viewPulseDetail(pulse.id);
-                    }
-                });
-                
-                // Create connect button HTML (only if not own pulse)
-                let connectBtnHTML = '';
-                if (!isOwnPulse) {
-                    const connectIcon = isConnected ? 'fa-user-check' : 'fa-user-plus';
-                    const connectClass = isConnected ? 'connected' : '';
-                    connectBtnHTML = `
-                        <button class="pulse-connect-btn ${connectClass}" data-creator-id="${pulse.user_id}">
-                            <i class="fas ${connectIcon}"></i>
-                        </button>
-                    `;
-                }
-                
-                let moreOptionsHTML = '';
-                if (isOwnPulse) {
-                    moreOptionsHTML = `
-                        <button class="pulse-more-options" data-pulse-id="${pulse.id}">
-                            <i class="fas fa-ellipsis-h"></i>
-                        </button>
-                        <div class="pulse-options-menu" id="options-menu-${pulse.id}">
-                            <button class="pulse-option-item edit-option" data-pulse-id="${pulse.id}">
-                                <i class="fas fa-edit"></i>
-                                Edit
-                            </button>
-                            <button class="pulse-option-item delete delete-option" data-pulse-id="${pulse.id}">
-                                <i class="fas fa-trash"></i>
-                                Delete
-                            </button>
-                        </div>
-                    `;
-                }
-                
-                // Media HTML
-                let mediaHTML = '';
-                if (hasMedia) {
-                    if (mediaType === 'video') {
-                        mediaHTML = `
-                            <div class="media-container has-media">
-                                <video class="pulse-media" data-video-id="video-${pulse.id}" preload="metadata" playsinline>
-                                    <source src="${pulse.media_url}" type="video/mp4">
-                                    Your browser does not support the video tag.
-                                </video>
-                                <div class="video-controls-overlay">
-                                    <div class="video-progress">
-                                        <div class="video-progress-filled"></div>
-                                    </div>
-                                    <div class="video-controls">
-                                        <div class="video-left-controls">
-                                            <button class="video-control-btn play-pause-btn">
-                                                <i class="fas fa-play"></i>
-                                            </button>
-                                            <div class="video-time">0:00 / 0:00</div>
-                                        </div>
-                                        <div class="video-right-controls">
-                                            <div class="video-volume">
-                                                <button class="video-control-btn mute-btn">
-                                                    <i class="fas fa-volume-up"></i>
-                                                </button>
-                                                <div class="volume-slider">
-                                                    <div class="volume-slider-filled"></div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        `;
-                    } else {
-                        mediaHTML = `
-                            <div class="media-container has-media">
-                                <img src="${pulse.media_url}" alt="Pulse image" class="pulse-media">
-                            </div>
-                        `;
-                    }
-                }
-                
-                card.innerHTML = `
-                    <div class="pulse-header">
-                        <div class="pulse-avatar" style="${avatarUrl ? `background-image: url('${avatarUrl}'); background-size: cover; background-position: center;` : ''}">
-                            ${avatarUrl ? '' : initials}
-                        </div>
-                        <div class="pulse-creator-info">
-                            <div class="creator-name">
-                                ${fullName}
-                                ${role === 'creator' ? '<span class="creator-badge">Creator</span>' : ''}
-                                ${role === 'admin' ? '<span class="creator-badge" style="background: rgba(239, 68, 68, 0.2); color: var(--error-color); border-color: rgba(239, 68, 68, 0.3);">Admin</span>' : ''}
-                            </div>
-                            <div class="pulse-time">${username ? `@${username} • ` : ''}${timeAgo}</div>
-                        </div>
-                        ${connectBtnHTML}
-                        ${moreOptionsHTML}
-                    </div>
-                    
-                    ${isSeries ? `
-                        <div class="pulse-series-label">
-                            PULSE SERIES · Part ${pulse.series_order}
-                        </div>
-                    ` : ''}
-                    
-                    <div class="pulse-content">
-                        ${pulse.caption ? `<p class="pulse-text">${pulse.caption}</p>` : ''}
-                        
-                        ${mediaHTML}
-                        
-                        ${pulse.linked_content_id ? `
-                            <div class="linked-content">
-                                <div class="linked-content-label">Linked content</div>
-                                <div class="linked-content-card">
-                                    <div class="content-thumbnail"></div>
-                                    <div class="content-info">
-                                        <h4>${pulse.linked_content_type || 'Content'}</h4>
-                                        <p>Tap to watch or listen</p>
-                                    </div>
-                                </div>
-                            </div>
-                        ` : ''}
-                    </div>
-                    
-                    <div class="pulse-actions">
-                        <button class="action-button like-btn ${isLiked ? 'liked' : ''}" data-pulse-id="${pulse.id}">
-                            <i class="fas fa-heart" ${isLiked ? 'style="color: var(--warm-gold);"' : ''}></i> ${likesCount}
-                        </button>
-                        <button class="action-button comment-btn" data-pulse-id="${pulse.id}">
-                            <i class="fas fa-comment"></i> ${commentsCount}
-                        </button>
-                        <button class="action-button share-btn" data-pulse-id="${pulse.id}">
-                            <i class="fas fa-share"></i> ${sharesCount}
-                        </button>
-                    </div>
-                    
-                    <div class="pulse-stats">
-                        <span class="likes-count">${likesCount} likes</span>
-                        <span class="comments-count">${commentsCount} comments</span>
-                        <span class="shares-count">${sharesCount} shares</span>
-                    </div>
-                `;
-                
-                // Initialize video controls if video exists
-                if (hasMedia && mediaType === 'video') {
-                    setTimeout(() => {
-                        const videoElement = card.querySelector('video');
-                        const mediaContainer = card.querySelector('.media-container');
-                        if (videoElement && mediaContainer) {
-                            initializeVideoPlayer(videoElement, mediaContainer);
-                        }
-                    }, 100);
-                }
-                
-                // Add event listeners
-                const likeBtn = card.querySelector('.like-btn');
-                const commentBtn = card.querySelector('.comment-btn');
-                const shareBtn = card.querySelector('.share-btn');
-                
-                likeBtn.addEventListener('click', (e) => handleLike(pulse.id, e));
-                commentBtn.addEventListener('click', (e) => handleComment(pulse.id, e));
-                shareBtn.addEventListener('click', (e) => handleShare(pulse.id, e));
-                
-                // Add event listener for connect button if it exists
-                const connectBtn = card.querySelector('.pulse-connect-btn');
-                if (connectBtn) {
-                    connectBtn.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        const creatorId = connectBtn.getAttribute('data-creator-id');
-                        handleConnect(creatorId, connectBtn);
-                    });
-                }
-                
-                // Add event listeners for more options if it's the user's own pulse
-                if (isOwnPulse) {
-                    const moreOptionsBtn = card.querySelector('.pulse-more-options');
-                    const optionsMenu = card.querySelector(`#options-menu-${pulse.id}`);
-                    const editOption = card.querySelector('.edit-option');
-                    const deleteOption = card.querySelector('.delete-option');
-                    
-                    moreOptionsBtn.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        // Close any other open menus
-                        document.querySelectorAll('.pulse-options-menu').forEach(menu => {
-                            if (menu !== optionsMenu) {
-                                menu.classList.remove('active');
-                            }
-                        });
-                        optionsMenu.classList.toggle('active');
-                    });
-                    
-                    editOption.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        optionsMenu.classList.remove('active');
-                        handleEdit(pulse.id);
-                    });
-                    
-                    deleteOption.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        optionsMenu.classList.remove('active');
-                        handleDelete(pulse.id);
-                    });
-                    
-                    // Close menu when clicking outside
-                    document.addEventListener('click', (e) => {
-                        if (!moreOptionsBtn.contains(e.target) && !optionsMenu.contains(e.target)) {
-                            optionsMenu.classList.remove('active');
-                        }
-                    });
-                }
-                
-                return card;
             }
             
             // ✅ CREATE PULSE (with series handling)
