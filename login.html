@@ -1,4 +1,486 @@
-<!DOCTYPE html>
+<<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Bantu Connect Pulse</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Orbitron:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Supabase JS SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <style>
+        :root {
+            --deep-black: #0A0E12;
+            --deep-navy: #0F172A;
+            --soft-white: #F8FAFC;
+            --slate-grey: #94A3B8;
+            --bantu-blue: #1D4ED8;
+            --warm-gold: #F59E0B;
+            --error-color: #EF4444;
+            --success-color: #10B981;
+            --glow-cycle-1: #00A3FF;
+            --glow-cycle-2: #0066FF;
+            --glow-cycle-3: #8B5CF6;
+            --glow-cycle-4: #EC4899;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--deep-black);
+            color: var(--soft-white);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+        
+        /* Animated Background */
+        .animated-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            overflow: hidden;
+        }
+        
+        .glow-cycle {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(60px);
+            opacity: 0.1;
+            animation: float 8s infinite ease-in-out;
+        }
+        
+        .glow-1 {
+            width: 400px;
+            height: 400px;
+            background: var(--glow-cycle-1);
+            top: 10%;
+            left: 5%;
+            animation-delay: 0s;
+        }
+        
+        .glow-2 {
+            width: 300px;
+            height: 300px;
+            background: var(--glow-cycle-2);
+            top: 60%;
+            right: 10%;
+            animation-delay: 2s;
+        }
+        
+        .glow-3 {
+            width: 350px;
+            height: 350px;
+            background: var(--glow-cycle-3);
+            bottom: 10%;
+            left: 20%;
+            animation-delay: 4s;
+        }
+        
+        .glow-4 {
+            width: 250px;
+            height: 250px;
+            background: var(--glow-cycle-4);
+            top: 20%;
+            right: 20%;
+            animation-delay: 6s;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0) scale(1); }
+            50% { transform: translateY(-20px) scale(1.05); }
+        }
+        
+        .login-container {
+            position: relative;
+            z-index: 2;
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+            padding: 40px;
+            width: 90%;
+            max-width: 400px;
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        }
+        
+        .logo {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .logo-icon {
+            width: 60px;
+            height: 60px;
+            margin: 0 auto 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.05);
+        }
+        
+        .logo-text {
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 700;
+            font-size: 28px;
+            background: linear-gradient(to right, var(--soft-white), var(--bantu-blue));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            letter-spacing: 1px;
+        }
+        
+        .tagline {
+            text-align: center;
+            color: var(--slate-grey);
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--soft-white);
+            font-weight: 500;
+            font-size: 14px;
+        }
+        
+        .form-input {
+            width: 100%;
+            padding: 16px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            border-radius: 12px;
+            color: var(--soft-white);
+            font-family: 'Inter', sans-serif;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+        
+        .form-input:focus {
+            outline: none;
+            border-color: var(--bantu-blue);
+            background: rgba(255, 255, 255, 0.08);
+        }
+        
+        .btn {
+            width: 100%;
+            padding: 16px;
+            border-radius: 12px;
+            border: none;
+            font-family: 'Inter', sans-serif;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 16px;
+            margin-top: 10px;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+            color: var(--soft-white);
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(29, 78, 216, 0.4);
+        }
+        
+        .divider {
+            text-align: center;
+            margin: 30px 0;
+            color: var(--slate-grey);
+            font-size: 14px;
+            position: relative;
+        }
+        
+        .divider::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: rgba(148, 163, 184, 0.2);
+        }
+        
+        .divider span {
+            background: rgba(15, 23, 42, 0.8);
+            padding: 0 20px;
+            position: relative;
+        }
+        
+        .social-login {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+        
+        .social-btn {
+            padding: 14px;
+            border-radius: 12px;
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--soft-white);
+            font-family: 'Inter', sans-serif;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        .social-btn:hover {
+            border-color: var(--bantu-blue);
+            background: rgba(255, 255, 255, 0.1);
+        }
+        
+        .error-message {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: var(--error-color);
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+        
+        .success-message {
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            color: var(--success-color);
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+        
+        .register-link {
+            text-align: center;
+            margin-top: 20px;
+            color: var(--slate-grey);
+            font-size: 14px;
+        }
+        
+        .register-link a {
+            color: var(--bantu-blue);
+            text-decoration: none;
+            font-weight: 600;
+        }
+        
+        .register-link a:hover {
+            text-decoration: underline;
+        }
+        
+        @media (max-width: 480px) {
+            .login-container {
+                padding: 30px 20px;
+            }
+            
+            .social-login {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Animated Background -->
+    <div class="animated-bg">
+        <div class="glow-cycle glow-1"></div>
+        <div class="glow-cycle glow-2"></div>
+        <div class="glow-cycle glow-3"></div>
+        <div class="glow-cycle glow-4"></div>
+    </div>
+
+    <div class="login-container">
+        <div class="logo">
+            <div class="logo-icon">
+                <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect width="40" height="40" rx="8" fill="#0F172A"/>
+                    <path d="M8 20 L12 16 L16 22 L20 18 L24 24 L28 20 L32 26" stroke="url(#pulse-gradient)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                    <circle cx="32" cy="26" r="3" fill="#F59E0B"/>
+                    <defs>
+                        <linearGradient id="pulse-gradient" x1="8" y1="20" x2="32" y2="26" gradientUnits="userSpaceOnUse">
+                            <stop stop-color="#1D4ED8"/>
+                            <stop offset="1" stop-color="#F59E0B"/>
+                        </linearGradient>
+                    </defs>
+                </svg>
+            </div>
+            <div class="logo-text">PULSE</div>
+        </div>
+        
+        <p class="tagline">Connect with African culture and creators</p>
+        
+        <div id="errorMessage" class="error-message"></div>
+        <div id="successMessage" class="success-message"></div>
+        
+        <form id="loginForm">
+            <div class="form-group">
+                <label class="form-label">Email</label>
+                <input type="email" class="form-input" id="email" placeholder="you@example.com" required>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Password</label>
+                <input type="password" class="form-input" id="password" placeholder="Your password" required>
+            </div>
+            
+            <button type="submit" class="btn btn-primary" id="loginBtn">
+                <span>Sign In</span>
+            </button>
+        </form>
+        
+        <div class="divider"><span>Or continue with</span></div>
+        
+        <div class="social-login">
+            <button class="social-btn" id="googleLogin">
+                <i class="fab fa-google"></i> Google
+            </button>
+            <button class="social-btn" id="githubLogin">
+                <i class="fab fa-github"></i> GitHub
+            </button>
+        </div>
+        
+        <div class="register-link">
+            Don't have an account? <a href="register.html">Sign up</a>
+        </div>
+    </div>
+
+    <script>
+        // Initialize Supabase client
+        const SUPABASE_URL = 'https://ydnxqnbjoshvxteevemc.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U';
+
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // Check if user is already logged in
+        async function checkSession() {
+            const { data: { session } } = await supabase.auth.getSession();
+            
+            if (session) {
+                // User is already logged in, redirect to profile
+                window.location.href = 'profile.html';
+            }
+        }
+
+        // Handle form submission
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const loginBtn = document.getElementById('loginBtn');
+            const errorMessage = document.getElementById('errorMessage');
+            const successMessage = document.getElementById('successMessage');
+            
+            // Reset messages
+            errorMessage.style.display = 'none';
+            successMessage.style.display = 'none';
+            
+            // Show loading state
+            const originalText = loginBtn.innerHTML;
+            loginBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Signing in...';
+            loginBtn.disabled = true;
+            
+            try {
+                const { data, error } = await supabase.auth.signInWithPassword({
+                    email,
+                    password
+                });
+                
+                if (error) throw error;
+                
+                // Show success message
+                successMessage.textContent = 'Login successful! Redirecting...';
+                successMessage.style.display = 'block';
+                
+                // Redirect to profile page after a short delay
+                setTimeout(() => {
+                    window.location.href = 'profile.html';
+                }, 1500);
+                
+            } catch (error) {
+                console.error('Login error:', error);
+                errorMessage.textContent = error.message || 'Failed to sign in. Please check your credentials.';
+                errorMessage.style.display = 'block';
+                
+                // Reset button
+                loginBtn.innerHTML = originalText;
+                loginBtn.disabled = false;
+            }
+        });
+        
+        // Google login
+        document.getElementById('googleLogin').addEventListener('click', async () => {
+            const { error } = await supabase.auth.signInWithOAuth({
+                provider: 'google',
+                options: {
+                    redirectTo: window.location.origin + '/profile.html'
+                }
+            });
+            
+            if (error) {
+                console.error('Google login error:', error);
+                document.getElementById('errorMessage').textContent = 'Google login failed. Please try again.';
+                document.getElementById('errorMessage').style.display = 'block';
+            }
+        });
+        
+        // GitHub login
+        document.getElementById('githubLogin').addEventListener('click', async () => {
+            const { error } = await supabase.auth.signInWithOAuth({
+                provider: 'github',
+                options: {
+                    redirectTo: window.location.origin + '/profile.html'
+                }
+            });
+            
+            if (error) {
+                console.error('GitHub login error:', error);
+                document.getElementById('errorMessage').textContent = 'GitHub login failed. Please try again.';
+                document.getElementById('errorMessage').style.display = 'block';
+            }
+        });
+        
+        // Initial session check
+        checkSession();
+        
+        // Listen for auth state changes
+        supabase.auth.onAuthStateChange((event, session) => {
+            if (event === 'SIGNED_IN' && session) {
+                // Redirect to profile after sign in
+                window.location.href = 'profile.html';
+            }
+        });
+    </script>
+</body>
+</html>!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
