@@ -1748,6 +1748,9 @@
         let dailyPulseData = null;
         let dailyPulsePosition = 2; // Show as the 3rd pulse (0-indexed position 2)
 
+        // NEW: Real-time subscription for likes
+        let realtimeSubscription = null;
+
         async function initialize() {
             console.log('Starting Pulse Feed initialization...');
             
@@ -1806,6 +1809,9 @@
                 
                 // Initialize the feed functionality
                 initializeFeed(session);
+                
+                // NEW: Set up real-time subscription for likes
+                setupRealtimeLikes();
                 
             } catch (error) {
                 console.error('Error:', error);
@@ -2297,7 +2303,7 @@
             }
         }
         
-        // ✅ HANDLE LIKE
+        // ✅ UPDATED: HANDLE LIKE - NOW WITH PROPER COUNT UPDATES
         async function handleLike(pulseId, e) {
             if (e) e.stopPropagation();
             
@@ -2308,13 +2314,29 @@
                     return;
                 }
                 
-                // Check if already liked
+                // Get current like status from the button
+                const pulseCard = document.querySelector(`[data-pulse-id="${pulseId}"]`);
+                if (!pulseCard) return;
+                
+                const likeBtn = pulseCard.querySelector('.like-btn');
+                const isCurrentlyLiked = likeBtn.classList.contains('liked');
+                
+                // Check if already liked in database
                 const { data: existingLike } = await supabaseClient
                     .from('pulse_likes')
                     .select('id')
                     .eq('pulse_id', pulseId)
                     .eq('user_id', session.user.id)
                     .single();
+                
+                // FIXED: Get the actual current likes count from the database
+                const { data: currentPulse } = await supabaseClient
+                    .from('pulses')
+                    .select('likes_count')
+                    .eq('id', pulseId)
+                    .single();
+                
+                let currentCount = currentPulse?.likes_count || 0;
                 
                 if (existingLike) {
                     // Unlike
@@ -2324,7 +2346,22 @@
                         .eq('id', existingLike.id);
                     
                     if (!error) {
-                        updateLikeUI(pulseId, false);
+                        // Update UI with correct count from trigger
+                        updateLikeUI(pulseId, false, currentCount - 1);
+                        
+                        // FIXED: Fetch updated count from database after trigger
+                        setTimeout(async () => {
+                            const { data: updatedPulse } = await supabaseClient
+                                .from('pulses')
+                                .select('likes_count')
+                                .eq('id', pulseId)
+                                .single();
+                            
+                            if (updatedPulse) {
+                                updateLikeUI(pulseId, false, updatedPulse.likes_count);
+                            }
+                        }, 100);
+                        
                         showToast('Like removed', 'success');
                     }
                 } else {
@@ -2337,10 +2374,25 @@
                         });
                     
                     if (!error) {
-                        updateLikeUI(pulseId, true);
+                        // Update UI with correct count from trigger
+                        updateLikeUI(pulseId, true, currentCount + 1);
+                        
+                        // FIXED: Fetch updated count from database after trigger
+                        setTimeout(async () => {
+                            const { data: updatedPulse } = await supabaseClient
+                                .from('pulses')
+                                .select('likes_count')
+                                .eq('id', pulseId)
+                                .single();
+                            
+                            if (updatedPulse) {
+                                updateLikeUI(pulseId, true, updatedPulse.likes_count);
+                            }
+                        }, 100);
+                        
                         showToast('Pulse liked!', 'success');
                         
-                        // ✅ Create notification for pulse creator (if not liking own pulse)
+                        // Create notification for pulse creator (if not liking own pulse)
                         const { data: pulse } = await supabaseClient
                             .from('pulses')
                             .select('user_id')
@@ -2366,8 +2418,8 @@
             }
         }
         
-        // ✅ UPDATE LIKE UI
-        function updateLikeUI(pulseId, isLiked) {
+        // ✅ UPDATED: UPDATE LIKE UI - NOW ACCEPTS COUNT PARAMETER
+        function updateLikeUI(pulseId, isLiked, count) {
             const pulseCard = document.querySelector(`[data-pulse-id="${pulseId}"]`);
             if (!pulseCard) return;
             
@@ -2378,23 +2430,15 @@
             if (likeBtn) {
                 if (isLiked) {
                     likeBtn.classList.add('liked');
-                    likeIcon.style.color = 'var(--warm-gold)';
-                    const currentText = likeBtn.textContent.trim();
-                    const currentCount = parseInt(currentText.match(/\d+/)?.[0]) || 0;
-                    likeBtn.innerHTML = `<i class="fas fa-heart" style="color: var(--warm-gold);"></i> ${currentCount + 1}`;
+                    likeBtn.innerHTML = `<i class="fas fa-heart" style="color: var(--warm-gold);"></i> ${count}`;
                 } else {
                     likeBtn.classList.remove('liked');
-                    likeIcon.style.color = '';
-                    const currentText = likeBtn.textContent.trim();
-                    const currentCount = parseInt(currentText.match(/\d+/)?.[0]) || 0;
-                    likeBtn.innerHTML = `<i class="fas fa-heart"></i> ${Math.max(0, currentCount - 1)}`;
+                    likeBtn.innerHTML = `<i class="fas fa-heart"></i> ${count}`;
                 }
             }
             
             if (likesCount) {
-                const currentCount = parseInt(likesCount.textContent.match(/\d+/)?.[0]) || 0;
-                const newCount = isLiked ? currentCount + 1 : Math.max(0, currentCount - 1);
-                likesCount.textContent = `${newCount} likes`;
+                likesCount.textContent = `${count} likes`;
             }
         }
         
@@ -2671,7 +2715,6 @@
                 }
                 
                 // Use a direct delete instead of soft delete to avoid RLS issues
-                // If you want soft delete, you need to add RLS policies in Supabase
                 const { error } = await supabaseClient
                     .from('pulses')
                     .delete()
@@ -3428,6 +3471,82 @@
             }
         }
         
+        // ✅ NEW: SETUP REAL-TIME LIKES UPDATES
+        function setupRealtimeLikes() {
+            try {
+                // Subscribe to changes in pulse_likes table
+                realtimeSubscription = supabaseClient
+                    .channel('pulse-likes-changes')
+                    .on(
+                        'postgres_changes',
+                        {
+                            event: '*', // Listen to all events (INSERT, UPDATE, DELETE)
+                            schema: 'public',
+                            table: 'pulse_likes'
+                        },
+                        async (payload) => {
+                            console.log('Realtime update received:', payload);
+                            
+                            // When a like is added or removed, update the pulse's like count
+                            const pulseId = payload.new?.pulse_id || payload.old?.pulse_id;
+                            
+                            if (pulseId) {
+                                // Fetch updated pulse data
+                                const { data: pulse, error } = await supabaseClient
+                                    .from('pulses')
+                                    .select('likes_count')
+                                    .eq('id', pulseId)
+                                    .single();
+                                
+                                if (!error && pulse) {
+                                    // Update the UI with the new like count
+                                    updatePulseLikeCount(pulseId, pulse.likes_count);
+                                    
+                                    // Also check if current user's like status changed
+                                    const { data: { session } } = await supabaseClient.auth.getSession();
+                                    if (session) {
+                                        const { data: userLike } = await supabaseClient
+                                            .from('pulse_likes')
+                                            .select('id')
+                                            .eq('pulse_id', pulseId)
+                                            .eq('user_id', session.user.id)
+                                            .single();
+                                        
+                                        const isLiked = !!userLike;
+                                        updateLikeUI(pulseId, isLiked, pulse.likes_count);
+                                    }
+                                }
+                            }
+                        }
+                    )
+                    .subscribe();
+                
+                console.log('Realtime subscription for likes established');
+                
+            } catch (error) {
+                console.error('Error setting up realtime subscription:', error);
+            }
+        }
+        
+        // ✅ NEW: UPDATE PULSE LIKE COUNT IN UI
+        function updatePulseLikeCount(pulseId, newCount) {
+            const pulseCard = document.querySelector(`[data-pulse-id="${pulseId}"]`);
+            if (!pulseCard) return;
+            
+            const likeBtn = pulseCard.querySelector('.like-btn');
+            const likesCount = pulseCard.querySelector('.likes-count');
+            
+            if (likeBtn) {
+                // Extract the current like status from the button
+                const isLiked = likeBtn.classList.contains('liked');
+                likeBtn.innerHTML = `<i class="fas fa-heart" ${isLiked ? 'style="color: var(--warm-gold);"' : ''}></i> ${newCount}`;
+            }
+            
+            if (likesCount) {
+                likesCount.textContent = `${newCount} likes`;
+            }
+        }
+        
         function initializeFeed(session) {
             // State variables
             let selectedMedia = null;
@@ -3551,10 +3670,20 @@
                 try {
                     console.log('🔄 Fetching pulses...');
                     
-                    // Use the view instead of trying to join manually
+                    // FIXED: Use direct query with join to get correct like counts
                     const { data, error } = await supabaseClient
-                        .from('pulses_with_user_details')
-                        .select('*')
+                        .from('pulses')
+                        .select(`
+                            *,
+                            user_profiles!inner (
+                                full_name,
+                                username,
+                                avatar_url,
+                                role,
+                                email
+                            )
+                        `)
+                        .is('deleted_at', null)
                         .order('created_at', { ascending: false })
                         .limit(20);
                     
@@ -3567,19 +3696,7 @@
                     const pulseIds = pulses.map(p => p.id);
                     const likedPulses = await checkUserLikes(pulseIds);
                     
-                    // Format for display
-                    const formattedData = pulses.map(pulse => ({
-                        ...pulse,
-                        user_profiles: {
-                            full_name: pulse.full_name,
-                            username: pulse.username,
-                            avatar_url: pulse.avatar_url,
-                            role: pulse.role,
-                            email: pulse.email
-                        }
-                    }));
-                    
-                    displayPulses(formattedData, likedPulses);
+                    displayPulses(pulses, likedPulses);
                     
                 } catch (error) {
                     console.error('❌ Error fetching pulses:', error);
@@ -3645,6 +3762,11 @@
                 const isOwnPulse = pulse.user_id === currentUserId;
                 const isLiked = likedPulses.has(pulse.id);
                 const isConnected = userConnections.has(pulse.user_id);
+                
+                // FIXED: Get the actual likes count from the pulse data
+                const likesCount = pulse.likes_count || 0;
+                const commentsCount = pulse.comments_count || 0;
+                const sharesCount = pulse.shares_count || 0;
                 
                 const card = document.createElement('div');
                 card.className = 'pulse-card';
@@ -3780,20 +3902,20 @@
                     
                     <div class="pulse-actions">
                         <button class="action-button like-btn ${isLiked ? 'liked' : ''}" data-pulse-id="${pulse.id}">
-                            <i class="fas fa-heart" ${isLiked ? 'style="color: var(--warm-gold);"' : ''}></i> ${pulse.likes_count || 0}
+                            <i class="fas fa-heart" ${isLiked ? 'style="color: var(--warm-gold);"' : ''}></i> ${likesCount}
                         </button>
                         <button class="action-button comment-btn" data-pulse-id="${pulse.id}">
-                            <i class="fas fa-comment"></i> ${pulse.comments_count || 0}
+                            <i class="fas fa-comment"></i> ${commentsCount}
                         </button>
                         <button class="action-button share-btn" data-pulse-id="${pulse.id}">
-                            <i class="fas fa-share"></i> ${pulse.shares_count || 0}
+                            <i class="fas fa-share"></i> ${sharesCount}
                         </button>
                     </div>
                     
                     <div class="pulse-stats">
-                        <span class="likes-count">${pulse.likes_count || 0} likes</span>
-                        <span class="comments-count">${pulse.comments_count || 0} comments</span>
-                        <span class="shares-count">${pulse.shares_count || 0} shares</span>
+                        <span class="likes-count">${likesCount} likes</span>
+                        <span class="comments-count">${commentsCount} comments</span>
+                        <span class="shares-count">${sharesCount} shares</span>
                     </div>
                 `;
                 
@@ -4197,6 +4319,9 @@
                 
                 if (event === 'SIGNED_OUT') {
                     window.location.href = 'login.html';
+                } else if (event === 'SIGNED_IN') {
+                    // Refresh the feed when user signs in
+                    setTimeout(() => fetchPulses(), 500);
                 }
             });
             
@@ -4226,6 +4351,13 @@
         
         // Start initialization
         document.addEventListener('DOMContentLoaded', initialize);
+        
+        // Cleanup realtime subscription when page unloads
+        window.addEventListener('beforeunload', () => {
+            if (realtimeSubscription) {
+                supabaseClient.removeChannel(realtimeSubscription);
+            }
+        });
     </script>
 </body>
 </html>
