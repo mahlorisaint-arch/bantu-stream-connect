@@ -275,7 +275,7 @@
             background-color: var(--deep-navy);
             border-radius: 16px;
             padding: 4px;
-            margin-bottom: 24px;
+            margin-bottom: 16px;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
         }
         
@@ -315,6 +315,116 @@
             height: 3px;
             background: linear-gradient(to right, var(--bantu-blue), var(--warm-gold));
             border-radius: 2px;
+        }
+        
+        /* Feature 3: Quiet Resume Banner */
+        .quiet-resume-banner {
+            background: rgba(15, 23, 42, 0.95);
+            border: 1px solid rgba(148, 163, 184, 0.1);
+            border-radius: 12px;
+            margin-bottom: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            position: sticky;
+            top: 120px; /* Below header and tabs */
+            z-index: 5;
+            opacity: 0;
+            transform: translateY(-10px);
+            animation: slideDownBanner 0.4s ease forwards;
+        }
+        
+        @keyframes slideDownBanner {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .resume-banner-content {
+            display: flex;
+            align-items: center;
+            padding: 12px 16px;
+            position: relative;
+        }
+        
+        .resume-icon-left {
+            color: var(--slate-grey);
+            margin-right: 12px;
+            font-size: 14px;
+            flex-shrink: 0;
+        }
+        
+        .resume-text {
+            flex: 1;
+            color: var(--slate-grey);
+            font-size: 14px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            padding-right: 8px;
+        }
+        
+        .resume-icon-right {
+            color: var(--indigo);
+            margin-left: 12px;
+            font-size: 14px;
+            flex-shrink: 0;
+        }
+        
+        .resume-dismiss {
+            background: none;
+            border: none;
+            color: var(--slate-grey);
+            font-size: 20px;
+            cursor: pointer;
+            margin-left: 12px;
+            padding: 0;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0.6;
+            transition: opacity 0.3s ease;
+            flex-shrink: 0;
+        }
+        
+        .resume-dismiss:hover {
+            opacity: 1;
+        }
+        
+        /* Hide banner when scrolled past first two pulses */
+        .quiet-resume-banner.hidden {
+            display: none;
+        }
+        
+        /* Feature 4: Daily Pulse Moment */
+        .daily-pulse-card {
+            position: relative;
+            transform: scale(1.05);
+            transform-origin: center top;
+            margin: 20px 0;
+            border-left: 3px solid var(--warm-gold);
+            box-shadow: 0 0 20px rgba(245, 158, 11, 0.1);
+        }
+        
+        .daily-pulse-header {
+            position: absolute;
+            top: -30px;
+            left: 20px;
+            color: var(--slate-grey);
+            font-size: 13px;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+            padding: 4px 8px;
+            background: rgba(15, 23, 42, 0.9);
+            border-radius: 6px;
+            border: 1px solid rgba(245, 158, 11, 0.2);
+        }
+        
+        .daily-pulse-header::before {
+            content: "✨ ";
         }
         
         /* Create Pulse Prompt */
@@ -1311,6 +1421,18 @@
                 margin-right: -12px;
                 width: calc(100% + 24px);
             }
+            
+            /* Mobile adjustments for Quiet Resume */
+            .quiet-resume-banner {
+                position: relative;
+                top: 0;
+                margin-bottom: 16px;
+            }
+            
+            .daily-pulse-card {
+                transform: none;
+                margin: 16px 0;
+            }
         }
         
         /* Custom Scrollbar */
@@ -1375,6 +1497,20 @@
             <button class="tab active" data-tab="pulse">Pulse</button>
             <button class="tab" data-tab="trending">Trending</button>
             <button class="tab" data-tab="connectors">Connectors</button>
+        </div>
+        
+        <!-- Feature 3: Quiet Resume Banner -->
+        <div class="quiet-resume-banner" id="quietResumeBanner" style="display: none;">
+            <div class="resume-banner-content">
+                <div class="resume-icon-left">
+                    <i class="fas fa-clock"></i>
+                </div>
+                <div class="resume-text" id="resumeText">Continue The Architecture of Afro-Futurism, Part 3 of 5</div>
+                <div class="resume-icon-right">
+                    <i class="fas fa-play"></i>
+                </div>
+                <button class="resume-dismiss" id="resumeDismiss">×</button>
+            </div>
         </div>
         
         <!-- Create Pulse Prompt -->
@@ -1603,6 +1739,15 @@
         let userConnections = new Set(); // Store connected user IDs
         let videoPlayers = new Map(); // Store video player instances
 
+        // Feature 3: Quiet Resume Banner State
+        let quietResumeData = null;
+        let bannerDismissed = false;
+        let bannerScrolledAway = false;
+
+        // Feature 4: Daily Pulse Data
+        let dailyPulseData = null;
+        let dailyPulsePosition = 2; // Show as the 3rd pulse (0-indexed position 2)
+
         async function initialize() {
             console.log('Starting Pulse Feed initialization...');
             
@@ -1636,6 +1781,12 @@
                 
                 // Load user profile with avatar
                 await loadUserProfile();
+                
+                // Load Feature 3: Quiet Resume
+                await loadQuietResumeData();
+                
+                // Load Feature 4: Daily Pulse Moment
+                await loadDailyPulseMoment();
                 
                 // Fetch user connections
                 await fetchUserConnections();
@@ -3065,6 +3216,218 @@
             });
         }
         
+        // ✅ NEW: QUIET RESUME BANNER - Load and show banner
+        async function loadQuietResumeData() {
+            try {
+                // Check session storage for dismissal
+                const dismissed = sessionStorage.getItem('quietResumeDismissed');
+                if (dismissed === 'true') {
+                    bannerDismissed = true;
+                    return;
+                }
+                
+                // Check for last viewed content (in a real app, this would come from your backend)
+                // For demo purposes, we'll check localStorage
+                const lastActivity = localStorage.getItem('lastPulseActivity');
+                
+                if (lastActivity) {
+                    const activity = JSON.parse(lastActivity);
+                    quietResumeData = activity;
+                    
+                    // Format the resume text based on activity type
+                    let resumeText = '';
+                    if (activity.type === 'series') {
+                        resumeText = `Continue ${activity.seriesTitle}, Part ${activity.part}`;
+                    } else if (activity.type === 'discussion') {
+                        resumeText = `Resume discussion on ${activity.topic}`;
+                    } else if (activity.type === 'pulse') {
+                        resumeText = `Continue watching "${activity.pulseTitle}"`;
+                    }
+                    
+                    // Update banner text
+                    document.getElementById('resumeText').textContent = resumeText;
+                    
+                    // Show banner
+                    document.getElementById('quietResumeBanner').style.display = 'block';
+                    
+                    // Add scroll listener to hide banner when scrolled past first two pulses
+                    setTimeout(() => {
+                        setupBannerScrollBehavior();
+                    }, 500);
+                }
+            } catch (error) {
+                console.log('No quiet resume data available:', error);
+            }
+        }
+        
+        // ✅ NEW: Setup banner scroll behavior
+        function setupBannerScrollBehavior() {
+            const banner = document.getElementById('quietResumeBanner');
+            const firstTwoPulses = document.querySelectorAll('.pulse-card:nth-child(-n+2)');
+            
+            if (firstTwoPulses.length < 2) return;
+            
+            const secondPulse = firstTwoPulses[1];
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (!entry.isIntersecting && window.scrollY > 100) {
+                        // Scrolled past second pulse on desktop
+                        if (window.innerWidth > 768) {
+                            banner.classList.add('hidden');
+                            bannerScrolledAway = true;
+                        }
+                    } else {
+                        banner.classList.remove('hidden');
+                        bannerScrolledAway = false;
+                    }
+                });
+            }, {
+                threshold: 0.1,
+                rootMargin: '-100px 0px 0px 0px'
+            });
+            
+            observer.observe(secondPulse);
+        }
+        
+        // ✅ NEW: Handle resume banner click
+        function handleResumeClick() {
+            if (!quietResumeData) return;
+            
+            // In a real app, you would restore the exact state:
+            // - Scroll position
+            // - Video timestamp
+            // - Open comment thread
+            // For demo, we'll navigate to the pulse detail
+            if (quietResumeData.pulseId) {
+                window.location.href = `pulse-content-detail.html?id=${quietResumeData.pulseId}&resume=true`;
+            }
+        }
+        
+        // ✅ NEW: Dismiss resume banner (session only)
+        function dismissResumeBanner() {
+            const banner = document.getElementById('quietResumeBanner');
+            banner.style.opacity = '0';
+            banner.style.transform = 'translateY(-10px)';
+            
+            setTimeout(() => {
+                banner.style.display = 'none';
+                bannerDismissed = true;
+                // Store dismissal in sessionStorage (clears when browser closes)
+                sessionStorage.setItem('quietResumeDismissed', 'true');
+            }, 300);
+        }
+        
+        // ✅ NEW: Feature 4 - Load Daily Pulse Moment
+        async function loadDailyPulseMoment() {
+            try {
+                const { data: { session } } = await supabaseClient.auth.getSession();
+                if (!session) return;
+                
+                // In a real app, this would come from a curated recommendation API
+                // For demo, we'll fetch a pulse that matches user's interests
+                
+                // First, get user's saved topics or completed series
+                const { data: userProfile } = await supabaseClient
+                    .from('user_profiles')
+                    .select('interests, saved_topics')
+                    .eq('id', session.user.id)
+                    .single();
+                
+                let dailyPulse = null;
+                
+                // Try to find a relevant pulse based on:
+                // A) Saved topics
+                if (userProfile?.saved_topics?.length > 0) {
+                    const { data: pulses } = await supabaseClient
+                        .from('pulses')
+                        .select('*, user_profiles!inner(*)')
+                        .contains('topics', userProfile.saved_topics[0])
+                        .order('created_at', { ascending: false })
+                        .limit(1)
+                        .single();
+                    
+                    if (pulses) dailyPulse = pulses;
+                }
+                
+                // B) If no saved topics, try to find from completed series
+                if (!dailyPulse) {
+                    // You would query completed series and find related content
+                    // For demo, we'll just get a recent high-quality pulse
+                    const { data: pulses } = await supabaseClient
+                        .from('pulses')
+                        .select('*, user_profiles!inner(*)')
+                        .order('likes_count', { ascending: false })
+                        .limit(1)
+                        .single();
+                    
+                    if (pulses) dailyPulse = pulses;
+                }
+                
+                if (dailyPulse) {
+                    dailyPulseData = dailyPulse;
+                }
+                
+            } catch (error) {
+                console.log('Could not load daily pulse moment:', error);
+            }
+        }
+        
+        // ✅ NEW: Create Daily Pulse Card
+        function createDailyPulseCard(pulse, likedPulses) {
+            const regularCard = createPulseCard(pulse, likedPulses);
+            
+            // Add daily pulse styling
+            regularCard.classList.add('daily-pulse-card');
+            
+            // Create and insert the "Your Pulse Today" header
+            const dailyHeader = document.createElement('div');
+            dailyHeader.className = 'daily-pulse-header';
+            dailyHeader.textContent = 'Your Pulse Today';
+            
+            // Insert the header before the card
+            const parent = regularCard.parentNode;
+            parent.insertBefore(dailyHeader, regularCard);
+            
+            return regularCard;
+        }
+        
+        // ✅ NEW: Save last activity for Quiet Resume
+        function saveLastActivity(type, data) {
+            const activity = {
+                type: type,
+                timestamp: new Date().toISOString(),
+                ...data
+            };
+            
+            localStorage.setItem('lastPulseActivity', JSON.stringify(activity));
+            
+            // Clear session dismissal so banner shows again for new activity
+            sessionStorage.removeItem('quietResumeDismissed');
+        }
+        
+        // ✅ NEW: Mobile behavior for Quiet Resume banner
+        function setupMobileBannerBehavior() {
+            if (window.innerWidth <= 768) {
+                const banner = document.getElementById('quietResumeBanner');
+                if (!banner) return;
+                
+                // On mobile, banner scrolls away naturally
+                let scrolledPastBanner = false;
+                
+                window.addEventListener('scroll', () => {
+                    if (window.scrollY > 100 && !scrolledPastBanner) {
+                        banner.style.opacity = '0';
+                        banner.style.transform = 'translateY(-20px)';
+                        scrolledPastBanner = true;
+                        
+                        setTimeout(() => {
+                            banner.style.display = 'none';
+                        }, 300);
+                    }
+                });
+            }
+        }
+        
         function initializeFeed(session) {
             // State variables
             let selectedMedia = null;
@@ -3101,6 +3464,10 @@
             const editMediaPreview = document.getElementById('editMediaPreview');
             const editRemoveMedia = document.getElementById('editRemoveMedia');
             const updatePulseBtn = document.getElementById('updatePulse');
+            
+            // Feature 3: Quiet Resume Banner events
+            const quietResumeBanner = document.getElementById('quietResumeBanner');
+            const resumeDismiss = document.getElementById('resumeDismiss');
             
             // ✅ HELPER: Ensure user profile exists
             async function ensureUserProfile(userId) {
@@ -3179,7 +3546,7 @@
                 updatePostButton();
             }
             
-            // ✅ UPDATED: FETCH PULSES FROM SUPABASE WITH LIKE STATUS
+            // ✅ UPDATED: FETCH PULSES FROM SUPABASE WITH LIKE STATUS AND DAILY PULSE
             async function fetchPulses() {
                 try {
                     console.log('🔄 Fetching pulses...');
@@ -3221,7 +3588,7 @@
                 }
             }
             
-            // ✅ UPDATED: DISPLAY PULSES WITH LIKE STATUS
+            // ✅ UPDATED: DISPLAY PULSES WITH DAILY PULSE MOMENT
             function displayPulses(pulses, likedPulses) {
                 if (!pulses || pulses.length === 0) {
                     loadSampleData();
@@ -3230,10 +3597,35 @@
                 
                 pulseFeedContainer.innerHTML = '';
                 
-                pulses.forEach(pulse => {
+                // Check if we have a daily pulse and it's not already in the pulses array
+                let hasDailyPulse = false;
+                let dailyPulseInserted = false;
+                
+                pulses.forEach((pulse, index) => {
+                    // Insert daily pulse at the specified position (default: 3rd position, index 2)
+                    if (dailyPulseData && !hasDailyPulse && index === dailyPulsePosition) {
+                        // Check if daily pulse is already in the feed
+                        const isAlreadyInFeed = pulses.some(p => p.id === dailyPulseData.id);
+                        
+                        if (!isAlreadyInFeed) {
+                            const dailyPulseCard = createDailyPulseCard(dailyPulseData, likedPulses);
+                            pulseFeedContainer.appendChild(dailyPulseCard);
+                            hasDailyPulse = true;
+                            dailyPulseInserted = true;
+                        }
+                    }
+                    
+                    // Insert the regular pulse
                     const pulseCard = createPulseCard(pulse, likedPulses);
                     pulseFeedContainer.appendChild(pulseCard);
                 });
+                
+                // If daily pulse wasn't inserted at the specified position (maybe because there weren't enough pulses),
+                // insert it at the end
+                if (dailyPulseData && !dailyPulseInserted) {
+                    const dailyPulseCard = createDailyPulseCard(dailyPulseData, likedPulses);
+                    pulseFeedContainer.appendChild(dailyPulseCard);
+                }
             }
             
             // ✅ UPDATED: CREATE PULSE CARD ELEMENT WITH EXACT VIDEO PLAYER FROM pulse-content-detail.html
@@ -3618,6 +4010,18 @@
             closeModal.addEventListener('click', closeCreateModal);
             cancelCreate.addEventListener('click', closeCreateModal);
             
+            // Feature 3: Quiet Resume Banner events
+            if (quietResumeBanner) {
+                quietResumeBanner.addEventListener('click', handleResumeClick);
+            }
+            
+            if (resumeDismiss) {
+                resumeDismiss.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    dismissResumeBanner();
+                });
+            }
+            
             // Close modal when clicking outside
             createModal.addEventListener('click', (e) => {
                 if (e.target === createModal) {
@@ -3798,6 +4202,9 @@
             
             // Initial data load
             fetchPulses();
+            
+            // Setup mobile behavior for Quiet Resume
+            setupMobileBannerBehavior();
         }
         
         // Add timeout for force load
