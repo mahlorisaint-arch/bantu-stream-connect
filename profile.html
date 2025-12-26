@@ -228,12 +228,34 @@
             align-items: center;
             justify-content: center;
             backdrop-filter: blur(10px);
+            position: relative;
         }
         
         .notification-btn:hover {
             color: var(--soft-white);
             background: rgba(255, 255, 255, 0.1);
             border-color: var(--bantu-blue);
+        }
+        
+        /* NEW: Notification Dot Indicator */
+        .notification-btn.has-unread::after {
+            content: '';
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            width: 8px;
+            height: 8px;
+            background: var(--warm-gold);
+            border-radius: 50%;
+            display: block;
+            box-shadow: 0 0 8px rgba(245, 158, 11, 0.5);
+            animation: pulse-gold 2s infinite;
+        }
+        
+        @keyframes pulse-gold {
+            0% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.7); }
+            70% { box-shadow: 0 0 0 6px rgba(245, 158, 11, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
         }
         
         .user-avatar {
@@ -258,7 +280,6 @@
             width: 100%;
             height: 100%;
             object-fit: cover;
-            border-radius: 50%;
         }
         
         /* Profile Header - Glassmorphism */
@@ -1465,7 +1486,8 @@
             </div>
             
             <div class="user-section">
-                <button class="notification-btn">
+                <!-- UPDATED: Notification button with real-time indicator -->
+                <button class="notification-btn" id="notificationBtn" onclick="window.location.href='notifications.html'">
                     <i class="far fa-bell"></i>
                 </button>
                 <div class="user-avatar" id="user-avatar" onclick="window.location.href='profile.html'">
@@ -1698,6 +1720,7 @@
         let currentViewProfile = null;
         let isConnected = false;
         let profileAvatarFile = null;
+        let notificationsSubscription = null; // For real-time notifications
 
         // Helper function to safely get element
         function getElement(id) {
@@ -1775,6 +1798,12 @@
                     await checkConnectionStatus();
                 }
                 
+                // NEW: Check for unread notifications
+                await checkUnreadNotifications();
+                
+                // NEW: Subscribe to real-time notifications
+                subscribeToNotifications();
+                
                 // Hide loading, show content
                 safeSetStyle(getElement('loading'), 'display', 'none');
                 safeSetStyle(getElement('content'), 'display', 'block');
@@ -1806,6 +1835,103 @@
                     initializeEventListeners();
                     loadSampleData();
                 }, 2000);
+            }
+        }
+        
+        // NEW: Check for unread notifications
+        async function checkUnreadNotifications() {
+            try {
+                // First check if the pulse_notifications table exists
+                const { count, error: countError } = await supabaseClient
+                    .from('pulse_notifications')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('target_user_id', currentUserId)
+                    .eq('is_read', false);
+                
+                if (countError) {
+                    console.log('pulse_notifications table might not exist, using fallback');
+                    // Table might not exist, use fallback logic
+                    updateNotificationIndicator(false); // No indicator if table doesn't exist
+                    return;
+                }
+                
+                const hasUnread = count > 0;
+                updateNotificationIndicator(hasUnread);
+                
+                console.log(`Found ${count} unread notifications`);
+                
+            } catch (error) {
+                console.error('Error checking unread notifications:', error);
+                updateNotificationIndicator(false);
+            }
+        }
+        
+        // NEW: Update notification indicator
+        function updateNotificationIndicator(hasUnread) {
+            const notificationBtn = document.getElementById('notificationBtn');
+            if (notificationBtn) {
+                if (hasUnread) {
+                    notificationBtn.classList.add('has-unread');
+                } else {
+                    notificationBtn.classList.remove('has-unread');
+                }
+            }
+        }
+        
+        // NEW: Subscribe to real-time notifications
+        function subscribeToNotifications() {
+            if (!supabaseClient || !currentUserId) return;
+            
+            try {
+                notificationsSubscription = supabaseClient
+                    .channel('profile-notifications')
+                    .on(
+                        'postgres_changes',
+                        {
+                            event: 'INSERT',
+                            schema: 'public',
+                            table: 'pulse_notifications',
+                            filter: `target_user_id=eq.${currentUserId}`
+                        },
+                        (payload) => {
+                            console.log('New notification received (real-time):', payload);
+                            // Show gold dot indicator
+                            updateNotificationIndicator(true);
+                            
+                            // Optional: Show a toast notification
+                            showToast('New notification!', 'success');
+                        }
+                    )
+                    .on(
+                        'postgres_changes',
+                        {
+                            event: 'UPDATE',
+                            schema: 'public',
+                            table: 'pulse_notifications',
+                            filter: `target_user_id=eq.${currentUserId}`
+                        },
+                        (payload) => {
+                            // Check if notification was marked as read
+                            if (payload.new.is_read === true && payload.old.is_read === false) {
+                                // Re-check all notifications to update indicator
+                                checkUnreadNotifications();
+                            }
+                        }
+                    )
+                    .subscribe((status) => {
+                        console.log('Notification subscription status:', status);
+                    });
+                    
+            } catch (error) {
+                console.error('Error setting up notification subscription:', error);
+            }
+        }
+        
+        // NEW: Clean up subscription when leaving page
+        function cleanupNotificationsSubscription() {
+            if (notificationsSubscription) {
+                supabaseClient.removeChannel(notificationsSubscription);
+                notificationsSubscription = null;
             }
         }
         
@@ -2103,21 +2229,37 @@
                 messageBtn.style.display = 'none';
             }
             
+            // NEW: Notification button click handler
+            const notificationBtn = document.getElementById('notificationBtn');
+            if (notificationBtn) {
+                notificationBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    window.location.href = 'notifications.html';
+                });
+            }
+            
             // Listen for auth changes
             if (supabaseClient) {
                 supabaseClient.auth.onAuthStateChange((event, session) => {
                     console.log('🔐 Auth state changed:', event);
                     
                     if (event === 'SIGNED_OUT') {
+                        // Clean up subscription
+                        cleanupNotificationsSubscription();
                         window.location.href = 'login.html';
                     } else if (event === 'SIGNED_IN' || event === 'USER_UPDATED') {
                         // Reload profile data if user updates
                         if (session && session.user.id === currentUserId) {
                             loadCurrentUserProfile(session.user);
+                            // Re-check notifications
+                            checkUnreadNotifications();
                         }
                     }
                 });
             }
+            
+            // Clean up subscription when page is unloaded
+            window.addEventListener('beforeunload', cleanupNotificationsSubscription);
         }
         
         // Log Out Function
@@ -2134,6 +2276,9 @@
                     logoutBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Logging out...';
                     logoutBtn.disabled = true;
                 }
+                
+                // Clean up subscription
+                cleanupNotificationsSubscription();
                 
                 // Sign out from Supabase
                 const { error } = await supabaseClient.auth.signOut();
