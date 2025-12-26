@@ -35,9 +35,6 @@
             --card-border: rgba(148, 163, 184, 0.2);
             --hover-overlay: rgba(255, 255, 255, 0.05);
             --active-overlay: rgba(245, 158, 11, 0.1);
-            --indigo: #4F46E5;
-            --gold-glow: rgba(245, 158, 11, 0.3);
-            --blue-glow: rgba(29, 78, 216, 0.3);
         }
         
         * {
@@ -275,7 +272,7 @@
             background-color: var(--deep-navy);
             border-radius: 16px;
             padding: 4px;
-            margin-bottom: 16px;
+            margin-bottom: 24px;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
         }
         
@@ -315,116 +312,6 @@
             height: 3px;
             background: linear-gradient(to right, var(--bantu-blue), var(--warm-gold));
             border-radius: 2px;
-        }
-        
-        /* Feature 3: Quiet Resume Banner */
-        .quiet-resume-banner {
-            background: rgba(15, 23, 42, 0.95);
-            border: 1px solid rgba(148, 163, 184, 0.1);
-            border-radius: 12px;
-            margin-bottom: 16px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            backdrop-filter: blur(10px);
-            position: sticky;
-            top: 120px; /* Below header and tabs */
-            z-index: 5;
-            opacity: 0;
-            transform: translateY(-10px);
-            animation: slideDownBanner 0.4s ease forwards;
-        }
-        
-        @keyframes slideDownBanner {
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-        
-        .resume-banner-content {
-            display: flex;
-            align-items: center;
-            padding: 12px 16px;
-            position: relative;
-        }
-        
-        .resume-icon-left {
-            color: var(--slate-grey);
-            margin-right: 12px;
-            font-size: 14px;
-            flex-shrink: 0;
-        }
-        
-        .resume-text {
-            flex: 1;
-            color: var(--slate-grey);
-            font-size: 14px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-            padding-right: 8px;
-        }
-        
-        .resume-icon-right {
-            color: var(--indigo);
-            margin-left: 12px;
-            font-size: 14px;
-            flex-shrink: 0;
-        }
-        
-        .resume-dismiss {
-            background: none;
-            border: none;
-            color: var(--slate-grey);
-            font-size: 20px;
-            cursor: pointer;
-            margin-left: 12px;
-            padding: 0;
-            width: 20px;
-            height: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            opacity: 0.6;
-            transition: opacity 0.3s ease;
-            flex-shrink: 0;
-        }
-        
-        .resume-dismiss:hover {
-            opacity: 1;
-        }
-        
-        /* Hide banner when scrolled past first two pulses */
-        .quiet-resume-banner.hidden {
-            display: none;
-        }
-        
-        /* Feature 4: Daily Pulse Moment */
-        .daily-pulse-card {
-            position: relative;
-            transform: scale(1.05);
-            transform-origin: center top;
-            margin: 20px 0;
-            border-left: 3px solid var(--warm-gold);
-            box-shadow: 0 0 20px rgba(245, 158, 11, 0.1);
-        }
-        
-        .daily-pulse-header {
-            position: absolute;
-            top: -30px;
-            left: 20px;
-            color: var(--slate-grey);
-            font-size: 13px;
-            font-weight: 500;
-            letter-spacing: 0.5px;
-            padding: 4px 8px;
-            background: rgba(15, 23, 42, 0.9);
-            border-radius: 6px;
-            border: 1px solid rgba(245, 158, 11, 0.2);
-        }
-        
-        .daily-pulse-header::before {
-            content: "✨ ";
         }
         
         /* Create Pulse Prompt */
@@ -489,7 +376,7 @@
             border-radius: 16px;
             overflow: hidden;
             transition: all 0.3s ease;
-            cursor: pointer;
+            cursor: pointer; /* Add cursor pointer for clickable card */
         }
         
         .pulse-card:hover {
@@ -503,7 +390,7 @@
             align-items: center;
             padding: 20px;
             padding-bottom: 0;
-            position: relative;
+            position: relative; /* For positioning the more options button */
         }
         
         .pulse-avatar {
@@ -564,65 +451,6 @@
             margin-top: 4px;
         }
         
-        /* Connect Button - Gold outline circle */
-        .pulse-connect-btn {
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            background: transparent;
-            border: 2px solid var(--warm-gold);
-            color: var(--warm-gold);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            margin-left: 8px;
-            font-size: 16px;
-            position: relative;
-            z-index: 10;
-        }
-        
-        .pulse-connect-btn:hover {
-            background: rgba(245, 158, 11, 0.1);
-            transform: scale(1.1);
-        }
-        
-        .pulse-connect-btn.connected {
-            border-color: var(--success-color);
-            color: var(--success-color);
-            background: rgba(16, 185, 129, 0.1);
-        }
-        
-        .pulse-connect-btn.connecting {
-            animation: connectPulse 0.6s ease;
-            border-color: var(--bantu-blue);
-            color: var(--bantu-blue);
-        }
-        
-        @keyframes connectPulse {
-            0% {
-                transform: scale(1);
-                border-color: var(--warm-gold);
-                color: var(--warm-gold);
-            }
-            33% {
-                transform: scale(1.2);
-                border-color: var(--bantu-blue);
-                color: var(--bantu-blue);
-            }
-            66% {
-                transform: scale(1.1);
-                border-color: var(--bantu-blue);
-                color: var(--bantu-blue);
-            }
-            100% {
-                transform: scale(1);
-                border-color: var(--success-color);
-                color: var(--success-color);
-            }
-        }
-        
         /* More options button for user's own pulses */
         .pulse-more-options {
             position: absolute;
@@ -636,7 +464,6 @@
             padding: 8px;
             border-radius: 8px;
             transition: all 0.3s ease;
-            z-index: 10;
         }
         
         .pulse-more-options:hover {
@@ -710,134 +537,22 @@
             color: var(--soft-white);
         }
         
-        /* UPDATED: EXACT Video Player from pulse-content-detail.html */
-        .media-container {
-            width: 100%;
-            aspect-ratio: 9/16;
-            background: black;
-            border-radius: 0;
+        /* Media Container */
+        .pulse-media-container {
+            border-radius: 12px;
             overflow: hidden;
-            margin-bottom: 20px;
+            margin-bottom: 16px;
             position: relative;
-            display: none;
+            background-color: var(--deep-black);
         }
         
-        .media-container.has-media {
-            display: block;
-        }
-        
-        .pulse-media {
+        .vertical-video {
             width: 100%;
-            height: 100%;
+            max-height: 600px;
             object-fit: cover;
             display: block;
         }
         
-        /* Custom Video Controls - Glassmorphism (EXACT from pulse-content-detail.html) */
-        .video-controls-overlay {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
-            padding: 20px;
-            opacity: 0;
-            transition: opacity 0.3s ease;
-            backdrop-filter: blur(10px);
-        }
-        
-        .media-container:hover .video-controls-overlay {
-            opacity: 1;
-        }
-        
-        .video-progress {
-            width: 100%;
-            height: 4px;
-            background: rgba(255,255,255,0.2);
-            border-radius: 2px;
-            margin-bottom: 15px;
-            position: relative;
-            cursor: pointer;
-        }
-        
-        .video-progress-filled {
-            position: absolute;
-            top: 0;
-            left: 0;
-            height: 100%;
-            background: var(--warm-gold);
-            border-radius: 2px;
-            width: 0%;
-        }
-        
-        .video-controls {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-        
-        .video-left-controls,
-        .video-right-controls {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-        
-        .video-control-btn {
-            background: rgba(15, 23, 42, 0.7);
-            border: 1px solid rgba(245, 158, 11, 0.3);
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--warm-gold);
-            font-size: 16px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            backdrop-filter: blur(5px);
-        }
-        
-        .video-control-btn:hover {
-            background: rgba(245, 158, 11, 0.2);
-            transform: scale(1.1);
-        }
-        
-        .video-time {
-            color: var(--warm-gold);
-            font-size: 14px;
-            font-weight: 500;
-            min-width: 100px;
-            text-align: center;
-        }
-        
-        .video-volume {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        
-        .volume-slider {
-            width: 80px;
-            height: 4px;
-            background: rgba(255,255,255,0.2);
-            border-radius: 2px;
-            position: relative;
-            cursor: pointer;
-        }
-        
-        .volume-slider-filled {
-            position: absolute;
-            top: 0;
-            left: 0;
-            height: 100%;
-            background: var(--warm-gold);
-            border-radius: 2px;
-            width: 50%;
-        }
-        
-        /* Image Placeholder */
         .image-placeholder {
             width: 100%;
             aspect-ratio: 9/16;
@@ -1414,25 +1129,6 @@
                 right: 20px;
                 top: 20px;
             }
-            
-            /* Mobile video player adjustments */
-            .media-container.has-media {
-                margin-left: -12px;
-                margin-right: -12px;
-                width: calc(100% + 24px);
-            }
-            
-            /* Mobile adjustments for Quiet Resume */
-            .quiet-resume-banner {
-                position: relative;
-                top: 0;
-                margin-bottom: 16px;
-            }
-            
-            .daily-pulse-card {
-                transform: none;
-                margin: 16px 0;
-            }
         }
         
         /* Custom Scrollbar */
@@ -1497,20 +1193,6 @@
             <button class="tab active" data-tab="pulse">Pulse</button>
             <button class="tab" data-tab="trending">Trending</button>
             <button class="tab" data-tab="connectors">Connectors</button>
-        </div>
-        
-        <!-- Feature 3: Quiet Resume Banner -->
-        <div class="quiet-resume-banner" id="quietResumeBanner" style="display: none;">
-            <div class="resume-banner-content">
-                <div class="resume-icon-left">
-                    <i class="fas fa-clock"></i>
-                </div>
-                <div class="resume-text" id="resumeText">Continue The Architecture of Afro-Futurism, Part 3 of 5</div>
-                <div class="resume-icon-right">
-                    <i class="fas fa-play"></i>
-                </div>
-                <button class="resume-dismiss" id="resumeDismiss">×</button>
-            </div>
         </div>
         
         <!-- Create Pulse Prompt -->
@@ -1736,267 +1418,7 @@
         let editingSeriesId = null;
         let editingSeriesTitle = null;
         let editingPulseData = null;
-        let userConnections = new Set(); // Store connected user IDs
-        let videoPlayers = new Map(); // Store video player instances
 
-        // Feature 3: Quiet Resume Banner State
-        let quietResumeData = null;
-        let bannerDismissed = false;
-        let bannerScrolledAway = false;
-
-        // Feature 4: Daily Pulse Data
-        let dailyPulseData = null;
-        let dailyPulsePosition = 2; // Show as the 3rd pulse (0-indexed position 2)
-
-        // NEW: Real-time subscription for likes
-        let realtimeSubscription = null;
-
-        // ✅ FIXED: MOVE createPulseCard FUNCTION TO GLOBAL SCOPE
-        function createPulseCard(pulse, likedPulses) {
-            // Get user info - handle missing profiles gracefully
-            const profile = pulse.user_profiles || {};
-            const fullName = profile.full_name || 'User';
-            const username = profile.username || '';
-            const avatarUrl = profile.avatar_url;
-            const role = profile.role || 'user';
-            const initials = fullName.substring(0, 2).toUpperCase();
-            const timeAgo = getTimeAgo(new Date(pulse.created_at));
-            
-            const isSeries = pulse.series_id && pulse.series_order;
-            const hasMedia = pulse.media_url;
-            const mediaType = pulse.media_type;
-            const isOwnPulse = pulse.user_id === currentUserId;
-            const isLiked = likedPulses.has(pulse.id);
-            const isConnected = userConnections.has(pulse.user_id);
-            
-            // Get counts from pulse data
-            const likesCount = pulse.likes_count || 0;
-            const commentsCount = pulse.comments_count || 0;
-            const sharesCount = pulse.shares_count || 0;
-            
-            const card = document.createElement('div');
-            card.className = 'pulse-card';
-            card.dataset.pulseId = pulse.id;
-            
-            // Add click event to view pulse detail
-            card.addEventListener('click', (e) => {
-                // Don't trigger if clicking on action buttons, connect button, or more options
-                if (!e.target.closest('.action-button') && 
-                    !e.target.closest('.pulse-connect-btn') &&
-                    !e.target.closest('.pulse-more-options') && 
-                    !e.target.closest('.pulse-options-menu')) {
-                    viewPulseDetail(pulse.id);
-                }
-            });
-            
-            // Create connect button HTML (only if not own pulse)
-            let connectBtnHTML = '';
-            if (!isOwnPulse) {
-                const connectIcon = isConnected ? 'fa-user-check' : 'fa-user-plus';
-                const connectClass = isConnected ? 'connected' : '';
-                connectBtnHTML = `
-                    <button class="pulse-connect-btn ${connectClass}" data-creator-id="${pulse.user_id}">
-                        <i class="fas ${connectIcon}"></i>
-                    </button>
-                `;
-            }
-            
-            let moreOptionsHTML = '';
-            if (isOwnPulse) {
-                moreOptionsHTML = `
-                    <button class="pulse-more-options" data-pulse-id="${pulse.id}">
-                        <i class="fas fa-ellipsis-h"></i>
-                    </button>
-                    <div class="pulse-options-menu" id="options-menu-${pulse.id}">
-                        <button class="pulse-option-item edit-option" data-pulse-id="${pulse.id}">
-                            <i class="fas fa-edit"></i>
-                            Edit
-                        </button>
-                        <button class="pulse-option-item delete delete-option" data-pulse-id="${pulse.id}">
-                            <i class="fas fa-trash"></i>
-                            Delete
-                        </button>
-                    </div>
-                `;
-            }
-            
-            // Media HTML
-            let mediaHTML = '';
-            if (hasMedia) {
-                if (mediaType === 'video') {
-                    mediaHTML = `
-                        <div class="media-container has-media">
-                            <video class="pulse-media" data-video-id="video-${pulse.id}" preload="metadata" playsinline>
-                                <source src="${pulse.media_url}" type="video/mp4">
-                                Your browser does not support the video tag.
-                            </video>
-                            <div class="video-controls-overlay">
-                                <div class="video-progress">
-                                    <div class="video-progress-filled"></div>
-                                </div>
-                                <div class="video-controls">
-                                    <div class="video-left-controls">
-                                        <button class="video-control-btn play-pause-btn">
-                                            <i class="fas fa-play"></i>
-                                        </button>
-                                        <div class="video-time">0:00 / 0:00</div>
-                                    </div>
-                                    <div class="video-right-controls">
-                                        <div class="video-volume">
-                                            <button class="video-control-btn mute-btn">
-                                                <i class="fas fa-volume-up"></i>
-                                            </button>
-                                            <div class="volume-slider">
-                                                <div class="volume-slider-filled"></div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                } else {
-                    mediaHTML = `
-                        <div class="media-container has-media">
-                            <img src="${pulse.media_url}" alt="Pulse image" class="pulse-media">
-                        </div>
-                    `;
-                }
-            }
-            
-            card.innerHTML = `
-                <div class="pulse-header">
-                    <div class="pulse-avatar" style="${avatarUrl ? `background-image: url('${avatarUrl}'); background-size: cover; background-position: center;` : ''}">
-                        ${avatarUrl ? '' : initials}
-                    </div>
-                    <div class="pulse-creator-info">
-                        <div class="creator-name">
-                            ${fullName}
-                            ${role === 'creator' ? '<span class="creator-badge">Creator</span>' : ''}
-                            ${role === 'admin' ? '<span class="creator-badge" style="background: rgba(239, 68, 68, 0.2); color: var(--error-color); border-color: rgba(239, 68, 68, 0.3);">Admin</span>' : ''}
-                        </div>
-                        <div class="pulse-time">${username ? `@${username} • ` : ''}${timeAgo}</div>
-                    </div>
-                    ${connectBtnHTML}
-                    ${moreOptionsHTML}
-                </div>
-                
-                ${isSeries ? `
-                    <div class="pulse-series-label">
-                        PULSE SERIES · Part ${pulse.series_order}
-                    </div>
-                ` : ''}
-                
-                <div class="pulse-content">
-                    ${pulse.caption ? `<p class="pulse-text">${pulse.caption}</p>` : ''}
-                    
-                    ${mediaHTML}
-                    
-                    ${pulse.linked_content_id ? `
-                        <div class="linked-content">
-                            <div class="linked-content-label">Linked content</div>
-                            <div class="linked-content-card">
-                                <div class="content-thumbnail"></div>
-                                <div class="content-info">
-                                    <h4>${pulse.linked_content_type || 'Content'}</h4>
-                                    <p>Tap to watch or listen</p>
-                                </div>
-                            </div>
-                        </div>
-                    ` : ''}
-                </div>
-                
-                <div class="pulse-actions">
-                    <button class="action-button like-btn ${isLiked ? 'liked' : ''}" data-pulse-id="${pulse.id}">
-                        <i class="fas fa-heart" ${isLiked ? 'style="color: var(--warm-gold);"' : ''}></i> ${likesCount}
-                    </button>
-                    <button class="action-button comment-btn" data-pulse-id="${pulse.id}">
-                        <i class="fas fa-comment"></i> ${commentsCount}
-                    </button>
-                    <button class="action-button share-btn" data-pulse-id="${pulse.id}">
-                        <i class="fas fa-share"></i> ${sharesCount}
-                    </button>
-                </div>
-                
-                <div class="pulse-stats">
-                    <span class="likes-count">${likesCount} likes</span>
-                    <span class="comments-count">${commentsCount} comments</span>
-                    <span class="shares-count">${sharesCount} shares</span>
-                </div>
-            `;
-            
-            // Initialize video controls if video exists
-            if (hasMedia && mediaType === 'video') {
-                setTimeout(() => {
-                    const videoElement = card.querySelector('video');
-                    const mediaContainer = card.querySelector('.media-container');
-                    if (videoElement && mediaContainer) {
-                        initializeVideoPlayer(videoElement, mediaContainer);
-                    }
-                }, 100);
-            }
-            
-            // Add event listeners
-            const likeBtn = card.querySelector('.like-btn');
-            const commentBtn = card.querySelector('.comment-btn');
-            const shareBtn = card.querySelector('.share-btn');
-            
-            likeBtn.addEventListener('click', (e) => handleLike(pulse.id, e));
-            commentBtn.addEventListener('click', (e) => handleComment(pulse.id, e));
-            shareBtn.addEventListener('click', (e) => handleShare(pulse.id, e));
-            
-            // Add event listener for connect button if it exists
-            const connectBtn = card.querySelector('.pulse-connect-btn');
-            if (connectBtn) {
-                connectBtn.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    const creatorId = connectBtn.getAttribute('data-creator-id');
-                    handleConnect(creatorId, connectBtn);
-                });
-            }
-            
-            // Add event listeners for more options if it's the user's own pulse
-            if (isOwnPulse) {
-                const moreOptionsBtn = card.querySelector('.pulse-more-options');
-                const optionsMenu = card.querySelector(`#options-menu-${pulse.id}`);
-                const editOption = card.querySelector('.edit-option');
-                const deleteOption = card.querySelector('.delete-option');
-                
-                moreOptionsBtn.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    // Close any other open menus
-                    document.querySelectorAll('.pulse-options-menu').forEach(menu => {
-                        if (menu !== optionsMenu) {
-                            menu.classList.remove('active');
-                        }
-                    });
-                    optionsMenu.classList.toggle('active');
-                });
-                
-                editOption.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    optionsMenu.classList.remove('active');
-                    handleEdit(pulse.id);
-                });
-                
-                deleteOption.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    optionsMenu.classList.remove('active');
-                    handleDelete(pulse.id);
-                });
-                
-                // Close menu when clicking outside
-                document.addEventListener('click', (e) => {
-                    if (!moreOptionsBtn.contains(e.target) && !optionsMenu.contains(e.target)) {
-                        optionsMenu.classList.remove('active');
-                    }
-                });
-            }
-            
-            return card;
-        }
-
-        // ✅ UPDATED INITIALIZE FUNCTION
         async function initialize() {
             console.log('Starting Pulse Feed initialization...');
             
@@ -2031,15 +1453,6 @@
                 // Load user profile with avatar
                 await loadUserProfile();
                 
-                // Load Feature 3: Quiet Resume
-                await loadQuietResumeData();
-                
-                // Load Feature 4: Daily Pulse Moment
-                await loadDailyPulseMoment();
-                
-                // Fetch user connections
-                await fetchUserConnections();
-                
                 // Fetch notifications
                 await fetchNotifications();
                 
@@ -2056,9 +1469,6 @@
                 // Initialize the feed functionality
                 initializeFeed(session);
                 
-                // NEW: Set up real-time subscription for likes
-                setupRealtimeLikes();
-                
             } catch (error) {
                 console.error('Error:', error);
                 document.getElementById('loading-text').textContent = 'Error loading. Please refresh.';
@@ -2072,7 +1482,15 @@
                     
                     document.getElementById('loading').style.display = 'none';
                     document.getElementById('content').style.display = 'block';
-                    showEmptyState();
+                    document.getElementById('pulse-feed-container').innerHTML = `
+                        <div class="error" style="padding: 40px 20px; text-align: center; color: var(--slate-grey);">
+                            <h3 style="color: var(--soft-white); margin-bottom: 10px;">Welcome to Bantu Connect Pulse!</h3>
+                            <p>The African way baba, it's all in the DNA.</p>
+                            <button class="modal-btn modal-btn-post" onclick="loadSampleData()" style="margin-top: 20px;">
+                                Load Demo Content
+                            </button>
+                        </div>
+                    `;
                     
                     // Set up basic event listeners
                     setupBasicEventListeners();
@@ -2216,124 +1634,6 @@
                     document.getElementById('modal-avatar').querySelector('span').textContent = initials;
                     document.getElementById('edit-modal-avatar').querySelector('span').textContent = initials;
                 }
-            }
-        }
-        
-        // ✅ NEW: FETCH USER CONNECTIONS
-        async function fetchUserConnections() {
-            try {
-                const { data: { session } } = await supabaseClient.auth.getSession();
-                if (!session) return;
-                
-                // Fetch connections where current user is the connector
-                const { data: connections, error } = await supabaseClient
-                    .from('connectors')
-                    .select('connected_id')
-                    .eq('connector_id', session.user.id);
-                
-                if (error) {
-                    console.error('Error fetching connections:', error);
-                    return;
-                }
-                
-                // Store connected user IDs in a Set for quick lookup
-                userConnections = new Set();
-                if (connections) {
-                    connections.forEach(connection => {
-                        userConnections.add(connection.connected_id);
-                    });
-                }
-                
-                console.log('User connections loaded:', userConnections.size);
-                
-            } catch (error) {
-                console.error('Error loading user connections:', error);
-            }
-        }
-        
-        // ✅ NEW: HANDLE CONNECT BUTTON CLICK
-        async function handleConnect(pulseCreatorId, connectBtn) {
-            try {
-                const { data: { session } } = await supabaseClient.auth.getSession();
-                if (!session) {
-                    showToast('Please login to connect with creators', 'error');
-                    return;
-                }
-                
-                // Don't allow connecting to yourself
-                if (pulseCreatorId === session.user.id) {
-                    showToast('You cannot connect with yourself', 'error');
-                    return;
-                }
-                
-                // Check if already connected
-                const isConnected = userConnections.has(pulseCreatorId);
-                
-                // Add connecting animation
-                connectBtn.classList.add('connecting');
-                connectBtn.disabled = true;
-                
-                if (isConnected) {
-                    // Disconnect: Delete the connection
-                    const { error } = await supabaseClient
-                        .from('connectors')
-                        .delete()
-                        .eq('connector_id', session.user.id)
-                        .eq('connected_id', pulseCreatorId);
-                    
-                    if (error) throw error;
-                    
-                    // Remove from local connections
-                    userConnections.delete(pulseCreatorId);
-                    
-                    // Update button state after animation
-                    setTimeout(() => {
-                        connectBtn.classList.remove('connected');
-                        connectBtn.classList.remove('connecting');
-                        connectBtn.innerHTML = '<i class="fas fa-user-plus"></i>';
-                        connectBtn.disabled = false;
-                    }, 600);
-                    
-                    showToast('Disconnected from creator', 'success');
-                } else {
-                    // Connect: Create new connection
-                    const { error } = await supabaseClient
-                        .from('connectors')
-                        .insert({
-                            connector_id: session.user.id,
-                            connected_id: pulseCreatorId,
-                            connection_type: 'creator',
-                            created_at: new Date().toISOString()
-                        });
-                    
-                    if (error) {
-                        // Check if it's a duplicate error (23505)
-                        if (error.code === '23505') {
-                            // Already connected, just update UI
-                            userConnections.add(pulseCreatorId);
-                        } else {
-                            throw error;
-                        }
-                    } else {
-                        userConnections.add(pulseCreatorId);
-                    }
-                    
-                    // Update button state after animation
-                    setTimeout(() => {
-                        connectBtn.classList.add('connected');
-                        connectBtn.classList.remove('connecting');
-                        connectBtn.innerHTML = '<i class="fas fa-user-check"></i>';
-                        connectBtn.disabled = false;
-                    }, 600);
-                    
-                    showToast('Connected with creator!', 'success');
-                }
-                
-            } catch (error) {
-                console.error('Error handling connection:', error);
-                connectBtn.classList.remove('connecting');
-                connectBtn.disabled = false;
-                showToast('Failed to update connection', 'error');
             }
         }
         
@@ -2541,7 +1841,7 @@
             }
         }
         
-        // ✅ UPDATED: HANDLE LIKE - NOW WITH PROPER COUNT UPDATES
+        // ✅ HANDLE LIKE
         async function handleLike(pulseId, e) {
             if (e) e.stopPropagation();
             
@@ -2552,29 +1852,13 @@
                     return;
                 }
                 
-                // Get current like status from the button
-                const pulseCard = document.querySelector(`[data-pulse-id="${pulseId}"]`);
-                if (!pulseCard) return;
-                
-                const likeBtn = pulseCard.querySelector('.like-btn');
-                const isCurrentlyLiked = likeBtn.classList.contains('liked');
-                
-                // Check if already liked in database
+                // Check if already liked
                 const { data: existingLike } = await supabaseClient
                     .from('pulse_likes')
                     .select('id')
                     .eq('pulse_id', pulseId)
                     .eq('user_id', session.user.id)
                     .single();
-                
-                // FIXED: Get the actual current likes count from the database
-                const { data: currentPulse } = await supabaseClient
-                    .from('pulses')
-                    .select('likes_count')
-                    .eq('id', pulseId)
-                    .single();
-                
-                let currentCount = currentPulse?.likes_count || 0;
                 
                 if (existingLike) {
                     // Unlike
@@ -2584,22 +1868,7 @@
                         .eq('id', existingLike.id);
                     
                     if (!error) {
-                        // Update UI with correct count from trigger
-                        updateLikeUI(pulseId, false, currentCount - 1);
-                        
-                        // FIXED: Fetch updated count from database after trigger
-                        setTimeout(async () => {
-                            const { data: updatedPulse } = await supabaseClient
-                                .from('pulses')
-                                .select('likes_count')
-                                .eq('id', pulseId)
-                                .single();
-                            
-                            if (updatedPulse) {
-                                updateLikeUI(pulseId, false, updatedPulse.likes_count);
-                            }
-                        }, 100);
-                        
+                        updateLikeUI(pulseId, false);
                         showToast('Like removed', 'success');
                     }
                 } else {
@@ -2612,25 +1881,10 @@
                         });
                     
                     if (!error) {
-                        // Update UI with correct count from trigger
-                        updateLikeUI(pulseId, true, currentCount + 1);
-                        
-                        // FIXED: Fetch updated count from database after trigger
-                        setTimeout(async () => {
-                            const { data: updatedPulse } = await supabaseClient
-                                .from('pulses')
-                                .select('likes_count')
-                                .eq('id', pulseId)
-                                .single();
-                            
-                            if (updatedPulse) {
-                                updateLikeUI(pulseId, true, updatedPulse.likes_count);
-                            }
-                        }, 100);
-                        
+                        updateLikeUI(pulseId, true);
                         showToast('Pulse liked!', 'success');
                         
-                        // Create notification for pulse creator (if not liking own pulse)
+                        // ✅ Create notification for pulse creator (if not liking own pulse)
                         const { data: pulse } = await supabaseClient
                             .from('pulses')
                             .select('user_id')
@@ -2656,8 +1910,8 @@
             }
         }
         
-        // ✅ UPDATED: UPDATE LIKE UI - NOW ACCEPTS COUNT PARAMETER
-        function updateLikeUI(pulseId, isLiked, count) {
+        // ✅ UPDATE LIKE UI
+        function updateLikeUI(pulseId, isLiked) {
             const pulseCard = document.querySelector(`[data-pulse-id="${pulseId}"]`);
             if (!pulseCard) return;
             
@@ -2668,15 +1922,23 @@
             if (likeBtn) {
                 if (isLiked) {
                     likeBtn.classList.add('liked');
-                    likeBtn.innerHTML = `<i class="fas fa-heart" style="color: var(--warm-gold);"></i> ${count}`;
+                    likeIcon.style.color = 'var(--warm-gold)';
+                    const currentText = likeBtn.textContent.trim();
+                    const currentCount = parseInt(currentText.match(/\d+/)?.[0]) || 0;
+                    likeBtn.innerHTML = `<i class="fas fa-heart" style="color: var(--warm-gold);"></i> ${currentCount + 1}`;
                 } else {
                     likeBtn.classList.remove('liked');
-                    likeBtn.innerHTML = `<i class="fas fa-heart"></i> ${count}`;
+                    likeIcon.style.color = '';
+                    const currentText = likeBtn.textContent.trim();
+                    const currentCount = parseInt(currentText.match(/\d+/)?.[0]) || 0;
+                    likeBtn.innerHTML = `<i class="fas fa-heart"></i> ${Math.max(0, currentCount - 1)}`;
                 }
             }
             
             if (likesCount) {
-                likesCount.textContent = `${count} likes`;
+                const currentCount = parseInt(likesCount.textContent.match(/\d+/)?.[0]) || 0;
+                const newCount = isLiked ? currentCount + 1 : Math.max(0, currentCount - 1);
+                likesCount.textContent = `${newCount} likes`;
             }
         }
         
@@ -2923,7 +2185,7 @@
         
         // ✅ FIXED: HANDLE DELETE PULSE - UPDATED TO WORK WITH RLS
         async function handleDelete(pulseId) {
-            if (!confirm('Are you sure you want to PERMANENTLY delete this pulse? This action cannot be undone.')) {
+            if (!confirm('Are you sure you want to delete this pulse? This action cannot be undone.')) {
                 return;
             }
             
@@ -2953,6 +2215,7 @@
                 }
                 
                 // Use a direct delete instead of soft delete to avoid RLS issues
+                // If you want soft delete, you need to add RLS policies in Supabase
                 const { error } = await supabaseClient
                     .from('pulses')
                     .delete()
@@ -3356,450 +2619,6 @@
             document.getElementById('editSeriesTitle').value = '';
         }
         
-        // ✅ NEW: Initialize video player for pulse feed
-        function initializeVideoPlayer(videoElement, controlsContainer) {
-            if (!videoElement || !controlsContainer) return;
-            
-            const videoId = videoElement.dataset.videoId || `video-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-            videoElement.id = videoId;
-            
-            const playPauseBtn = controlsContainer.querySelector('.play-pause-btn');
-            const muteBtn = controlsContainer.querySelector('.mute-btn');
-            const videoProgress = controlsContainer.querySelector('.video-progress');
-            const videoProgressFilled = controlsContainer.querySelector('.video-progress-filled');
-            const volumeSlider = controlsContainer.querySelector('.volume-slider');
-            const volumeSliderFilled = controlsContainer.querySelector('.volume-slider-filled');
-            const videoTime = controlsContainer.querySelector('.video-time');
-            const mediaContainer = controlsContainer.closest('.media-container');
-            
-            // Format time function
-            function formatTime(seconds) {
-                if (isNaN(seconds)) return '0:00';
-                const mins = Math.floor(seconds / 60);
-                const secs = Math.floor(seconds % 60);
-                return `${mins}:${secs.toString().padStart(2, '0')}`;
-            }
-            
-            // Update time display
-            function updateTimeDisplay() {
-                if (!videoElement.duration) return;
-                const current = formatTime(videoElement.currentTime);
-                const duration = formatTime(videoElement.duration);
-                videoTime.textContent = `${current} / ${duration}`;
-                
-                // Update progress bar
-                const progressPercent = (videoElement.currentTime / videoElement.duration) * 100;
-                videoProgressFilled.style.width = `${progressPercent}%`;
-            }
-            
-            // Set initial volume
-            videoElement.volume = 0.7;
-            volumeSliderFilled.style.width = '70%';
-            
-            // Play/Pause functionality
-            playPauseBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                if (videoElement.paused) {
-                    videoElement.play();
-                    playPauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
-                } else {
-                    videoElement.pause();
-                    playPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
-                }
-            });
-            
-            // Video events
-            videoElement.addEventListener('play', () => {
-                playPauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
-            });
-            
-            videoElement.addEventListener('pause', () => {
-                playPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
-            });
-            
-            videoElement.addEventListener('timeupdate', updateTimeDisplay);
-            
-            videoElement.addEventListener('loadedmetadata', () => {
-                updateTimeDisplay();
-            });
-            
-            // Click on video to play/pause
-            mediaContainer.addEventListener('click', (e) => {
-                if (e.target === mediaContainer || e.target.classList.contains('video-controls-overlay')) {
-                    if (videoElement.paused) {
-                        videoElement.play();
-                        playPauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
-                    } else {
-                        videoElement.pause();
-                        playPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
-                    }
-                }
-            });
-            
-            // Progress bar click
-            videoProgress.addEventListener('click', (e) => {
-                e.stopPropagation();
-                const rect = videoProgress.getBoundingClientRect();
-                const pos = (e.clientX - rect.left) / rect.width;
-                videoElement.currentTime = pos * videoElement.duration;
-                updateTimeDisplay();
-            });
-            
-            // Mute/unmute
-            muteBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                videoElement.muted = !videoElement.muted;
-                muteBtn.innerHTML = videoElement.muted ? 
-                    '<i class="fas fa-volume-mute"></i>' : 
-                    '<i class="fas fa-volume-up"></i>';
-            });
-            
-            // Volume slider
-            volumeSlider.addEventListener('click', (e) => {
-                e.stopPropagation();
-                const rect = volumeSlider.getBoundingClientRect();
-                const pos = (e.clientX - rect.left) / rect.width;
-                const volume = Math.max(0, Math.min(1, pos));
-                videoElement.volume = volume;
-                videoElement.muted = volume === 0;
-                volumeSliderFilled.style.width = `${volume * 100}%`;
-                muteBtn.innerHTML = volume === 0 ? 
-                    '<i class="fas fa-volume-mute"></i>' : 
-                    '<i class="fas fa-volume-up"></i>';
-            });
-            
-            // Show controls on hover
-            mediaContainer.addEventListener('mouseenter', () => {
-                const controls = controlsContainer.querySelector('.video-controls-overlay');
-                if (controls) {
-                    controls.style.opacity = '1';
-                }
-            });
-            
-            mediaContainer.addEventListener('mouseleave', () => {
-                const controls = controlsContainer.querySelector('.video-controls-overlay');
-                if (controls && !videoElement.paused) {
-                    controls.style.opacity = '0';
-                }
-            });
-            
-            // Store video player reference
-            videoPlayers.set(videoId, {
-                video: videoElement,
-                controls: controlsContainer,
-                playPauseBtn,
-                muteBtn,
-                videoProgress,
-                videoProgressFilled,
-                volumeSlider,
-                volumeSliderFilled,
-                videoTime
-            });
-        }
-        
-        // ✅ NEW: QUIET RESUME BANNER - Load and show banner
-        async function loadQuietResumeData() {
-            try {
-                // Check session storage for dismissal
-                const dismissed = sessionStorage.getItem('quietResumeDismissed');
-                if (dismissed === 'true') {
-                    bannerDismissed = true;
-                    return;
-                }
-                
-                // Check for last viewed content (in a real app, this would come from your backend)
-                // For demo purposes, we'll check localStorage
-                const lastActivity = localStorage.getItem('lastPulseActivity');
-                
-                if (lastActivity) {
-                    const activity = JSON.parse(lastActivity);
-                    quietResumeData = activity;
-                    
-                    // Format the resume text based on activity type
-                    let resumeText = '';
-                    if (activity.type === 'series') {
-                        resumeText = `Continue ${activity.seriesTitle}, Part ${activity.part}`;
-                    } else if (activity.type === 'discussion') {
-                        resumeText = `Resume discussion on ${activity.topic}`;
-                    } else if (activity.type === 'pulse') {
-                        resumeText = `Continue watching "${activity.pulseTitle}"`;
-                    }
-                    
-                    // Update banner text
-                    document.getElementById('resumeText').textContent = resumeText;
-                    
-                    // Show banner
-                    document.getElementById('quietResumeBanner').style.display = 'block';
-                    
-                    // Add scroll listener to hide banner when scrolled past first two pulses
-                    setTimeout(() => {
-                        setupBannerScrollBehavior();
-                    }, 500);
-                }
-            } catch (error) {
-                console.log('No quiet resume data available:', error);
-            }
-        }
-        
-        // ✅ NEW: Setup banner scroll behavior
-        function setupBannerScrollBehavior() {
-            const banner = document.getElementById('quietResumeBanner');
-            const firstTwoPulses = document.querySelectorAll('.pulse-card:nth-child(-n+2)');
-            
-            if (firstTwoPulses.length < 2) return;
-            
-            const secondPulse = firstTwoPulses[1];
-            const observer = new IntersectionObserver((entries) => {
-                entries.forEach(entry => {
-                    if (!entry.isIntersecting && window.scrollY > 100) {
-                        // Scrolled past second pulse on desktop
-                        if (window.innerWidth > 768) {
-                            banner.classList.add('hidden');
-                            bannerScrolledAway = true;
-                        }
-                    } else {
-                        banner.classList.remove('hidden');
-                        bannerScrolledAway = false;
-                    }
-                });
-            }, {
-                threshold: 0.1,
-                rootMargin: '-100px 0px 0px 0px'
-            });
-            
-            observer.observe(secondPulse);
-        }
-        
-        // ✅ NEW: Handle resume banner click
-        function handleResumeClick() {
-            if (!quietResumeData) return;
-            
-            // In a real app, you would restore the exact state:
-            // - Scroll position
-            // - Video timestamp
-            // - Open comment thread
-            // For demo, we'll navigate to the pulse detail
-            if (quietResumeData.pulseId) {
-                window.location.href = `pulse-content-detail.html?id=${quietResumeData.pulseId}&resume=true`;
-            }
-        }
-        
-        // ✅ NEW: Dismiss resume banner (session only)
-        function dismissResumeBanner() {
-            const banner = document.getElementById('quietResumeBanner');
-            banner.style.opacity = '0';
-            banner.style.transform = 'translateY(-10px)';
-            
-            setTimeout(() => {
-                banner.style.display = 'none';
-                bannerDismissed = true;
-                // Store dismissal in sessionStorage (clears when browser closes)
-                sessionStorage.setItem('quietResumeDismissed', 'true');
-            }, 300);
-        }
-        
-        // ✅ UPDATED: LOAD DAILY PULSE MOMENT - FIXED QUERY
-        async function loadDailyPulseMoment() {
-            try {
-                const { data: { session } } = await supabaseClient.auth.getSession();
-                if (!session) return;
-                
-                // FIXED: Simple query without problematic joins
-                const { data: pulses, error } = await supabaseClient
-                    .from('pulses')
-                    .select('*')
-                    .is('deleted_at', null)
-                    .order('likes_count', { ascending: false })
-                    .limit(1)
-                    .single();
-                
-                if (error) {
-                    console.log('Could not load daily pulse moment:', error);
-                    return;
-                }
-                
-                if (pulses) {
-                    // Fetch user profile for this pulse
-                    const { data: userProfile } = await supabaseClient
-                        .from('user_profiles')
-                        .select('*')
-                        .eq('id', pulses.user_id)
-                        .single();
-                    
-                    dailyPulseData = {
-                        ...pulses,
-                        user_profiles: userProfile || {
-                            full_name: 'Featured Creator',
-                            username: '',
-                            avatar_url: null,
-                            role: 'creator',
-                            email: ''
-                        }
-                    };
-                }
-                
-            } catch (error) {
-                console.log('Could not load daily pulse moment:', error);
-            }
-        }
-        
-        // ✅ FIXED: Create Daily Pulse Card - NOW USES GLOBAL createPulseCard FUNCTION
-        function createDailyPulseCard(pulse, likedPulses) {
-            const regularCard = createPulseCard(pulse, likedPulses);
-            
-            // Add daily pulse styling
-            regularCard.classList.add('daily-pulse-card');
-            
-            // Create and insert the "Your Pulse Today" header
-            const dailyHeader = document.createElement('div');
-            dailyHeader.className = 'daily-pulse-header';
-            dailyHeader.textContent = 'Your Pulse Today';
-            
-            // Insert the header before the card
-            const parent = regularCard.parentNode;
-            parent.insertBefore(dailyHeader, regularCard);
-            
-            return regularCard;
-        }
-        
-        // ✅ NEW: Save last activity for Quiet Resume
-        function saveLastActivity(type, data) {
-            const activity = {
-                type: type,
-                timestamp: new Date().toISOString(),
-                ...data
-            };
-            
-            localStorage.setItem('lastPulseActivity', JSON.stringify(activity));
-            
-            // Clear session dismissal so banner shows again for new activity
-            sessionStorage.removeItem('quietResumeDismissed');
-        }
-        
-        // ✅ NEW: Mobile behavior for Quiet Resume banner
-        function setupMobileBannerBehavior() {
-            if (window.innerWidth <= 768) {
-                const banner = document.getElementById('quietResumeBanner');
-                if (!banner) return;
-                
-                // On mobile, banner scrolls away naturally
-                let scrolledPastBanner = false;
-                
-                window.addEventListener('scroll', () => {
-                    if (window.scrollY > 100 && !scrolledPastBanner) {
-                        banner.style.opacity = '0';
-                        banner.style.transform = 'translateY(-20px)';
-                        scrolledPastBanner = true;
-                        
-                        setTimeout(() => {
-                            banner.style.display = 'none';
-                        }, 300);
-                    }
-                });
-            }
-        }
-        
-        // ✅ NEW: SETUP REAL-TIME LIKES UPDATES
-        function setupRealtimeLikes() {
-            try {
-                // Subscribe to changes in pulse_likes table
-                realtimeSubscription = supabaseClient
-                    .channel('pulse-likes-changes')
-                    .on(
-                        'postgres_changes',
-                        {
-                            event: '*', // Listen to all events (INSERT, UPDATE, DELETE)
-                            schema: 'public',
-                            table: 'pulse_likes'
-                        },
-                        async (payload) => {
-                            console.log('Realtime update received:', payload);
-                            
-                            // When a like is added or removed, update the pulse's like count
-                            const pulseId = payload.new?.pulse_id || payload.old?.pulse_id;
-                            
-                            if (pulseId) {
-                                // Fetch updated pulse data
-                                const { data: pulse, error } = await supabaseClient
-                                    .from('pulses')
-                                    .select('likes_count')
-                                    .eq('id', pulseId)
-                                    .single();
-                                
-                                if (!error && pulse) {
-                                    // Update the UI with the new like count
-                                    updatePulseLikeCount(pulseId, pulse.likes_count);
-                                    
-                                    // Also check if current user's like status changed
-                                    const { data: { session } } = await supabaseClient.auth.getSession();
-                                    if (session) {
-                                        const { data: userLike } = await supabaseClient
-                                            .from('pulse_likes')
-                                            .select('id')
-                                            .eq('pulse_id', pulseId)
-                                            .eq('user_id', session.user.id)
-                                            .single();
-                                        
-                                        const isLiked = !!userLike;
-                                        updateLikeUI(pulseId, isLiked, pulse.likes_count);
-                                    }
-                                }
-                            }
-                        }
-                    )
-                    .subscribe();
-                
-                console.log('Realtime subscription for likes established');
-                
-            } catch (error) {
-                console.error('Error setting up realtime subscription:', error);
-            }
-        }
-        
-        // ✅ NEW: UPDATE PULSE LIKE COUNT IN UI
-        function updatePulseLikeCount(pulseId, newCount) {
-            const pulseCard = document.querySelector(`[data-pulse-id="${pulseId}"]`);
-            if (!pulseCard) return;
-            
-            const likeBtn = pulseCard.querySelector('.like-btn');
-            const likesCount = pulseCard.querySelector('.likes-count');
-            
-            if (likeBtn) {
-                // Extract the current like status from the button
-                const isLiked = likeBtn.classList.contains('liked');
-                likeBtn.innerHTML = `<i class="fas fa-heart" ${isLiked ? 'style="color: var(--warm-gold);"' : ''}></i> ${newCount}`;
-            }
-            
-            if (likesCount) {
-                likesCount.textContent = `${newCount} likes`;
-            }
-        }
-        
-        // ✅ NEW: SHOW EMPTY STATE INSTEAD OF DEMO DATA
-        function showEmptyState() {
-            const feed = document.getElementById('pulse-feed-container');
-            feed.innerHTML = `
-                <div class="empty-state">
-                    <div class="empty-icon">
-                        <i class="fas fa-compass"></i>
-                    </div>
-                    <div class="empty-title">No Pulses Yet</div>
-                    <div class="empty-description">
-                        Be the first to drop a pulse! Share what's moving the culture in your community.
-                    </div>
-                    <button class="modal-btn modal-btn-post" onclick="openCreateModal()" style="margin-top: 20px;">
-                        Create Your First Pulse
-                    </button>
-                </div>
-            `;
-        }
-        
-        // ✅ NEW: OPEN CREATE MODAL FUNCTION (for empty state button)
-        function openCreateModal() {
-            document.getElementById('createModal').style.display = 'flex';
-            document.getElementById('caption').focus();
-        }
-        
         function initializeFeed(session) {
             // State variables
             let selectedMedia = null;
@@ -3836,10 +2655,6 @@
             const editMediaPreview = document.getElementById('editMediaPreview');
             const editRemoveMedia = document.getElementById('editRemoveMedia');
             const updatePulseBtn = document.getElementById('updatePulse');
-            
-            // Feature 3: Quiet Resume Banner events
-            const quietResumeBanner = document.getElementById('quietResumeBanner');
-            const resumeDismiss = document.getElementById('resumeDismiss');
             
             // ✅ HELPER: Ensure user profile exists
             async function ensureUserProfile(userId) {
@@ -3918,114 +2733,231 @@
                 updatePostButton();
             }
             
-            // ✅ UPDATED: FETCH PULSES FUNCTION
+            // ✅ UPDATED: FETCH PULSES FROM SUPABASE WITH LIKE STATUS
             async function fetchPulses() {
                 try {
                     console.log('🔄 Fetching pulses...');
                     
-                    // FIXED: Fetch pulses first, then get user profiles separately
-                    const { data: pulsesData, error } = await supabaseClient
-                        .from('pulses')
+                    // Use the view instead of trying to join manually
+                    const { data, error } = await supabaseClient
+                        .from('pulses_with_user_details')
                         .select('*')
-                        .is('deleted_at', null)
                         .order('created_at', { ascending: false })
                         .limit(20);
                     
                     if (error) throw error;
                     
-                    console.log(`✅ Fetched ${pulsesData?.length || 0} pulses`);
-                    
-                    if (!pulsesData || pulsesData.length === 0) {
-                        showEmptyState();
-                        return;
-                    }
-                    
-                    // Get user IDs from pulses
-                    const userIds = [...new Set(pulsesData.map(p => p.user_id))];
-                    
-                    // Fetch user profiles for these user IDs
-                    const { data: userProfiles, error: profilesError } = await supabaseClient
-                        .from('user_profiles')
-                        .select('*')
-                        .in('id', userIds);
-                    
-                    if (profilesError) {
-                        console.warn('Could not fetch user profiles:', profilesError);
-                        // Continue without profiles
-                    }
-                    
-                    // Create a map of user_id to profile for easy lookup
-                    const userProfileMap = {};
-                    if (userProfiles) {
-                        userProfiles.forEach(profile => {
-                            userProfileMap[profile.id] = profile;
-                        });
-                    }
-                    
-                    // Combine pulses with user profiles
-                    const pulses = pulsesData.map(pulse => ({
-                        ...pulse,
-                        user_profiles: userProfileMap[pulse.user_id] || {
-                            full_name: 'User',
-                            username: '',
-                            avatar_url: null,
-                            role: 'user',
-                            email: ''
-                        }
-                    }));
+                    console.log(`✅ Fetched ${data?.length || 0} pulses`);
+                    pulses = data || [];
                     
                     // Check which pulses the current user has liked
                     const pulseIds = pulses.map(p => p.id);
                     const likedPulses = await checkUserLikes(pulseIds);
                     
-                    displayPulses(pulses, likedPulses);
+                    // Format for display
+                    const formattedData = pulses.map(pulse => ({
+                        ...pulse,
+                        user_profiles: {
+                            full_name: pulse.full_name,
+                            username: pulse.username,
+                            avatar_url: pulse.avatar_url,
+                            role: pulse.role,
+                            email: pulse.email
+                        }
+                    }));
+                    
+                    displayPulses(formattedData, likedPulses);
                     
                 } catch (error) {
                     console.error('❌ Error fetching pulses:', error);
-                    showEmptyState();
+                    showToast('Failed to load pulses. Showing demo data.', 'error');
+                    loadSampleData();
                 }
             }
             
-            // ✅ UPDATED: DISPLAY PULSES - HANDLE EMPTY STATE
+            // ✅ UPDATED: DISPLAY PULSES WITH LIKE STATUS
             function displayPulses(pulses, likedPulses) {
-                const pulseFeedContainer = document.getElementById('pulse-feed-container');
-                
                 if (!pulses || pulses.length === 0) {
-                    showEmptyState();
+                    loadSampleData();
                     return;
                 }
                 
                 pulseFeedContainer.innerHTML = '';
                 
-                // Check if we have a daily pulse and it's not already in the pulses array
-                let hasDailyPulse = false;
-                let dailyPulseInserted = false;
-                
-                pulses.forEach((pulse, index) => {
-                    // Insert daily pulse at the specified position (default: 3rd position, index 2)
-                    if (dailyPulseData && !hasDailyPulse && index === dailyPulsePosition) {
-                        // Check if daily pulse is already in the feed
-                        const isAlreadyInFeed = pulses.some(p => p.id === dailyPulseData.id);
-                        
-                        if (!isAlreadyInFeed) {
-                            const dailyPulseCard = createDailyPulseCard(dailyPulseData, likedPulses);
-                            pulseFeedContainer.appendChild(dailyPulseCard);
-                            hasDailyPulse = true;
-                            dailyPulseInserted = true;
-                        }
-                    }
-                    
-                    // Insert the regular pulse
+                pulses.forEach(pulse => {
                     const pulseCard = createPulseCard(pulse, likedPulses);
                     pulseFeedContainer.appendChild(pulseCard);
                 });
+            }
+            
+            // ✅ UPDATED: CREATE PULSE CARD ELEMENT WITH LIKE STATE
+            function createPulseCard(pulse, likedPulses) {
+                // Get user info from combined data
+                const profile = pulse.user_profiles || {};
+                const fullName = profile.full_name || profile.email?.split('@')[0] || 'User';
+                const username = profile.username || '';
+                const avatarUrl = profile.avatar_url;
+                const role = profile.role || '';
+                const initials = fullName.substring(0, 2).toUpperCase();
+                const timeAgo = getTimeAgo(new Date(pulse.created_at));
                 
-                // If daily pulse wasn't inserted at the specified position (maybe because there weren't enough pulses),
-                // insert it at the end
-                if (dailyPulseData && !dailyPulseInserted) {
-                    const dailyPulseCard = createDailyPulseCard(dailyPulseData, likedPulses);
-                    pulseFeedContainer.appendChild(dailyPulseCard);
+                const isSeries = pulse.series_id && pulse.series_order;
+                const hasMedia = pulse.media_url;
+                const mediaType = pulse.media_type;
+                const isOwnPulse = pulse.user_id === currentUserId;
+                const isLiked = likedPulses.has(pulse.id);
+                
+                const card = document.createElement('div');
+                card.className = 'pulse-card';
+                card.dataset.pulseId = pulse.id;
+                
+                // Add click event to view pulse detail
+                card.addEventListener('click', (e) => {
+                    // Don't trigger if clicking on action buttons or more options
+                    if (!e.target.closest('.action-button') && !e.target.closest('.pulse-more-options') && 
+                        !e.target.closest('.pulse-options-menu')) {
+                        viewPulseDetail(pulse.id);
+                    }
+                });
+                
+                let moreOptionsHTML = '';
+                if (isOwnPulse) {
+                    moreOptionsHTML = `
+                        <button class="pulse-more-options" data-pulse-id="${pulse.id}">
+                            <i class="fas fa-ellipsis-h"></i>
+                        </button>
+                        <div class="pulse-options-menu" id="options-menu-${pulse.id}">
+                            <button class="pulse-option-item edit-option" data-pulse-id="${pulse.id}">
+                                <i class="fas fa-edit"></i>
+                                Edit
+                            </button>
+                            <button class="pulse-option-item delete delete-option" data-pulse-id="${pulse.id}">
+                                <i class="fas fa-trash"></i>
+                                Delete
+                            </button>
+                        </div>
+                    `;
                 }
+                
+                card.innerHTML = `
+                    <div class="pulse-header">
+                        <div class="pulse-avatar" style="${avatarUrl ? `background-image: url('${avatarUrl}'); background-size: cover; background-position: center;` : ''}">
+                            ${avatarUrl ? '' : initials}
+                        </div>
+                        <div class="pulse-creator-info">
+                            <div class="creator-name">
+                                ${fullName}
+                                ${role === 'creator' ? '<span class="creator-badge">Creator</span>' : ''}
+                                ${role === 'admin' ? '<span class="creator-badge" style="background: rgba(239, 68, 68, 0.2); color: var(--error-color); border-color: rgba(239, 68, 68, 0.3);">Admin</span>' : ''}
+                            </div>
+                            <div class="pulse-time">${username ? `@${username} • ` : ''}${timeAgo}</div>
+                        </div>
+                        ${moreOptionsHTML}
+                    </div>
+                    
+                    ${isSeries ? `
+                        <div class="pulse-series-label">
+                            PULSE SERIES · Part ${pulse.series_order}
+                        </div>
+                    ` : ''}
+                    
+                    <div class="pulse-content">
+                        ${pulse.caption ? `<p class="pulse-text">${pulse.caption}</p>` : ''}
+                        
+                        ${hasMedia ? `
+                            <div class="pulse-media-container">
+                                ${mediaType === 'video' ? `
+                                    <video class="vertical-video" controls>
+                                        <source src="${pulse.media_url}" type="video/mp4">
+                                        Your browser does not support the video tag.
+                                    </video>
+                                ` : `
+                                    <img src="${pulse.media_url}" alt="Pulse image" style="width:100%; border-radius:12px;">
+                                `}
+                            </div>
+                        ` : ''}
+                        
+                        ${pulse.linked_content_id ? `
+                            <div class="linked-content">
+                                <div class="linked-content-label">Linked content</div>
+                                <div class="linked-content-card">
+                                    <div class="content-thumbnail"></div>
+                                    <div class="content-info">
+                                        <h4>${pulse.linked_content_type || 'Content'}</h4>
+                                        <p>Tap to watch or listen</p>
+                                    </div>
+                                </div>
+                            </div>
+                        ` : ''}
+                    </div>
+                    
+                    <div class="pulse-actions">
+                        <button class="action-button like-btn ${isLiked ? 'liked' : ''}" data-pulse-id="${pulse.id}">
+                            <i class="fas fa-heart" ${isLiked ? 'style="color: var(--warm-gold);"' : ''}></i> ${pulse.likes_count || 0}
+                        </button>
+                        <button class="action-button comment-btn" data-pulse-id="${pulse.id}">
+                            <i class="fas fa-comment"></i> ${pulse.comments_count || 0}
+                        </button>
+                        <button class="action-button share-btn" data-pulse-id="${pulse.id}">
+                            <i class="fas fa-share"></i> ${pulse.shares_count || 0}
+                        </button>
+                    </div>
+                    
+                    <div class="pulse-stats">
+                        <span class="likes-count">${pulse.likes_count || 0} likes</span>
+                        <span class="comments-count">${pulse.comments_count || 0} comments</span>
+                        <span class="shares-count">${pulse.shares_count || 0} shares</span>
+                    </div>
+                `;
+                
+                // Add event listeners
+                const likeBtn = card.querySelector('.like-btn');
+                const commentBtn = card.querySelector('.comment-btn');
+                const shareBtn = card.querySelector('.share-btn');
+                
+                likeBtn.addEventListener('click', (e) => handleLike(pulse.id, e));
+                commentBtn.addEventListener('click', (e) => handleComment(pulse.id, e));
+                shareBtn.addEventListener('click', (e) => handleShare(pulse.id, e));
+                
+                // Add event listeners for more options if it's the user's own pulse
+                if (isOwnPulse) {
+                    const moreOptionsBtn = card.querySelector('.pulse-more-options');
+                    const optionsMenu = card.querySelector(`#options-menu-${pulse.id}`);
+                    const editOption = card.querySelector('.edit-option');
+                    const deleteOption = card.querySelector('.delete-option');
+                    
+                    moreOptionsBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        // Close any other open menus
+                        document.querySelectorAll('.pulse-options-menu').forEach(menu => {
+                            if (menu !== optionsMenu) {
+                                menu.classList.remove('active');
+                            }
+                        });
+                        optionsMenu.classList.toggle('active');
+                    });
+                    
+                    editOption.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        optionsMenu.classList.remove('active');
+                        handleEdit(pulse.id);
+                    });
+                    
+                    deleteOption.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        optionsMenu.classList.remove('active');
+                        handleDelete(pulse.id);
+                    });
+                    
+                    // Close menu when clicking outside
+                    document.addEventListener('click', (e) => {
+                        if (!moreOptionsBtn.contains(e.target) && !optionsMenu.contains(e.target)) {
+                            optionsMenu.classList.remove('active');
+                        }
+                    });
+                }
+                
+                return card;
             }
             
             // ✅ CREATE PULSE (with series handling)
@@ -4169,18 +3101,6 @@
             createPulseBtn.addEventListener('click', openCreateModal);
             closeModal.addEventListener('click', closeCreateModal);
             cancelCreate.addEventListener('click', closeCreateModal);
-            
-            // Feature 3: Quiet Resume Banner events
-            if (quietResumeBanner) {
-                quietResumeBanner.addEventListener('click', handleResumeClick);
-            }
-            
-            if (resumeDismiss) {
-                resumeDismiss.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    dismissResumeBanner();
-                });
-            }
             
             // Close modal when clicking outside
             createModal.addEventListener('click', (e) => {
@@ -4357,17 +3277,11 @@
                 
                 if (event === 'SIGNED_OUT') {
                     window.location.href = 'login.html';
-                } else if (event === 'SIGNED_IN') {
-                    // Refresh the feed when user signs in
-                    setTimeout(() => fetchPulses(), 500);
                 }
             });
             
             // Initial data load
             fetchPulses();
-            
-            // Setup mobile behavior for Quiet Resume
-            setupMobileBannerBehavior();
         }
         
         // Add timeout for force load
@@ -4389,13 +3303,6 @@
         
         // Start initialization
         document.addEventListener('DOMContentLoaded', initialize);
-        
-        // Cleanup realtime subscription when page unloads
-        window.addEventListener('beforeunload', () => {
-            if (realtimeSubscription) {
-                supabaseClient.removeChannel(realtimeSubscription);
-            }
-        });
     </script>
 </body>
 </html>
