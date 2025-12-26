@@ -2146,7 +2146,7 @@
             }
         }
         
-        // ✅ HANDLE LIKE
+        // ✅ FIXED: HANDLE LIKE WITH PROPER COUNT UPDATES
         async function handleLike(pulseId, e) {
             if (e) e.stopPropagation();
             
@@ -2173,7 +2173,14 @@
                         .eq('id', existingLike.id);
                     
                     if (!error) {
-                        updateLikeUI(pulseId, false);
+                        // Get updated likes count after unlike
+                        const { data: pulseData } = await supabaseClient
+                            .from('pulses')
+                            .select('likes_count')
+                            .eq('id', pulseId)
+                            .single();
+                        
+                        updateLikeUI(pulseId, false, pulseData?.likes_count || 0);
                         showToast('Like removed', 'success');
                     }
                 } else {
@@ -2186,7 +2193,14 @@
                         });
                     
                     if (!error) {
-                        updateLikeUI(pulseId, true);
+                        // Get updated likes count after like
+                        const { data: pulseData } = await supabaseClient
+                            .from('pulses')
+                            .select('likes_count')
+                            .eq('id', pulseId)
+                            .single();
+                        
+                        updateLikeUI(pulseId, true, pulseData?.likes_count || 0);
                         showToast('Pulse liked!', 'success');
                         
                         // ✅ Create notification for pulse creator (if not liking own pulse)
@@ -2215,8 +2229,8 @@
             }
         }
         
-        // ✅ UPDATE LIKE UI
-        function updateLikeUI(pulseId, isLiked) {
+        // ✅ FIXED: UPDATE LIKE UI WITH EXACT COUNT
+        function updateLikeUI(pulseId, isLiked, exactLikesCount) {
             const pulseCard = document.querySelector(`[data-pulse-id="${pulseId}"]`);
             if (!pulseCard) return;
             
@@ -2227,23 +2241,17 @@
             if (likeBtn) {
                 if (isLiked) {
                     likeBtn.classList.add('liked');
-                    likeIcon.style.color = 'var(--warm-gold)';
-                    const currentText = likeBtn.textContent.trim();
-                    const currentCount = parseInt(currentText.match(/\d+/)?.[0]) || 0;
-                    likeBtn.innerHTML = `<i class="fas fa-heart" style="color: var(--warm-gold);"></i> ${currentCount + 1}`;
+                    if (likeIcon) likeIcon.style.color = 'var(--warm-gold)';
                 } else {
                     likeBtn.classList.remove('liked');
-                    likeIcon.style.color = '';
-                    const currentText = likeBtn.textContent.trim();
-                    const currentCount = parseInt(currentText.match(/\d+/)?.[0]) || 0;
-                    likeBtn.innerHTML = `<i class="fas fa-heart"></i> ${Math.max(0, currentCount - 1)}`;
+                    if (likeIcon) likeIcon.style.color = '';
                 }
+                likeBtn.innerHTML = `<i class="fas fa-heart" ${isLiked ? 'style="color: var(--warm-gold);"' : ''}></i> ${exactLikesCount}`;
             }
             
             if (likesCount) {
-                const currentCount = parseInt(likesCount.textContent.match(/\d+/)?.[0]) || 0;
-                const newCount = isLiked ? currentCount + 1 : Math.max(0, currentCount - 1);
-                likesCount.textContent = `${newCount} likes`;
+                // Use the exact count with proper pluralization
+                likesCount.textContent = `${exactLikesCount} ${exactLikesCount === 1 ? 'like' : 'likes'}`;
             }
         }
         
@@ -3179,40 +3187,54 @@
                 updatePostButton();
             }
             
-            // ✅ UPDATED: FETCH PULSES FROM SUPABASE WITH LIKE STATUS
+            // ✅ FIXED: FETCH PULSES FROM SUPABASE WITH PROPER LIKES COUNT
             async function fetchPulses() {
                 try {
                     console.log('🔄 Fetching pulses...');
                     
-                    // Use the view instead of trying to join manually
-                    const { data, error } = await supabaseClient
-                        .from('pulses_with_user_details')
-                        .select('*')
+                    // First, fetch the pulses
+                    const { data: pulsesData, error: pulsesError } = await supabaseClient
+                        .from('pulses')
+                        .select('*, user_profiles(*)')
+                        .is('deleted_at', null)
                         .order('created_at', { ascending: false })
                         .limit(20);
                     
-                    if (error) throw error;
+                    if (pulsesError) throw pulsesError;
                     
-                    console.log(`✅ Fetched ${data?.length || 0} pulses`);
-                    pulses = data || [];
+                    // Get the actual likes count for each pulse from pulse_likes table
+                    const pulseIds = pulsesData.map(p => p.id);
+                    const { data: likesData, error: likesError } = await supabaseClient
+                        .from('pulse_likes')
+                        .select('pulse_id, count')
+                        .in('pulse_id', pulseIds)
+                        .group('pulse_id');
+                    
+                    if (likesError && !likesError.message.includes('JSON')) {
+                        console.warn('Error fetching likes count:', likesError);
+                    }
+                    
+                    // Create a map of pulse_id to actual likes count
+                    const likesCountMap = {};
+                    if (likesData) {
+                        likesData.forEach(item => {
+                            likesCountMap[item.pulse_id] = item.count;
+                        });
+                    }
+                    
+                    // Update pulses data with actual likes count
+                    pulsesData.forEach(pulse => {
+                        // Use actual count from pulse_likes if available, otherwise use stored count
+                        pulse.actual_likes_count = likesCountMap[pulse.id] || pulse.likes_count || 0;
+                    });
+                    
+                    console.log(`✅ Fetched ${pulsesData?.length || 0} pulses with actual likes counts`);
+                    pulses = pulsesData || [];
                     
                     // Check which pulses the current user has liked
-                    const pulseIds = pulses.map(p => p.id);
                     const likedPulses = await checkUserLikes(pulseIds);
                     
-                    // Format for display
-                    const formattedData = pulses.map(pulse => ({
-                        ...pulse,
-                        user_profiles: {
-                            full_name: pulse.full_name,
-                            username: pulse.username,
-                            avatar_url: pulse.avatar_url,
-                            role: pulse.role,
-                            email: pulse.email
-                        }
-                    }));
-                    
-                    displayPulses(formattedData, likedPulses);
+                    displayPulses(pulses, likedPulses);
                     
                 } catch (error) {
                     console.error('❌ Error fetching pulses:', error);
@@ -3221,7 +3243,7 @@
                 }
             }
             
-            // ✅ UPDATED: DISPLAY PULSES WITH LIKE STATUS
+            // ✅ FIXED: DISPLAY PULSES WITH ACTUAL LIKES COUNT
             function displayPulses(pulses, likedPulses) {
                 if (!pulses || pulses.length === 0) {
                     loadSampleData();
@@ -3236,7 +3258,7 @@
                 });
             }
             
-            // ✅ UPDATED: CREATE PULSE CARD ELEMENT WITH EXACT VIDEO PLAYER FROM pulse-content-detail.html
+            // ✅ FIXED: CREATE PULSE CARD ELEMENT WITH ACTUAL LIKES COUNT
             function createPulseCard(pulse, likedPulses) {
                 // Get user info from combined data
                 const profile = pulse.user_profiles || {};
@@ -3247,6 +3269,8 @@
                 const initials = fullName.substring(0, 2).toUpperCase();
                 const timeAgo = getTimeAgo(new Date(pulse.created_at));
                 
+                // Use actual likes count instead of stored count
+                const actualLikesCount = pulse.actual_likes_count || pulse.likes_count || 0;
                 const isSeries = pulse.series_id && pulse.series_order;
                 const hasMedia = pulse.media_url;
                 const mediaType = pulse.media_type;
@@ -3388,7 +3412,7 @@
                     
                     <div class="pulse-actions">
                         <button class="action-button like-btn ${isLiked ? 'liked' : ''}" data-pulse-id="${pulse.id}">
-                            <i class="fas fa-heart" ${isLiked ? 'style="color: var(--warm-gold);"' : ''}></i> ${pulse.likes_count || 0}
+                            <i class="fas fa-heart" ${isLiked ? 'style="color: var(--warm-gold);"' : ''}></i> ${actualLikesCount}
                         </button>
                         <button class="action-button comment-btn" data-pulse-id="${pulse.id}">
                             <i class="fas fa-comment"></i> ${pulse.comments_count || 0}
@@ -3399,7 +3423,7 @@
                     </div>
                     
                     <div class="pulse-stats">
-                        <span class="likes-count">${pulse.likes_count || 0} likes</span>
+                        <span class="likes-count">${actualLikesCount} ${actualLikesCount === 1 ? 'like' : 'likes'}</span>
                         <span class="comments-count">${pulse.comments_count || 0} comments</span>
                         <span class="shares-count">${pulse.shares_count || 0} shares</span>
                     </div>
