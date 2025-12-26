@@ -1751,6 +1751,7 @@
         // NEW: Real-time subscription for likes
         let realtimeSubscription = null;
 
+        // ✅ UPDATED INITIALIZE FUNCTION (from your second update)
         async function initialize() {
             console.log('Starting Pulse Feed initialization...');
             
@@ -1826,15 +1827,7 @@
                     
                     document.getElementById('loading').style.display = 'none';
                     document.getElementById('content').style.display = 'block';
-                    document.getElementById('pulse-feed-container').innerHTML = `
-                        <div class="error" style="padding: 40px 20px; text-align: center; color: var(--slate-grey);">
-                            <h3 style="color: var(--soft-white); margin-bottom: 10px;">Welcome to Bantu Connect Pulse!</h3>
-                            <p>The African way baba, it's all in the DNA.</p>
-                            <button class="modal-btn modal-btn-post" onclick="loadSampleData()" style="margin-top: 20px;">
-                                Load Demo Content
-                            </button>
-                        </div>
-                    `;
+                    showEmptyState();
                     
                     // Set up basic event listeners
                     setupBasicEventListeners();
@@ -3360,54 +3353,44 @@
             }, 300);
         }
         
-        // ✅ NEW: Feature 4 - Load Daily Pulse Moment
+        // ✅ UPDATED: LOAD DAILY PULSE MOMENT - FIXED QUERY (from your first update)
         async function loadDailyPulseMoment() {
             try {
                 const { data: { session } } = await supabaseClient.auth.getSession();
                 if (!session) return;
                 
-                // In a real app, this would come from a curated recommendation API
-                // For demo, we'll fetch a pulse that matches user's interests
-                
-                // First, get user's saved topics or completed series
-                const { data: userProfile } = await supabaseClient
-                    .from('user_profiles')
-                    .select('interests, saved_topics')
-                    .eq('id', session.user.id)
+                // FIXED: Simple query without problematic joins
+                const { data: pulses, error } = await supabaseClient
+                    .from('pulses')
+                    .select('*')
+                    .is('deleted_at', null)
+                    .order('likes_count', { ascending: false })
+                    .limit(1)
                     .single();
                 
-                let dailyPulse = null;
-                
-                // Try to find a relevant pulse based on:
-                // A) Saved topics
-                if (userProfile?.saved_topics?.length > 0) {
-                    const { data: pulses } = await supabaseClient
-                        .from('pulses')
-                        .select('*, user_profiles!inner(*)')
-                        .contains('topics', userProfile.saved_topics[0])
-                        .order('created_at', { ascending: false })
-                        .limit(1)
-                        .single();
-                    
-                    if (pulses) dailyPulse = pulses;
+                if (error) {
+                    console.log('Could not load daily pulse moment:', error);
+                    return;
                 }
                 
-                // B) If no saved topics, try to find from completed series
-                if (!dailyPulse) {
-                    // You would query completed series and find related content
-                    // For demo, we'll just get a recent high-quality pulse
-                    const { data: pulses } = await supabaseClient
-                        .from('pulses')
-                        .select('*, user_profiles!inner(*)')
-                        .order('likes_count', { ascending: false })
-                        .limit(1)
+                if (pulses) {
+                    // Fetch user profile for this pulse
+                    const { data: userProfile } = await supabaseClient
+                        .from('user_profiles')
+                        .select('*')
+                        .eq('id', pulses.user_id)
                         .single();
                     
-                    if (pulses) dailyPulse = pulses;
-                }
-                
-                if (dailyPulse) {
-                    dailyPulseData = dailyPulse;
+                    dailyPulseData = {
+                        ...pulses,
+                        user_profiles: userProfile || {
+                            full_name: 'Featured Creator',
+                            username: '',
+                            avatar_url: null,
+                            role: 'creator',
+                            email: ''
+                        }
+                    };
                 }
                 
             } catch (error) {
@@ -3547,6 +3530,31 @@
             }
         }
         
+        // ✅ NEW: SHOW EMPTY STATE INSTEAD OF DEMO DATA (from your first update)
+        function showEmptyState() {
+            const feed = document.getElementById('pulse-feed-container');
+            feed.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-icon">
+                        <i class="fas fa-compass"></i>
+                    </div>
+                    <div class="empty-title">No Pulses Yet</div>
+                    <div class="empty-description">
+                        Be the first to drop a pulse! Share what's moving the culture in your community.
+                    </div>
+                    <button class="modal-btn modal-btn-post" onclick="openCreateModal()" style="margin-top: 20px;">
+                        Create Your First Pulse
+                    </button>
+                </div>
+            `;
+        }
+        
+        // ✅ NEW: OPEN CREATE MODAL FUNCTION (for empty state button) (from your first update)
+        function openCreateModal() {
+            document.getElementById('createModal').style.display = 'flex';
+            document.getElementById('caption').focus();
+        }
+        
         function initializeFeed(session) {
             // State variables
             let selectedMedia = null;
@@ -3665,32 +3673,61 @@
                 updatePostButton();
             }
             
-            // ✅ UPDATED: FETCH PULSES FROM SUPABASE WITH LIKE STATUS AND DAILY PULSE
+            // ✅ UPDATED: FETCH PULSES FUNCTION (from your first update)
             async function fetchPulses() {
                 try {
                     console.log('🔄 Fetching pulses...');
                     
-                    // FIXED: Use direct query with join to get correct like counts
-                    const { data, error } = await supabaseClient
+                    // FIXED: Fetch pulses first, then get user profiles separately
+                    const { data: pulsesData, error } = await supabaseClient
                         .from('pulses')
-                        .select(`
-                            *,
-                            user_profiles!inner (
-                                full_name,
-                                username,
-                                avatar_url,
-                                role,
-                                email
-                            )
-                        `)
+                        .select('*')
                         .is('deleted_at', null)
                         .order('created_at', { ascending: false })
                         .limit(20);
                     
                     if (error) throw error;
                     
-                    console.log(`✅ Fetched ${data?.length || 0} pulses`);
-                    pulses = data || [];
+                    console.log(`✅ Fetched ${pulsesData?.length || 0} pulses`);
+                    
+                    if (!pulsesData || pulsesData.length === 0) {
+                        showEmptyState();
+                        return;
+                    }
+                    
+                    // Get user IDs from pulses
+                    const userIds = [...new Set(pulsesData.map(p => p.user_id))];
+                    
+                    // Fetch user profiles for these user IDs
+                    const { data: userProfiles, error: profilesError } = await supabaseClient
+                        .from('user_profiles')
+                        .select('*')
+                        .in('id', userIds);
+                    
+                    if (profilesError) {
+                        console.warn('Could not fetch user profiles:', profilesError);
+                        // Continue without profiles
+                    }
+                    
+                    // Create a map of user_id to profile for easy lookup
+                    const userProfileMap = {};
+                    if (userProfiles) {
+                        userProfiles.forEach(profile => {
+                            userProfileMap[profile.id] = profile;
+                        });
+                    }
+                    
+                    // Combine pulses with user profiles
+                    const pulses = pulsesData.map(pulse => ({
+                        ...pulse,
+                        user_profiles: userProfileMap[pulse.user_id] || {
+                            full_name: 'User',
+                            username: '',
+                            avatar_url: null,
+                            role: 'user',
+                            email: ''
+                        }
+                    }));
                     
                     // Check which pulses the current user has liked
                     const pulseIds = pulses.map(p => p.id);
@@ -3700,15 +3737,16 @@
                     
                 } catch (error) {
                     console.error('❌ Error fetching pulses:', error);
-                    showToast('Failed to load pulses. Showing demo data.', 'error');
-                    loadSampleData();
+                    showEmptyState();
                 }
             }
             
-            // ✅ UPDATED: DISPLAY PULSES WITH DAILY PULSE MOMENT
+            // ✅ UPDATED: DISPLAY PULSES - HANDLE EMPTY STATE (from your first update)
             function displayPulses(pulses, likedPulses) {
+                const pulseFeedContainer = document.getElementById('pulse-feed-container');
+                
                 if (!pulses || pulses.length === 0) {
-                    loadSampleData();
+                    showEmptyState();
                     return;
                 }
                 
@@ -3745,14 +3783,14 @@
                 }
             }
             
-            // ✅ UPDATED: CREATE PULSE CARD ELEMENT WITH EXACT VIDEO PLAYER FROM pulse-content-detail.html
+            // ✅ UPDATED: CREATE PULSE CARD - HANDLE MISSING PROFILES (from your first update)
             function createPulseCard(pulse, likedPulses) {
-                // Get user info from combined data
+                // Get user info - handle missing profiles gracefully
                 const profile = pulse.user_profiles || {};
-                const fullName = profile.full_name || profile.email?.split('@')[0] || 'User';
+                const fullName = profile.full_name || 'User';
                 const username = profile.username || '';
                 const avatarUrl = profile.avatar_url;
-                const role = profile.role || '';
+                const role = profile.role || 'user';
                 const initials = fullName.substring(0, 2).toUpperCase();
                 const timeAgo = getTimeAgo(new Date(pulse.created_at));
                 
@@ -3763,7 +3801,7 @@
                 const isLiked = likedPulses.has(pulse.id);
                 const isConnected = userConnections.has(pulse.user_id);
                 
-                // FIXED: Get the actual likes count from the pulse data
+                // Get counts from pulse data
                 const likesCount = pulse.likes_count || 0;
                 const commentsCount = pulse.comments_count || 0;
                 const sharesCount = pulse.shares_count || 0;
@@ -3814,7 +3852,7 @@
                     `;
                 }
                 
-                // UPDATED: EXACT Video player HTML from pulse-content-detail.html
+                // Media HTML
                 let mediaHTML = '';
                 if (hasMedia) {
                     if (mediaType === 'video') {
