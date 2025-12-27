@@ -1660,7 +1660,7 @@
                 // Initialize event listeners
                 initializeEventListeners();
                 
-                // Try to load real notifications
+                // Load real notifications
                 await loadRealNotifications();
                 
                 // Subscribe to new notifications
@@ -1890,33 +1890,19 @@ Founder, Bantu Stream Connect & Pulse`;
             try {
                 console.log('Loading real notifications from database...');
                 
-                // First, check if pulse_notifications table exists by trying to count
-                const { count, error: countError } = await supabaseClient
-                    .from('pulse_notifications')
-                    .select('*', { count: 'exact', head: true })
-                    .eq('target_user_id', currentUserId);
+                // Load founder welcome notification separately
+                await loadFounderWelcomeNotification();
                 
-                if (countError) {
-                    console.log('pulse_notifications table might not exist, creating it...');
-                    await createNotificationsTable();
-                    await seedSampleNotifications();
-                } else {
-                    console.log(`Found ${count} notifications in database`);
-                    
-                    // Load founder welcome notification separately
-                    await loadFounderWelcomeNotification();
-                    
-                    // Load other notifications with pagination
-                    await loadNotificationsByCategory('all', 0, pagination.all.limit);
-                    
-                    // Update UI
-                    updateBadgeCounts();
-                    renderNotifications('all');
-                }
+                // Load other notifications with pagination
+                await loadNotificationsByCategory('all', 0, pagination.all.limit);
+                
+                // Update UI
+                updateBadgeCounts();
+                renderNotifications('all');
                 
             } catch (error) {
                 console.error('Error loading notifications:', error);
-                showToast('Loading notifications from database', 'warning');
+                showToast('Error loading notifications. Please refresh.', 'error');
                 await loadFallbackNotifications();
             }
         }
@@ -1960,130 +1946,26 @@ Founder, Bantu Stream Connect & Pulse`;
             }
         }
         
-        async function createNotificationsTable() {
-            try {
-                // Note: In a real app, you'd create this table via Supabase SQL editor
-                // This is just a fallback to show we're trying to create it
-                console.log('Attempting to create pulse_notifications table...');
-                
-                // For now, we'll just seed sample data
-                await seedSampleNotifications();
-                
-            } catch (error) {
-                console.error('Error creating notifications table:', error);
-            }
-        }
-        
-        async function seedSampleNotifications() {
-            try {
-                console.log('Seeding sample notifications...');
-                
-                // Check if we already have notifications
-                const { count } = await supabaseClient
-                    .from('pulse_notifications')
-                    .select('*', { count: 'exact', head: true })
-                    .eq('target_user_id', currentUserId);
-                
-                if (count > 0) {
-                    console.log('Notifications already exist, skipping seed');
-                    return;
-                }
-                
-                // Create sample notifications (excluding founder welcome which is created separately)
-                const sampleNotifications = [
-                    {
-                        type: 'like',
-                        actor_id: currentUserId, // In real app, this would be other users
-                        target_user_id: currentUserId,
-                        pulse_id: null,
-                        message: 'Loved your latest Pulse about cultural heritage!',
-                        is_read: false,
-                        metadata: {
-                            actor_name: 'Amina Diallo',
-                            actor_username: 'aminad',
-                            actor_avatar: '',
-                            pulse_caption: 'Preserving traditional West African drumming techniques'
-                        }
-                    },
-                    {
-                        type: 'comment',
-                        actor_id: currentUserId,
-                        target_user_id: currentUserId,
-                        pulse_id: null,
-                        message: 'Great insight! I learned something new today.',
-                        is_read: false,
-                        metadata: {
-                            actor_name: 'Kwame Osei',
-                            actor_username: 'kwameo',
-                            actor_avatar: '',
-                            pulse_caption: 'The symbolism behind Adinkra cloth patterns'
-                        }
-                    },
-                    {
-                        type: 'mention',
-                        actor_id: currentUserId,
-                        target_user_id: currentUserId,
-                        pulse_id: null,
-                        message: 'Check out this amazing cultural insight from @you!',
-                        is_read: true,
-                        metadata: {
-                            actor_name: 'Zara Ndlovu',
-                            actor_username: 'zarandlovu',
-                            actor_avatar: '',
-                            pulse_caption: 'Harvest festival celebrations across Africa'
-                        }
-                    },
-                    {
-                        type: 'follow',
-                        actor_id: currentUserId,
-                        target_user_id: currentUserId,
-                        message: 'Started following you to see more cultural content',
-                        is_read: false,
-                        metadata: {
-                            actor_name: 'Kofi Mensah',
-                            actor_username: 'kofim',
-                            actor_avatar: ''
-                        }
-                    },
-                    {
-                        type: 'creator',
-                        actor_id: currentUserId,
-                        target_user_id: currentUserId,
-                        message: 'Your Pulse Series reached 100 connectors! 🎉',
-                        is_read: false,
-                        metadata: {
-                            milestone: '100 connectors',
-                            series_title: 'African Cultural Heritage'
-                        }
-                    }
-                ];
-                
-                // Insert sample notifications
-                const { error } = await supabaseClient
-                    .from('pulse_notifications')
-                    .insert(sampleNotifications.map(notif => ({
-                        ...notif,
-                        created_at: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000).toISOString()
-                    })));
-                
-                if (error) {
-                    console.error('Error seeding notifications:', error);
-                    throw error;
-                }
-                
-                console.log('Sample notifications seeded successfully');
-                
-            } catch (error) {
-                console.error('Error seeding notifications:', error);
-                throw error;
-            }
-        }
-        
         async function loadNotificationsByCategory(category, offset = 0, limit = 20) {
             try {
                 let query = supabaseClient
                     .from('pulse_notifications')
-                    .select('*')
+                    .select(`
+                        *,
+                        actor:actor_id (
+                            id,
+                            full_name,
+                            username,
+                            avatar_url,
+                            role
+                        ),
+                        pulse:pulse_id (
+                            id,
+                            caption,
+                            media_url,
+                            user_id
+                        )
+                    `)
                     .eq('target_user_id', currentUserId)
                     .neq('type', 'founder_welcome') // Exclude founder welcome from regular queries
                     .order('created_at', { ascending: false })
@@ -2105,16 +1987,86 @@ Founder, Bantu Stream Connect & Pulse`;
                     return [];
                 }
                 
-                // Process notifications
-                const processedNotifications = notifications.map(notif => ({
-                    id: notif.id,
-                    type: notif.type,
-                    message: notif.message,
-                    metadata: notif.metadata || {},
-                    timestamp: formatTimeAgo(notif.created_at),
-                    isRead: notif.is_read,
-                    rawData: notif
-                }));
+                // Process notifications with user profile data
+                const processedNotifications = await Promise.all(
+                    notifications.map(async (notif) => {
+                        // Get actor info from joined data or metadata
+                        let actorInfo = {};
+                        if (notif.actor) {
+                            actorInfo = {
+                                name: notif.actor.full_name || 'User',
+                                username: notif.actor.username || 'user',
+                                avatar: notif.actor.avatar_url || '',
+                                initials: getInitials(notif.actor.full_name || 'User'),
+                                id: notif.actor.id
+                            };
+                        } else if (notif.metadata && notif.metadata.actor_name) {
+                            actorInfo = {
+                                name: notif.metadata.actor_name,
+                                username: notif.metadata.actor_username || 'user',
+                                avatar: notif.metadata.actor_avatar || '',
+                                initials: getInitials(notif.metadata.actor_name),
+                                id: notif.actor_id
+                            };
+                        }
+                        
+                        // Get message based on notification type
+                        let message = notif.message || '';
+                        let context = '';
+                        
+                        if (!message) {
+                            switch(notif.type) {
+                                case 'like':
+                                    message = `${actorInfo.name || 'Someone'} liked your Pulse`;
+                                    context = notif.pulse?.caption || '';
+                                    break;
+                                case 'comment':
+                                    message = `${actorInfo.name || 'Someone'} commented on your Pulse`;
+                                    context = notif.metadata?.comment_text || '';
+                                    break;
+                                case 'comment_like':
+                                    message = `${actorInfo.name || 'Someone'} liked your comment`;
+                                    context = notif.metadata?.comment_text || '';
+                                    break;
+                                case 'follow':
+                                    message = `${actorInfo.name || 'Someone'} started following you`;
+                                    break;
+                                case 'mention':
+                                    message = `${actorInfo.name || 'Someone'} mentioned you`;
+                                    context = notif.metadata?.mention_text || '';
+                                    break;
+                                case 'share':
+                                    message = `${actorInfo.name || 'Someone'} shared your Pulse`;
+                                    context = notif.pulse?.caption || '';
+                                    break;
+                                case 'creator':
+                                    message = notif.metadata?.message || 'Creator notification';
+                                    context = notif.metadata?.context || '';
+                                    break;
+                                case 'system':
+                                    message = notif.metadata?.message || 'System notification';
+                                    context = notif.metadata?.context || '';
+                                    break;
+                                default:
+                                    message = 'New notification';
+                            }
+                        }
+                        
+                        return {
+                            id: notif.id,
+                            type: notif.type,
+                            message: message,
+                            context: context,
+                            timestamp: formatTimeAgo(notif.created_at),
+                            isRead: notif.is_read,
+                            actor: actorInfo,
+                            actors: actorInfo.id ? [actorInfo] : [],
+                            pulse: notif.pulse,
+                            metadata: notif.metadata || {},
+                            rawData: notif
+                        };
+                    })
+                );
                 
                 // Store notifications
                 if (offset === 0) {
@@ -2145,98 +2097,6 @@ Founder, Bantu Stream Connect & Pulse`;
             const currentOffset = notifications[category].length;
             await loadNotificationsByCategory(category, currentOffset, pagination[category].limit);
             renderNotifications(category);
-        }
-        
-        function processNotifications(dbNotifications) {
-            // Clear existing notifications (except founder welcome)
-            notifications.all = [];
-            notifications.mentions = [];
-            notifications.creator = [];
-            notifications.system = [];
-            
-            // Group similar notifications by type and content
-            const grouped = {};
-            
-            dbNotifications.forEach(notification => {
-                const key = `${notification.type}_${notification.pulse_id || 'general'}`;
-                
-                if (!grouped[key]) {
-                    grouped[key] = {
-                        id: notification.id,
-                        type: notification.type,
-                        actors: [],
-                        message: '',
-                        context: notification.message || '',
-                        timestamp: formatTimeAgo(notification.created_at),
-                        isRead: notification.is_read,
-                        metadata: notification.metadata || {}
-                    };
-                }
-                
-                // Add actor info from metadata
-                if (notification.metadata) {
-                    const actorInfo = {
-                        name: notification.metadata.actor_name || 'User',
-                        username: notification.metadata.actor_username || 'user',
-                        avatar: notification.metadata.actor_avatar || '',
-                        initials: getInitials(notification.metadata.actor_name || 'User')
-                    };
-                    grouped[key].actors.push(actorInfo);
-                }
-                
-                // Update message based on actor count
-                const actorCount = grouped[key].actors.length;
-                if (actorCount === 1) {
-                    const actor = grouped[key].actors[0];
-                    switch(notification.type) {
-                        case 'like':
-                            grouped[key].message = `${actor.name} liked your Pulse`;
-                            break;
-                        case 'comment':
-                            grouped[key].message = `${actor.name} commented on your Pulse`;
-                            break;
-                        case 'mention':
-                            grouped[key].message = `${actor.name} mentioned you`;
-                            break;
-                        case 'follow':
-                            grouped[key].message = `${actor.name} started following you`;
-                            break;
-                        default:
-                            grouped[key].message = notification.message || 'New notification';
-                    }
-                } else {
-                    switch(notification.type) {
-                        case 'like':
-                            grouped[key].message = `${actorCount} people liked your Pulse`;
-                            break;
-                        case 'comment':
-                            grouped[key].message = `${actorCount} people commented on your Pulse`;
-                            break;
-                        default:
-                            grouped[key].message = notification.message || 'New notification';
-                    }
-                }
-            });
-            
-            // Categorize grouped notifications
-            Object.values(grouped).forEach(notification => {
-                notifications.all.push(notification);
-                
-                if (notification.type === 'mention') {
-                    notifications.mentions.push(notification);
-                } else if (['creator', 'follow'].includes(notification.type)) {
-                    notifications.creator.push(notification);
-                } else if (notification.type === 'system') {
-                    notifications.system.push(notification);
-                }
-            });
-            
-            // Sort by timestamp (newest first)
-            Object.keys(notifications).forEach(category => {
-                notifications[category].sort((a, b) => {
-                    return new Date(b.rawData?.created_at || 0) - new Date(a.rawData?.created_at || 0);
-                });
-            });
         }
         
         function formatTimeAgo(timestamp) {
@@ -2306,9 +2166,70 @@ Founder, Bantu Stream Connect & Pulse`;
                 return;
             }
             
-            // Render other notifications
+            // Group notifications by type and pulse_id (for likes, comments, etc.)
+            const groupedNotifications = {};
+            
             notificationsList.forEach(notification => {
-                const isGrouped = notification.actors && notification.actors.length > 1;
+                const key = `${notification.type}_${notification.rawData.pulse_id || 'general'}`;
+                
+                if (['like', 'comment', 'comment_like'].includes(notification.type) && notification.rawData.pulse_id) {
+                    if (!groupedNotifications[key]) {
+                        groupedNotifications[key] = {
+                            id: notification.id,
+                            type: notification.type,
+                            actors: [],
+                            message: '',
+                            context: notification.context || '',
+                            timestamp: notification.timestamp,
+                            isRead: notification.isRead,
+                            metadata: notification.metadata,
+                            pulse: notification.pulse
+                        };
+                    }
+                    
+                    // Add actor to group
+                    if (notification.actor && notification.actor.id) {
+                        // Check if actor already exists in group
+                        const existingActor = groupedNotifications[key].actors.find(a => a.id === notification.actor.id);
+                        if (!existingActor) {
+                            groupedNotifications[key].actors.push(notification.actor);
+                        }
+                    }
+                    
+                    // Update message based on actor count
+                    const actorCount = groupedNotifications[key].actors.length;
+                    if (actorCount === 1) {
+                        const actor = groupedNotifications[key].actors[0];
+                        groupedNotifications[key].message = `${actor.name} ${getActionText(notification.type)}`;
+                    } else if (actorCount === 2) {
+                        const actor1 = groupedNotifications[key].actors[0].name;
+                        const actor2 = groupedNotifications[key].actors[1].name;
+                        groupedNotifications[key].message = `${actor1} and ${actor2} ${getActionText(notification.type, true)}`;
+                    } else if (actorCount > 2) {
+                        groupedNotifications[key].message = `${actorCount} people ${getActionText(notification.type, true)}`;
+                    }
+                    
+                } else {
+                    // Single notification (not grouped)
+                    const notificationKey = `single_${notification.id}`;
+                    groupedNotifications[notificationKey] = {
+                        id: notification.id,
+                        type: notification.type,
+                        actors: notification.actor ? [notification.actor] : [],
+                        message: notification.message,
+                        context: notification.context || '',
+                        timestamp: notification.timestamp,
+                        isRead: notification.isRead,
+                        metadata: notification.metadata,
+                        pulse: notification.pulse,
+                        isSingle: true
+                    };
+                }
+            });
+            
+            // Render grouped notifications
+            Object.values(groupedNotifications).forEach(notification => {
+                const isGrouped = notification.actors.length > 1 && !notification.isSingle;
                 
                 if (isGrouped) {
                     // Render grouped notification
@@ -2319,7 +2240,7 @@ Founder, Bantu Stream Connect & Pulse`;
                     const actorCount = notification.actors.length;
                     const avatarsHTML = notification.actors.slice(0, 3).map((actor, index) => `
                         <div class="grouped-avatar" style="z-index: ${3 - index};">
-                            ${actor.avatar ? `<img src="${actor.avatar}" alt="${actor.name}">` : `<span>${actor.initials}</span>`}
+                            ${actor.avatar ? `<img src="${actor.avatar}" alt="${actor.name}" onerror="this.parentElement.innerHTML='<span>${actor.initials}</span>'; this.remove();">` : `<span>${actor.initials}</span>`}
                         </div>
                     `).join('');
                     
@@ -2338,9 +2259,10 @@ Founder, Bantu Stream Connect & Pulse`;
                             </div>
                         </div>
                         ${notification.context ? `<div class="grouped-preview">"${notification.context}"</div>` : ''}
+                        ${notification.pulse?.caption ? `<div class="pulse-preview">${notification.pulse.caption}</div>` : ''}
                         <div class="grouped-time">
                             ${notification.timestamp}
-                            ${notification.metadata.pulse_caption ? `<i class="fas fa-chevron-right" style="margin-left: auto; color: var(--slate-grey);"></i>` : ''}
+                            ${notification.pulse ? `<i class="fas fa-chevron-right" style="margin-left: auto; color: var(--slate-grey);"></i>` : ''}
                         </div>
                         <div class="notification-actions">
                             <button class="action-btn" onclick="event.stopPropagation(); markAsRead('${notification.id}')" title="Mark as read">
@@ -2376,7 +2298,7 @@ Founder, Bantu Stream Connect & Pulse`;
                     
                     notificationItem.innerHTML = `
                         <div class="notification-avatar ${avatarClass}">
-                            ${actor.avatar ? `<img src="${actor.avatar}" alt="${actor.name}">` : `<span>${actor.initials}</span>`}
+                            ${actor.avatar ? `<img src="${actor.avatar}" alt="${actor.name}" onerror="this.style.display='none'; this.parentElement.innerHTML='<span>${actor.initials}</span>';">` : `<span>${actor.initials}</span>`}
                         </div>
                         <div class="notification-content">
                             <div class="notification-message">
@@ -2385,9 +2307,10 @@ Founder, Bantu Stream Connect & Pulse`;
                                 <span class="notification-type ${notification.type}">${notification.type}</span>
                             </div>
                             ${notification.context ? `<div class="notification-context">"${notification.context}"</div>` : ''}
+                            ${notification.pulse?.caption ? `<div class="pulse-preview">${notification.pulse.caption}</div>` : ''}
                             <div class="notification-time">
                                 ${notification.timestamp}
-                                ${notification.metadata.pulse_caption ? `<i class="fas fa-chevron-right" style="margin-left: auto; color: var(--slate-grey);"></i>` : ''}
+                                ${notification.pulse ? `<i class="fas fa-chevron-right" style="margin-left: auto; color: var(--slate-grey);"></i>` : ''}
                             </div>
                         </div>
                         <div class="notification-actions">
@@ -2409,6 +2332,37 @@ Founder, Bantu Stream Connect & Pulse`;
                     container.appendChild(notificationItem);
                 }
             });
+            
+            // Show empty state if no notifications after rendering
+            if (container.children.length === 0 && category !== 'all' && category !== 'system') {
+                let emptyMessage = 'No notifications';
+                let emptyDescription = 'New notifications will appear here.';
+                
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">
+                            <i class="far fa-bell"></i>
+                        </div>
+                        <div class="empty-title">${emptyMessage}</div>
+                        <div class="empty-description">${emptyDescription}</div>
+                    </div>
+                `;
+            }
+        }
+        
+        function getActionText(type, plural = false) {
+            switch(type) {
+                case 'like':
+                    return plural ? 'liked your Pulse' : 'liked your Pulse';
+                case 'comment':
+                    return plural ? 'commented on your Pulse' : 'commented on your Pulse';
+                case 'comment_like':
+                    return plural ? 'liked your comment' : 'liked your comment';
+                case 'share':
+                    return plural ? 'shared your Pulse' : 'shared your Pulse';
+                default:
+                    return plural ? 'interacted with your content' : 'interacted with your content';
+            }
         }
         
         function renderFounderWelcomeNotification(container) {
@@ -2712,18 +2666,19 @@ Founder, Bantu Stream Connect & Pulse`;
             }
             
             // Navigate to relevant content
-            if (notification.metadata && notification.metadata.pulse_caption) {
-                showToast('Opening pulse...', 'success');
-                // In real app: window.location.href = `pulse-detail.html?id=${notification.rawData.pulse_id}`;
-            } else if (notification.type === 'follow') {
-                const actor = notification.actors && notification.actors[0];
-                if (actor) {
-                    showToast(`Viewing ${actor.name}'s profile...`, 'success');
-                    // In real app: window.location.href = `profile.html?user_id=${notification.rawData.actor_id}`;
-                }
+            if (notification.pulse && notification.pulse.id) {
+                // Navigate to pulse
+                window.location.href = `pulse-content-detail.html?id=${notification.pulse.id}`;
+            } else if (notification.actor && notification.actor.id) {
+                // Navigate to user profile
+                window.location.href = `profile.html?user_id=${notification.actor.id}`;
+            } else if (notification.rawData && notification.rawData.comment_id) {
+                // Navigate to comment
+                showToast('Opening comment...', 'success');
+                // You might need to implement comment navigation
             } else {
-                // Default action
-                showToast('Opening notification...', 'success');
+                // Default action - stay on notifications page
+                showToast('Notification viewed', 'success');
             }
         }
         
@@ -2769,60 +2724,67 @@ Founder, Bantu Stream Connect & Pulse`;
         }
         
         function subscribeToNotifications() {
-            if (!supabaseClient) return;
+            if (!supabaseClient || !currentUserId) return;
             
-            // Subscribe to pulse_notifications table changes
-            notificationsSubscription = supabaseClient
-                .channel('pulse-notifications')
-                .on(
-                    'postgres_changes',
-                    {
-                        event: 'INSERT',
-                        schema: 'public',
-                        table: 'pulse_notifications',
-                        filter: `target_user_id=eq.${currentUserId}`
-                    },
-                    async (payload) => {
-                        console.log('New notification received:', payload);
-                        
-                        // Check if it's a founder welcome notification
-                        if (payload.new.type === 'founder_welcome' && payload.new.actor_id === FOUNDER_ID) {
-                            // Reload founder welcome notification
-                            await loadFounderWelcomeNotification();
-                        } else {
-                            // Add new notification to local state
-                            const newNotification = {
-                                id: payload.new.id,
-                                type: payload.new.type,
-                                message: payload.new.message,
-                                metadata: payload.new.metadata || {},
-                                timestamp: 'Just now',
-                                isRead: payload.new.is_read,
-                                rawData: payload.new
-                            };
+            try {
+                // Subscribe to pulse_notifications table changes
+                notificationsSubscription = supabaseClient
+                    .channel(`notifications-${currentUserId}`)
+                    .on(
+                        'postgres_changes',
+                        {
+                            event: 'INSERT',
+                            schema: 'public',
+                            table: 'pulse_notifications',
+                            filter: `target_user_id=eq.${currentUserId}`
+                        },
+                        async (payload) => {
+                            console.log('New notification received:', payload);
                             
-                            // Add to appropriate categories
-                            notifications.all.unshift(newNotification);
-                            
-                            if (newNotification.type === 'mention') {
-                                notifications.mentions.unshift(newNotification);
-                            } else if (['creator', 'follow'].includes(newNotification.type)) {
-                                notifications.creator.unshift(newNotification);
-                            } else if (newNotification.type === 'system') {
-                                notifications.system.unshift(newNotification);
+                            // Check if it's a founder welcome notification
+                            if (payload.new.type === 'founder_welcome' && payload.new.actor_id === FOUNDER_ID) {
+                                // Reload founder welcome notification
+                                await loadFounderWelcomeNotification();
+                            } else {
+                                // Add new notification to local state
+                                const newNotification = {
+                                    id: payload.new.id,
+                                    type: payload.new.type,
+                                    message: payload.new.message,
+                                    metadata: payload.new.metadata || {},
+                                    timestamp: 'Just now',
+                                    isRead: payload.new.is_read,
+                                    rawData: payload.new
+                                };
+                                
+                                // Add to appropriate categories
+                                notifications.all.unshift(newNotification);
+                                
+                                if (newNotification.type === 'mention') {
+                                    notifications.mentions.unshift(newNotification);
+                                } else if (['creator', 'follow'].includes(newNotification.type)) {
+                                    notifications.creator.unshift(newNotification);
+                                } else if (newNotification.type === 'system') {
+                                    notifications.system.unshift(newNotification);
+                                }
                             }
+                            
+                            // Update UI
+                            const activeTab = document.querySelector('.tab.active').getAttribute('data-tab');
+                            renderNotifications(activeTab);
+                            updateBadgeCounts();
+                            
+                            // Show toast notification
+                            showToast('New notification received!', 'success');
                         }
-                        
-                        // Update UI
-                        const activeTab = document.querySelector('.tab.active').getAttribute('data-tab');
-                        renderNotifications(activeTab);
-                        updateBadgeCounts();
-                        
-                        // Show toast notification
-                        showToast('New notification!', 'success');
-                    }
-                )
-                .subscribe();
+                    )
+                    .subscribe((status) => {
+                        console.log('Notification subscription status:', status);
+                    });
+                
+            } catch (error) {
+                console.error('Error subscribing to notifications:', error);
+            }
         }
         
         async function loadFallbackNotifications() {
@@ -2864,7 +2826,7 @@ Founder, Bantu Stream Connect & Pulse`,
                 {
                     id: '1',
                     type: 'like',
-                    actors: [{ name: 'Amina Diallo', username: 'aminad', initials: 'AD' }],
+                    actors: [{ name: 'Amina Diallo', username: 'aminad', initials: 'AD', id: 'user1' }],
                     message: 'Amina Diallo liked your Pulse',
                     context: 'Preserving traditional West African drumming techniques',
                     timestamp: '2h ago',
@@ -2874,27 +2836,27 @@ Founder, Bantu Stream Connect & Pulse`,
                 {
                     id: '2',
                     type: 'comment',
-                    actors: [{ name: 'Kwame Osei', username: 'kwameo', initials: 'KO' }],
+                    actors: [{ name: 'Kwame Osei', username: 'kwameo', initials: 'KO', id: 'user2' }],
                     message: 'Kwame Osei commented on your Pulse',
                     context: 'Great insight! I learned something new today.',
                     timestamp: '3h ago',
                     isRead: false,
-                    metadata: { pulse_caption: 'Adinkra symbolism' }
+                    metadata: { pulse_caption: 'Adinkra symbolism', comment_text: 'Great insight! I learned something new today.' }
                 },
                 {
                     id: '3',
-                    type: 'mention',
-                    actors: [{ name: 'Zara Ndlovu', username: 'zarandlovu', initials: 'ZN' }],
-                    message: 'Zara Ndlovu mentioned you',
-                    context: 'Check out this amazing cultural insight!',
+                    type: 'comment_like',
+                    actors: [{ name: 'Zara Ndlovu', username: 'zarandlovu', initials: 'ZN', id: 'user3' }],
+                    message: 'Zara Ndlovu liked your comment',
+                    context: 'This is so insightful!',
                     timestamp: '1d ago',
                     isRead: true,
-                    metadata: { pulse_caption: 'Harvest festivals' }
+                    metadata: { comment_text: 'This is so insightful!' }
                 },
                 {
                     id: '4',
                     type: 'follow',
-                    actors: [{ name: 'Kofi Mensah', username: 'kofim', initials: 'KM' }],
+                    actors: [{ name: 'Kofi Mensah', username: 'kofim', initials: 'KM', id: 'user4' }],
                     message: 'Kofi Mensah started following you',
                     context: 'Interested in your cultural content',
                     timestamp: '2d ago',
@@ -2902,10 +2864,10 @@ Founder, Bantu Stream Connect & Pulse`,
                 },
                 {
                     id: '5',
-                    type: 'creator',
-                    actors: [{ name: 'Bantu Pulse', initials: 'BP' }],
-                    message: 'Your Pulse Series reached 100 connectors! 🎉',
-                    context: 'African Cultural Heritage series milestone',
+                    type: 'share',
+                    actors: [{ name: 'Bantu Pulse', initials: 'BP', id: 'system' }],
+                    message: 'Your Pulse was shared 5 times',
+                    context: 'African Cultural Heritage series',
                     timestamp: '3d ago',
                     isRead: false
                 }
