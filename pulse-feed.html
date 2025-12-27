@@ -3189,59 +3189,129 @@
             
             // ✅ FIXED: FETCH PULSES FROM SUPABASE WITH PROPER LIKES COUNT
             async function fetchPulses() {
-                try {
-                    console.log('🔄 Fetching pulses...');
-                    
-                    // First, fetch the pulses
-                    const { data: pulsesData, error: pulsesError } = await supabaseClient
-                        .from('pulses')
-                        .select('*, user_profiles(*)')
-                        .is('deleted_at', null)
-                        .order('created_at', { ascending: false })
-                        .limit(20);
-                    
-                    if (pulsesError) throw pulsesError;
-                    
-                    // Get the actual likes count for each pulse from pulse_likes table
-                    const pulseIds = pulsesData.map(p => p.id);
-                    const { data: likesData, error: likesError } = await supabaseClient
-                        .from('pulse_likes')
-                        .select('pulse_id, count')
-                        .in('pulse_id', pulseIds)
-                        .group('pulse_id');
-                    
-                    if (likesError && !likesError.message.includes('JSON')) {
-                        console.warn('Error fetching likes count:', likesError);
+    try {
+        console.log('🔄 Fetching pulses...');
+        
+        // First, fetch the pulses
+        const { data: pulsesData, error: pulsesError } = await supabaseClient
+            .from('pulses')
+            .select('*')
+            .is('deleted_at', null)
+            .order('created_at', { ascending: false })
+            .limit(20);
+        
+        if (pulsesError) throw pulsesError;
+        
+        if (!pulsesData || pulsesData.length === 0) {
+            console.log('No pulses found');
+            loadSampleData();
+            return;
+        }
+        
+        console.log(`✅ Fetched ${pulsesData?.length || 0} pulses`);
+        
+        // Get user IDs from pulses
+        const userIds = [...new Set(pulsesData.map(p => p.user_id))];
+        
+        // Try to fetch user profiles from auth.users first (most reliable)
+        let userProfilesMap = {};
+        
+        try {
+            // Try to get user data from auth.users
+            const { data: authUsersData, error: authError } = await supabaseClient.auth.admin.listUsers();
+            
+            if (!authError && authUsersData) {
+                authUsersData.users.forEach(user => {
+                    if (userIds.includes(user.id)) {
+                        userProfilesMap[user.id] = {
+                            id: user.id,
+                            email: user.email,
+                            full_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'User',
+                            avatar_url: user.user_metadata?.avatar_url || null,
+                            role: 'creator' // default role
+                        };
                     }
-                    
-                    // Create a map of pulse_id to actual likes count
-                    const likesCountMap = {};
-                    if (likesData) {
-                        likesData.forEach(item => {
-                            likesCountMap[item.pulse_id] = item.count;
-                        });
-                    }
-                    
-                    // Update pulses data with actual likes count
-                    pulsesData.forEach(pulse => {
-                        // Use actual count from pulse_likes if available, otherwise use stored count
-                        pulse.actual_likes_count = likesCountMap[pulse.id] || pulse.likes_count || 0;
-                    });
-                    
-                    console.log(`✅ Fetched ${pulsesData?.length || 0} pulses with actual likes counts`);
-                    pulses = pulsesData || [];
-                    
-                    // Check which pulses the current user has liked
-                    const likedPulses = await checkUserLikes(pulseIds);
-                    
-                    displayPulses(pulses, likedPulses);
-                    
-                } catch (error) {
-                    console.error('❌ Error fetching pulses:', error);
-                    showToast('Failed to load pulses. Showing demo data.', 'error');
-                    loadSampleData();
-                }
+                });
             }
+        } catch (authError) {
+            console.warn('Could not fetch auth users:', authError);
+        }
+        
+        // If we couldn't get all users from auth, try the user_profiles table
+        const missingUserIds = userIds.filter(id => !userProfilesMap[id]);
+        if (missingUserIds.length > 0) {
+            try {
+                const { data: profilesData, error: profilesError } = await supabaseClient
+                    .from('user_profiles')
+                    .select('*')
+                    .in('id', missingUserIds);
+                
+                if (!profilesError && profilesData) {
+                    profilesData.forEach(profile => {
+                        userProfilesMap[profile.id] = profile;
+                    });
+                }
+            } catch (profilesError) {
+                console.warn('Could not fetch user profiles:', profilesError);
+            }
+        }
+        
+        // Get the actual likes count for each pulse from pulse_likes table
+        const pulseIds = pulsesData.map(p => p.id);
+        const { data: likesData, error: likesError } = await supabaseClient
+            .from('pulse_likes')
+            .select('pulse_id')
+            .in('pulse_id', pulseIds);
+        
+        if (likesError && !likesError.message.includes('JSON')) {
+            console.warn('Error fetching likes count:', likesError);
+        }
+        
+        // Create a map of pulse_id to actual likes count
+        const likesCountMap = {};
+        if (likesData) {
+            // Count likes per pulse
+            const pulseLikeCounts = {};
+            likesData.forEach(item => {
+                if (!pulseLikeCounts[item.pulse_id]) {
+                    pulseLikeCounts[item.pulse_id] = 0;
+                }
+                pulseLikeCounts[item.pulse_id]++;
+            });
+            
+            // Update the map
+            Object.keys(pulseLikeCounts).forEach(pulseId => {
+                likesCountMap[pulseId] = pulseLikeCounts[pulseId];
+            });
+        }
+        
+        // Update pulses data with user profiles and actual likes count
+        const enrichedPulses = pulsesData.map(pulse => ({
+            ...pulse,
+            user_profiles: userProfilesMap[pulse.user_id] || {
+                id: pulse.user_id,
+                email: 'unknown@user.com',
+                full_name: 'User',
+                username: 'user',
+                role: 'creator',
+                avatar_url: null
+            },
+            actual_likes_count: likesCountMap[pulse.id] || pulse.likes_count || 0
+        }));
+        
+        pulses = enrichedPulses;
+        
+        // Check which pulses the current user has liked
+        const likedPulses = await checkUserLikes(pulseIds);
+        
+        displayPulses(pulses, likedPulses);
+        
+    } catch (error) {
+        console.error('❌ Error fetching pulses:', error);
+        showToast('Failed to load pulses. Showing demo data.', 'error');
+        loadSampleData();
+    }
+}
             
             // ✅ FIXED: DISPLAY PULSES WITH ACTUAL LIKES COUNT
             function displayPulses(pulses, likedPulses) {
