@@ -1731,85 +1731,70 @@
             return name.substring(0, 2).toUpperCase();
         }
         
+        // ✅ FIXED: LOAD PULSE WITH ACTUAL LIKES COUNT
         async function loadPulse() {
             try {
                 console.log('Loading pulse:', pulseId);
                 
-                // Fetch pulse with user details
+                // First, fetch the pulse data
                 const { data: pulse, error } = await supabaseClient
-                    .from('pulses_with_user_details')
+                    .from('pulses')
                     .select('*')
                     .eq('id', pulseId)
                     .single();
                 
                 if (error) {
-                    console.error('Error fetching pulse from view:', error);
-                    // Try alternative: join manually
-                    const { data: pulseAlt, error: errorAlt } = await supabaseClient
-                        .from('pulses')
-                        .select(`
-                            *,
-                            user_profiles!inner (
-                                id,
-                                full_name,
-                                username,
-                                avatar_url,
-                                role,
-                                email
-                            )
-                        `)
-                        .eq('id', pulseId)
+                    console.error('Error fetching pulse:', error);
+                    throw error;
+                }
+                
+                currentPulse = pulse;
+                
+                // Get user info
+                try {
+                    const { data: creatorData } = await supabaseClient
+                        .from('user_profiles')
+                        .select('*')
+                        .eq('id', pulse.user_id)
                         .single();
                     
-                    if (errorAlt) {
-                        console.error('Error fetching pulse with join:', errorAlt);
-                        // Last resort: fetch separately
-                        const { data: pulseData } = await supabaseClient
-                            .from('pulses')
-                            .select('*')
-                            .eq('id', pulseId)
-                            .single();
-                        
-                        if (!pulseData) throw new Error('Pulse not found');
-                        
-                        currentPulse = pulseData;
-                        
-                        // Get creator info separately
-                        const { data: creatorData } = await supabaseClient
-                            .from('user_profiles')
-                            .select('*')
-                            .eq('id', pulseData.user_id)
-                            .single();
-                        
-                        pulseCreator = creatorData || {
-                            full_name: 'Unknown User',
-                            username: 'unknown',
-                            avatar_url: null,
-                            role: 'user',
-                            email: 'unknown@example.com',
-                            id: pulseData.user_id
-                        };
-                    } else {
-                        currentPulse = pulseAlt;
-                        pulseCreator = {
-                            full_name: pulseAlt.user_profiles.full_name,
-                            username: pulseAlt.user_profiles.username,
-                            avatar_url: pulseAlt.user_profiles.avatar_url,
-                            role: pulseAlt.user_profiles.role,
-                            email: pulseAlt.user_profiles.email,
-                            id: pulseAlt.user_id
-                        };
-                    }
-                } else {
-                    currentPulse = pulse;
-                    pulseCreator = {
-                        full_name: pulse.full_name,
-                        username: pulse.username,
-                        avatar_url: pulse.avatar_url,
-                        role: pulse.role,
-                        email: pulse.email,
+                    pulseCreator = creatorData || {
+                        full_name: 'Unknown User',
+                        username: 'unknown',
+                        avatar_url: null,
+                        role: 'user',
+                        email: 'unknown@example.com',
                         id: pulse.user_id
                     };
+                } catch (creatorError) {
+                    console.error('Error fetching creator:', creatorError);
+                    pulseCreator = {
+                        full_name: 'User',
+                        username: 'user',
+                        avatar_url: null,
+                        role: 'user',
+                        email: 'unknown@example.com',
+                        id: pulse.user_id
+                    };
+                }
+                
+                // ✅ FIXED: Get actual likes count from pulse_likes table
+                let actualLikesCount = 0;
+                try {
+                    const { data: likesData, error: likesError } = await supabaseClient
+                        .from('pulse_likes')
+                        .select('id')
+                        .eq('pulse_id', pulseId);
+                    
+                    if (!likesError && likesData) {
+                        actualLikesCount = likesData.length;
+                    } else {
+                        // Fallback to stored count
+                        actualLikesCount = pulse.likes_count || 0;
+                    }
+                } catch (likesError) {
+                    console.error('Error fetching likes count:', likesError);
+                    actualLikesCount = pulse.likes_count || 0;
                 }
                 
                 // Update UI
@@ -1860,9 +1845,9 @@
                 // Set caption
                 document.getElementById('caption-text').textContent = currentPulse.caption || '';
                 
-                // Set counts
+                // ✅ FIXED: Set counts with proper pluralization
                 document.getElementById('comment-count').textContent = currentPulse.comments_count || 0;
-                document.getElementById('like-count').textContent = currentPulse.likes_count || 0;
+                document.getElementById('like-count').textContent = actualLikesCount;
                 document.getElementById('share-count').textContent = currentPulse.shares_count || 0;
                 
                 // Load media
@@ -2004,7 +1989,6 @@
         
         async function checkLikeStatus() {
             try {
-                // Check if pulse_likes table exists, otherwise use a fallback
                 const { data, error } = await supabaseClient
                     .from('pulse_likes')
                     .select('id')
@@ -2013,8 +1997,7 @@
                     .maybeSingle(); // Use maybeSingle to avoid error if no record
                 
                 if (error && error.code !== 'PGRST116') {
-                    // Table might not exist, check if we need to create it
-                    console.log('Like table might not exist, using fallback');
+                    console.log('Error checking like status:', error);
                     isLiked = false;
                 } else {
                     isLiked = !!data;
@@ -2072,43 +2055,35 @@
             }
         }
         
+        // ✅ FIXED: HANDLE LIKE WITH PROPER COUNT UPDATES
         async function handleLike() {
             try {
-                // Check if pulse_likes table exists by attempting to create it
-                if (isLiked) {
-                    // Unlike - try to delete from pulse_likes
+                // Check if already liked
+                const { data: existingLike } = await supabaseClient
+                    .from('pulse_likes')
+                    .select('id')
+                    .eq('pulse_id', pulseId)
+                    .eq('user_id', currentUserId)
+                    .single();
+                
+                if (existingLike) {
+                    // Unlike
                     const { error } = await supabaseClient
                         .from('pulse_likes')
                         .delete()
-                        .eq('pulse_id', pulseId)
-                        .eq('user_id', currentUserId);
+                        .eq('id', existingLike.id);
                     
-                    if (error) {
-                        // Table might not exist, just update local state
-                        console.log('Could not unlike (table might not exist):', error);
-                    } else {
+                    if (!error) {
                         isLiked = false;
+                        updateLikeUI();
                         
-                        // Update pulse likes count in pulses table
-                        const currentCount = parseInt(document.getElementById('like-count').textContent) || 0;
-                        const newCount = Math.max(0, currentCount - 1);
-                        
-                        const { error: updateError } = await supabaseClient
-                            .from('pulses')
-                            .update({ 
-                                likes_count: newCount,
-                                updated_at: new Date().toISOString()
-                            })
-                            .eq('id', pulseId);
-                        
-                        if (!updateError) {
-                            document.getElementById('like-count').textContent = newCount;
-                        }
+                        // Get updated likes count
+                        await updateLikesCountAfterChange();
                         
                         showToast('Like removed', 'success');
                     }
                 } else {
-                    // Like - try to insert into pulse_likes
+                    // Like
                     const { error } = await supabaseClient
                         .from('pulse_likes')
                         .insert({
@@ -2117,43 +2092,56 @@
                             created_at: new Date().toISOString()
                         });
                     
-                    if (error) {
-                        // Table might not exist, just update pulses table directly
-                        console.log('Could not like (table might not exist):', error);
-                        
-                        // Update pulses table directly
-                        const currentCount = parseInt(document.getElementById('like-count').textContent) || 0;
-                        const newCount = currentCount + 1;
-                        
-                        const { error: updateError } = await supabaseClient
-                            .from('pulses')
-                            .update({ 
-                                likes_count: newCount,
-                                updated_at: new Date().toISOString()
-                            })
-                            .eq('id', pulseId);
-                        
-                        if (!updateError) {
-                            document.getElementById('like-count').textContent = newCount;
-                            isLiked = true;
-                            showToast('Pulse liked!', 'success');
-                        }
-                    } else {
+                    if (!error) {
                         isLiked = true;
+                        updateLikeUI();
                         
-                        // Update pulse likes count
-                        const currentCount = parseInt(document.getElementById('like-count').textContent) || 0;
-                        document.getElementById('like-count').textContent = currentCount + 1;
+                        // Get updated likes count
+                        await updateLikesCountAfterChange();
                         
                         showToast('Pulse liked!', 'success');
                     }
                 }
                 
-                updateLikeUI();
-                
             } catch (error) {
                 console.error('Error handling like:', error);
                 showToast('Failed to like pulse', 'error');
+            }
+        }
+        
+        // ✅ NEW: UPDATE LIKES COUNT AFTER LIKE/UNLIKE
+        async function updateLikesCountAfterChange() {
+            try {
+                // Get actual likes count from pulse_likes table
+                const { data: likesData, error: likesError } = await supabaseClient
+                    .from('pulse_likes')
+                    .select('id')
+                    .eq('pulse_id', pulseId);
+                
+                if (!likesError && likesData) {
+                    const actualLikesCount = likesData.length;
+                    document.getElementById('like-count').textContent = actualLikesCount;
+                } else {
+                    // Fallback: get from pulses table
+                    const { data: pulseData } = await supabaseClient
+                        .from('pulses')
+                        .select('likes_count')
+                        .eq('id', pulseId)
+                        .single();
+                    
+                    if (pulseData) {
+                        document.getElementById('like-count').textContent = pulseData.likes_count || 0;
+                    }
+                }
+            } catch (error) {
+                console.error('Error updating likes count:', error);
+                // Fallback: update UI by incrementing/decrementing
+                const currentCount = parseInt(document.getElementById('like-count').textContent) || 0;
+                if (isLiked) {
+                    document.getElementById('like-count').textContent = currentCount + 1;
+                } else {
+                    document.getElementById('like-count').textContent = Math.max(0, currentCount - 1);
+                }
             }
         }
         
