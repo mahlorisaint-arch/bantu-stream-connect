@@ -2064,7 +2064,7 @@
                     .select('id')
                     .eq('pulse_id', pulseId)
                     .eq('user_id', currentUserId)
-                    .single();
+                    .maybeSingle();
                 
                 if (existingLike) {
                     // Unlike
@@ -2464,9 +2464,8 @@
                 commentInput.value = '';
                 document.getElementById('postCommentBtn').disabled = true;
                 
-                // Update comment count
-                const currentCount = parseInt(document.getElementById('comment-count').textContent) || 0;
-                document.getElementById('comment-count').textContent = currentCount + 1;
+                // Update comment count - FIXED: Count all non-removed comments
+                await updateCommentCount();
                 
                 // Reload comments
                 loadComments();
@@ -2476,6 +2475,32 @@
             } catch (error) {
                 console.error('Error posting comment:', error);
                 showToast('Failed to post comment', 'error');
+            }
+        }
+        
+        // ✅ FIXED: NEW FUNCTION TO UPDATE COMMENT COUNT
+        async function updateCommentCount() {
+            try {
+                // Count all non-removed comments for this pulse
+                const { data: comments, error } = await supabaseClient
+                    .from('pulse_comments')
+                    .select('id', { count: 'exact' })
+                    .eq('pulse_id', pulseId)
+                    .is('is_removed', false);
+                
+                if (!error && comments !== null) {
+                    // The count is in the data array length
+                    const commentCount = comments.length;
+                    document.getElementById('comment-count').textContent = commentCount;
+                    
+                    // Also update the pulse's comments_count in the database
+                    await supabaseClient
+                        .from('pulses')
+                        .update({ comments_count: commentCount })
+                        .eq('id', pulseId);
+                }
+            } catch (error) {
+                console.error('Error updating comment count:', error);
             }
         }
         
@@ -2500,6 +2525,9 @@
                 // Clear input and hide composer
                 replyInput.value = '';
                 document.getElementById(`reply-composer-${parentId}`).classList.remove('active');
+                
+                // Update comment count - FIXED
+                await updateCommentCount();
                 
                 // Reload comments
                 loadComments();
@@ -2599,6 +2627,10 @@
                 
                 console.log('Top level comments:', topLevelComments.length, 'Replies:', replies.length);
                 
+                // ✅ FIXED: Update comment count based on actual number of comments
+                const totalComments = topLevelComments.length + replies.length;
+                document.getElementById('comment-count').textContent = totalComments;
+                
                 // Display top-level comments
                 topLevelComments.forEach(comment => {
                     const commentReplies = replies.filter(r => r.parent_comment_id === comment.id);
@@ -2633,6 +2665,22 @@
             const fullName = userProfile.full_name || 'User';
             const isCommentOwner = comment.user_id === currentUserId;
             const isLiked = likedCommentIds.has(comment.id);
+            
+            // ✅ FIXED: Get actual likes count from pulse_comments_likes table
+            let actualLikesCount = 0;
+            try {
+                // We'll fetch the actual count asynchronously
+                fetchCommentLikesCount(comment.id).then(count => {
+                    const likeCountElement = commentItem.querySelector(`[data-comment-id="${comment.id}"] .comment-like-count`);
+                    if (likeCountElement) {
+                        likeCountElement.textContent = count;
+                    }
+                }).catch(err => {
+                    console.log('Error fetching comment likes count:', err);
+                });
+            } catch (error) {
+                console.error('Error setting up likes count fetch:', error);
+            }
             
             // FIXED: Use img tag for avatar instead of background image
             commentItem.innerHTML = `
@@ -2704,6 +2752,20 @@
                     replyItem.className = 'comment-item';
                     replyItem.style.marginBottom = '8px';
                     replyItem.dataset.commentId = reply.id;
+                    
+                    // ✅ FIXED: Get actual likes count for replies too
+                    try {
+                        fetchCommentLikesCount(reply.id).then(count => {
+                            const replyLikeCountElement = replyItem.querySelector(`[data-comment-id="${reply.id}"] .comment-like-count`);
+                            if (replyLikeCountElement) {
+                                replyLikeCountElement.textContent = count;
+                            }
+                        }).catch(err => {
+                            console.log('Error fetching reply likes count:', err);
+                        });
+                    } catch (error) {
+                        console.error('Error setting up reply likes count fetch:', error);
+                    }
                     
                     // FIXED: Use img tag for reply avatar too
                     replyItem.innerHTML = `
@@ -2863,6 +2925,24 @@
             });
         }
         
+        // ✅ NEW FUNCTION: FETCH ACTUAL COMMENT LIKES COUNT
+        async function fetchCommentLikesCount(commentId) {
+            try {
+                const { data: likesData, error } = await supabaseClient
+                    .from('pulse_comments_likes')
+                    .select('id')
+                    .eq('comment_id', commentId);
+                
+                if (!error && likesData) {
+                    return likesData.length;
+                }
+                return 0;
+            } catch (error) {
+                console.error('Error fetching comment likes count:', error);
+                return 0;
+            }
+        }
+        
         // FIXED: Added proper click prevention and button disabling
         async function likeComment(commentId, buttonElement) {
             // Prevent multiple clicks
@@ -2899,6 +2979,10 @@
                 const alreadyLiked = !!existingLike;
                 console.log('Already liked:', alreadyLiked, 'Like data:', existingLike);
                 
+                // Get current like count from the button
+                const likeCountElement = buttonElement.querySelector('.comment-like-count');
+                const currentCount = parseInt(likeCountElement.textContent) || 0;
+                
                 if (alreadyLiked) {
                     // UNLIKE: Delete the like record
                     const { error: deleteError } = await supabaseClient
@@ -2911,11 +2995,11 @@
                         throw deleteError;
                     }
                     
-                    // Get current likes count after deletion (trigger will update it)
-                    setTimeout(async () => {
-                        await updateCommentLikeUI(commentId, null, false, buttonElement);
-                    }, 100);
+                    // Update UI immediately
+                    likeCountElement.textContent = Math.max(0, currentCount - 1);
+                    buttonElement.classList.remove('liked');
                     
+                    // The trigger should update the pulse_comments.likes_count automatically
                     showToast('Like removed', 'success');
                     
                 } else {
@@ -2944,9 +3028,8 @@
                             
                             if (existing) {
                                 // Update UI as liked
-                                setTimeout(async () => {
-                                    await updateCommentLikeUI(commentId, null, true, buttonElement);
-                                }, 100);
+                                likeCountElement.textContent = currentCount + 1;
+                                buttonElement.classList.add('liked');
                                 showToast('Comment liked!', 'success');
                                 return;
                             }
@@ -2955,10 +3038,9 @@
                         throw insertError;
                     }
                     
-                    // Update UI after trigger updates the count
-                    setTimeout(async () => {
-                        await updateCommentLikeUI(commentId, null, true, buttonElement);
-                    }, 100);
+                    // Update UI immediately
+                    likeCountElement.textContent = currentCount + 1;
+                    buttonElement.classList.add('liked');
                     
                     showToast('Comment liked!', 'success');
                 }
@@ -2998,46 +3080,28 @@
             }
         }
         
-        // FIXED: Update the updateCommentLikeUI function to handle the trigger-based updates
-        async function updateCommentLikeUI(commentId, likesCount = null, isLiked = null, buttonElement = null) {
-            const likeBtn = buttonElement || document.querySelector(`[data-comment-id="${commentId}"] .like-comment-btn`);
-            if (!likeBtn) return;
-            
-            // If likesCount is not provided, fetch it from the database (after trigger update)
-            if (likesCount === null) {
-                try {
-                    // Wait a bit for the trigger to update
-                    await new Promise(resolve => setTimeout(resolve, 100));
-                    
-                    const { data: comment } = await supabaseClient
-                        .from('pulse_comments')
-                        .select('likes_count')
-                        .eq('id', commentId)
-                        .single();
-                    
-                    likesCount = comment?.likes_count || 0;
-                } catch (error) {
-                    console.error('Error fetching comment likes count:', error);
+        // ✅ FIXED: Update comment likes count after like/unlike
+        async function updateCommentLikesCount(commentId) {
+            try {
+                const actualLikesCount = await fetchCommentLikesCount(commentId);
+                
+                // Update the UI for this specific comment
+                const likeBtn = document.querySelector(`[data-comment-id="${commentId}"] .like-comment-btn`);
+                if (likeBtn) {
                     const likeCountElement = likeBtn.querySelector('.comment-like-count');
-                    likesCount = parseInt(likeCountElement.textContent) || 0;
+                    if (likeCountElement) {
+                        likeCountElement.textContent = actualLikesCount;
+                    }
                 }
-            }
-            
-            // If isLiked is not provided, check current state
-            if (isLiked === null) {
-                isLiked = likeBtn.classList.contains('liked');
-            }
-            
-            // Update UI
-            const likeCountElement = likeBtn.querySelector('.comment-like-count');
-            if (likeCountElement) {
-                likeCountElement.textContent = likesCount;
-            }
-            
-            if (isLiked) {
-                likeBtn.classList.add('liked');
-            } else {
-                likeBtn.classList.remove('liked');
+                
+                // Also update the pulse_comments table (the trigger should do this, but we'll do it as backup)
+                await supabaseClient
+                    .from('pulse_comments')
+                    .update({ likes_count: actualLikesCount })
+                    .eq('id', commentId);
+                    
+            } catch (error) {
+                console.error('Error updating comment likes count:', error);
             }
         }
         
@@ -3119,9 +3183,8 @@
                     showToast(`${isReply ? 'Reply' : 'Comment'} deleted permanently`, 'success');
                 }
                 
-                // Update comment count on the pulse
-                const currentCount = parseInt(document.getElementById('comment-count').textContent) || 0;
-                document.getElementById('comment-count').textContent = Math.max(0, currentCount - 1);
+                // ✅ FIXED: Update comment count properly
+                await updateCommentCount();
                 
                 // Remove the comment from UI immediately
                 const commentElement = document.querySelector(`[data-comment-id="${commentId}"]`);
