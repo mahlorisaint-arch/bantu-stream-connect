@@ -1049,12 +1049,18 @@
             console.log('Starting Saved initialization...');
             
             try {
-                // Create Supabase client
+                // Create Supabase client with proper configuration
                 supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
                     auth: {
                         autoRefreshToken: true,
                         persistSession: true,
-                        detectSessionInUrl: true
+                        detectSessionInUrl: false
+                    },
+                    global: {
+                        headers: {
+                            'apikey': SUPABASE_ANON_KEY,
+                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                        }
                     }
                 });
                 
@@ -1062,6 +1068,7 @@
                 const { data: { session }, error } = await supabaseClient.auth.getSession();
                 
                 if (error) {
+                    console.error('Session error:', error);
                     throw error;
                 }
                 
@@ -1256,68 +1263,34 @@
             try {
                 console.log('Loading saved pulses...');
                 
-                // Load saved pulses with correct joins
-                const { data: savedPulses, error } = await supabaseClient
-                    .from('saved_pulses')
-                    .select(`
-                        id,
-                        saved_at,
-                        pulse:pulses (
-                            id,
-                            caption,
-                            media_url,
-                            media_type,
-                            series_id,
-                            series_order,
-                            user_id,
-                            created_at
-                        ),
-                        user_profiles!saved_pulses_user_id_fkey (
-                            id,
-                            full_name,
-                            username,
-                            avatar_url
-                        )
-                    `)
-                    .eq('user_id', currentUserId)
-                    .order('saved_at', { ascending: false });
-                
-                if (error) {
-                    console.error('Error loading saved pulses:', error);
-                    // Try alternative query structure
-                    await loadSavedPulsesAlternative();
-                    return;
+                // First, try to get saved pulses directly
+                let savedItems = [];
+                try {
+                    const { data: savedPulses, error } = await supabaseClient
+                        .from('saved_pulses')
+                        .select('id, pulse_id, saved_at, user_id')
+                        .eq('user_id', currentUserId)
+                        .order('saved_at', { ascending: false });
+                    
+                    if (error) {
+                        console.error('Error loading saved pulses:', error);
+                        // Try alternative table name
+                        const { data: savedData } = await supabaseClient
+                            .from('user_saved_pulses')
+                            .select('id, pulse_id, saved_at, user_id')
+                            .eq('user_id', currentUserId)
+                            .order('saved_at', { ascending: false });
+                        
+                        if (savedData) savedItems = savedData;
+                    } else {
+                        savedItems = savedPulses || [];
+                    }
+                } catch (error) {
+                    console.error('Error in saved pulses query:', error);
+                    savedItems = [];
                 }
                 
-                console.log('Found saved pulses:', savedPulses);
-                
-                if (!savedPulses || savedPulses.length === 0) {
-                    await loadFallbackPulses();
-                    return;
-                }
-                
-                // Process and render saved pulses
-                const processedPulses = await processSavedPulses(savedPulses);
-                renderSavedPulses(processedPulses);
-                
-            } catch (error) {
-                console.error('Error loading saved pulses:', error);
-                await loadFallbackPulses();
-            }
-        }
-        
-        async function loadSavedPulsesAlternative() {
-            try {
-                console.log('Trying alternative query for saved pulses...');
-                
-                // Try a simpler query first - just get saved pulse IDs
-                const { data: savedItems, error } = await supabaseClient
-                    .from('saved_pulses')
-                    .select('pulse_id, saved_at')
-                    .eq('user_id', currentUserId)
-                    .order('saved_at', { ascending: false });
-                
-                if (error) throw error;
+                console.log('Found saved items:', savedItems.length);
                 
                 if (!savedItems || savedItems.length === 0) {
                     renderEmptyPulses();
@@ -1325,92 +1298,69 @@
                 }
                 
                 // Get pulse details for each saved pulse
-                const pulseIds = savedItems.map(item => item.pulse_id);
-                const { data: pulses, error: pulsesError } = await supabaseClient
-                    .from('pulses')
-                    .select(`
-                        id,
-                        caption,
-                        media_url,
-                        media_type,
-                        series_id,
-                        series_order,
-                        user_id,
-                        created_at,
-                        user_profiles (
-                            full_name,
-                            username,
-                            avatar_url
-                        )
-                    `)
-                    .in('id', pulseIds);
+                const pulseIds = savedItems.map(item => item.pulse_id).filter(id => id);
+                let pulses = [];
                 
-                if (pulsesError) throw pulsesError;
+                if (pulseIds.length > 0) {
+                    try {
+                        const { data: pulsesData, error } = await supabaseClient
+                            .from('pulses')
+                            .select('*')
+                            .in('id', pulseIds)
+                            .is('deleted_at', null);
+                        
+                        if (error) {
+                            console.error('Error loading pulse details:', error);
+                        } else {
+                            pulses = pulsesData || [];
+                        }
+                    } catch (error) {
+                        console.error('Error fetching pulse details:', error);
+                    }
+                }
                 
-                // Combine saved_at with pulse data
-                const processedPulses = pulses.map(pulse => {
-                    const savedItem = savedItems.find(item => item.pulse_id === pulse.id);
-                    return {
-                        id: savedItem.pulse_id + '_saved',
-                        saved_at: savedItem.saved_at,
-                        pulse: {
-                            id: pulse.id,
-                            caption: pulse.caption,
-                            media_url: pulse.media_url,
-                            media_type: pulse.media_type,
-                            series_id: pulse.series_id,
-                            series_order: pulse.series_order,
-                            user_id: pulse.user_id,
-                            created_at: pulse.created_at
-                        },
-                        user_profiles: pulse.user_profiles
+                // Get user profiles for the pulses
+                const processedPulses = [];
+                
+                for (const savedItem of savedItems) {
+                    const pulse = pulses.find(p => p.id === savedItem.pulse_id);
+                    if (!pulse) continue;
+                    
+                    // Get creator profile
+                    let creator = {
+                        full_name: 'Unknown User',
+                        username: 'unknown',
+                        avatar_url: null
                     };
-                });
+                    
+                    try {
+                        const { data: creatorData } = await supabaseClient
+                            .from('user_profiles')
+                            .select('full_name, username, avatar_url')
+                            .eq('id', pulse.user_id)
+                            .single();
+                        
+                        if (creatorData) {
+                            creator = creatorData;
+                        }
+                    } catch (error) {
+                        console.error('Error fetching creator:', error);
+                    }
+                    
+                    processedPulses.push({
+                        id: savedItem.id,
+                        saved_at: savedItem.saved_at,
+                        pulse: pulse,
+                        creator: creator
+                    });
+                }
                 
                 renderSavedPulses(processedPulses);
                 
             } catch (error) {
-                console.error('Error in alternative query:', error);
+                console.error('Error loading saved pulses:', error);
                 await loadFallbackPulses();
             }
-        }
-        
-        async function processSavedPulses(savedPulses) {
-            const processedPulses = [];
-            
-            for (const savedItem of savedPulses) {
-                if (!savedItem.pulse) continue;
-                
-                // Get creator information
-                let creatorInfo = savedItem.user_profiles;
-                
-                // If creator info not in the query result, fetch it separately
-                if (!creatorInfo) {
-                    try {
-                        const { data: creator } = await supabaseClient
-                            .from('user_profiles')
-                            .select('full_name, username, avatar_url')
-                            .eq('id', savedItem.pulse.user_id)
-                            .single();
-                        
-                        creatorInfo = creator;
-                    } catch (error) {
-                        console.error('Error fetching creator info:', error);
-                        creatorInfo = {
-                            full_name: 'Unknown User',
-                            username: 'unknown',
-                            avatar_url: null
-                        };
-                    }
-                }
-                
-                processedPulses.push({
-                    ...savedItem,
-                    creator: creatorInfo
-                });
-            }
-            
-            return processedPulses;
         }
         
         function renderSavedPulses(savedPulses) {
@@ -1425,7 +1375,7 @@
             
             savedPulses.forEach(savedItem => {
                 const pulse = savedItem.pulse;
-                const creator = savedItem.creator || savedItem.user_profiles;
+                const creator = savedItem.creator;
                 
                 if (!pulse || !creator) {
                     console.warn('Missing pulse or creator data:', savedItem);
@@ -1508,7 +1458,7 @@
                     </div>
                 `;
                 
-                // Click to view pulse content
+                // Click to view pulse content - FIXED: Properly pass pulse ID
                 pulseCard.addEventListener('click', (e) => {
                     if (!e.target.closest('.action-menu') && !e.target.closest('.saved-pulse-save-icon') && !e.target.closest('.action-item')) {
                         viewPulseContent(pulse.id);
@@ -1538,69 +1488,34 @@
             try {
                 console.log('Loading saved series...');
                 
-                // Load saved series with correct joins
-                const { data: savedSeries, error } = await supabaseClient
-                    .from('saved_series')
-                    .select(`
-                        id,
-                        saved_at,
-                        series:pulse_series (
-                            id,
-                            title,
-                            description,
-                            cover_image_url,
-                            creator_id,
-                            current_part,
-                            total_parts,
-                            is_completed,
-                            created_at
-                        ),
-                        user_profiles!saved_series_user_id_fkey (
-                            id,
-                            full_name,
-                            username,
-                            avatar_url
-                        )
-                    `)
-                    .eq('user_id', currentUserId)
-                    .order('saved_at', { ascending: false });
-                
-                if (error) {
-                    console.error('Error loading saved series:', error);
-                    // Try alternative query structure
-                    await loadSavedSeriesAlternative();
-                    return;
+                // First, try to get saved series directly
+                let savedItems = [];
+                try {
+                    const { data: savedSeries, error } = await supabaseClient
+                        .from('saved_series')
+                        .select('id, series_id, saved_at, user_id')
+                        .eq('user_id', currentUserId)
+                        .order('saved_at', { ascending: false });
+                    
+                    if (error) {
+                        console.error('Error loading saved series:', error);
+                        // Try alternative table name
+                        const { data: savedData } = await supabaseClient
+                            .from('user_saved_series')
+                            .select('id, series_id, saved_at, user_id')
+                            .eq('user_id', currentUserId)
+                            .order('saved_at', { ascending: false });
+                        
+                        if (savedData) savedItems = savedData;
+                    } else {
+                        savedItems = savedSeries || [];
+                    }
+                } catch (error) {
+                    console.error('Error in saved series query:', error);
+                    savedItems = [];
                 }
                 
-                console.log('Found saved series:', savedSeries);
-                
-                if (!savedSeries || savedSeries.length === 0) {
-                    renderEmptySeries();
-                    return;
-                }
-                
-                // Process and render saved series
-                const processedSeries = await processSavedSeries(savedSeries);
-                renderSavedSeries(processedSeries);
-                
-            } catch (error) {
-                console.error('Error loading saved series:', error);
-                renderEmptySeries();
-            }
-        }
-        
-        async function loadSavedSeriesAlternative() {
-            try {
-                console.log('Trying alternative query for saved series...');
-                
-                // Try a simpler query first - just get saved series IDs
-                const { data: savedItems, error } = await supabaseClient
-                    .from('saved_series')
-                    .select('series_id, saved_at')
-                    .eq('user_id', currentUserId)
-                    .order('saved_at', { ascending: false });
-                
-                if (error) throw error;
+                console.log('Found saved series items:', savedItems.length);
                 
                 if (!savedItems || savedItems.length === 0) {
                     renderEmptySeries();
@@ -1608,94 +1523,69 @@
                 }
                 
                 // Get series details for each saved series
-                const seriesIds = savedItems.map(item => item.series_id);
-                const { data: series, error: seriesError } = await supabaseClient
-                    .from('pulse_series')
-                    .select(`
-                        id,
-                        title,
-                        description,
-                        cover_image_url,
-                        creator_id,
-                        current_part,
-                        total_parts,
-                        is_completed,
-                        created_at,
-                        user_profiles (
-                            full_name,
-                            username,
-                            avatar_url
-                        )
-                    `)
-                    .in('id', seriesIds);
+                const seriesIds = savedItems.map(item => item.series_id).filter(id => id);
+                let series = [];
                 
-                if (seriesError) throw seriesError;
+                if (seriesIds.length > 0) {
+                    try {
+                        const { data: seriesData, error } = await supabaseClient
+                            .from('pulse_series')
+                            .select('*')
+                            .in('id', seriesIds)
+                            .eq('is_archived', false);
+                        
+                        if (error) {
+                            console.error('Error loading series details:', error);
+                        } else {
+                            series = seriesData || [];
+                        }
+                    } catch (error) {
+                        console.error('Error fetching series details:', error);
+                    }
+                }
                 
-                // Combine saved_at with series data
-                const processedSeries = series.map(s => {
-                    const savedItem = savedItems.find(item => item.series_id === s.id);
-                    return {
-                        id: savedItem.series_id + '_saved',
-                        saved_at: savedItem.saved_at,
-                        series: {
-                            id: s.id,
-                            title: s.title,
-                            description: s.description,
-                            cover_image_url: s.cover_image_url,
-                            creator_id: s.creator_id,
-                            current_part: s.current_part,
-                            total_parts: s.total_parts,
-                            is_completed: s.is_completed,
-                            created_at: s.created_at
-                        },
-                        user_profiles: s.user_profiles
+                // Get creator profiles for the series
+                const processedSeries = [];
+                
+                for (const savedItem of savedItems) {
+                    const seriesItem = series.find(s => s.id === savedItem.series_id);
+                    if (!seriesItem) continue;
+                    
+                    // Get creator profile
+                    let creator = {
+                        full_name: 'Unknown Creator',
+                        username: 'unknown',
+                        avatar_url: null
                     };
-                });
+                    
+                    try {
+                        const { data: creatorData } = await supabaseClient
+                            .from('user_profiles')
+                            .select('full_name, username, avatar_url')
+                            .eq('id', seriesItem.creator_id)
+                            .single();
+                        
+                        if (creatorData) {
+                            creator = creatorData;
+                        }
+                    } catch (error) {
+                        console.error('Error fetching creator:', error);
+                    }
+                    
+                    processedSeries.push({
+                        id: savedItem.id,
+                        saved_at: savedItem.saved_at,
+                        series: seriesItem,
+                        creator: creator
+                    });
+                }
                 
                 renderSavedSeries(processedSeries);
                 
             } catch (error) {
-                console.error('Error in alternative query:', error);
+                console.error('Error loading saved series:', error);
                 renderEmptySeries();
             }
-        }
-        
-        async function processSavedSeries(savedSeries) {
-            const processedSeries = [];
-            
-            for (const savedItem of savedSeries) {
-                if (!savedItem.series) continue;
-                
-                // Get creator information
-                let creatorInfo = savedItem.user_profiles;
-                
-                // If creator info not in the query result, fetch it separately
-                if (!creatorInfo) {
-                    try {
-                        const { data: creator } = await supabaseClient
-                            .from('user_profiles')
-                            .select('full_name, username, avatar_url')
-                            .eq('id', savedItem.series.creator_id)
-                            .single();
-                        
-                        creatorInfo = creator;
-                    } catch (error) {
-                        console.error('Error fetching creator info:', error);
-                        creatorInfo = {
-                            full_name: 'Unknown Creator',
-                            username: 'unknown',
-                            avatar_url: null
-                        };
-                    }
-                }
-                
-                processedSeries.push({
-                    ...savedItem,
-                    creator: creatorInfo
-                });
-            }
-            
-            return processedSeries;
         }
         
         function renderSavedSeries(savedSeries) {
@@ -1710,7 +1600,7 @@
             
             savedSeries.forEach(savedItem => {
                 const series = savedItem.series;
-                const creator = savedItem.creator || savedItem.user_profiles;
+                const creator = savedItem.creator;
                 
                 if (!series || !creator) {
                     console.warn('Missing series or creator data:', savedItem);
@@ -1764,7 +1654,7 @@
                     </div>
                 `;
                 
-                // Click to view series content
+                // Click to view series content - FIXED: Properly pass series ID
                 seriesCard.addEventListener('click', (e) => {
                     if (!e.target.closest('.action-menu') && !e.target.closest('.view-series-btn') && !e.target.closest('.action-item')) {
                         viewSeriesContent(series.id);
@@ -1851,7 +1741,16 @@
                         .eq('id', id)
                         .eq('user_id', currentUserId);
                     
-                    if (error) throw error;
+                    if (error) {
+                        // Try alternative table
+                        const { error: altError } = await supabaseClient
+                            .from('user_saved_pulses')
+                            .delete()
+                            .eq('id', id)
+                            .eq('user_id', currentUserId);
+                        
+                        if (altError) throw altError;
+                    }
                 } else {
                     // Remove from saved_series
                     const { error } = await supabaseClient
@@ -1860,7 +1759,16 @@
                         .eq('id', id)
                         .eq('user_id', currentUserId);
                     
-                    if (error) throw error;
+                    if (error) {
+                        // Try alternative table
+                        const { error: altError } = await supabaseClient
+                            .from('user_saved_series')
+                            .delete()
+                            .eq('id', id)
+                            .eq('user_id', currentUserId);
+                        
+                        if (altError) throw altError;
+                    }
                 }
                 
                 showToast(`Removed from Saved`, 'success');
@@ -1900,14 +1808,56 @@
             hideActionSheet();
         }
         
-        // Updated function to redirect to pulse-content-detail.html for pulses
+        // FIXED: Updated function to redirect to pulse-content-detail.html for pulses
         function viewPulseContent(pulseId) {
-            window.location.href = `pulse-content-detail.html?pulse_id=${pulseId}`;
+            if (!pulseId || pulseId === 'undefined') {
+                console.error('No pulse ID specified for viewPulseContent');
+                showToast('Cannot open pulse: No pulse ID specified', 'error');
+                return;
+            }
+            console.log('Redirecting to pulse:', pulseId);
+            window.location.href = `pulse-content-detail.html?id=${pulseId}`;
         }
         
-        // Updated function to redirect to pulse-content-detail.html for series
-        function viewSeriesContent(seriesId) {
-            window.location.href = `pulse-content-detail.html?series_id=${seriesId}`;
+        // FIXED: Updated function to redirect properly for series
+        async function viewSeriesContent(seriesId) {
+            if (!seriesId || seriesId === 'undefined') {
+                console.error('No series ID specified for viewSeriesContent');
+                showToast('Cannot open series: No series ID specified', 'error');
+                return;
+            }
+            
+            console.log('Redirecting to series:', seriesId);
+            
+            try {
+                // Try to get the first pulse in the series
+                const { data: pulses, error } = await supabaseClient
+                    .from('pulses')
+                    .select('id')
+                    .eq('series_id', seriesId)
+                    .order('series_order', { ascending: true })
+                    .limit(1);
+                
+                if (error) {
+                    console.error('Error fetching series pulses:', error);
+                    // Fallback: redirect to pulse-feed with series filter
+                    window.location.href = `pulse-feed.html?series=${seriesId}`;
+                    return;
+                }
+                
+                if (pulses && pulses.length > 0) {
+                    // Redirect to the first pulse in the series
+                    window.location.href = `pulse-content-detail.html?id=${pulses[0].id}`;
+                } else {
+                    // No pulses in series, redirect to feed with series filter
+                    window.location.href = `pulse-feed.html?series=${seriesId}`;
+                }
+                
+            } catch (error) {
+                console.error('Error viewing series:', error);
+                // Fallback to series filter on feed
+                window.location.href = `pulse-feed.html?series=${seriesId}`;
+            }
         }
         
         async function loadFallbackData() {
@@ -1953,9 +1903,13 @@
         
         // Start initialization when DOM is fully loaded
         if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', initialize);
+            document.addEventListener('DOMContentLoaded', function() {
+                // Add a small delay to ensure everything is ready
+                setTimeout(initialize, 100);
+            });
         } else {
-            initialize();
+            // Add a small delay to ensure everything is ready
+            setTimeout(initialize, 100);
         }
     </script>
 </body>
