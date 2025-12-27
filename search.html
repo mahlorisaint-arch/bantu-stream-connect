@@ -44,6 +44,9 @@
             --glass-bg: rgba(255, 255, 255, 0.1);
             --glass-border: rgba(255, 255, 255, 0.2);
             --glass-shadow: rgba(0, 0, 0, 0.1);
+            --futuristic-blue: #00A3FF;
+            --glowing-gold: #FFD700;
+            --glowing-blue: #0066FF;
         }
         
         * {
@@ -185,19 +188,19 @@
         .logo-icon {
             width: 32px;
             height: 32px;
-            border-radius: 50%;
+            border-radius: 8px;
             display: flex;
             align-items: center;
             justify-content: center;
             box-shadow: 0 0 32px rgba(29, 78, 216, 0.3);
             overflow: hidden;
-            background: transparent;
+            background: var(--deep-navy);
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
         
-        .logo-icon img {
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
+        .pulse-logo-svg {
+            width: 24px;
+            height: 24px;
         }
         
         .logo-text {
@@ -380,7 +383,16 @@
             padding: 0 20px;
         }
         
-        /* Search Results Section - MOVED ABOVE EXPLORE BANNER */
+        /* Custom SVG Icons */
+        .custom-icon {
+            width: 16px;
+            height: 16px;
+            display: inline-block;
+            vertical-align: middle;
+            margin-right: 6px;
+        }
+        
+        /* Search Results Section - NOW ABOVE EXPLORE BANNER */
         .results-section {
             display: none;
             margin-bottom: 24px;
@@ -814,16 +826,54 @@
         .sa-blue { background: var(--sa-blue); }
         .sa-red { background: var(--sa-red); }
         
-        /* Categories Section */
+        /* Categories Section - UPDATED: Scrollable with arrows */
         .categories-section {
             margin-bottom: 24px;
+            position: relative;
+        }
+        
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
         }
         
         .section-title {
             font-size: 16px;
             font-weight: 700;
             color: var(--soft-white);
-            margin-bottom: 12px;
+        }
+        
+        .scroll-arrows {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .scroll-arrow {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: var(--slate-grey);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+        
+        .scroll-arrow:hover {
+            color: var(--soft-white);
+            background: rgba(255, 255, 255, 0.15);
+            border-color: var(--indigo);
+        }
+        
+        .scroll-arrow.left {
+            transform: rotate(180deg);
         }
         
         .categories-container {
@@ -837,6 +887,7 @@
             padding: 8px 0;
             scrollbar-width: none;
             -ms-overflow-style: none;
+            scroll-behavior: smooth;
         }
         
         .categories-scroll::-webkit-scrollbar {
@@ -1232,6 +1283,10 @@
                 bottom: 70px;
                 right: 16px;
             }
+            
+            .scroll-arrows {
+                display: none;
+            }
         }
         
         @media (min-width: 769px) {
@@ -1282,13 +1337,14 @@
         <header class="header">
             <div class="logo-container" onclick="window.location.href='pulse-feed.html'">
                 <div class="logo-icon">
-                    <svg width="32" height="32" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <!-- Updated Pulse Icon -->
+                    <svg class="pulse-logo-svg" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <rect width="40" height="40" rx="8" fill="#0F172A"/>
                         <path d="M8 20 L12 16 L16 22 L20 18 L24 24 L28 20 L32 26" stroke="url(#pulse-gradient)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
                         <circle cx="32" cy="26" r="3" fill="#F59E0B"/>
                         <defs>
                             <linearGradient id="pulse-gradient" x1="8" y1="20" x2="32" y2="26" gradientUnits="userSpaceOnUse">
-                                <stop stop-color="#1D4ED8"/>
+                                <stop stop-color="#4F46E5"/>
                                 <stop offset="1" stop-color="#F59E0B"/>
                             </linearGradient>
                         </defs>
@@ -1348,16 +1404,64 @@
         <div class="results-section" id="resultsSection">
             <div class="results-tabs">
                 <button class="result-tab active" data-tab="pulses">
-                    <i class="fas fa-bolt"></i> Pulses
+                    <!-- Updated Pulses Icon -->
+                    <svg class="custom-icon" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect width="16" height="16" rx="4" fill="#0F172A"/>
+                        <path d="M3 8 L5 6 L7 9 L9 7 L11 10 L13 8" stroke="url(#pulse-tab-gradient)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                        <circle cx="13" cy="10" r="1.5" fill="#F59E0B"/>
+                        <defs>
+                            <linearGradient id="pulse-tab-gradient" x1="3" y1="8" x2="13" y2="10" gradientUnits="userSpaceOnUse">
+                                <stop stop-color="#4F46E5"/>
+                                <stop offset="1" stop-color="#F59E0B"/>
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                    Pulses
                 </button>
                 <button class="result-tab" data-tab="series">
-                    <i class="fas fa-layer-group"></i> Series
+                    <!-- Updated Series Icon -->
+                    <svg class="custom-icon" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect width="16" height="16" rx="4" fill="#0F172A"/>
+                        <!-- Layer 3: Futuristic Blue -->
+                        <rect x="4" y="7" width="8" height="6" rx="1" fill="#00A3FF" fill-opacity="0.3"/>
+                        <!-- Layer 2: Gradient mix of blue and gold -->
+                        <rect x="3" y="5" width="8" height="6" rx="1" fill="url(#series-gradient)" fill-opacity="0.6"/>
+                        <!-- Layer 1: Glowing Gold -->
+                        <rect x="2" y="3" width="8" height="6" rx="1" fill="#FFD700" fill-opacity="0.8"/>
+                        <defs>
+                            <linearGradient id="series-gradient" x1="3" y1="5" x2="11" y2="11" gradientUnits="userSpaceOnUse">
+                                <stop stop-color="#4F46E5"/>
+                                <stop offset="1" stop-color="#F59E0B"/>
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                    Series
                 </button>
                 <button class="result-tab" data-tab="creators">
-                    <i class="fas fa-user"></i> Creators
+                    <!-- Updated Creators Icon -->
+                    <svg class="custom-icon" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect width="16" height="16" rx="4" fill="#0F172A"/>
+                        <circle cx="8" cy="6" r="2" fill="#00A3FF"/>
+                        <path d="M3 14 C3 11 5 10 8 10 C11 10 13 11 13 14" stroke="#00A3FF" stroke-width="1.5" stroke-linecap="round"/>
+                    </svg>
+                    Creators
                 </button>
                 <button class="result-tab" data-tab="content">
-                    <i class="fas fa-link"></i> Content
+                    <!-- Updated Content Link Icon -->
+                    <svg class="custom-icon" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect width="16" height="16" rx="4" fill="#0F172A"/>
+                        <path d="M6 8 L10 8" stroke="url(#content-gradient)" stroke-width="1.5" stroke-linecap="round"/>
+                        <path d="M8 6 L10 8 L8 10" stroke="url(#content-gradient)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                        <circle cx="6" cy="8" r="1.5" fill="url(#content-gradient)"/>
+                        <circle cx="12" cy="8" r="1.5" fill="url(#content-gradient)"/>
+                        <defs>
+                            <linearGradient id="content-gradient" x1="6" y1="6" x2="12" y2="10" gradientUnits="userSpaceOnUse">
+                                <stop stop-color="#00A3FF"/>
+                                <stop offset="1" stop-color="#0066FF"/>
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                    Content
                 </button>
             </div>
             
@@ -1406,9 +1510,19 @@
             </p>
         </div>
         
-        <!-- Categories Section -->
+        <!-- Categories Section - UPDATED: Now with scroll arrows -->
         <div class="categories-section">
-            <h2 class="section-title">Discover by Category</h2>
+            <div class="section-header">
+                <h2 class="section-title">Discover by Category</h2>
+                <div class="scroll-arrows">
+                    <button class="scroll-arrow left" id="scrollLeft">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                    <button class="scroll-arrow right" id="scrollRight">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
             <div class="categories-container">
                 <div class="categories-scroll" id="categoriesScroll">
                     <!-- Categories will be loaded here -->
@@ -1634,6 +1748,42 @@
                 
                 categoriesScroll.appendChild(chip);
             });
+            
+            // Initialize scroll arrows
+            const scrollLeft = document.getElementById('scrollLeft');
+            const scrollRight = document.getElementById('scrollRight');
+            const scrollContainer = document.getElementById('categoriesScroll');
+            
+            scrollLeft.addEventListener('click', () => {
+                scrollContainer.scrollBy({ left: -200, behavior: 'smooth' });
+            });
+            
+            scrollRight.addEventListener('click', () => {
+                scrollContainer.scrollBy({ left: 200, behavior: 'smooth' });
+            });
+            
+            // Add touch/swipe support for mobile
+            let isScrolling = false;
+            let startX = 0;
+            let scrollLeftPosition = 0;
+            
+            scrollContainer.addEventListener('touchstart', (e) => {
+                isScrolling = true;
+                startX = e.touches[0].pageX;
+                scrollLeftPosition = scrollContainer.scrollLeft;
+            });
+            
+            scrollContainer.addEventListener('touchmove', (e) => {
+                if (!isScrolling) return;
+                e.preventDefault();
+                const x = e.touches[0].pageX;
+                const walk = (x - startX) * 2;
+                scrollContainer.scrollLeft = scrollLeftPosition - walk;
+            });
+            
+            scrollContainer.addEventListener('touchend', () => {
+                isScrolling = false;
+            });
         }
         
         function showTopicView(category) {
@@ -1822,15 +1972,27 @@
             `;
             
             try {
-                // Fetch featured series from database
+                // Use series_with_details view to get series with pulse count
                 const { data: series, error: seriesError } = await supabaseClient
-                    .from('pulse_series')
+                    .from('series_with_details')
                     .select('*')
                     .eq('is_archived', false)
                     .order('created_at', { ascending: false })
                     .limit(5);
                 
-                if (seriesError) throw seriesError;
+                if (seriesError) {
+                    console.error('Error using series_with_details, falling back to pulse_series:', seriesError);
+                    // Fallback to pulse_series table
+                    const { data: seriesData, error: fallbackError } = await supabaseClient
+                        .from('pulse_series')
+                        .select('*')
+                        .eq('is_archived', false)
+                        .order('created_at', { ascending: false })
+                        .limit(5);
+                    
+                    if (fallbackError) throw fallbackError;
+                    series = seriesData;
+                }
                 
                 seriesScroll.innerHTML = '';
                 
@@ -1869,7 +2031,18 @@
                     const creatorProfile = creatorMap[s.creator_id] || {};
                     const creatorName = creatorProfile.full_name || 'Creator';
                     const creatorUsername = creatorProfile.username || 'creator';
-                    const progressPercentage = Math.min((s.current_part || 0) / (s.total_parts || 1) * 100, 100);
+                    
+                    // Calculate progress percentage based on pulse count or current_part
+                    let progressPercentage = 0;
+                    let progressText = '0 pulses';
+                    
+                    if (s.pulse_count !== undefined) {
+                        progressPercentage = Math.min((s.pulse_count || 0) / (s.total_parts || 1) * 100, 100);
+                        progressText = `${s.pulse_count || 0} ${s.pulse_count === 1 ? 'pulse' : 'pulses'}`;
+                    } else if (s.current_part !== undefined) {
+                        progressPercentage = Math.min((s.current_part || 0) / (s.total_parts || 1) * 100, 100);
+                        progressText = `${s.current_part || 0}/${s.total_parts || '∞'} parts`;
+                    }
                     
                     seriesCard.innerHTML = `
                         <div class="series-cover">
@@ -1883,7 +2056,7 @@
                             <div class="series-title">${s.title || 'Untitled Series'}</div>
                             <div class="series-creator">By ${creatorName}</div>
                             <div class="series-meta">
-                                <span>${s.current_part || 0}/${s.total_parts || '∞'} parts</span>
+                                <span>${progressText}</span>
                                 <span>${s.is_completed ? 'Completed' : 'Active'}</span>
                             </div>
                         </div>
@@ -2267,6 +2440,10 @@
             const mediaUrl = pulse.media_url || '';
             const mediaType = pulse.media_type || 'none';
             
+            // Get likes count - use the actual likes_count from the view
+            // If not available, try to get count from pulse_likes table
+            let likesCount = pulse.likes_count || 0;
+            
             card.innerHTML = `
                 <div class="pulse-result-media">
                     ${mediaUrl && mediaType === 'image' ? 
@@ -2284,7 +2461,7 @@
                     <div class="pulse-result-text">${truncatedCaption}</div>
                     <div class="pulse-result-meta">
                         <span>@${pulse.username || 'user'}</span>
-                        <span>${timeAgo} · ${pulse.likes_count || 0} likes</span>
+                        <span>${timeAgo} · ${likesCount} ${likesCount === 1 ? 'like' : 'likes'}</span>
                     </div>
                 </div>
             `;
@@ -2300,15 +2477,29 @@
             const seriesGrid = document.getElementById('seriesResultsGrid');
             
             try {
+                // Use series_with_details view to get series with pulse count
                 const { data: series, error: seriesError } = await supabaseClient
-                    .from('pulse_series')
+                    .from('series_with_details')
                     .select('*')
                     .or(`title.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%`)
                     .eq('is_archived', false)
                     .order('created_at', { ascending: false })
                     .limit(8);
                 
-                if (seriesError) throw seriesError;
+                if (seriesError) {
+                    console.error('Error using series_with_details, falling back to pulse_series:', seriesError);
+                    // Fallback to pulse_series table
+                    const { data: seriesData, error: fallbackError } = await supabaseClient
+                        .from('pulse_series')
+                        .select('*')
+                        .or(`title.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%`)
+                        .eq('is_archived', false)
+                        .order('created_at', { ascending: false })
+                        .limit(8);
+                    
+                    if (fallbackError) throw fallbackError;
+                    series = seriesData;
+                }
                 
                 seriesGrid.innerHTML = '';
                 
@@ -2346,11 +2537,15 @@
                     const creatorProfile = creatorMap[s.creator_id] || {};
                     const creatorName = creatorProfile.full_name || 'Creator';
                     
+                    // Use pulse_count from view or fallback to current_part
+                    const pulseCount = s.pulse_count || s.current_part || 0;
+                    const totalParts = s.total_parts || '∞';
+                    
                     card.innerHTML = `
                         <div class="series-result-title">${s.title || 'Untitled Series'}</div>
                         <div class="series-result-creator">By ${creatorName}</div>
                         <div class="series-result-stats">
-                            <span>${s.current_part || 0}/${s.total_parts || '∞'} parts</span>
+                            <span>${pulseCount} ${pulseCount === 1 ? 'pulse' : 'pulses'}</span>
                             <span>${s.is_completed ? 'Completed' : 'In Progress'}</span>
                         </div>
                         <div class="series-result-action">View Series</div>
@@ -2642,9 +2837,8 @@
         }
         
         function viewSeries(seriesId) {
-            // Open series in new tab or modal
-            showToast('Opening series...', 'success');
-            // In a real app: window.location.href = `series-detail.html?id=${seriesId}`;
+            // Redirect to pulse-content-detail.html with series parameter
+            window.location.href = `pulse-content-detail.html?series_id=${seriesId}`;
         }
         
         function viewCreatorProfile(creatorId) {
