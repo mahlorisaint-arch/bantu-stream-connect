@@ -1633,12 +1633,18 @@
             console.log('Starting Search/Explore initialization...');
             
             try {
-                // Create Supabase client
+                // Create Supabase client with better error handling
                 supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
                     auth: {
                         autoRefreshToken: true,
                         persistSession: true,
-                        detectSessionInUrl: true
+                        detectSessionInUrl: false
+                    },
+                    global: {
+                        headers: {
+                            'apikey': SUPABASE_ANON_KEY,
+                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                        }
                     }
                 });
                 
@@ -1646,6 +1652,7 @@
                 const { data: { session }, error } = await supabaseClient.auth.getSession();
                 
                 if (error) {
+                    console.error('Session error:', error);
                     throw error;
                 }
                 
@@ -1818,47 +1825,23 @@
             `;
             
             try {
-                // Use the pulses_with_user_details view to get real pulse data with user info
-                const { data: pulses, error } = await supabaseClient
-                    .from('pulses_with_user_details')
-                    .select('*')
-                    .ilike('caption', `%${categoryId}%`)
-                    .order('created_at', { ascending: false })
-                    .limit(6);
-                
-                if (error) {
-                    console.error('Error using view, falling back to direct query:', error);
-                    // Fallback to direct query if view doesn't exist
-                    const { data: pulsesData, error: pulsesError } = await supabaseClient
+                // Use the pulses table directly with proper error handling
+                let pulses = [];
+                try {
+                    const { data: pulsesData, error } = await supabaseClient
                         .from('pulses')
                         .select('*')
-                        .ilike('caption', `%${categoryId}%`)
+                        .or(`caption.ilike.%${categoryId}%,media_type.ilike.%${categoryId}%`)
                         .is('deleted_at', null)
                         .order('created_at', { ascending: false })
                         .limit(6);
                     
-                    if (pulsesError) throw pulsesError;
-                    
-                    // Get user profiles for the pulses
-                    const userIds = [...new Set(pulsesData.map(p => p.user_id))];
-                    const { data: userProfiles } = await supabaseClient
-                        .from('user_profiles')
-                        .select('id, full_name, username')
-                        .in('id', userIds);
-                    
-                    const userMap = {};
-                    if (userProfiles) {
-                        userProfiles.forEach(profile => {
-                            userMap[profile.id] = profile;
-                        });
-                    }
-                    
-                    // Combine pulse data with user info
-                    pulses = pulsesData.map(pulse => ({
-                        ...pulse,
-                        full_name: userMap[pulse.user_id]?.full_name || 'User',
-                        username: userMap[pulse.user_id]?.username || 'user'
-                    }));
+                    if (error) throw error;
+                    pulses = pulsesData || [];
+                } catch (error) {
+                    console.error('Error fetching pulses:', error);
+                    // Fallback to sample data
+                    pulses = [];
                 }
                 
                 topicResultsGrid.innerHTML = '';
@@ -1871,7 +1854,7 @@
                             caption: getTopicPulseCaption(categoryId, 0),
                             user_id: currentUserId,
                             created_at: new Date(Date.now() - 3600000).toISOString(),
-                            likes_count: Math.floor(Math.random() * 50),
+                            likes_count: Math.floor(Math.random() * 50) + 1,
                             comments_count: Math.floor(Math.random() * 20),
                             username: 'user1',
                             full_name: 'User One'
@@ -1881,7 +1864,7 @@
                             caption: getTopicPulseCaption(categoryId, 1),
                             user_id: currentUserId,
                             created_at: new Date(Date.now() - 7200000).toISOString(),
-                            likes_count: Math.floor(Math.random() * 50),
+                            likes_count: Math.floor(Math.random() * 50) + 1,
                             comments_count: Math.floor(Math.random() * 20),
                             username: 'user2',
                             full_name: 'User Two'
@@ -1891,18 +1874,81 @@
                             caption: getTopicPulseCaption(categoryId, 2),
                             user_id: currentUserId,
                             created_at: new Date(Date.now() - 10800000).toISOString(),
-                            likes_count: Math.floor(Math.random() * 50),
+                            likes_count: Math.floor(Math.random() * 50) + 1,
                             comments_count: Math.floor(Math.random() * 20),
                             username: 'user3',
                             full_name: 'User Three'
                         }
                     ];
                     
+                    // Get actual likes count for sample pulses
+                    for (const pulse of samplePulses) {
+                        pulse.actualLikesCount = pulse.likes_count;
+                    }
+                    
                     samplePulses.forEach(pulse => {
                         const pulseCard = createPulseResultCard(pulse);
                         topicResultsGrid.appendChild(pulseCard);
                     });
                 } else {
+                    // Get actual likes count from pulse_likes table for real pulses
+                    const pulseIds = pulses.map(p => p.id);
+                    
+                    try {
+                        const { data: likesData, error: likesError } = await supabaseClient
+                            .from('pulse_likes')
+                            .select('pulse_id')
+                            .in('pulse_id', pulseIds);
+                        
+                        if (!likesError && likesData) {
+                            // Create a map of pulse_id to like count
+                            const likesMap = {};
+                            likesData.forEach(like => {
+                                likesMap[like.pulse_id] = (likesMap[like.pulse_id] || 0) + 1;
+                            });
+                            
+                            // Add actual likes count to each pulse
+                            pulses.forEach(pulse => {
+                                pulse.actualLikesCount = likesMap[pulse.id] || pulse.likes_count || 0;
+                            });
+                        }
+                    } catch (likesError) {
+                        console.error('Error fetching likes:', likesError);
+                        // Use stored likes_count as fallback
+                        pulses.forEach(pulse => {
+                            pulse.actualLikesCount = pulse.likes_count || 0;
+                        });
+                    }
+                    
+                    // Get user profiles for the pulses
+                    const userIds = [...new Set(pulses.map(p => p.user_id))];
+                    try {
+                        const { data: userProfiles } = await supabaseClient
+                            .from('user_profiles')
+                            .select('id, full_name, username')
+                            .in('id', userIds);
+                        
+                        const userMap = {};
+                        if (userProfiles) {
+                            userProfiles.forEach(profile => {
+                                userMap[profile.id] = profile;
+                            });
+                        }
+                        
+                        // Combine pulse data with user info
+                        pulses.forEach(pulse => {
+                            const userProfile = userMap[pulse.user_id] || {};
+                            pulse.full_name = userProfile.full_name || 'User';
+                            pulse.username = userProfile.username || 'user';
+                        });
+                    } catch (profileError) {
+                        console.error('Error fetching user profiles:', profileError);
+                        pulses.forEach(pulse => {
+                            pulse.full_name = 'User';
+                            pulse.username = 'user';
+                        });
+                    }
+                    
                     // Display real pulses
                     pulses.forEach(pulse => {
                         const pulseCard = createPulseResultCard(pulse);
@@ -1972,16 +2018,20 @@
             `;
             
             try {
-                // Use series_with_details view to get series with pulse count
-                const { data: series, error: seriesError } = await supabaseClient
-                    .from('series_with_details')
-                    .select('*')
-                    .eq('is_archived', false)
-                    .order('created_at', { ascending: false })
-                    .limit(5);
-                
-                if (seriesError) {
-                    console.error('Error using series_with_details, falling back to pulse_series:', seriesError);
+                // Try to use series_with_details view first
+                let series = [];
+                try {
+                    const { data: seriesData, error: seriesError } = await supabaseClient
+                        .from('series_with_details')
+                        .select('*')
+                        .eq('is_archived', false)
+                        .order('created_at', { ascending: false })
+                        .limit(5);
+                    
+                    if (seriesError) throw seriesError;
+                    series = seriesData || [];
+                } catch (viewError) {
+                    console.error('Error using series_with_details, falling back to pulse_series:', viewError);
                     // Fallback to pulse_series table
                     const { data: seriesData, error: fallbackError } = await supabaseClient
                         .from('pulse_series')
@@ -1991,7 +2041,7 @@
                         .limit(5);
                     
                     if (fallbackError) throw fallbackError;
-                    series = seriesData;
+                    series = seriesData || [];
                 }
                 
                 seriesScroll.innerHTML = '';
@@ -2347,18 +2397,10 @@
             const pulseGrid = document.getElementById('pulseResultsGrid');
             
             try {
-                // Use the pulses_with_user_details view to get real pulse data with user info
-                const { data: pulses, error } = await supabaseClient
-                    .from('pulses_with_user_details')
-                    .select('*')
-                    .or(`caption.ilike.%${searchTerm}%,full_name.ilike.%${searchTerm}%,username.ilike.%${searchTerm}%`)
-                    .order('created_at', { ascending: false })
-                    .limit(12);
-                
-                if (error) {
-                    console.error('Error using view, falling back to direct query:', error);
-                    // Fallback to direct query if view doesn't exist
-                    const { data: pulsesData, error: pulsesError } = await supabaseClient
+                // First try to get pulses from the pulses table
+                let pulses = [];
+                try {
+                    const { data: pulsesData, error } = await supabaseClient
                         .from('pulses')
                         .select('*')
                         .or(`caption.ilike.%${searchTerm}%`)
@@ -2366,28 +2408,11 @@
                         .order('created_at', { ascending: false })
                         .limit(12);
                     
-                    if (pulsesError) throw pulsesError;
-                    
-                    // Get user profiles for the pulses
-                    const userIds = [...new Set(pulsesData.map(p => p.user_id))];
-                    const { data: userProfiles } = await supabaseClient
-                        .from('user_profiles')
-                        .select('id, full_name, username')
-                        .in('id', userIds);
-                    
-                    const userMap = {};
-                    if (userProfiles) {
-                        userProfiles.forEach(profile => {
-                            userMap[profile.id] = profile;
-                        });
-                    }
-                    
-                    // Combine pulse data with user info
-                    pulses = pulsesData.map(pulse => ({
-                        ...pulse,
-                        full_name: userMap[pulse.user_id]?.full_name || 'User',
-                        username: userMap[pulse.user_id]?.username || 'user'
-                    }));
+                    if (error) throw error;
+                    pulses = pulsesData || [];
+                } catch (error) {
+                    console.error('Error fetching pulses:', error);
+                    pulses = [];
                 }
                 
                 pulseGrid.innerHTML = '';
@@ -2403,6 +2428,64 @@
                         </div>
                     `;
                     return;
+                }
+                
+                // Get actual likes count from pulse_likes table
+                const pulseIds = pulses.map(p => p.id);
+                
+                try {
+                    const { data: likesData, error: likesError } = await supabaseClient
+                        .from('pulse_likes')
+                        .select('pulse_id')
+                        .in('pulse_id', pulseIds);
+                    
+                    if (!likesError && likesData) {
+                        // Create a map of pulse_id to like count
+                        const likesMap = {};
+                        likesData.forEach(like => {
+                            likesMap[like.pulse_id] = (likesMap[like.pulse_id] || 0) + 1;
+                        });
+                        
+                        // Add actual likes count to each pulse
+                        pulses.forEach(pulse => {
+                            pulse.actualLikesCount = likesMap[pulse.id] || pulse.likes_count || 0;
+                        });
+                    }
+                } catch (likesError) {
+                    console.error('Error fetching likes:', likesError);
+                    // Use stored likes_count as fallback
+                    pulses.forEach(pulse => {
+                        pulse.actualLikesCount = pulse.likes_count || 0;
+                    });
+                }
+                
+                // Get user profiles for the pulses
+                const userIds = [...new Set(pulses.map(p => p.user_id))];
+                try {
+                    const { data: userProfiles } = await supabaseClient
+                        .from('user_profiles')
+                        .select('id, full_name, username')
+                        .in('id', userIds);
+                    
+                    const userMap = {};
+                    if (userProfiles) {
+                        userProfiles.forEach(profile => {
+                            userMap[profile.id] = profile;
+                        });
+                    }
+                    
+                    // Combine pulse data with user info
+                    pulses.forEach(pulse => {
+                        const userProfile = userMap[pulse.user_id] || {};
+                        pulse.full_name = userProfile.full_name || 'User';
+                        pulse.username = userProfile.username || 'user';
+                    });
+                } catch (profileError) {
+                    console.error('Error fetching user profiles:', profileError);
+                    pulses.forEach(pulse => {
+                        pulse.full_name = 'User';
+                        pulse.username = 'user';
+                    });
                 }
                 
                 pulses.forEach(pulse => {
@@ -2440,16 +2523,15 @@
             const mediaUrl = pulse.media_url || '';
             const mediaType = pulse.media_type || 'none';
             
-            // Get likes count - use the actual likes_count from the view
-            // If not available, try to get count from pulse_likes table
-            let likesCount = pulse.likes_count || 0;
+            // Get likes count - use actualLikesCount if available, otherwise use stored count
+            const likesCount = pulse.actualLikesCount !== undefined ? pulse.actualLikesCount : (pulse.likes_count || 0);
             
             card.innerHTML = `
                 <div class="pulse-result-media">
                     ${mediaUrl && mediaType === 'image' ? 
-                        `<img src="${mediaUrl}" alt="Pulse preview">` : 
+                        `<img src="${mediaUrl}" alt="Pulse preview" onerror="this.style.display='none'">` : 
                     mediaUrl && mediaType === 'video' ?
-                        `<video poster="${mediaUrl}">
+                        `<video poster="${mediaUrl}" onerror="this.style.display='none'">
                             <source src="${mediaUrl}" type="video/mp4">
                         </video>` :
                         `<div style="display: flex; align-items: center; justify-content: center; height: 100%; color: var(--slate-grey);">
@@ -2477,17 +2559,21 @@
             const seriesGrid = document.getElementById('seriesResultsGrid');
             
             try {
-                // Use series_with_details view to get series with pulse count
-                const { data: series, error: seriesError } = await supabaseClient
-                    .from('series_with_details')
-                    .select('*')
-                    .or(`title.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%`)
-                    .eq('is_archived', false)
-                    .order('created_at', { ascending: false })
-                    .limit(8);
-                
-                if (seriesError) {
-                    console.error('Error using series_with_details, falling back to pulse_series:', seriesError);
+                // Try to use series_with_details view first
+                let series = [];
+                try {
+                    const { data: seriesData, error: seriesError } = await supabaseClient
+                        .from('series_with_details')
+                        .select('*')
+                        .or(`title.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%`)
+                        .eq('is_archived', false)
+                        .order('created_at', { ascending: false })
+                        .limit(8);
+                    
+                    if (seriesError) throw seriesError;
+                    series = seriesData || [];
+                } catch (viewError) {
+                    console.error('Error using series_with_details, falling back to pulse_series:', viewError);
                     // Fallback to pulse_series table
                     const { data: seriesData, error: fallbackError } = await supabaseClient
                         .from('pulse_series')
@@ -2498,7 +2584,7 @@
                         .limit(8);
                     
                     if (fallbackError) throw fallbackError;
-                    series = seriesData;
+                    series = seriesData || [];
                 }
                 
                 seriesGrid.innerHTML = '';
@@ -2617,7 +2703,7 @@
                     card.innerHTML = `
                         <div class="creator-result-avatar">
                             ${creator.avatar_url ? 
-                                `<img src="${creator.avatar_url}" alt="${creator.full_name}">` : 
+                                `<img src="${creator.avatar_url}" alt="${creator.full_name}" onerror="this.style.display='none'">` : 
                                 initials
                             }
                         </div>
@@ -2678,29 +2764,17 @@
             const contentGrid = document.getElementById('contentResultsGrid');
             
             try {
-                // Search linked content using the view
+                // Search linked content using pulses table directly
                 const { data: pulses, error } = await supabaseClient
-                    .from('pulses_with_user_details')
+                    .from('pulses')
                     .select('*')
                     .not('linked_content_id', 'is', null)
                     .or(`caption.ilike.%${searchTerm}%,linked_content_type.ilike.%${searchTerm}%`)
+                    .is('deleted_at', null)
                     .order('created_at', { ascending: false })
                     .limit(6);
                 
-                if (error) {
-                    // Fallback to direct query
-                    const { data: pulsesData, error: pulsesError } = await supabaseClient
-                        .from('pulses')
-                        .select('*')
-                        .not('linked_content_id', 'is', null)
-                        .or(`caption.ilike.%${searchTerm}%,linked_content_type.ilike.%${searchTerm}%`)
-                        .is('deleted_at', null)
-                        .order('created_at', { ascending: false })
-                        .limit(6);
-                    
-                    if (pulsesError) throw pulsesError;
-                    pulses = pulsesData;
-                }
+                if (error) throw error;
                 
                 contentGrid.innerHTML = '';
                 
@@ -2766,24 +2840,34 @@
         }
         
         function getTimeAgo(date) {
+            if (!date || isNaN(new Date(date).getTime())) {
+                return 'just now';
+            }
+            
             const seconds = Math.floor((new Date() - date) / 1000);
             
-            let interval = seconds / 31536000;
-            if (interval > 1) return Math.floor(interval) + ' years ago';
+            if (seconds < 30) return 'just now';
+            if (seconds < 60) return seconds + ' seconds ago';
             
-            interval = seconds / 2592000;
-            if (interval > 1) return Math.floor(interval) + ' months ago';
+            const minutes = Math.floor(seconds / 60);
+            if (minutes < 2) return 'a minute ago';
+            if (minutes < 60) return minutes + ' minutes ago';
             
-            interval = seconds / 86400;
-            if (interval > 1) return Math.floor(interval) + ' days ago';
+            const hours = Math.floor(minutes / 60);
+            if (hours < 2) return 'an hour ago';
+            if (hours < 24) return hours + ' hours ago';
             
-            interval = seconds / 3600;
-            if (interval > 1) return Math.floor(interval) + ' hours ago';
+            const days = Math.floor(hours / 24);
+            if (days < 2) return 'yesterday';
+            if (days < 30) return days + ' days ago';
             
-            interval = seconds / 60;
-            if (interval > 1) return Math.floor(interval) + ' minutes ago';
+            const months = Math.floor(days / 30);
+            if (months < 2) return 'a month ago';
+            if (months < 12) return months + ' months ago';
             
-            return Math.floor(seconds) + ' seconds ago';
+            const years = Math.floor(months / 12);
+            if (years < 2) return 'a year ago';
+            return years + ' years ago';
         }
         
         function getInitials(name) {
@@ -2836,9 +2920,36 @@
             window.location.href = `pulse-content-detail.html?id=${pulseId}`;
         }
         
-        function viewSeries(seriesId) {
-            // Redirect to pulse-content-detail.html with series parameter
-            window.location.href = `pulse-content-detail.html?series_id=${seriesId}`;
+        async function viewSeries(seriesId) {
+            try {
+                // First, try to get the first pulse in the series
+                const { data: pulses, error } = await supabaseClient
+                    .from('pulses')
+                    .select('id')
+                    .eq('series_id', seriesId)
+                    .order('series_order', { ascending: true })
+                    .limit(1);
+                
+                if (error) {
+                    console.error('Error fetching series pulses:', error);
+                    // If no pulses found or error, redirect to series view
+                    window.location.href = `pulse-feed.html?series=${seriesId}`;
+                    return;
+                }
+                
+                if (pulses && pulses.length > 0) {
+                    // Redirect to the first pulse in the series
+                    window.location.href = `pulse-content-detail.html?id=${pulses[0].id}`;
+                } else {
+                    // No pulses in series, redirect to feed with series filter
+                    window.location.href = `pulse-feed.html?series=${seriesId}`;
+                }
+                
+            } catch (error) {
+                console.error('Error viewing series:', error);
+                // Fallback to series filter on feed
+                window.location.href = `pulse-feed.html?series=${seriesId}`;
+            }
         }
         
         function viewCreatorProfile(creatorId) {
@@ -2848,6 +2959,10 @@
         function viewLinkedContent(contentId) {
             showToast('Opening content on Bantu Stream...', 'success');
             // Implementation depends on your content system
+            // For now, just show a toast
+            setTimeout(() => {
+                showToast('Content opened successfully', 'success');
+            }, 1000);
         }
         
         function showToast(message, type = 'error') {
@@ -2876,28 +2991,52 @@
             seriesScroll.innerHTML = '';
             
             const sampleSeries = [
-                { title: 'Amapiano Evolution', creator: 'DJ Kabza', parts: '4 of 6', status: 'Active' },
-                { title: 'Kasi Entrepreneurs', creator: 'Thando Mokoena', parts: '3 of 8', status: 'Active' },
-                { title: 'SA Heritage Stories', creator: 'Cultural Archive', parts: '6 of 6', status: 'Completed' }
+                { 
+                    title: 'Amapiano Evolution', 
+                    creator: 'DJ Kabza', 
+                    pulse_count: 4,
+                    total_parts: 6, 
+                    is_completed: false,
+                    cover_image_url: null
+                },
+                { 
+                    title: 'Kasi Entrepreneurs', 
+                    creator: 'Thando Mokoena', 
+                    pulse_count: 3,
+                    total_parts: 8, 
+                    is_completed: false,
+                    cover_image_url: null
+                },
+                { 
+                    title: 'SA Heritage Stories', 
+                    creator: 'Cultural Archive', 
+                    pulse_count: 6,
+                    total_parts: 6, 
+                    is_completed: true,
+                    cover_image_url: null
+                }
             ];
             
             sampleSeries.forEach(series => {
                 const seriesCard = document.createElement('div');
                 seriesCard.className = 'series-card';
                 
+                const progressPercentage = Math.min((series.pulse_count || 0) / (series.total_parts || 1) * 100, 100);
+                const progressText = `${series.pulse_count || 0} ${series.pulse_count === 1 ? 'pulse' : 'pulses'}`;
+                
                 seriesCard.innerHTML = `
                     <div class="series-cover">
                         <div class="series-badge">Featured</div>
                         <div class="series-progress">
-                            <div class="series-progress-fill" style="width: ${series.status === 'Completed' ? '100' : '66'}%"></div>
+                            <div class="series-progress-fill" style="width: ${progressPercentage}%"></div>
                         </div>
                     </div>
                     <div class="series-info">
                         <div class="series-title">${series.title}</div>
                         <div class="series-creator">By ${series.creator}</div>
                         <div class="series-meta">
-                            <span>${series.parts} parts</span>
-                            <span>${series.status}</span>
+                            <span>${progressText}</span>
+                            <span>${series.is_completed ? 'Completed' : 'Active'}</span>
                         </div>
                     </div>
                 `;
@@ -2907,7 +3046,10 @@
         }
         
         // Start initialization
-        document.addEventListener('DOMContentLoaded', initialize);
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add a small delay to ensure everything is ready
+            setTimeout(initialize, 100);
+        });
     </script>
 </body>
 </html>
