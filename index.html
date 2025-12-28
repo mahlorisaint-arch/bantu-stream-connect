@@ -5,9 +5,38 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bantu Stream Connect - Home Feed</title>
     
-    <!-- Remove Tailwind warning by using local CSS -->
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Orbitron:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
     <style>
-        /* Base Styles */
+        /* Color Theme - Same as pulse-feed.html and pulse-content-detail.html */
+        :root {
+            --deep-black: #0A0E12;
+            --deep-navy: #0F172A;
+            --soft-white: #F8FAFC;
+            --slate-grey: #94A3B8;
+            --bantu-blue: #1D4ED8;
+            --warm-gold: #F59E0B;
+            --error-color: #EF4444;
+            --success-color: #10B981;
+            --glow-cycle-1: #00A3FF;
+            --glow-cycle-2: #0066FF;
+            --glow-cycle-3: #8B5CF6;
+            --glow-cycle-4: #EC4899;
+            --card-bg: rgba(15, 23, 42, 0.6);
+            --card-border: rgba(148, 163, 184, 0.2);
+            --hover-overlay: rgba(255, 255, 255, 0.05);
+            --active-overlay: rgba(245, 158, 11, 0.1);
+            --indigo: #4F46E5;
+            --gold-glow: rgba(245, 158, 11, 0.3);
+            --blue-glow: rgba(29, 78, 216, 0.3);
+        }
+        
         * {
             margin: 0;
             padding: 0;
@@ -15,10 +44,11 @@
         }
         
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
-            background: linear-gradient(135deg, #001F54 0%, #0A0E3F 50%, #000000 100%);
-            color: white;
+            font-family: 'Inter', sans-serif;
+            background: var(--deep-black);
+            color: var(--soft-white);
             min-height: 100vh;
+            overflow-x: hidden;
         }
         
         /* Loading Screen */
@@ -28,7 +58,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: linear-gradient(135deg, #001F54 0%, #0A0E3F 50%, #000000 100%);
+            background: var(--deep-black);
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -39,9 +69,9 @@
         .spinner {
             width: 50px;
             height: 50px;
-            border: 4px solid rgba(255, 255, 255, 0.1);
+            border: 3px solid rgba(255, 255, 255, 0.1);
             border-radius: 50%;
-            border-top-color: #4dabf7;
+            border-top-color: var(--bantu-blue);
             animation: spin 1s linear infinite;
             margin-bottom: 20px;
         }
@@ -50,15 +80,85 @@
             to { transform: rotate(360deg); }
         }
         
-        /* Header */
+        /* Animated Background - Same as pulse-content-detail.html */
+        .animated-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            overflow: hidden;
+        }
+        
+        .glow-cycle {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(60px);
+            opacity: 0.1;
+            animation: float 8s infinite ease-in-out;
+        }
+        
+        .glow-1 {
+            width: 400px;
+            height: 400px;
+            background: var(--glow-cycle-1);
+            top: 10%;
+            left: 5%;
+            animation-delay: 0s;
+        }
+        
+        .glow-2 {
+            width: 300px;
+            height: 300px;
+            background: var(--glow-cycle-2);
+            top: 60%;
+            right: 10%;
+            animation-delay: 2s;
+        }
+        
+        .glow-3 {
+            width: 350px;
+            height: 350px;
+            background: var(--glow-cycle-3);
+            bottom: 10%;
+            left: 20%;
+            animation-delay: 4s;
+        }
+        
+        .glow-4 {
+            width: 250px;
+            height: 250px;
+            background: var(--glow-cycle-4);
+            top: 20%;
+            right: 20%;
+            animation-delay: 6s;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0) scale(1); }
+            50% { transform: translateY(-20px) scale(1.05); }
+        }
+        
+        /* Main Container */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 24px;
+            position: relative;
+            z-index: 2;
+            padding-bottom: 100px; /* Space for content */
+        }
+        
+        /* Header - Updated to match Pulse style */
         .header {
-            background: rgba(0, 31, 84, 0.9);
-            backdrop-filter: blur(10px);
-            padding: 15px 20px;
+            background: rgba(10, 14, 18, 0.9);
+            backdrop-filter: blur(20px);
+            padding: 16px 20px;
             position: sticky;
             top: 0;
             z-index: 100;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            border-bottom: 1px solid var(--card-border);
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -70,22 +170,33 @@
             gap: 12px;
         }
         
-        .app-icon {
+        .logo-icon {
             width: 40px;
             height: 40px;
             border-radius: 10px;
-            object-fit: cover;
-            border: 2px solid rgba(255, 255, 255, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 32px rgba(29, 78, 216, 0.3);
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
         
         .logo-text {
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 700;
             font-size: 18px;
-            font-weight: 600;
+            background: linear-gradient(to right, var(--soft-white), var(--bantu-blue));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            letter-spacing: 0.5px;
         }
         
         .header-actions {
             display: flex;
             gap: 10px;
+            align-items: center;
         }
         
         .icon-btn {
@@ -94,7 +205,7 @@
             border-radius: 50%;
             background: rgba(255, 255, 255, 0.1);
             border: 1px solid rgba(255, 255, 255, 0.2);
-            color: white;
+            color: var(--soft-white);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -108,23 +219,29 @@
         }
         
         .search-btn {
-            color: #FFD700;
+            color: var(--warm-gold);
         }
         
         .profile-btn {
             width: 40px;
             height: 40px;
             border-radius: 50%;
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+            border: 2px solid rgba(255, 255, 255, 0.2);
             cursor: pointer;
             overflow: hidden;
             transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 14px;
         }
         
         .profile-btn:hover {
-            background: rgba(255, 255, 255, 0.2);
             transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(29, 78, 216, 0.3);
         }
         
         .profile-img {
@@ -139,51 +256,42 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            background: linear-gradient(135deg, #4dabf7 0%, #748ffc 100%);
+            background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
             color: white;
+            font-size: 16px;
         }
         
-        /* Main Content */
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-        
-        /* Home-Feed Development Window */
+        /* Home-Feed Development Window - Updated to always be visible */
         .development-card {
-            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-            border-radius: 20px;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 24px;
             padding: 30px;
             margin-bottom: 30px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
             position: relative;
             overflow: hidden;
             backdrop-filter: blur(10px);
-            animation: cardEntrance 0.6s ease-out;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
-        }
-        
-        @keyframes cardEntrance {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            border-top: 2px solid var(--warm-gold);
         }
         
         .development-card::before {
             content: '';
             position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400" opacity="0.03"><filter id="noise"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="3" stitchTiles="stitch"/></filter><rect width="100%%" height="100%%" filter="url(%23noise)"/></svg>');
-            pointer-events: none;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            background: linear-gradient(45deg, var(--warm-gold), var(--bantu-blue), var(--warm-gold));
+            border-radius: 26px;
+            z-index: -1;
+            opacity: 0.2;
+            animation: pulse-glow 3s infinite alternate;
+        }
+        
+        @keyframes pulse-glow {
+            0% { opacity: 0.1; }
+            100% { opacity: 0.3; }
         }
         
         .development-header {
@@ -207,13 +315,14 @@
             width: 80px;
             height: 80px;
             border-radius: 20px;
-            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-            border: 2px solid rgba(255, 255, 255, 0.1);
+            background: rgba(15, 23, 42, 0.8);
+            border: 2px solid rgba(245, 158, 11, 0.3);
             position: relative;
             overflow: hidden;
             display: flex;
             align-items: center;
             justify-content: center;
+            backdrop-filter: blur(10px);
         }
         
         .pulse-icon svg {
@@ -242,7 +351,7 @@
         }
         
         .pulse-node {
-            fill: #f59e0b;
+            fill: var(--warm-gold);
             animation: pulseNode 2.5s ease-in-out infinite;
         }
         
@@ -282,21 +391,21 @@
         .development-content h2 {
             font-size: 28px;
             font-weight: 700;
-            background: linear-gradient(135deg, #ffffff 0%, #cbd5e1 100%);
+            background: linear-gradient(135deg, var(--soft-white), var(--warm-gold));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             margin-bottom: 10px;
         }
         
         .development-message {
-            color: rgba(255, 255, 255, 0.85);
+            color: rgba(248, 250, 252, 0.85);
             line-height: 1.6;
             margin-bottom: 25px;
             font-size: 16px;
         }
         
         .development-message strong {
-            color: #f59e0b;
+            color: var(--warm-gold);
             font-weight: 600;
         }
         
@@ -323,189 +432,50 @@
             }
         }
         
-        .dismiss-btn {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            color: rgba(255, 255, 255, 0.7);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            z-index: 2;
-        }
-        
-        .dismiss-btn:hover {
-            background: rgba(255, 255, 255, 0.2);
-            color: white;
-            transform: rotate(90deg);
-        }
-        
-        .modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.8);
-            backdrop-filter: blur(10px);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 2000;
-            animation: fadeIn 0.3s ease;
-        }
-        
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-        
-        .modal {
-            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-            border-radius: 20px;
-            padding: 40px;
-            max-width: 500px;
-            width: 90%;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            position: relative;
-            animation: modalSlideIn 0.4s ease-out;
-        }
-        
-        @keyframes modalSlideIn {
-            from {
-                opacity: 0;
-                transform: translateY(-30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-        
-        .modal h3 {
-            font-size: 24px;
-            font-weight: 700;
-            margin-bottom: 20px;
-            background: linear-gradient(135deg, #ffffff 0%, #cbd5e1 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-        
-        .modal-content {
-            color: rgba(255, 255, 255, 0.85);
-            line-height: 1.6;
-            margin-bottom: 30px;
-        }
-        
-        .modal-status {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-            margin: 25px 0;
-        }
-        
-        .status-item {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 12px;
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 10px;
-            border-left: 3px solid;
-        }
-        
-        .status-item.web {
-            border-left-color: #60a5fa;
-        }
-        
-        .status-item.mobile {
-            border-left-color: #34d399;
-        }
-        
-        .status-item.pulse {
-            border-left-color: #f59e0b;
-        }
-        
-        .status-item strong {
-            color: white;
-            font-weight: 600;
-            min-width: 120px;
-        }
-        
-        .modal-cta {
-            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-            color: white;
-            border: none;
-            padding: 15px 30px;
-            border-radius: 12px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            display: block;
-            width: 100%;
-            text-align: center;
-        }
-        
-        .modal-cta:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 25px rgba(245, 158, 11, 0.4);
-        }
-        
-        .close-modal {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            color: rgba(255, 255, 255, 0.7);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-        
-        .close-modal:hover {
-            background: rgba(255, 255, 255, 0.2);
-            color: white;
-            transform: rotate(90deg);
-        }
-        
-        /* Hero Section */
+        /* Hero Section - Updated to match Pulse style */
         .hero {
-            background: linear-gradient(135deg, #0A1128 0%, #002855 100%);
-            border-radius: 20px;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 24px;
             padding: 40px;
             margin-bottom: 30px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            background: linear-gradient(45deg, var(--bantu-blue), var(--warm-gold));
+            border-radius: 26px;
+            z-index: -1;
+            opacity: 0.1;
         }
         
         .hero h1 {
             font-size: 32px;
             margin-bottom: 15px;
             font-weight: 700;
+            background: linear-gradient(135deg, var(--soft-white), var(--bantu-blue));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
         
         .hero p {
-            color: rgba(255, 255, 255, 0.8);
+            color: rgba(248, 250, 252, 0.8);
             margin-bottom: 25px;
             font-size: 18px;
         }
         
         .hero-btn {
-            background: linear-gradient(135deg, #4dabf7 0%, #748ffc 100%);
-            color: white;
+            background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+            color: var(--soft-white);
             border: none;
             padding: 15px 30px;
             border-radius: 12px;
@@ -513,14 +483,15 @@
             font-weight: 600;
             cursor: pointer;
             transition: all 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
         
         .hero-btn:hover {
             transform: translateY(-3px);
-            box-shadow: 0 10px 25px rgba(77, 171, 247, 0.4);
+            box-shadow: 0 10px 25px rgba(29, 78, 216, 0.4);
         }
         
-        /* Content Sections */
+        /* Content Sections - Updated to match Pulse style */
         .section {
             margin-bottom: 40px;
         }
@@ -535,24 +506,29 @@
         .section-title {
             font-size: 24px;
             font-weight: 700;
+            background: linear-gradient(135deg, var(--soft-white), var(--warm-gold));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
         
         .see-all-btn {
-            padding: 8px 16px;
+            padding: 10px 20px;
             background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            border: 1px solid var(--card-border);
             border-radius: 10px;
-            color: #4dabf7;
+            color: var(--warm-gold);
             font-size: 14px;
+            font-weight: 500;
             cursor: pointer;
             transition: all 0.3s ease;
         }
         
         .see-all-btn:hover {
             background: rgba(255, 255, 255, 0.2);
+            border-color: var(--warm-gold);
         }
         
-        /* Content Cards */
+        /* Content Cards - Updated to match Pulse style */
         .content-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
@@ -560,18 +536,19 @@
         }
         
         .content-card {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 15px;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 20px;
             overflow: hidden;
             transition: all 0.3s ease;
             cursor: pointer;
+            backdrop-filter: blur(10px);
         }
         
         .content-card:hover {
             transform: translateY(-8px);
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
-            border-color: rgba(255, 255, 255, 0.3);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+            border-color: rgba(245, 158, 11, 0.3);
         }
         
         .card-thumbnail {
@@ -609,12 +586,18 @@
             border-radius: 50%;
             background: rgba(0, 0, 0, 0.6);
             border: 1px solid rgba(255, 255, 255, 0.3);
-            color: #FFD700;
+            color: var(--warm-gold);
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
             z-index: 2;
+            transition: all 0.3s ease;
+        }
+        
+        .share-btn:hover {
+            background: rgba(245, 158, 11, 0.2);
+            transform: scale(1.1);
         }
         
         .card-content {
@@ -630,14 +613,15 @@
             -webkit-box-orient: vertical;
             overflow: hidden;
             min-height: 40px;
+            color: var(--soft-white);
         }
         
         .creator-btn {
-            background: linear-gradient(135deg, #4dabf7 0%, #748ffc 100%);
-            color: white;
+            background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+            color: var(--soft-white);
             border: none;
-            padding: 6px 12px;
-            border-radius: 8px;
+            padding: 8px 15px;
+            border-radius: 10px;
             font-size: 12px;
             font-weight: 500;
             cursor: pointer;
@@ -645,23 +629,24 @@
             align-items: center;
             gap: 5px;
             transition: all 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
         
         .creator-btn:hover {
             transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(77, 171, 247, 0.4);
+            box-shadow: 0 4px 12px rgba(29, 78, 216, 0.4);
         }
         
-        /* Browse All CTA */
+        /* Browse All CTA - Updated to match Pulse style */
         .browse-all-cta {
             text-align: center;
             margin: 50px 0;
         }
         
         .cta-button {
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            color: white;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            color: var(--soft-white);
             padding: 18px 35px;
             border-radius: 15px;
             font-size: 18px;
@@ -671,20 +656,25 @@
             align-items: center;
             gap: 12px;
             transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
         }
         
         .cta-button:hover {
-            background: rgba(255, 255, 255, 0.2);
-            border-color: rgba(255, 255, 255, 0.3);
+            background: rgba(255, 255, 255, 0.1);
+            border-color: var(--warm-gold);
             transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
         }
         
-        /* Footer */
+        /* Footer - Updated to match Pulse style */
         .footer {
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            border-top: 1px solid var(--card-border);
             padding: 30px 20px;
             text-align: center;
-            color: rgba(255, 255, 255, 0.6);
+            color: var(--slate-grey);
+            background: rgba(10, 14, 18, 0.9);
+            backdrop-filter: blur(10px);
+            margin-top: 50px;
         }
         
         .footer-links {
@@ -696,25 +686,25 @@
         }
         
         .footer-links a {
-            color: #4dabf7;
+            color: var(--warm-gold);
             text-decoration: none;
             font-size: 14px;
             transition: all 0.3s ease;
         }
         
         .footer-links a:hover {
-            color: #FFD700;
+            color: var(--soft-white);
             text-decoration: underline;
         }
         
         .footer-contact {
             margin-top: 20px;
             font-size: 14px;
-            color: rgba(255, 255, 255, 0.7);
+            color: var(--slate-grey);
         }
         
         .footer-contact a {
-            color: #FFD700;
+            color: var(--warm-gold);
             text-decoration: none;
         }
         
@@ -722,38 +712,44 @@
             text-decoration: underline;
         }
         
-        /* Empty State */
+        /* Empty State - Updated to match Pulse style */
         .empty-state {
             text-align: center;
             padding: 50px 20px;
-            color: rgba(255, 255, 255, 0.5);
+            color: var(--slate-grey);
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            backdrop-filter: blur(10px);
         }
         
-        /* Toast */
+        /* Toast - Updated to match Pulse style */
         .toast {
             position: fixed;
             bottom: 20px;
             right: 20px;
             padding: 15px 25px;
-            border-radius: 10px;
-            color: white;
+            border-radius: 12px;
+            color: var(--soft-white);
             font-weight: 500;
             z-index: 1000;
             animation: slideIn 0.3s ease;
             max-width: 300px;
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--card-border);
         }
         
         .toast.error {
-            background: linear-gradient(135deg, #ff6b6b 0%, #c92a2a 100%);
+            background: rgba(239, 68, 68, 0.9);
         }
         
         .toast.success {
-            background: linear-gradient(135deg, #51cf66 0%, #2b8a3e 100%);
+            background: rgba(16, 185, 129, 0.9);
         }
         
         .toast.info {
-            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
         }
         
         @keyframes slideIn {
@@ -767,10 +763,29 @@
             }
         }
         
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: var(--deep-navy);
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: var(--bantu-blue);
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--warm-gold);
+        }
+        
         /* Responsive */
         @media (max-width: 768px) {
             .container {
-                padding: 15px;
+                padding: 16px;
+                max-width: 100%;
             }
             
             .development-card {
@@ -795,11 +810,6 @@
             
             .development-content h2 {
                 font-size: 22px;
-            }
-            
-            .modal {
-                padding: 25px;
-                width: 95%;
             }
             
             .hero {
@@ -856,13 +866,33 @@
         <div id="loading-text">Loading Bantu Stream Connect...</div>
     </div>
 
+    <!-- Animated Background -->
+    <div class="animated-bg">
+        <div class="glow-cycle glow-1"></div>
+        <div class="glow-cycle glow-2"></div>
+        <div class="glow-cycle glow-3"></div>
+        <div class="glow-cycle glow-4"></div>
+    </div>
+
     <!-- Main Content (hidden until loaded) -->
     <div id="app" style="display: none;">
         <!-- Header -->
         <header class="header">
-            <div class="logo">
-                <img src="assets/icon/bantu_stream_connect_icon.png" alt="Bantu Stream Connect" class="app-icon">
-                <div class="logo-text">Bantu Stream Connect</div>
+            <div class="logo" onclick="window.location.href='index.html'">
+                <div class="logo-icon">
+                    <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect width="40" height="40" rx="8" fill="#0F172A"/>
+                        <path d="M8 20 L12 16 L16 22 L20 18 L24 24 L28 20 L32 26" stroke="url(#pulse-gradient)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                        <circle cx="32" cy="26" r="3" fill="#F59E0B"/>
+                        <defs>
+                            <linearGradient id="pulse-gradient" x1="8" y1="20" x2="32" y2="26" gradientUnits="userSpaceOnUse">
+                                <stop stop-color="#1D4ED8"/>
+                                <stop offset="1" stop-color="#F59E0B"/>
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                </div>
+                <div class="logo-text">BANTU STREAM CONNECT</div>
             </div>
             <div class="header-actions">
                 <button id="search-btn" class="icon-btn search-btn" title="Search">
@@ -883,22 +913,16 @@
 
         <!-- Main Content -->
         <main class="container">
-            <!-- Home-Feed Development Window -->
-            <div id="development-status-card" class="development-card" style="display: none;">
-                <button class="dismiss-btn" title="Dismiss">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M6 18L18 6M6 6l12 12"/>
-                    </svg>
-                </button>
-                
+            <!-- Home-Feed Development Window - ALWAYS VISIBLE -->
+            <div id="development-status-card" class="development-card">
                 <div class="development-header">
-                    <div class="pulse-icon-container" id="pulse-icon-container">
+                    <div class="pulse-icon-container" id="pulse-icon-container" onclick="window.location.href='pulse-feed.html'">
                         <div class="pulse-icon">
                             <svg viewBox="0 0 100 100">
                                 <defs>
                                     <linearGradient id="pulseGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                                        <stop offset="0%" stop-color="#3730a3" />
-                                        <stop offset="100%" stop-color="#f59e0b" />
+                                        <stop offset="0%" stop-color="#1D4ED8" />
+                                        <stop offset="100%" stop-color="#F59E0B" />
                                     </linearGradient>
                                 </defs>
                                 <path class="pulse-path" d="M20,50 C30,20 40,30 50,50 S70,80 80,50" />
@@ -920,7 +944,7 @@
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="M5 12h14M12 5l7 7-7 7"/>
                             </svg>
-                            Tap the pulsing icon to begin your journey
+                            Tap the pulsing icon to begin your journey to Pulse Feed
                         </div>
                     </div>
                 </div>
@@ -969,44 +993,6 @@
                 Need help? Contact us at <a href="mailto:support@bantustreamconnect.com">support@bantustreamconnect.com</a>
             </div>
         </footer>
-    </div>
-
-    <!-- Modal for Development Update -->
-    <div id="development-modal" class="modal-overlay" style="display: none;">
-        <div class="modal">
-            <button class="close-modal" title="Close">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M6 18L18 6M6 6l12 12"/>
-                </svg>
-            </button>
-            
-            <h3>Platform Development Update</h3>
-            
-            <div class="modal-content">
-                <p>We're carefully crafting the future of African content streaming. Here's our current status:</p>
-                
-                <div class="modal-status">
-                    <div class="status-item web">
-                        <strong>Web App:</strong>
-                        <span>In active development, taking shape with premium features</span>
-                    </div>
-                    
-                    <div class="status-item mobile">
-                        <strong>Mobile App:</strong>
-                        <span>Final stages, closed testing → Public launch coming soon</span>
-                    </div>
-                    
-                    <div class="status-item pulse">
-                        <strong>Bantu Connect Pulse:</strong>
-                        <span>Live now — Share moments, ideas, and creativity</span>
-                    </div>
-                </div>
-                
-                <p>We're building with intention, creating a platform that celebrates African creativity and innovation.</p>
-            </div>
-            
-            <button class="modal-cta" id="continue-to-pulse">Continue to Pulse</button>
-        </div>
     </div>
 
     <!-- Toast Container -->
@@ -1082,150 +1068,39 @@
 
     <!-- Home Feed JavaScript -->
     <script>
-        // Development Window Manager
+        // Development Window Manager - UPDATED TO ALWAYS BE VISIBLE
         const DevelopmentWindow = {
-            STORAGE_KEY: 'bantu_dev_window_dismissed',
-            SESSION_KEY: 'bantu_dev_window_shown',
-            
             init() {
                 this.card = document.getElementById('development-status-card');
-                this.dismissBtn = this.card?.querySelector('.dismiss-btn');
                 this.pulseIcon = document.getElementById('pulse-icon-container');
-                this.modal = document.getElementById('development-modal');
-                this.closeModalBtn = this.modal?.querySelector('.close-modal');
-                this.continueToPulseBtn = document.getElementById('continue-to-pulse');
                 
-                // Check if we should show the card
-                const isDismissed = localStorage.getItem(this.STORAGE_KEY) === 'true';
-                const wasShownThisSession = sessionStorage.getItem(this.SESSION_KEY) === 'true';
-                
-                if (!isDismissed && !wasShownThisSession) {
-                    this.showCard();
-                }
-                
+                // Always show the card - no dismissal logic
+                this.showCard();
                 this.setupEventListeners();
             },
             
             showCard() {
                 if (this.card) {
+                    this.card.style.display = 'block';
+                    // Add entrance animation
                     setTimeout(() => {
-                        this.card.style.display = 'block';
-                        sessionStorage.setItem(this.SESSION_KEY, 'true');
-                    }, 300); // Small delay for better entrance timing
-                }
-            },
-            
-            dismissCard() {
-                if (this.card) {
-                    this.card.style.opacity = '0';
-                    this.card.style.transform = 'translateY(-20px)';
-                    
-                    setTimeout(() => {
-                        this.card.style.display = 'none';
-                        localStorage.setItem(this.STORAGE_KEY, 'true');
-                        showToast('Development window minimized', 'info');
-                    }, 300);
-                }
-            },
-            
-            showModal() {
-                if (this.modal) {
-                    this.modal.style.display = 'flex';
-                    document.body.style.overflow = 'hidden';
-                }
-            },
-            
-            hideModal() {
-                if (this.modal) {
-                    this.modal.style.opacity = '0';
-                    
-                    setTimeout(() => {
-                        this.modal.style.display = 'none';
-                        document.body.style.overflow = '';
-                    }, 300);
+                        this.card.style.animation = 'cardEntrance 0.6s ease-out';
+                    }, 100);
                 }
             },
             
             redirectToPulse() {
-                // For now, redirect to explore-screen.html
-                // Later, this should be /pulse-feed or pulse.html
-                window.location.href = 'explore-screen.html';
+                // Redirect to pulse-feed.html
+                window.location.href = 'pulse-feed.html';
             },
             
             setupEventListeners() {
-                // Dismiss button
-                if (this.dismissBtn) {
-                    this.dismissBtn.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        this.dismissCard();
-                    });
-                }
-                
-                // Pulse icon click - redirect to pulse
+                // Pulse icon click - redirect to pulse-feed.html
                 if (this.pulseIcon) {
                     this.pulseIcon.addEventListener('click', () => {
                         this.redirectToPulse();
                     });
                 }
-                
-                // Optional: Add "Learn More" functionality
-                // You can add a "Learn more" link in the card that opens the modal
-                // For now, we'll use double-click on the card to open modal
-                if (this.card) {
-                    let clickCount = 0;
-                    let clickTimer;
-                    
-                    this.card.addEventListener('click', (e) => {
-                        if (e.target.closest('.dismiss-btn') || e.target.closest('#pulse-icon-container')) {
-                            return;
-                        }
-                        
-                        clickCount++;
-                        
-                        if (clickCount === 1) {
-                            clickTimer = setTimeout(() => {
-                                clickCount = 0;
-                            }, 300);
-                        } else if (clickCount === 2) {
-                            clearTimeout(clickTimer);
-                            clickCount = 0;
-                            this.showModal();
-                        }
-                    });
-                }
-                
-                // Modal close button
-                if (this.closeModalBtn) {
-                    this.closeModalBtn.addEventListener('click', () => {
-                        this.hideModal();
-                    });
-                }
-                
-                // Modal overlay click
-                if (this.modal) {
-                    this.modal.addEventListener('click', (e) => {
-                        if (e.target === this.modal) {
-                            this.hideModal();
-                        }
-                    });
-                }
-                
-                // Continue to Pulse button
-                if (this.continueToPulseBtn) {
-                    this.continueToPulseBtn.addEventListener('click', () => {
-                        this.hideModal();
-                        setTimeout(() => {
-                            this.redirectToPulse();
-                        }, 300);
-                    });
-                }
-                
-                // Escape key to close modal
-                document.addEventListener('keydown', (e) => {
-                    if (e.key === 'Escape' && this.modal.style.display === 'flex') {
-                        this.hideModal();
-                    }
-                });
             }
         };
         
@@ -1233,7 +1108,7 @@
         document.addEventListener('DOMContentLoaded', async () => {
             console.log('🚀 Bantu Stream Connect Home Feed Initializing...');
             
-            // Initialize Development Window
+            // Initialize Development Window (always visible)
             DevelopmentWindow.init();
             
             // Initialize auth and check if user is logged in
