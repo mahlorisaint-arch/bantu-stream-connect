@@ -152,6 +152,11 @@
     .indigo-glow {
       box-shadow: 0 0 15px rgba(79, 70, 229, 0.3);
     }
+
+    /* Hero image loading fallback */
+    .hero-image {
+      background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+    }
   </style>
 </head>
 <body class="bg-bantu-dark text-bantu-text font-sans">
@@ -189,9 +194,12 @@
     <!-- Hero Image & Title -->
     <div class="relative">
       <div class="absolute inset-0 bg-gradient-to-b from-black/70 via-black/50 to-bantu-dark z-10"></div>
-      <img src="https://images.unsplash.com/photo-1518709268805-4e9042af2176?auto=format&fit=crop&w=2000&q=80" 
-           alt="Late night work session with laptop glow"
-           class="w-full h-[50vh] object-cover">
+      <div class="hero-image w-full h-[50vh]">
+        <img src="assets/blog/IMG_20251107_000832_201.webp" 
+             alt="Behind the scenes: Late night work session building Bantu Stream Connect"
+             class="w-full h-full object-cover"
+             onerror="this.onerror=null; this.parentElement.classList.add('flex', 'items-center', 'justify-center'); this.parentElement.innerHTML='<div class=\"text-center p-8\"><i data-lucide=\"monitor\" class=\"w-16 h-16 mx-auto text-bantu-primary mb-4\"></i><p class=\"text-xl text-bantu-text\">Behind the Scenes: Building Bantu</p><p class=\"text-bantu-text/70 mt-2\">The late night dedication that powers our vision</p></div>'; lucide.createIcons();">
+      </div>
       
       <div class="absolute inset-0 z-20 flex items-center">
         <div class="container mx-auto px-4 sm:px-6 lg:px-8">
@@ -526,6 +534,22 @@
       setInterval(() => {
         clockElement.classList.toggle('opacity-70');
       }, 2000);
+    }
+
+    // Image loading error handling
+    const heroImage = document.querySelector('.hero-image img');
+    if (heroImage) {
+      heroImage.onerror = function() {
+        this.parentElement.classList.add('flex', 'items-center', 'justify-center');
+        this.parentElement.innerHTML = `
+          <div class="text-center p-8">
+            <i data-lucide="monitor" class="w-16 h-16 mx-auto text-bantu-primary mb-4"></i>
+            <p class="text-xl text-bantu-text">Behind the Scenes: Building Bantu</p>
+            <p class="text-bantu-text/70 mt-2">The late night dedication that powers our vision</p>
+          </div>
+        `;
+        lucide.createIcons();
+      };
     }
   </script>
 </body>
