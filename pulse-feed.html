@@ -217,7 +217,7 @@
             gap: 16px;
         }
         
-        /* UPDATED: Notification button with real-time indicator (exactly like profile.html) */
+        /* UPDATED: Notification button with real-time indicator */
         .notification-btn {
             background: rgba(255, 255, 255, 0.05);
             border: 1px solid var(--glass-border);
@@ -645,12 +645,17 @@
         .media-container {
             width: 100%;
             aspect-ratio: 9/16;
-            background: black;
+            background: linear-gradient(90deg, 
+                rgba(15, 23, 42, 0.5) 25%, 
+                rgba(29, 78, 216, 0.1) 50%, 
+                rgba(15, 23, 42, 0.5) 75%);
+            background-size: 200% 100%;
             border-radius: 0;
             overflow: hidden;
             margin-bottom: 20px;
             position: relative;
             display: none;
+            animation: loading 1.5s infinite;
         }
         
         .media-container.has-media {
@@ -662,6 +667,28 @@
             height: 100%;
             object-fit: cover;
             display: block;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        .pulse-media.loaded {
+            opacity: 1;
+        }
+        
+        @keyframes loading {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+        
+        /* Video loading state */
+        .video-loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: var(--warm-gold);
+            font-size: 24px;
+            z-index: 1;
         }
         
         /* Custom Video Controls - Glassmorphism */
@@ -675,6 +702,7 @@
             opacity: 0;
             transition: opacity 0.3s ease;
             backdrop-filter: blur(10px);
+            z-index: 2;
         }
         
         .media-container:hover .video-controls-overlay {
@@ -1362,6 +1390,50 @@
             backdrop-filter: blur(20px);
         }
         
+        /* Load More Button */
+        .load-more-btn {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 16px;
+            text-align: center;
+            color: var(--warm-gold);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            margin: 20px 0;
+        }
+        
+        .load-more-btn:hover {
+            background: rgba(245, 158, 11, 0.1);
+            border-color: var(--warm-gold);
+            transform: translateY(-2px);
+        }
+        
+        .load-more-btn.loading {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+        
+        /* Upload Progress */
+        .upload-progress {
+            width: 100%;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 2px;
+            margin-top: 10px;
+            overflow: hidden;
+        }
+        
+        .upload-progress-bar {
+            height: 100%;
+            background: linear-gradient(to right, var(--bantu-blue), var(--warm-gold));
+            border-radius: 2px;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+        
         /* Responsive */
         @media (max-width: 768px) {
             .container {
@@ -1450,7 +1522,7 @@
             </div>
             
             <div class="user-section">
-                <!-- UPDATED: Notification button with gold dot indicator (exactly like profile.html) -->
+                <!-- UPDATED: Notification button with gold dot indicator -->
                 <button class="notification-btn" id="notificationBtn" onclick="window.location.href='notifications.html'">
                     <i class="far fa-bell"></i>
                 </button>
@@ -1481,6 +1553,10 @@
         <div class="tab-content active" id="pulse-feed">
             <div class="pulse-feed" id="pulse-feed-container">
                 <!-- Pulses will be loaded here dynamically -->
+            </div>
+            <!-- Load More Button -->
+            <div class="load-more-btn" id="loadMoreBtn" style="display: none;">
+                <span>Load More Pulses</span>
             </div>
         </div>
         
@@ -1568,8 +1644,13 @@
                             <i class="fas fa-cloud-upload-alt"></i>
                         </div>
                         <div class="upload-text">Add photo or video</div>
-                        <div class="upload-hint">Supports vertical video (9:16)</div>
+                        <div class="upload-hint">Supports vertical video (9:16) - Max 20MB</div>
                         <input type="file" id="mediaInput" accept="image/*,video/*" style="display: none;">
+                    </div>
+                    
+                    <!-- Upload Progress -->
+                    <div class="upload-progress" id="uploadProgress" style="display: none;">
+                        <div class="upload-progress-bar" id="uploadProgressBar"></div>
                     </div>
                     
                     <div id="mediaPreview" class="media-preview" style="display: none;">
@@ -1636,7 +1717,7 @@
                             <i class="fas fa-cloud-upload-alt"></i>
                         </div>
                         <div class="upload-text">Change photo or video</div>
-                        <div class="upload-hint">Supports vertical video (9:16)</div>
+                        <div class="upload-hint">Supports vertical video (9:16) - Max 20MB</div>
                         <input type="file" id="editMediaInput" accept="image/*,video/*" style="display: none;">
                     </div>
                     
@@ -1691,8 +1772,17 @@
         let editingSeriesId = null;
         let editingSeriesTitle = null;
         let editingPulseData = null;
-        let userConnections = new Set(); // Store connected user IDs
-        let videoPlayers = new Map(); // Store video player instances
+        let userConnections = new Set();
+        let videoPlayers = new Map();
+        
+        // Performance optimization variables
+        let isProcessingUpload = false;
+        let activeVideoPlayers = new Set();
+        let isFeedLoading = false;
+        let currentOffset = 0;
+        const PULSES_PER_PAGE = 10;
+        let hasMorePulses = true;
+        let lazyLoadObserver = null;
 
         async function initialize() {
             console.log('Starting Pulse Feed initialization...');
@@ -1731,10 +1821,10 @@
                 // Fetch user connections
                 await fetchUserConnections();
                 
-                // NEW: Check for unread notifications
+                // Check for unread notifications
                 await checkUnreadNotifications();
                 
-                // NEW: Subscribe to real-time notifications
+                // Subscribe to real-time notifications
                 subscribeToNotifications();
                 
                 // Hide loading, show content
@@ -1779,10 +1869,9 @@
             }
         }
         
-        // NEW: Check for unread notifications (exactly like profile.html)
+        // Check for unread notifications
         async function checkUnreadNotifications() {
             try {
-                // First check if the pulse_notifications table exists
                 const { count, error: countError } = await supabaseClient
                     .from('pulse_notifications')
                     .select('*', { count: 'exact', head: true })
@@ -1791,8 +1880,7 @@
                 
                 if (countError) {
                     console.log('pulse_notifications table might not exist, using fallback');
-                    // Table might not exist, use fallback logic
-                    updateNotificationIndicator(false); // No indicator if table doesn't exist
+                    updateNotificationIndicator(false);
                     return;
                 }
                 
@@ -1807,7 +1895,7 @@
             }
         }
         
-        // NEW: Update notification indicator (exactly like profile.html)
+        // Update notification indicator
         function updateNotificationIndicator(hasUnread) {
             const notificationBtn = document.getElementById('notificationBtn');
             if (notificationBtn) {
@@ -1819,7 +1907,7 @@
             }
         }
         
-        // NEW: Subscribe to real-time notifications (exactly like profile.html)
+        // Subscribe to real-time notifications
         function subscribeToNotifications() {
             if (!supabaseClient || !currentUserId) return;
             
@@ -1836,10 +1924,7 @@
                         },
                         (payload) => {
                             console.log('New notification received (real-time):', payload);
-                            // Show gold dot indicator
                             updateNotificationIndicator(true);
-                            
-                            // Optional: Show a toast notification
                             showToast('New notification!', 'success');
                         }
                     )
@@ -1852,9 +1937,7 @@
                             filter: `target_user_id=eq.${currentUserId}`
                         },
                         (payload) => {
-                            // Check if notification was marked as read
                             if (payload.new.is_read === true && payload.old.is_read === false) {
-                                // Re-check all notifications to update indicator
                                 checkUnreadNotifications();
                             }
                         }
@@ -1874,7 +1957,7 @@
             return name.substring(0, 2).toUpperCase();
         }
         
-        // ✅ OPTIMIZED: LOAD USER PROFILE WITH AVATAR
+        // Optimized: LOAD USER PROFILE WITH AVATAR
         async function loadUserProfile() {
             try {
                 const { data: { session } } = await supabaseClient.auth.getSession();
@@ -1905,7 +1988,6 @@
                     
                     if (error) throw error;
                     
-                    // Use the new profile
                     profile = newProfile;
                 }
                 
@@ -2007,7 +2089,7 @@
             }
         }
         
-        // ✅ NEW: FETCH USER CONNECTIONS
+        // FETCH USER CONNECTIONS
         async function fetchUserConnections() {
             try {
                 const { data: { session } } = await supabaseClient.auth.getSession();
@@ -2039,7 +2121,7 @@
             }
         }
         
-        // ✅ UPDATED: HANDLE CONNECT BUTTON CLICK WITH SMALLER BUTTON
+        // HANDLE CONNECT BUTTON CLICK WITH SMALLER BUTTON
         async function handleConnect(pulseCreatorId, connectBtn) {
             try {
                 const { data: { session } } = await supabaseClient.auth.getSession();
@@ -2248,7 +2330,7 @@
             showToast('Please sign in to view pulse details', 'error');
         }
         
-        // ✅ SHOW TOAST
+        // SHOW TOAST
         function showToast(message, type = 'error') {
             const toast = document.createElement('div');
             toast.className = `toast ${type}`;
@@ -2267,7 +2349,7 @@
             }, 4000);
         }
         
-        // ✅ GET TIME AGO
+        // GET TIME AGO
         function getTimeAgo(date) {
             const seconds = Math.floor((new Date() - date) / 1000);
             
@@ -2289,7 +2371,7 @@
             return Math.floor(seconds) + ' seconds ago';
         }
         
-        // ✅ UPDATED: GET REAL COMMENTS COUNT FROM pulse_comments TABLE
+        // GET REAL COMMENTS COUNT FROM pulse_comments TABLE
         async function getRealCommentsCount(pulseId) {
             try {
                 const { count, error } = await supabaseClient
@@ -2310,7 +2392,7 @@
             }
         }
         
-        // ✅ UPDATED: UPDATE COMMENT COUNT IN UI WITH REAL COUNT
+        // UPDATE COMMENT COUNT IN UI WITH REAL COUNT
         async function updateCommentCount(pulseId, increment) {
             const pulseCard = document.querySelector(`[data-pulse-id="${pulseId}"]`);
             if (!pulseCard) return;
@@ -2330,7 +2412,7 @@
             }
         }
         
-        // ✅ UPDATE SHARE COUNT IN UI
+        // UPDATE SHARE COUNT IN UI
         function updateShareCount(pulseId, increment) {
             const pulseCard = document.querySelector(`[data-pulse-id="${pulseId}"]`);
             if (!pulseCard) return;
@@ -2350,7 +2432,7 @@
             }
         }
         
-        // ✅ FIXED: HANDLE LIKE WITH PROPER COUNT UPDATES
+        // HANDLE LIKE WITH PROPER COUNT UPDATES
         async function handleLike(pulseId, e) {
             if (e) e.stopPropagation();
             
@@ -2407,7 +2489,7 @@
                         updateLikeUI(pulseId, true, pulseData?.likes_count || 0);
                         showToast('Pulse liked!', 'success');
                         
-                        // ✅ Create notification for pulse creator (if not liking own pulse)
+                        // Create notification for pulse creator (if not liking own pulse)
                         const { data: pulse } = await supabaseClient
                             .from('pulses')
                             .select('user_id')
@@ -2433,7 +2515,7 @@
             }
         }
         
-        // ✅ FIXED: UPDATE LIKE UI WITH EXACT COUNT
+        // UPDATE LIKE UI WITH EXACT COUNT
         function updateLikeUI(pulseId, isLiked, exactLikesCount) {
             const pulseCard = document.querySelector(`[data-pulse-id="${pulseId}"]`);
             if (!pulseCard) return;
@@ -2459,7 +2541,7 @@
             }
         }
         
-        // ✅ UPDATED: HANDLE COMMENT WITH REAL COUNT UPDATE
+        // HANDLE COMMENT WITH REAL COUNT UPDATE
         async function handleComment(pulseId, e) {
             if (e) e.stopPropagation();
             
@@ -2537,7 +2619,7 @@
                         showToast('Comment posted successfully!', 'success');
                         commentModal.remove();
                         
-                        // UPDATED: Update comment count in UI with real count
+                        // Update comment count in UI with real count
                         updateCommentCount(pulseId, 1);
                         
                     } catch (error) {
@@ -2552,7 +2634,7 @@
             }
         }
         
-        // ✅ HANDLE SHARE
+        // HANDLE SHARE
         async function handleShare(pulseId, e) {
             if (e) e.stopPropagation();
             
@@ -2695,12 +2777,12 @@
             }
         }
         
-        // ✅ VIEW PULSE DETAIL
+        // VIEW PULSE DETAIL
         function viewPulseDetail(pulseId) {
             window.location.href = `pulse-content-detail.html?id=${pulseId}`;
         }
         
-        // ✅ FIXED: HANDLE DELETE PULSE - UPDATED TO WORK WITH RLS
+        // HANDLE DELETE PULSE - UPDATED TO WORK WITH RLS
         async function handleDelete(pulseId) {
             if (!confirm('Are you sure you want to PERMANENTLY delete this pulse? This action cannot be undone.')) {
                 return;
@@ -2732,7 +2814,6 @@
                 }
                 
                 // Use a direct delete instead of soft delete to avoid RLS issues
-                // If you want soft delete, you need to add RLS policies in Supabase
                 const { error } = await supabaseClient
                     .from('pulses')
                     .delete()
@@ -2773,7 +2854,7 @@
             }
         }
         
-        // ✅ UPDATED: HANDLE EDIT PULSE WITH SERIES SUPPORT
+        // HANDLE EDIT PULSE WITH SERIES SUPPORT
         async function handleEdit(pulseId) {
             try {
                 // Fetch the pulse data with series info
@@ -2919,7 +3000,7 @@
             }
         }
         
-        // ✅ NEW: CREATE NOTIFICATION FUNCTION
+        // CREATE NOTIFICATION FUNCTION
         async function createNotification(type, actorId, targetUserId, pulseId, commentId, message) {
             try {
                 const { error } = await supabaseClient
@@ -2944,7 +3025,7 @@
             }
         }
         
-        // ✅ NEW: CHECK IF USER HAS LIKED EACH PULSE
+        // CHECK IF USER HAS LIKED EACH PULSE
         async function checkUserLikes(pulseIds) {
             try {
                 const { data: { session } } = await supabaseClient.auth.getSession();
@@ -2971,7 +3052,7 @@
             }
         }
         
-        // ✅ UPDATED: UPDATE PULSE WITH SERIES SUPPORT
+        // UPDATE PULSE WITH SERIES SUPPORT
         async function updatePulse() {
             try {
                 if (!editingPulseId) return;
@@ -3036,38 +3117,139 @@
             }
         }
         
-        // ✅ UPLOAD MEDIA FUNCTION
+        // UPLOAD MEDIA FUNCTION WITH COMPRESSION
         async function uploadMedia(file) {
+            if (isProcessingUpload) {
+                throw new Error('Upload already in progress');
+            }
+            
             try {
+                isProcessingUpload = true;
+                
+                // Validate file size (max 20MB to prevent freezing)
+                const maxSize = 20 * 1024 * 1024; // 20MB
+                if (file.size > maxSize) {
+                    throw new Error('File size must be less than 20MB');
+                }
+                
                 const { data: { session } } = await supabaseClient.auth.getSession();
                 if (!session) throw new Error('No session');
                 
-                const fileExt = file.name.split('.').pop();
+                // Show upload progress
+                document.getElementById('uploadProgress').style.display = 'block';
+                document.getElementById('uploadProgressBar').style.width = '10%';
+                
+                // Compress image if it's too large
+                let processedFile = file;
+                if (file.type.startsWith('image/') && !file.type.includes('gif')) {
+                    processedFile = await compressImage(file, {
+                        maxWidth: 1080,
+                        maxHeight: 1920,
+                        quality: 0.8
+                    });
+                }
+                
+                document.getElementById('uploadProgressBar').style.width = '30%';
+                
+                const fileExt = processedFile.name.split('.').pop();
                 const fileName = `${session.user.id}/${Date.now()}.${fileExt}`;
                 const filePath = `pulse-media/${fileName}`;
                 
+                document.getElementById('uploadProgressBar').style.width = '50%';
+                
                 const { error: uploadError } = await supabaseClient.storage
                     .from('pulse-media')
-                    .upload(filePath, file);
+                    .upload(filePath, processedFile);
                 
                 if (uploadError) throw uploadError;
+                
+                document.getElementById('uploadProgressBar').style.width = '80%';
                 
                 const { data: { publicUrl } } = supabaseClient.storage
                     .from('pulse-media')
                     .getPublicUrl(filePath);
                 
+                document.getElementById('uploadProgressBar').style.width = '100%';
+                
+                setTimeout(() => {
+                    document.getElementById('uploadProgress').style.display = 'none';
+                    document.getElementById('uploadProgressBar').style.width = '0%';
+                }, 500);
+                
                 return {
                     url: publicUrl,
-                    type: file.type.startsWith('video/') ? 'video' : 'image'
+                    type: processedFile.type.startsWith('video/') ? 'video' : 'image'
                 };
                 
             } catch (error) {
+                document.getElementById('uploadProgress').style.display = 'none';
+                document.getElementById('uploadProgressBar').style.width = '0%';
                 console.error('❌ Upload error:', error);
-                throw new Error('Failed to upload media');
+                throw error;
+            } finally {
+                isProcessingUpload = false;
             }
         }
         
-        // ✅ CLOSE EDIT MODAL FUNCTION
+        // IMAGE COMPRESSION FUNCTION
+        async function compressImage(file, options = {}) {
+            return new Promise((resolve, reject) => {
+                // Skip compression for small files (< 1MB)
+                if (file.size < 1024 * 1024) {
+                    resolve(file);
+                    return;
+                }
+                
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                
+                reader.onload = (event) => {
+                    const img = new Image();
+                    img.src = event.target.result;
+                    
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        let width = img.width;
+                        let height = img.height;
+                        
+                        // Calculate new dimensions
+                        const maxWidth = options.maxWidth || 1080;
+                        const maxHeight = options.maxHeight || 1920;
+                        
+                        if (width > height) {
+                            if (width > maxWidth) {
+                                height = Math.round((height * maxWidth) / width);
+                                width = maxWidth;
+                            }
+                        } else {
+                            if (height > maxHeight) {
+                                width = Math.round((width * maxHeight) / height);
+                                height = maxHeight;
+                            }
+                        }
+                        
+                        canvas.width = width;
+                        canvas.height = height;
+                        
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, width, height);
+                        
+                        canvas.toBlob((blob) => {
+                            resolve(new File([blob], file.name, {
+                                type: file.type,
+                                lastModified: Date.now()
+                            }));
+                        }, file.type, options.quality || 0.8);
+                    };
+                    
+                    img.onerror = reject;
+                };
+                
+                reader.onerror = reject;
+            });
+        }
+        
+        // CLOSE EDIT MODAL FUNCTION
         function closeEditModalFunc() {
             document.getElementById('editModal').style.display = 'none';
             document.getElementById('editCaption').value = '';
@@ -3085,7 +3267,7 @@
             document.getElementById('editSeriesTitle').value = '';
         }
         
-        // ✅ NEW: Initialize video player for pulse feed
+        // Initialize video player for pulse feed
         function initializeVideoPlayer(videoElement, controlsContainer) {
             if (!videoElement || !controlsContainer) return;
             
@@ -3131,19 +3313,23 @@
                 if (videoElement.paused) {
                     videoElement.play();
                     playPauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
+                    activeVideoPlayers.add(videoId);
                 } else {
                     videoElement.pause();
                     playPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
+                    activeVideoPlayers.delete(videoId);
                 }
             });
             
             // Video events
             videoElement.addEventListener('play', () => {
                 playPauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
+                activeVideoPlayers.add(videoId);
             });
             
             videoElement.addEventListener('pause', () => {
                 playPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
+                activeVideoPlayers.delete(videoId);
             });
             
             videoElement.addEventListener('timeupdate', updateTimeDisplay);
@@ -3158,9 +3344,11 @@
                     if (videoElement.paused) {
                         videoElement.play();
                         playPauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
+                        activeVideoPlayers.add(videoId);
                     } else {
                         videoElement.pause();
                         playPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
+                        activeVideoPlayers.delete(videoId);
                     }
                 }
             });
@@ -3226,6 +3414,137 @@
             });
         }
         
+        // PAUSE ALL VIDEOS
+        function pauseAllVideos() {
+            videoPlayers.forEach(player => {
+                if (player.video && !player.video.paused) {
+                    player.video.pause();
+                }
+            });
+            activeVideoPlayers.clear();
+        }
+        
+        // DEBOUNCE FUNCTION
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+        
+        // SETUP LAZY LOADING
+        function setupLazyLoading() {
+            if (lazyLoadObserver) {
+                lazyLoadObserver.disconnect();
+            }
+            
+            lazyLoadObserver = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        const mediaContainer = entry.target;
+                        const img = mediaContainer.querySelector('img[data-src]');
+                        const video = mediaContainer.querySelector('video[data-src]');
+                        
+                        if (img) {
+                            const tempImg = new Image();
+                            tempImg.src = img.dataset.src;
+                            tempImg.onload = () => {
+                                img.src = img.dataset.src;
+                                img.classList.add('loaded');
+                                img.removeAttribute('data-src');
+                            };
+                        }
+                        
+                        if (video) {
+                            video.src = video.dataset.src;
+                            video.removeAttribute('data-src');
+                            video.load();
+                        }
+                        
+                        lazyLoadObserver.unobserve(mediaContainer);
+                    }
+                });
+            }, { rootMargin: '100px' });
+            
+            // Observe all media containers
+            document.querySelectorAll('.media-container').forEach(container => {
+                lazyLoadObserver.observe(container);
+            });
+        }
+        
+        // LOAD MORE PULSES
+        async function loadMorePulses() {
+            if (isFeedLoading || !hasMorePulses) return;
+            
+            const loadMoreBtn = document.getElementById('loadMoreBtn');
+            loadMoreBtn.classList.add('loading');
+            loadMoreBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading...';
+            
+            try {
+                currentOffset += PULSES_PER_PAGE;
+                const newPulses = await fetchPulses(PULSES_PER_PAGE, currentOffset);
+                
+                if (newPulses.length === 0) {
+                    hasMorePulses = false;
+                    loadMoreBtn.style.display = 'none';
+                    return;
+                }
+                
+                // Check which pulses the current user has liked
+                const likedPulses = await checkUserLikes(newPulses.map(p => p.id));
+                
+                // Append new pulses
+                const fragment = document.createDocumentFragment();
+                newPulses.forEach(pulse => {
+                    const pulseCard = createPulseCard(pulse, likedPulses);
+                    fragment.appendChild(pulseCard);
+                });
+                
+                document.getElementById('pulse-feed-container').appendChild(fragment);
+                
+                // Setup lazy loading for new elements
+                setupLazyLoading();
+                
+                // Show/hide load more button
+                if (newPulses.length < PULSES_PER_PAGE) {
+                    hasMorePulses = false;
+                    loadMoreBtn.style.display = 'none';
+                }
+                
+            } catch (error) {
+                console.error('Error loading more pulses:', error);
+                showToast('Failed to load more pulses', 'error');
+            } finally {
+                loadMoreBtn.classList.remove('loading');
+                loadMoreBtn.innerHTML = '<span>Load More Pulses</span>';
+            }
+        }
+        
+        // CLEANUP RESOURCES
+        function cleanupResources() {
+            // Pause all videos
+            pauseAllVideos();
+            
+            // Clear video players map
+            videoPlayers.clear();
+            
+            // Clear lazy load observer
+            if (lazyLoadObserver) {
+                lazyLoadObserver.disconnect();
+                lazyLoadObserver = null;
+            }
+            
+            // Clear any timeouts
+            if (forceLoadTimeout) {
+                clearTimeout(forceLoadTimeout);
+            }
+        }
+        
         function initializeFeed(session) {
             // State variables
             let selectedMedia = null;
@@ -3252,6 +3571,7 @@
             const tabs = document.querySelectorAll('.tab');
             const tabContents = document.querySelectorAll('.tab-content');
             const pulseFeedContainer = document.getElementById('pulse-feed-container');
+            const loadMoreBtn = document.getElementById('loadMoreBtn');
             
             // Edit modal elements
             const editModal = document.getElementById('editModal');
@@ -3263,7 +3583,7 @@
             const editRemoveMedia = document.getElementById('editRemoveMedia');
             const updatePulseBtn = document.getElementById('updatePulse');
             
-            // ✅ HELPER: Ensure user profile exists
+            // HELPER: Ensure user profile exists
             async function ensureUserProfile(userId) {
                 try {
                     const { data: { session } } = await supabaseClient.auth.getSession();
@@ -3303,7 +3623,7 @@
                 }
             }
             
-            // ✅ SET LOADING STATE
+            // SET LOADING STATE
             function setLoading(loading) {
                 if (loading) {
                     postPulseBtn.disabled = true;
@@ -3314,19 +3634,19 @@
                 }
             }
             
-            // ✅ UPDATE POST BUTTON STATE
+            // UPDATE POST BUTTON STATE
             function updatePostButton() {
                 const hasContent = captionInput.value.trim() || selectedMedia;
                 postPulseBtn.disabled = !hasContent;
             }
             
-            // ✅ OPEN CREATE MODAL
+            // OPEN CREATE MODAL
             function openCreateModal() {
                 createModal.style.display = 'flex';
                 captionInput.focus();
             }
             
-            // ✅ CLOSE CREATE MODAL
+            // CLOSE CREATE MODAL
             function closeCreateModal() {
                 createModal.style.display = 'none';
                 captionInput.value = '';
@@ -3338,119 +3658,111 @@
                 toggleSwitch.classList.remove('active');
                 seriesOptions.classList.remove('active');
                 updatePostButton();
+                
+                // Hide upload progress
+                document.getElementById('uploadProgress').style.display = 'none';
+                document.getElementById('uploadProgressBar').style.width = '0%';
             }
             
-            // ✅ UPDATED: FETCH PULSES FROM SUPABASE WITH REAL COMMENTS COUNT
-            async function fetchPulses() {
+            // OPTIMIZED: FETCH PULSES FROM SUPABASE WITH PAGINATION
+            async function fetchPulses(limit = PULSES_PER_PAGE, offset = 0) {
+                if (isFeedLoading) return [];
+                
                 try {
+                    isFeedLoading = true;
                     console.log('🔄 Fetching pulses...');
                     
-                    // First, fetch the pulses
+                    // Pause all active videos before loading new content
+                    pauseAllVideos();
+                    
                     const { data: pulsesData, error: pulsesError } = await supabaseClient
                         .from('pulses')
                         .select('*')
                         .is('deleted_at', null)
                         .order('created_at', { ascending: false })
-                        .limit(20);
+                        .range(offset, offset + limit - 1);
                     
                     if (pulsesError) throw pulsesError;
                     
                     if (!pulsesData || pulsesData.length === 0) {
-                        console.log('No pulses found');
-                        loadSampleData();
-                        return;
+                        if (offset === 0) {
+                            loadSampleData();
+                        }
+                        return [];
                     }
                     
-                    console.log(`✅ Fetched ${pulsesData?.length || 0} pulses`);
+                    console.log(`✅ Fetched ${pulsesData.length} pulses`);
                     
                     // Get user IDs from pulses
                     const userIds = [...new Set(pulsesData.map(p => p.user_id))];
                     
-                    // Try to fetch user profiles from auth.users first (most reliable)
+                    // Fetch user profiles
                     let userProfilesMap = {};
                     
                     try {
-                        // Try to get user data from auth.users
-                        const { data: authUsersData, error: authError } = await supabaseClient.auth.admin.listUsers();
+                        const { data: profilesData, error: profilesError } = await supabaseClient
+                            .from('user_profiles')
+                            .select('*')
+                            .in('id', userIds);
                         
-                        if (!authError && authUsersData) {
-                            authUsersData.users.forEach(user => {
-                                if (userIds.includes(user.id)) {
-                                    userProfilesMap[user.id] = {
-                                        id: user.id,
-                                        email: user.email,
-                                        full_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'User',
-                                        avatar_url: user.user_metadata?.avatar_url || null,
-                                        role: 'creator' // default role
-                                    };
-                                }
+                        if (!profilesError && profilesData) {
+                            profilesData.forEach(profile => {
+                                userProfilesMap[profile.id] = profile;
                             });
                         }
-                    } catch (authError) {
-                        console.warn('Could not fetch auth users:', authError);
+                    } catch (profilesError) {
+                        console.warn('Could not fetch user profiles:', profilesError);
                     }
                     
-                    // If we couldn't get all users from auth, try the user_profiles table
-                    const missingUserIds = userIds.filter(id => !userProfilesMap[id]);
-                    if (missingUserIds.length > 0) {
-                        try {
-                            const { data: profilesData, error: profilesError } = await supabaseClient
-                                .from('user_profiles')
-                                .select('*')
-                                .in('id', missingUserIds);
-                            
-                            if (!profilesError && profilesData) {
-                                profilesData.forEach(profile => {
-                                    userProfilesMap[profile.id] = profile;
-                                });
-                            }
-                        } catch (profilesError) {
-                            console.warn('Could not fetch user profiles:', profilesError);
-                        }
-                    }
-                    
-                    // Get the actual likes count for each pulse from pulse_likes table
+                    // Get pulse IDs for batch operations
                     const pulseIds = pulsesData.map(p => p.id);
-                    const { data: likesData, error: likesError } = await supabaseClient
-                        .from('pulse_likes')
-                        .select('pulse_id')
-                        .in('pulse_id', pulseIds);
                     
-                    if (likesError && !likesError.message.includes('JSON')) {
+                    // Get likes count in batch
+                    const likesCountMap = {};
+                    try {
+                        const { data: likesData, error: likesError } = await supabaseClient
+                            .from('pulse_likes')
+                            .select('pulse_id')
+                            .in('pulse_id', pulseIds);
+                        
+                        if (!likesError && likesData) {
+                            const pulseLikeCounts = {};
+                            likesData.forEach(item => {
+                                pulseLikeCounts[item.pulse_id] = (pulseLikeCounts[item.pulse_id] || 0) + 1;
+                            });
+                            
+                            Object.keys(pulseLikeCounts).forEach(pulseId => {
+                                likesCountMap[pulseId] = pulseLikeCounts[pulseId];
+                            });
+                        }
+                    } catch (likesError) {
                         console.warn('Error fetching likes count:', likesError);
                     }
                     
-                    // Create a map of pulse_id to actual likes count
-                    const likesCountMap = {};
-                    if (likesData) {
-                        // Count likes per pulse
-                        const pulseLikeCounts = {};
-                        likesData.forEach(item => {
-                            if (!pulseLikeCounts[item.pulse_id]) {
-                                pulseLikeCounts[item.pulse_id] = 0;
-                            }
-                            pulseLikeCounts[item.pulse_id]++;
-                        });
-                        
-                        // Update the map
-                        Object.keys(pulseLikeCounts).forEach(pulseId => {
-                            likesCountMap[pulseId] = pulseLikeCounts[pulseId];
-                        });
-                    }
-                    
-                    // UPDATED: Get real comments count for each pulse from pulse_comments table
+                    // Get comments count in batch
                     const commentsCountMap = {};
-                    for (const pulse of pulsesData) {
-                        try {
-                            const realCommentsCount = await getRealCommentsCount(pulse.id);
-                            commentsCountMap[pulse.id] = realCommentsCount;
-                        } catch (error) {
-                            console.error(`Error getting comments count for pulse ${pulse.id}:`, error);
-                            commentsCountMap[pulse.id] = pulse.comments_count || 0;
+                    try {
+                        const { data: commentsData, error: commentsError } = await supabaseClient
+                            .from('pulse_comments')
+                            .select('pulse_id')
+                            .in('pulse_id', pulseIds)
+                            .eq('is_removed', false);
+                        
+                        if (!commentsError && commentsData) {
+                            const pulseCommentCounts = {};
+                            commentsData.forEach(item => {
+                                pulseCommentCounts[item.pulse_id] = (pulseCommentCounts[item.pulse_id] || 0) + 1;
+                            });
+                            
+                            Object.keys(pulseCommentCounts).forEach(pulseId => {
+                                commentsCountMap[pulseId] = pulseCommentCounts[pulseId];
+                            });
                         }
+                    } catch (commentsError) {
+                        console.warn('Error fetching comments count:', commentsError);
                     }
                     
-                    // Update pulses data with user profiles and actual counts
+                    // Update pulses data
                     const enrichedPulses = pulsesData.map(pulse => ({
                         ...pulse,
                         user_profiles: userProfilesMap[pulse.user_id] || {
@@ -3465,36 +3777,55 @@
                         actual_comments_count: commentsCountMap[pulse.id] || pulse.comments_count || 0
                     }));
                     
-                    pulses = enrichedPulses;
-                    
-                    // Check which pulses the current user has liked
-                    const likedPulses = await checkUserLikes(pulseIds);
-                    
-                    displayPulses(pulses, likedPulses);
+                    return enrichedPulses;
                     
                 } catch (error) {
                     console.error('❌ Error fetching pulses:', error);
-                    showToast('Failed to load pulses. Showing demo data.', 'error');
-                    loadSampleData();
+                    showToast('Failed to load pulses', 'error');
+                    return [];
+                } finally {
+                    isFeedLoading = false;
                 }
             }
             
-            // ✅ UPDATED: DISPLAY PULSES WITH REAL COMMENTS COUNT
-            function displayPulses(pulses, likedPulses) {
+            // DISPLAY PULSES WITH LAZY LOADING
+            async function displayPulses(pulses, likedPulses) {
                 if (!pulses || pulses.length === 0) {
                     loadSampleData();
                     return;
                 }
                 
-                pulseFeedContainer.innerHTML = '';
+                const pulseFeedContainer = document.getElementById('pulse-feed-container');
+                
+                // Clear existing pulses only if it's the first load
+                if (currentOffset === 0) {
+                    pulseFeedContainer.innerHTML = '';
+                }
+                
+                // Use document fragment for better performance
+                const fragment = document.createDocumentFragment();
                 
                 pulses.forEach(pulse => {
                     const pulseCard = createPulseCard(pulse, likedPulses);
-                    pulseFeedContainer.appendChild(pulseCard);
+                    fragment.appendChild(pulseCard);
                 });
+                
+                pulseFeedContainer.appendChild(fragment);
+                
+                // Setup lazy loading
+                setupLazyLoading();
+                
+                // Show/hide load more button
+                if (pulses.length >= PULSES_PER_PAGE && currentOffset === 0) {
+                    loadMoreBtn.style.display = 'block';
+                    hasMorePulses = true;
+                } else if (pulses.length < PULSES_PER_PAGE) {
+                    loadMoreBtn.style.display = 'none';
+                    hasMorePulses = false;
+                }
             }
             
-            // ✅ UPDATED: CREATE PULSE CARD ELEMENT WITH REAL COMMENTS COUNT
+            // CREATE PULSE CARD ELEMENT WITH LAZY LOADING
             function createPulseCard(pulse, likedPulses) {
                 // Get user info from combined data
                 const profile = pulse.user_profiles || {};
@@ -3519,14 +3850,20 @@
                 card.className = 'pulse-card';
                 card.dataset.pulseId = pulse.id;
                 
-                // Add click event to view pulse detail
+                // Add debounced click handler
+                let clickTimer;
                 card.addEventListener('click', (e) => {
+                    clearTimeout(clickTimer);
+                    
                     // Don't trigger if clicking on action buttons, connect button, or more options
                     if (!e.target.closest('.action-button') && 
                         !e.target.closest('.pulse-connect-btn') &&
                         !e.target.closest('.pulse-more-options') && 
                         !e.target.closest('.pulse-options-menu')) {
-                        viewPulseDetail(pulse.id);
+                        
+                        clickTimer = setTimeout(() => {
+                            viewPulseDetail(pulse.id);
+                        }, 200);
                     }
                 });
                 
@@ -3561,14 +3898,20 @@
                     `;
                 }
                 
-                // Video player HTML
+                // Media HTML with lazy loading
                 let mediaHTML = '';
                 if (hasMedia) {
                     if (mediaType === 'video') {
                         mediaHTML = `
                             <div class="media-container has-media">
-                                <video class="pulse-media" data-video-id="video-${pulse.id}" preload="metadata" playsinline>
-                                    <source src="${pulse.media_url}" type="video/mp4">
+                                <div class="video-loading">
+                                    <i class="fas fa-spinner fa-spin"></i>
+                                </div>
+                                <video class="pulse-media" 
+                                       data-video-id="video-${pulse.id}" 
+                                       preload="none" 
+                                       playsinline
+                                       data-src="${pulse.media_url}">
                                     Your browser does not support the video tag.
                                 </video>
                                 <div class="video-controls-overlay">
@@ -3599,7 +3942,11 @@
                     } else {
                         mediaHTML = `
                             <div class="media-container has-media">
-                                <img src="${pulse.media_url}" alt="Pulse image" class="pulse-media">
+                                <img src="" 
+                                     alt="Pulse image" 
+                                     class="pulse-media" 
+                                     loading="lazy"
+                                     data-src="${pulse.media_url}">
                             </div>
                         `;
                     }
@@ -3666,15 +4013,29 @@
                     </div>
                 `;
                 
-                // Initialize video controls if video exists
+                // Initialize video controls only when video is clicked
                 if (hasMedia && mediaType === 'video') {
-                    setTimeout(() => {
-                        const videoElement = card.querySelector('video');
-                        const mediaContainer = card.querySelector('.media-container');
-                        if (videoElement && mediaContainer) {
+                    const videoElement = card.querySelector('video');
+                    const mediaContainer = card.querySelector('.media-container');
+                    if (videoElement && mediaContainer) {
+                        // Wait for video to be loaded via lazy loading
+                        videoElement.addEventListener('loadeddata', () => {
+                            const loadingIndicator = mediaContainer.querySelector('.video-loading');
+                            if (loadingIndicator) {
+                                loadingIndicator.style.display = 'none';
+                            }
                             initializeVideoPlayer(videoElement, mediaContainer);
-                        }
-                    }, 100);
+                        });
+                        
+                        videoElement.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            if (videoElement.paused) {
+                                videoElement.play();
+                            } else {
+                                videoElement.pause();
+                            }
+                        });
+                    }
                 }
                 
                 // Add event listeners
@@ -3737,8 +4098,13 @@
                 return card;
             }
             
-            // ✅ CREATE PULSE (with series handling)
+            // CREATE PULSE (with series handling and optimized upload)
             async function createPulse() {
+                if (isProcessingUpload) {
+                    showToast('Please wait for current upload to complete', 'error');
+                    return;
+                }
+                
                 try {
                     const { data: { session } } = await supabaseClient.auth.getSession();
                     if (!session) throw new Error('No session');
@@ -3749,11 +4115,23 @@
                     const caption = captionInput.value.trim();
                     const seriesTitle = seriesTitleInput.value.trim();
                     
+                    // Validate caption length
+                    if (caption.length > 500) {
+                        showToast('Caption must be less than 500 characters', 'error');
+                        return;
+                    }
+                    
                     // Upload media if selected
                     let mediaData = null;
                     if (selectedMedia) {
                         setLoading(true);
-                        mediaData = await uploadMedia(selectedMedia);
+                        try {
+                            mediaData = await uploadMedia(selectedMedia);
+                        } catch (uploadError) {
+                            showToast('Failed to upload media: ' + uploadError.message, 'error');
+                            setLoading(false);
+                            return;
+                        }
                     }
                     
                     // Prepare pulse data
@@ -3863,17 +4241,28 @@
                     
                     // Close modal and refresh feed
                     closeCreateModal();
-                    setTimeout(() => fetchPulses(), 500);
+                    
+                    // Clear feed and load fresh data
+                    currentOffset = 0;
+                    pulseFeedContainer.innerHTML = '<div style="padding: 20px; text-align: center;">Loading...</div>';
+                    
+                    setTimeout(async () => {
+                        const pulses = await fetchPulses(PULSES_PER_PAGE, 0);
+                        if (pulses.length > 0) {
+                            const likedPulses = await checkUserLikes(pulses.map(p => p.id));
+                            displayPulses(pulses, likedPulses);
+                        }
+                    }, 1000);
                     
                 } catch (error) {
                     console.error('❌ Create pulse error:', error);
-                    showToast('Failed to post pulse. Please try again.', 'error');
+                    showToast('Failed to post pulse: ' + error.message, 'error');
                 } finally {
                     setLoading(false);
                 }
             }
             
-            // ✅ EVENT LISTENERS
+            // EVENT LISTENERS
             createPrompt.addEventListener('click', openCreateModal);
             createPulseBtn.addEventListener('click', openCreateModal);
             closeModal.addEventListener('click', closeCreateModal);
@@ -4043,10 +4432,23 @@
                     document.getElementById(`${tabId}-feed`).classList.add('active');
                     
                     if (tabId === 'pulse') {
-                        fetchPulses();
+                        currentOffset = 0;
+                        fetchPulses().then(pulses => {
+                            if (pulses.length > 0) {
+                                return checkUserLikes(pulses.map(p => p.id));
+                            }
+                            return new Set();
+                        }).then(likedPulses => {
+                            if (pulses && pulses.length > 0) {
+                                displayPulses(pulses, likedPulses);
+                            }
+                        });
                     }
                 });
             });
+            
+            // Load more button
+            loadMoreBtn.addEventListener('click', loadMorePulses);
             
             // Listen for auth changes
             supabaseClient.auth.onAuthStateChange((event, session) => {
@@ -4058,7 +4460,16 @@
             });
             
             // Initial data load
-            fetchPulses();
+            fetchPulses().then(pulses => {
+                if (pulses.length > 0) {
+                    return checkUserLikes(pulses.map(p => p.id));
+                }
+                return new Set();
+            }).then(likedPulses => {
+                if (pulses && pulses.length > 0) {
+                    displayPulses(pulses, likedPulses);
+                }
+            });
         }
         
         // Add timeout for force load
@@ -4077,6 +4488,16 @@
                 }, 3000);
             }
         }, 7000);
+        
+        // Add visibility change listener
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                pauseAllVideos();
+            }
+        });
+        
+        // Add beforeunload listener to cleanup
+        window.addEventListener('beforeunload', cleanupResources);
         
         // Start initialization
         document.addEventListener('DOMContentLoaded', initialize);
