@@ -217,7 +217,7 @@
             gap: 16px;
         }
         
-        /* UPDATED: Notification button with real-time indicator */
+        /* UPDATED: Notification button with real-time indicator (exactly like profile.html) */
         .notification-btn {
             background: rgba(255, 255, 255, 0.05);
             border: 1px solid var(--glass-border);
@@ -645,17 +645,12 @@
         .media-container {
             width: 100%;
             aspect-ratio: 9/16;
-            background: linear-gradient(90deg, 
-                rgba(15, 23, 42, 0.5) 25%, 
-                rgba(29, 78, 216, 0.1) 50%, 
-                rgba(15, 23, 42, 0.5) 75%);
-            background-size: 200% 100%;
+            background: black;
             border-radius: 0;
             overflow: hidden;
             margin-bottom: 20px;
             position: relative;
             display: none;
-            animation: loading 1.5s infinite;
         }
         
         .media-container.has-media {
@@ -667,28 +662,6 @@
             height: 100%;
             object-fit: cover;
             display: block;
-            opacity: 0;
-            transition: opacity 0.3s ease;
-        }
-        
-        .pulse-media.loaded {
-            opacity: 1;
-        }
-        
-        @keyframes loading {
-            0% { background-position: 200% 0; }
-            100% { background-position: -200% 0; }
-        }
-        
-        /* Video loading state */
-        .video-loading {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            color: var(--warm-gold);
-            font-size: 24px;
-            z-index: 1;
         }
         
         /* Custom Video Controls - Glassmorphism */
@@ -702,7 +675,6 @@
             opacity: 0;
             transition: opacity 0.3s ease;
             backdrop-filter: blur(10px);
-            z-index: 2;
         }
         
         .media-container:hover .video-controls-overlay {
@@ -1390,50 +1362,6 @@
             backdrop-filter: blur(20px);
         }
         
-        /* Load More Button */
-        .load-more-btn {
-            background: var(--glass-bg);
-            border: 1px solid var(--glass-border);
-            border-radius: 16px;
-            padding: 16px;
-            text-align: center;
-            color: var(--warm-gold);
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            backdrop-filter: blur(10px);
-            margin: 20px 0;
-        }
-        
-        .load-more-btn:hover {
-            background: rgba(245, 158, 11, 0.1);
-            border-color: var(--warm-gold);
-            transform: translateY(-2px);
-        }
-        
-        .load-more-btn.loading {
-            opacity: 0.7;
-            cursor: not-allowed;
-        }
-        
-        /* Upload Progress */
-        .upload-progress {
-            width: 100%;
-            height: 4px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 2px;
-            margin-top: 10px;
-            overflow: hidden;
-        }
-        
-        .upload-progress-bar {
-            height: 100%;
-            background: linear-gradient(to right, var(--bantu-blue), var(--warm-gold));
-            border-radius: 2px;
-            width: 0%;
-            transition: width 0.3s ease;
-        }
-        
         /* Responsive */
         @media (max-width: 768px) {
             .container {
@@ -1522,7 +1450,7 @@
             </div>
             
             <div class="user-section">
-                <!-- UPDATED: Notification button with gold dot indicator -->
+                <!-- UPDATED: Notification button with gold dot indicator (exactly like profile.html) -->
                 <button class="notification-btn" id="notificationBtn" onclick="window.location.href='notifications.html'">
                     <i class="far fa-bell"></i>
                 </button>
@@ -1553,10 +1481,6 @@
         <div class="tab-content active" id="pulse-feed">
             <div class="pulse-feed" id="pulse-feed-container">
                 <!-- Pulses will be loaded here dynamically -->
-            </div>
-            <!-- Load More Button -->
-            <div class="load-more-btn" id="loadMoreBtn" style="display: none;">
-                <span>Load More Pulses</span>
             </div>
         </div>
         
@@ -1644,13 +1568,8 @@
                             <i class="fas fa-cloud-upload-alt"></i>
                         </div>
                         <div class="upload-text">Add photo or video</div>
-                        <div class="upload-hint">Supports vertical video (9:16) - Max 20MB</div>
+                        <div class="upload-hint">Supports vertical video (9:16)</div>
                         <input type="file" id="mediaInput" accept="image/*,video/*" style="display: none;">
-                    </div>
-                    
-                    <!-- Upload Progress -->
-                    <div class="upload-progress" id="uploadProgress" style="display: none;">
-                        <div class="upload-progress-bar" id="uploadProgressBar"></div>
                     </div>
                     
                     <div id="mediaPreview" class="media-preview" style="display: none;">
@@ -1717,7 +1636,7 @@
                             <i class="fas fa-cloud-upload-alt"></i>
                         </div>
                         <div class="upload-text">Change photo or video</div>
-                        <div class="upload-hint">Supports vertical video (9:16) - Max 20MB</div>
+                        <div class="upload-hint">Supports vertical video (9:16)</div>
                         <input type="file" id="editMediaInput" accept="image/*,video/*" style="display: none;">
                     </div>
                     
@@ -1772,17 +1691,27 @@
         let editingSeriesId = null;
         let editingSeriesTitle = null;
         let editingPulseData = null;
-        let userConnections = new Set();
-        let videoPlayers = new Map();
+        let userConnections = new Set(); // Store connected user IDs
+        let videoPlayers = new Map(); // Store video player instances
         
-        // Performance optimization variables
+        // NEW: Performance optimization variables
         let isProcessingUpload = false;
-        let activeVideoPlayers = new Set();
+        let activeVideoPlayers = new Set(); // Track active videos
         let isFeedLoading = false;
-        let currentOffset = 0;
-        const PULSES_PER_PAGE = 10;
-        let hasMorePulses = true;
-        let lazyLoadObserver = null;
+        let pulses = []; // Store pulses globally for better management
+
+        // Add this function to optimize performance
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
 
         async function initialize() {
             console.log('Starting Pulse Feed initialization...');
@@ -1821,10 +1750,10 @@
                 // Fetch user connections
                 await fetchUserConnections();
                 
-                // Check for unread notifications
+                // NEW: Check for unread notifications
                 await checkUnreadNotifications();
                 
-                // Subscribe to real-time notifications
+                // NEW: Subscribe to real-time notifications
                 subscribeToNotifications();
                 
                 // Hide loading, show content
@@ -1869,9 +1798,10 @@
             }
         }
         
-        // Check for unread notifications
+        // NEW: Check for unread notifications (exactly like profile.html)
         async function checkUnreadNotifications() {
             try {
+                // First check if the pulse_notifications table exists
                 const { count, error: countError } = await supabaseClient
                     .from('pulse_notifications')
                     .select('*', { count: 'exact', head: true })
@@ -1880,7 +1810,8 @@
                 
                 if (countError) {
                     console.log('pulse_notifications table might not exist, using fallback');
-                    updateNotificationIndicator(false);
+                    // Table might not exist, use fallback logic
+                    updateNotificationIndicator(false); // No indicator if table doesn't exist
                     return;
                 }
                 
@@ -1895,7 +1826,7 @@
             }
         }
         
-        // Update notification indicator
+        // NEW: Update notification indicator (exactly like profile.html)
         function updateNotificationIndicator(hasUnread) {
             const notificationBtn = document.getElementById('notificationBtn');
             if (notificationBtn) {
@@ -1907,7 +1838,7 @@
             }
         }
         
-        // Subscribe to real-time notifications
+        // NEW: Subscribe to real-time notifications (exactly like profile.html)
         function subscribeToNotifications() {
             if (!supabaseClient || !currentUserId) return;
             
@@ -1924,7 +1855,10 @@
                         },
                         (payload) => {
                             console.log('New notification received (real-time):', payload);
+                            // Show gold dot indicator
                             updateNotificationIndicator(true);
+                            
+                            // Optional: Show a toast notification
                             showToast('New notification!', 'success');
                         }
                     )
@@ -1937,7 +1871,9 @@
                             filter: `target_user_id=eq.${currentUserId}`
                         },
                         (payload) => {
+                            // Check if notification was marked as read
                             if (payload.new.is_read === true && payload.old.is_read === false) {
+                                // Re-check all notifications to update indicator
                                 checkUnreadNotifications();
                             }
                         }
@@ -1957,7 +1893,7 @@
             return name.substring(0, 2).toUpperCase();
         }
         
-        // Optimized: LOAD USER PROFILE WITH AVATAR
+        // ✅ OPTIMIZED: LOAD USER PROFILE WITH AVATAR
         async function loadUserProfile() {
             try {
                 const { data: { session } } = await supabaseClient.auth.getSession();
@@ -1988,6 +1924,7 @@
                     
                     if (error) throw error;
                     
+                    // Use the new profile
                     profile = newProfile;
                 }
                 
@@ -2089,7 +2026,7 @@
             }
         }
         
-        // FETCH USER CONNECTIONS
+        // ✅ NEW: FETCH USER CONNECTIONS
         async function fetchUserConnections() {
             try {
                 const { data: { session } } = await supabaseClient.auth.getSession();
@@ -2121,7 +2058,7 @@
             }
         }
         
-        // HANDLE CONNECT BUTTON CLICK WITH SMALLER BUTTON
+        // ✅ UPDATED: HANDLE CONNECT BUTTON CLICK WITH SMALLER BUTTON
         async function handleConnect(pulseCreatorId, connectBtn) {
             try {
                 const { data: { session } } = await supabaseClient.auth.getSession();
@@ -2330,7 +2267,7 @@
             showToast('Please sign in to view pulse details', 'error');
         }
         
-        // SHOW TOAST
+        // ✅ SHOW TOAST
         function showToast(message, type = 'error') {
             const toast = document.createElement('div');
             toast.className = `toast ${type}`;
@@ -2349,7 +2286,7 @@
             }, 4000);
         }
         
-        // GET TIME AGO
+        // ✅ GET TIME AGO
         function getTimeAgo(date) {
             const seconds = Math.floor((new Date() - date) / 1000);
             
@@ -2371,7 +2308,7 @@
             return Math.floor(seconds) + ' seconds ago';
         }
         
-        // GET REAL COMMENTS COUNT FROM pulse_comments TABLE
+        // ✅ UPDATED: GET REAL COMMENTS COUNT FROM pulse_comments TABLE
         async function getRealCommentsCount(pulseId) {
             try {
                 const { count, error } = await supabaseClient
@@ -2392,7 +2329,7 @@
             }
         }
         
-        // UPDATE COMMENT COUNT IN UI WITH REAL COUNT
+        // ✅ UPDATED: UPDATE COMMENT COUNT IN UI WITH REAL COUNT
         async function updateCommentCount(pulseId, increment) {
             const pulseCard = document.querySelector(`[data-pulse-id="${pulseId}"]`);
             if (!pulseCard) return;
@@ -2412,7 +2349,7 @@
             }
         }
         
-        // UPDATE SHARE COUNT IN UI
+        // ✅ UPDATE SHARE COUNT IN UI
         function updateShareCount(pulseId, increment) {
             const pulseCard = document.querySelector(`[data-pulse-id="${pulseId}"]`);
             if (!pulseCard) return;
@@ -2432,7 +2369,7 @@
             }
         }
         
-        // HANDLE LIKE WITH PROPER COUNT UPDATES
+        // ✅ FIXED: HANDLE LIKE WITH PROPER COUNT UPDATES
         async function handleLike(pulseId, e) {
             if (e) e.stopPropagation();
             
@@ -2489,7 +2426,7 @@
                         updateLikeUI(pulseId, true, pulseData?.likes_count || 0);
                         showToast('Pulse liked!', 'success');
                         
-                        // Create notification for pulse creator (if not liking own pulse)
+                        // ✅ Create notification for pulse creator (if not liking own pulse)
                         const { data: pulse } = await supabaseClient
                             .from('pulses')
                             .select('user_id')
@@ -2515,7 +2452,7 @@
             }
         }
         
-        // UPDATE LIKE UI WITH EXACT COUNT
+        // ✅ FIXED: UPDATE LIKE UI WITH EXACT COUNT
         function updateLikeUI(pulseId, isLiked, exactLikesCount) {
             const pulseCard = document.querySelector(`[data-pulse-id="${pulseId}"]`);
             if (!pulseCard) return;
@@ -2541,7 +2478,7 @@
             }
         }
         
-        // HANDLE COMMENT WITH REAL COUNT UPDATE
+        // ✅ UPDATED: HANDLE COMMENT WITH REAL COUNT UPDATE
         async function handleComment(pulseId, e) {
             if (e) e.stopPropagation();
             
@@ -2619,7 +2556,7 @@
                         showToast('Comment posted successfully!', 'success');
                         commentModal.remove();
                         
-                        // Update comment count in UI with real count
+                        // UPDATED: Update comment count in UI with real count
                         updateCommentCount(pulseId, 1);
                         
                     } catch (error) {
@@ -2634,7 +2571,7 @@
             }
         }
         
-        // HANDLE SHARE
+        // ✅ HANDLE SHARE
         async function handleShare(pulseId, e) {
             if (e) e.stopPropagation();
             
@@ -2777,12 +2714,12 @@
             }
         }
         
-        // VIEW PULSE DETAIL
+        // ✅ VIEW PULSE DETAIL
         function viewPulseDetail(pulseId) {
             window.location.href = `pulse-content-detail.html?id=${pulseId}`;
         }
         
-        // HANDLE DELETE PULSE - UPDATED TO WORK WITH RLS
+        // ✅ FIXED: HANDLE DELETE PULSE - UPDATED TO WORK WITH RLS
         async function handleDelete(pulseId) {
             if (!confirm('Are you sure you want to PERMANENTLY delete this pulse? This action cannot be undone.')) {
                 return;
@@ -2814,6 +2751,7 @@
                 }
                 
                 // Use a direct delete instead of soft delete to avoid RLS issues
+                // If you want soft delete, you need to add RLS policies in Supabase
                 const { error } = await supabaseClient
                     .from('pulses')
                     .delete()
@@ -2854,7 +2792,7 @@
             }
         }
         
-        // HANDLE EDIT PULSE WITH SERIES SUPPORT
+        // ✅ UPDATED: HANDLE EDIT PULSE WITH SERIES SUPPORT
         async function handleEdit(pulseId) {
             try {
                 // Fetch the pulse data with series info
@@ -3000,7 +2938,7 @@
             }
         }
         
-        // CREATE NOTIFICATION FUNCTION
+        // ✅ NEW: CREATE NOTIFICATION FUNCTION
         async function createNotification(type, actorId, targetUserId, pulseId, commentId, message) {
             try {
                 const { error } = await supabaseClient
@@ -3025,7 +2963,7 @@
             }
         }
         
-        // CHECK IF USER HAS LIKED EACH PULSE
+        // ✅ NEW: CHECK IF USER HAS LIKED EACH PULSE
         async function checkUserLikes(pulseIds) {
             try {
                 const { data: { session } } = await supabaseClient.auth.getSession();
@@ -3052,7 +2990,7 @@
             }
         }
         
-        // UPDATE PULSE WITH SERIES SUPPORT
+        // ✅ UPDATED: UPDATE PULSE WITH SERIES SUPPORT
         async function updatePulse() {
             try {
                 if (!editingPulseId) return;
@@ -3117,7 +3055,7 @@
             }
         }
         
-        // UPLOAD MEDIA FUNCTION WITH COMPRESSION
+        // ✅ OPTIMIZED: UPLOAD MEDIA FUNCTION with better error handling
         async function uploadMedia(file) {
             if (isProcessingUpload) {
                 throw new Error('Upload already in progress');
@@ -3135,10 +3073,6 @@
                 const { data: { session } } = await supabaseClient.auth.getSession();
                 if (!session) throw new Error('No session');
                 
-                // Show upload progress
-                document.getElementById('uploadProgress').style.display = 'block';
-                document.getElementById('uploadProgressBar').style.width = '10%';
-                
                 // Compress image if it's too large
                 let processedFile = file;
                 if (file.type.startsWith('image/') && !file.type.includes('gif')) {
@@ -3149,13 +3083,12 @@
                     });
                 }
                 
-                document.getElementById('uploadProgressBar').style.width = '30%';
-                
                 const fileExt = processedFile.name.split('.').pop();
                 const fileName = `${session.user.id}/${Date.now()}.${fileExt}`;
                 const filePath = `pulse-media/${fileName}`;
                 
-                document.getElementById('uploadProgressBar').style.width = '50%';
+                // Show upload progress
+                showToast('Uploading media...', 'success');
                 
                 const { error: uploadError } = await supabaseClient.storage
                     .from('pulse-media')
@@ -3163,18 +3096,9 @@
                 
                 if (uploadError) throw uploadError;
                 
-                document.getElementById('uploadProgressBar').style.width = '80%';
-                
                 const { data: { publicUrl } } = supabaseClient.storage
                     .from('pulse-media')
                     .getPublicUrl(filePath);
-                
-                document.getElementById('uploadProgressBar').style.width = '100%';
-                
-                setTimeout(() => {
-                    document.getElementById('uploadProgress').style.display = 'none';
-                    document.getElementById('uploadProgressBar').style.width = '0%';
-                }, 500);
                 
                 return {
                     url: publicUrl,
@@ -3182,8 +3106,6 @@
                 };
                 
             } catch (error) {
-                document.getElementById('uploadProgress').style.display = 'none';
-                document.getElementById('uploadProgressBar').style.width = '0%';
                 console.error('❌ Upload error:', error);
                 throw error;
             } finally {
@@ -3191,15 +3113,9 @@
             }
         }
         
-        // IMAGE COMPRESSION FUNCTION
+        // Add image compression function
         async function compressImage(file, options = {}) {
             return new Promise((resolve, reject) => {
-                // Skip compression for small files (< 1MB)
-                if (file.size < 1024 * 1024) {
-                    resolve(file);
-                    return;
-                }
-                
                 const reader = new FileReader();
                 reader.readAsDataURL(file);
                 
@@ -3249,7 +3165,7 @@
             });
         }
         
-        // CLOSE EDIT MODAL FUNCTION
+        // ✅ CLOSE EDIT MODAL FUNCTION
         function closeEditModalFunc() {
             document.getElementById('editModal').style.display = 'none';
             document.getElementById('editCaption').value = '';
@@ -3267,7 +3183,7 @@
             document.getElementById('editSeriesTitle').value = '';
         }
         
-        // Initialize video player for pulse feed
+        // ✅ NEW: Initialize video player for pulse feed
         function initializeVideoPlayer(videoElement, controlsContainer) {
             if (!videoElement || !controlsContainer) return;
             
@@ -3313,11 +3229,9 @@
                 if (videoElement.paused) {
                     videoElement.play();
                     playPauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
-                    activeVideoPlayers.add(videoId);
                 } else {
                     videoElement.pause();
                     playPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
-                    activeVideoPlayers.delete(videoId);
                 }
             });
             
@@ -3344,11 +3258,9 @@
                     if (videoElement.paused) {
                         videoElement.play();
                         playPauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
-                        activeVideoPlayers.add(videoId);
                     } else {
                         videoElement.pause();
                         playPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
-                        activeVideoPlayers.delete(videoId);
                     }
                 }
             });
@@ -3396,7 +3308,11 @@
             mediaContainer.addEventListener('mouseleave', () => {
                 const controls = controlsContainer.querySelector('.video-controls-overlay');
                 if (controls && !videoElement.paused) {
-                    controls.style.opacity = '0';
+                    setTimeout(() => {
+                        if (!mediaContainer.matches(':hover')) {
+                            controls.style.opacity = '0';
+                        }
+                    }, 1000);
                 }
             });
             
@@ -3414,7 +3330,7 @@
             });
         }
         
-        // PAUSE ALL VIDEOS
+        // Add function to pause all videos
         function pauseAllVideos() {
             videoPlayers.forEach(player => {
                 if (player.video && !player.video.paused) {
@@ -3424,26 +3340,159 @@
             activeVideoPlayers.clear();
         }
         
-        // DEBOUNCE FUNCTION
-        function debounce(func, wait) {
-            let timeout;
-            return function executedFunction(...args) {
-                const later = () => {
-                    clearTimeout(timeout);
-                    func(...args);
-                };
-                clearTimeout(timeout);
-                timeout = setTimeout(later, wait);
-            };
+        // ✅ OPTIMIZED: FETCH PULSES FUNCTION with pagination
+        async function fetchPulses(limit = 10, offset = 0) {
+            if (isFeedLoading) return [];
+            
+            try {
+                isFeedLoading = true;
+                console.log('🔄 Fetching pulses...');
+                
+                // Pause all active videos before loading new content
+                pauseAllVideos();
+                
+                const { data: pulsesData, error: pulsesError } = await supabaseClient
+                    .from('pulses')
+                    .select('*')
+                    .is('deleted_at', null)
+                    .order('created_at', { ascending: false })
+                    .range(offset, offset + limit - 1);
+                
+                if (pulsesError) throw pulsesError;
+                
+                if (!pulsesData || pulsesData.length === 0) {
+                    if (offset === 0) {
+                        loadSampleData();
+                    }
+                    return [];
+                }
+                
+                console.log(`✅ Fetched ${pulsesData.length} pulses`);
+                
+                // Get user IDs from pulses
+                const userIds = [...new Set(pulsesData.map(p => p.user_id))];
+                
+                // Fetch user profiles
+                let userProfilesMap = {};
+                
+                try {
+                    const { data: profilesData, error: profilesError } = await supabaseClient
+                        .from('user_profiles')
+                        .select('*')
+                        .in('id', userIds);
+                    
+                    if (!profilesError && profilesData) {
+                        profilesData.forEach(profile => {
+                            userProfilesMap[profile.id] = profile;
+                        });
+                    }
+                } catch (profilesError) {
+                    console.warn('Could not fetch user profiles:', profilesError);
+                }
+                
+                // Get pulse IDs for batch operations
+                const pulseIds = pulsesData.map(p => p.id);
+                
+                // Get likes count in batch
+                const likesCountMap = {};
+                try {
+                    const { data: likesData, error: likesError } = await supabaseClient
+                        .from('pulse_likes')
+                        .select('pulse_id')
+                        .in('pulse_id', pulseIds);
+                    
+                    if (!likesError && likesData) {
+                        const pulseLikeCounts = {};
+                        likesData.forEach(item => {
+                            pulseLikeCounts[item.pulse_id] = (pulseLikeCounts[item.pulse_id] || 0) + 1;
+                        });
+                        
+                        Object.keys(pulseLikeCounts).forEach(pulseId => {
+                            likesCountMap[pulseId] = pulseLikeCounts[pulseId];
+                        });
+                    }
+                } catch (likesError) {
+                    console.warn('Error fetching likes count:', likesError);
+                }
+                
+                // Get comments count in batch
+                const commentsCountMap = {};
+                try {
+                    const { data: commentsData, error: commentsError } = await supabaseClient
+                        .from('pulse_comments')
+                        .select('pulse_id')
+                        .in('pulse_id', pulseIds)
+                        .eq('is_removed', false);
+                    
+                    if (!commentsError && commentsData) {
+                        const pulseCommentCounts = {};
+                        commentsData.forEach(item => {
+                            pulseCommentCounts[item.pulse_id] = (pulseCommentCounts[item.pulse_id] || 0) + 1;
+                        });
+                        
+                        Object.keys(pulseCommentCounts).forEach(pulseId => {
+                            commentsCountMap[pulseId] = pulseCommentCounts[pulseId];
+                        });
+                    }
+                } catch (commentsError) {
+                    console.warn('Error fetching comments count:', commentsError);
+                }
+                
+                // Update pulses data
+                const enrichedPulses = pulsesData.map(pulse => ({
+                    ...pulse,
+                    user_profiles: userProfilesMap[pulse.user_id] || {
+                        id: pulse.user_id,
+                        email: 'unknown@user.com',
+                        full_name: 'User',
+                        username: 'user',
+                        role: 'creator',
+                        avatar_url: null
+                    },
+                    actual_likes_count: likesCountMap[pulse.id] || pulse.likes_count || 0,
+                    actual_comments_count: commentsCountMap[pulse.id] || pulse.comments_count || 0
+                }));
+                
+                return enrichedPulses;
+                
+            } catch (error) {
+                console.error('❌ Error fetching pulses:', error);
+                showToast('Failed to load pulses', 'error');
+                return [];
+            } finally {
+                isFeedLoading = false;
+            }
         }
         
-        // SETUP LAZY LOADING
-        function setupLazyLoading() {
-            if (lazyLoadObserver) {
-                lazyLoadObserver.disconnect();
+        // ✅ OPTIMIZED: DISPLAY PULSES with lazy loading
+        function displayPulses(pulses, likedPulses) {
+            if (!pulses || pulses.length === 0) {
+                loadSampleData();
+                return;
             }
             
-            lazyLoadObserver = new IntersectionObserver((entries) => {
+            const pulseFeedContainer = document.getElementById('pulse-feed-container');
+            
+            // Clear existing pulses
+            pulseFeedContainer.innerHTML = '';
+            
+            // Use document fragment for better performance
+            const fragment = document.createDocumentFragment();
+            
+            pulses.forEach(pulse => {
+                const pulseCard = createPulseCard(pulse, likedPulses);
+                fragment.appendChild(pulseCard);
+            });
+            
+            pulseFeedContainer.appendChild(fragment);
+            
+            // Setup intersection observer for lazy loading
+            setupLazyLoading();
+        }
+        
+        // Add lazy loading setup
+        function setupLazyLoading() {
+            const observer = new IntersectionObserver((entries) => {
                 entries.forEach(entry => {
                     if (entry.isIntersecting) {
                         const mediaContainer = entry.target;
@@ -3451,81 +3500,294 @@
                         const video = mediaContainer.querySelector('video[data-src]');
                         
                         if (img) {
-                            const tempImg = new Image();
-                            tempImg.src = img.dataset.src;
-                            tempImg.onload = () => {
-                                img.src = img.dataset.src;
-                                img.classList.add('loaded');
-                                img.removeAttribute('data-src');
-                            };
+                            img.src = img.dataset.src;
+                            img.removeAttribute('data-src');
                         }
                         
                         if (video) {
                             video.src = video.dataset.src;
                             video.removeAttribute('data-src');
-                            video.load();
+                            video.load(); // Load video only when visible
                         }
                         
-                        lazyLoadObserver.unobserve(mediaContainer);
+                        observer.unobserve(mediaContainer);
                     }
                 });
-            }, { rootMargin: '100px' });
+            }, { rootMargin: '50px' });
             
             // Observe all media containers
             document.querySelectorAll('.media-container').forEach(container => {
-                lazyLoadObserver.observe(container);
+                observer.observe(container);
             });
         }
         
-        // LOAD MORE PULSES
-        async function loadMorePulses() {
-            if (isFeedLoading || !hasMorePulses) return;
+        // ✅ OPTIMIZED: CREATE PULSE CARD with lazy loading
+        function createPulseCard(pulse, likedPulses) {
+            // Get user info from combined data
+            const profile = pulse.user_profiles || {};
+            const fullName = profile.full_name || profile.email?.split('@')[0] || 'User';
+            const username = profile.username || '';
+            const avatarUrl = profile.avatar_url;
+            const role = profile.role || '';
+            const initials = fullName.substring(0, 2).toUpperCase();
+            const timeAgo = getTimeAgo(new Date(pulse.created_at));
             
-            const loadMoreBtn = document.getElementById('loadMoreBtn');
-            loadMoreBtn.classList.add('loading');
-            loadMoreBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading...';
+            // Use actual counts instead of stored counts
+            const actualLikesCount = pulse.actual_likes_count || pulse.likes_count || 0;
+            const actualCommentsCount = pulse.actual_comments_count || pulse.comments_count || 0;
+            const isSeries = pulse.series_id && pulse.series_order;
+            const hasMedia = pulse.media_url;
+            const mediaType = pulse.media_type;
+            const isOwnPulse = pulse.user_id === currentUserId;
+            const isLiked = likedPulses.has(pulse.id);
+            const isConnected = userConnections.has(pulse.user_id);
             
-            try {
-                currentOffset += PULSES_PER_PAGE;
-                const newPulses = await fetchPulses(PULSES_PER_PAGE, currentOffset);
+            const card = document.createElement('div');
+            card.className = 'pulse-card';
+            card.dataset.pulseId = pulse.id;
+            
+            // Add debounced click handler
+            let clickTimer;
+            card.addEventListener('click', (e) => {
+                clearTimeout(clickTimer);
                 
-                if (newPulses.length === 0) {
-                    hasMorePulses = false;
-                    loadMoreBtn.style.display = 'none';
-                    return;
+                // Don't trigger if clicking on action buttons, connect button, or more options
+                if (!e.target.closest('.action-button') && 
+                    !e.target.closest('.pulse-connect-btn') &&
+                    !e.target.closest('.pulse-more-options') && 
+                    !e.target.closest('.pulse-options-menu')) {
+                    
+                    clickTimer = setTimeout(() => {
+                        viewPulseDetail(pulse.id);
+                    }, 200);
                 }
+            });
+            
+            // Create connect button HTML (only if not own pulse)
+            let connectBtnHTML = '';
+            if (!isOwnPulse) {
+                const connectIcon = isConnected ? 'fa-user-check' : 'fa-user-plus';
+                const connectClass = isConnected ? 'connected' : '';
+                connectBtnHTML = `
+                    <button class="pulse-connect-btn ${connectClass}" data-creator-id="${pulse.user_id}">
+                        <i class="fas ${connectIcon}"></i>
+                    </button>
+                `;
+            }
+            
+            let moreOptionsHTML = '';
+            if (isOwnPulse) {
+                moreOptionsHTML = `
+                    <button class="pulse-more-options" data-pulse-id="${pulse.id}">
+                        <i class="fas fa-ellipsis-h"></i>
+                    </button>
+                    <div class="pulse-options-menu" id="options-menu-${pulse.id}">
+                        <button class="pulse-option-item edit-option" data-pulse-id="${pulse.id}">
+                            <i class="fas fa-edit"></i>
+                            Edit
+                        </button>
+                        <button class="pulse-option-item delete delete-option" data-pulse-id="${pulse.id}">
+                            <i class="fas fa-trash"></i>
+                            Delete
+                        </button>
+                    </div>
+                `;
+            }
+            
+            // Media HTML with lazy loading
+            let mediaHTML = '';
+            if (hasMedia) {
+                if (mediaType === 'video') {
+                    mediaHTML = `
+                        <div class="media-container has-media">
+                            <video class="pulse-media" 
+                                   data-video-id="video-${pulse.id}" 
+                                   preload="none" 
+                                   playsinline
+                                   data-src="${pulse.media_url}">
+                                Your browser does not support the video tag.
+                            </video>
+                            <div class="video-controls-overlay">
+                                <div class="video-progress">
+                                    <div class="video-progress-filled"></div>
+                                </div>
+                                <div class="video-controls">
+                                    <div class="video-left-controls">
+                                        <button class="video-control-btn play-pause-btn">
+                                            <i class="fas fa-play"></i>
+                                        </button>
+                                        <div class="video-time">0:00 / 0:00</div>
+                                    </div>
+                                    <div class="video-right-controls">
+                                        <div class="video-volume">
+                                            <button class="video-control-btn mute-btn">
+                                                <i class="fas fa-volume-up"></i>
+                                            </button>
+                                            <div class="volume-slider">
+                                                <div class="volume-slider-filled"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    mediaHTML = `
+                        <div class="media-container has-media">
+                            <img src="" 
+                                 alt="Pulse image" 
+                                 class="pulse-media" 
+                                 loading="lazy"
+                                 data-src="${pulse.media_url}">
+                        </div>
+                    `;
+                }
+            }
+            
+            card.innerHTML = `
+                <div class="pulse-header">
+                    <div class="pulse-avatar" style="${avatarUrl ? `background-image: url('${avatarUrl}'); background-size: cover; background-position: center;` : ''}">
+                        ${avatarUrl ? '' : initials}
+                    </div>
+                    <div class="pulse-creator-info">
+                        <div class="creator-name">
+                            ${fullName}
+                            ${role === 'creator' ? '<span class="creator-badge">Creator</span>' : ''}
+                            ${role === 'admin' ? '<span class="creator-badge" style="background: rgba(239, 68, 68, 0.2); color: var(--error-color); border-color: rgba(239, 68, 68, 0.3);">Admin</span>' : ''}
+                        </div>
+                        <div class="pulse-time">${username ? `@${username} • ` : ''}${timeAgo}</div>
+                    </div>
+                    ${connectBtnHTML}
+                    ${moreOptionsHTML}
+                </div>
                 
-                // Check which pulses the current user has liked
-                const likedPulses = await checkUserLikes(newPulses.map(p => p.id));
+                ${isSeries ? `
+                    <div class="pulse-series-label">
+                        PULSE SERIES · Part ${pulse.series_order}
+                    </div>
+                ` : ''}
                 
-                // Append new pulses
-                const fragment = document.createDocumentFragment();
-                newPulses.forEach(pulse => {
-                    const pulseCard = createPulseCard(pulse, likedPulses);
-                    fragment.appendChild(pulseCard);
+                <div class="pulse-content">
+                    ${pulse.caption ? `<p class="pulse-text">${pulse.caption}</p>` : ''}
+                    
+                    ${mediaHTML}
+                    
+                    ${pulse.linked_content_id ? `
+                        <div class="linked-content">
+                            <div class="linked-content-label">Linked content</div>
+                                <div class="linked-content-card">
+                                    <div class="content-thumbnail"></div>
+                                    <div class="content-info">
+                                        <h4>${pulse.linked_content_type || 'Content'}</h4>
+                                        <p>Tap to watch or listen</p>
+                                    </div>
+                                </div>
+                            </div>
+                    ` : ''}
+                </div>
+                
+                <div class="pulse-actions">
+                    <button class="action-button like-btn ${isLiked ? 'liked' : ''}" data-pulse-id="${pulse.id}">
+                        <i class="fas fa-heart" ${isLiked ? 'style="color: var(--warm-gold);"' : ''}></i> ${actualLikesCount}
+                    </button>
+                    <button class="action-button comment-btn" data-pulse-id="${pulse.id}">
+                        <i class="fas fa-comment"></i> ${actualCommentsCount}
+                    </button>
+                    <button class="action-button share-btn" data-pulse-id="${pulse.id}">
+                        <i class="fas fa-share"></i> ${pulse.shares_count || 0}
+                    </button>
+                </div>
+                
+                <div class="pulse-stats">
+                    <span class="likes-count">${actualLikesCount} ${actualLikesCount === 1 ? 'like' : 'likes'}</span>
+                    <span class="comments-count">${actualCommentsCount} ${actualCommentsCount === 1 ? 'comment' : 'comments'}</span>
+                    <span class="shares-count">${pulse.shares_count || 0} shares</span>
+                </div>
+            `;
+            
+            // Initialize video controls if video exists
+            if (hasMedia && mediaType === 'video') {
+                setTimeout(() => {
+                    const videoElement = card.querySelector('video');
+                    const mediaContainer = card.querySelector('.media-container');
+                    if (videoElement && mediaContainer) {
+                        // Don't auto-initialize, wait for user interaction
+                        videoElement.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            // Load video source if not already loaded
+                            if (videoElement.hasAttribute('data-src')) {
+                                videoElement.src = videoElement.dataset.src;
+                                videoElement.removeAttribute('data-src');
+                                videoElement.load();
+                            }
+                            initializeVideoPlayer(videoElement, mediaContainer);
+                        });
+                    }
+                }, 100);
+            }
+            
+            // Add event listeners
+            const likeBtn = card.querySelector('.like-btn');
+            const commentBtn = card.querySelector('.comment-btn');
+            const shareBtn = card.querySelector('.share-btn');
+            
+            likeBtn.addEventListener('click', (e) => handleLike(pulse.id, e));
+            commentBtn.addEventListener('click', (e) => handleComment(pulse.id, e));
+            shareBtn.addEventListener('click', (e) => handleShare(pulse.id, e));
+            
+            // Add event listener for connect button if it exists
+            const connectBtn = card.querySelector('.pulse-connect-btn');
+            if (connectBtn) {
+                connectBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const creatorId = connectBtn.getAttribute('data-creator-id');
+                    handleConnect(creatorId, connectBtn);
+                });
+            }
+            
+            // Add event listeners for more options if it's the user's own pulse
+            if (isOwnPulse) {
+                const moreOptionsBtn = card.querySelector('.pulse-more-options');
+                const optionsMenu = card.querySelector(`#options-menu-${pulse.id}`);
+                const editOption = card.querySelector('.edit-option');
+                const deleteOption = card.querySelector('.delete-option');
+                
+                moreOptionsBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    // Close any other open menus
+                    document.querySelectorAll('.pulse-options-menu').forEach(menu => {
+                        if (menu !== optionsMenu) {
+                            menu.classList.remove('active');
+                        }
+                    });
+                    optionsMenu.classList.toggle('active');
                 });
                 
-                document.getElementById('pulse-feed-container').appendChild(fragment);
+                editOption.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    optionsMenu.classList.remove('active');
+                    handleEdit(pulse.id);
+                });
                 
-                // Setup lazy loading for new elements
-                setupLazyLoading();
+                deleteOption.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    optionsMenu.classList.remove('active');
+                    handleDelete(pulse.id);
+                });
                 
-                // Show/hide load more button
-                if (newPulses.length < PULSES_PER_PAGE) {
-                    hasMorePulses = false;
-                    loadMoreBtn.style.display = 'none';
-                }
-                
-            } catch (error) {
-                console.error('Error loading more pulses:', error);
-                showToast('Failed to load more pulses', 'error');
-            } finally {
-                loadMoreBtn.classList.remove('loading');
-                loadMoreBtn.innerHTML = '<span>Load More Pulses</span>';
+                // Close menu when clicking outside
+                document.addEventListener('click', (e) => {
+                    if (!moreOptionsBtn.contains(e.target) && !optionsMenu.contains(e.target)) {
+                        optionsMenu.classList.remove('active');
+                    }
+                });
             }
+            
+            return card;
         }
         
-        // CLEANUP RESOURCES
+        // Add cleanup function
         function cleanupResources() {
             // Pause all videos
             pauseAllVideos();
@@ -3533,23 +3795,26 @@
             // Clear video players map
             videoPlayers.clear();
             
-            // Clear lazy load observer
-            if (lazyLoadObserver) {
-                lazyLoadObserver.disconnect();
-                lazyLoadObserver = null;
-            }
-            
             // Clear any timeouts
             if (forceLoadTimeout) {
                 clearTimeout(forceLoadTimeout);
             }
         }
         
+        // Add beforeunload listener to cleanup
+        window.addEventListener('beforeunload', cleanupResources);
+        
+        // Add visibility change listener
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                pauseAllVideos();
+            }
+        });
+
         function initializeFeed(session) {
             // State variables
             let selectedMedia = null;
             let isSeriesMode = false;
-            let pulses = [];
             
             // DOM Elements
             const createPrompt = document.getElementById('createPrompt');
@@ -3571,7 +3836,6 @@
             const tabs = document.querySelectorAll('.tab');
             const tabContents = document.querySelectorAll('.tab-content');
             const pulseFeedContainer = document.getElementById('pulse-feed-container');
-            const loadMoreBtn = document.getElementById('loadMoreBtn');
             
             // Edit modal elements
             const editModal = document.getElementById('editModal');
@@ -3583,7 +3847,7 @@
             const editRemoveMedia = document.getElementById('editRemoveMedia');
             const updatePulseBtn = document.getElementById('updatePulse');
             
-            // HELPER: Ensure user profile exists
+            // ✅ HELPER: Ensure user profile exists
             async function ensureUserProfile(userId) {
                 try {
                     const { data: { session } } = await supabaseClient.auth.getSession();
@@ -3623,7 +3887,7 @@
                 }
             }
             
-            // SET LOADING STATE
+            // ✅ SET LOADING STATE
             function setLoading(loading) {
                 if (loading) {
                     postPulseBtn.disabled = true;
@@ -3634,19 +3898,19 @@
                 }
             }
             
-            // UPDATE POST BUTTON STATE
+            // ✅ UPDATE POST BUTTON STATE
             function updatePostButton() {
                 const hasContent = captionInput.value.trim() || selectedMedia;
                 postPulseBtn.disabled = !hasContent;
             }
             
-            // OPEN CREATE MODAL
+            // ✅ OPEN CREATE MODAL
             function openCreateModal() {
                 createModal.style.display = 'flex';
                 captionInput.focus();
             }
             
-            // CLOSE CREATE MODAL
+            // ✅ CLOSE CREATE MODAL
             function closeCreateModal() {
                 createModal.style.display = 'none';
                 captionInput.value = '';
@@ -3658,447 +3922,9 @@
                 toggleSwitch.classList.remove('active');
                 seriesOptions.classList.remove('active');
                 updatePostButton();
-                
-                // Hide upload progress
-                document.getElementById('uploadProgress').style.display = 'none';
-                document.getElementById('uploadProgressBar').style.width = '0%';
             }
             
-            // OPTIMIZED: FETCH PULSES FROM SUPABASE WITH PAGINATION
-            async function fetchPulses(limit = PULSES_PER_PAGE, offset = 0) {
-                if (isFeedLoading) return [];
-                
-                try {
-                    isFeedLoading = true;
-                    console.log('🔄 Fetching pulses...');
-                    
-                    // Pause all active videos before loading new content
-                    pauseAllVideos();
-                    
-                    const { data: pulsesData, error: pulsesError } = await supabaseClient
-                        .from('pulses')
-                        .select('*')
-                        .is('deleted_at', null)
-                        .order('created_at', { ascending: false })
-                        .range(offset, offset + limit - 1);
-                    
-                    if (pulsesError) throw pulsesError;
-                    
-                    if (!pulsesData || pulsesData.length === 0) {
-                        if (offset === 0) {
-                            loadSampleData();
-                        }
-                        return [];
-                    }
-                    
-                    console.log(`✅ Fetched ${pulsesData.length} pulses`);
-                    
-                    // Get user IDs from pulses
-                    const userIds = [...new Set(pulsesData.map(p => p.user_id))];
-                    
-                    // Fetch user profiles
-                    let userProfilesMap = {};
-                    
-                    try {
-                        const { data: profilesData, error: profilesError } = await supabaseClient
-                            .from('user_profiles')
-                            .select('*')
-                            .in('id', userIds);
-                        
-                        if (!profilesError && profilesData) {
-                            profilesData.forEach(profile => {
-                                userProfilesMap[profile.id] = profile;
-                            });
-                        }
-                    } catch (profilesError) {
-                        console.warn('Could not fetch user profiles:', profilesError);
-                    }
-                    
-                    // Get pulse IDs for batch operations
-                    const pulseIds = pulsesData.map(p => p.id);
-                    
-                    // Get likes count in batch
-                    const likesCountMap = {};
-                    try {
-                        const { data: likesData, error: likesError } = await supabaseClient
-                            .from('pulse_likes')
-                            .select('pulse_id')
-                            .in('pulse_id', pulseIds);
-                        
-                        if (!likesError && likesData) {
-                            const pulseLikeCounts = {};
-                            likesData.forEach(item => {
-                                pulseLikeCounts[item.pulse_id] = (pulseLikeCounts[item.pulse_id] || 0) + 1;
-                            });
-                            
-                            Object.keys(pulseLikeCounts).forEach(pulseId => {
-                                likesCountMap[pulseId] = pulseLikeCounts[pulseId];
-                            });
-                        }
-                    } catch (likesError) {
-                        console.warn('Error fetching likes count:', likesError);
-                    }
-                    
-                    // Get comments count in batch
-                    const commentsCountMap = {};
-                    try {
-                        const { data: commentsData, error: commentsError } = await supabaseClient
-                            .from('pulse_comments')
-                            .select('pulse_id')
-                            .in('pulse_id', pulseIds)
-                            .eq('is_removed', false);
-                        
-                        if (!commentsError && commentsData) {
-                            const pulseCommentCounts = {};
-                            commentsData.forEach(item => {
-                                pulseCommentCounts[item.pulse_id] = (pulseCommentCounts[item.pulse_id] || 0) + 1;
-                            });
-                            
-                            Object.keys(pulseCommentCounts).forEach(pulseId => {
-                                commentsCountMap[pulseId] = pulseCommentCounts[pulseId];
-                            });
-                        }
-                    } catch (commentsError) {
-                        console.warn('Error fetching comments count:', commentsError);
-                    }
-                    
-                    // Update pulses data
-                    const enrichedPulses = pulsesData.map(pulse => ({
-                        ...pulse,
-                        user_profiles: userProfilesMap[pulse.user_id] || {
-                            id: pulse.user_id,
-                            email: 'unknown@user.com',
-                            full_name: 'User',
-                            username: 'user',
-                            role: 'creator',
-                            avatar_url: null
-                        },
-                        actual_likes_count: likesCountMap[pulse.id] || pulse.likes_count || 0,
-                        actual_comments_count: commentsCountMap[pulse.id] || pulse.comments_count || 0
-                    }));
-                    
-                    return enrichedPulses;
-                    
-                } catch (error) {
-                    console.error('❌ Error fetching pulses:', error);
-                    showToast('Failed to load pulses', 'error');
-                    return [];
-                } finally {
-                    isFeedLoading = false;
-                }
-            }
-            
-            // DISPLAY PULSES WITH LAZY LOADING
-            async function displayPulses(pulses, likedPulses) {
-                if (!pulses || pulses.length === 0) {
-                    loadSampleData();
-                    return;
-                }
-                
-                const pulseFeedContainer = document.getElementById('pulse-feed-container');
-                
-                // Clear existing pulses only if it's the first load
-                if (currentOffset === 0) {
-                    pulseFeedContainer.innerHTML = '';
-                }
-                
-                // Use document fragment for better performance
-                const fragment = document.createDocumentFragment();
-                
-                pulses.forEach(pulse => {
-                    const pulseCard = createPulseCard(pulse, likedPulses);
-                    fragment.appendChild(pulseCard);
-                });
-                
-                pulseFeedContainer.appendChild(fragment);
-                
-                // Setup lazy loading
-                setupLazyLoading();
-                
-                // Show/hide load more button
-                if (pulses.length >= PULSES_PER_PAGE && currentOffset === 0) {
-                    loadMoreBtn.style.display = 'block';
-                    hasMorePulses = true;
-                } else if (pulses.length < PULSES_PER_PAGE) {
-                    loadMoreBtn.style.display = 'none';
-                    hasMorePulses = false;
-                }
-            }
-            
-            // CREATE PULSE CARD ELEMENT WITH LAZY LOADING
-            function createPulseCard(pulse, likedPulses) {
-                // Get user info from combined data
-                const profile = pulse.user_profiles || {};
-                const fullName = profile.full_name || profile.email?.split('@')[0] || 'User';
-                const username = profile.username || '';
-                const avatarUrl = profile.avatar_url;
-                const role = profile.role || '';
-                const initials = fullName.substring(0, 2).toUpperCase();
-                const timeAgo = getTimeAgo(new Date(pulse.created_at));
-                
-                // Use actual counts instead of stored counts
-                const actualLikesCount = pulse.actual_likes_count || pulse.likes_count || 0;
-                const actualCommentsCount = pulse.actual_comments_count || pulse.comments_count || 0;
-                const isSeries = pulse.series_id && pulse.series_order;
-                const hasMedia = pulse.media_url;
-                const mediaType = pulse.media_type;
-                const isOwnPulse = pulse.user_id === currentUserId;
-                const isLiked = likedPulses.has(pulse.id);
-                const isConnected = userConnections.has(pulse.user_id);
-                
-                const card = document.createElement('div');
-                card.className = 'pulse-card';
-                card.dataset.pulseId = pulse.id;
-                
-                // Add debounced click handler
-                let clickTimer;
-                card.addEventListener('click', (e) => {
-                    clearTimeout(clickTimer);
-                    
-                    // Don't trigger if clicking on action buttons, connect button, or more options
-                    if (!e.target.closest('.action-button') && 
-                        !e.target.closest('.pulse-connect-btn') &&
-                        !e.target.closest('.pulse-more-options') && 
-                        !e.target.closest('.pulse-options-menu')) {
-                        
-                        clickTimer = setTimeout(() => {
-                            viewPulseDetail(pulse.id);
-                        }, 200);
-                    }
-                });
-                
-                // Create connect button HTML (only if not own pulse)
-                let connectBtnHTML = '';
-                if (!isOwnPulse) {
-                    const connectIcon = isConnected ? 'fa-user-check' : 'fa-user-plus';
-                    const connectClass = isConnected ? 'connected' : '';
-                    connectBtnHTML = `
-                        <button class="pulse-connect-btn ${connectClass}" data-creator-id="${pulse.user_id}">
-                            <i class="fas ${connectIcon}"></i>
-                        </button>
-                    `;
-                }
-                
-                let moreOptionsHTML = '';
-                if (isOwnPulse) {
-                    moreOptionsHTML = `
-                        <button class="pulse-more-options" data-pulse-id="${pulse.id}">
-                            <i class="fas fa-ellipsis-h"></i>
-                        </button>
-                        <div class="pulse-options-menu" id="options-menu-${pulse.id}">
-                            <button class="pulse-option-item edit-option" data-pulse-id="${pulse.id}">
-                                <i class="fas fa-edit"></i>
-                                Edit
-                            </button>
-                            <button class="pulse-option-item delete delete-option" data-pulse-id="${pulse.id}">
-                                <i class="fas fa-trash"></i>
-                                Delete
-                            </button>
-                        </div>
-                    `;
-                }
-                
-                // Media HTML with lazy loading
-                let mediaHTML = '';
-                if (hasMedia) {
-                    if (mediaType === 'video') {
-                        mediaHTML = `
-                            <div class="media-container has-media">
-                                <div class="video-loading">
-                                    <i class="fas fa-spinner fa-spin"></i>
-                                </div>
-                                <video class="pulse-media" 
-                                       data-video-id="video-${pulse.id}" 
-                                       preload="none" 
-                                       playsinline
-                                       data-src="${pulse.media_url}">
-                                    Your browser does not support the video tag.
-                                </video>
-                                <div class="video-controls-overlay">
-                                    <div class="video-progress">
-                                        <div class="video-progress-filled"></div>
-                                    </div>
-                                    <div class="video-controls">
-                                        <div class="video-left-controls">
-                                            <button class="video-control-btn play-pause-btn">
-                                                <i class="fas fa-play"></i>
-                                            </button>
-                                            <div class="video-time">0:00 / 0:00</div>
-                                        </div>
-                                        <div class="video-right-controls">
-                                            <div class="video-volume">
-                                                <button class="video-control-btn mute-btn">
-                                                    <i class="fas fa-volume-up"></i>
-                                                </button>
-                                                <div class="volume-slider">
-                                                    <div class="volume-slider-filled"></div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        `;
-                    } else {
-                        mediaHTML = `
-                            <div class="media-container has-media">
-                                <img src="" 
-                                     alt="Pulse image" 
-                                     class="pulse-media" 
-                                     loading="lazy"
-                                     data-src="${pulse.media_url}">
-                            </div>
-                        `;
-                    }
-                }
-                
-                card.innerHTML = `
-                    <div class="pulse-header">
-                        <div class="pulse-avatar" style="${avatarUrl ? `background-image: url('${avatarUrl}'); background-size: cover; background-position: center;` : ''}">
-                            ${avatarUrl ? '' : initials}
-                        </div>
-                        <div class="pulse-creator-info">
-                            <div class="creator-name">
-                                ${fullName}
-                                ${role === 'creator' ? '<span class="creator-badge">Creator</span>' : ''}
-                                ${role === 'admin' ? '<span class="creator-badge" style="background: rgba(239, 68, 68, 0.2); color: var(--error-color); border-color: rgba(239, 68, 68, 0.3);">Admin</span>' : ''}
-                            </div>
-                            <div class="pulse-time">${username ? `@${username} • ` : ''}${timeAgo}</div>
-                        </div>
-                        ${connectBtnHTML}
-                        ${moreOptionsHTML}
-                    </div>
-                    
-                    ${isSeries ? `
-                        <div class="pulse-series-label">
-                            PULSE SERIES · Part ${pulse.series_order}
-                        </div>
-                    ` : ''}
-                    
-                    <div class="pulse-content">
-                        ${pulse.caption ? `<p class="pulse-text">${pulse.caption}</p>` : ''}
-                        
-                        ${mediaHTML}
-                        
-                        ${pulse.linked_content_id ? `
-                            <div class="linked-content">
-                                <div class="linked-content-label">Linked content</div>
-                                <div class="linked-content-card">
-                                    <div class="content-thumbnail"></div>
-                                    <div class="content-info">
-                                        <h4>${pulse.linked_content_type || 'Content'}</h4>
-                                        <p>Tap to watch or listen</p>
-                                    </div>
-                                </div>
-                            </div>
-                        ` : ''}
-                    </div>
-                    
-                    <div class="pulse-actions">
-                        <button class="action-button like-btn ${isLiked ? 'liked' : ''}" data-pulse-id="${pulse.id}">
-                            <i class="fas fa-heart" ${isLiked ? 'style="color: var(--warm-gold);"' : ''}></i> ${actualLikesCount}
-                        </button>
-                        <button class="action-button comment-btn" data-pulse-id="${pulse.id}">
-                            <i class="fas fa-comment"></i> ${actualCommentsCount}
-                        </button>
-                        <button class="action-button share-btn" data-pulse-id="${pulse.id}">
-                            <i class="fas fa-share"></i> ${pulse.shares_count || 0}
-                        </button>
-                    </div>
-                    
-                    <div class="pulse-stats">
-                        <span class="likes-count">${actualLikesCount} ${actualLikesCount === 1 ? 'like' : 'likes'}</span>
-                        <span class="comments-count">${actualCommentsCount} ${actualCommentsCount === 1 ? 'comment' : 'comments'}</span>
-                        <span class="shares-count">${pulse.shares_count || 0} shares</span>
-                    </div>
-                `;
-                
-                // Initialize video controls only when video is clicked
-                if (hasMedia && mediaType === 'video') {
-                    const videoElement = card.querySelector('video');
-                    const mediaContainer = card.querySelector('.media-container');
-                    if (videoElement && mediaContainer) {
-                        // Wait for video to be loaded via lazy loading
-                        videoElement.addEventListener('loadeddata', () => {
-                            const loadingIndicator = mediaContainer.querySelector('.video-loading');
-                            if (loadingIndicator) {
-                                loadingIndicator.style.display = 'none';
-                            }
-                            initializeVideoPlayer(videoElement, mediaContainer);
-                        });
-                        
-                        videoElement.addEventListener('click', (e) => {
-                            e.stopPropagation();
-                            if (videoElement.paused) {
-                                videoElement.play();
-                            } else {
-                                videoElement.pause();
-                            }
-                        });
-                    }
-                }
-                
-                // Add event listeners
-                const likeBtn = card.querySelector('.like-btn');
-                const commentBtn = card.querySelector('.comment-btn');
-                const shareBtn = card.querySelector('.share-btn');
-                
-                likeBtn.addEventListener('click', (e) => handleLike(pulse.id, e));
-                commentBtn.addEventListener('click', (e) => handleComment(pulse.id, e));
-                shareBtn.addEventListener('click', (e) => handleShare(pulse.id, e));
-                
-                // Add event listener for connect button if it exists
-                const connectBtn = card.querySelector('.pulse-connect-btn');
-                if (connectBtn) {
-                    connectBtn.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        const creatorId = connectBtn.getAttribute('data-creator-id');
-                        handleConnect(creatorId, connectBtn);
-                    });
-                }
-                
-                // Add event listeners for more options if it's the user's own pulse
-                if (isOwnPulse) {
-                    const moreOptionsBtn = card.querySelector('.pulse-more-options');
-                    const optionsMenu = card.querySelector(`#options-menu-${pulse.id}`);
-                    const editOption = card.querySelector('.edit-option');
-                    const deleteOption = card.querySelector('.delete-option');
-                    
-                    moreOptionsBtn.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        // Close any other open menus
-                        document.querySelectorAll('.pulse-options-menu').forEach(menu => {
-                            if (menu !== optionsMenu) {
-                                menu.classList.remove('active');
-                            }
-                        });
-                        optionsMenu.classList.toggle('active');
-                    });
-                    
-                    editOption.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        optionsMenu.classList.remove('active');
-                        handleEdit(pulse.id);
-                    });
-                    
-                    deleteOption.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        optionsMenu.classList.remove('active');
-                        handleDelete(pulse.id);
-                    });
-                    
-                    // Close menu when clicking outside
-                    document.addEventListener('click', (e) => {
-                        if (!moreOptionsBtn.contains(e.target) && !optionsMenu.contains(e.target)) {
-                            optionsMenu.classList.remove('active');
-                        }
-                    });
-                }
-                
-                return card;
-            }
-            
-            // CREATE PULSE (with series handling and optimized upload)
+            // ✅ OPTIMIZED: CREATE PULSE (with series handling)
             async function createPulse() {
                 if (isProcessingUpload) {
                     showToast('Please wait for current upload to complete', 'error');
@@ -4239,15 +4065,15 @@
                     console.log('✅ Pulse created:', pulse.id);
                     showToast('Pulse posted successfully!', 'success');
                     
-                    // Close modal and refresh feed
+                    // Close modal and refresh only first few pulses
                     closeCreateModal();
                     
                     // Clear feed and load fresh data
-                    currentOffset = 0;
-                    pulseFeedContainer.innerHTML = '<div style="padding: 20px; text-align: center;">Loading...</div>';
+                    const feedContainer = document.getElementById('pulse-feed-container');
+                    feedContainer.innerHTML = '<div style="padding: 20px; text-align: center;">Loading...</div>';
                     
                     setTimeout(async () => {
-                        const pulses = await fetchPulses(PULSES_PER_PAGE, 0);
+                        const pulses = await fetchPulses(5, 0); // Load only 5 latest pulses
                         if (pulses.length > 0) {
                             const likedPulses = await checkUserLikes(pulses.map(p => p.id));
                             displayPulses(pulses, likedPulses);
@@ -4262,7 +4088,7 @@
                 }
             }
             
-            // EVENT LISTENERS
+            // ✅ EVENT LISTENERS
             createPrompt.addEventListener('click', openCreateModal);
             createPulseBtn.addEventListener('click', openCreateModal);
             closeModal.addEventListener('click', closeCreateModal);
@@ -4289,9 +4115,9 @@
                     return;
                 }
                 
-                // Validate file size (max 50MB)
-                if (file.size > 50 * 1024 * 1024) {
-                    showToast('File size must be less than 50MB', 'error');
+                // Validate file size (max 20MB)
+                if (file.size > 20 * 1024 * 1024) {
+                    showToast('File size must be less than 20MB', 'error');
                     return;
                 }
                 
@@ -4375,9 +4201,9 @@
                     return;
                 }
                 
-                // Validate file size (max 50MB)
-                if (file.size > 50 * 1024 * 1024) {
-                    showToast('File size must be less than 50MB', 'error');
+                // Validate file size (max 20MB)
+                if (file.size > 20 * 1024 * 1024) {
+                    showToast('File size must be less than 20MB', 'error');
                     return;
                 }
                 
@@ -4432,23 +4258,11 @@
                     document.getElementById(`${tabId}-feed`).classList.add('active');
                     
                     if (tabId === 'pulse') {
-                        currentOffset = 0;
-                        fetchPulses().then(pulses => {
-                            if (pulses.length > 0) {
-                                return checkUserLikes(pulses.map(p => p.id));
-                            }
-                            return new Set();
-                        }).then(likedPulses => {
-                            if (pulses && pulses.length > 0) {
-                                displayPulses(pulses, likedPulses);
-                            }
-                        });
+                        // Use debounced fetch for better performance
+                        debouncedFetchPulses()();
                     }
                 });
             });
-            
-            // Load more button
-            loadMoreBtn.addEventListener('click', loadMorePulses);
             
             // Listen for auth changes
             supabaseClient.auth.onAuthStateChange((event, session) => {
@@ -4459,17 +4273,17 @@
                 }
             });
             
+            // Replace the existing fetchPulses call with debounced version
+            const debouncedFetchPulses = debounce(async () => {
+                const fetchedPulses = await fetchPulses(10, 0);
+                if (fetchedPulses.length > 0) {
+                    const likedPulses = await checkUserLikes(fetchedPulses.map(p => p.id));
+                    displayPulses(fetchedPulses, likedPulses);
+                }
+            }, 300);
+            
             // Initial data load
-            fetchPulses().then(pulses => {
-                if (pulses.length > 0) {
-                    return checkUserLikes(pulses.map(p => p.id));
-                }
-                return new Set();
-            }).then(likedPulses => {
-                if (pulses && pulses.length > 0) {
-                    displayPulses(pulses, likedPulses);
-                }
-            });
+            debouncedFetchPulses();
         }
         
         // Add timeout for force load
@@ -4488,16 +4302,6 @@
                 }, 3000);
             }
         }, 7000);
-        
-        // Add visibility change listener
-        document.addEventListener('visibilitychange', () => {
-            if (document.hidden) {
-                pauseAllVideos();
-            }
-        });
-        
-        // Add beforeunload listener to cleanup
-        window.addEventListener('beforeunload', cleanupResources);
         
         // Start initialization
         document.addEventListener('DOMContentLoaded', initialize);
