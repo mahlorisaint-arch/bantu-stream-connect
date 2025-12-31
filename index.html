@@ -1117,6 +1117,13 @@
         document.addEventListener('DOMContentLoaded', async () => {
             console.log('🚀 Bantu Stream Connect Home Feed Initializing...');
             
+            // DOM Elements - Define them FIRST to avoid ReferenceError
+            const loadingScreen = document.getElementById('loading');
+            const loadingText = document.getElementById('loading-text');
+            const app = document.getElementById('app');
+            const contentSections = document.getElementById('content-sections');
+            const profileBtn = document.getElementById('profile-btn');
+            
             // Initialize Development Window (always visible)
             DevelopmentWindow.init();
             
@@ -1130,7 +1137,6 @@
                 showToast('Welcome! Sign in to access personalized features.', 'info');
                 
                 // Update profile button to redirect to login
-                const profileBtn = document.getElementById('profile-btn');
                 if (profileBtn) {
                     profileBtn.addEventListener('click', () => {
                         window.location.href = 'login.html?redirect=index.html';
@@ -1168,13 +1174,6 @@
                 'STEM'
             ];
             
-            // DOM Elements
-            const loadingScreen = document.getElementById('loading');
-            const loadingText = document.getElementById('loading-text');
-            const app = document.getElementById('app');
-            const contentSections = document.getElementById('content-sections');
-            const profileBtn = document.getElementById('profile-btn');
-            
             // ✅ SHOW/HIDE LOADING
             function setLoading(loading, text = '') {
                 isLoading = loading;
@@ -1198,7 +1197,15 @@
                 toast.textContent = message;
                 
                 const container = document.getElementById('toast-container');
-                container.appendChild(toast);
+                if (!container) {
+                    // Create toast container if it doesn't exist
+                    const newContainer = document.createElement('div');
+                    newContainer.id = 'toast-container';
+                    document.body.appendChild(newContainer);
+                    newContainer.appendChild(toast);
+                } else {
+                    container.appendChild(toast);
+                }
                 
                 setTimeout(() => {
                     toast.style.opacity = '0';
@@ -1207,23 +1214,38 @@
                 }, 3000);
             }
             
-            // ✅ LOAD USER PROFILE PICTURE
+            // ✅ LOAD USER PROFILE PICTURE - FIXED VERSION
             async function loadUserProfilePicture(user) {
                 try {
-                    if (!user) return;
+                    if (!user || !profileBtn) return;
                     
-                    // Try to get user profile from user_profiles table
+                    // First, update the profile button with email initials as fallback
+                    const userInitials = getInitials(user.email);
+                    profileBtn.innerHTML = `
+                        <div class="profile-placeholder">
+                            ${userInitials}
+                        </div>
+                    `;
+                    
+                    // Then try to get user profile from user_profiles table
                     try {
-                        const { data: profile, error } = await supabaseAuth
+                        // First check what columns exist in the user_profiles table
+                        const { data: profile, error: profileError } = await supabaseAuth
                             .from('user_profiles')
                             .select('*')
-                            .eq('user_id', user.id)
-                            .single();
+                            .or(`id.eq.${user.id},user_id.eq.${user.id}`)  // Try both id and user_id columns
+                            .maybeSingle();  // Use maybeSingle to avoid throwing error if no results
                         
-                        if (!error && profile && profile.avatar_url) {
+                        if (profileError) {
+                            console.log('Profile query error:', profileError);
+                            return; // Keep using initials
+                        }
+                        
+                        if (profile && profile.avatar_url) {
                             // Fix avatar URL
                             let avatarUrl = profile.avatar_url;
                             if (!avatarUrl.startsWith('http')) {
+                                // Try to construct the proper URL
                                 avatarUrl = `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/${avatarUrl.replace(/^\/+/, '')}`;
                             }
                             
@@ -1233,33 +1255,22 @@
                             profileImg.src = avatarUrl;
                             profileImg.alt = 'Profile Picture';
                             profileImg.onerror = function() {
-                                // If image fails to load, show placeholder with initials
+                                // If image fails to load, keep using initials
                                 this.parentElement.innerHTML = `
                                     <div class="profile-placeholder">
-                                        ${getInitials(user.email)}
+                                        ${userInitials}
                                     </div>
                                 `;
                             };
                             
                             // Clear placeholder and add image
-                            if (profileBtn) {
-                                profileBtn.innerHTML = '';
-                                profileBtn.appendChild(profileImg);
-                            }
-                            
-                            return;
+                            profileBtn.innerHTML = '';
+                            profileBtn.appendChild(profileImg);
                         }
+                        
                     } catch (error) {
-                        console.log('No user profile found, using email initials');
-                    }
-                    
-                    // Fallback: Show initials based on email
-                    if (profileBtn) {
-                        profileBtn.innerHTML = `
-                            <div class="profile-placeholder">
-                                ${getInitials(user.email)}
-                            </div>
-                        `;
+                        console.log('No user profile found or error fetching profile:', error);
+                        // Keep using initials if profile fetch fails
                     }
                     
                 } catch (error) {
@@ -1640,20 +1651,17 @@
                 }
                 
                 // Profile button behavior depends on authentication
-                if (profileBtn) {
-                    // Remove any existing click listeners and add new one
-                    const newProfileBtn = profileBtn.cloneNode(true);
-                    profileBtn.parentNode.replaceChild(newProfileBtn, profileBtn);
-                    
-                    newProfileBtn.addEventListener('click', async () => {
+                // Use event delegation to avoid cloning issues
+                document.addEventListener('click', async (e) => {
+                    if (e.target.closest('#profile-btn')) {
                         const { data: { session } } = await supabaseAuth.auth.getSession();
                         if (session) {
                             window.location.href = 'profile.html';
                         } else {
                             window.location.href = 'login.html?redirect=index.html';
                         }
-                    });
-                }
+                    }
+                });
                 
                 // Browse all buttons
                 const browseAllBtn = document.getElementById('browse-all-btn');
@@ -1786,3 +1794,4 @@
     </script>
 </body>
 </html>
+
