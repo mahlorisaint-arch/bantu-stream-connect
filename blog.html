@@ -15,9 +15,14 @@
             'bantu-accent': '#f59e0b',
             'bantu-dark': '#0f172a',
             'bantu-text': '#e2e8f0',
+            'pulse-blue': '#3b82f6',
+            'pulse-gold': '#fbbf24',
+            'heritage-brown': '#8B4513',
+            'storytelling-purple': '#7C3AED',
           },
           fontFamily: {
             sans: ['Inter', 'system-ui', 'sans-serif'],
+            serif: ['Georgia', 'serif'],
           },
         }
       }
@@ -72,6 +77,45 @@
 
     .blog-card:hover:before {
       left: 100%;
+    }
+
+    /* Pulsing animation for Pulse posts */
+    @keyframes pulse-glow {
+      0%, 100% {
+        transform: scale(1);
+        opacity: 1;
+        filter: drop-shadow(0 0 10px rgba(59, 130, 246, 0.5));
+      }
+      50% {
+        transform: scale(1.05);
+        opacity: 0.9;
+        filter: drop-shadow(0 0 20px rgba(59, 130, 246, 0.8));
+      }
+    }
+
+    .pulse-animation {
+      animation: pulse-glow 2s infinite ease-in-out;
+    }
+
+    /* Category specific styles */
+    .category-platform {
+      background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(251, 191, 36, 0.05) 100%);
+      border: 1px solid rgba(59, 130, 246, 0.3);
+    }
+
+    .category-founder {
+      background: linear-gradient(135deg, rgba(79, 70, 229, 0.1) 0%, rgba(245, 158, 11, 0.05) 100%);
+      border: 1px solid rgba(79, 70, 229, 0.3);
+    }
+
+    .category-tech {
+      background: linear-gradient(135deg, rgba(79, 70, 229, 0.1) 0%, rgba(30, 41, 59, 0.5) 100%);
+      border: 1px solid rgba(79, 70, 229, 0.3);
+    }
+
+    .category-storytelling {
+      background: linear-gradient(135deg, rgba(124, 58, 237, 0.1) 0%, rgba(139, 69, 19, 0.05) 100%);
+      border: 1px solid rgba(124, 58, 237, 0.3);
     }
   </style>
 </head>
@@ -131,25 +175,25 @@
           <span id="tech-count" class="text-sm text-bantu-text/60 mt-1">Loading...</span>
         </a>
 
-        <!-- Category Card 2: Sustainability -->
-        <a href="#sustainability" class="bg-bantu-dark border border-bantu-text/30 hover:border-bantu-accent/70 rounded-xl p-5 flex flex-col items-start transition duration-300 transform hover:-translate-y-1 shadow-lg fade-in fade-in-delay-1">
-          <i data-lucide="leaf" class="w-8 h-8 text-green-500 mb-3"></i>
-          <span class="text-lg font-semibold text-white">Sustainability</span>
-          <span id="sustainability-count" class="text-sm text-bantu-text/60 mt-1">Loading...</span>
+        <!-- Category Card 2: Platform Launches -->
+        <a href="#platform" class="bg-bantu-dark border border-bantu-text/30 hover:border-pulse-blue/70 rounded-xl p-5 flex flex-col items-start transition duration-300 transform hover:-translate-y-1 shadow-lg fade-in fade-in-delay-1">
+          <i data-lucide="zap" class="w-8 h-8 text-pulse-blue mb-3"></i>
+          <span class="text-lg font-semibold text-white">Platform Launches</span>
+          <span id="platform-count" class="text-sm text-bantu-text/60 mt-1">Loading...</span>
         </a>
 
-        <!-- Category Card 3: Creative Industries -->
-        <a href="#creative" class="bg-bantu-dark border border-bantu-text/30 hover:border-bantu-accent/70 rounded-xl p-5 flex flex-col items-start transition duration-300 transform hover:-translate-y-1 shadow-lg fade-in fade-in-delay-2">
-          <i data-lucide="pen-tool" class="w-8 h-8 text-pink-500 mb-3"></i>
-          <span class="text-lg font-semibold text-white">Creative Industries</span>
-          <span id="creative-count" class="text-sm text-bantu-text/60 mt-1">Loading...</span>
+        <!-- Category Card 3: Storytelling -->
+        <a href="#storytelling" class="bg-bantu-dark border border-bantu-text/30 hover:border-storytelling-purple/70 rounded-xl p-5 flex flex-col items-start transition duration-300 transform hover:-translate-y-1 shadow-lg fade-in fade-in-delay-2">
+          <i data-lucide="book-open" class="w-8 h-8 text-storytelling-purple mb-3"></i>
+          <span class="text-lg font-semibold text-white">Storytelling</span>
+          <span id="storytelling-count" class="text-sm text-bantu-text/60 mt-1">Loading...</span>
         </a>
 
-        <!-- Category Card 4: Entrepreneurship -->
-        <a href="#entrepreneurship" class="bg-bantu-dark border border-bantu-text/30 hover:border-bantu-accent/70 rounded-xl p-5 flex flex-col items-start transition duration-300 transform hover:-translate-y-1 shadow-lg fade-in fade-in-delay-2">
-          <i data-lucide="rocket" class="w-8 h-8 text-bantu-accent mb-3"></i>
-          <span class="text-lg font-semibold text-white">Entrepreneurship</span>
-          <span id="entrepreneurship-count" class="text-sm text-bantu-text/60 mt-1">Loading...</span>
+        <!-- Category Card 4: Founder's Notes -->
+        <a href="#founder" class="bg-bantu-dark border border-bantu-text/30 hover:border-bantu-accent/70 rounded-xl p-5 flex flex-col items-start transition duration-300 transform hover:-translate-y-1 shadow-lg fade-in fade-in-delay-2">
+          <i data-lucide="user" class="w-8 h-8 text-bantu-accent mb-3"></i>
+          <span class="text-lg font-semibold text-white">Founder's Notes</span>
+          <span id="founder-count" class="text-sm text-bantu-text/60 mt-1">Loading...</span>
         </a>
       </div>
     </div>
@@ -216,17 +260,90 @@
 
     // Category mapping
     const categories = {
-      'tech': { name: 'Tech & Innovation', icon: 'cpu', color: 'bantu-primary', count: 0 },
-      'sustainability': { name: 'Sustainability', icon: 'leaf', color: 'green-500', count: 0 },
-      'creative': { name: 'Creative Industries', icon: 'pen-tool', color: 'pink-500', count: 0 },
-      'entrepreneurship': { name: 'Entrepreneurship', icon: 'rocket', color: 'bantu-accent', count: 0 },
-      'platform': { name: 'Platform Launch', icon: 'zap', color: 'bantu-primary', count: 0 }
+      'tech': { 
+        name: 'Tech & Innovation', 
+        icon: 'cpu', 
+        color: 'bantu-primary', 
+        count: 0 
+      },
+      'platform': { 
+        name: 'Platform Launch', 
+        icon: 'zap', 
+        color: 'pulse-blue', 
+        count: 0 
+      },
+      'storytelling': { 
+        name: 'Storytelling', 
+        icon: 'book-open', 
+        color: 'storytelling-purple', 
+        count: 0 
+      },
+      'founder': { 
+        name: "Founder's Notes", 
+        icon: 'user', 
+        color: 'bantu-accent', 
+        count: 0 
+      },
+      'entrepreneurship': { 
+        name: 'Entrepreneurship', 
+        icon: 'rocket', 
+        color: 'bantu-accent', 
+        count: 0 
+      },
+      'sustainability': { 
+        name: 'Sustainability', 
+        icon: 'leaf', 
+        color: 'green-500', 
+        count: 0 
+      },
+      'creative': { 
+        name: 'Creative Industries', 
+        icon: 'pen-tool', 
+        color: 'pink-500', 
+        count: 0 
+      }
     };
 
-    // All Blog Posts Array (including the two we created)
+    // All Blog Posts Array (including the five new posts)
     const allBlogPosts = [
+      // NEW POST 1: Bantu Connect Pulse Launch
       {
         id: 1,
+        title: "The Narrative Debt: Why We Needed to Build Better",
+        subtitle: "Bantu Connect Pulse Launch Announcement",
+        excerpt: "In the sprawling, vibrant landscape of the African creator economy, a debt persists. The debt owed to the story itself. Pulse is not a place for fleeting reactions. It is a new African social platform designed to move culture forward by prioritizing continuity and sequence inherent in all great storytelling.",
+        content: "Full article content here...",
+        image: "assets/icon/pulse.png",
+        category: "platform",
+        author: "Mahlori Mhlanga, Special Correspondent",
+        date: "2025-12-01",
+        readTime: "8 min read",
+        isFeatured: true,
+        url: "bantu-connect-pulse-blog.html",
+        tags: ["Product Launch", "Social Platform", "Vertical Video", "African Tech"],
+        specialClass: "category-platform"
+      },
+      
+      // NEW POST 2: Behind the Scenes Journey
+      {
+        id: 2,
+        title: "The Pulse of Dedication: The Unspoken Reality of Building Bantu",
+        excerpt: "As I write this, it's 2:00 AM. The digital clock on my laptop casts a faint indigo glow across my couch, the same deep tone that anchors Bantu's visual identity. Sleep can wait. This is the side of building that rarely makes it into the highlight reels.",
+        content: "Full article content here...",
+        image: "assets/blog/IMG_20251107_000832_201.webp",
+        category: "founder",
+        author: "Mahlori Mhlanga, Founder, Bantu Stream Connect & Pulse",
+        date: "2025-12-26",
+        readTime: "8 min read",
+        isFeatured: false,
+        url: "behind-the-scenes-journey.html",
+        tags: ["Founder's Note", "Building Bantu", "Startup Journey"],
+        specialClass: "category-founder"
+      },
+      
+      // NEW POST 3: DNA of Disruption
+      {
+        id: 3,
         title: "The DNA of Disruption: How Blockchain, AI, and Green Tech are Rewriting Africa's Future",
         excerpt: "The continent of Africa is not just catching up to global technological trends; it is actively rewriting the playbook. In boardrooms from Nairobi to Johannesburg, a consensus is forming: the future of African economic power rests not on copying old models, but on leapfrogging them entirely.",
         content: "Full article content here...",
@@ -235,14 +352,34 @@
         author: "Bantu Stream Connect Insights Team",
         date: "2025-04-01",
         readTime: "12 min read",
-        isFeatured: true,
+        isFeatured: false,
         url: "dna-of-disruption.html",
-        tags: ["Tech & Innovation", "Sustainability", "Entrepreneurship"]
+        tags: ["Tech & Innovation", "Sustainability", "Entrepreneurship"],
+        specialClass: "category-tech"
       },
+      
+      // NEW POST 4: The Unwritten Chapters
       {
-        id: 2,
+        id: 4,
+        title: "The Unwritten Chapters: Why Untold South African Stories Are Our Blueprint for Freedom",
+        excerpt: "South Africa is a land saturated with history, yet starved of its narratives. We carry the weight of monumental, globally documented chapters, but sometimes, the deepest, most vital truths of our identity are hidden in the quiet archives.",
+        content: "Full article content here...",
+        image: "assets/20251228_202549.jpg",
+        category: "storytelling",
+        author: "Mahlori Mhlanga, Founder of Bantu Stream Connect",
+        date: "2025-12-01",
+        readTime: "10 min read",
+        isFeatured: false,
+        url: "the-unwritten-chapters.html",
+        tags: ["Storytelling", "Heritage", "Narrative", "South Africa"],
+        specialClass: "category-storytelling"
+      },
+      
+      // NEW POST 5: Welcome to Bantu Stream Connect
+      {
+        id: 5,
         title: "Welcome to Bantu Stream Connect: The Digital Universe Africa Has Been Waiting For",
-        excerpt: "Where Creators Rise, Stories Flourish, and Entertainment is Reimagined. The Dawn of Africa's Digital Renaissance. There are apps, and then there are movements that redefine generations.",
+        excerpt: "Where Creators Rise, Stories Flourish, and Entertainment is Reimagined. Every once in a technological era, a platform emerges that doesn't just join the digital landscape, it transforms it completely. Bantu Stream Connect is that revolution.",
         content: "Full article content here...",
         image: "assets/blog/new-explore-screen.png",
         category: "platform",
@@ -251,10 +388,13 @@
         readTime: "10 min read",
         isFeatured: false,
         url: "welcome-to-bantu-stream-connect.html",
-        tags: ["Platform Launch", "Creative Industries", "Entrepreneurship"]
+        tags: ["Platform Launch", "Creative Industries", "Entrepreneurship"],
+        specialClass: "category-platform"
       },
+      
+      // Existing posts
       {
-        id: 3,
+        id: 6,
         title: "Why the 90/10 Split is the Only Model for African Creator Sustainability",
         excerpt: "We break down the flawed economics of global streaming platforms and present the definitive case for revenue ownership as the key driver for continental growth and quality content production...",
         content: "Full article content here...",
@@ -265,10 +405,11 @@
         readTime: "8 min read",
         isFeatured: false,
         url: "#",
-        tags: ["Entrepreneurship", "Creator Economy"]
+        tags: ["Entrepreneurship", "Creator Economy"],
+        specialClass: ""
       },
       {
-        id: 4,
+        id: 7,
         title: "Decoding the Amapiano Economy: Beyond the Dance Floor",
         excerpt: "A deep dive into how Amapiano creators are utilizing new digital ownership models to secure their financial futures in a global market...",
         content: "Full article content here...",
@@ -279,10 +420,11 @@
         readTime: "5 min read",
         isFeatured: false,
         url: "#",
-        tags: ["Creative Industries", "Music", "Economy"]
+        tags: ["Creative Industries", "Music", "Economy"],
+        specialClass: ""
       },
       {
-        id: 5,
+        id: 8,
         title: "The Decentralized Grid: How Micro-Solar is Powering African Content",
         excerpt: "Exploring the critical link between renewable energy access and the exponential growth of local digital content consumption...",
         content: "Full article content here...",
@@ -293,10 +435,11 @@
         readTime: "8 min read",
         isFeatured: false,
         url: "#",
-        tags: ["Sustainability", "Infrastructure", "Tech"]
+        tags: ["Sustainability", "Infrastructure", "Tech"],
+        specialClass: ""
       },
       {
-        id: 6,
+        id: 9,
         title: "From Iroko to Stream: The Business of Independent African Filmmaking",
         excerpt: "Interviews with top Nollywood directors on financing, distribution challenges, and the potential of creator-first platforms...",
         content: "Full article content here...",
@@ -307,10 +450,11 @@
         readTime: "10 min read",
         isFeatured: false,
         url: "#",
-        tags: ["Creative Industries", "Film", "Business"]
+        tags: ["Creative Industries", "Film", "Business"],
+        specialClass: ""
       },
       {
-        id: 7,
+        id: 10,
         title: "Bridging the Digital Skills Gap in Soweto: A Blueprint for Growth",
         excerpt: "How localized educational streaming content is providing accessible technical training to millions of youth across South Africa...",
         content: "Full article content here...",
@@ -321,10 +465,11 @@
         readTime: "7 min read",
         isFeatured: false,
         url: "#",
-        tags: ["Tech & Innovation", "Education", "Development"]
+        tags: ["Tech & Innovation", "Education", "Development"],
+        specialClass: ""
       },
       {
-        id: 8,
+        id: 11,
         title: "The Global Rise of African StoryTech Startups",
         excerpt: "A VC deep dive on why African content and technology are uniquely positioned to capture international investment in the next five years...",
         content: "Full article content here...",
@@ -335,10 +480,11 @@
         readTime: "12 min read",
         isFeatured: false,
         url: "#",
-        tags: ["Entrepreneurship", "Investment", "Tech"]
+        tags: ["Entrepreneurship", "Investment", "Tech"],
+        specialClass: ""
       },
       {
-        id: 9,
+        id: 12,
         title: "The Future of African Podcasting: Local Voices, Global Impact",
         excerpt: "How podcasters across the continent are leveraging new platforms to build sustainable media businesses...",
         content: "Full article content here...",
@@ -349,10 +495,11 @@
         readTime: "6 min read",
         isFeatured: false,
         url: "#",
-        tags: ["Creative Industries", "Audio", "Business"]
+        tags: ["Creative Industries", "Audio", "Business"],
+        specialClass: ""
       },
       {
-        id: 10,
+        id: 13,
         title: "Building Digital Infrastructure for Rural Creators",
         excerpt: "Case studies from Kenya, Nigeria, and South Africa on bringing high-speed internet to underserved creative communities...",
         content: "Full article content here...",
@@ -363,7 +510,8 @@
         readTime: "9 min read",
         isFeatured: false,
         url: "#",
-        tags: ["Tech & Innovation", "Infrastructure", "Development"]
+        tags: ["Tech & Innovation", "Infrastructure", "Development"],
+        specialClass: ""
       }
     ];
 
@@ -372,7 +520,7 @@
 
     // Format date
     function formatDate(dateString) {
-      const options = { year: 'numeric', month: 'short', day: 'numeric' };
+      const options = { year: 'numeric', month: 'long', day: 'numeric' };
       return new Date(dateString).toLocaleDateString('en-US', options);
     }
 
@@ -399,6 +547,7 @@
     // Create post element
     function createPostElement(post) {
       const category = categories[post.category] || categories.tech;
+      const specialClass = post.specialClass || '';
       
       // Create tags HTML if they exist
       let tagsHtml = '';
@@ -414,12 +563,15 @@
         `;
       }
       
+      // Add pulse animation for Pulse launch post
+      const pulseClass = post.id === 1 ? 'pulse-animation' : '';
+      
       return `
-        <article class="bg-bantu-dark border border-bantu-text/20 rounded-xl overflow-hidden shadow-lg blog-card">
+        <article class="bg-bantu-dark border border-bantu-text/20 rounded-xl overflow-hidden shadow-lg blog-card ${specialClass}">
           <div class="relative overflow-hidden">
             <img src="${post.image}" 
                  alt="${post.title}" 
-                 class="w-full h-48 object-cover transition-transform duration-500 hover:scale-110"
+                 class="w-full h-48 object-cover transition-transform duration-500 hover:scale-110 ${pulseClass}"
                  onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1551650975-87deedd944c3?auto=format&fit=crop&w=600&q=80'">
             <div class="absolute top-3 left-3">
               <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-${category.color}/20 text-${category.color}">
@@ -429,9 +581,10 @@
             </div>
           </div>
           <div class="p-6">
-            <h3 class="text-xl font-bold text-white mb-3 leading-snug hover:text-bantu-accent transition duration-200 cursor-pointer">
+            <h3 class="text-xl font-bold text-white mb-2 leading-snug hover:text-bantu-accent transition duration-200 cursor-pointer">
               ${post.title}
             </h3>
+            ${post.subtitle ? `<p class="text-sm text-pulse-gold mb-2 font-medium">${post.subtitle}</p>` : ''}
             <p class="text-bantu-text/70 text-sm line-clamp-3 mb-4">
               ${post.excerpt}
             </p>
@@ -464,12 +617,13 @@
       if (!featuredPost) return;
       
       const category = categories[featuredPost.category] || categories.tech;
+      const pulseClass = featuredPost.id === 1 ? 'pulse-animation' : '';
       
       document.getElementById('hero-post').innerHTML = `
         <div class="md:w-1/2 relative">
           <img src="${featuredPost.image}" 
                alt="${featuredPost.title}" 
-               class="w-full h-72 md:h-full object-cover transition-transform duration-700 hover:scale-105"
+               class="w-full h-72 md:h-full object-cover transition-transform duration-700 hover:scale-105 ${pulseClass}"
                onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=1200&q=80'">
           <div class="absolute top-4 left-4 flex flex-wrap gap-2">
             <span class="inline-flex items-center px-3 py-1 text-sm font-medium rounded-full text-bantu-dark bg-bantu-accent">
@@ -486,6 +640,7 @@
           <h2 class="text-3xl sm:text-4xl font-bold text-white mb-4 leading-tight hover:text-bantu-accent transition duration-200 cursor-pointer">
             ${featuredPost.title}
           </h2>
+          ${featuredPost.subtitle ? `<p class="text-lg text-pulse-gold mb-3 font-medium">${featuredPost.subtitle}</p>` : ''}
           <p class="text-bantu-text/70 mb-6 line-clamp-3">
             ${featuredPost.excerpt}
           </p>
@@ -504,7 +659,7 @@
               <i data-lucide="clock" class="w-4 h-4 mr-2"></i>
               <span>${featuredPost.readTime}</span>
             </div>
-            <a href="${featuredPost.url}" class="inline-flex items-center px-6 py-3 bg-bantu-accent text-bantu-dark font-bold rounded-lg hover:bg-yellow-500 transition duration-300 transform hover:scale-105">
+            <a href="${featuredPost.url}" class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-pulse-blue to-pulse-gold text-white font-bold rounded-lg hover:opacity-90 transition duration-300 transform hover:scale-105">
               Read Full Article
               <i data-lucide="arrow-right" class="w-4 h-4 ml-2"></i>
             </a>
@@ -531,6 +686,9 @@
           allPosts = allBlogPosts;
         }
         
+        // Sort posts by date (newest first)
+        allPosts.sort((a, b) => new Date(b.date) - new Date(a.date));
+        
         // Update category counts
         updateCategoryCounts(allPosts);
         
@@ -543,6 +701,7 @@
       } catch (err) {
         // Fallback to our blog posts data
         allPosts = allBlogPosts;
+        allPosts.sort((a, b) => new Date(b.date) - new Date(a.date));
         updateCategoryCounts(allPosts);
         renderHeroPost(allPosts);
         loadPage();
@@ -660,11 +819,14 @@
       
       grid.innerHTML = '';
       loadBtn.style.display = 'block';
-      loadPage();
+      loadPosts();
     }
 
     // Initialize
     document.addEventListener('DOMContentLoaded', loadPosts);
+    
+    // Global reset filters function
+    window.resetFilters = resetFilters;
   </script>
 </body>
 </html>
