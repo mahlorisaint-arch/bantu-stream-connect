@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bantu Connect Pulse - What's moving the culture</title>
+    <title>Bantu Connect Pulse - No DNA, Just RSA</title>
     
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -3198,142 +3198,149 @@
             });
         }
         
-        async function fetchPulses(limit = 10, offset = 0) {
-            if (isFeedLoading) return [];
+        // FIXED: Reliable pulse fetching function
+async function fetchPulses(limit = 10, offset = 0) {
+    if (isFeedLoading) {
+        console.log('Already loading, skipping...');
+        return [];
+    }
+    
+    try {
+        isFeedLoading = true;
+        console.log(`Fetching pulses: limit=${limit}, offset=${offset}`);
+        
+        // 1. Fetch pulses with a timeout
+        const timeoutPromise = new Promise((_, reject) => {
+            setTimeout(() => reject(new Error('Request timeout')), 8000);
+        });
+        
+        const fetchPromise = supabaseClient
+            .from('pulses')
+            .select('*')
+            .is('deleted_at', null)
+            .order('created_at', { ascending: false })
+            .range(offset, offset + limit - 1);
+        
+        const { data: pulsesData, error: pulsesError } = await Promise.race([
+            fetchPromise,
+            timeoutPromise
+        ]);
+        
+        if (pulsesError) {
+            console.error('❌ Pulse fetch error:', pulsesError);
             
-            try {
-                isFeedLoading = true;
+            // Handle auth errors
+            if (pulsesError.message.includes('JWT') || pulsesError.code === 'PGRST301') {
+                console.log('Auth error detected, refreshing session...');
+                const { data: { session }, error: refreshError } = await supabaseClient.auth.refreshSession();
                 
-                // Add timeout to prevent hanging requests
-                const timeoutPromise = new Promise((_, reject) => {
-                    setTimeout(() => reject(new Error('Request timeout')), 10000);
-                });
+                if (refreshError) {
+                    console.error('Auth refresh failed:', refreshError);
+                    showToast('Session expired. Please login again.', 'error');
+                    setTimeout(() => {
+                        window.location.href = 'login.html';
+                    }, 2000);
+                    return [];
+                }
                 
-                // Fetch pulses with timeout protection
-                const fetchPromise = supabaseClient
+                // Retry once with new session
+                console.log('Retrying with refreshed session...');
+                const retryResult = await supabaseClient
                     .from('pulses')
                     .select('*')
                     .is('deleted_at', null)
                     .order('created_at', { ascending: false })
                     .range(offset, offset + limit - 1);
                 
-                const { data: pulsesData, error: pulsesError } = await Promise.race([
-                    fetchPromise,
-                    timeoutPromise
-                ]);
-                
-                if (pulsesError) {
-                    // Handle specific errors
-                    if (pulsesError.message.includes('JWT') || pulsesError.code === 'PGRST301') {
-                        // Auth error - try to refresh session
-                        const { data: { session }, error: refreshError } = await supabaseClient.auth.refreshSession();
-                        if (refreshError) {
-                            console.error('Auth error, redirecting to login');
-                            window.location.href = 'login.html';
-                            return [];
-                        }
-                        // Retry with new session
-                        return await fetchPulses(limit, offset);
-                    }
-                    throw pulsesError;
-                }
-                
-                if (!pulsesData || pulsesData.length === 0) {
+                if (retryResult.error) {
+                    console.error('Retry failed:', retryResult.error);
                     return [];
                 }
                 
-                // Optimize: Only fetch user profiles for pulses we don't have yet
-                const newPulses = pulsesData.filter(pulse => !displayedPulseIds.has(pulse.id));
-                
-                if (newPulses.length === 0) {
-                    // All pulses are already displayed, but we should still update offset
-                    return [];
-                }
-                
-                // Get user IDs from new pulses
-                const userIds = [...new Set(newPulses.map(p => p.user_id))];
-                
-                // Batch fetch user profiles
-                let userProfilesMap = {};
-                if (userIds.length > 0) {
-                    try {
-                        const { data: profilesData, error: profilesError } = await supabaseClient
-                            .from('user_profiles')
-                            .select('id, email, full_name, username, role, avatar_url')
-                            .in('id', userIds);
-                        
-                        if (!profilesError && profilesData) {
-                            profilesData.forEach(profile => {
-                                userProfilesMap[profile.id] = profile;
-                            });
-                        }
-                    } catch (profilesError) {
-                        console.warn('Could not fetch user profiles:', profilesError);
-                    }
-                }
-                
-                // Get pulse IDs for batch operations
-                const pulseIds = newPulses.map(p => p.id);
-                
-                // Batch fetch likes count
-                const likesCountMap = {};
-                try {
-                    const { data: likesData, error: likesError } = await supabaseClient
-                        .from('pulse_likes')
-                        .select('pulse_id, count')
-                        .in('pulse_id', pulseIds);
-                    
-                    if (!likesError && likesData) {
-                        likesData.forEach(item => {
-                            likesCountMap[item.pulse_id] = item.count || 0;
-                        });
-                    }
-                } catch (likesError) {
-                    console.warn('Error fetching likes count:', likesError);
-                }
-                
-                // Batch fetch comments count
-                const commentsCountMap = {};
-                try {
-                    const { data: commentsData, error: commentsError } = await supabaseClient
-                        .from('pulse_comments')
-                        .select('pulse_id, count')
-                        .in('pulse_id', pulseIds)
-                        .eq('is_removed', false);
-                    
-                    if (!commentsError && commentsData) {
-                        commentsData.forEach(item => {
-                            commentsCountMap[item.pulse_id] = item.count || 0;
-                        });
-                    }
-                } catch (commentsError) {
-                    console.warn('Error fetching comments count:', commentsError);
-                }
-                
-                // Enrich pulses data
-                const enrichedPulses = newPulses.map(pulse => ({
-                    ...pulse,
-                    user_profiles: userProfilesMap[pulse.user_id] || {
-                        id: pulse.user_id,
-                        email: 'user@example.com',
-                        full_name: 'User',
-                        username: 'user',
-                        role: 'creator',
-                        avatar_url: null
-                    },
-                    actual_likes_count: likesCountMap[pulse.id] || pulse.likes_count || 0,
-                    actual_comments_count: commentsCountMap[pulse.id] || pulse.comments_count || 0
-                }));
-                
-                return enrichedPulses;
-                
-            } catch (error) {
-                console.error('❌ Error fetching pulses:', error);
-                return [];
-            } finally {
-                isFeedLoading = false;
+                pulsesData = retryResult.data;
+            } else {
+                throw pulsesError;
             }
         }
+        
+        if (!pulsesData || pulsesData.length === 0) {
+            console.log('No pulses found');
+            return [];
+        }
+        
+        // 2. Get unique user IDs
+        const userIds = [...new Set(pulsesData.map(p => p.user_id))];
+        
+        // 3. Batch fetch user profiles
+        let userProfilesMap = {};
+        if (userIds.length > 0) {
+            const { data: profilesData, error: profilesError } = await supabaseClient
+                .from('user_profiles')
+                .select('id, email, full_name, username, role, avatar_url')
+                .in('id', userIds);
+            
+            if (!profilesError && profilesData) {
+                profilesData.forEach(profile => {
+                    userProfilesMap[profile.id] = profile;
+                });
+            }
+        }
+        
+        // 4. Get pulse IDs for batch operations
+        const pulseIds = pulsesData.map(p => p.id);
+        
+        // 5. Batch fetch likes count (single query)
+        const { data: likesData, error: likesError } = await supabaseClient
+            .from('pulse_likes')
+            .select('pulse_id')
+            .in('pulse_id', pulseIds);
+        
+        const likesCountMap = {};
+        if (!likesError && likesData) {
+            likesData.forEach(like => {
+                likesCountMap[like.pulse_id] = (likesCountMap[like.pulse_id] || 0) + 1;
+            });
+        }
+        
+        // 6. Batch fetch comments count (single query)
+        const { data: commentsData, error: commentsError } = await supabaseClient
+            .from('pulse_comments')
+            .select('pulse_id')
+            .in('pulse_id', pulseIds)
+            .eq('is_removed', false);
+        
+        const commentsCountMap = {};
+        if (!commentsError && commentsData) {
+            commentsData.forEach(comment => {
+                commentsCountMap[comment.pulse_id] = (commentsCountMap[comment.pulse_id] || 0) + 1;
+            });
+        }
+        
+        // 7. Enrich pulses with all data
+        const enrichedPulses = pulsesData.map(pulse => ({
+            ...pulse,
+            user_profiles: userProfilesMap[pulse.user_id] || {
+                id: pulse.user_id,
+                email: 'user@example.com',
+                full_name: 'User',
+                username: 'user',
+                role: 'creator',
+                avatar_url: null
+            },
+            actual_likes_count: likesCountMap[pulse.id] || 0,
+            actual_comments_count: commentsCountMap[pulse.id] || 0
+        }));
+        
+        console.log(`✅ Successfully fetched ${enrichedPulses.length} pulses`);
+        return enrichedPulses;
+        
+    } catch (error) {
+        console.error('❌ Fatal error in fetchPulses:', error);
+        return [];
+    } finally {
+        isFeedLoading = false;
+    }
+}
         
         // FIXED: displayPulses function - NO loading messages, just show pulses
         function displayPulses(pulses, likedPulses) {
