@@ -1728,6 +1728,38 @@
         let allPulses = [];
         let displayedPulseIds = new Set();
 
+        // Performance optimization functions
+        let scrollThrottleTimeout = null;
+        let isCheckingScroll = false;
+
+        function throttle(func, limit) {
+            let inThrottle;
+            return function() {
+                const args = arguments;
+                const context = this;
+                if (!inThrottle) {
+                    func.apply(context, args);
+                    inThrottle = true;
+                    setTimeout(() => inThrottle = false, limit);
+                }
+            };
+        }
+
+        function debounce(func, wait, immediate) {
+            let timeout;
+            return function() {
+                const context = this, args = arguments;
+                const later = function() {
+                    timeout = null;
+                    if (!immediate) func.apply(context, args);
+                };
+                const callNow = immediate && !timeout;
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+                if (callNow) func.apply(context, args);
+            };
+        }
+
         async function initialize() {
             console.log('Starting Pulse Feed initialization...');
             
@@ -1801,12 +1833,15 @@
                     document.getElementById('loading').style.display = 'none';
                     document.getElementById('content').style.display = 'block';
                     document.getElementById('pulse-feed-container').innerHTML = `
-                        <div class="error" style="padding: 40px 20px; text-align: center; color: var(--slate-grey);">
-                            <h3 style="color: var(--soft-white); margin-bottom: 10px;">Welcome to Bantu Connect Pulse!</h3>
-                            <p>The African way baba, it's all in the DNA.</p>
-                            <button class="modal-btn modal-btn-post" onclick="loadSampleData()" style="margin-top: 20px;">
-                                Load Demo Content
-                            </button>
+                        <div class="empty-state">
+                            <div class="empty-icon">
+                                <i class="fas fa-feather-alt"></i>
+                            </div>
+                            <div class="empty-title">No pulses yet</div>
+                            <div class="empty-description">
+                                Be the first to share what's moving the culture!<br>
+                                Click the + button to create your first pulse.
+                            </div>
                         </div>
                     `;
                     
@@ -1818,32 +1853,52 @@
         
         // Set up infinite scroll
         function setupInfiniteScroll() {
-            // Debounce scroll events for performance
-            let scrollTimeout;
+            // Use passive event listener for better performance
             window.addEventListener('scroll', () => {
-                clearTimeout(scrollTimeout);
-                scrollTimeout = setTimeout(() => {
+                if (!isLoadingMore && hasMorePulses) {
                     checkScrollPosition();
-                }, 100);
-            });
+                }
+            }, { passive: true });
             
-            // Also check on resize
-            window.addEventListener('resize', checkScrollPosition);
+            // Also check on resize (throttled)
+            let resizeTimeout;
+            window.addEventListener('resize', () => {
+                clearTimeout(resizeTimeout);
+                resizeTimeout = setTimeout(() => {
+                    if (!isLoadingMore && hasMorePulses) {
+                        checkScrollPosition();
+                    }
+                }, 250);
+            });
         }
         
         // Check if we need to load more pulses
-        async function checkScrollPosition() {
-            // Don't load if already loading or no more pulses
-            if (isLoadingMore || !hasMorePulses) return;
+        function checkScrollPosition() {
+            // Don't check if already checking or loading
+            if (isCheckingScroll || isLoadingMore) return;
             
-            const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-            const scrollHeight = document.documentElement.scrollHeight;
-            const clientHeight = document.documentElement.clientHeight;
-            
-            // Load more when user is 300px from the bottom
-            if (scrollTop + clientHeight >= scrollHeight - 300) {
-                await loadMorePulses();
+            // Throttle scroll checks
+            if (scrollThrottleTimeout) {
+                clearTimeout(scrollThrottleTimeout);
             }
+            
+            scrollThrottleTimeout = setTimeout(() => {
+                isCheckingScroll = true;
+                
+                const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+                const scrollHeight = document.documentElement.scrollHeight;
+                const clientHeight = document.documentElement.clientHeight;
+                
+                // Calculate distance from bottom
+                const distanceFromBottom = scrollHeight - (scrollTop + clientHeight);
+                
+                // Load more when 500px from bottom (more buffer to prevent freezing)
+                if (distanceFromBottom < 500 && hasMorePulses && !isLoadingMore) {
+                    loadMorePulses();
+                }
+                
+                isCheckingScroll = false;
+            }, 200); // 200ms throttle
         }
         
         // Load more pulses for infinite scroll
@@ -1859,10 +1914,14 @@
                     loadingIndicator.classList.add('active');
                 }
                 
+                // Add a small delay to prevent UI freezing
+                await new Promise(resolve => setTimeout(resolve, 100));
+                
                 // Fetch next batch of pulses
                 const newPulses = await fetchPulses(PULSES_PER_PAGE, currentOffset);
                 
-                if (newPulses.length === 0) {
+                // If no more pulses or error, stop infinite scroll
+                if (!newPulses || newPulses.length === 0) {
                     hasMorePulses = false;
                     if (loadingIndicator) {
                         loadingIndicator.innerHTML = '<div>No more pulses to load</div>';
@@ -1873,14 +1932,28 @@
                     return;
                 }
                 
+                // Filter out any pulses already displayed
+                const uniquePulses = newPulses.filter(pulse => !displayedPulseIds.has(pulse.id));
+                
+                if (uniquePulses.length === 0) {
+                    // No new unique pulses, but we might have reached the end
+                    currentOffset += PULSES_PER_PAGE;
+                    hasMorePulses = false;
+                    if (loadingIndicator) {
+                        loadingIndicator.innerHTML = '<div>No more pulses to load</div>';
+                        loadingIndicator.classList.remove('active');
+                    }
+                    return;
+                }
+                
                 // Update offset for next load
-                currentOffset += newPulses.length;
+                currentOffset += PULSES_PER_PAGE;
                 
                 // Check which pulses user has liked
-                const likedPulses = await checkUserLikes(newPulses.map(p => p.id));
+                const likedPulses = await checkUserLikes(uniquePulses.map(p => p.id));
                 
                 // Display the new pulses
-                displayMorePulses(newPulses, likedPulses);
+                displayMorePulses(uniquePulses, likedPulses);
                 
                 // Hide loading indicator
                 if (loadingIndicator) {
@@ -1888,18 +1961,22 @@
                 }
                 
                 // If we got fewer pulses than requested, we might be at the end
-                if (newPulses.length < PULSES_PER_PAGE) {
+                if (uniquePulses.length < PULSES_PER_PAGE) {
                     hasMorePulses = false;
                 }
                 
             } catch (error) {
                 console.error('Error loading more pulses:', error);
-                showToast('Failed to load more pulses', 'error');
                 
                 // Hide loading indicator on error
                 const loadingIndicator = document.getElementById('loading-more');
                 if (loadingIndicator) {
                     loadingIndicator.classList.remove('active');
+                }
+                
+                // Don't show error toast for network issues to avoid spam
+                if (error.message !== 'Network Error') {
+                    showToast('Failed to load more pulses', 'error');
                 }
             } finally {
                 isLoadingMore = false;
@@ -2276,93 +2353,6 @@
                     document.getElementById(`${tabId}-feed`).classList.add('active');
                 });
             });
-        }
-        
-        function loadSampleData() {
-            const feed = document.getElementById('pulse-feed-container');
-            
-            const samplePosts = [
-                {
-                    name: 'Alex B.',
-                    content: 'The rhythm of African storytelling isn\'t just in the words—it\'s in the spaces between them.',
-                    time: '2 hours ago'
-                },
-                {
-                    name: 'Maya C.',
-                    content: 'Just dropped my latest track! The fusion of traditional rhythms with contemporary beats. 🔊',
-                    time: '5 hours ago'
-                },
-                {
-                    name: 'Kwame T.',
-                    content: 'Building bridges between artists and musicians. The collaboration potential is limitless when we work across borders.',
-                    time: '1 day ago'
-                }
-            ];
-            
-            let html = '';
-            
-            samplePosts.forEach(post => {
-                html += `
-                    <div class="pulse-card" onclick="viewSamplePulse()">
-                        <div class="pulse-header">
-                            <div class="pulse-avatar">${post.name.substring(0, 2).toUpperCase()}</div>
-                            <div class="pulse-creator-info">
-                                <div class="creator-name">${post.name}</div>
-                                <div class="pulse-time">${post.time}</div>
-                            </div>
-                        </div>
-                        
-                        <div class="pulse-content">
-                            <p class="pulse-text">${post.content}</p>
-                        </div>
-                        
-                        <div class="pulse-actions">
-                            <button class="action-button like-btn">
-                                <i class="fas fa-heart"></i> Like
-                            </button>
-                            <button class="action-button comment-btn">
-                                <i class="fas fa-comment"></i> Comment
-                            </button>
-                            <button class="action-button share-btn">
-                                <i class="fas fa-share"></i> Share
-                            </button>
-                        </div>
-                        
-                        <div class="pulse-stats">
-                            <span class="likes-count">${Math.floor(Math.random() * 100)} likes</span>
-                            <span class="comments-count">${Math.floor(Math.random() * 20)} comments</span>
-                            <span class="shares-count">${Math.floor(Math.random() * 10)} shares</span>
-                        </div>
-                    </div>
-                `;
-            });
-            
-            feed.innerHTML = html;
-            
-            document.querySelectorAll('.like-btn').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    showToast('Please sign in to like pulses', 'error');
-                });
-            });
-            
-            document.querySelectorAll('.comment-btn').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    showToast('Please sign in to comment', 'error');
-                });
-            });
-            
-            document.querySelectorAll('.share-btn').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    showToast('Please sign in to share', 'error');
-                });
-            });
-        }
-        
-        function viewSamplePulse() {
-            showToast('Please sign in to view pulse details', 'error');
         }
         
         function showToast(message, type = 'error') {
@@ -3299,92 +3289,119 @@
             
             try {
                 isFeedLoading = true;
-                console.log('🔄 Fetching pulses...');
                 
-                const { data: pulsesData, error: pulsesError } = await supabaseClient
+                // Add timeout to prevent hanging requests
+                const timeoutPromise = new Promise((_, reject) => {
+                    setTimeout(() => reject(new Error('Request timeout')), 10000);
+                });
+                
+                // Fetch pulses with timeout protection
+                const fetchPromise = supabaseClient
                     .from('pulses')
                     .select('*')
                     .is('deleted_at', null)
                     .order('created_at', { ascending: false })
                     .range(offset, offset + limit - 1);
                 
-                if (pulsesError) throw pulsesError;
+                const { data: pulsesData, error: pulsesError } = await Promise.race([
+                    fetchPromise,
+                    timeoutPromise
+                ]);
+                
+                if (pulsesError) {
+                    // Handle specific errors
+                    if (pulsesError.message.includes('JWT') || pulsesError.code === 'PGRST301') {
+                        // Auth error - try to refresh session
+                        const { data: { session }, error: refreshError } = await supabaseClient.auth.refreshSession();
+                        if (refreshError) {
+                            console.error('Auth error, redirecting to login');
+                            window.location.href = 'login.html';
+                            return [];
+                        }
+                        // Retry with new session
+                        return await fetchPulses(limit, offset);
+                    }
+                    throw pulsesError;
+                }
                 
                 if (!pulsesData || pulsesData.length === 0) {
                     return [];
                 }
                 
-                console.log(`✅ Fetched ${pulsesData.length} pulses`);
+                // Optimize: Only fetch user profiles for pulses we don't have yet
+                const newPulses = pulsesData.filter(pulse => !displayedPulseIds.has(pulse.id));
                 
-                const userIds = [...new Set(pulsesData.map(p => p.user_id))];
-                
-                let userProfilesMap = {};
-                
-                try {
-                    const { data: profilesData, error: profilesError } = await supabaseClient
-                        .from('user_profiles')
-                        .select('*')
-                        .in('id', userIds);
-                    
-                    if (!profilesError && profilesData) {
-                        profilesData.forEach(profile => {
-                            userProfilesMap[profile.id] = profile;
-                        });
-                    }
-                } catch (profilesError) {
-                    console.warn('Could not fetch user profiles:', profilesError);
+                if (newPulses.length === 0) {
+                    // All pulses are already displayed, but we should still update offset
+                    return [];
                 }
                 
-                const pulseIds = pulsesData.map(p => p.id);
+                // Get user IDs from new pulses
+                const userIds = [...new Set(newPulses.map(p => p.user_id))];
                 
+                // Batch fetch user profiles
+                let userProfilesMap = {};
+                if (userIds.length > 0) {
+                    try {
+                        const { data: profilesData, error: profilesError } = await supabaseClient
+                            .from('user_profiles')
+                            .select('id, email, full_name, username, role, avatar_url')
+                            .in('id', userIds);
+                        
+                        if (!profilesError && profilesData) {
+                            profilesData.forEach(profile => {
+                                userProfilesMap[profile.id] = profile;
+                            });
+                        }
+                    } catch (profilesError) {
+                        console.warn('Could not fetch user profiles:', profilesError);
+                    }
+                }
+                
+                // Get pulse IDs for batch operations
+                const pulseIds = newPulses.map(p => p.id);
+                
+                // Batch fetch likes count
                 const likesCountMap = {};
                 try {
                     const { data: likesData, error: likesError } = await supabaseClient
                         .from('pulse_likes')
-                        .select('pulse_id')
+                        .select('pulse_id, count')
                         .in('pulse_id', pulseIds);
                     
                     if (!likesError && likesData) {
-                        const pulseLikeCounts = {};
                         likesData.forEach(item => {
-                            pulseLikeCounts[item.pulse_id] = (pulseLikeCounts[item.pulse_id] || 0) + 1;
-                        });
-                        
-                        Object.keys(pulseLikeCounts).forEach(pulseId => {
-                            likesCountMap[pulseId] = pulseLikeCounts[pulseId];
+                            likesCountMap[item.pulse_id] = item.count || 0;
                         });
                     }
                 } catch (likesError) {
                     console.warn('Error fetching likes count:', likesError);
                 }
                 
+                // Batch fetch comments count
                 const commentsCountMap = {};
                 try {
                     const { data: commentsData, error: commentsError } = await supabaseClient
                         .from('pulse_comments')
-                        .select('pulse_id')
+                        .select('pulse_id, count')
                         .in('pulse_id', pulseIds)
                         .eq('is_removed', false);
                     
                     if (!commentsError && commentsData) {
-                        const pulseCommentCounts = {};
                         commentsData.forEach(item => {
-                            pulseCommentCounts[item.pulse_id] = (pulseCommentCounts[item.pulse_id] || 0) + 1;
-                        });
-                        
-                        Object.keys(pulseCommentCounts).forEach(pulseId => {
-                            commentsCountMap[pulseId] = pulseCommentCounts[pulseId];
+                            commentsCountMap[item.pulse_id] = item.count || 0;
                         });
                     }
                 } catch (commentsError) {
                     console.warn('Error fetching comments count:', commentsError);
                 }
                 
-                const enrichedPulses = pulsesData.map(pulse => ({
+                // Enrich pulses data
+                const enrichedPulses = newPulses.map(pulse => ({
                     ...pulse,
                     user_profiles: userProfilesMap[pulse.user_id] || {
                         id: pulse.user_id,
-                        email: 'unknown@user.com',
+                        email: 'user@example.com',
                         full_name: 'User',
                         username: 'user',
                         role: 'creator',
@@ -3398,7 +3415,12 @@
                 
             } catch (error) {
                 console.error('❌ Error fetching pulses:', error);
-                showToast('Failed to load pulses', 'error');
+                
+                // Don't show toast for timeout or network errors to avoid spam
+                if (!error.message.includes('timeout') && !error.message.includes('Network')) {
+                    showToast('Failed to load pulses', 'error');
+                }
+                
                 return [];
             } finally {
                 isFeedLoading = false;
@@ -3406,15 +3428,31 @@
         }
         
         function displayPulses(pulses, likedPulses) {
+            const pulseFeedContainer = document.getElementById('pulse-feed-container');
+            
             if (!pulses || pulses.length === 0) {
-                loadSampleData();
+                // Show empty state for first load
+                if (currentOffset === 0) {
+                    pulseFeedContainer.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-icon">
+                                <i class="fas fa-feather-alt"></i>
+                            </div>
+                            <div class="empty-title">No pulses yet</div>
+                            <div class="empty-description">
+                                Be the first to share what's moving the culture!<br>
+                                Click the + button to create your first pulse.
+                            </div>
+                        </div>
+                    `;
+                }
                 return;
             }
             
-            const pulseFeedContainer = document.getElementById('pulse-feed-container');
+            // Clear existing pulses
             pulseFeedContainer.innerHTML = '';
             
-            // Reset displayed IDs
+            // Reset displayed IDs and pulses array
             displayedPulseIds.clear();
             allPulses = [];
             
@@ -3433,6 +3471,7 @@
             currentOffset = pulses.length;
             hasMorePulses = pulses.length >= PULSES_PER_PAGE;
             
+            // Setup lazy loading
             setupLazyLoading();
         }
         
@@ -3733,6 +3772,27 @@
             }
         });
 
+        // Load initial pulses function
+        async function loadInitialPulses() {
+            try {
+                isFeedLoading = true;
+                const pulses = await fetchPulses(PULSES_PER_PAGE, 0);
+                
+                if (pulses.length > 0) {
+                    const likedPulses = await checkUserLikes(pulses.map(p => p.id));
+                    displayPulses(pulses, likedPulses);
+                } else {
+                    // Show empty state
+                    displayPulses([], new Set());
+                }
+            } catch (error) {
+                console.error('Error loading initial pulses:', error);
+                displayPulses([], new Set());
+            } finally {
+                isFeedLoading = false;
+            }
+        }
+
         function initializeFeed(session) {
             let selectedMedia = null;
             let isSeriesMode = false;
@@ -3755,7 +3815,6 @@
             const userAvatar = document.getElementById('user-avatar');
             const tabs = document.querySelectorAll('.tab');
             const tabContents = document.querySelectorAll('.tab-content');
-            const pulseFeedContainer = document.getElementById('pulse-feed-container');
             
             const editModal = document.getElementById('editModal');
             const closeEditModal = document.getElementById('closeEditModal');
@@ -3834,26 +3893,6 @@
                 toggleSwitch.classList.remove('active');
                 seriesOptions.classList.remove('active');
                 updatePostButton();
-            }
-            
-            // Load initial pulses
-            async function loadInitialPulses() {
-                try {
-                    isFeedLoading = true;
-                    const pulses = await fetchPulses(PULSES_PER_PAGE, 0);
-                    
-                    if (pulses.length > 0) {
-                        const likedPulses = await checkUserLikes(pulses.map(p => p.id));
-                        displayPulses(pulses, likedPulses);
-                    } else {
-                        loadSampleData();
-                    }
-                } catch (error) {
-                    console.error('Error loading initial pulses:', error);
-                    loadSampleData();
-                } finally {
-                    isFeedLoading = false;
-                }
             }
             
             async function createPulse() {
@@ -4175,7 +4214,18 @@
                     isInitialized = true;
                     document.getElementById('loading').style.display = 'none';
                     document.getElementById('content').style.display = 'block';
-                    loadSampleData();
+                    document.getElementById('pulse-feed-container').innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-icon">
+                                <i class="fas fa-feather-alt"></i>
+                            </div>
+                            <div class="empty-title">No pulses yet</div>
+                            <div class="empty-description">
+                                Be the first to share what's moving the culture!<br>
+                                Click the + button to create your first pulse.
+                            </div>
+                        </div>
+                    `;
                     setupBasicEventListeners();
                 }, 3000);
             }
