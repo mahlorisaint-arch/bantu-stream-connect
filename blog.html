@@ -29,7 +29,6 @@
     }
   </script>
   <script src="https://unpkg.com/lucide@latest"></script>
-  <link href="assets/css/bantu-global.css" rel="stylesheet" />
   <style>
     .fade-in { opacity: 0; transform: translateY(20px); animation: fadeInUp 1s forwards; }
     .fade-in-delay-1 { animation-delay: 0.3s; }
@@ -96,27 +95,6 @@
     .pulse-animation {
       animation: pulse-glow 2s infinite ease-in-out;
     }
-
-    /* Category specific styles */
-    .category-platform {
-      background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(251, 191, 36, 0.05) 100%);
-      border: 1px solid rgba(59, 130, 246, 0.3);
-    }
-
-    .category-founder {
-      background: linear-gradient(135deg, rgba(79, 70, 229, 0.1) 0%, rgba(245, 158, 11, 0.05) 100%);
-      border: 1px solid rgba(79, 70, 229, 0.3);
-    }
-
-    .category-tech {
-      background: linear-gradient(135deg, rgba(79, 70, 229, 0.1) 0%, rgba(30, 41, 59, 0.5) 100%);
-      border: 1px solid rgba(79, 70, 229, 0.3);
-    }
-
-    .category-storytelling {
-      background: linear-gradient(135deg, rgba(124, 58, 237, 0.1) 0%, rgba(139, 69, 19, 0.05) 100%);
-      border: 1px solid rgba(124, 58, 237, 0.3);
-    }
   </style>
 </head>
 <body class="bg-bantu-dark text-bantu-text font-sans">
@@ -137,7 +115,7 @@
         <a href="users.html" class="hover:text-bantu-accent transition duration-150">Users</a>
         <a href="empowerment.html" class="hover:text-bantu-accent transition duration-150">Empowerment</a>
         <a href="blog.html" class="text-bantu-accent border-b-2 border-bantu-accent pb-1">Blog</a>
-        <a href="#waitlist" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg shadow-sm text-bantu-dark bg-bantu-accent hover:bg-yellow-500 transition duration-150">
+        <a href="#newsletter" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg shadow-sm text-bantu-dark bg-bantu-accent hover:bg-yellow-500 transition duration-150">
           Join the Community
         </a>
       </nav>
@@ -153,48 +131,56 @@
   <section class="py-12 md:py-16 bg-gradient-to-b from-bantu-dark to-gray-900">
     <div class="container mx-auto px-4 sm:px-6 lg:px-8">
       <h1 class="text-4xl sm:text-5xl font-extrabold mb-8 text-white tracking-tight text-center">
-        Beyond the Screen: Bantu Stream Insights
+        Bantu Insights: Building Africa's Digital Future
       </h1>
       
-      <div id="hero-post" class="bg-bantu-dark border border-bantu-primary/40 rounded-xl shadow-2xl overflow-hidden md:flex fade-in">
-        <!-- Hero content will be populated by JavaScript -->
-      </div>
-    </div>
-  </section>
-
-  <!-- Featured Topics & Categories -->
-  <section class="py-12 bg-gray-900">
-    <div class="container mx-auto px-4 sm:px-6 lg:px-8">
-      <h2 class="text-2xl font-bold mb-6 text-white border-b border-bantu-text/20 pb-2">Explore Topics</h2>
-      
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <!-- Category Card 1: Tech -->
-        <a href="#tech" class="bg-bantu-dark border border-bantu-text/30 hover:border-bantu-accent/70 rounded-xl p-5 flex flex-col items-start transition duration-300 transform hover:-translate-y-1 shadow-lg fade-in fade-in-delay-1">
-          <i data-lucide="cpu" class="w-8 h-8 text-bantu-primary mb-3"></i>
-          <span class="text-lg font-semibold text-white">Tech & Innovation</span>
-          <span id="tech-count" class="text-sm text-bantu-text/60 mt-1">Loading...</span>
-        </a>
-
-        <!-- Category Card 2: Platform Launches -->
-        <a href="#platform" class="bg-bantu-dark border border-bantu-text/30 hover:border-pulse-blue/70 rounded-xl p-5 flex flex-col items-start transition duration-300 transform hover:-translate-y-1 shadow-lg fade-in fade-in-delay-1">
-          <i data-lucide="zap" class="w-8 h-8 text-pulse-blue mb-3"></i>
-          <span class="text-lg font-semibold text-white">Platform Launches</span>
-          <span id="platform-count" class="text-sm text-bantu-text/60 mt-1">Loading...</span>
-        </a>
-
-        <!-- Category Card 3: Storytelling -->
-        <a href="#storytelling" class="bg-bantu-dark border border-bantu-text/30 hover:border-storytelling-purple/70 rounded-xl p-5 flex flex-col items-start transition duration-300 transform hover:-translate-y-1 shadow-lg fade-in fade-in-delay-2">
-          <i data-lucide="book-open" class="w-8 h-8 text-storytelling-purple mb-3"></i>
-          <span class="text-lg font-semibold text-white">Storytelling</span>
-          <span id="storytelling-count" class="text-sm text-bantu-text/60 mt-1">Loading...</span>
-        </a>
-
-        <!-- Category Card 4: Founder's Notes -->
-        <a href="#founder" class="bg-bantu-dark border border-bantu-text/30 hover:border-bantu-accent/70 rounded-xl p-5 flex flex-col items-start transition duration-300 transform hover:-translate-y-1 shadow-lg fade-in fade-in-delay-2">
-          <i data-lucide="user" class="w-8 h-8 text-bantu-accent mb-3"></i>
-          <span class="text-lg font-semibold text-white">Founder's Notes</span>
-          <span id="founder-count" class="text-sm text-bantu-text/60 mt-1">Loading...</span>
-        </a>
+      <!-- Hero Post: Bantu Connect Pulse Launch -->
+      <div class="bg-bantu-dark border border-pulse-blue/40 rounded-xl shadow-2xl overflow-hidden md:flex fade-in category-platform">
+        <div class="md:w-1/2 relative">
+          <img src="assets/icon/pulse.png" 
+               alt="Bantu Connect Pulse Launch"
+               class="w-full h-72 md:h-full object-contain p-8 transition-transform duration-700 hover:scale-105 pulse-animation"
+               onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1551650975-87deedd944c3?auto=format&fit=crop&w=1200&q=80'">
+          <div class="absolute top-4 left-4 flex flex-wrap gap-2">
+            <span class="inline-flex items-center px-3 py-1 text-sm font-medium rounded-full text-white bg-gradient-to-r from-pulse-blue to-pulse-gold">
+              <i data-lucide="zap" class="w-3 h-3 mr-1"></i>
+              FEATURED LAUNCH
+            </span>
+            <span class="inline-flex items-center px-3 py-1 text-sm font-medium rounded-full bg-pulse-blue/20 text-pulse-blue">
+              <i data-lucide="rocket" class="w-3 h-3 mr-1"></i>
+              Platform Launch
+            </span>
+          </div>
+        </div>
+        <div class="md:w-1/2 p-6 sm:p-10 flex flex-col justify-center">
+          <h2 class="text-3xl sm:text-4xl font-bold text-white mb-4 leading-tight hover:text-pulse-blue transition duration-200 cursor-pointer">
+            The Narrative Debt: Why We Needed to Build Better
+          </h2>
+          <p class="text-lg text-pulse-gold mb-3 font-medium">Bantu Connect Pulse Launch Announcement</p>
+          <p class="text-bantu-text/70 mb-6 line-clamp-3">
+            In the sprawling, vibrant landscape of the African creator economy, a debt persists. The debt owed to the story itself. Pulse is not a place for fleeting reactions. It is a new African social platform designed to move culture forward by prioritizing continuity and sequence inherent in all great storytelling.
+          </p>
+          <div class="flex items-center text-sm mb-4">
+            <div class="flex items-center mr-6 text-bantu-text/70">
+              <i data-lucide="user" class="w-4 h-4 mr-2"></i>
+              <span>Mahlori Mhlanga, Special Correspondent</span>
+            </div>
+            <div class="flex items-center text-bantu-text/70">
+              <i data-lucide="calendar" class="w-4 h-4 mr-2"></i>
+              <span>December 2025</span>
+            </div>
+          </div>
+          <div class="flex items-center justify-between">
+            <div class="flex items-center text-bantu-text/70">
+              <i data-lucide="clock" class="w-4 h-4 mr-2"></i>
+              <span>8 min read</span>
+            </div>
+            <a href="bantu-connect-pulse-blog.html" class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-pulse-blue to-pulse-gold text-white font-bold rounded-lg hover:opacity-90 transition duration-300 transform hover:scale-105">
+              Read Full Article
+              <i data-lucide="arrow-right" class="w-4 h-4 ml-2"></i>
+            </a>
+          </div>
+        </div>
       </div>
     </div>
   </section>
@@ -202,36 +188,386 @@
   <!-- Main Blog Post Grid -->
   <section class="py-12 bg-bantu-dark">
     <div class="container mx-auto px-4 sm:px-6 lg:px-8">
-      <h2 class="text-3xl font-bold mb-8 text-white">Latest Insights</h2>
+      <h2 class="text-3xl font-bold mb-8 text-white border-b border-bantu-text/20 pb-4">Latest Insights & Updates</h2>
       
-      <div id="blog-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-        <!-- Blog posts will be loaded here dynamically -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        
+        <!-- Post 1: Behind the Scenes Journey -->
+        <article class="bg-bantu-dark border border-bantu-text/20 rounded-xl overflow-hidden shadow-lg blog-card category-founder">
+          <div class="relative overflow-hidden">
+            <img src="assets/blog/IMG_20251107_000832_201.webp" 
+                 alt="Behind the Scenes: Building Bantu"
+                 class="w-full h-48 object-cover transition-transform duration-500 hover:scale-110"
+                 onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1551650975-87deedd944c3?auto=format&fit=crop&w=600&q=80'">
+            <div class="absolute top-3 left-3">
+              <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-bantu-accent/20 text-bantu-accent">
+                <i data-lucide="user" class="w-3 h-3 mr-1"></i>
+                Founder's Notes
+              </span>
+            </div>
+          </div>
+          <div class="p-6">
+            <h3 class="text-xl font-bold text-white mb-3 leading-snug hover:text-bantu-accent transition duration-200 cursor-pointer">
+              The Pulse of Dedication: The Unspoken Reality of Building Bantu
+            </h3>
+            <p class="text-bantu-text/70 text-sm line-clamp-3 mb-4">
+              As I write this, it's 2:00 AM. The digital clock on my laptop casts a faint indigo glow across my couch, the same deep tone that anchors Bantu's visual identity. Sleep can wait. This is the side of building that rarely makes it into the highlight reels.
+            </p>
+            <div class="flex flex-wrap gap-1 mt-2">
+              <span class="text-xs px-2 py-1 rounded-full bg-bantu-primary/10 text-bantu-primary">
+                Founder's Note
+              </span>
+              <span class="text-xs px-2 py-1 rounded-full bg-bantu-primary/10 text-bantu-primary">
+                Building Bantu
+              </span>
+            </div>
+            <div class="flex items-center justify-between mt-4 pt-4 border-t border-bantu-text/10">
+              <div class="flex items-center text-xs text-bantu-text/50">
+                <i data-lucide="user" class="w-3 h-3 mr-1"></i>
+                <span>Mahlori Mhlanga, Founder</span>
+              </div>
+              <div class="flex items-center text-xs text-bantu-text/50">
+                <i data-lucide="clock" class="w-3 h-3 mr-1"></i>
+                <span>8 min read</span>
+              </div>
+            </div>
+            <div class="mt-4 flex justify-between items-center">
+              <span class="text-xs text-bantu-text/50">26 December 2025</span>
+              <a href="behind-the-scenes-journey.html" class="inline-flex items-center text-bantu-accent text-sm font-medium hover:underline">
+                Read Article
+                <i data-lucide="arrow-right" class="w-3 h-3 ml-1"></i>
+              </a>
+            </div>
+          </div>
+        </article>
+
+        <!-- Post 2: DNA of Disruption -->
+        <article class="bg-bantu-dark border border-bantu-text/20 rounded-xl overflow-hidden shadow-lg blog-card category-tech">
+          <div class="relative overflow-hidden">
+            <img src="assets/blog/African-tech.jpeg" 
+                 alt="Blockchain, AI, and Green Tech in Africa"
+                 class="w-full h-48 object-cover transition-transform duration-500 hover:scale-110"
+                 onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1551650975-87deedd944c3?auto=format&fit=crop&w=600&q=80'">
+            <div class="absolute top-3 left-3">
+              <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-bantu-primary/20 text-bantu-primary">
+                <i data-lucide="cpu" class="w-3 h-3 mr-1"></i>
+                Tech & Innovation
+              </span>
+            </div>
+          </div>
+          <div class="p-6">
+            <h3 class="text-xl font-bold text-white mb-3 leading-snug hover:text-bantu-accent transition duration-200 cursor-pointer">
+              The DNA of Disruption: How Blockchain, AI, and Green Tech are Rewriting Africa's Future
+            </h3>
+            <p class="text-bantu-text/70 text-sm line-clamp-3 mb-4">
+              The continent of Africa is not just catching up to global technological trends; it is actively rewriting the playbook. In boardrooms from Nairobi to Johannesburg, a consensus is forming: the future of African economic power rests not on copying old models, but on leapfrogging them entirely.
+            </p>
+            <div class="flex flex-wrap gap-1 mt-2">
+              <span class="text-xs px-2 py-1 rounded-full bg-green-500/10 text-green-500">
+                Blockchain
+              </span>
+              <span class="text-xs px-2 py-1 rounded-full bg-blue-500/10 text-blue-500">
+                AI
+              </span>
+              <span class="text-xs px-2 py-1 rounded-full bg-green-500/10 text-green-500">
+                Green Tech
+              </span>
+            </div>
+            <div class="flex items-center justify-between mt-4 pt-4 border-t border-bantu-text/10">
+              <div class="flex items-center text-xs text-bantu-text/50">
+                <i data-lucide="user" class="w-3 h-3 mr-1"></i>
+                <span>Bantu Stream Connect Insights Team</span>
+              </div>
+              <div class="flex items-center text-xs text-bantu-text/50">
+                <i data-lucide="clock" class="w-3 h-3 mr-1"></i>
+                <span>12 min read</span>
+              </div>
+            </div>
+            <div class="mt-4 flex justify-between items-center">
+              <span class="text-xs text-bantu-text/50">April 2025</span>
+              <a href="dna-of-disruption.html" class="inline-flex items-center text-bantu-accent text-sm font-medium hover:underline">
+                Read Article
+                <i data-lucide="arrow-right" class="w-3 h-3 ml-1"></i>
+              </a>
+            </div>
+          </div>
+        </article>
+
+        <!-- Post 3: The Unwritten Chapters -->
+        <article class="bg-bantu-dark border border-bantu-text/20 rounded-xl overflow-hidden shadow-lg blog-card category-storytelling">
+          <div class="relative overflow-hidden">
+            <img src="assets/20251228_202549.jpg" 
+                 alt="South African Heritage and Storytelling"
+                 class="w-full h-48 object-cover transition-transform duration-500 hover:scale-110"
+                 onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1551650975-87deedd944c3?auto=format&fit=crop&w=600&q=80'">
+            <div class="absolute top-3 left-3">
+              <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-storytelling-purple/20 text-storytelling-purple">
+                <i data-lucide="book-open" class="w-3 h-3 mr-1"></i>
+                Storytelling
+              </span>
+            </div>
+          </div>
+          <div class="p-6">
+            <h3 class="text-xl font-bold text-white mb-3 leading-snug hover:text-bantu-accent transition duration-200 cursor-pointer">
+              The Unwritten Chapters: Why Untold South African Stories Are Our Blueprint for Freedom
+            </h3>
+            <p class="text-bantu-text/70 text-sm line-clamp-3 mb-4">
+              South Africa is a land saturated with history, yet starved of its narratives. We carry the weight of monumental, globally documented chapters, but sometimes, the deepest, most vital truths of our identity are hidden in the quiet archives.
+            </p>
+            <div class="flex flex-wrap gap-1 mt-2">
+              <span class="text-xs px-2 py-1 rounded-full bg-storytelling-purple/10 text-storytelling-purple">
+                Heritage
+              </span>
+              <span class="text-xs px-2 py-1 rounded-full bg-heritage-brown/10 text-heritage-brown">
+                Narrative
+              </span>
+              <span class="text-xs px-2 py-1 rounded-full bg-red-500/10 text-red-500">
+                South Africa
+              </span>
+            </div>
+            <div class="flex items-center justify-between mt-4 pt-4 border-t border-bantu-text/10">
+              <div class="flex items-center text-xs text-bantu-text/50">
+                <i data-lucide="user" class="w-3 h-3 mr-1"></i>
+                <span>Mahlori Mhlanga, Founder</span>
+              </div>
+              <div class="flex items-center text-xs text-bantu-text/50">
+                <i data-lucide="clock" class="w-3 h-3 mr-1"></i>
+                <span>10 min read</span>
+              </div>
+            </div>
+            <div class="mt-4 flex justify-between items-center">
+              <span class="text-xs text-bantu-text/50">December 2025</span>
+              <a href="the-unwritten-chapters.html" class="inline-flex items-center text-bantu-accent text-sm font-medium hover:underline">
+                Read Article
+                <i data-lucide="arrow-right" class="w-3 h-3 ml-1"></i>
+              </a>
+            </div>
+          </div>
+        </article>
+
+        <!-- Post 4: Welcome to Bantu Stream Connect -->
+        <article class="bg-bantu-dark border border-bantu-text/20 rounded-xl overflow-hidden shadow-lg blog-card category-platform">
+          <div class="relative overflow-hidden">
+            <img src="assets/blog/new-explore-screen.png" 
+                 alt="Bantu Stream Connect Platform"
+                 class="w-full h-48 object-cover transition-transform duration-500 hover:scale-110"
+                 onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1551650975-87deedd944c3?auto=format&fit=crop&w=600&q=80'">
+            <div class="absolute top-3 left-3">
+              <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-pulse-blue/20 text-pulse-blue">
+                <i data-lucide="zap" class="w-3 h-3 mr-1"></i>
+                Platform Launch
+              </span>
+            </div>
+          </div>
+          <div class="p-6">
+            <h3 class="text-xl font-bold text-white mb-3 leading-snug hover:text-bantu-accent transition duration-200 cursor-pointer">
+              Welcome to Bantu Stream Connect: The Digital Universe Africa Has Been Waiting For
+            </h3>
+            <p class="text-bantu-text/70 text-sm line-clamp-3 mb-4">
+              Where Creators Rise, Stories Flourish, and Entertainment is Reimagined. Every once in a technological era, a platform emerges that doesn't just join the digital landscape, it transforms it completely. Bantu Stream Connect is that revolution.
+            </p>
+            <div class="flex flex-wrap gap-1 mt-2">
+              <span class="text-xs px-2 py-1 rounded-full bg-pulse-blue/10 text-pulse-blue">
+                Platform Launch
+              </span>
+              <span class="text-xs px-2 py-1 rounded-full bg-pink-500/10 text-pink-500">
+                Creative Industries
+              </span>
+              <span class="text-xs px-2 py-1 rounded-full bg-bantu-accent/10 text-bantu-accent">
+                Entrepreneurship
+              </span>
+            </div>
+            <div class="flex items-center justify-between mt-4 pt-4 border-t border-bantu-text/10">
+              <div class="flex items-center text-xs text-bantu-text/50">
+                <i data-lucide="user" class="w-3 h-3 mr-1"></i>
+                <span>Bantu Stream Connect Team</span>
+              </div>
+              <div class="flex items-center text-xs text-bantu-text/50">
+                <i data-lucide="clock" class="w-3 h-3 mr-1"></i>
+                <span>10 min read</span>
+              </div>
+            </div>
+            <div class="mt-4 flex justify-between items-center">
+              <span class="text-xs text-bantu-text/50">March 2025</span>
+              <a href="welcome-to-bantu-stream-connect.html" class="inline-flex items-center text-bantu-accent text-sm font-medium hover:underline">
+                Read Article
+                <i data-lucide="arrow-right" class="w-3 h-3 ml-1"></i>
+              </a>
+            </div>
+          </div>
+        </article>
+
+        <!-- Newsletter CTA Card -->
+        <div class="md:col-span-2 lg:col-span-1 flex items-center justify-center p-8 bg-gradient-to-br from-bantu-primary/10 to-bantu-accent/10 border-2 border-dashed border-bantu-primary rounded-xl shadow-inner fade-in">
+          <div class="text-center">
+            <i data-lucide="mail" class="w-12 h-12 text-bantu-primary mx-auto mb-4"></i>
+            <h3 class="text-2xl font-bold text-white mb-3">Never Miss an Update</h3>
+            <p class="text-bantu-text/70 mb-6">Subscribe to get the latest insights on African innovation, creator economy trends, and platform updates directly in your inbox.</p>
+            <div class="flex flex-col gap-3">
+              <input type="email" placeholder="Your email address" class="w-full px-4 py-3 rounded-lg bg-white/10 border border-bantu-text/30 text-white placeholder-bantu-text/50 focus:outline-none focus:border-bantu-accent">
+              <button class="w-full px-6 py-3 bg-bantu-accent text-bantu-dark font-bold rounded-lg hover:bg-yellow-500 transition duration-300">
+                Subscribe Now
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Additional Older Posts (Optional Placeholders) -->
+        <article class="bg-bantu-dark border border-bantu-text/20 rounded-xl overflow-hidden shadow-lg blog-card">
+          <div class="relative overflow-hidden">
+            <img src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=600&q=80" 
+                 alt="African Creator Economy"
+                 class="w-full h-48 object-cover transition-transform duration-500 hover:scale-110">
+            <div class="absolute top-3 left-3">
+              <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-500/20 text-green-500">
+                <i data-lucide="leaf" class="w-3 h-3 mr-1"></i>
+                Sustainability
+              </span>
+            </div>
+          </div>
+          <div class="p-6">
+            <h3 class="text-xl font-bold text-white mb-3 leading-snug hover:text-bantu-accent transition duration-200 cursor-pointer">
+              Why the 90/10 Split is the Only Model for African Creator Sustainability
+            </h3>
+            <p class="text-bantu-text/70 text-sm line-clamp-3 mb-4">
+              We break down the flawed economics of global streaming platforms and present the definitive case for revenue ownership as the key driver for continental growth and quality content production.
+            </p>
+            <div class="flex items-center justify-between mt-4 pt-4 border-t border-bantu-text/10">
+              <div class="flex items-center text-xs text-bantu-text/50">
+                <i data-lucide="user" class="w-3 h-3 mr-1"></i>
+                <span>Thabo Mbele</span>
+              </div>
+              <div class="flex items-center text-xs text-bantu-text/50">
+                <i data-lucide="clock" class="w-3 h-3 mr-1"></i>
+                <span>8 min read</span>
+              </div>
+            </div>
+            <div class="mt-4 flex justify-between items-center">
+              <span class="text-xs text-bantu-text/50">October 2025</span>
+              <a href="#" class="inline-flex items-center text-bantu-accent text-sm font-medium hover:underline">
+                Coming Soon
+                <i data-lucide="arrow-right" class="w-3 h-3 ml-1"></i>
+              </a>
+            </div>
+          </div>
+        </article>
+
+        <article class="bg-bantu-dark border border-bantu-text/20 rounded-xl overflow-hidden shadow-lg blog-card">
+          <div class="relative overflow-hidden">
+            <img src="https://images.unsplash.com/photo-1511379938547-c1f69419868d?auto=format&fit=crop&w=600&q=80" 
+                 alt="African Music Industry"
+                 class="w-full h-48 object-cover transition-transform duration-500 hover:scale-110">
+            <div class="absolute top-3 left-3">
+              <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-pink-500/20 text-pink-500">
+                <i data-lucide="music" class="w-3 h-3 mr-1"></i>
+                Creative Industries
+              </span>
+            </div>
+          </div>
+          <div class="p-6">
+            <h3 class="text-xl font-bold text-white mb-3 leading-snug hover:text-bantu-accent transition duration-200 cursor-pointer">
+              Decoding the Amapiano Economy: Beyond the Dance Floor
+            </h3>
+            <p class="text-bantu-text/70 text-sm line-clamp-3 mb-4">
+              A deep dive into how Amapiano creators are utilizing new digital ownership models to secure their financial futures in a global market.
+            </p>
+            <div class="flex items-center justify-between mt-4 pt-4 border-t border-bantu-text/10">
+              <div class="flex items-center text-xs text-bantu-text/50">
+                <i data-lucide="user" class="w-3 h-3 mr-1"></i>
+                <span>Lerato Mokoena</span>
+              </div>
+              <div class="flex items-center text-xs text-bantu-text/50">
+                <i data-lucide="clock" class="w-3 h-3 mr-1"></i>
+                <span>5 min read</span>
+              </div>
+            </div>
+            <div class="mt-4 flex justify-between items-center">
+              <span class="text-xs text-bantu-text/50">September 2025</span>
+              <a href="#" class="inline-flex items-center text-bantu-accent text-sm font-medium hover:underline">
+                Coming Soon
+                <i data-lucide="arrow-right" class="w-3 h-3 ml-1"></i>
+              </a>
+            </div>
+          </div>
+        </article>
+
       </div>
       
-      <!-- Load More Button -->
+      <!-- View All Articles Button -->
       <div class="text-center mt-12">
-        <button id="load-more" class="px-8 py-3 border border-bantu-primary text-sm font-semibold rounded-lg text-bantu-primary hover:bg-bantu-primary hover:text-white transition duration-150">
-          Load More Articles
-        </button>
+        <a href="#" class="inline-flex items-center px-8 py-3 border border-bantu-primary text-sm font-semibold rounded-lg text-bantu-primary hover:bg-bantu-primary hover:text-white transition duration-150">
+          <i data-lucide="archive" class="w-4 h-4 mr-2"></i>
+          View All Articles
+        </a>
       </div>
     </div>
   </section>
 
-  <!-- Newsletter CTA -->
-  <section class="py-16 bg-gradient-to-r from-bantu-primary/20 to-bantu-accent/20">
+  <!-- Featured Topics Section -->
+  <section class="py-16 bg-gradient-to-r from-bantu-primary/10 to-bantu-accent/10">
+    <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+      <h2 class="text-3xl font-bold text-white mb-12 text-center">Explore by Topic</h2>
+      
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+        <!-- Platform Launches -->
+        <a href="#platform" class="bg-bantu-dark/80 backdrop-blur-sm border border-pulse-blue/30 hover:border-pulse-blue rounded-xl p-6 flex flex-col items-center text-center transition duration-300 transform hover:-translate-y-2 shadow-lg">
+          <div class="w-16 h-16 rounded-full bg-pulse-blue/10 flex items-center justify-center mb-4">
+            <i data-lucide="zap" class="w-8 h-8 text-pulse-blue"></i>
+          </div>
+          <h3 class="text-lg font-bold text-white mb-2">Platform Launches</h3>
+          <p class="text-sm text-bantu-text/70">Latest releases & updates</p>
+          <span class="mt-3 text-xs text-pulse-blue">2 Articles</span>
+        </a>
+
+        <!-- Founder's Notes -->
+        <a href="#founder" class="bg-bantu-dark/80 backdrop-blur-sm border border-bantu-accent/30 hover:border-bantu-accent rounded-xl p-6 flex flex-col items-center text-center transition duration-300 transform hover:-translate-y-2 shadow-lg">
+          <div class="w-16 h-16 rounded-full bg-bantu-accent/10 flex items-center justify-center mb-4">
+            <i data-lucide="user" class="w-8 h-8 text-bantu-accent"></i>
+          </div>
+          <h3 class="text-lg font-bold text-white mb-2">Founder's Notes</h3>
+          <p class="text-sm text-bantu-text/70">Behind-the-scenes insights</p>
+          <span class="mt-3 text-xs text-bantu-accent">2 Articles</span>
+        </a>
+
+        <!-- Tech & Innovation -->
+        <a href="#tech" class="bg-bantu-dark/80 backdrop-blur-sm border border-bantu-primary/30 hover:border-bantu-primary rounded-xl p-6 flex flex-col items-center text-center transition duration-300 transform hover:-translate-y-2 shadow-lg">
+          <div class="w-16 h-16 rounded-full bg-bantu-primary/10 flex items-center justify-center mb-4">
+            <i data-lucide="cpu" class="w-8 h-8 text-bantu-primary"></i>
+          </div>
+          <h3 class="text-lg font-bold text-white mb-2">Tech & Innovation</h3>
+          <p class="text-sm text-bantu-text/70">Blockchain, AI, Green Tech</p>
+          <span class="mt-3 text-xs text-bantu-primary">1 Article</span>
+        </a>
+
+        <!-- Storytelling -->
+        <a href="#storytelling" class="bg-bantu-dark/80 backdrop-blur-sm border border-storytelling-purple/30 hover:border-storytelling-purple rounded-xl p-6 flex flex-col items-center text-center transition duration-300 transform hover:-translate-y-2 shadow-lg">
+          <div class="w-16 h-16 rounded-full bg-storytelling-purple/10 flex items-center justify-center mb-4">
+            <i data-lucide="book-open" class="w-8 h-8 text-storytelling-purple"></i>
+          </div>
+          <h3 class="text-lg font-bold text-white mb-2">Storytelling</h3>
+          <p class="text-sm text-bantu-text/70">Narrative & heritage</p>
+          <span class="mt-3 text-xs text-storytelling-purple">1 Article</span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Final Newsletter CTA -->
+  <section id="newsletter" class="py-16 bg-gradient-to-r from-bantu-primary via-purple-600 to-bantu-accent">
     <div class="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
       <div class="max-w-2xl mx-auto">
-        <i data-lucide="mail" class="w-16 h-16 text-bantu-primary mx-auto mb-6"></i>
-        <h2 class="text-3xl font-bold text-white mb-4">Stay Updated with African Innovation</h2>
-        <p class="text-lg text-bantu-text/80 mb-8">
-          Get weekly insights, creator spotlights, and platform updates delivered directly to your inbox.
+        <i data-lucide="message-square" class="w-16 h-16 text-white mx-auto mb-6"></i>
+        <h2 class="text-3xl md:text-4xl font-bold text-white mb-4">Join the Conversation</h2>
+        <p class="text-xl text-white/90 mb-8">
+          Be part of Africa's digital renaissance. Get exclusive insights, early access to features, and connect with the Bantu Stream Connect community.
         </p>
         <div class="flex flex-col sm:flex-row gap-4 max-w-md mx-auto">
-          <input type="email" placeholder="Your email address" class="flex-grow px-4 py-3 rounded-lg bg-white/10 border border-bantu-text/30 text-white placeholder-bantu-text/50 focus:outline-none focus:border-bantu-accent">
-          <button class="px-6 py-3 bg-bantu-accent text-bantu-dark font-bold rounded-lg hover:bg-yellow-500 transition duration-300">
-            Subscribe
+          <input type="email" placeholder="Enter your email" class="flex-grow px-6 py-4 rounded-lg bg-white/20 border border-white/30 text-white placeholder-white/60 focus:outline-none focus:border-white backdrop-blur-sm">
+          <button class="px-8 py-4 bg-white text-bantu-dark font-bold rounded-lg hover:bg-gray-100 transition duration-300 shadow-lg">
+            Join Community
           </button>
         </div>
+        <p class="text-sm text-white/70 mt-6">No spam, ever. Unsubscribe anytime.</p>
       </div>
     </div>
   </section>
@@ -239,594 +575,72 @@
   <!-- Footer -->
   <footer class="bg-black bg-opacity-80 text-gray-400">
     <div class="container mx-auto px-4 sm:px-6 lg:px-8 text-center py-8">
-      <img src="assets/bsc-logo.png" alt="BSC Logo" class="h-12 mx-auto mb-4">
+      <div class="flex items-center justify-center mb-6">
+        <img src="assets/bsc-logo.png" alt="BSC Logo" class="h-12">
+        <div class="ml-4">
+          <div class="flex items-center">
+            <img src="assets/icon/pulse.png" alt="Pulse" class="h-6 w-6 mr-2 pulse-animation">
+            <span class="font-bold text-lg text-white">Bantu Connect Pulse</span>
+          </div>
+          <p class="text-sm">The social layer of Bantu Stream Connect</p>
+        </div>
+      </div>
       <p class="mb-4">© 2025 Bantu Stream Connect. All rights reserved.</p>
       <div class="flex justify-center gap-6 mb-4 flex-wrap">
         <a href="#" class="hover:text-blue-500 transition">Privacy Policy</a>
         <a href="#" class="hover:text-blue-500 transition">Terms of Service</a>
         <a href="#" class="hover:text-blue-500 transition">Contact Us</a>
         <a href="#" class="hover:text-blue-500 transition">Careers</a>
+        <a href="#" class="hover:text-blue-500 transition">Press Kit</a>
       </div>
-      <p class="italic">"The African way baba, it's all in the DNA."</p>
-      <p class="mt-2">Made with ❤️ in South Africa</p>
+      <p class="italic mb-2">"The African way baba, it's all in the DNA."</p>
+      <p>Made with ❤️ in South Africa</p>
     </div>
   </footer>
 
-  <!-- Blog Script with All Blog Posts Integrated -->
+  <!-- Initialize Lucide Icons -->
   <script>
-    let page = 0;
-    const perPage = 6;
-    let allPosts = [];
-
-    // Category mapping
-    const categories = {
-      'tech': { 
-        name: 'Tech & Innovation', 
-        icon: 'cpu', 
-        color: 'bantu-primary', 
-        count: 0 
-      },
-      'platform': { 
-        name: 'Platform Launch', 
-        icon: 'zap', 
-        color: 'pulse-blue', 
-        count: 0 
-      },
-      'storytelling': { 
-        name: 'Storytelling', 
-        icon: 'book-open', 
-        color: 'storytelling-purple', 
-        count: 0 
-      },
-      'founder': { 
-        name: "Founder's Notes", 
-        icon: 'user', 
-        color: 'bantu-accent', 
-        count: 0 
-      },
-      'entrepreneurship': { 
-        name: 'Entrepreneurship', 
-        icon: 'rocket', 
-        color: 'bantu-accent', 
-        count: 0 
-      },
-      'sustainability': { 
-        name: 'Sustainability', 
-        icon: 'leaf', 
-        color: 'green-500', 
-        count: 0 
-      },
-      'creative': { 
-        name: 'Creative Industries', 
-        icon: 'pen-tool', 
-        color: 'pink-500', 
-        count: 0 
-      }
-    };
-
-    // All Blog Posts Array (including the five new posts)
-    const allBlogPosts = [
-      // NEW POST 1: Bantu Connect Pulse Launch
-      {
-        id: 1,
-        title: "The Narrative Debt: Why We Needed to Build Better",
-        subtitle: "Bantu Connect Pulse Launch Announcement",
-        excerpt: "In the sprawling, vibrant landscape of the African creator economy, a debt persists. The debt owed to the story itself. Pulse is not a place for fleeting reactions. It is a new African social platform designed to move culture forward by prioritizing continuity and sequence inherent in all great storytelling.",
-        content: "Full article content here...",
-        image: "assets/icon/pulse.png",
-        category: "platform",
-        author: "Mahlori Mhlanga, Special Correspondent",
-        date: "2025-12-01",
-        readTime: "8 min read",
-        isFeatured: true,
-        url: "bantu-connect-pulse-blog.html",
-        tags: ["Product Launch", "Social Platform", "Vertical Video", "African Tech"],
-        specialClass: "category-platform"
-      },
-      
-      // NEW POST 2: Behind the Scenes Journey
-      {
-        id: 2,
-        title: "The Pulse of Dedication: The Unspoken Reality of Building Bantu",
-        excerpt: "As I write this, it's 2:00 AM. The digital clock on my laptop casts a faint indigo glow across my couch, the same deep tone that anchors Bantu's visual identity. Sleep can wait. This is the side of building that rarely makes it into the highlight reels.",
-        content: "Full article content here...",
-        image: "assets/blog/IMG_20251107_000832_201.webp",
-        category: "founder",
-        author: "Mahlori Mhlanga, Founder, Bantu Stream Connect & Pulse",
-        date: "2025-12-26",
-        readTime: "8 min read",
-        isFeatured: false,
-        url: "behind-the-scenes-journey.html",
-        tags: ["Founder's Note", "Building Bantu", "Startup Journey"],
-        specialClass: "category-founder"
-      },
-      
-      // NEW POST 3: DNA of Disruption
-      {
-        id: 3,
-        title: "The DNA of Disruption: How Blockchain, AI, and Green Tech are Rewriting Africa's Future",
-        excerpt: "The continent of Africa is not just catching up to global technological trends; it is actively rewriting the playbook. In boardrooms from Nairobi to Johannesburg, a consensus is forming: the future of African economic power rests not on copying old models, but on leapfrogging them entirely.",
-        content: "Full article content here...",
-        image: "assets/blog/African-tech.jpeg",
-        category: "tech",
-        author: "Bantu Stream Connect Insights Team",
-        date: "2025-04-01",
-        readTime: "12 min read",
-        isFeatured: false,
-        url: "dna-of-disruption.html",
-        tags: ["Tech & Innovation", "Sustainability", "Entrepreneurship"],
-        specialClass: "category-tech"
-      },
-      
-      // NEW POST 4: The Unwritten Chapters
-      {
-        id: 4,
-        title: "The Unwritten Chapters: Why Untold South African Stories Are Our Blueprint for Freedom",
-        excerpt: "South Africa is a land saturated with history, yet starved of its narratives. We carry the weight of monumental, globally documented chapters, but sometimes, the deepest, most vital truths of our identity are hidden in the quiet archives.",
-        content: "Full article content here...",
-        image: "assets/20251228_202549.jpg",
-        category: "storytelling",
-        author: "Mahlori Mhlanga, Founder of Bantu Stream Connect",
-        date: "2025-12-01",
-        readTime: "10 min read",
-        isFeatured: false,
-        url: "the-unwritten-chapters.html",
-        tags: ["Storytelling", "Heritage", "Narrative", "South Africa"],
-        specialClass: "category-storytelling"
-      },
-      
-      // NEW POST 5: Welcome to Bantu Stream Connect
-      {
-        id: 5,
-        title: "Welcome to Bantu Stream Connect: The Digital Universe Africa Has Been Waiting For",
-        excerpt: "Where Creators Rise, Stories Flourish, and Entertainment is Reimagined. Every once in a technological era, a platform emerges that doesn't just join the digital landscape, it transforms it completely. Bantu Stream Connect is that revolution.",
-        content: "Full article content here...",
-        image: "assets/blog/new-explore-screen.png",
-        category: "platform",
-        author: "Bantu Stream Connect Team",
-        date: "2025-03-25",
-        readTime: "10 min read",
-        isFeatured: false,
-        url: "welcome-to-bantu-stream-connect.html",
-        tags: ["Platform Launch", "Creative Industries", "Entrepreneurship"],
-        specialClass: "category-platform"
-      },
-      
-      // Existing posts
-      {
-        id: 6,
-        title: "Why the 90/10 Split is the Only Model for African Creator Sustainability",
-        excerpt: "We break down the flawed economics of global streaming platforms and present the definitive case for revenue ownership as the key driver for continental growth and quality content production...",
-        content: "Full article content here...",
-        image: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=1200&q=80",
-        category: "entrepreneurship",
-        author: "Thabo Mbele",
-        date: "2025-10-25",
-        readTime: "8 min read",
-        isFeatured: false,
-        url: "#",
-        tags: ["Entrepreneurship", "Creator Economy"],
-        specialClass: ""
-      },
-      {
-        id: 7,
-        title: "Decoding the Amapiano Economy: Beyond the Dance Floor",
-        excerpt: "A deep dive into how Amapiano creators are utilizing new digital ownership models to secure their financial futures in a global market...",
-        content: "Full article content here...",
-        image: "https://images.unsplash.com/photo-1511379938547-c1f69419868d?auto=format&fit=crop&w=1200&q=80",
-        category: "creative",
-        author: "Lerato Mokoena",
-        date: "2025-09-18",
-        readTime: "5 min read",
-        isFeatured: false,
-        url: "#",
-        tags: ["Creative Industries", "Music", "Economy"],
-        specialClass: ""
-      },
-      {
-        id: 8,
-        title: "The Decentralized Grid: How Micro-Solar is Powering African Content",
-        excerpt: "Exploring the critical link between renewable energy access and the exponential growth of local digital content consumption...",
-        content: "Full article content here...",
-        image: "https://images.unsplash.com/photo-1466611653911-95081537e5b7?auto=format&fit=crop&w=1200&q=80",
-        category: "sustainability",
-        author: "Kwame Nkrumah",
-        date: "2025-09-01",
-        readTime: "8 min read",
-        isFeatured: false,
-        url: "#",
-        tags: ["Sustainability", "Infrastructure", "Tech"],
-        specialClass: ""
-      },
-      {
-        id: 9,
-        title: "From Iroko to Stream: The Business of Independent African Filmmaking",
-        excerpt: "Interviews with top Nollywood directors on financing, distribution challenges, and the potential of creator-first platforms...",
-        content: "Full article content here...",
-        image: "https://images.unsplash.com/photo-1489599809516-9827b6d1cf13?auto=format&fit=crop&w=1200&q=80",
-        category: "creative",
-        author: "Chioma Okoro",
-        date: "2025-08-24",
-        readTime: "10 min read",
-        isFeatured: false,
-        url: "#",
-        tags: ["Creative Industries", "Film", "Business"],
-        specialClass: ""
-      },
-      {
-        id: 10,
-        title: "Bridging the Digital Skills Gap in Soweto: A Blueprint for Growth",
-        excerpt: "How localized educational streaming content is providing accessible technical training to millions of youth across South Africa...",
-        content: "Full article content here...",
-        image: "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=1200&q=80",
-        category: "tech",
-        author: "Sipho Dlamini",
-        date: "2025-07-15",
-        readTime: "7 min read",
-        isFeatured: false,
-        url: "#",
-        tags: ["Tech & Innovation", "Education", "Development"],
-        specialClass: ""
-      },
-      {
-        id: 11,
-        title: "The Global Rise of African StoryTech Startups",
-        excerpt: "A VC deep dive on why African content and technology are uniquely positioned to capture international investment in the next five years...",
-        content: "Full article content here...",
-        image: "https://images.unsplash.com/photo-1556761175-b413da4baf72?auto=format&fit=crop&w=1200&q=80",
-        category: "entrepreneurship",
-        author: "Amina Diallo",
-        date: "2025-06-28",
-        readTime: "12 min read",
-        isFeatured: false,
-        url: "#",
-        tags: ["Entrepreneurship", "Investment", "Tech"],
-        specialClass: ""
-      },
-      {
-        id: 12,
-        title: "The Future of African Podcasting: Local Voices, Global Impact",
-        excerpt: "How podcasters across the continent are leveraging new platforms to build sustainable media businesses...",
-        content: "Full article content here...",
-        image: "https://images.unsplash.com/photo-1589903308904-1010c2294adc?auto=format&fit=crop&w=1200&q=80",
-        category: "creative",
-        author: "David Osei",
-        date: "2025-05-10",
-        readTime: "6 min read",
-        isFeatured: false,
-        url: "#",
-        tags: ["Creative Industries", "Audio", "Business"],
-        specialClass: ""
-      },
-      {
-        id: 13,
-        title: "Building Digital Infrastructure for Rural Creators",
-        excerpt: "Case studies from Kenya, Nigeria, and South Africa on bringing high-speed internet to underserved creative communities...",
-        content: "Full article content here...",
-        image: "https://images.unsplash.com/photo-1542744095-fcf48d80b0fd?auto=format&fit=crop&w=1200&q=80",
-        category: "tech",
-        author: "James Kariuki",
-        date: "2025-04-22",
-        readTime: "9 min read",
-        isFeatured: false,
-        url: "#",
-        tags: ["Tech & Innovation", "Infrastructure", "Development"],
-        specialClass: ""
-      }
-    ];
-
-    // Initialize Lucide icons
     lucide.createIcons();
-
-    // Format date
-    function formatDate(dateString) {
-      const options = { year: 'numeric', month: 'long', day: 'numeric' };
-      return new Date(dateString).toLocaleDateString('en-US', options);
-    }
-
-    // Update category counts
-    function updateCategoryCounts(posts) {
-      const counts = {};
-      Object.keys(categories).forEach(cat => counts[cat] = 0);
-      
-      posts.forEach(post => {
-        if (post.category && counts[post.category] !== undefined) {
-          counts[post.category]++;
-        }
-      });
-      
-      // Update category cards
-      Object.keys(categories).forEach(cat => {
-        const element = document.getElementById(`${cat}-count`);
-        if (element) {
-          element.textContent = `${counts[cat]} Articles`;
-        }
-      });
-    }
-
-    // Create post element
-    function createPostElement(post) {
-      const category = categories[post.category] || categories.tech;
-      const specialClass = post.specialClass || '';
-      
-      // Create tags HTML if they exist
-      let tagsHtml = '';
-      if (post.tags && post.tags.length > 0) {
-        tagsHtml = `
-          <div class="flex flex-wrap gap-1 mt-2">
-            ${post.tags.slice(0, 2).map(tag => `
-              <span class="text-xs px-2 py-1 rounded-full bg-bantu-primary/10 text-bantu-primary">
-                ${tag}
-              </span>
-            `).join('')}
-          </div>
-        `;
-      }
-      
-      // Add pulse animation for Pulse launch post
-      const pulseClass = post.id === 1 ? 'pulse-animation' : '';
-      
-      return `
-        <article class="bg-bantu-dark border border-bantu-text/20 rounded-xl overflow-hidden shadow-lg blog-card ${specialClass}">
-          <div class="relative overflow-hidden">
-            <img src="${post.image}" 
-                 alt="${post.title}" 
-                 class="w-full h-48 object-cover transition-transform duration-500 hover:scale-110 ${pulseClass}"
-                 onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1551650975-87deedd944c3?auto=format&fit=crop&w=600&q=80'">
-            <div class="absolute top-3 left-3">
-              <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-${category.color}/20 text-${category.color}">
-                <i data-lucide="${category.icon}" class="w-3 h-3 mr-1"></i>
-                ${category.name}
-              </span>
-            </div>
-          </div>
-          <div class="p-6">
-            <h3 class="text-xl font-bold text-white mb-2 leading-snug hover:text-bantu-accent transition duration-200 cursor-pointer">
-              ${post.title}
-            </h3>
-            ${post.subtitle ? `<p class="text-sm text-pulse-gold mb-2 font-medium">${post.subtitle}</p>` : ''}
-            <p class="text-bantu-text/70 text-sm line-clamp-3 mb-4">
-              ${post.excerpt}
-            </p>
-            ${tagsHtml}
-            <div class="flex items-center justify-between mt-4 pt-4 border-t border-bantu-text/10">
-              <div class="flex items-center text-xs text-bantu-text/50">
-                <i data-lucide="user" class="w-3 h-3 mr-1"></i>
-                <span>${post.author}</span>
-              </div>
-              <div class="flex items-center text-xs text-bantu-text/50">
-                <i data-lucide="clock" class="w-3 h-3 mr-1"></i>
-                <span>${post.readTime}</span>
-              </div>
-            </div>
-            <div class="mt-4 flex justify-between items-center">
-              <span class="text-xs text-bantu-text/50">${formatDate(post.date)}</span>
-              <a href="${post.url}" class="inline-flex items-center text-bantu-accent text-sm font-medium hover:underline">
-                Read Article
-                <i data-lucide="arrow-right" class="w-3 h-3 ml-1"></i>
-              </a>
-            </div>
-          </div>
-        </article>
-      `;
-    }
-
-    // Render hero post
-    function renderHeroPost(posts) {
-      const featuredPost = posts.find(post => post.isFeatured) || posts[0];
-      if (!featuredPost) return;
-      
-      const category = categories[featuredPost.category] || categories.tech;
-      const pulseClass = featuredPost.id === 1 ? 'pulse-animation' : '';
-      
-      document.getElementById('hero-post').innerHTML = `
-        <div class="md:w-1/2 relative">
-          <img src="${featuredPost.image}" 
-               alt="${featuredPost.title}" 
-               class="w-full h-72 md:h-full object-cover transition-transform duration-700 hover:scale-105 ${pulseClass}"
-               onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=1200&q=80'">
-          <div class="absolute top-4 left-4 flex flex-wrap gap-2">
-            <span class="inline-flex items-center px-3 py-1 text-sm font-medium rounded-full text-bantu-dark bg-bantu-accent">
-              <i data-lucide="star" class="w-3 h-3 mr-1"></i>
-              FEATURED
-            </span>
-            <span class="inline-flex items-center px-3 py-1 text-sm font-medium rounded-full bg-${category.color}/20 text-${category.color}">
-              <i data-lucide="${category.icon}" class="w-3 h-3 mr-1"></i>
-              ${category.name}
-            </span>
-          </div>
-        </div>
-        <div class="md:w-1/2 p-6 sm:p-10 flex flex-col justify-center">
-          <h2 class="text-3xl sm:text-4xl font-bold text-white mb-4 leading-tight hover:text-bantu-accent transition duration-200 cursor-pointer">
-            ${featuredPost.title}
-          </h2>
-          ${featuredPost.subtitle ? `<p class="text-lg text-pulse-gold mb-3 font-medium">${featuredPost.subtitle}</p>` : ''}
-          <p class="text-bantu-text/70 mb-6 line-clamp-3">
-            ${featuredPost.excerpt}
-          </p>
-          <div class="flex items-center text-sm mb-4">
-            <div class="flex items-center mr-6 text-bantu-text/70">
-              <i data-lucide="user" class="w-4 h-4 mr-2"></i>
-              <span>${featuredPost.author}</span>
-            </div>
-            <div class="flex items-center text-bantu-text/70">
-              <i data-lucide="calendar" class="w-4 h-4 mr-2"></i>
-              <span>${formatDate(featuredPost.date)}</span>
-            </div>
-          </div>
-          <div class="flex items-center justify-between">
-            <div class="flex items-center text-bantu-text/70">
-              <i data-lucide="clock" class="w-4 h-4 mr-2"></i>
-              <span>${featuredPost.readTime}</span>
-            </div>
-            <a href="${featuredPost.url}" class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-pulse-blue to-pulse-gold text-white font-bold rounded-lg hover:opacity-90 transition duration-300 transform hover:scale-105">
-              Read Full Article
-              <i data-lucide="arrow-right" class="w-4 h-4 ml-2"></i>
-            </a>
-          </div>
-        </div>
-      `;
-      
-      // Re-initialize icons in hero
-      lucide.createIcons();
-    }
-
-    // Load posts
-    async function loadPosts() {
-      const grid = document.getElementById('blog-grid');
-      const loadBtn = document.getElementById('load-more');
-      
-      try {
-        // Try to fetch real data first
-        const res = await fetch('data/posts.json');
-        if (res.ok) {
-          allPosts = await res.json();
-        } else {
-          // Fallback to our blog posts data
-          allPosts = allBlogPosts;
-        }
-        
-        // Sort posts by date (newest first)
-        allPosts.sort((a, b) => new Date(b.date) - new Date(a.date));
-        
-        // Update category counts
-        updateCategoryCounts(allPosts);
-        
-        // Render hero post
-        renderHeroPost(allPosts);
-        
-        // Load initial posts
-        loadPage();
-        
-      } catch (err) {
-        // Fallback to our blog posts data
-        allPosts = allBlogPosts;
-        allPosts.sort((a, b) => new Date(b.date) - new Date(a.date));
-        updateCategoryCounts(allPosts);
-        renderHeroPost(allPosts);
-        loadPage();
-        console.log('Using integrated blog posts:', err);
-      }
-      
-      function loadPage() {
-        const start = page * perPage;
-        const end = start + perPage;
-        const pagePosts = allPosts.slice(start, end);
-        
-        // Add posts to grid
-        pagePosts.forEach(post => {
-          grid.insertAdjacentHTML('beforeend', createPostElement(post));
-        });
-        
-        // Add CTA card after first 3 posts on first page
-        if (page === 0 && allPosts.length >= 3) {
-          const ctaCard = `
-            <div class="md:col-span-2 lg:col-span-1 flex items-center justify-center p-8 bg-gradient-to-br from-bantu-primary/10 to-bantu-accent/10 border-2 border-dashed border-bantu-primary rounded-xl shadow-inner fade-in">
-              <div class="text-center">
-                <i data-lucide="mail" class="w-12 h-12 text-bantu-primary mx-auto mb-4"></i>
-                <h3 class="text-2xl font-bold text-white mb-3">Get Weekly Insights</h3>
-                <p class="text-bantu-text/70 mb-6">Subscribe to our newsletter for the latest on African innovation and creator economy trends.</p>
-                <button class="w-full px-6 py-3 bg-bantu-accent text-bantu-dark font-bold rounded-lg hover:bg-yellow-500 transition duration-300">
-                  Subscribe Now
-                </button>
-              </div>
-            </div>
-          `;
-          
-          // Insert CTA after 3rd post
-          const posts = grid.querySelectorAll('.blog-card');
-          if (posts.length >= 3) {
-            posts[2].insertAdjacentHTML('afterend', ctaCard);
-          }
-        }
-        
-        page++;
-        
-        // Hide load button if no more posts
-        if (end >= allPosts.length) {
-          loadBtn.style.display = 'none';
-        }
-        
-        // Re-initialize icons
-        lucide.createIcons();
-        
-        // Add click event to all blog cards
-        document.querySelectorAll('.blog-card h3').forEach(title => {
-          title.addEventListener('click', function() {
-            const card = this.closest('.blog-card');
-            const link = card.querySelector('a[href*="#"]') || card.querySelector('a');
-            if (link && link.href) {
-              window.location.href = link.href;
-            }
-          });
-        });
-      }
-      
-      loadBtn.addEventListener('click', loadPage);
-      
-      // Add category filter functionality
-      document.querySelectorAll('[href^="#"]').forEach(link => {
-        link.addEventListener('click', function(e) {
-          const hash = this.getAttribute('href').substring(1);
-          if (hash && categories[hash]) {
-            e.preventDefault();
-            filterByCategory(hash);
-          }
-        });
-      });
-    }
-
-    // Filter by category
-    function filterByCategory(category) {
-      const grid = document.getElementById('blog-grid');
-      const loadBtn = document.getElementById('load-more');
-      
-      // Reset page
-      page = 0;
-      grid.innerHTML = '';
-      
-      // Filter posts
-      const filteredPosts = allPosts.filter(post => post.category === category);
-      
-      if (filteredPosts.length === 0) {
-        grid.innerHTML = `
-          <div class="col-span-3 text-center py-12">
-            <i data-lucide="search" class="w-12 h-12 text-bantu-text/30 mx-auto mb-4"></i>
-            <h3 class="text-xl font-bold text-white mb-2">No articles found</h3>
-            <p class="text-bantu-text/70">We're working on more content in this category.</p>
-            <button onclick="resetFilters()" class="mt-4 px-6 py-2 border border-bantu-primary text-bantu-primary rounded-lg hover:bg-bantu-primary hover:text-white transition">
-              View All Articles
-            </button>
-          </div>
-        `;
-        loadBtn.style.display = 'none';
-      } else {
-        // Show filtered posts
-        filteredPosts.forEach(post => {
-          grid.insertAdjacentHTML('beforeend', createPostElement(post));
-        });
-        loadBtn.style.display = 'none';
-      }
-      
-      lucide.createIcons();
-    }
-
-    // Reset filters
-    function resetFilters() {
-      page = 0;
-      const grid = document.getElementById('blog-grid');
-      const loadBtn = document.getElementById('load-more');
-      
-      grid.innerHTML = '';
-      loadBtn.style.display = 'block';
-      loadPosts();
-    }
-
-    // Initialize
-    document.addEventListener('DOMContentLoaded', loadPosts);
     
-    // Global reset filters function
-    window.resetFilters = resetFilters;
+    // Add smooth scrolling
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+      anchor.addEventListener('click', function (e) {
+        e.preventDefault();
+        const target = document.querySelector(this.getAttribute('href'));
+        if (target) {
+          target.scrollIntoView({
+            behavior: 'smooth',
+            block: 'start'
+          });
+        }
+      });
+    });
+
+    // Add click events to blog cards
+    document.querySelectorAll('.blog-card h3').forEach(title => {
+      title.addEventListener('click', function() {
+        const card = this.closest('.blog-card');
+        const link = card.querySelector('a[href*=".html"]');
+        if (link && link.href) {
+          window.location.href = link.href;
+        }
+      });
+    });
+
+    // Add newsletter form submission
+    document.querySelectorAll('button').forEach(button => {
+      if (button.textContent.includes('Subscribe') || button.textContent.includes('Join Community')) {
+        button.addEventListener('click', function() {
+          const form = this.closest('div').querySelector('input[type="email"]');
+          if (form && form.value) {
+            alert('Thank you for subscribing! You\'ll receive our next update.');
+            form.value = '';
+          } else {
+            alert('Please enter your email address.');
+          }
+        });
+      }
+    });
   </script>
 </body>
 </html>
