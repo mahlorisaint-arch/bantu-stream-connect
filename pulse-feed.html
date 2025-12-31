@@ -914,36 +914,6 @@
             box-shadow: 0 0 40px rgba(29, 78, 216, 0.5);
         }
         
-        /* Empty State - Glassmorphism */
-        .empty-state {
-            text-align: center;
-            padding: 48px 20px;
-            color: var(--slate-grey);
-            background: var(--glass-bg);
-            border: 1px solid var(--glass-border);
-            border-radius: 16px;
-            backdrop-filter: blur(10px);
-        }
-        
-        .empty-icon {
-            font-size: 48px;
-            margin-bottom: 20px;
-            opacity: 0.5;
-        }
-        
-        .empty-title {
-            font-size: 18px;
-            margin-bottom: 12px;
-            color: var(--soft-white);
-        }
-        
-        .empty-description {
-            font-size: 14px;
-            max-width: 300px;
-            margin: 0 auto;
-            line-height: 1.5;
-        }
-        
         /* Tab Content */
         .tab-content {
             display: none;
@@ -1509,27 +1479,17 @@
         
         <!-- Trending Tab -->
         <div class="tab-content" id="trending-feed">
-            <div class="empty-state">
-                <div class="empty-icon">
-                    <i class="fas fa-chart-line"></i>
-                </div>
-                <div class="empty-title">Trending Pulses</div>
-                <div class="empty-description">
-                    Discover what's moving the culture across Africa and the diaspora. Trending content appears here based on engagement and velocity.
-                </div>
+            <div style="padding: 40px 20px; text-align: center; color: var(--slate-grey);">
+                <h3 style="color: var(--soft-white); margin-bottom: 10px;">Trending Pulses</h3>
+                <p>Discover what's moving the culture across Africa and the diaspora. Trending content appears here based on engagement and velocity.</p>
             </div>
         </div>
         
         <!-- Connectors Tab -->
         <div class="tab-content" id="connectors-feed">
-            <div class="empty-state">
-                <div class="empty-icon">
-                    <i class="fas fa-handshake"></i>
-                </div>
-                <div class="empty-title">Connectors Feed</div>
-                <div class="empty-description">
-                    Trusted voices you're connected to. Build meaningful creator relationships and discover collaborative opportunities.
-                </div>
+            <div style="padding: 40px 20px; text-align: center; color: var(--slate-grey);">
+                <h3 style="color: var(--soft-white); margin-bottom: 10px;">Connectors Feed</h3>
+                <p>Trusted voices you're connected to. Build meaningful creator relationships and discover collaborative opportunities.</p>
             </div>
         </div>
         
@@ -1717,7 +1677,7 @@
         let userConnections = new Set(); // Store connected user IDs
         let videoPlayers = new Map(); // Store video player instances
         
-        // Infinite scroll variables
+        // Infinite scroll variables - UPDATED: Simplified state management
         let isFeedLoading = false;
         let hasMorePulses = true;
         let currentOffset = 0;
@@ -1728,9 +1688,11 @@
         let allPulses = [];
         let displayedPulseIds = new Set();
 
-        // Performance optimization functions
+        // Performance optimization - UPDATED: Better throttling
         let scrollThrottleTimeout = null;
         let isCheckingScroll = false;
+        const SCROLL_THROTTLE_DELAY = 200;
+        const SCROLL_LOAD_THRESHOLD = 500;
 
         function throttle(func, limit) {
             let inThrottle;
@@ -1816,14 +1778,14 @@
                 // Initialize the feed functionality
                 initializeFeed(session);
                 
-                // Set up infinite scroll
+                // Set up infinite scroll - UPDATED: Better setup
                 setupInfiniteScroll();
                 
             } catch (error) {
                 console.error('Error:', error);
                 document.getElementById('loading-text').textContent = 'Error loading. Please refresh.';
                 
-                // Still show content after delay
+                // Still show content after delay - UPDATED: Removed empty state
                 setTimeout(() => {
                     isInitialized = true;
                     if (forceLoadTimeout) {
@@ -1832,16 +1794,15 @@
                     
                     document.getElementById('loading').style.display = 'none';
                     document.getElementById('content').style.display = 'block';
+                    
+                    // Show error message instead of empty state
                     document.getElementById('pulse-feed-container').innerHTML = `
-                        <div class="empty-state">
-                            <div class="empty-icon">
-                                <i class="fas fa-feather-alt"></i>
-                            </div>
-                            <div class="empty-title">No pulses yet</div>
-                            <div class="empty-description">
-                                Be the first to share what's moving the culture!<br>
-                                Click the + button to create your first pulse.
-                            </div>
+                        <div style="padding: 40px 20px; text-align: center; color: var(--slate-grey);">
+                            <h3 style="color: var(--soft-white); margin-bottom: 10px;">Unable to Load Feed</h3>
+                            <p>There was an error loading the pulse feed. Please try refreshing the page.</p>
+                            <button onclick="window.location.reload()" class="modal-btn modal-btn-post" style="margin-top: 20px;">
+                                Refresh Page
+                            </button>
                         </div>
                     `;
                     
@@ -1851,57 +1812,41 @@
             }
         }
         
-        // Set up infinite scroll
+        // Set up infinite scroll - UPDATED: Simplified and better
         function setupInfiniteScroll() {
             // Use passive event listener for better performance
-            window.addEventListener('scroll', () => {
-                if (!isLoadingMore && hasMorePulses) {
-                    checkScrollPosition();
-                }
-            }, { passive: true });
+            const throttledScrollCheck = throttle(checkScrollPosition, SCROLL_THROTTLE_DELAY);
+            window.addEventListener('scroll', throttledScrollCheck, { passive: true });
             
             // Also check on resize (throttled)
             let resizeTimeout;
             window.addEventListener('resize', () => {
                 clearTimeout(resizeTimeout);
                 resizeTimeout = setTimeout(() => {
-                    if (!isLoadingMore && hasMorePulses) {
-                        checkScrollPosition();
-                    }
+                    checkScrollPosition();
                 }, 250);
             });
         }
         
-        // Check if we need to load more pulses
+        // Check if we need to load more pulses - UPDATED: Simplified
         function checkScrollPosition() {
-            // Don't check if already checking or loading
-            if (isCheckingScroll || isLoadingMore) return;
+            // Don't check if already loading or no more pulses
+            if (isLoadingMore || !hasMorePulses || isFeedLoading) return;
             
-            // Throttle scroll checks
-            if (scrollThrottleTimeout) {
-                clearTimeout(scrollThrottleTimeout);
+            const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+            const scrollHeight = document.documentElement.scrollHeight;
+            const clientHeight = document.documentElement.clientHeight;
+            
+            // Calculate distance from bottom
+            const distanceFromBottom = scrollHeight - (scrollTop + clientHeight);
+            
+            // Load more when threshold reached
+            if (distanceFromBottom < SCROLL_LOAD_THRESHOLD) {
+                loadMorePulses();
             }
-            
-            scrollThrottleTimeout = setTimeout(() => {
-                isCheckingScroll = true;
-                
-                const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-                const scrollHeight = document.documentElement.scrollHeight;
-                const clientHeight = document.documentElement.clientHeight;
-                
-                // Calculate distance from bottom
-                const distanceFromBottom = scrollHeight - (scrollTop + clientHeight);
-                
-                // Load more when 500px from bottom (more buffer to prevent freezing)
-                if (distanceFromBottom < 500 && hasMorePulses && !isLoadingMore) {
-                    loadMorePulses();
-                }
-                
-                isCheckingScroll = false;
-            }, 200); // 200ms throttle
         }
         
-        // Load more pulses for infinite scroll
+        // Load more pulses for infinite scroll - UPDATED: Better error handling
         async function loadMorePulses() {
             if (isLoadingMore || !hasMorePulses) return;
             
@@ -1924,10 +1869,7 @@
                 if (!newPulses || newPulses.length === 0) {
                     hasMorePulses = false;
                     if (loadingIndicator) {
-                        loadingIndicator.innerHTML = '<div>No more pulses to load</div>';
-                        setTimeout(() => {
-                            loadingIndicator.classList.remove('active');
-                        }, 2000);
+                        loadingIndicator.classList.remove('active'); // Just hide, don't show message
                     }
                     return;
                 }
@@ -1940,7 +1882,6 @@
                     currentOffset += PULSES_PER_PAGE;
                     hasMorePulses = false;
                     if (loadingIndicator) {
-                        loadingIndicator.innerHTML = '<div>No more pulses to load</div>';
                         loadingIndicator.classList.remove('active');
                     }
                     return;
@@ -1983,7 +1924,7 @@
             }
         }
         
-        // Display additional pulses (for infinite scroll)
+        // Display additional pulses (for infinite scroll) - UPDATED: Removed empty state
         function displayMorePulses(pulses, likedPulses) {
             if (!pulses || pulses.length === 0) return;
             
@@ -3427,38 +3368,48 @@
             }
         }
         
+        // UPDATED: displayPulses function - Removed empty state
         function displayPulses(pulses, likedPulses) {
             const pulseFeedContainer = document.getElementById('pulse-feed-container');
             
+            // Clear existing pulses only on initial load
+            if (currentOffset === 0) {
+                pulseFeedContainer.innerHTML = '';
+            }
+            
             if (!pulses || pulses.length === 0) {
-                // Show empty state for first load
-                if (currentOffset === 0) {
-                    pulseFeedContainer.innerHTML = `
-                        <div class="empty-state">
-                            <div class="empty-icon">
-                                <i class="fas fa-feather-alt"></i>
-                            </div>
-                            <div class="empty-title">No pulses yet</div>
-                            <div class="empty-description">
-                                Be the first to share what's moving the culture!<br>
-                                Click the + button to create your first pulse.
-                            </div>
-                        </div>
-                    `;
+                // If no pulses on initial load, just show a loading message temporarily
+                if (currentOffset === 0 && displayedPulseIds.size === 0) {
+                    pulseFeedContainer.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--slate-grey);">Loading pulses...</div>';
+                    
+                    // Try to load again after a delay
+                    setTimeout(async () => {
+                        try {
+                            const retryPulses = await fetchPulses(PULSES_PER_PAGE, 0);
+                            if (retryPulses && retryPulses.length > 0) {
+                                const retryLikedPulses = await checkUserLikes(retryPulses.map(p => p.id));
+                                displayPulses(retryPulses, retryLikedPulses);
+                            }
+                        } catch (error) {
+                            console.error('Retry failed:', error);
+                        }
+                    }, 1000);
                 }
                 return;
             }
             
-            // Clear existing pulses
-            pulseFeedContainer.innerHTML = '';
-            
-            // Reset displayed IDs and pulses array
-            displayedPulseIds.clear();
-            allPulses = [];
+            // Only reset tracking on first load
+            if (currentOffset === 0) {
+                displayedPulseIds.clear();
+                allPulses = [];
+            }
             
             const fragment = document.createDocumentFragment();
             
             pulses.forEach(pulse => {
+                // Skip if already displayed
+                if (displayedPulseIds.has(pulse.id)) return;
+                
                 const pulseCard = createPulseCard(pulse, likedPulses);
                 fragment.appendChild(pulseCard);
                 displayedPulseIds.add(pulse.id);
@@ -3468,7 +3419,7 @@
             pulseFeedContainer.appendChild(fragment);
             
             // Update offset for infinite scroll
-            currentOffset = pulses.length;
+            currentOffset = displayedPulseIds.size;
             hasMorePulses = pulses.length >= PULSES_PER_PAGE;
             
             // Setup lazy loading
@@ -3772,22 +3723,50 @@
             }
         });
 
-        // Load initial pulses function
+        // UPDATED: loadInitialPulses function - Removed empty state
         async function loadInitialPulses() {
             try {
                 isFeedLoading = true;
+                
+                // Clear the feed container with a loading message
+                const pulseFeedContainer = document.getElementById('pulse-feed-container');
+                pulseFeedContainer.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--slate-grey);">Loading pulses...</div>';
+                
+                // Reset offset
+                currentOffset = 0;
+                
                 const pulses = await fetchPulses(PULSES_PER_PAGE, 0);
                 
                 if (pulses.length > 0) {
                     const likedPulses = await checkUserLikes(pulses.map(p => p.id));
                     displayPulses(pulses, likedPulses);
                 } else {
-                    // Show empty state
-                    displayPulses([], new Set());
+                    // If no pulses returned, show a retry message instead of empty state
+                    pulseFeedContainer.innerHTML = `
+                        <div style="padding: 40px 20px; text-align: center; color: var(--slate-grey);">
+                            <h3 style="color: var(--soft-white); margin-bottom: 10px;">Loading Content</h3>
+                            <p>Unable to load pulses at the moment. Please try again.</p>
+                            <button onclick="loadInitialPulses()" class="modal-btn modal-btn-post" style="margin-top: 20px;">
+                                Retry Loading
+                            </button>
+                        </div>
+                    `;
                 }
+                
             } catch (error) {
                 console.error('Error loading initial pulses:', error);
-                displayPulses([], new Set());
+                
+                // Show error message instead of empty state
+                const pulseFeedContainer = document.getElementById('pulse-feed-container');
+                pulseFeedContainer.innerHTML = `
+                    <div style="padding: 40px 20px; text-align: center; color: var(--slate-grey);">
+                        <h3 style="color: var(--soft-white); margin-bottom: 10px;">Connection Error</h3>
+                        <p>Unable to connect to the server. Please check your internet connection.</p>
+                        <button onclick="loadInitialPulses()" class="modal-btn modal-btn-post" style="margin-top: 20px;">
+                            Retry Connection
+                        </button>
+                    </div>
+                `;
             } finally {
                 isFeedLoading = false;
             }
@@ -4205,6 +4184,7 @@
             loadInitialPulses();
         }
         
+        // UPDATED: timeout fallback - Removed empty state
         forceLoadTimeout = setTimeout(() => {
             if (!isInitialized) {
                 console.log('Timeout reached - forcing content display');
@@ -4214,18 +4194,15 @@
                     isInitialized = true;
                     document.getElementById('loading').style.display = 'none';
                     document.getElementById('content').style.display = 'block';
-                    document.getElementById('pulse-feed-container').innerHTML = `
-                        <div class="empty-state">
-                            <div class="empty-icon">
-                                <i class="fas fa-feather-alt"></i>
-                            </div>
-                            <div class="empty-title">No pulses yet</div>
-                            <div class="empty-description">
-                                Be the first to share what's moving the culture!<br>
-                                Click the + button to create your first pulse.
-                            </div>
-                        </div>
-                    `;
+                    
+                    // Show loading message instead of empty state
+                    document.getElementById('pulse-feed-container').innerHTML = '<div style="padding: 20px; text-align: center; color: var(--slate-grey);">Loading content...</div>';
+                    
+                    // Try to load pulses
+                    setTimeout(() => {
+                        loadInitialPulses();
+                    }, 500);
+                    
                     setupBasicEventListeners();
                 }, 3000);
             }
