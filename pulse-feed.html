@@ -1677,7 +1677,7 @@
         let userConnections = new Set(); // Store connected user IDs
         let videoPlayers = new Map(); // Store video player instances
         
-        // Infinite scroll variables - UPDATED: Simplified state management
+        // Infinite scroll variables
         let isFeedLoading = false;
         let hasMorePulses = true;
         let currentOffset = 0;
@@ -1688,37 +1688,33 @@
         let allPulses = [];
         let displayedPulseIds = new Set();
 
-        // Performance optimization - UPDATED: Better throttling
+        // FIXED: Simple and efficient scroll handling
         let scrollThrottleTimeout = null;
-        let isCheckingScroll = false;
-        const SCROLL_THROTTLE_DELAY = 200;
-        const SCROLL_LOAD_THRESHOLD = 500;
+        let isScrollListenerActive = true;
 
-        function throttle(func, limit) {
-            let inThrottle;
+        // Simple throttle function
+        function throttle(func, wait) {
+            let timeout = null;
+            let previous = 0;
+            
             return function() {
-                const args = arguments;
-                const context = this;
-                if (!inThrottle) {
-                    func.apply(context, args);
-                    inThrottle = true;
-                    setTimeout(() => inThrottle = false, limit);
+                const now = Date.now();
+                const remaining = wait - (now - previous);
+                
+                if (remaining <= 0 || remaining > wait) {
+                    if (timeout) {
+                        clearTimeout(timeout);
+                        timeout = null;
+                    }
+                    previous = now;
+                    func.apply(this, arguments);
+                } else if (!timeout) {
+                    timeout = setTimeout(() => {
+                        previous = Date.now();
+                        timeout = null;
+                        func.apply(this, arguments);
+                    }, remaining);
                 }
-            };
-        }
-
-        function debounce(func, wait, immediate) {
-            let timeout;
-            return function() {
-                const context = this, args = arguments;
-                const later = function() {
-                    timeout = null;
-                    if (!immediate) func.apply(context, args);
-                };
-                const callNow = immediate && !timeout;
-                clearTimeout(timeout);
-                timeout = setTimeout(later, wait);
-                if (callNow) func.apply(context, args);
             };
         }
 
@@ -1778,14 +1774,11 @@
                 // Initialize the feed functionality
                 initializeFeed(session);
                 
-                // Set up infinite scroll - UPDATED: Better setup
-                setupInfiniteScroll();
-                
             } catch (error) {
                 console.error('Error:', error);
                 document.getElementById('loading-text').textContent = 'Error loading. Please refresh.';
                 
-                // Still show content after delay - UPDATED: Removed empty state
+                // Still show content after delay
                 setTimeout(() => {
                     isInitialized = true;
                     if (forceLoadTimeout) {
@@ -1795,58 +1788,45 @@
                     document.getElementById('loading').style.display = 'none';
                     document.getElementById('content').style.display = 'block';
                     
-                    // Show error message instead of empty state
-                    document.getElementById('pulse-feed-container').innerHTML = `
-                        <div style="padding: 40px 20px; text-align: center; color: var(--slate-grey);">
-                            <h3 style="color: var(--soft-white); margin-bottom: 10px;">Unable to Load Feed</h3>
-                            <p>There was an error loading the pulse feed. Please try refreshing the page.</p>
-                            <button onclick="window.location.reload()" class="modal-btn modal-btn-post" style="margin-top: 20px;">
-                                Refresh Page
-                            </button>
-                        </div>
-                    `;
-                    
                     // Set up basic event listeners
                     setupBasicEventListeners();
                 }, 2000);
             }
         }
         
-        // Set up infinite scroll - UPDATED: Simplified and better
+        // FIXED: Setup infinite scroll with proper throttling
         function setupInfiniteScroll() {
-            // Use passive event listener for better performance
-            const throttledScrollCheck = throttle(checkScrollPosition, SCROLL_THROTTLE_DELAY);
+            // Use a throttled scroll handler
+            const throttledScrollCheck = throttle(() => {
+                if (!isLoadingMore && hasMorePulses && isScrollListenerActive) {
+                    checkScrollPosition();
+                }
+            }, 200);
+            
             window.addEventListener('scroll', throttledScrollCheck, { passive: true });
             
-            // Also check on resize (throttled)
-            let resizeTimeout;
-            window.addEventListener('resize', () => {
-                clearTimeout(resizeTimeout);
-                resizeTimeout = setTimeout(() => {
-                    checkScrollPosition();
-                }, 250);
+            // Clean up on page unload
+            window.addEventListener('beforeunload', () => {
+                window.removeEventListener('scroll', throttledScrollCheck);
             });
         }
         
-        // Check if we need to load more pulses - UPDATED: Simplified
+        // FIXED: Check if we need to load more pulses
         function checkScrollPosition() {
             // Don't check if already loading or no more pulses
-            if (isLoadingMore || !hasMorePulses || isFeedLoading) return;
+            if (isLoadingMore || !hasMorePulses || !isScrollListenerActive) return;
             
             const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
             const scrollHeight = document.documentElement.scrollHeight;
             const clientHeight = document.documentElement.clientHeight;
             
-            // Calculate distance from bottom
-            const distanceFromBottom = scrollHeight - (scrollTop + clientHeight);
-            
-            // Load more when threshold reached
-            if (distanceFromBottom < SCROLL_LOAD_THRESHOLD) {
+            // Load more when 300px from bottom
+            if (scrollHeight - (scrollTop + clientHeight) < 300) {
                 loadMorePulses();
             }
         }
         
-        // Load more pulses for infinite scroll - UPDATED: Better error handling
+        // FIXED: Load more pulses with better performance
         async function loadMorePulses() {
             if (isLoadingMore || !hasMorePulses) return;
             
@@ -1859,17 +1839,14 @@
                     loadingIndicator.classList.add('active');
                 }
                 
-                // Add a small delay to prevent UI freezing
-                await new Promise(resolve => setTimeout(resolve, 100));
-                
                 // Fetch next batch of pulses
                 const newPulses = await fetchPulses(PULSES_PER_PAGE, currentOffset);
                 
-                // If no more pulses or error, stop infinite scroll
+                // If no more pulses, stop infinite scroll
                 if (!newPulses || newPulses.length === 0) {
                     hasMorePulses = false;
                     if (loadingIndicator) {
-                        loadingIndicator.classList.remove('active'); // Just hide, don't show message
+                        loadingIndicator.classList.remove('active');
                     }
                     return;
                 }
@@ -1878,7 +1855,7 @@
                 const uniquePulses = newPulses.filter(pulse => !displayedPulseIds.has(pulse.id));
                 
                 if (uniquePulses.length === 0) {
-                    // No new unique pulses, but we might have reached the end
+                    // No new unique pulses
                     currentOffset += PULSES_PER_PAGE;
                     hasMorePulses = false;
                     if (loadingIndicator) {
@@ -1915,16 +1892,12 @@
                     loadingIndicator.classList.remove('active');
                 }
                 
-                // Don't show error toast for network issues to avoid spam
-                if (error.message !== 'Network Error') {
-                    showToast('Failed to load more pulses', 'error');
-                }
             } finally {
                 isLoadingMore = false;
             }
         }
         
-        // Display additional pulses (for infinite scroll) - UPDATED: Removed empty state
+        // Display additional pulses (for infinite scroll)
         function displayMorePulses(pulses, likedPulses) {
             if (!pulses || pulses.length === 0) return;
             
@@ -3356,50 +3329,24 @@
                 
             } catch (error) {
                 console.error('❌ Error fetching pulses:', error);
-                
-                // Don't show toast for timeout or network errors to avoid spam
-                if (!error.message.includes('timeout') && !error.message.includes('Network')) {
-                    showToast('Failed to load pulses', 'error');
-                }
-                
                 return [];
             } finally {
                 isFeedLoading = false;
             }
         }
         
-        // UPDATED: displayPulses function - Removed empty state
+        // FIXED: displayPulses function - NO loading messages, just show pulses
         function displayPulses(pulses, likedPulses) {
             const pulseFeedContainer = document.getElementById('pulse-feed-container');
+            
+            if (!pulses || pulses.length === 0) {
+                // Just return if no pulses - don't show any message
+                return;
+            }
             
             // Clear existing pulses only on initial load
             if (currentOffset === 0) {
                 pulseFeedContainer.innerHTML = '';
-            }
-            
-            if (!pulses || pulses.length === 0) {
-                // If no pulses on initial load, just show a loading message temporarily
-                if (currentOffset === 0 && displayedPulseIds.size === 0) {
-                    pulseFeedContainer.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--slate-grey);">Loading pulses...</div>';
-                    
-                    // Try to load again after a delay
-                    setTimeout(async () => {
-                        try {
-                            const retryPulses = await fetchPulses(PULSES_PER_PAGE, 0);
-                            if (retryPulses && retryPulses.length > 0) {
-                                const retryLikedPulses = await checkUserLikes(retryPulses.map(p => p.id));
-                                displayPulses(retryPulses, retryLikedPulses);
-                            }
-                        } catch (error) {
-                            console.error('Retry failed:', error);
-                        }
-                    }, 1000);
-                }
-                return;
-            }
-            
-            // Only reset tracking on first load
-            if (currentOffset === 0) {
                 displayedPulseIds.clear();
                 allPulses = [];
             }
@@ -3723,50 +3670,26 @@
             }
         });
 
-        // UPDATED: loadInitialPulses function - Removed empty state
+        // FIXED: loadInitialPulses function - NO loading messages
         async function loadInitialPulses() {
             try {
                 isFeedLoading = true;
                 
-                // Clear the feed container with a loading message
-                const pulseFeedContainer = document.getElementById('pulse-feed-container');
-                pulseFeedContainer.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--slate-grey);">Loading pulses...</div>';
-                
                 // Reset offset
                 currentOffset = 0;
                 
+                // Fetch pulses
                 const pulses = await fetchPulses(PULSES_PER_PAGE, 0);
                 
                 if (pulses.length > 0) {
                     const likedPulses = await checkUserLikes(pulses.map(p => p.id));
                     displayPulses(pulses, likedPulses);
-                } else {
-                    // If no pulses returned, show a retry message instead of empty state
-                    pulseFeedContainer.innerHTML = `
-                        <div style="padding: 40px 20px; text-align: center; color: var(--slate-grey);">
-                            <h3 style="color: var(--soft-white); margin-bottom: 10px;">Loading Content</h3>
-                            <p>Unable to load pulses at the moment. Please try again.</p>
-                            <button onclick="loadInitialPulses()" class="modal-btn modal-btn-post" style="margin-top: 20px;">
-                                Retry Loading
-                            </button>
-                        </div>
-                    `;
                 }
+                // If no pulses, do nothing - don't show any message
                 
             } catch (error) {
                 console.error('Error loading initial pulses:', error);
-                
-                // Show error message instead of empty state
-                const pulseFeedContainer = document.getElementById('pulse-feed-container');
-                pulseFeedContainer.innerHTML = `
-                    <div style="padding: 40px 20px; text-align: center; color: var(--slate-grey);">
-                        <h3 style="color: var(--soft-white); margin-bottom: 10px;">Connection Error</h3>
-                        <p>Unable to connect to the server. Please check your internet connection.</p>
-                        <button onclick="loadInitialPulses()" class="modal-btn modal-btn-post" style="margin-top: 20px;">
-                            Retry Connection
-                        </button>
-                    </div>
-                `;
+                // Don't show any error message - just log it
             } finally {
                 isFeedLoading = false;
             }
@@ -3999,13 +3922,8 @@
                     
                     closeCreateModal();
                     
-                    // Reset and reload feed
-                    const feedContainer = document.getElementById('pulse-feed-container');
-                    feedContainer.innerHTML = '<div style="padding: 20px; text-align: center;">Loading...</div>';
-                    
-                    setTimeout(async () => {
-                        await loadInitialPulses();
-                    }, 1000);
+                    // Reload feed
+                    loadInitialPulses();
                     
                 } catch (error) {
                     console.error('❌ Create pulse error:', error);
@@ -4182,9 +4100,13 @@
             
             // Load initial pulses
             loadInitialPulses();
+            
+            // Setup infinite scroll AFTER initial load
+            setTimeout(() => {
+                setupInfiniteScroll();
+            }, 100);
         }
         
-        // UPDATED: timeout fallback - Removed empty state
         forceLoadTimeout = setTimeout(() => {
             if (!isInitialized) {
                 console.log('Timeout reached - forcing content display');
@@ -4194,14 +4116,6 @@
                     isInitialized = true;
                     document.getElementById('loading').style.display = 'none';
                     document.getElementById('content').style.display = 'block';
-                    
-                    // Show loading message instead of empty state
-                    document.getElementById('pulse-feed-container').innerHTML = '<div style="padding: 20px; text-align: center; color: var(--slate-grey);">Loading content...</div>';
-                    
-                    // Try to load pulses
-                    setTimeout(() => {
-                        loadInitialPulses();
-                    }, 500);
                     
                     setupBasicEventListeners();
                 }, 3000);
