@@ -1362,6 +1362,24 @@
             backdrop-filter: blur(20px);
         }
         
+        /* Infinite Scroll Loading Indicator */
+        .loading-more {
+            text-align: center;
+            padding: 20px;
+            color: var(--slate-grey);
+            display: none;
+        }
+        
+        .loading-more.active {
+            display: block;
+        }
+        
+        .loading-more .spinner {
+            width: 30px;
+            height: 30px;
+            margin: 0 auto 10px;
+        }
+        
         /* Responsive */
         @media (max-width: 768px) {
             .container {
@@ -1481,6 +1499,11 @@
         <div class="tab-content active" id="pulse-feed">
             <div class="pulse-feed" id="pulse-feed-container">
                 <!-- Pulses will be loaded here dynamically -->
+            </div>
+            <!-- Infinite scroll loading indicator -->
+            <div id="loading-more" class="loading-more">
+                <div class="spinner"></div>
+                <div>Loading more pulses...</div>
             </div>
         </div>
         
@@ -1694,24 +1717,16 @@
         let userConnections = new Set(); // Store connected user IDs
         let videoPlayers = new Map(); // Store video player instances
         
-        // NEW: Performance optimization variables
-        let isProcessingUpload = false;
-        let activeVideoPlayers = new Set(); // Track active videos
+        // Infinite scroll variables
         let isFeedLoading = false;
-        let pulses = []; // Store pulses globally for better management
-
-        // Add this function to optimize performance
-        function debounce(func, wait) {
-            let timeout;
-            return function executedFunction(...args) {
-                const later = () => {
-                    clearTimeout(timeout);
-                    func(...args);
-                };
-                clearTimeout(timeout);
-                timeout = setTimeout(later, wait);
-            };
-        }
+        let hasMorePulses = true;
+        let currentOffset = 0;
+        const PULSES_PER_PAGE = 10;
+        let isLoadingMore = false;
+        
+        // Store pulses in memory for better management
+        let allPulses = [];
+        let displayedPulseIds = new Set();
 
         async function initialize() {
             console.log('Starting Pulse Feed initialization...');
@@ -1750,10 +1765,10 @@
                 // Fetch user connections
                 await fetchUserConnections();
                 
-                // NEW: Check for unread notifications
+                // Check for unread notifications
                 await checkUnreadNotifications();
                 
-                // NEW: Subscribe to real-time notifications
+                // Subscribe to real-time notifications
                 subscribeToNotifications();
                 
                 // Hide loading, show content
@@ -1768,6 +1783,9 @@
                 
                 // Initialize the feed functionality
                 initializeFeed(session);
+                
+                // Set up infinite scroll
+                setupInfiniteScroll();
                 
             } catch (error) {
                 console.error('Error:', error);
@@ -1798,10 +1816,122 @@
             }
         }
         
-        // NEW: Check for unread notifications (exactly like profile.html)
+        // Set up infinite scroll
+        function setupInfiniteScroll() {
+            // Debounce scroll events for performance
+            let scrollTimeout;
+            window.addEventListener('scroll', () => {
+                clearTimeout(scrollTimeout);
+                scrollTimeout = setTimeout(() => {
+                    checkScrollPosition();
+                }, 100);
+            });
+            
+            // Also check on resize
+            window.addEventListener('resize', checkScrollPosition);
+        }
+        
+        // Check if we need to load more pulses
+        async function checkScrollPosition() {
+            // Don't load if already loading or no more pulses
+            if (isLoadingMore || !hasMorePulses) return;
+            
+            const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+            const scrollHeight = document.documentElement.scrollHeight;
+            const clientHeight = document.documentElement.clientHeight;
+            
+            // Load more when user is 300px from the bottom
+            if (scrollTop + clientHeight >= scrollHeight - 300) {
+                await loadMorePulses();
+            }
+        }
+        
+        // Load more pulses for infinite scroll
+        async function loadMorePulses() {
+            if (isLoadingMore || !hasMorePulses) return;
+            
+            try {
+                isLoadingMore = true;
+                
+                // Show loading indicator
+                const loadingIndicator = document.getElementById('loading-more');
+                if (loadingIndicator) {
+                    loadingIndicator.classList.add('active');
+                }
+                
+                // Fetch next batch of pulses
+                const newPulses = await fetchPulses(PULSES_PER_PAGE, currentOffset);
+                
+                if (newPulses.length === 0) {
+                    hasMorePulses = false;
+                    if (loadingIndicator) {
+                        loadingIndicator.innerHTML = '<div>No more pulses to load</div>';
+                        setTimeout(() => {
+                            loadingIndicator.classList.remove('active');
+                        }, 2000);
+                    }
+                    return;
+                }
+                
+                // Update offset for next load
+                currentOffset += newPulses.length;
+                
+                // Check which pulses user has liked
+                const likedPulses = await checkUserLikes(newPulses.map(p => p.id));
+                
+                // Display the new pulses
+                displayMorePulses(newPulses, likedPulses);
+                
+                // Hide loading indicator
+                if (loadingIndicator) {
+                    loadingIndicator.classList.remove('active');
+                }
+                
+                // If we got fewer pulses than requested, we might be at the end
+                if (newPulses.length < PULSES_PER_PAGE) {
+                    hasMorePulses = false;
+                }
+                
+            } catch (error) {
+                console.error('Error loading more pulses:', error);
+                showToast('Failed to load more pulses', 'error');
+                
+                // Hide loading indicator on error
+                const loadingIndicator = document.getElementById('loading-more');
+                if (loadingIndicator) {
+                    loadingIndicator.classList.remove('active');
+                }
+            } finally {
+                isLoadingMore = false;
+            }
+        }
+        
+        // Display additional pulses (for infinite scroll)
+        function displayMorePulses(pulses, likedPulses) {
+            if (!pulses || pulses.length === 0) return;
+            
+            const pulseFeedContainer = document.getElementById('pulse-feed-container');
+            const fragment = document.createDocumentFragment();
+            
+            pulses.forEach(pulse => {
+                // Skip if already displayed
+                if (displayedPulseIds.has(pulse.id)) return;
+                
+                const pulseCard = createPulseCard(pulse, likedPulses);
+                fragment.appendChild(pulseCard);
+                displayedPulseIds.add(pulse.id);
+                allPulses.push(pulse);
+            });
+            
+            pulseFeedContainer.appendChild(fragment);
+            
+            // Setup lazy loading for new media
+            setupLazyLoading();
+        }
+        
+        // Check for unread notifications
         async function checkUnreadNotifications() {
             try {
-                // First check if the pulse_notifications table exists
                 const { count, error: countError } = await supabaseClient
                     .from('pulse_notifications')
                     .select('*', { count: 'exact', head: true })
@@ -1810,8 +1940,7 @@
                 
                 if (countError) {
                     console.log('pulse_notifications table might not exist, using fallback');
-                    // Table might not exist, use fallback logic
-                    updateNotificationIndicator(false); // No indicator if table doesn't exist
+                    updateNotificationIndicator(false);
                     return;
                 }
                 
@@ -1826,7 +1955,7 @@
             }
         }
         
-        // NEW: Update notification indicator (exactly like profile.html)
+        // Update notification indicator
         function updateNotificationIndicator(hasUnread) {
             const notificationBtn = document.getElementById('notificationBtn');
             if (notificationBtn) {
@@ -1838,7 +1967,7 @@
             }
         }
         
-        // NEW: Subscribe to real-time notifications (exactly like profile.html)
+        // Subscribe to real-time notifications
         function subscribeToNotifications() {
             if (!supabaseClient || !currentUserId) return;
             
@@ -1855,10 +1984,7 @@
                         },
                         (payload) => {
                             console.log('New notification received (real-time):', payload);
-                            // Show gold dot indicator
                             updateNotificationIndicator(true);
-                            
-                            // Optional: Show a toast notification
                             showToast('New notification!', 'success');
                         }
                     )
@@ -1871,9 +1997,7 @@
                             filter: `target_user_id=eq.${currentUserId}`
                         },
                         (payload) => {
-                            // Check if notification was marked as read
                             if (payload.new.is_read === true && payload.old.is_read === false) {
-                                // Re-check all notifications to update indicator
                                 checkUnreadNotifications();
                             }
                         }
@@ -1893,21 +2017,18 @@
             return name.substring(0, 2).toUpperCase();
         }
         
-        // ✅ OPTIMIZED: LOAD USER PROFILE WITH AVATAR
         async function loadUserProfile() {
             try {
                 const { data: { session } } = await supabaseClient.auth.getSession();
                 if (!session) return;
                 
-                // Fetch user profile with avatar
-                const { data: profile } = await supabaseClient
+                let profile = await supabaseClient
                     .from('user_profiles')
                     .select('avatar_url, full_name, email')
                     .eq('id', session.user.id)
                     .single();
                 
-                if (!profile) {
-                    // Create a basic profile if it doesn't exist
+                if (!profile.data) {
                     const { data: newProfile, error } = await supabaseClient
                         .from('user_profiles')
                         .upsert({
@@ -1924,14 +2045,13 @@
                     
                     if (error) throw error;
                     
-                    // Use the new profile
-                    profile = newProfile;
+                    profile = { data: newProfile };
                 }
                 
-                const initials = getUserInitials(profile);
-                const avatarImgSrc = profile.avatar_url;
+                const initials = getUserInitials(profile.data || session.user);
+                const avatarImgSrc = profile.data?.avatar_url;
                 
-                // Function to update avatar elements efficiently
+                // Update all avatar places
                 const updateAvatar = (containerId, imgId, initialsId) => {
                     const container = document.getElementById(containerId);
                     const img = document.getElementById(imgId);
@@ -1940,7 +2060,6 @@
                     if (!container) return;
                     
                     if (avatarImgSrc) {
-                        // Preload image for better performance
                         const preloadImg = new Image();
                         preloadImg.src = avatarImgSrc;
                         
@@ -1953,7 +2072,6 @@
                         };
                         
                         preloadImg.onerror = () => {
-                            // If image fails to load, show initials
                             if (initialsEl) {
                                 initialsEl.style.display = 'flex';
                                 initialsEl.textContent = initials;
@@ -1961,7 +2079,6 @@
                             if (img) img.style.display = 'none';
                         };
                     } else {
-                        // No avatar, show initials
                         if (initialsEl) {
                             initialsEl.style.display = 'flex';
                             initialsEl.textContent = initials;
@@ -1970,7 +2087,6 @@
                     }
                 };
                 
-                // Update all avatar places
                 updateAvatar('user-avatar', 'user-avatar-img', 'avatar-initials');
                 
                 // Update prompt avatar
@@ -2003,7 +2119,6 @@
                 updateAvatar('modal-avatar', 'modal-avatar-img', 'modal-avatar-initials');
                 updateAvatar('edit-modal-avatar', 'edit-modal-avatar-img', 'edit-modal-avatar-initials');
                 
-                // Prefetch the profile image for better performance
                 if (avatarImgSrc) {
                     const link = document.createElement('link');
                     link.rel = 'preload';
@@ -2014,7 +2129,6 @@
                 
             } catch (error) {
                 console.log('Error loading user profile:', error);
-                // Fallback to initials
                 const { data: { session } } = await supabaseClient.auth.getSession();
                 if (session) {
                     const initials = getUserInitials(session.user);
@@ -2026,13 +2140,11 @@
             }
         }
         
-        // ✅ NEW: FETCH USER CONNECTIONS
         async function fetchUserConnections() {
             try {
                 const { data: { session } } = await supabaseClient.auth.getSession();
                 if (!session) return;
                 
-                // Fetch connections where current user is the connector
                 const { data: connections, error } = await supabaseClient
                     .from('connectors')
                     .select('connected_id')
@@ -2043,7 +2155,6 @@
                     return;
                 }
                 
-                // Store connected user IDs in a Set for quick lookup
                 userConnections = new Set();
                 if (connections) {
                     connections.forEach(connection => {
@@ -2058,7 +2169,6 @@
             }
         }
         
-        // ✅ UPDATED: HANDLE CONNECT BUTTON CLICK WITH SMALLER BUTTON
         async function handleConnect(pulseCreatorId, connectBtn) {
             try {
                 const { data: { session } } = await supabaseClient.auth.getSession();
@@ -2067,21 +2177,17 @@
                     return;
                 }
                 
-                // Don't allow connecting to yourself
                 if (pulseCreatorId === session.user.id) {
                     showToast('You cannot connect with yourself', 'error');
                     return;
                 }
                 
-                // Check if already connected
                 const isConnected = userConnections.has(pulseCreatorId);
                 
-                // Add connecting animation
                 connectBtn.classList.add('connecting');
                 connectBtn.disabled = true;
                 
                 if (isConnected) {
-                    // Disconnect: Delete the connection
                     const { error } = await supabaseClient
                         .from('connectors')
                         .delete()
@@ -2090,10 +2196,8 @@
                     
                     if (error) throw error;
                     
-                    // Remove from local connections
                     userConnections.delete(pulseCreatorId);
                     
-                    // Update button state after animation
                     setTimeout(() => {
                         connectBtn.classList.remove('connected');
                         connectBtn.classList.remove('connecting');
@@ -2103,7 +2207,6 @@
                     
                     showToast('Disconnected from creator', 'success');
                 } else {
-                    // Connect: Create new connection
                     const { error } = await supabaseClient
                         .from('connectors')
                         .insert({
@@ -2114,9 +2217,7 @@
                         });
                     
                     if (error) {
-                        // Check if it's a duplicate error (23505)
                         if (error.code === '23505') {
-                            // Already connected, just update UI
                             userConnections.add(pulseCreatorId);
                         } else {
                             throw error;
@@ -2125,7 +2226,6 @@
                         userConnections.add(pulseCreatorId);
                     }
                     
-                    // Update button state after animation
                     setTimeout(() => {
                         connectBtn.classList.add('connected');
                         connectBtn.classList.remove('connecting');
@@ -2159,7 +2259,6 @@
                 showToast('Please sign in to create pulses', 'error');
             });
             
-            // User avatar now redirects to profile
             userAvatar.addEventListener('click', () => {
                 window.location.href = 'profile.html';
             });
@@ -2240,7 +2339,6 @@
             
             feed.innerHTML = html;
             
-            // Add event listeners to sample buttons
             document.querySelectorAll('.like-btn').forEach(btn => {
                 btn.addEventListener('click', (e) => {
                     e.stopPropagation();
@@ -2267,7 +2365,6 @@
             showToast('Please sign in to view pulse details', 'error');
         }
         
-        // ✅ SHOW TOAST
         function showToast(message, type = 'error') {
             const toast = document.createElement('div');
             toast.className = `toast ${type}`;
@@ -2286,7 +2383,6 @@
             }, 4000);
         }
         
-        // ✅ GET TIME AGO
         function getTimeAgo(date) {
             const seconds = Math.floor((new Date() - date) / 1000);
             
@@ -2308,7 +2404,6 @@
             return Math.floor(seconds) + ' seconds ago';
         }
         
-        // ✅ UPDATED: GET REAL COMMENTS COUNT FROM pulse_comments TABLE
         async function getRealCommentsCount(pulseId) {
             try {
                 const { count, error } = await supabaseClient
@@ -2329,27 +2424,22 @@
             }
         }
         
-        // ✅ UPDATED: UPDATE COMMENT COUNT IN UI WITH REAL COUNT
         async function updateCommentCount(pulseId, increment) {
             const pulseCard = document.querySelector(`[data-pulse-id="${pulseId}"]`);
             if (!pulseCard) return;
             
-            // Get the real count from the database
             const realCount = await getRealCommentsCount(pulseId);
             
             const commentsBtn = pulseCard.querySelector('.comment-btn');
             const commentsCount = pulseCard.querySelector('.comments-count');
             
-            // Update button text
             commentsBtn.innerHTML = `<i class="fas fa-comment"></i> ${realCount}`;
             
-            // Update stats
             if (commentsCount) {
                 commentsCount.textContent = `${realCount} ${realCount === 1 ? 'comment' : 'comments'}`;
             }
         }
         
-        // ✅ UPDATE SHARE COUNT IN UI
         function updateShareCount(pulseId, increment) {
             const pulseCard = document.querySelector(`[data-pulse-id="${pulseId}"]`);
             if (!pulseCard) return;
@@ -2357,19 +2447,17 @@
             const sharesBtn = pulseCard.querySelector('.share-btn');
             const sharesStats = pulseCard.querySelector('.shares-count');
             
-            // Update button text
             const currentText = sharesBtn.textContent.trim();
             const currentCount = parseInt(currentText.match(/\d+/)?.[0]) || 0;
             sharesBtn.innerHTML = `<i class="fas fa-share"></i> ${currentCount + increment}`;
             
-            // Update stats
             if (sharesStats) {
                 const statsCurrent = parseInt(sharesStats.textContent.match(/\d+/)?.[0]) || 0;
                 sharesStats.textContent = `${statsCurrent + increment} shares`;
             }
         }
         
-        // ✅ FIXED: HANDLE LIKE WITH PROPER COUNT UPDATES
+        // FIXED: Handle like with immediate count update
         async function handleLike(pulseId, e) {
             if (e) e.stopPropagation();
             
@@ -2388,6 +2476,9 @@
                     .eq('user_id', session.user.id)
                     .single();
                 
+                let isLiked;
+                let newLikesCount;
+                
                 if (existingLike) {
                     // Unlike
                     const { error } = await supabaseClient
@@ -2395,17 +2486,18 @@
                         .delete()
                         .eq('id', existingLike.id);
                     
-                    if (!error) {
-                        // Get updated likes count after unlike
-                        const { data: pulseData } = await supabaseClient
-                            .from('pulses')
-                            .select('likes_count')
-                            .eq('id', pulseId)
-                            .single();
-                        
-                        updateLikeUI(pulseId, false, pulseData?.likes_count || 0);
-                        showToast('Like removed', 'success');
-                    }
+                    if (error) throw error;
+                    
+                    // Get current count after unlike
+                    const { count: likeCount } = await supabaseClient
+                        .from('pulse_likes')
+                        .select('*', { count: 'exact', head: true })
+                        .eq('pulse_id', pulseId);
+                    
+                    isLiked = false;
+                    newLikesCount = likeCount || 0;
+                    
+                    showToast('Like removed', 'success');
                 } else {
                     // Like
                     const { error } = await supabaseClient
@@ -2415,36 +2507,40 @@
                             user_id: session.user.id
                         });
                     
-                    if (!error) {
-                        // Get updated likes count after like
-                        const { data: pulseData } = await supabaseClient
-                            .from('pulses')
-                            .select('likes_count')
-                            .eq('id', pulseId)
-                            .single();
-                        
-                        updateLikeUI(pulseId, true, pulseData?.likes_count || 0);
-                        showToast('Pulse liked!', 'success');
-                        
-                        // ✅ Create notification for pulse creator (if not liking own pulse)
-                        const { data: pulse } = await supabaseClient
-                            .from('pulses')
-                            .select('user_id')
-                            .eq('id', pulseId)
-                            .single();
-                        
-                        if (pulse && pulse.user_id !== session.user.id) {
-                            await createNotification(
-                                'like',
-                                session.user.id,
-                                pulse.user_id,
-                                pulseId,
-                                null,
-                                `${session.user.email.split('@')[0]} liked your pulse`
-                            );
-                        }
+                    if (error) throw error;
+                    
+                    // Get current count after like
+                    const { count: likeCount } = await supabaseClient
+                        .from('pulse_likes')
+                        .select('*', { count: 'exact', head: true })
+                        .eq('pulse_id', pulseId);
+                    
+                    isLiked = true;
+                    newLikesCount = likeCount || 0;
+                    
+                    showToast('Pulse liked!', 'success');
+                    
+                    // Create notification for pulse creator
+                    const { data: pulse } = await supabaseClient
+                        .from('pulses')
+                        .select('user_id')
+                        .eq('id', pulseId)
+                        .single();
+                    
+                    if (pulse && pulse.user_id !== session.user.id) {
+                        await createNotification(
+                            'like',
+                            session.user.id,
+                            pulse.user_id,
+                            pulseId,
+                            null,
+                            `${session.user.email.split('@')[0]} liked your pulse`
+                        );
                     }
                 }
+                
+                // Update UI immediately with new count
+                updateLikeUI(pulseId, isLiked, newLikesCount);
                 
             } catch (error) {
                 console.error('❌ Like error:', error);
@@ -2452,7 +2548,7 @@
             }
         }
         
-        // ✅ FIXED: UPDATE LIKE UI WITH EXACT COUNT
+        // FIXED: Update like UI with immediate count
         function updateLikeUI(pulseId, isLiked, exactLikesCount) {
             const pulseCard = document.querySelector(`[data-pulse-id="${pulseId}"]`);
             if (!pulseCard) return;
@@ -2473,12 +2569,10 @@
             }
             
             if (likesCount) {
-                // Use the exact count with proper pluralization
                 likesCount.textContent = `${exactLikesCount} ${exactLikesCount === 1 ? 'like' : 'likes'}`;
             }
         }
         
-        // ✅ UPDATED: HANDLE COMMENT WITH REAL COUNT UPDATE
         async function handleComment(pulseId, e) {
             if (e) e.stopPropagation();
             
@@ -2489,7 +2583,6 @@
                     return;
                 }
                 
-                // Create comment modal
                 const commentModal = document.createElement('div');
                 commentModal.className = 'modal-overlay';
                 commentModal.style.display = 'flex';
@@ -2520,7 +2613,6 @@
                 
                 document.body.appendChild(commentModal);
                 
-                // Close modal handlers
                 const closeBtn = commentModal.querySelector('#closeCommentModal');
                 closeBtn.addEventListener('click', () => commentModal.remove());
                 
@@ -2530,7 +2622,6 @@
                     }
                 });
                 
-                // Form submission
                 const commentForm = commentModal.querySelector('#commentForm');
                 commentForm.addEventListener('submit', async (e) => {
                     e.preventDefault();
@@ -2556,7 +2647,6 @@
                         showToast('Comment posted successfully!', 'success');
                         commentModal.remove();
                         
-                        // UPDATED: Update comment count in UI with real count
                         updateCommentCount(pulseId, 1);
                         
                     } catch (error) {
@@ -2571,7 +2661,6 @@
             }
         }
         
-        // ✅ HANDLE SHARE
         async function handleShare(pulseId, e) {
             if (e) e.stopPropagation();
             
@@ -2582,7 +2671,6 @@
                     return;
                 }
                 
-                // Create share modal
                 const shareModal = document.createElement('div');
                 shareModal.className = 'modal-overlay';
                 shareModal.style.display = 'flex';
@@ -2627,7 +2715,6 @@
                 
                 document.body.appendChild(shareModal);
                 
-                // Close modal handlers
                 const closeBtn = shareModal.querySelector('#closeShareModal');
                 closeBtn.addEventListener('click', () => shareModal.remove());
                 
@@ -2637,7 +2724,6 @@
                     }
                 });
                 
-                // Share handlers
                 const shareInternal = shareModal.querySelector('#shareInternal');
                 const shareExternal = shareModal.querySelector('#shareExternal');
                 const copyLink = shareModal.querySelector('#copyLink');
@@ -2659,7 +2745,6 @@
                         showToast('Pulse shared internally!', 'success');
                         shareModal.remove();
                         
-                        // Update share count in UI
                         updateShareCount(pulseId, 1);
                         
                     } catch (error) {
@@ -2684,10 +2769,8 @@
                         showToast('Pulse shared externally!', 'success');
                         shareModal.remove();
                         
-                        // Update share count in UI
                         updateShareCount(pulseId, 1);
                         
-                        // Also try to open native share if available
                         if (navigator.share) {
                             navigator.share({
                                 title: 'Bantu Connect Pulse',
@@ -2714,12 +2797,10 @@
             }
         }
         
-        // ✅ VIEW PULSE DETAIL
         function viewPulseDetail(pulseId) {
             window.location.href = `pulse-content-detail.html?id=${pulseId}`;
         }
         
-        // ✅ FIXED: HANDLE DELETE PULSE - UPDATED TO WORK WITH RLS
         async function handleDelete(pulseId) {
             if (!confirm('Are you sure you want to PERMANENTLY delete this pulse? This action cannot be undone.')) {
                 return;
@@ -2732,7 +2813,6 @@
                     return;
                 }
                 
-                // First check if the pulse belongs to the user
                 const { data: pulse, error: fetchError } = await supabaseClient
                     .from('pulses')
                     .select('user_id, series_id')
@@ -2750,18 +2830,13 @@
                     return;
                 }
                 
-                // Use a direct delete instead of soft delete to avoid RLS issues
-                // If you want soft delete, you need to add RLS policies in Supabase
                 const { error } = await supabaseClient
                     .from('pulses')
                     .delete()
                     .eq('id', pulseId)
-                    .eq('user_id', session.user.id); // Double check ownership
+                    .eq('user_id', session.user.id);
                 
                 if (error) {
-                    console.error('Delete error:', error);
-                    
-                    // If delete fails, try soft delete as fallback
                     const { error: softDeleteError } = await supabaseClient
                         .from('pulses')
                         .update({ deleted_at: new Date().toISOString() })
@@ -2773,7 +2848,6 @@
                     }
                 }
                 
-                // Remove pulse from UI
                 const pulseCard = document.querySelector(`[data-pulse-id="${pulseId}"]`);
                 if (pulseCard) {
                     pulseCard.style.opacity = '0.5';
@@ -2792,10 +2866,8 @@
             }
         }
         
-        // ✅ UPDATED: HANDLE EDIT PULSE WITH SERIES SUPPORT
         async function handleEdit(pulseId) {
             try {
-                // Fetch the pulse data with series info
                 const { data: pulse, error } = await supabaseClient
                     .from('pulses')
                     .select('*, pulse_series(*)')
@@ -2807,16 +2879,13 @@
                 editingPulseId = pulseId;
                 editingPulseData = pulse;
                 
-                // Populate edit modal
                 document.getElementById('editCaption').value = pulse.caption || '';
                 
-                // Clear any previous media preview
                 const editMediaPreview = document.getElementById('editMediaPreview');
                 editMediaPreview.style.display = 'none';
                 editMediaPreview.innerHTML = '';
                 editSelectedMedia = null;
                 
-                // If pulse has media, show it
                 if (pulse.media_url) {
                     if (pulse.media_type === 'video') {
                         const video = document.createElement('video');
@@ -2835,7 +2904,6 @@
                     editMediaPreview.style.display = 'block';
                 }
                 
-                // Handle series editing
                 const editSeriesOptions = document.getElementById('editSeriesOptions');
                 if (pulse.series_id && pulse.pulse_series) {
                     editingSeriesId = pulse.series_id;
@@ -2844,7 +2912,6 @@
                     document.getElementById('editSeriesTitle').value = editingSeriesTitle;
                     editSeriesOptions.style.display = 'block';
                     
-                    // Add event listeners for series buttons
                     document.getElementById('removeFromSeries').onclick = async () => {
                         if (confirm('Remove this pulse from the series? It will become a standalone pulse.')) {
                             try {
@@ -2864,7 +2931,6 @@
                                 editingSeriesId = null;
                                 editingSeriesTitle = null;
                                 
-                                // Update local data
                                 editingPulseData.series_id = null;
                                 editingPulseData.series_order = null;
                             } catch (error) {
@@ -2878,7 +2944,6 @@
                         const newSeriesName = prompt('Enter new series name:');
                         if (newSeriesName && newSeriesName.trim()) {
                             try {
-                                // Create new series
                                 const { data: newSeries, error: seriesError } = await supabaseClient
                                     .from('pulse_series')
                                     .insert({
@@ -2897,7 +2962,6 @@
                                 
                                 if (seriesError) throw seriesError;
                                 
-                                // Update pulse with new series
                                 const { error: updateError } = await supabaseClient
                                     .from('pulses')
                                     .update({ 
@@ -2914,7 +2978,6 @@
                                 editingSeriesTitle = newSeriesName.trim();
                                 document.getElementById('editSeriesTitle').value = editingSeriesTitle;
                                 
-                                // Update local data
                                 editingPulseData.series_id = newSeries.id;
                                 editingPulseData.series_order = 1;
                             } catch (error) {
@@ -2929,7 +2992,6 @@
                     editingSeriesTitle = null;
                 }
                 
-                // Show edit modal
                 document.getElementById('editModal').style.display = 'flex';
                 
             } catch (error) {
@@ -2938,7 +3000,6 @@
             }
         }
         
-        // ✅ NEW: CREATE NOTIFICATION FUNCTION
         async function createNotification(type, actorId, targetUserId, pulseId, commentId, message) {
             try {
                 const { error } = await supabaseClient
@@ -2955,7 +3016,6 @@
                 
                 if (error) throw error;
                 
-                // Update notification badge immediately
                 await checkUnreadNotifications();
                 
             } catch (error) {
@@ -2963,7 +3023,6 @@
             }
         }
         
-        // ✅ NEW: CHECK IF USER HAS LIKED EACH PULSE
         async function checkUserLikes(pulseIds) {
             try {
                 const { data: { session } } = await supabaseClient.auth.getSession();
@@ -2977,7 +3036,6 @@
                 
                 if (error) throw error;
                 
-                // Create a Set of liked pulse IDs for quick lookup
                 const likedPulses = new Set();
                 if (userLikes) {
                     userLikes.forEach(like => likedPulses.add(like.pulse_id));
@@ -2990,32 +3048,27 @@
             }
         }
         
-        // ✅ UPDATED: UPDATE PULSE WITH SERIES SUPPORT
         async function updatePulse() {
             try {
                 if (!editingPulseId) return;
                 
                 const caption = document.getElementById('editCaption').value.trim();
                 
-                // Upload new media if selected
                 let mediaData = null;
                 if (editSelectedMedia) {
                     mediaData = await uploadMedia(editSelectedMedia);
                 }
                 
-                // Prepare update data
                 const updateData = {
                     caption: caption || null,
                     updated_at: new Date().toISOString()
                 };
                 
-                // Only update media if new media was uploaded
                 if (mediaData) {
                     updateData.media_url = mediaData.url;
                     updateData.media_type = mediaData.type;
                 }
                 
-                // Update series title if it has changed
                 const editSeriesTitle = document.getElementById('editSeriesTitle').value.trim();
                 if (editingSeriesId && editSeriesTitle !== editingSeriesTitle) {
                     try {
@@ -3030,11 +3083,9 @@
                         editingSeriesTitle = editSeriesTitle;
                     } catch (seriesError) {
                         console.error('Error updating series title:', seriesError);
-                        // Don't fail the whole update if series title update fails
                     }
                 }
                 
-                // Update pulse
                 const { error } = await supabaseClient
                     .from('pulses')
                     .update(updateData)
@@ -3045,9 +3096,8 @@
                 console.log('✅ Pulse updated:', editingPulseId);
                 showToast('Pulse updated successfully!', 'success');
                 
-                // Close modal and refresh feed
                 closeEditModalFunc();
-                setTimeout(() => fetchPulses(), 500);
+                setTimeout(() => loadInitialPulses(), 500);
                 
             } catch (error) {
                 console.error('❌ Update pulse error:', error);
@@ -3055,44 +3105,20 @@
             }
         }
         
-        // ✅ OPTIMIZED: UPLOAD MEDIA FUNCTION with better error handling
         async function uploadMedia(file) {
-            if (isProcessingUpload) {
-                throw new Error('Upload already in progress');
-            }
-            
             try {
-                isProcessingUpload = true;
-                
-                // Validate file size (max 20MB to prevent freezing)
-                const maxSize = 20 * 1024 * 1024; // 20MB
-                if (file.size > maxSize) {
-                    throw new Error('File size must be less than 20MB');
-                }
-                
                 const { data: { session } } = await supabaseClient.auth.getSession();
                 if (!session) throw new Error('No session');
                 
-                // Compress image if it's too large
-                let processedFile = file;
-                if (file.type.startsWith('image/') && !file.type.includes('gif')) {
-                    processedFile = await compressImage(file, {
-                        maxWidth: 1080,
-                        maxHeight: 1920,
-                        quality: 0.8
-                    });
-                }
-                
-                const fileExt = processedFile.name.split('.').pop();
+                const fileExt = file.name.split('.').pop();
                 const fileName = `${session.user.id}/${Date.now()}.${fileExt}`;
                 const filePath = `pulse-media/${fileName}`;
                 
-                // Show upload progress
                 showToast('Uploading media...', 'success');
                 
                 const { error: uploadError } = await supabaseClient.storage
                     .from('pulse-media')
-                    .upload(filePath, processedFile);
+                    .upload(filePath, file);
                 
                 if (uploadError) throw uploadError;
                 
@@ -3102,70 +3128,15 @@
                 
                 return {
                     url: publicUrl,
-                    type: processedFile.type.startsWith('video/') ? 'video' : 'image'
+                    type: file.type.startsWith('video/') ? 'video' : 'image'
                 };
                 
             } catch (error) {
                 console.error('❌ Upload error:', error);
                 throw error;
-            } finally {
-                isProcessingUpload = false;
             }
         }
         
-        // Add image compression function
-        async function compressImage(file, options = {}) {
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.readAsDataURL(file);
-                
-                reader.onload = (event) => {
-                    const img = new Image();
-                    img.src = event.target.result;
-                    
-                    img.onload = () => {
-                        const canvas = document.createElement('canvas');
-                        let width = img.width;
-                        let height = img.height;
-                        
-                        // Calculate new dimensions
-                        const maxWidth = options.maxWidth || 1080;
-                        const maxHeight = options.maxHeight || 1920;
-                        
-                        if (width > height) {
-                            if (width > maxWidth) {
-                                height = Math.round((height * maxWidth) / width);
-                                width = maxWidth;
-                            }
-                        } else {
-                            if (height > maxHeight) {
-                                width = Math.round((width * maxHeight) / height);
-                                height = maxHeight;
-                            }
-                        }
-                        
-                        canvas.width = width;
-                        canvas.height = height;
-                        
-                        const ctx = canvas.getContext('2d');
-                        ctx.drawImage(img, 0, 0, width, height);
-                        
-                        canvas.toBlob((blob) => {
-                            resolve(new File([blob], file.name, {
-                                type: file.type,
-                                lastModified: Date.now()
-                            }));
-                        }, file.type, options.quality || 0.8);
-                    };
-                    
-                    img.onerror = reject;
-                };
-                
-                reader.onerror = reject;
-            });
-        }
-        
-        // ✅ CLOSE EDIT MODAL FUNCTION
         function closeEditModalFunc() {
             document.getElementById('editModal').style.display = 'none';
             document.getElementById('editCaption').value = '';
@@ -3183,7 +3154,6 @@
             document.getElementById('editSeriesTitle').value = '';
         }
         
-        // ✅ NEW: Initialize video player for pulse feed
         function initializeVideoPlayer(videoElement, controlsContainer) {
             if (!videoElement || !controlsContainer) return;
             
@@ -3199,7 +3169,6 @@
             const videoTime = controlsContainer.querySelector('.video-time');
             const mediaContainer = controlsContainer.closest('.media-container');
             
-            // Format time function
             function formatTime(seconds) {
                 if (isNaN(seconds)) return '0:00';
                 const mins = Math.floor(seconds / 60);
@@ -3207,23 +3176,19 @@
                 return `${mins}:${secs.toString().padStart(2, '0')}`;
             }
             
-            // Update time display
             function updateTimeDisplay() {
                 if (!videoElement.duration) return;
                 const current = formatTime(videoElement.currentTime);
                 const duration = formatTime(videoElement.duration);
                 videoTime.textContent = `${current} / ${duration}`;
                 
-                // Update progress bar
                 const progressPercent = (videoElement.currentTime / videoElement.duration) * 100;
                 videoProgressFilled.style.width = `${progressPercent}%`;
             }
             
-            // Set initial volume
             videoElement.volume = 0.7;
             volumeSliderFilled.style.width = '70%';
             
-            // Play/Pause functionality
             playPauseBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 if (videoElement.paused) {
@@ -3235,15 +3200,12 @@
                 }
             });
             
-            // Video events
             videoElement.addEventListener('play', () => {
                 playPauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
-                activeVideoPlayers.add(videoId);
             });
             
             videoElement.addEventListener('pause', () => {
                 playPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
-                activeVideoPlayers.delete(videoId);
             });
             
             videoElement.addEventListener('timeupdate', updateTimeDisplay);
@@ -3252,7 +3214,6 @@
                 updateTimeDisplay();
             });
             
-            // Click on video to play/pause
             mediaContainer.addEventListener('click', (e) => {
                 if (e.target === mediaContainer || e.target.classList.contains('video-controls-overlay')) {
                     if (videoElement.paused) {
@@ -3265,7 +3226,6 @@
                 }
             });
             
-            // Progress bar click
             videoProgress.addEventListener('click', (e) => {
                 e.stopPropagation();
                 const rect = videoProgress.getBoundingClientRect();
@@ -3274,7 +3234,6 @@
                 updateTimeDisplay();
             });
             
-            // Mute/unmute
             muteBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 videoElement.muted = !videoElement.muted;
@@ -3283,7 +3242,6 @@
                     '<i class="fas fa-volume-up"></i>';
             });
             
-            // Volume slider
             volumeSlider.addEventListener('click', (e) => {
                 e.stopPropagation();
                 const rect = volumeSlider.getBoundingClientRect();
@@ -3297,7 +3255,6 @@
                     '<i class="fas fa-volume-up"></i>';
             });
             
-            // Show controls on hover
             mediaContainer.addEventListener('mouseenter', () => {
                 const controls = controlsContainer.querySelector('.video-controls-overlay');
                 if (controls) {
@@ -3316,7 +3273,6 @@
                 }
             });
             
-            // Store video player reference
             videoPlayers.set(videoId, {
                 video: videoElement,
                 controls: controlsContainer,
@@ -3330,26 +3286,20 @@
             });
         }
         
-        // Add function to pause all videos
         function pauseAllVideos() {
             videoPlayers.forEach(player => {
                 if (player.video && !player.video.paused) {
                     player.video.pause();
                 }
             });
-            activeVideoPlayers.clear();
         }
         
-        // ✅ OPTIMIZED: FETCH PULSES FUNCTION with pagination
         async function fetchPulses(limit = 10, offset = 0) {
             if (isFeedLoading) return [];
             
             try {
                 isFeedLoading = true;
                 console.log('🔄 Fetching pulses...');
-                
-                // Pause all active videos before loading new content
-                pauseAllVideos();
                 
                 const { data: pulsesData, error: pulsesError } = await supabaseClient
                     .from('pulses')
@@ -3361,18 +3311,13 @@
                 if (pulsesError) throw pulsesError;
                 
                 if (!pulsesData || pulsesData.length === 0) {
-                    if (offset === 0) {
-                        loadSampleData();
-                    }
                     return [];
                 }
                 
                 console.log(`✅ Fetched ${pulsesData.length} pulses`);
                 
-                // Get user IDs from pulses
                 const userIds = [...new Set(pulsesData.map(p => p.user_id))];
                 
-                // Fetch user profiles
                 let userProfilesMap = {};
                 
                 try {
@@ -3390,10 +3335,8 @@
                     console.warn('Could not fetch user profiles:', profilesError);
                 }
                 
-                // Get pulse IDs for batch operations
                 const pulseIds = pulsesData.map(p => p.id);
                 
-                // Get likes count in batch
                 const likesCountMap = {};
                 try {
                     const { data: likesData, error: likesError } = await supabaseClient
@@ -3415,7 +3358,6 @@
                     console.warn('Error fetching likes count:', likesError);
                 }
                 
-                // Get comments count in batch
                 const commentsCountMap = {};
                 try {
                     const { data: commentsData, error: commentsError } = await supabaseClient
@@ -3438,7 +3380,6 @@
                     console.warn('Error fetching comments count:', commentsError);
                 }
                 
-                // Update pulses data
                 const enrichedPulses = pulsesData.map(pulse => ({
                     ...pulse,
                     user_profiles: userProfilesMap[pulse.user_id] || {
@@ -3464,7 +3405,6 @@
             }
         }
         
-        // ✅ OPTIMIZED: DISPLAY PULSES with lazy loading
         function displayPulses(pulses, likedPulses) {
             if (!pulses || pulses.length === 0) {
                 loadSampleData();
@@ -3472,25 +3412,30 @@
             }
             
             const pulseFeedContainer = document.getElementById('pulse-feed-container');
-            
-            // Clear existing pulses
             pulseFeedContainer.innerHTML = '';
             
-            // Use document fragment for better performance
+            // Reset displayed IDs
+            displayedPulseIds.clear();
+            allPulses = [];
+            
             const fragment = document.createDocumentFragment();
             
             pulses.forEach(pulse => {
                 const pulseCard = createPulseCard(pulse, likedPulses);
                 fragment.appendChild(pulseCard);
+                displayedPulseIds.add(pulse.id);
+                allPulses.push(pulse);
             });
             
             pulseFeedContainer.appendChild(fragment);
             
-            // Setup intersection observer for lazy loading
+            // Update offset for infinite scroll
+            currentOffset = pulses.length;
+            hasMorePulses = pulses.length >= PULSES_PER_PAGE;
+            
             setupLazyLoading();
         }
         
-        // Add lazy loading setup
         function setupLazyLoading() {
             const observer = new IntersectionObserver((entries) => {
                 entries.forEach(entry => {
@@ -3507,7 +3452,7 @@
                         if (video) {
                             video.src = video.dataset.src;
                             video.removeAttribute('data-src');
-                            video.load(); // Load video only when visible
+                            video.load();
                         }
                         
                         observer.unobserve(mediaContainer);
@@ -3515,15 +3460,12 @@
                 });
             }, { rootMargin: '50px' });
             
-            // Observe all media containers
             document.querySelectorAll('.media-container').forEach(container => {
                 observer.observe(container);
             });
         }
         
-        // ✅ OPTIMIZED: CREATE PULSE CARD with lazy loading
         function createPulseCard(pulse, likedPulses) {
-            // Get user info from combined data
             const profile = pulse.user_profiles || {};
             const fullName = profile.full_name || profile.email?.split('@')[0] || 'User';
             const username = profile.username || '';
@@ -3532,7 +3474,6 @@
             const initials = fullName.substring(0, 2).toUpperCase();
             const timeAgo = getTimeAgo(new Date(pulse.created_at));
             
-            // Use actual counts instead of stored counts
             const actualLikesCount = pulse.actual_likes_count || pulse.likes_count || 0;
             const actualCommentsCount = pulse.actual_comments_count || pulse.comments_count || 0;
             const isSeries = pulse.series_id && pulse.series_order;
@@ -3546,12 +3487,10 @@
             card.className = 'pulse-card';
             card.dataset.pulseId = pulse.id;
             
-            // Add debounced click handler
             let clickTimer;
             card.addEventListener('click', (e) => {
                 clearTimeout(clickTimer);
                 
-                // Don't trigger if clicking on action buttons, connect button, or more options
                 if (!e.target.closest('.action-button') && 
                     !e.target.closest('.pulse-connect-btn') &&
                     !e.target.closest('.pulse-more-options') && 
@@ -3563,7 +3502,6 @@
                 }
             });
             
-            // Create connect button HTML (only if not own pulse)
             let connectBtnHTML = '';
             if (!isOwnPulse) {
                 const connectIcon = isConnected ? 'fa-user-check' : 'fa-user-plus';
@@ -3594,7 +3532,6 @@
                 `;
             }
             
-            // Media HTML with lazy loading
             let mediaHTML = '';
             if (hasMedia) {
                 if (mediaType === 'video') {
@@ -3706,16 +3643,13 @@
                 </div>
             `;
             
-            // Initialize video controls if video exists
             if (hasMedia && mediaType === 'video') {
                 setTimeout(() => {
                     const videoElement = card.querySelector('video');
                     const mediaContainer = card.querySelector('.media-container');
                     if (videoElement && mediaContainer) {
-                        // Don't auto-initialize, wait for user interaction
                         videoElement.addEventListener('click', (e) => {
                             e.stopPropagation();
-                            // Load video source if not already loaded
                             if (videoElement.hasAttribute('data-src')) {
                                 videoElement.src = videoElement.dataset.src;
                                 videoElement.removeAttribute('data-src');
@@ -3727,7 +3661,6 @@
                 }, 100);
             }
             
-            // Add event listeners
             const likeBtn = card.querySelector('.like-btn');
             const commentBtn = card.querySelector('.comment-btn');
             const shareBtn = card.querySelector('.share-btn');
@@ -3736,7 +3669,6 @@
             commentBtn.addEventListener('click', (e) => handleComment(pulse.id, e));
             shareBtn.addEventListener('click', (e) => handleShare(pulse.id, e));
             
-            // Add event listener for connect button if it exists
             const connectBtn = card.querySelector('.pulse-connect-btn');
             if (connectBtn) {
                 connectBtn.addEventListener('click', (e) => {
@@ -3746,7 +3678,6 @@
                 });
             }
             
-            // Add event listeners for more options if it's the user's own pulse
             if (isOwnPulse) {
                 const moreOptionsBtn = card.querySelector('.pulse-more-options');
                 const optionsMenu = card.querySelector(`#options-menu-${pulse.id}`);
@@ -3755,7 +3686,6 @@
                 
                 moreOptionsBtn.addEventListener('click', (e) => {
                     e.stopPropagation();
-                    // Close any other open menus
                     document.querySelectorAll('.pulse-options-menu').forEach(menu => {
                         if (menu !== optionsMenu) {
                             menu.classList.remove('active');
@@ -3776,7 +3706,6 @@
                     handleDelete(pulse.id);
                 });
                 
-                // Close menu when clicking outside
                 document.addEventListener('click', (e) => {
                     if (!moreOptionsBtn.contains(e.target) && !optionsMenu.contains(e.target)) {
                         optionsMenu.classList.remove('active');
@@ -3787,24 +3716,17 @@
             return card;
         }
         
-        // Add cleanup function
         function cleanupResources() {
-            // Pause all videos
             pauseAllVideos();
-            
-            // Clear video players map
             videoPlayers.clear();
             
-            // Clear any timeouts
             if (forceLoadTimeout) {
                 clearTimeout(forceLoadTimeout);
             }
         }
         
-        // Add beforeunload listener to cleanup
         window.addEventListener('beforeunload', cleanupResources);
         
-        // Add visibility change listener
         document.addEventListener('visibilitychange', () => {
             if (document.hidden) {
                 pauseAllVideos();
@@ -3812,11 +3734,9 @@
         });
 
         function initializeFeed(session) {
-            // State variables
             let selectedMedia = null;
             let isSeriesMode = false;
             
-            // DOM Elements
             const createPrompt = document.getElementById('createPrompt');
             const createPulseBtn = document.getElementById('createPulseBtn');
             const createModal = document.getElementById('createModal');
@@ -3837,7 +3757,6 @@
             const tabContents = document.querySelectorAll('.tab-content');
             const pulseFeedContainer = document.getElementById('pulse-feed-container');
             
-            // Edit modal elements
             const editModal = document.getElementById('editModal');
             const closeEditModal = document.getElementById('closeEditModal');
             const cancelEdit = document.getElementById('cancelEdit');
@@ -3847,13 +3766,11 @@
             const editRemoveMedia = document.getElementById('editRemoveMedia');
             const updatePulseBtn = document.getElementById('updatePulse');
             
-            // ✅ HELPER: Ensure user profile exists
             async function ensureUserProfile(userId) {
                 try {
                     const { data: { session } } = await supabaseClient.auth.getSession();
                     if (!session) return null;
                     
-                    // Check if profile exists
                     const { data: existingProfile } = await supabaseClient
                         .from('user_profiles')
                         .select('*')
@@ -3861,7 +3778,6 @@
                         .single();
                     
                     if (!existingProfile) {
-                        // Create a basic profile
                         const { data: newProfile, error } = await supabaseClient
                             .from('user_profiles')
                             .upsert({
@@ -3887,7 +3803,6 @@
                 }
             }
             
-            // ✅ SET LOADING STATE
             function setLoading(loading) {
                 if (loading) {
                     postPulseBtn.disabled = true;
@@ -3898,19 +3813,16 @@
                 }
             }
             
-            // ✅ UPDATE POST BUTTON STATE
             function updatePostButton() {
                 const hasContent = captionInput.value.trim() || selectedMedia;
                 postPulseBtn.disabled = !hasContent;
             }
             
-            // ✅ OPEN CREATE MODAL
             function openCreateModal() {
                 createModal.style.display = 'flex';
                 captionInput.focus();
             }
             
-            // ✅ CLOSE CREATE MODAL
             function closeCreateModal() {
                 createModal.style.display = 'none';
                 captionInput.value = '';
@@ -3924,30 +3836,41 @@
                 updatePostButton();
             }
             
-            // ✅ OPTIMIZED: CREATE PULSE (with series handling)
-            async function createPulse() {
-                if (isProcessingUpload) {
-                    showToast('Please wait for current upload to complete', 'error');
-                    return;
+            // Load initial pulses
+            async function loadInitialPulses() {
+                try {
+                    isFeedLoading = true;
+                    const pulses = await fetchPulses(PULSES_PER_PAGE, 0);
+                    
+                    if (pulses.length > 0) {
+                        const likedPulses = await checkUserLikes(pulses.map(p => p.id));
+                        displayPulses(pulses, likedPulses);
+                    } else {
+                        loadSampleData();
+                    }
+                } catch (error) {
+                    console.error('Error loading initial pulses:', error);
+                    loadSampleData();
+                } finally {
+                    isFeedLoading = false;
                 }
-                
+            }
+            
+            async function createPulse() {
                 try {
                     const { data: { session } } = await supabaseClient.auth.getSession();
                     if (!session) throw new Error('No session');
                     
-                    // Ensure user profile exists
                     await ensureUserProfile(session.user.id);
                     
                     const caption = captionInput.value.trim();
                     const seriesTitle = seriesTitleInput.value.trim();
                     
-                    // Validate caption length
                     if (caption.length > 500) {
                         showToast('Caption must be less than 500 characters', 'error');
                         return;
                     }
                     
-                    // Upload media if selected
                     let mediaData = null;
                     if (selectedMedia) {
                         setLoading(true);
@@ -3960,7 +3883,6 @@
                         }
                     }
                     
-                    // Prepare pulse data
                     const pulseData = {
                         user_id: session.user.id,
                         caption: caption || null,
@@ -3975,10 +3897,8 @@
                     let seriesId = null;
                     let seriesOrder = 1;
                     
-                    // Handle series if enabled
                     if (isSeriesMode && seriesTitle) {
                         try {
-                            // First, check if a series with the same title exists for this user
                             const { data: existingSeries, error: seriesError } = await supabaseClient
                                 .from('pulse_series')
                                 .select('id, current_part')
@@ -3986,16 +3906,14 @@
                                 .eq('title', seriesTitle)
                                 .maybeSingle();
                             
-                            if (seriesError && seriesError.code !== 'PGRST116') { // PGRST116 is "no rows returned"
+                            if (seriesError && seriesError.code !== 'PGRST116') {
                                 console.warn('Series check error:', seriesError);
                             }
                             
                             if (existingSeries) {
-                                // Use existing series
                                 seriesId = existingSeries.id;
                                 seriesOrder = existingSeries.current_part + 1;
                                 
-                                // Update the series to increment current_part
                                 await supabaseClient
                                     .from('pulse_series')
                                     .update({ 
@@ -4004,7 +3922,6 @@
                                     })
                                     .eq('id', seriesId);
                             } else {
-                                // Create new series
                                 const { data: newSeries, error: createError } = await supabaseClient
                                     .from('pulse_series')
                                     .insert({
@@ -4033,12 +3950,10 @@
                             
                         } catch (seriesError) {
                             console.error('❌ Series creation error:', seriesError);
-                            // Continue without series if series creation fails
                             showToast('Created pulse without series', 'error');
                         }
                     }
                     
-                    // Create pulse
                     const { data: pulse, error } = await supabaseClient
                         .from('pulses')
                         .insert(pulseData)
@@ -4047,7 +3962,6 @@
                     
                     if (error) throw error;
                     
-                    // If we have a series, create the series item
                     if (seriesId) {
                         try {
                             await supabaseClient
@@ -4065,19 +3979,14 @@
                     console.log('✅ Pulse created:', pulse.id);
                     showToast('Pulse posted successfully!', 'success');
                     
-                    // Close modal and refresh only first few pulses
                     closeCreateModal();
                     
-                    // Clear feed and load fresh data
+                    // Reset and reload feed
                     const feedContainer = document.getElementById('pulse-feed-container');
                     feedContainer.innerHTML = '<div style="padding: 20px; text-align: center;">Loading...</div>';
                     
                     setTimeout(async () => {
-                        const pulses = await fetchPulses(5, 0); // Load only 5 latest pulses
-                        if (pulses.length > 0) {
-                            const likedPulses = await checkUserLikes(pulses.map(p => p.id));
-                            displayPulses(pulses, likedPulses);
-                        }
+                        await loadInitialPulses();
                     }, 1000);
                     
                 } catch (error) {
@@ -4088,34 +3997,29 @@
                 }
             }
             
-            // ✅ EVENT LISTENERS
             createPrompt.addEventListener('click', openCreateModal);
             createPulseBtn.addEventListener('click', openCreateModal);
             closeModal.addEventListener('click', closeCreateModal);
             cancelCreate.addEventListener('click', closeCreateModal);
             
-            // Close modal when clicking outside
             createModal.addEventListener('click', (e) => {
                 if (e.target === createModal) {
                     closeCreateModal();
                 }
             });
             
-            // Media upload
             mediaUpload.addEventListener('click', () => mediaInput.click());
             
             mediaInput.addEventListener('change', (e) => {
                 const file = e.target.files[0];
                 if (!file) return;
                 
-                // Validate file type
                 const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'video/mp4', 'video/quicktime'];
                 if (!validTypes.includes(file.type)) {
                     showToast('Please select a valid image or video file', 'error');
                     return;
                 }
                 
-                // Validate file size (max 20MB)
                 if (file.size > 20 * 1024 * 1024) {
                     showToast('File size must be less than 20MB', 'error');
                     return;
@@ -4123,7 +4027,6 @@
                 
                 selectedMedia = file;
                 
-                // Show preview
                 const reader = new FileReader();
                 reader.onload = (e) => {
                     mediaPreview.innerHTML = '';
@@ -4158,50 +4061,41 @@
                 updatePostButton();
             });
             
-            // Series toggle
             seriesToggle.addEventListener('click', () => {
                 isSeriesMode = !isSeriesMode;
                 toggleSwitch.classList.toggle('active', isSeriesMode);
                 seriesOptions.classList.toggle('active', isSeriesMode);
             });
             
-            // Caption input
             captionInput.addEventListener('input', updatePostButton);
             
-            // Post pulse
             postPulseBtn.addEventListener('click', createPulse);
             
-            // User profile navigation
             userAvatar.addEventListener('click', () => {
                 window.location.href = 'profile.html';
             });
             
-            // Edit modal events
             closeEditModal.addEventListener('click', closeEditModalFunc);
             cancelEdit.addEventListener('click', closeEditModalFunc);
             
-            // Close edit modal when clicking outside
             editModal.addEventListener('click', (e) => {
                 if (e.target === editModal) {
                     closeEditModalFunc();
                 }
             });
             
-            // Edit media upload
             editMediaUpload.addEventListener('click', () => editMediaInput.click());
             
             editMediaInput.addEventListener('change', (e) => {
                 const file = e.target.files[0];
                 if (!file) return;
                 
-                // Validate file type
                 const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'video/mp4', 'video/quicktime'];
                 if (!validTypes.includes(file.type)) {
                     showToast('Please select a valid image or video file', 'error');
                     return;
                 }
                 
-                // Validate file size (max 20MB)
                 if (file.size > 20 * 1024 * 1024) {
                     showToast('File size must be less than 20MB', 'error');
                     return;
@@ -4209,7 +4103,6 @@
                 
                 editSelectedMedia = file;
                 
-                // Show preview
                 const reader = new FileReader();
                 reader.onload = (e) => {
                     editMediaPreview.innerHTML = '';
@@ -4241,10 +4134,8 @@
                 editMediaInput.value = '';
             });
             
-            // Update pulse
             updatePulseBtn.addEventListener('click', updatePulse);
             
-            // Tab switching
             tabs.forEach(tab => {
                 tab.addEventListener('click', function() {
                     tabs.forEach(t => t.classList.remove('active'));
@@ -4258,13 +4149,11 @@
                     document.getElementById(`${tabId}-feed`).classList.add('active');
                     
                     if (tabId === 'pulse') {
-                        // Use debounced fetch for better performance
-                        debouncedFetchPulses()();
+                        loadInitialPulses();
                     }
                 });
             });
             
-            // Listen for auth changes
             supabaseClient.auth.onAuthStateChange((event, session) => {
                 console.log('🔐 Auth state changed:', event);
                 
@@ -4273,26 +4162,15 @@
                 }
             });
             
-            // Replace the existing fetchPulses call with debounced version
-            const debouncedFetchPulses = debounce(async () => {
-                const fetchedPulses = await fetchPulses(10, 0);
-                if (fetchedPulses.length > 0) {
-                    const likedPulses = await checkUserLikes(fetchedPulses.map(p => p.id));
-                    displayPulses(fetchedPulses, likedPulses);
-                }
-            }, 300);
-            
-            // Initial data load
-            debouncedFetchPulses();
+            // Load initial pulses
+            loadInitialPulses();
         }
         
-        // Add timeout for force load
         forceLoadTimeout = setTimeout(() => {
             if (!isInitialized) {
                 console.log('Timeout reached - forcing content display');
                 document.getElementById('loading-text').textContent = 'Taking longer than expected...';
                 
-                // Force show after 7 seconds total
                 setTimeout(() => {
                     isInitialized = true;
                     document.getElementById('loading').style.display = 'none';
@@ -4303,7 +4181,6 @@
             }
         }, 7000);
         
-        // Start initialization
         document.addEventListener('DOMContentLoaded', initialize);
     </script>
 </body>
