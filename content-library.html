@@ -13,8 +13,11 @@
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
+    <!-- Supabase JS SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
     <style>
-        /* Color Theme (from Flutter app) */
+        /* Color Theme - Same as index.html and pulse-feed.html */
         :root {
             --deep-black: #0A0E12;
             --deep-navy: #0F172A;
@@ -24,10 +27,17 @@
             --warm-gold: #F59E0B;
             --error-color: #EF4444;
             --success-color: #10B981;
-            --glow-blue-1: #00A3FF;
-            --glow-blue-2: #0066FF;
-            --glow-purple: #8B5CF6;
-            --glow-pink: #EC4899;
+            --glow-cycle-1: #00A3FF;
+            --glow-cycle-2: #0066FF;
+            --glow-cycle-3: #8B5CF6;
+            --glow-cycle-4: #EC4899;
+            --card-bg: rgba(15, 23, 42, 0.6);
+            --card-border: rgba(148, 163, 184, 0.2);
+            --hover-overlay: rgba(255, 255, 255, 0.05);
+            --active-overlay: rgba(245, 158, 11, 0.1);
+            --indigo: #4F46E5;
+            --gold-glow: rgba(245, 158, 11, 0.3);
+            --blue-glow: rgba(29, 78, 216, 0.3);
         }
         
         * {
@@ -38,7 +48,7 @@
         
         body {
             font-family: 'Inter', sans-serif;
-            background: linear-gradient(135deg, #001F54 0%, #0A0E3F 50%, #000000 100%);
+            background: var(--deep-black);
             color: var(--soft-white);
             min-height: 100vh;
             overflow-x: hidden;
@@ -51,7 +61,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: linear-gradient(135deg, #001F54 0%, #0A0E3F 50%, #000000 100%);
+            background: var(--deep-black);
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -64,7 +74,7 @@
             height: 50px;
             border: 3px solid rgba(255, 255, 255, 0.1);
             border-radius: 50%;
-            border-top-color: var(--warm-gold);
+            border-top-color: var(--bantu-blue);
             animation: spin 1s linear infinite;
             margin-bottom: 20px;
         }
@@ -73,33 +83,85 @@
             to { transform: rotate(360deg); }
         }
         
-        /* Glassmorphism Effects */
-        .glassmorphism {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 16px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        /* Animated Background - Same as index.html */
+        .animated-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            overflow: hidden;
         }
         
-        .glassmorphism-gold {
-            background: rgba(245, 158, 11, 0.1);
-            backdrop-filter: blur(10px);
-            border: 2px solid rgba(245, 158, 11, 0.3);
-            border-radius: 16px;
-            box-shadow: 0 8px 32px rgba(245, 158, 11, 0.2);
+        .glow-cycle {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(60px);
+            opacity: 0.1;
+            animation: float 8s infinite ease-in-out;
         }
         
-        /* Header */
+        .glow-1 {
+            width: 400px;
+            height: 400px;
+            background: var(--glow-cycle-1);
+            top: 10%;
+            left: 5%;
+            animation-delay: 0s;
+        }
+        
+        .glow-2 {
+            width: 300px;
+            height: 300px;
+            background: var(--glow-cycle-2);
+            top: 60%;
+            right: 10%;
+            animation-delay: 2s;
+        }
+        
+        .glow-3 {
+            width: 350px;
+            height: 350px;
+            background: var(--glow-cycle-3);
+            bottom: 10%;
+            left: 20%;
+            animation-delay: 4s;
+        }
+        
+        .glow-4 {
+            width: 250px;
+            height: 250px;
+            background: var(--glow-cycle-4);
+            top: 20%;
+            right: 20%;
+            animation-delay: 6s;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0) scale(1); }
+            50% { transform: translateY(-20px) scale(1.05); }
+        }
+        
+        /* Main Container */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 24px;
+            position: relative;
+            z-index: 2;
+            padding-bottom: 100px;
+        }
+        
+        /* Header - Updated to match index.html */
         .header {
-            background: rgba(0, 31, 84, 0.9);
-            backdrop-filter: blur(10px);
-            padding: 15px 20px;
+            background: rgba(10, 14, 18, 0.9);
+            backdrop-filter: blur(20px);
+            padding: 16px 20px;
             position: sticky;
             top: 0;
             z-index: 100;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            border-bottom: 1px solid var(--card-border);
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -112,23 +174,32 @@
         }
         
         .logo-icon {
-            width: 32px;
-            height: 32px;
-            background: linear-gradient(135deg, #4dabf7 0%, #748ffc 100%);
-            border-radius: 8px;
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
             display: flex;
             align-items: center;
             justify-content: center;
+            box-shadow: 0 0 32px rgba(29, 78, 216, 0.3);
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
         
         .logo-text {
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 700;
             font-size: 18px;
-            font-weight: 600;
+            background: linear-gradient(to right, var(--soft-white), var(--bantu-blue));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            letter-spacing: 0.5px;
         }
         
         .header-actions {
             display: flex;
             gap: 10px;
+            align-items: center;
         }
         
         .icon-btn {
@@ -137,7 +208,7 @@
             border-radius: 50%;
             background: rgba(255, 255, 255, 0.1);
             border: 1px solid rgba(255, 255, 255, 0.2);
-            color: white;
+            color: var(--soft-white);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -154,16 +225,56 @@
             color: var(--warm-gold);
         }
         
+        .profile-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            cursor: pointer;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 14px;
+        }
+        
+        .profile-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(29, 78, 216, 0.3);
+        }
+        
+        .profile-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .profile-placeholder {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+            color: white;
+            font-size: 16px;
+        }
+        
         /* Category Tabs */
         .category-tabs-container {
-            background: rgba(10, 17, 40, 0.9);
-            backdrop-filter: blur(10px);
+            background: rgba(10, 14, 18, 0.9);
+            backdrop-filter: blur(20px);
             padding: 15px 20px;
             position: sticky;
-            top: 70px;
+            top: 72px;
             z-index: 99;
             overflow-x: auto;
             white-space: nowrap;
+            border-bottom: 1px solid var(--card-border);
         }
         
         .category-tabs {
@@ -172,40 +283,56 @@
         }
         
         .category-tab {
-            padding: 8px 16px;
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 20px;
-            color: white;
+            padding: 10px 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            color: var(--slate-grey);
             font-size: 14px;
+            font-weight: 500;
             cursor: pointer;
             transition: all 0.3s ease;
+            min-width: 100px;
+            text-align: center;
         }
         
         .category-tab:hover {
-            background: rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.1);
+            border-color: var(--warm-gold);
+            color: var(--soft-white);
         }
         
         .category-tab.active {
-            background: linear-gradient(135deg, #4dabf7 0%, #748ffc 100%);
+            background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
             border-color: transparent;
-            box-shadow: 0 4px 15px rgba(77, 171, 247, 0.4);
+            color: var(--soft-white);
+            box-shadow: 0 4px 15px rgba(29, 78, 216, 0.4);
         }
         
-        /* Main Content */
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-        
-        /* Hero Section */
+        /* Hero Section - Updated to match index.html */
         .hero {
-            background: linear-gradient(135deg, #0A1128 0%, #002855 100%);
-            border-radius: 20px;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 24px;
             padding: 40px;
-            margin-bottom: 30px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            margin: 30px 0;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            background: linear-gradient(45deg, var(--bantu-blue), var(--warm-gold));
+            border-radius: 26px;
+            z-index: -1;
+            opacity: 0.1;
         }
         
         .hero h1 {
@@ -213,18 +340,20 @@
             font-size: 32px;
             margin-bottom: 15px;
             font-weight: 700;
-            color: var(--warm-gold);
+            background: linear-gradient(135deg, var(--soft-white), var(--warm-gold));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
         
         .hero p {
-            color: rgba(255, 255, 255, 0.8);
+            color: rgba(248, 250, 252, 0.8);
             margin-bottom: 25px;
             font-size: 18px;
         }
         
         .hero-btn {
-            background: linear-gradient(135deg, var(--warm-gold), #f97316);
-            color: var(--deep-black);
+            background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+            color: var(--soft-white);
             border: none;
             padding: 15px 30px;
             border-radius: 12px;
@@ -232,11 +361,12 @@
             font-weight: 600;
             cursor: pointer;
             transition: all 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
         
         .hero-btn:hover {
             transform: translateY(-3px);
-            box-shadow: 0 10px 25px rgba(245, 158, 11, 0.4);
+            box-shadow: 0 10px 25px rgba(29, 78, 216, 0.4);
         }
         
         /* Content Sections */
@@ -255,25 +385,29 @@
             font-family: 'Orbitron', sans-serif;
             font-size: 24px;
             font-weight: 700;
-            color: var(--soft-white);
+            background: linear-gradient(135deg, var(--soft-white), var(--warm-gold));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
         
         .see-all-btn {
-            padding: 8px 16px;
+            padding: 10px 20px;
             background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            border: 1px solid var(--card-border);
             border-radius: 10px;
-            color: #4dabf7;
+            color: var(--warm-gold);
             font-size: 14px;
+            font-weight: 500;
             cursor: pointer;
             transition: all 0.3s ease;
         }
         
         .see-all-btn:hover {
             background: rgba(255, 255, 255, 0.2);
+            border-color: var(--warm-gold);
         }
         
-        /* Content Cards */
+        /* Content Cards - Updated to match index.html */
         .content-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
@@ -281,20 +415,22 @@
         }
         
         .content-card {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 15px;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 20px;
             overflow: hidden;
             transition: all 0.3s ease;
             cursor: pointer;
             text-decoration: none;
             color: inherit;
+            backdrop-filter: blur(10px);
+            position: relative;
         }
         
         .content-card:hover {
             transform: translateY(-8px);
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
-            border-color: rgba(255, 255, 255, 0.3);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+            border-color: rgba(245, 158, 11, 0.3);
         }
         
         .card-thumbnail {
@@ -372,14 +508,15 @@
             -webkit-box-orient: vertical;
             overflow: hidden;
             min-height: 40px;
+            color: var(--soft-white);
         }
         
         .creator-btn {
-            background: linear-gradient(135deg, #4dabf7 0%, #748ffc 100%);
-            color: white;
+            background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+            color: var(--soft-white);
             border: none;
-            padding: 6px 12px;
-            border-radius: 8px;
+            padding: 8px 15px;
+            border-radius: 10px;
             font-size: 12px;
             font-weight: 500;
             cursor: pointer;
@@ -387,11 +524,12 @@
             align-items: center;
             gap: 5px;
             transition: all 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
         
         .creator-btn:hover {
             transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(77, 171, 247, 0.4);
+            box-shadow: 0 4px 12px rgba(29, 78, 216, 0.4);
         }
         
         /* Badges */
@@ -401,6 +539,7 @@
             left: 10px;
             display: flex;
             gap: 0.5rem;
+            z-index: 2;
         }
         
         .card-badge {
@@ -423,37 +562,63 @@
             background: rgba(29, 78, 216, 0.8);
         }
         
+        .badge-live {
+            background: rgba(239, 68, 68, 0.8);
+        }
+        
+        /* Stats */
+        .card-stats {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+            font-size: 12px;
+            color: var(--slate-grey);
+        }
+        
+        .card-stat {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        
         /* Empty State */
         .empty-state {
             text-align: center;
             padding: 50px 20px;
-            color: rgba(255, 255, 255, 0.5);
+            color: var(--slate-grey);
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            backdrop-filter: blur(10px);
         }
         
-        /* Toast */
+        /* Toast - Same as index.html */
         .toast {
             position: fixed;
             bottom: 20px;
             right: 20px;
             padding: 15px 25px;
-            border-radius: 10px;
-            color: white;
+            border-radius: 12px;
+            color: var(--soft-white);
             font-weight: 500;
             z-index: 1000;
             animation: slideIn 0.3s ease;
             max-width: 300px;
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--card-border);
         }
         
         .toast.error {
-            background: linear-gradient(135deg, #ff6b6b 0%, #c92a2a 100%);
+            background: rgba(239, 68, 68, 0.9);
         }
         
         .toast.success {
-            background: linear-gradient(135deg, #51cf66 0%, #2b8a3e 100%);
+            background: rgba(16, 185, 129, 0.9);
         }
         
         .toast.info {
-            background: linear-gradient(135deg, #4dabf7 0%, #748ffc 100%);
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
         }
         
         @keyframes slideIn {
@@ -467,10 +632,29 @@
             }
         }
         
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: var(--deep-navy);
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: var(--bantu-blue);
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--warm-gold);
+        }
+        
         /* Responsive */
         @media (max-width: 768px) {
             .container {
-                padding: 15px;
+                padding: 16px;
+                max-width: 100%;
             }
             
             .hero {
@@ -493,6 +677,12 @@
             .card-thumbnail {
                 height: 120px;
             }
+            
+            .category-tab {
+                padding: 8px 16px;
+                min-width: 80px;
+                font-size: 13px;
+            }
         }
         
         @media (max-width: 480px) {
@@ -504,6 +694,16 @@
                 padding: 12px 24px;
                 font-size: 16px;
             }
+            
+            .category-tabs {
+                gap: 4px;
+            }
+            
+            .category-tab {
+                padding: 6px 12px;
+                min-width: 70px;
+                font-size: 12px;
+            }
         }
     </style>
 </head>
@@ -514,22 +714,47 @@
         <div id="loading-text">Loading Content Library...</div>
     </div>
 
+    <!-- Animated Background -->
+    <div class="animated-bg">
+        <div class="glow-cycle glow-1"></div>
+        <div class="glow-cycle glow-2"></div>
+        <div class="glow-cycle glow-3"></div>
+        <div class="glow-cycle glow-4"></div>
+    </div>
+
     <!-- Main Content (hidden until loaded) -->
     <div id="app" style="display: none;">
         <!-- Header -->
         <header class="header">
-            <div class="logo">
+            <div class="logo" onclick="window.location.href='index.html'">
                 <div class="logo-icon">
-                    <i class="fas fa-stream" style="color: white;"></i>
+                    <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect width="40" height="40" rx="8" fill="#0F172A"/>
+                        <path d="M8 20 L12 16 L16 22 L20 18 L24 24 L28 20 L32 26" stroke="url(#pulse-gradient)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                        <circle cx="32" cy="26" r="3" fill="#F59E0B"/>
+                        <defs>
+                            <linearGradient id="pulse-gradient" x1="8" y1="20" x2="32" y2="26" gradientUnits="userSpaceOnUse">
+                                <stop stop-color="#1D4ED8"/>
+                                <stop offset="1" stop-color="#F59E0B"/>
+                            </linearGradient>
+                        </defs>
+                    </svg>
                 </div>
-                <div class="logo-text">Bantu Stream Connect</div>
+                <div class="logo-text">BANTU STREAM CONNECT</div>
             </div>
             <div class="header-actions">
                 <button id="search-btn" class="icon-btn search-btn" title="Search">
-                    <i class="fas fa-search"></i>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                    </svg>
                 </button>
-                <button id="profile-btn" class="icon-btn" title="Profile">
-                    <i class="fas fa-user"></i>
+                <button id="profile-btn" class="profile-btn" title="Profile">
+                    <!-- Profile picture will be loaded here -->
+                    <div class="profile-placeholder">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                        </svg>
+                    </div>
                 </button>
             </div>
         </header>
@@ -547,7 +772,7 @@
             <section class="hero">
                 <h1>CONTENT LIBRARY</h1>
                 <p>Browse and discover amazing content from creators across Africa</p>
-                <button id="browse-all-btn" class="hero-btn">Browse All Content</button>
+                <button id="browse-all-btn" class="hero-btn">Explore All Content</button>
             </section>
 
             <!-- Content Sections -->
@@ -560,10 +785,10 @@
     <!-- Toast Container -->
     <div id="toast-container"></div>
 
-    <!-- SIMPLE SUPABASE CLIENT - USING THE SAME AS HOME-FEED.HTML -->
+    <!-- SIMPLE SUPABASE CLIENT FOR CONTENT QUERIES -->
     <script>
-        // Simple Supabase REST client (no AuthClient dependency)
-        class SimpleSupabaseClient {
+        // Simple Supabase REST client for content queries (not authentication)
+        class ContentSupabaseClient {
             constructor(url, key) {
                 this.url = url;
                 this.key = key;
@@ -621,47 +846,63 @@
                 if (url.startsWith('http')) return url;
                 return `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/${url.replace(/^\/+/, '')}`;
             }
-            
-            // Get view count for content
-            async getContentViewCount(contentId) {
-                try {
-                    const response = await fetch(
-                        `${this.url}/rest/v1/content_views?content_id=eq.${contentId}&select=id`,
-                        {
-                            headers: {
-                                'apikey': this.key,
-                                'Authorization': `Bearer ${this.key}`,
-                                'Content-Type': 'application/json'
-                            }
-                        }
-                    );
-                    
-                    if (response.ok) {
-                        const data = await response.json();
-                        return data.length;
-                    }
-                    return 0;
-                } catch (error) {
-                    console.error('Error getting view count:', error);
-                    return 0;
-                }
-            }
         }
         
-        // Initialize simple Supabase client
-        const supabase = new SimpleSupabaseClient(
+        // Initialize content Supabase client
+        const contentSupabase = new ContentSupabaseClient(
             'https://ydnxqnbjoshvxteevemc.supabase.co',
             'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U'
         );
         
-        console.log('✅ Simple Supabase client initialized');
+        console.log('✅ Content Supabase client initialized');
     </script>
 
-    <!-- Content Library JavaScript -->
+    <!-- Authentication and Content Library JavaScript -->
     <script>
+        // Supabase Configuration (same as index.html)
+        const SUPABASE_URL = 'https://ydnxqnbjoshvxteevemc.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U';
+
+        // Initialize Supabase client for authentication
+        const supabaseAuth = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        
+        console.log('✅ Supabase Auth client initialized');
+        
         // Wait for DOM to be ready
         document.addEventListener('DOMContentLoaded', async () => {
             console.log('📚 Content Library Initializing...');
+            
+            // DOM Elements - Define them FIRST to avoid ReferenceError
+            const loadingScreen = document.getElementById('loading');
+            const loadingText = document.getElementById('loading-text');
+            const app = document.getElementById('app');
+            const categoryTabs = document.getElementById('category-tabs');
+            const contentSections = document.getElementById('content-sections');
+            const profileBtn = document.getElementById('profile-btn');
+            
+            // Initialize auth and check if user is logged in
+            const { data: { session }, error } = await supabaseAuth.auth.getSession();
+            const isAuthenticated = !!session;
+            
+            if (!isAuthenticated) {
+                // User is not authenticated, show a toast
+                console.log('⚠️ User not authenticated, showing public content library');
+                showToast('Welcome! Sign in to access personalized features.', 'info');
+                
+                // Update profile button to redirect to login
+                if (profileBtn) {
+                    profileBtn.addEventListener('click', () => {
+                        window.location.href = 'login.html?redirect=content-library.html';
+                    });
+                }
+            } else {
+                // User is authenticated
+                console.log('✅ User authenticated:', session.user.email);
+                showToast(`Welcome back, ${session.user.email}!`, 'success');
+                
+                // Load user profile picture
+                await loadUserProfilePicture(session.user);
+            }
             
             // State variables
             let allContentData = [];
@@ -669,27 +910,22 @@
             let selectedCategoryIndex = 0;
             let isLoading = true;
             
-            // Categories (from Flutter app)
+            // Categories
             const categories = [
-                'All Content',
-                'Films',
+                'All',
+                'Movies',
                 'TV Shows',
-                'Music',
-                'Podcasts',
-                'STEM',
                 'Documentaries',
+                'Kids',
                 'Sports',
-                'Skits',
                 'News',
-                'Vlogs & Tutorials'
+                'Music',
+                'Videos',
+                'Podcasts',
+                'Skits',
+                'Content',
+                'STEM'
             ];
-            
-            // DOM Elements
-            const loadingScreen = document.getElementById('loading');
-            const loadingText = document.getElementById('loading-text');
-            const app = document.getElementById('app');
-            const categoryTabs = document.getElementById('category-tabs');
-            const contentSections = document.getElementById('content-sections');
             
             // ✅ SHOW/HIDE LOADING
             function setLoading(loading, text = '') {
@@ -714,7 +950,15 @@
                 toast.textContent = message;
                 
                 const container = document.getElementById('toast-container');
-                container.appendChild(toast);
+                if (!container) {
+                    // Create toast container if it doesn't exist
+                    const newContainer = document.createElement('div');
+                    newContainer.id = 'toast-container';
+                    document.body.appendChild(newContainer);
+                    newContainer.appendChild(toast);
+                } else {
+                    container.appendChild(toast);
+                }
                 
                 setTimeout(() => {
                     toast.style.opacity = '0';
@@ -723,17 +967,121 @@
                 }, 3000);
             }
             
+            // ✅ LOAD USER PROFILE PICTURE
+            async function loadUserProfilePicture(user) {
+                try {
+                    if (!user || !profileBtn) return;
+                    
+                    // First, update the profile button with email initials as fallback
+                    const userInitials = getInitials(user.email);
+                    profileBtn.innerHTML = `
+                        <div class="profile-placeholder">
+                            ${userInitials}
+                        </div>
+                    `;
+                    
+                    // Then try to get user profile from user_profiles table
+                    try {
+                        // Query the user_profiles table using id (which matches auth.users.id)
+                        const { data: profile, error: profileError } = await supabaseAuth
+                            .from('user_profiles')
+                            .select('*')
+                            .eq('id', user.id)  // Use 'id' column, not 'user_id'
+                            .maybeSingle();  // Use maybeSingle to avoid throwing error if no results
+                        
+                        if (profileError) {
+                            console.log('Profile query error:', profileError);
+                            return; // Keep using initials
+                        }
+                        
+                        if (profile && profile.avatar_url) {
+                            // Fix avatar URL
+                            let avatarUrl = profile.avatar_url;
+                            if (!avatarUrl.startsWith('http')) {
+                                // Try to construct the proper URL
+                                if (avatarUrl.startsWith('avatars/')) {
+                                    avatarUrl = `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/${avatarUrl}`;
+                                } else {
+                                    avatarUrl = `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/avatars/${avatarUrl}`;
+                                }
+                            }
+                            
+                            // Create img element for profile picture
+                            const profileImg = document.createElement('img');
+                            profileImg.className = 'profile-img';
+                            profileImg.src = avatarUrl;
+                            profileImg.alt = 'Profile Picture';
+                            profileImg.onerror = function() {
+                                // If image fails to load, keep using initials
+                                this.parentElement.innerHTML = `
+                                    <div class="profile-placeholder">
+                                        ${userInitials}
+                                    </div>
+                                `;
+                            };
+                            
+                            profileImg.onload = function() {
+                                // Image loaded successfully
+                                console.log('Profile image loaded successfully');
+                            };
+                            
+                            // Clear placeholder and add image
+                            profileBtn.innerHTML = '';
+                            profileBtn.appendChild(profileImg);
+                        } else {
+                            // Profile exists but no avatar_url, check full_name for better initials
+                            if (profile && profile.full_name) {
+                                const nameInitials = getInitialsFromName(profile.full_name);
+                                profileBtn.innerHTML = `
+                                    <div class="profile-placeholder">
+                                        ${nameInitials}
+                                    </div>
+                                `;
+                            }
+                        }
+                        
+                    } catch (error) {
+                        console.log('No user profile found or error fetching profile:', error);
+                        // Keep using initials if profile fetch fails
+                    }
+                    
+                } catch (error) {
+                    console.error('Error loading user profile picture:', error);
+                }
+            }
+            
+            // Helper function to get initials from email
+            function getInitials(email) {
+                if (!email) return 'U';
+                const parts = email.split('@')[0];
+                if (parts.length >= 2) {
+                    return parts.substring(0, 2).toUpperCase();
+                }
+                return email.charAt(0).toUpperCase();
+            }
+            
+            // Helper function to get initials from full name
+            function getInitialsFromName(fullName) {
+                if (!fullName) return 'U';
+                const names = fullName.split(' ');
+                if (names.length >= 2) {
+                    return (names[0].charAt(0) + names[names.length - 1].charAt(0)).toUpperCase();
+                }
+                return fullName.charAt(0).toUpperCase();
+            }
+            
             // ✅ FETCH CONTENT FROM SUPABASE
             async function fetchContent() {
                 try {
                     console.log('🔄 Fetching content from Supabase...');
                     loadingText.textContent = 'Fetching content...';
                     
+                    // First, try to get all content
                     let contentData = [];
                     
                     try {
-                        // Try Content table first (capital C)
-                        contentData = await supabase.query('Content', {
+                        // Try Content table first
+                        contentData = await contentSupabase.query('Content', {
                             select: '*,user_profiles!user_id(*)',
                             where: { status: 'published' },
                             orderBy: 'created_at',
@@ -746,7 +1094,7 @@
                         
                         // Try lowercase table name
                         try {
-                            contentData = await supabase.query('content', {
+                            contentData = await contentSupabase.query('content', {
                                 select: '*',
                                 where: { status: 'published' },
                                 orderBy: 'created_at',
@@ -762,46 +1110,39 @@
                     }
                     
                     // Process the data
-                    const processedData = [];
-                    
-                    for (const item of contentData) {
-                        try {
-                            let creatorName = 'Content Creator';
-                            
-                            // Try to get creator name from joined data
-                            if (item.user_profiles) {
-                                creatorName = item.user_profiles.full_name || 
-                                            item.user_profiles.username || 
-                                            'Content Creator';
-                            } else if (item.creator) {
-                                creatorName = item.creator;
-                            }
-                            
-                            // Get view count
-                            const views = await supabase.getContentViewCount(item.id);
-                            
-                            processedData.push({
-                                id: item.id,
-                                title: item.title || 'Untitled',
-                                description: item.description || '',
-                                thumbnail_url: item.thumbnail_url,
-                                file_url: item.file_url,
-                                media_type: item.media_type || 'video',
-                                genre: item.genre,
-                                created_at: item.created_at,
-                                creator: creatorName,
-                                creator_display_name: creatorName,
-                                creator_id: item.creator_id || item.user_id,
-                                user_id: item.user_id,
-                                views: views,
-                                likes: item.likes_count || item.likes || 0,
-                                is_live: item.is_live || false,
-                                is_new: isContentNew(item.created_at)
-                            });
-                        } catch (itemError) {
-                            console.error('Error processing item:', itemError);
+                    const processedData = contentData.map(item => {
+                        let creatorName = 'Content Creator';
+                        
+                        // Try to get creator name from joined data
+                        if (item.user_profiles) {
+                            creatorName = item.user_profiles.full_name || 
+                                        item.user_profiles.username || 
+                                        'Content Creator';
+                        } else if (item.creator) {
+                            creatorName = item.creator;
                         }
-                    }
+                        
+                        // Check if content is new (less than 7 days old)
+                        const isNew = isContentNew(item.created_at);
+                        
+                        return {
+                            id: item.id,
+                            title: item.title || 'Untitled',
+                            description: item.description || '',
+                            thumbnail_url: item.thumbnail_url,
+                            file_url: item.file_url,
+                            media_type: item.media_type || 'video',
+                            genre: item.genre,
+                            created_at: item.created_at,
+                            creator: creatorName,
+                            creator_display_name: creatorName,
+                            creator_id: item.creator_id || item.user_id,
+                            user_id: item.user_id,
+                            views: item.views_count || item.views || 0,
+                            likes: item.likes_count || item.likes || 0,
+                            is_new: isNew
+                        };
+                    });
                     
                     console.log('✅ Processed content:', processedData.length, 'items');
                     return processedData;
@@ -845,7 +1186,6 @@
                         user_id: '1',
                         views: 12500,
                         likes: 890,
-                        is_live: false,
                         is_new: true
                     },
                     {
@@ -863,7 +1203,6 @@
                         user_id: '2',
                         views: 8900,
                         likes: 650,
-                        is_live: false,
                         is_new: true
                     },
                     {
@@ -881,7 +1220,6 @@
                         user_id: '3',
                         views: 15600,
                         likes: 1200,
-                        is_live: false,
                         is_new: true
                     },
                     {
@@ -891,7 +1229,7 @@
                         thumbnail_url: 'https://images.unsplash.com/photo-1565958011703-44f9829ba187?w=400&h=225&fit=crop',
                         file_url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4',
                         media_type: 'video',
-                        genre: 'Vlogs & Tutorials',
+                        genre: 'Videos',
                         created_at: new Date().toISOString(),
                         creator: 'Chef Amina',
                         creator_display_name: 'Chef Amina',
@@ -899,7 +1237,6 @@
                         user_id: '4',
                         views: 7800,
                         likes: 540,
-                        is_live: false,
                         is_new: true
                     },
                     {
@@ -917,7 +1254,6 @@
                         user_id: '5',
                         views: 11200,
                         likes: 890,
-                        is_live: false,
                         is_new: true
                     },
                     {
@@ -935,7 +1271,6 @@
                         user_id: '6',
                         views: 21500,
                         likes: 1800,
-                        is_live: true,
                         is_new: true
                     }
                 ];
@@ -956,18 +1291,45 @@
             // ✅ GET TRENDING CONTENT
             function getTrendingContent(contentData) {
                 if (!contentData || contentData.length === 0) return [];
+                
+                // Get content from last 7 days
+                const oneWeekAgo = new Date();
+                oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+                
+                const recentContent = contentData.filter(item => {
+                    try {
+                        const createdAt = new Date(item.created_at);
+                        return createdAt >= oneWeekAgo;
+                    } catch {
+                        return false;
+                    }
+                });
+                
                 // Sort by engagement score (views + likes*2)
-                return [...contentData].sort((a, b) => {
+                return recentContent.sort((a, b) => {
                     const aScore = (a.views || 0) + ((a.likes || 0) * 2);
                     const bScore = (b.views || 0) + ((b.likes || 0) * 2);
                     return bScore - aScore;
                 }).slice(0, 10);
             }
             
+            // ✅ FORMAT NUMBERS
+            function formatNumber(num) {
+                if (num >= 1000000) {
+                    return (num / 1000000).toFixed(1) + 'M';
+                } else if (num >= 1000) {
+                    return (num / 1000).toFixed(1) + 'K';
+                }
+                return num;
+            }
+            
             // ✅ INITIALIZE CONTENT LIBRARY
             async function initializeContentLibrary() {
                 try {
                     setLoading(true, 'Loading Content Library...');
+                    
+                    // Setup event listeners
+                    setupEventListeners();
                     
                     // Load content
                     loadingText.textContent = 'Fetching content...';
@@ -980,9 +1342,6 @@
                     loadingText.textContent = 'Setting up interface...';
                     renderCategoryTabs();
                     renderContentSections();
-                    
-                    // Setup event listeners
-                    setupEventListeners();
                     
                     // Show the app
                     setLoading(false);
@@ -1000,8 +1359,7 @@
                 
                 categoryTabs.innerHTML = categories.map((category, index) => `
                     <button class="category-tab ${index === selectedCategoryIndex ? 'active' : ''}" 
-                            data-index="${index}"
-                            data-genre="${category === 'All Content' ? '' : category}">
+                            data-index="${index}">
                         ${category}
                     </button>
                 `).join('');
@@ -1087,13 +1445,12 @@
                 
                 return contentItems.map(content => {
                     const thumbnailUrl = content.thumbnail_url ? 
-                        supabase.fixMediaUrl(content.thumbnail_url) : 
+                        contentSupabase.fixMediaUrl(content.thumbnail_url) : 
                         'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop';
                     
                     const badges = [];
                     if (isTrending) badges.push('TRENDING');
-                    if (content.is_live) badges.push('LIVE');
-                    if (content.is_new && !content.is_live) badges.push('NEW');
+                    if (content.is_new) badges.push('NEW');
                     
                     return `
                         <a href="content-detail.html?id=${content.id}" class="content-card" data-content-id="${content.id}">
@@ -1104,14 +1461,15 @@
                                 <div class="thumbnail-overlay"></div>
                                 <div class="play-overlay">
                                     <div class="play-icon">
-                                        <i class="fas fa-play"></i>
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <polygon points="5 3 19 12 5 21 5 3"/>
+                                        </svg>
                                     </div>
                                 </div>
                                 ${badges.length > 0 ? `
                                     <div class="card-badges">
                                         ${badges.map(badge => `
                                             <div class="card-badge ${badge === 'TRENDING' ? 'badge-trending' : badge === 'NEW' ? 'badge-new' : ''}">
-                                                ${badge === 'LIVE' ? '<i class="fas fa-circle" style="color: #EF4444;"></i>' : ''}
                                                 ${badge}
                                             </div>
                                         `).join('')}
@@ -1123,28 +1481,32 @@
                                     ${content.title.length > 50 ? content.title.substring(0, 50) + '...' : content.title}
                                 </h3>
                                 <button class="creator-btn" 
-                                        onclick="event.preventDefault(); event.stopPropagation(); window.location.href='creator.html?id=${content.creator_id}'">
-                                    <i class="fas fa-user"></i>
+                                        onclick="event.preventDefault(); event.stopPropagation(); window.location.href='creator-channel.html?id=${content.creator_id}&name=${encodeURIComponent(content.creator)}'">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
+                                        <circle cx="12" cy="7" r="4"/>
+                                    </svg>
                                     ${content.creator.length > 15 ? content.creator.substring(0, 15) + '...' : content.creator}
                                 </button>
-                                <div style="display: flex; gap: 10px; margin-top: 10px; font-size: 12px; color: var(--slate-grey);">
-                                    <span><i class="fas fa-eye"></i> ${formatNumber(content.views)}</span>
-                                    <span><i class="fas fa-heart"></i> ${formatNumber(content.likes)}</span>
+                                <div class="card-stats">
+                                    <div class="card-stat">
+                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                                            <circle cx="12" cy="12" r="3"/>
+                                        </svg>
+                                        ${formatNumber(content.views)}
+                                    </div>
+                                    <div class="card-stat">
+                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/>
+                                        </svg>
+                                        ${formatNumber(content.likes)}
+                                    </div>
                                 </div>
                             </div>
                         </a>
                     `;
                 }).join('');
-            }
-            
-            // ✅ FORMAT NUMBERS
-            function formatNumber(num) {
-                if (num >= 1000000) {
-                    return (num / 1000000).toFixed(1) + 'M';
-                } else if (num >= 1000) {
-                    return (num / 1000).toFixed(1) + 'K';
-                }
-                return num;
             }
             
             // ✅ CATEGORY CHANGE HANDLER
@@ -1160,7 +1522,7 @@
                 });
                 
                 // Filter content
-                if (selectedCategory === 'All Content') {
+                if (selectedCategory === 'All') {
                     filteredContentData = allContentData;
                 } else {
                     filteredContentData = allContentData.filter(item => {
@@ -1182,22 +1544,38 @@
             
             // ✅ SETUP EVENT LISTENERS
             function setupEventListeners() {
-                // Search button
+                // Search button - redirect to content-library.html (stays on same page)
                 const searchBtn = document.getElementById('search-btn');
                 if (searchBtn) {
-                    searchBtn.addEventListener('click', handleSearch);
+                    searchBtn.addEventListener('click', () => {
+                        showToast('Search functionality coming soon!', 'info');
+                    });
                 }
                 
-                // Profile button
-                const profileBtn = document.getElementById('profile-btn');
-                if (profileBtn) {
-                    profileBtn.addEventListener('click', handleProfile);
-                }
+                // Profile button behavior depends on authentication
+                // Use event delegation to avoid cloning issues
+                document.addEventListener('click', async (e) => {
+                    if (e.target.closest('#profile-btn')) {
+                        const { data: { session } } = await supabaseAuth.auth.getSession();
+                        if (session) {
+                            window.location.href = 'profile.html';
+                        } else {
+                            window.location.href = 'login.html?redirect=content-library.html';
+                        }
+                    }
+                });
                 
                 // Browse all button
                 const browseAllBtn = document.getElementById('browse-all-btn');
                 if (browseAllBtn) {
-                    browseAllBtn.addEventListener('click', handleBrowseAll);
+                    browseAllBtn.addEventListener('click', () => {
+                        // Navigate to content-detail with first item or show all
+                        if (allContentData.length > 0) {
+                            window.location.href = `content-detail.html?id=${allContentData[0].id}`;
+                        } else {
+                            showToast('No content available to browse', 'error');
+                        }
+                    });
                 }
                 
                 // See all buttons (delegated)
@@ -1219,29 +1597,33 @@
                 // Additional interactions can be added here
             }
             
-            // ✅ EVENT HANDLERS
-            function handleSearch() {
-                console.log('🔍 Search clicked');
-                showToast('Search functionality coming soon!', 'info');
-            }
-            
-            function handleProfile() {
-                console.log('👤 Profile clicked');
-                window.location.href = 'profile.html';
-            }
-            
-            function handleBrowseAll() {
-                console.log('📚 Browse All clicked');
-                // Navigate to content-detail with first item or show all
-                if (allContentData.length > 0) {
-                    window.location.href = `content-detail.html?id=${allContentData[0].id}`;
-                } else {
-                    showToast('No content available to browse', 'error');
-                }
-            }
-            
             // Initialize the app
             await initializeContentLibrary();
+            
+            // Listen for auth state changes
+            supabaseAuth.auth.onAuthStateChange((event, session) => {
+                console.log('Auth state changed:', event);
+                
+                if (event === 'SIGNED_IN') {
+                    console.log('User signed in');
+                    // Reload profile picture
+                    if (session?.user) {
+                        loadUserProfilePicture(session.user);
+                    }
+                } else if (event === 'SIGNED_OUT') {
+                    console.log('User signed out');
+                    // Reset profile button to placeholder
+                    if (profileBtn) {
+                        profileBtn.innerHTML = `
+                            <div class="profile-placeholder">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                                </svg>
+                            </div>
+                        `;
+                    }
+                }
+            });
         });
     </script>
 </body>
