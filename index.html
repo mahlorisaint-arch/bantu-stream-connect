@@ -13,6 +13,9 @@
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
+    <!-- Supabase JS SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
     <style>
         /* Color Theme - Same as pulse-feed.html and pulse-content-detail.html */
         :root {
@@ -998,9 +1001,6 @@
     <!-- Toast Container -->
     <div id="toast-container"></div>
 
-    <!-- Import Auth Manager -->
-    <script src="auth.js"></script>
-
     <!-- SIMPLE SUPABASE CLIENT FOR CONTENT QUERIES -->
     <script>
         // Simple Supabase REST client for content queries (not authentication)
@@ -1066,8 +1066,17 @@
         console.log('✅ Content Supabase client initialized');
     </script>
 
-    <!-- Home Feed JavaScript -->
+    <!-- Authentication and Home Feed JavaScript -->
     <script>
+        // Supabase Configuration (same as login.html)
+        const SUPABASE_URL = 'https://ydnxqnbjoshvxteevemc.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U';
+
+        // Initialize Supabase client for authentication
+        const supabaseAuth = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        
+        console.log('✅ Supabase Auth client initialized');
+
         // Development Window Manager - UPDATED TO ALWAYS BE VISIBLE
         const DevelopmentWindow = {
             init() {
@@ -1112,12 +1121,13 @@
             DevelopmentWindow.init();
             
             // Initialize auth and check if user is logged in
-            const isAuthenticated = await auth.initialize();
+            const { data: { session }, error } = await supabaseAuth.auth.getSession();
+            const isAuthenticated = !!session;
             
             if (!isAuthenticated) {
                 // User is not authenticated, show a toast and update profile button behavior
                 console.log('⚠️ User not authenticated, showing public home feed');
-                showToast('Welcome! Sign in to access all features.', 'info');
+                showToast('Welcome! Sign in to access personalized features.', 'info');
                 
                 // Update profile button to redirect to login
                 const profileBtn = document.getElementById('profile-btn');
@@ -1128,8 +1138,11 @@
                 }
             } else {
                 // User is authenticated
-                console.log('✅ User authenticated:', auth.getCurrentUser()?.email);
-                showToast(`Welcome back, ${auth.getUserProfile()?.full_name || auth.getCurrentUser()?.email}!`, 'success');
+                console.log('✅ User authenticated:', session.user.email);
+                showToast(`Welcome back, ${session.user.email}!`, 'success');
+                
+                // Load user profile picture
+                await loadUserProfilePicture(session.user);
             }
             
             // State variables
@@ -1195,42 +1208,73 @@
             }
             
             // ✅ LOAD USER PROFILE PICTURE
-            async function loadUserProfilePicture() {
+            async function loadUserProfilePicture(user) {
                 try {
-                    if (!auth.isAuthenticated()) return;
+                    if (!user) return;
                     
-                    const userProfile = auth.getUserProfile();
-                    
-                    if (userProfile && userProfile.avatar_url) {
-                        // Fix avatar URL
-                        let avatarUrl = userProfile.avatar_url;
-                        if (!avatarUrl.startsWith('http')) {
-                            avatarUrl = `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/${avatarUrl.replace(/^\/+/, '')}`;
+                    // Try to get user profile from user_profiles table
+                    try {
+                        const { data: profile, error } = await supabaseAuth
+                            .from('user_profiles')
+                            .select('*')
+                            .eq('user_id', user.id)
+                            .single();
+                        
+                        if (!error && profile && profile.avatar_url) {
+                            // Fix avatar URL
+                            let avatarUrl = profile.avatar_url;
+                            if (!avatarUrl.startsWith('http')) {
+                                avatarUrl = `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/${avatarUrl.replace(/^\/+/, '')}`;
+                            }
+                            
+                            // Create img element for profile picture
+                            const profileImg = document.createElement('img');
+                            profileImg.className = 'profile-img';
+                            profileImg.src = avatarUrl;
+                            profileImg.alt = 'Profile Picture';
+                            profileImg.onerror = function() {
+                                // If image fails to load, show placeholder with initials
+                                this.parentElement.innerHTML = `
+                                    <div class="profile-placeholder">
+                                        ${getInitials(user.email)}
+                                    </div>
+                                `;
+                            };
+                            
+                            // Clear placeholder and add image
+                            if (profileBtn) {
+                                profileBtn.innerHTML = '';
+                                profileBtn.appendChild(profileImg);
+                            }
+                            
+                            return;
                         }
-                        
-                        // Create img element for profile picture
-                        const profileImg = document.createElement('img');
-                        profileImg.className = 'profile-img';
-                        profileImg.src = avatarUrl;
-                        profileImg.alt = 'Profile Picture';
-                        profileImg.onerror = function() {
-                            // If image fails to load, show placeholder
-                            this.parentElement.innerHTML = `
-                                <div class="profile-placeholder">
-                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
-                                    </svg>
-                                </div>
-                            `;
-                        };
-                        
-                        // Clear placeholder and add image
-                        profileBtn.innerHTML = '';
-                        profileBtn.appendChild(profileImg);
+                    } catch (error) {
+                        console.log('No user profile found, using email initials');
                     }
+                    
+                    // Fallback: Show initials based on email
+                    if (profileBtn) {
+                        profileBtn.innerHTML = `
+                            <div class="profile-placeholder">
+                                ${getInitials(user.email)}
+                            </div>
+                        `;
+                    }
+                    
                 } catch (error) {
                     console.error('Error loading user profile picture:', error);
                 }
+            }
+            
+            // Helper function to get initials from email
+            function getInitials(email) {
+                if (!email) return 'U';
+                const parts = email.split('@')[0];
+                if (parts.length >= 2) {
+                    return parts.substring(0, 2).toUpperCase();
+                }
+                return email.charAt(0).toUpperCase();
             }
             
             // ✅ FETCH HOME FEED CONTENT
@@ -1443,8 +1487,8 @@
                 try {
                     setLoading(true, 'Loading Bantu Stream Connect...');
                     
-                    // Load user profile picture if authenticated
-                    await loadUserProfilePicture();
+                    // Setup event listeners (including profile button based on auth)
+                    setupEventListeners();
                     
                     // Load content
                     loadingText.textContent = 'Fetching content...';
@@ -1456,9 +1500,6 @@
                     // Render UI
                     loadingText.textContent = 'Setting up interface...';
                     renderContentSections();
-                    
-                    // Setup event listeners
-                    setupEventListeners();
                     
                     // Show the app
                     setLoading(false);
@@ -1601,8 +1642,12 @@
                 // Profile button behavior depends on authentication
                 if (profileBtn) {
                     // Remove any existing click listeners and add new one
-                    profileBtn.addEventListener('click', () => {
-                        if (auth.isAuthenticated()) {
+                    const newProfileBtn = profileBtn.cloneNode(true);
+                    profileBtn.parentNode.replaceChild(newProfileBtn, profileBtn);
+                    
+                    newProfileBtn.addEventListener('click', async () => {
+                        const { data: { session } } = await supabaseAuth.auth.getSession();
+                        if (session) {
                             window.location.href = 'profile.html';
                         } else {
                             window.location.href = 'login.html?redirect=index.html';
@@ -1712,6 +1757,31 @@
             
             // Initialize the app
             await initializeHomeFeed();
+            
+            // Listen for auth state changes
+            supabaseAuth.auth.onAuthStateChange((event, session) => {
+                console.log('Auth state changed:', event);
+                
+                if (event === 'SIGNED_IN') {
+                    console.log('User signed in');
+                    // Reload profile picture
+                    if (session?.user) {
+                        loadUserProfilePicture(session.user);
+                    }
+                } else if (event === 'SIGNED_OUT') {
+                    console.log('User signed out');
+                    // Reset profile button to placeholder
+                    if (profileBtn) {
+                        profileBtn.innerHTML = `
+                            <div class="profile-placeholder">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                                </svg>
+                            </div>
+                        `;
+                    }
+                }
+            });
         });
     </script>
 </body>
