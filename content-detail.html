@@ -1739,11 +1739,127 @@
         
         console.log('✅ Supabase Auth client initialized');
         
+        // Toast function (defined before any code that might use it)
+        function showToast(message, type = 'info') {
+            // Get or create toast container
+            let toastContainer = document.getElementById('toast-container');
+            
+            if (!toastContainer) {
+                toastContainer = document.createElement('div');
+                toastContainer.id = 'toast-container';
+                document.body.appendChild(toastContainer);
+            }
+            
+            // Remove existing toast
+            const existingToast = document.querySelector('.toast');
+            if (existingToast) existingToast.remove();
+            
+            // Create new toast
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            
+            let icon = 'info-circle';
+            if (type === 'success') icon = 'check-circle';
+            if (type === 'error') icon = 'exclamation-circle';
+            if (type === 'warning') icon = 'exclamation-triangle';
+            
+            toast.innerHTML = `
+                <i class="fas fa-${icon}"></i>
+                <span>${message}</span>
+            `;
+            
+            toastContainer.appendChild(toast);
+            
+            // Remove toast after 3 seconds
+            setTimeout(() => {
+                if (toast.parentNode) {
+                    toast.style.opacity = '0';
+                    setTimeout(() => {
+                        if (toast.parentNode) toast.remove();
+                    }, 300);
+                }
+            }, 3000);
+        }
+        
+        // Helper functions (defined early)
+        function getInitials(email) {
+            if (!email) return 'U';
+            const parts = email.split('@')[0];
+            if (parts.length >= 2) {
+                return parts.substring(0, 2).toUpperCase();
+            }
+            return email.charAt(0).toUpperCase();
+        }
+        
+        function getInitialsFromName(fullName) {
+            if (!fullName) return 'U';
+            const names = fullName.split(' ');
+            if (names.length >= 2) {
+                return (names[0].charAt(0) + names[names.length - 1].charAt(0)).toUpperCase();
+            }
+            return fullName.charAt(0).toUpperCase();
+        }
+        
+        function formatDate(dateString) {
+            if (!dateString) return '-';
+            const date = new Date(dateString);
+            return date.toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric'
+            });
+        }
+        
+        function formatDuration(seconds) {
+            if (!seconds) return '-';
+            const hours = Math.floor(seconds / 3600);
+            const minutes = Math.floor((seconds % 3600) / 60);
+            const remainingSeconds = seconds % 60;
+            
+            if (hours > 0) {
+                return `${hours}h ${minutes}m`;
+            } else if (minutes > 0) {
+                return `${minutes}m ${remainingSeconds}s`;
+            } else {
+                return `${remainingSeconds}s`;
+            }
+        }
+        
+        function formatCommentTime(dateString) {
+            if (!dateString) return 'Recently';
+            
+            try {
+                const date = new Date(dateString);
+                const now = new Date();
+                const diffMs = now - date;
+                const diffSec = Math.floor(diffMs / 1000);
+                const diffMin = Math.floor(diffSec / 60);
+                const diffHour = Math.floor(diffMin / 60);
+                const diffDay = Math.floor(diffHour / 24);
+                
+                if (diffDay > 0) return `${diffDay}d ago`;
+                if (diffHour > 0) return `${diffHour}h ago`;
+                if (diffMin > 0) return `${diffMin}m ago`;
+                return 'Just now';
+            } catch (e) {
+                return 'Recently';
+            }
+        }
+        
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text)
+                .then(() => showToast('Link copied to clipboard!', 'success'))
+                .catch(err => {
+                    console.error('Failed to copy:', err);
+                    showToast('Failed to copy link', 'error');
+                });
+        }
+        
         // Wait for DOM to be ready
         document.addEventListener('DOMContentLoaded', async () => {
             console.log('🎬 Content Detail Screen Initializing...');
             
-            // DOM Elements - Define them FIRST to avoid ReferenceError
+            // DOM Elements
             const loadingScreen = document.getElementById('loading');
             const loadingText = document.getElementById('loading-text');
             const app = document.getElementById('app');
@@ -1839,9 +1955,6 @@
             const deleteCommentModal = document.getElementById('deleteCommentModal');
             const cancelDeleteBtn = document.getElementById('cancelDeleteBtn');
             const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
-            
-            // Toast Container
-            const toastContainer = document.getElementById('toast-container');
             
             // Back to Top Button
             const backToTopBtn = document.getElementById('backToTop');
@@ -2029,26 +2142,6 @@
                 } catch (error) {
                     console.error('Error loading user comment avatar:', error);
                 }
-            }
-            
-            // Helper function to get initials from email
-            function getInitials(email) {
-                if (!email) return 'U';
-                const parts = email.split('@')[0];
-                if (parts.length >= 2) {
-                    return parts.substring(0, 2).toUpperCase();
-                }
-                return email.charAt(0).toUpperCase();
-            }
-            
-            // Helper function to get initials from full name
-            function getInitialsFromName(fullName) {
-                if (!fullName) return 'U';
-                const names = fullName.split(' ');
-                if (names.length >= 2) {
-                    return (names[0].charAt(0) + names[names.length - 1].charAt(0)).toUpperCase();
-                }
-                return fullName.charAt(0).toUpperCase();
             }
             
             // ✅ LOAD CONTENT DATA
@@ -2746,103 +2839,6 @@
                 backToTopBtn.addEventListener('click', () => {
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                 });
-            }
-            
-            // ✅ UTILITY FUNCTIONS
-            
-            function formatDate(dateString) {
-                if (!dateString) return '-';
-                const date = new Date(dateString);
-                return date.toLocaleDateString('en-US', {
-                    year: 'numeric',
-                    month: 'short',
-                    day: 'numeric'
-                });
-            }
-            
-            function formatDuration(seconds) {
-                if (!seconds) return '-';
-                const hours = Math.floor(seconds / 3600);
-                const minutes = Math.floor((seconds % 3600) / 60);
-                const remainingSeconds = seconds % 60;
-                
-                if (hours > 0) {
-                    return `${hours}h ${minutes}m`;
-                } else if (minutes > 0) {
-                    return `${minutes}m ${remainingSeconds}s`;
-                } else {
-                    return `${remainingSeconds}s`;
-                }
-            }
-            
-            function formatCommentTime(dateString) {
-                if (!dateString) return 'Recently';
-                
-                try {
-                    const date = new Date(dateString);
-                    const now = new Date();
-                    const diffMs = now - date;
-                    const diffSec = Math.floor(diffMs / 1000);
-                    const diffMin = Math.floor(diffSec / 60);
-                    const diffHour = Math.floor(diffMin / 60);
-                    const diffDay = Math.floor(diffHour / 24);
-                    
-                    if (diffDay > 0) return `${diffDay}d ago`;
-                    if (diffHour > 0) return `${diffHour}h ago`;
-                    if (diffMin > 0) return `${diffMin}m ago`;
-                    return 'Just now';
-                } catch (e) {
-                    return 'Recently';
-                }
-            }
-            
-            function showToast(message, type = 'info') {
-                // Remove existing toast
-                const existingToast = document.querySelector('.toast');
-                if (existingToast) existingToast.remove();
-                
-                // Create new toast
-                const toast = document.createElement('div');
-                toast.className = `toast ${type}`;
-                
-                let icon = 'info-circle';
-                if (type === 'success') icon = 'check-circle';
-                if (type === 'error') icon = 'exclamation-circle';
-                if (type === 'warning') icon = 'exclamation-triangle';
-                
-                toast.innerHTML = `
-                    <i class="fas fa-${icon}"></i>
-                    <span>${message}</span>
-                `;
-                
-                if (!toastContainer) {
-                    // Create toast container if it doesn't exist
-                    const newContainer = document.createElement('div');
-                    newContainer.id = 'toast-container';
-                    document.body.appendChild(newContainer);
-                    newContainer.appendChild(toast);
-                } else {
-                    toastContainer.appendChild(toast);
-                }
-                
-                // Remove toast after 3 seconds
-                setTimeout(() => {
-                    if (toast.parentNode) {
-                        toast.style.opacity = '0';
-                        setTimeout(() => {
-                            if (toast.parentNode) toast.remove();
-                        }, 300);
-                    }
-                }, 3000);
-            }
-            
-            function copyToClipboard(text) {
-                navigator.clipboard.writeText(text)
-                    .then(() => showToast('Link copied to clipboard!', 'success'))
-                    .catch(err => {
-                        console.error('Failed to copy:', err);
-                        showToast('Failed to copy link', 'error');
-                    });
             }
             
             // ✅ START INITIALIZATION
