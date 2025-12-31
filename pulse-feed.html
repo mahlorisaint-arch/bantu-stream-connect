@@ -3679,28 +3679,78 @@ async function fetchPulses(limit = 10, offset = 0) {
 
         // FIXED: loadInitialPulses function - NO loading messages
         async function loadInitialPulses() {
-            try {
-                isFeedLoading = true;
-                
-                // Reset offset
-                currentOffset = 0;
-                
-                // Fetch pulses
-                const pulses = await fetchPulses(PULSES_PER_PAGE, 0);
-                
-                if (pulses.length > 0) {
-                    const likedPulses = await checkUserLikes(pulses.map(p => p.id));
-                    displayPulses(pulses, likedPulses);
-                }
-                // If no pulses, do nothing - don't show any message
-                
-            } catch (error) {
-                console.error('Error loading initial pulses:', error);
-                // Don't show any error message - just log it
-            } finally {
-                isFeedLoading = false;
-            }
+    console.log('Loading initial pulses...');
+    
+    // Reset everything
+    currentOffset = 0;
+    displayedPulseIds.clear();
+    allPulses = [];
+    hasMorePulses = true;
+    
+    const pulseFeedContainer = document.getElementById('pulse-feed-container');
+    if (!pulseFeedContainer) {
+        console.error('Pulse feed container not found!');
+        return;
+    }
+    
+    // Show loading state
+    pulseFeedContainer.innerHTML = `
+        <div style="text-align: center; padding: 40px; color: var(--slate-grey);">
+            <div class="spinner" style="margin: 0 auto 20px;"></div>
+            <div>Loading feed...</div>
+        </div>
+    `;
+    
+    try {
+        const pulses = await fetchPulses(PULSES_PER_PAGE, 0);
+        
+        if (pulses.length === 0) {
+            // Show empty state
+            pulseFeedContainer.innerHTML = `
+                <div style="text-align: center; padding: 60px 20px; color: var(--slate-grey);">
+                    <div style="font-size: 48px; margin-bottom: 20px; opacity: 0.5;">
+                        <i class="far fa-newspaper"></i>
+                    </div>
+                    <h3 style="color: var(--soft-white); margin-bottom: 10px;">No pulses yet</h3>
+                    <p>Be the first to drop a pulse and start the conversation!</p>
+                    <button class="modal-btn modal-btn-post" onclick="document.getElementById('createPulseBtn').click()" style="margin-top: 20px;">
+                        Create First Pulse
+                    </button>
+                </div>
+            `;
+            hasMorePulses = false;
+            return;
         }
+        
+        // Get liked status
+        const likedPulses = await checkUserLikes(pulses.map(p => p.id));
+        
+        // Clear loading
+        pulseFeedContainer.innerHTML = '';
+        
+        // Display pulses
+        displayPulses(pulses, likedPulses);
+        
+        console.log(`✅ Displayed ${pulses.length} initial pulses`);
+        
+    } catch (error) {
+        console.error('Error loading initial pulses:', error);
+        
+        // Show error state
+        pulseFeedContainer.innerHTML = `
+            <div style="text-align: center; padding: 60px 20px; color: var(--slate-grey);">
+                <div style="font-size: 48px; margin-bottom: 20px; color: var(--error-color);">
+                    <i class="fas fa-exclamation-triangle"></i>
+                </div>
+                <h3 style="color: var(--soft-white); margin-bottom: 10px;">Failed to load feed</h3>
+                <p>Please check your connection and try again.</p>
+                <button class="modal-btn modal-btn-post" onclick="loadInitialPulses()" style="margin-top: 20px;">
+                    <i class="fas fa-redo"></i> Retry
+                </button>
+            </div>
+        `;
+    }
+}
 
         function initializeFeed(session) {
             let selectedMedia = null;
