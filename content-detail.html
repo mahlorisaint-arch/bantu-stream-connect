@@ -5,9 +5,41 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Content Details - Bantu Stream Connect</title>
     
-    <!-- Base Styles from home-feed.html -->
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Orbitron:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Supabase JS SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
     <style>
-        /* Base Styles */
+        /* Color Theme - Same as index.html and pulse-feed.html */
+        :root {
+            --deep-black: #0A0E12;
+            --deep-navy: #0F172A;
+            --soft-white: #F8FAFC;
+            --slate-grey: #94A3B8;
+            --bantu-blue: #1D4ED8;
+            --warm-gold: #F59E0B;
+            --error-color: #EF4444;
+            --success-color: #10B981;
+            --glow-cycle-1: #00A3FF;
+            --glow-cycle-2: #0066FF;
+            --glow-cycle-3: #8B5CF6;
+            --glow-cycle-4: #EC4899;
+            --card-bg: rgba(15, 23, 42, 0.6);
+            --card-border: rgba(148, 163, 184, 0.2);
+            --hover-overlay: rgba(255, 255, 255, 0.05);
+            --active-overlay: rgba(245, 158, 11, 0.1);
+            --indigo: #4F46E5;
+            --gold-glow: rgba(245, 158, 11, 0.3);
+            --blue-glow: rgba(29, 78, 216, 0.3);
+        }
+        
         * {
             margin: 0;
             padding: 0;
@@ -15,10 +47,11 @@
         }
         
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
-            background: linear-gradient(135deg, #001F54 0%, #0A0E3F 50%, #000000 100%);
-            color: white;
+            font-family: 'Inter', sans-serif;
+            background: var(--deep-black);
+            color: var(--soft-white);
             min-height: 100vh;
+            overflow-x: hidden;
         }
         
         /* Loading Screen */
@@ -28,7 +61,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: linear-gradient(135deg, #001F54 0%, #0A0E3F 50%, #000000 100%);
+            background: var(--deep-black);
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -39,9 +72,9 @@
         .spinner {
             width: 50px;
             height: 50px;
-            border: 4px solid rgba(255, 255, 255, 0.1);
+            border: 3px solid rgba(255, 255, 255, 0.1);
             border-radius: 50%;
-            border-top-color: #4dabf7;
+            border-top-color: var(--bantu-blue);
             animation: spin 1s linear infinite;
             margin-bottom: 20px;
         }
@@ -50,15 +83,85 @@
             to { transform: rotate(360deg); }
         }
         
-        /* Header */
+        /* Animated Background - Same as index.html */
+        .animated-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            overflow: hidden;
+        }
+        
+        .glow-cycle {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(60px);
+            opacity: 0.1;
+            animation: float 8s infinite ease-in-out;
+        }
+        
+        .glow-1 {
+            width: 400px;
+            height: 400px;
+            background: var(--glow-cycle-1);
+            top: 10%;
+            left: 5%;
+            animation-delay: 0s;
+        }
+        
+        .glow-2 {
+            width: 300px;
+            height: 300px;
+            background: var(--glow-cycle-2);
+            top: 60%;
+            right: 10%;
+            animation-delay: 2s;
+        }
+        
+        .glow-3 {
+            width: 350px;
+            height: 350px;
+            background: var(--glow-cycle-3);
+            bottom: 10%;
+            left: 20%;
+            animation-delay: 4s;
+        }
+        
+        .glow-4 {
+            width: 250px;
+            height: 250px;
+            background: var(--glow-cycle-4);
+            top: 20%;
+            right: 20%;
+            animation-delay: 6s;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0) scale(1); }
+            50% { transform: translateY(-20px) scale(1.05); }
+        }
+        
+        /* Main Container */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 24px;
+            position: relative;
+            z-index: 2;
+            padding-bottom: 100px;
+        }
+        
+        /* Header - Same as index.html */
         .header {
-            background: rgba(0, 31, 84, 0.9);
-            backdrop-filter: blur(10px);
-            padding: 15px 20px;
+            background: rgba(10, 14, 18, 0.9);
+            backdrop-filter: blur(20px);
+            padding: 16px 20px;
             position: sticky;
             top: 0;
             z-index: 100;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            border-bottom: 1px solid var(--card-border);
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -68,26 +171,36 @@
             display: flex;
             align-items: center;
             gap: 12px;
+            cursor: pointer;
         }
         
         .logo-icon {
-            width: 32px;
-            height: 32px;
-            background: linear-gradient(135deg, #4dabf7 0%, #748ffc 100%);
-            border-radius: 8px;
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
             display: flex;
             align-items: center;
             justify-content: center;
+            box-shadow: 0 0 32px rgba(29, 78, 216, 0.3);
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
         
         .logo-text {
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 700;
             font-size: 18px;
-            font-weight: 600;
+            background: linear-gradient(to right, var(--soft-white), var(--bantu-blue));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            letter-spacing: 0.5px;
         }
         
         .header-actions {
             display: flex;
             gap: 10px;
+            align-items: center;
         }
         
         .icon-btn {
@@ -96,7 +209,7 @@
             border-radius: 50%;
             background: rgba(255, 255, 255, 0.1);
             border: 1px solid rgba(255, 255, 255, 0.2);
-            color: white;
+            color: var(--soft-white);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -110,42 +223,93 @@
         }
         
         .search-btn {
-            color: #FFD700;
+            color: var(--warm-gold);
         }
         
-        /* Main Content */
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
+        .profile-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            cursor: pointer;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 14px;
         }
         
-        /* Hero Section (Custom for content detail) */
+        .profile-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(29, 78, 216, 0.3);
+        }
+        
+        .profile-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .profile-placeholder {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+            color: white;
+            font-size: 16px;
+        }
+        
+        /* Content Hero Section */
         .content-hero {
-            background: linear-gradient(135deg, #0A1128 0%, #002855 100%);
-            border-radius: 20px;
-            padding: 30px;
-            margin-bottom: 30px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 24px;
+            padding: 40px;
+            margin: 30px 0;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+            position: relative;
+            overflow: hidden;
             display: grid;
             grid-template-columns: 300px 1fr;
             gap: 30px;
             align-items: center;
         }
         
+        .content-hero::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            background: linear-gradient(45deg, var(--bantu-blue), var(--warm-gold));
+            border-radius: 26px;
+            z-index: -1;
+            opacity: 0.1;
+        }
+        
         @media (max-width: 768px) {
             .content-hero {
                 grid-template-columns: 1fr;
+                padding: 30px 20px;
             }
         }
         
         .hero-poster {
-            border-radius: 15px;
+            border-radius: 20px;
             overflow: hidden;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-            border: 2px solid rgba(77, 171, 247, 0.3);
+            border: 2px solid rgba(245, 158, 11, 0.3);
             height: 300px;
             background: linear-gradient(45deg, #0A1128, #002855);
+            position: relative;
         }
         
         .hero-poster img {
@@ -160,8 +324,9 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            color: #4dabf7;
+            color: var(--bantu-blue);
             font-size: 4rem;
+            background: var(--card-bg);
         }
         
         .hero-info {
@@ -171,10 +336,13 @@
         }
         
         .hero-info h1 {
-            font-size: 28px;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 32px;
             font-weight: 700;
+            background: linear-gradient(135deg, var(--soft-white), var(--warm-gold));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
             margin-bottom: 5px;
-            color: white;
         }
         
         .hero-meta {
@@ -193,7 +361,7 @@
         }
         
         .meta-item i {
-            color: #4dabf7;
+            color: var(--bantu-blue);
         }
         
         .hero-description {
@@ -210,7 +378,7 @@
         
         .action-btn {
             padding: 12px 24px;
-            border-radius: 10px;
+            border-radius: 12px;
             border: none;
             font-size: 16px;
             font-weight: 600;
@@ -222,51 +390,36 @@
         }
         
         .play-btn {
-            background: linear-gradient(135deg, #4dabf7 0%, #748ffc 100%);
-            color: white;
+            background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+            color: var(--soft-white);
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
         
         .play-btn:hover {
             transform: translateY(-3px);
-            box-shadow: 0 10px 25px rgba(77, 171, 247, 0.4);
+            box-shadow: 0 10px 25px rgba(29, 78, 216, 0.4);
         }
         
         .secondary-btn {
             background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            color: white;
+            border: 1px solid var(--card-border);
+            color: var(--soft-white);
         }
         
         .secondary-btn:hover {
             background: rgba(255, 255, 255, 0.2);
-            border-color: rgba(255, 255, 255, 0.3);
+            border-color: var(--warm-gold);
             transform: translateY(-3px);
-        }
-        
-        /* Content Sections */
-        .section {
-            margin-bottom: 40px;
-        }
-        
-        .section-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-        
-        .section-title {
-            font-size: 24px;
-            font-weight: 700;
         }
         
         /* Creator Info Section */
         .creator-section {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 15px;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 20px;
             padding: 25px;
             margin-bottom: 30px;
+            backdrop-filter: blur(10px);
         }
         
         .creator-info {
@@ -279,12 +432,19 @@
             width: 80px;
             height: 80px;
             border-radius: 50%;
-            background: linear-gradient(135deg, #4dabf7 0%, #748ffc 100%);
+            background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
             display: flex;
             align-items: center;
             justify-content: center;
             font-size: 2rem;
             color: white;
+            overflow: hidden;
+        }
+        
+        .creator-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
         }
         
         .creator-details {
@@ -295,6 +455,7 @@
             font-size: 20px;
             font-weight: 600;
             margin-bottom: 5px;
+            color: var(--soft-white);
         }
         
         .creator-details p {
@@ -303,10 +464,10 @@
             margin-bottom: 10px;
         }
         
-        .subscribe-btn {
+        .connect-btn {
             padding: 10px 25px;
-            background: linear-gradient(135deg, #4dabf7 0%, #748ffc 100%);
-            color: white;
+            background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+            color: var(--soft-white);
             border: none;
             border-radius: 10px;
             font-weight: 600;
@@ -315,15 +476,16 @@
             align-items: center;
             gap: 8px;
             transition: all 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
         
-        .subscribe-btn:hover {
+        .connect-btn:hover {
             transform: translateY(-2px);
-            box-shadow: 0 10px 25px rgba(77, 171, 247, 0.4);
+            box-shadow: 0 10px 25px rgba(29, 78, 216, 0.4);
         }
         
-        .subscribe-btn.subscribed {
-            background: linear-gradient(135deg, #51cf66 0%, #2b8a3e 100%);
+        .connect-btn.connected {
+            background: linear-gradient(135deg, var(--success-color), #2b8a3e);
         }
         
         /* Stats Grid */
@@ -335,24 +497,31 @@
         }
         
         .stat-card {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 12px;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
             padding: 20px;
             display: flex;
             align-items: center;
             gap: 15px;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--warm-gold);
         }
         
         .stat-icon {
             width: 50px;
             height: 50px;
             border-radius: 12px;
-            background: rgba(77, 171, 247, 0.2);
+            background: rgba(29, 78, 216, 0.2);
             display: flex;
             align-items: center;
             justify-content: center;
-            color: #4dabf7;
+            color: var(--bantu-blue);
             font-size: 1.5rem;
         }
         
@@ -365,15 +534,33 @@
         .stat-content p {
             font-size: 18px;
             font-weight: 600;
+            color: var(--soft-white);
         }
         
         /* Description Section */
         .description-section {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 15px;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 20px;
             padding: 25px;
             margin-bottom: 30px;
+            backdrop-filter: blur(10px);
+        }
+        
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .section-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 24px;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--soft-white), var(--warm-gold));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
         
         .description-content {
@@ -384,25 +571,27 @@
         
         .show-more-btn {
             background: transparent;
-            color: #4dabf7;
-            border: 1px solid #4dabf7;
+            color: var(--bantu-blue);
+            border: 1px solid var(--bantu-blue);
             padding: 8px 20px;
             border-radius: 20px;
             cursor: pointer;
             transition: all 0.3s ease;
+            font-weight: 500;
         }
         
         .show-more-btn:hover {
-            background: rgba(77, 171, 247, 0.1);
+            background: rgba(29, 78, 216, 0.1);
         }
         
         /* Comments Section */
         .comments-section {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 15px;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 20px;
             padding: 25px;
             margin-bottom: 30px;
+            backdrop-filter: blur(10px);
         }
         
         .comments-header {
@@ -415,9 +604,9 @@
         .refresh-btn {
             padding: 8px 16px;
             background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            border: 1px solid var(--card-border);
             border-radius: 10px;
-            color: #4dabf7;
+            color: var(--bantu-blue);
             font-size: 14px;
             cursor: pointer;
             display: flex;
@@ -428,6 +617,7 @@
         
         .refresh-btn:hover {
             background: rgba(255, 255, 255, 0.2);
+            border-color: var(--bantu-blue);
         }
         
         .add-comment {
@@ -440,12 +630,19 @@
             width: 50px;
             height: 50px;
             border-radius: 50%;
-            background: linear-gradient(135deg, #4dabf7 0%, #748ffc 100%);
+            background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
             display: flex;
             align-items: center;
             justify-content: center;
             color: white;
             font-size: 1.2rem;
+            overflow: hidden;
+        }
+        
+        .comment-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
         }
         
         .comment-input-container {
@@ -457,10 +654,10 @@
         .comment-input-container textarea {
             flex: 1;
             background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            border: 1px solid var(--card-border);
             border-radius: 12px;
             padding: 15px;
-            color: white;
+            color: var(--soft-white);
             font-family: inherit;
             font-size: 16px;
             resize: vertical;
@@ -469,15 +666,15 @@
         }
         
         .comment-input-container textarea:focus {
-            border-color: #4dabf7;
+            border-color: var(--bantu-blue);
         }
         
         .send-comment-btn {
             width: 50px;
             height: 50px;
             border-radius: 50%;
-            background: linear-gradient(135deg, #4dabf7 0%, #748ffc 100%);
-            color: white;
+            background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+            color: var(--soft-white);
             border: none;
             cursor: pointer;
             display: flex;
@@ -506,7 +703,7 @@
         }
         
         .comments-list::-webkit-scrollbar-thumb {
-            background: #4dabf7;
+            background: var(--bantu-blue);
             border-radius: 3px;
         }
         
@@ -524,7 +721,7 @@
         
         .comment-item {
             background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            border: 1px solid var(--card-border);
             border-radius: 12px;
             padding: 20px;
             margin-bottom: 15px;
@@ -541,12 +738,19 @@
             width: 40px;
             height: 40px;
             border-radius: 50%;
-            background: linear-gradient(135deg, #4dabf7 0%, #748ffc 100%);
+            background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
             display: flex;
             align-items: center;
             justify-content: center;
             color: white;
             font-size: 1rem;
+            overflow: hidden;
+        }
+        
+        .comment-avatar-sm img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
         }
         
         .comment-user {
@@ -557,6 +761,7 @@
             font-size: 16px;
             display: block;
             margin-bottom: 3px;
+            color: var(--soft-white);
         }
         
         .comment-time {
@@ -574,8 +779,8 @@
             height: 32px;
             border-radius: 50%;
             background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            color: white;
+            border: 1px solid var(--card-border);
+            color: var(--soft-white);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -589,19 +794,19 @@
         }
         
         .edit-btn {
-            color: #4dabf7;
+            color: var(--bantu-blue);
         }
         
         .delete-btn {
-            color: #ff6b6b;
+            color: var(--error-color);
         }
         
         .like-btn {
-            color: #ff6b6b;
+            color: var(--error-color);
         }
         
         .like-btn.liked {
-            color: #ff6b6b;
+            color: var(--error-color);
         }
         
         .comment-content {
@@ -638,18 +843,21 @@
         }
         
         .content-card {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 15px;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 20px;
             overflow: hidden;
             transition: all 0.3s ease;
             cursor: pointer;
+            text-decoration: none;
+            color: inherit;
+            backdrop-filter: blur(10px);
         }
         
         .content-card:hover {
             transform: translateY(-8px);
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
-            border-color: rgba(255, 255, 255, 0.3);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+            border-color: rgba(245, 158, 11, 0.3);
         }
         
         .card-thumbnail {
@@ -691,6 +899,7 @@
             -webkit-box-orient: vertical;
             overflow: hidden;
             min-height: 40px;
+            color: var(--soft-white);
         }
         
         .related-meta {
@@ -702,7 +911,7 @@
         }
         
         .related-meta i {
-            color: #4dabf7;
+            color: var(--bantu-blue);
         }
         
         .related-placeholder {
@@ -710,6 +919,10 @@
             text-align: center;
             padding: 60px 20px;
             color: rgba(255, 255, 255, 0.5);
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            backdrop-filter: blur(10px);
         }
         
         .related-placeholder i {
@@ -720,44 +933,47 @@
         
         /* Footer */
         .footer {
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            border-top: 1px solid var(--card-border);
             padding: 30px 20px;
             text-align: center;
-            color: rgba(255, 255, 255, 0.6);
+            color: var(--slate-grey);
+            background: rgba(10, 14, 18, 0.9);
+            backdrop-filter: blur(10px);
+            margin-top: 50px;
         }
         
-        /* Toast */
+        /* Toast - Same as index.html */
         .toast {
             position: fixed;
             bottom: 20px;
             right: 20px;
             padding: 15px 25px;
-            border-radius: 10px;
-            color: white;
+            border-radius: 12px;
+            color: var(--soft-white);
             font-weight: 500;
             z-index: 1000;
             animation: slideIn 0.3s ease;
             max-width: 300px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--card-border);
         }
         
         .toast.error {
-            background: linear-gradient(135deg, #ff6b6b 0%, #c92a2a 100%);
+            background: rgba(239, 68, 68, 0.9);
         }
         
         .toast.success {
-            background: linear-gradient(135deg, #51cf66 0%, #2b8a3e 100%);
+            background: rgba(16, 185, 129, 0.9);
         }
         
         .toast.info {
-            background: linear-gradient(135deg, #4dabf7 0%, #1c7ed6 100%);
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
         }
         
         .toast.warning {
-            background: linear-gradient(135deg, #ffd43b 0%, #f08c00 100%);
-            color: #000;
+            background: rgba(245, 158, 11, 0.9);
+            color: var(--soft-white);
         }
         
         @keyframes slideIn {
@@ -771,7 +987,7 @@
             }
         }
         
-        /* Modals (Custom) */
+        /* Modals */
         .modal-overlay {
             position: fixed;
             top: 0;
@@ -787,12 +1003,13 @@
         }
         
         .modal-container {
-            background: linear-gradient(135deg, #0A1128 0%, #002855 100%);
+            background: var(--card-bg);
             padding: 30px;
             border-radius: 20px;
             max-width: 500px;
             width: 90%;
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            border: 1px solid var(--card-border);
+            backdrop-filter: blur(10px);
         }
         
         .modal-header {
@@ -803,15 +1020,16 @@
         }
         
         .modal-header h3 {
-            color: white;
+            color: var(--soft-white);
             font-size: 22px;
             margin: 0;
+            font-family: 'Orbitron', sans-serif;
         }
         
         .modal-close {
             background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            color: white;
+            border: 1px solid var(--card-border);
+            color: var(--soft-white);
             font-size: 1.2rem;
             cursor: pointer;
             width: 36px;
@@ -834,10 +1052,10 @@
         .modal-body textarea {
             width: 100%;
             background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            border: 1px solid var(--card-border);
             border-radius: 12px;
             padding: 15px;
-            color: white;
+            color: var(--soft-white);
             font-family: inherit;
             font-size: 16px;
             resize: vertical;
@@ -846,7 +1064,7 @@
         }
         
         .modal-body textarea:focus {
-            border-color: #4dabf7;
+            border-color: var(--bantu-blue);
         }
         
         .modal-body p {
@@ -877,8 +1095,8 @@
         
         .cancel-btn {
             background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            color: white;
+            border: 1px solid var(--card-border);
+            color: var(--soft-white);
         }
         
         .cancel-btn:hover {
@@ -886,13 +1104,15 @@
         }
         
         .save-btn {
-            background: linear-gradient(135deg, #4dabf7 0%, #748ffc 100%);
-            color: white;
+            background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+            color: var(--soft-white);
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
         
         .delete-btn {
-            background: linear-gradient(135deg, #ff6b6b 0%, #c92a2a 100%);
-            color: white;
+            background: linear-gradient(135deg, var(--error-color), #c92a2a);
+            color: var(--soft-white);
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
         
         /* Back to Top Button */
@@ -903,8 +1123,8 @@
             width: 50px;
             height: 50px;
             border-radius: 50%;
-            background: linear-gradient(135deg, #4dabf7 0%, #748ffc 100%);
-            color: white;
+            background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+            color: var(--soft-white);
             border: none;
             cursor: pointer;
             display: flex;
@@ -914,17 +1134,41 @@
             z-index: 100;
             transition: all 0.3s ease;
             display: none;
+            border: 1px solid rgba(255, 255, 255, 0.2);
         }
         
         .back-to-top:hover {
             transform: translateY(-5px);
-            box-shadow: 0 10px 25px rgba(77, 171, 247, 0.4);
+            box-shadow: 0 10px 25px rgba(29, 78, 216, 0.4);
+        }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: var(--deep-navy);
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: var(--bantu-blue);
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--warm-gold);
         }
         
         /* Responsive Design */
         @media (max-width: 768px) {
+            .container {
+                padding: 16px;
+                max-width: 100%;
+            }
+            
             .content-hero {
-                padding: 20px;
+                padding: 30px 20px;
                 gap: 20px;
             }
             
@@ -964,7 +1208,7 @@
                 height: 70px;
             }
             
-            .subscribe-btn {
+            .connect-btn {
                 width: 100%;
                 justify-content: center;
             }
@@ -1024,17 +1268,33 @@
         <div id="loading-text">Loading Content Details...</div>
     </div>
 
+    <!-- Animated Background -->
+    <div class="animated-bg">
+        <div class="glow-cycle glow-1"></div>
+        <div class="glow-cycle glow-2"></div>
+        <div class="glow-cycle glow-3"></div>
+        <div class="glow-cycle glow-4"></div>
+    </div>
+
     <!-- Main Content (hidden until loaded) -->
     <div id="app" style="display: none;">
         <!-- Header -->
         <header class="header">
-            <div class="logo">
+            <div class="logo" onclick="window.location.href='index.html'">
                 <div class="logo-icon">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
-                        <path d="M4 6h16M4 12h16M4 18h16"/>
+                    <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect width="40" height="40" rx="8" fill="#0F172A"/>
+                        <path d="M8 20 L12 16 L16 22 L20 18 L24 24 L28 20 L32 26" stroke="url(#pulse-gradient)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                        <circle cx="32" cy="26" r="3" fill="#F59E0B"/>
+                        <defs>
+                            <linearGradient id="pulse-gradient" x1="8" y1="20" x2="32" y2="26" gradientUnits="userSpaceOnUse">
+                                <stop stop-color="#1D4ED8"/>
+                                <stop offset="1" stop-color="#F59E0B"/>
+                            </linearGradient>
+                        </defs>
                     </svg>
                 </div>
-                <div class="logo-text">Bantu Stream Connect</div>
+                <div class="logo-text">BANTU STREAM CONNECT</div>
             </div>
             <div class="header-actions">
                 <button id="search-btn" class="icon-btn search-btn" title="Search">
@@ -1042,10 +1302,13 @@
                         <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
                     </svg>
                 </button>
-                <button id="profile-btn" class="icon-btn" title="Profile">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
-                    </svg>
+                <button id="profile-btn" class="profile-btn" title="Profile">
+                    <!-- Profile picture will be loaded here -->
+                    <div class="profile-placeholder">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                        </svg>
+                    </div>
                 </button>
             </div>
         </header>
@@ -1087,10 +1350,6 @@
                             <i class="fas fa-play"></i>
                             <span>Play Now</span>
                         </button>
-                        <button class="action-btn secondary-btn" id="downloadBtn">
-                            <i class="fas fa-download"></i>
-                            <span>Download</span>
-                        </button>
                         <button class="action-btn secondary-btn" id="favoriteBtn">
                             <i class="far fa-heart"></i>
                             <span>Favorite</span>
@@ -1106,16 +1365,16 @@
             <!-- Creator Info Section -->
             <section class="creator-section" id="creatorSection">
                 <div class="creator-info">
-                    <div class="creator-avatar">
+                    <div class="creator-avatar" id="creatorAvatar">
                         <i class="fas fa-user-circle"></i>
                     </div>
                     <div class="creator-details">
                         <h3 id="creatorDisplayName">Creator Name</h3>
-                        <p id="creatorSubscribers">0 subscribers</p>
+                        <p id="creatorConnectors">0 connectors</p>
                     </div>
-                    <button class="subscribe-btn" id="subscribeBtn">
+                    <button class="connect-btn" id="connectBtn">
                         <i class="fas fa-user-plus"></i>
-                        <span>Subscribe</span>
+                        <span>Connect</span>
                     </button>
                 </div>
             </section>
@@ -1186,7 +1445,7 @@
                 
                 <!-- Add Comment Form -->
                 <div class="add-comment">
-                    <div class="comment-avatar">
+                    <div class="comment-avatar" id="userCommentAvatar">
                         <i class="fas fa-user-circle"></i>
                     </div>
                     <div class="comment-input-container">
@@ -1269,28 +1528,6 @@
         </div>
     </div>
 
-    <div class="modal-overlay" id="downloadModal">
-        <div class="modal-container">
-            <div class="modal-header">
-                <h3>Download Content</h3>
-                <button class="modal-close" id="closeDownloadModal">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <div class="modal-body">
-                <p id="downloadModalText">Would you like to download this content for offline viewing?</p>
-                <div style="background: rgba(77, 171, 247, 0.1); border: 1px solid rgba(77, 171, 247, 0.2); border-radius: 12px; padding: 15px; margin-top: 15px; display: flex; align-items: center; gap: 10px;">
-                    <i class="fas fa-info-circle" style="color: #4dabf7;"></i>
-                    <p style="color: rgba(255, 255, 255, 0.7); margin: 0; font-size: 14px;">File will be downloaded to your device's downloads folder.</p>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button class="modal-btn cancel-btn" id="cancelDownloadBtn">Cancel</button>
-                <button class="modal-btn save-btn" id="confirmDownloadBtn">Download</button>
-            </div>
-        </div>
-    </div>
-
     <!-- Toast Container -->
     <div id="toast-container"></div>
 
@@ -1299,13 +1536,10 @@
         <i class="fas fa-arrow-up"></i>
     </button>
 
-    <!-- Font Awesome -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
-
-    <!-- SIMPLE SUPABASE CLIENT (from home-feed.html) -->
+    <!-- SIMPLE SUPABASE CLIENT FOR CONTENT QUERIES -->
     <script>
-        // Simple Supabase REST client (no AuthClient dependency)
-        class SimpleSupabaseClient {
+        // Simple Supabase REST client for content queries (not authentication)
+        class ContentSupabaseClient {
             constructor(url, key) {
                 this.url = url;
                 this.key = key;
@@ -1386,22 +1620,159 @@
                 if (url.startsWith('http')) return url;
                 return `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/${url.replace(/^\/+/, '')}`;
             }
+            
+            // Check if user is connected to creator
+            async checkConnection(connectorId, connectedId) {
+                try {
+                    const response = await fetch(
+                        `${this.url}/rest/v1/connectors?connector_id=eq.${connectorId}&connected_id=eq.${connectedId}`,
+                        {
+                            headers: {
+                                'apikey': this.key,
+                                'Authorization': `Bearer ${this.key}`,
+                                'Content-Type': 'application/json'
+                            }
+                        }
+                    );
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        return data.length > 0;
+                    }
+                    return false;
+                } catch (error) {
+                    console.error('Error checking connection:', error);
+                    return false;
+                }
+            }
+            
+            // Create connection
+            async createConnection(connectorId, connectedId) {
+                try {
+                    const response = await fetch(`${this.url}/rest/v1/connectors`, {
+                        method: 'POST',
+                        headers: {
+                            'apikey': this.key,
+                            'Authorization': `Bearer ${this.key}`,
+                            'Content-Type': 'application/json',
+                            'Prefer': 'return=minimal'
+                        },
+                        body: JSON.stringify({
+                            connector_id: connectorId,
+                            connected_id: connectedId,
+                            connection_type: 'creator'
+                        })
+                    });
+                    
+                    return response.ok;
+                } catch (error) {
+                    console.error('Error creating connection:', error);
+                    return false;
+                }
+            }
+            
+            // Delete connection
+            async deleteConnection(connectorId, connectedId) {
+                try {
+                    const response = await fetch(
+                        `${this.url}/rest/v1/connectors?connector_id=eq.${connectorId}&connected_id=eq.${connectedId}`,
+                        {
+                            method: 'DELETE',
+                            headers: {
+                                'apikey': this.key,
+                                'Authorization': `Bearer ${this.key}`,
+                                'Content-Type': 'application/json'
+                            }
+                        }
+                    );
+                    
+                    return response.ok;
+                } catch (error) {
+                    console.error('Error deleting connection:', error);
+                    return false;
+                }
+            }
+            
+            // Get connector count for creator
+            async getConnectorCount(connectedId) {
+                try {
+                    const response = await fetch(
+                        `${this.url}/rest/v1/connectors?select=id&connected_id=eq.${connectedId}`,
+                        {
+                            headers: {
+                                'apikey': this.key,
+                                'Authorization': `Bearer ${this.key}`,
+                                'Content-Type': 'application/json'
+                            }
+                        }
+                    );
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        return data.length;
+                    }
+                    return 0;
+                } catch (error) {
+                    console.error('Error getting connector count:', error);
+                    return 0;
+                }
+            }
         }
         
-        // Initialize simple Supabase client
-        const supabase = new SimpleSupabaseClient(
+        // Initialize content Supabase client
+        const contentSupabase = new ContentSupabaseClient(
             'https://ydnxqnbjoshvxteevemc.supabase.co',
             'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U'
         );
         
-        console.log('✅ Simple Supabase client initialized');
+        console.log('✅ Content Supabase client initialized');
     </script>
 
-    <!-- CONTENT DETAIL JAVASCRIPT -->
+    <!-- Authentication and Content Detail JavaScript -->
     <script>
+        // Supabase Configuration (same as index.html)
+        const SUPABASE_URL = 'https://ydnxqnbjoshvxteevemc.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U';
+
+        // Initialize Supabase client for authentication
+        const supabaseAuth = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        
+        console.log('✅ Supabase Auth client initialized');
+        
         // Wait for DOM to be ready
-        document.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener('DOMContentLoaded', async () => {
             console.log('🎬 Content Detail Screen Initializing...');
+            
+            // DOM Elements - Define them FIRST to avoid ReferenceError
+            const loadingScreen = document.getElementById('loading');
+            const loadingText = document.getElementById('loading-text');
+            const app = document.getElementById('app');
+            const profileBtn = document.getElementById('profile-btn');
+            
+            // Initialize auth and check if user is logged in
+            const { data: { session }, error } = await supabaseAuth.auth.getSession();
+            const isAuthenticated = !!session;
+            
+            if (!isAuthenticated) {
+                // User is not authenticated, show a toast
+                console.log('⚠️ User not authenticated, showing public content');
+                showToast('Sign in to connect with creators and comment', 'info');
+                
+                // Update profile button to redirect to login
+                if (profileBtn) {
+                    profileBtn.addEventListener('click', () => {
+                        const currentUrl = encodeURIComponent(window.location.href);
+                        window.location.href = `login.html?redirect=${currentUrl}`;
+                    });
+                }
+            } else {
+                // User is authenticated
+                console.log('✅ User authenticated:', session.user.email);
+                showToast(`Welcome back, ${session.user.email}!`, 'success');
+                
+                // Load user profile picture
+                await loadUserProfilePicture(session.user);
+            }
             
             // Global variables
             let contentData = null;
@@ -1410,14 +1781,10 @@
             let editingCommentId = null;
             let deletingCommentId = null;
             let currentContentId = null;
-            let isSubscribed = false;
+            let creatorId = null;
+            let isConnected = false;
             let isInFavorites = false;
             let isLoading = false;
-            
-            // DOM Elements
-            const loadingScreen = document.getElementById('loading');
-            const loadingText = document.getElementById('loading-text');
-            const app = document.getElementById('app');
             
             // Hero Section Elements
             const heroPoster = document.getElementById('heroPoster');
@@ -1431,14 +1798,14 @@
             
             // Buttons
             const playBtn = document.getElementById('playBtn');
-            const downloadBtn = document.getElementById('downloadBtn');
             const favoriteBtn = document.getElementById('favoriteBtn');
             const shareBtn = document.getElementById('shareBtn');
             
             // Creator Info Elements
+            const creatorAvatar = document.getElementById('creatorAvatar');
             const creatorDisplayName = document.getElementById('creatorDisplayName');
-            const creatorSubscribers = document.getElementById('creatorSubscribers');
-            const subscribeBtn = document.getElementById('subscribeBtn');
+            const creatorConnectors = document.getElementById('creatorConnectors');
+            const connectBtn = document.getElementById('connectBtn');
             
             // Stats Elements
             const uploadDate = document.getElementById('uploadDate');
@@ -1457,6 +1824,7 @@
             const commentsList = document.getElementById('commentsList');
             const noComments = document.getElementById('noComments');
             const commentsCount = document.getElementById('commentsCount');
+            const userCommentAvatar = document.getElementById('userCommentAvatar');
             
             // Related Content
             const relatedGrid = document.getElementById('relatedGrid');
@@ -1471,12 +1839,6 @@
             const deleteCommentModal = document.getElementById('deleteCommentModal');
             const cancelDeleteBtn = document.getElementById('cancelDeleteBtn');
             const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
-            
-            const downloadModal = document.getElementById('downloadModal');
-            const closeDownloadModal = document.getElementById('closeDownloadModal');
-            const cancelDownloadBtn = document.getElementById('cancelDownloadBtn');
-            const confirmDownloadBtn = document.getElementById('confirmDownloadBtn');
-            const downloadModalText = document.getElementById('downloadModalText');
             
             // Toast Container
             const toastContainer = document.getElementById('toast-container');
@@ -1505,6 +1867,16 @@
                     // Load related content
                     await loadRelatedContent();
                     
+                    // Check connection status if authenticated
+                    if (isAuthenticated && session?.user?.id && creatorId) {
+                        await checkConnectionStatus(session.user.id, creatorId);
+                    }
+                    
+                    // Load user avatar for comments if authenticated
+                    if (isAuthenticated && session?.user) {
+                        await loadUserCommentAvatar(session.user);
+                    }
+                    
                     // Show the app
                     loadingScreen.style.display = 'none';
                     app.style.display = 'block';
@@ -1524,6 +1896,161 @@
                 }
             }
             
+            // ✅ LOAD USER PROFILE PICTURE
+            async function loadUserProfilePicture(user) {
+                try {
+                    if (!user || !profileBtn) return;
+                    
+                    // First, update the profile button with email initials as fallback
+                    const userInitials = getInitials(user.email);
+                    profileBtn.innerHTML = `
+                        <div class="profile-placeholder">
+                            ${userInitials}
+                        </div>
+                    `;
+                    
+                    // Then try to get user profile from user_profiles table
+                    try {
+                        // Query the user_profiles table using id (which matches auth.users.id)
+                        const { data: profile, error: profileError } = await supabaseAuth
+                            .from('user_profiles')
+                            .select('*')
+                            .eq('id', user.id)
+                            .maybeSingle();
+                        
+                        if (profileError) {
+                            console.log('Profile query error:', profileError);
+                            return; // Keep using initials
+                        }
+                        
+                        if (profile && profile.avatar_url) {
+                            // Fix avatar URL
+                            let avatarUrl = profile.avatar_url;
+                            if (!avatarUrl.startsWith('http')) {
+                                // Try to construct the proper URL
+                                if (avatarUrl.startsWith('avatars/')) {
+                                    avatarUrl = `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/${avatarUrl}`;
+                                } else {
+                                    avatarUrl = `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/avatars/${avatarUrl}`;
+                                }
+                            }
+                            
+                            // Create img element for profile picture
+                            const profileImg = document.createElement('img');
+                            profileImg.className = 'profile-img';
+                            profileImg.src = avatarUrl;
+                            profileImg.alt = 'Profile Picture';
+                            profileImg.onerror = function() {
+                                // If image fails to load, keep using initials
+                                this.parentElement.innerHTML = `
+                                    <div class="profile-placeholder">
+                                        ${userInitials}
+                                    </div>
+                                `;
+                            };
+                            
+                            profileImg.onload = function() {
+                                // Image loaded successfully
+                                console.log('Profile image loaded successfully');
+                            };
+                            
+                            // Clear placeholder and add image
+                            profileBtn.innerHTML = '';
+                            profileBtn.appendChild(profileImg);
+                        } else {
+                            // Profile exists but no avatar_url, check full_name for better initials
+                            if (profile && profile.full_name) {
+                                const nameInitials = getInitialsFromName(profile.full_name);
+                                profileBtn.innerHTML = `
+                                    <div class="profile-placeholder">
+                                        ${nameInitials}
+                                    </div>
+                                `;
+                            }
+                        }
+                        
+                    } catch (error) {
+                        console.log('No user profile found or error fetching profile:', error);
+                        // Keep using initials if profile fetch fails
+                    }
+                    
+                } catch (error) {
+                    console.error('Error loading user profile picture:', error);
+                }
+            }
+            
+            // ✅ LOAD USER COMMENT AVATAR
+            async function loadUserCommentAvatar(user) {
+                try {
+                    if (!user || !userCommentAvatar) return;
+                    
+                    // Try to get user profile from user_profiles table
+                    try {
+                        const { data: profile, error: profileError } = await supabaseAuth
+                            .from('user_profiles')
+                            .select('*')
+                            .eq('id', user.id)
+                            .maybeSingle();
+                        
+                        if (profileError) {
+                            console.log('Profile query error:', profileError);
+                            return;
+                        }
+                        
+                        if (profile && profile.avatar_url) {
+                            // Fix avatar URL
+                            let avatarUrl = profile.avatar_url;
+                            if (!avatarUrl.startsWith('http')) {
+                                if (avatarUrl.startsWith('avatars/')) {
+                                    avatarUrl = `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/${avatarUrl}`;
+                                } else {
+                                    avatarUrl = `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/avatars/${avatarUrl}`;
+                                }
+                            }
+                            
+                            // Create img element for avatar
+                            const avatarImg = document.createElement('img');
+                            avatarImg.src = avatarUrl;
+                            avatarImg.alt = 'Profile Picture';
+                            avatarImg.onerror = function() {
+                                // If image fails to load, keep using icon
+                                this.parentElement.innerHTML = '<i class="fas fa-user-circle"></i>';
+                            };
+                            
+                            // Clear icon and add image
+                            userCommentAvatar.innerHTML = '';
+                            userCommentAvatar.appendChild(avatarImg);
+                        }
+                        
+                    } catch (error) {
+                        console.log('No user profile found for comment avatar:', error);
+                    }
+                    
+                } catch (error) {
+                    console.error('Error loading user comment avatar:', error);
+                }
+            }
+            
+            // Helper function to get initials from email
+            function getInitials(email) {
+                if (!email) return 'U';
+                const parts = email.split('@')[0];
+                if (parts.length >= 2) {
+                    return parts.substring(0, 2).toUpperCase();
+                }
+                return email.charAt(0).toUpperCase();
+            }
+            
+            // Helper function to get initials from full name
+            function getInitialsFromName(fullName) {
+                if (!fullName) return 'U';
+                const names = fullName.split(' ');
+                if (names.length >= 2) {
+                    return (names[0].charAt(0) + names[names.length - 1].charAt(0)).toUpperCase();
+                }
+                return fullName.charAt(0).toUpperCase();
+            }
+            
             // ✅ LOAD CONTENT DATA
             async function loadContentData() {
                 try {
@@ -1534,12 +2061,12 @@
                     
                     try {
                         // Try 'Content' table first
-                        contentDataArray = await supabase.queryWithFilter('Content', 'id', currentContentId);
+                        contentDataArray = await contentSupabase.queryWithFilter('Content', 'id', currentContentId, '*,user_profiles!user_id(*)');
                     } catch (error) {
                         console.log('⚠️ Content table failed, trying content table...');
                         try {
                             // Try lowercase 'content' table
-                            contentDataArray = await supabase.queryWithFilter('content', 'id', currentContentId);
+                            contentDataArray = await contentSupabase.queryWithFilter('content', 'id', currentContentId);
                         } catch (error2) {
                             console.log('⚠️ Both table queries failed');
                             throw new Error('Content not found');
@@ -1553,6 +2080,15 @@
                     contentData = contentDataArray[0];
                     console.log('✅ Content loaded:', contentData.title);
                     
+                    // Get creator ID
+                    creatorId = contentData.creator_id || contentData.user_id;
+                    
+                    // Get connector count for creator
+                    if (creatorId) {
+                        const connectorCount = await contentSupabase.getConnectorCount(creatorId);
+                        creatorConnectors.textContent = `${connectorCount} connectors`;
+                    }
+                    
                     // Update UI with content data
                     updateContentUI();
                     
@@ -1560,6 +2096,25 @@
                     console.error('❌ Error loading content:', error);
                     showToast('Content not found', 'error');
                     throw error;
+                }
+            }
+            
+            // ✅ CHECK CONNECTION STATUS
+            async function checkConnectionStatus(userId, creatorId) {
+                try {
+                    isConnected = await contentSupabase.checkConnection(userId, creatorId);
+                    
+                    // Update connect button
+                    if (isConnected) {
+                        connectBtn.innerHTML = '<i class="fas fa-user-check"></i><span>Connected</span>';
+                        connectBtn.classList.add('connected');
+                    } else {
+                        connectBtn.innerHTML = '<i class="fas fa-user-plus"></i><span>Connect</span>';
+                        connectBtn.classList.remove('connected');
+                    }
+                    
+                } catch (error) {
+                    console.error('Error checking connection status:', error);
                 }
             }
             
@@ -1572,20 +2127,23 @@
                 
                 const creator = contentData.creator || 
                                contentData.creator_display_name || 
-                               contentData.user_profiles?.display_name ||
+                               contentData.user_profiles?.full_name ||
                                contentData.user_profiles?.username || 
                                'Unknown Creator';
                 creatorName.textContent = creator;
+                creatorDisplayName.textContent = creator;
                 
                 // Set poster image
                 if (contentData.thumbnail_url) {
-                    const thumbnailUrl = supabase.fixMediaUrl(contentData.thumbnail_url);
+                    const thumbnailUrl = contentSupabase.fixMediaUrl(contentData.thumbnail_url);
                     posterPlaceholder.innerHTML = `<img src="${thumbnailUrl}" alt="${contentData.title}" style="width: 100%; height: 100%; object-fit: cover;">`;
                 }
                 
-                // Update creator info
-                creatorDisplayName.textContent = creator;
-                creatorSubscribers.textContent = `${contentData.subscriber_count || 0} subscribers`;
+                // Set creator avatar
+                if (contentData.user_profiles && contentData.user_profiles.avatar_url) {
+                    const avatarUrl = contentSupabase.fixMediaUrl(contentData.user_profiles.avatar_url);
+                    creatorAvatar.innerHTML = `<img src="${avatarUrl}" alt="${creator}" style="width: 100%; height: 100%; object-fit: cover;">`;
+                }
                 
                 // Update stats
                 uploadDate.textContent = formatDate(contentData.created_at);
@@ -1623,14 +2181,14 @@
                     let similarContent = [];
                     
                     try {
-                        similarContent = await supabase.query('Content', {
+                        similarContent = await contentSupabase.query('Content', {
                             select: '*',
                             where: { status: 'published' },
                             limit: 8
                         });
                     } catch (error) {
                         console.log('⚠️ Content table failed, trying content table...');
-                        similarContent = await supabase.query('content', {
+                        similarContent = await contentSupabase.query('content', {
                             select: '*',
                             where: { status: 'published' },
                             limit: 8
@@ -1669,12 +2227,13 @@
                 
                 relatedGrid.innerHTML = '';
                 relatedContent.forEach(content => {
-                    const card = document.createElement('div');
+                    const card = document.createElement('a');
                     card.className = 'content-card';
+                    card.href = `content-detail.html?id=${content.id}`;
                     card.dataset.contentId = content.id;
                     card.innerHTML = `
                         <div class="card-thumbnail">
-                            <img src="${content.thumbnail_url ? supabase.fixMediaUrl(content.thumbnail_url) : 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop'}" 
+                            <img src="${content.thumbnail_url ? contentSupabase.fixMediaUrl(content.thumbnail_url) : 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop'}" 
                                  alt="${content.title}"
                                  onerror="this.src='https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop'">
                             <div class="thumbnail-overlay"></div>
@@ -1689,11 +2248,6 @@
                             </div>
                         </div>
                     `;
-                    
-                    // Add click event
-                    card.addEventListener('click', () => {
-                        window.location.href = `content-detail.html?id=${content.id}`;
-                    });
                     
                     relatedGrid.appendChild(card);
                 });
@@ -1717,11 +2271,16 @@
                     language: 'English',
                     views: 12500,
                     likes: 890,
-                    subscriber_count: 1500
+                    creator_id: 'creator123'
                 };
+                
+                creatorId = 'creator123';
                 
                 // Update UI
                 updateContentUI();
+                
+                // Update connector count
+                creatorConnectors.textContent = '245 connectors';
                 
                 // Load sample related content
                 relatedContent = [
@@ -1789,17 +2348,14 @@
                 // Play button
                 playBtn.addEventListener('click', handlePlayPressed);
                 
-                // Download button
-                downloadBtn.addEventListener('click', handleDownloadPressed);
-                
                 // Favorite button
                 favoriteBtn.addEventListener('click', toggleFavorite);
                 
                 // Share button
                 shareBtn.addEventListener('click', shareContent);
                 
-                // Subscribe button
-                subscribeBtn.addEventListener('click', toggleSubscription);
+                // Connect button
+                connectBtn.addEventListener('click', toggleConnection);
                 
                 // Refresh comments button
                 refreshCommentsBtn.addEventListener('click', () => {
@@ -1829,11 +2385,6 @@
                 cancelDeleteBtn.addEventListener('click', () => deleteCommentModal.style.display = 'none');
                 confirmDeleteBtn.addEventListener('click', deleteComment);
                 
-                // Download modal
-                closeDownloadModal.addEventListener('click', () => downloadModal.style.display = 'none');
-                cancelDownloadBtn.addEventListener('click', () => downloadModal.style.display = 'none');
-                confirmDownloadBtn.addEventListener('click', startDownload);
-                
                 // Close modals when clicking outside
                 document.querySelectorAll('.modal-overlay').forEach(modal => {
                     modal.addEventListener('click', (e) => {
@@ -1845,11 +2396,26 @@
                 
                 // Header buttons
                 document.getElementById('search-btn').addEventListener('click', () => {
-                    showToast('Search functionality coming soon!', 'info');
+                    window.location.href = 'content-library.html';
                 });
                 
-                document.getElementById('profile-btn').addEventListener('click', () => {
-                    showToast('Profile page coming soon!', 'info');
+                // Profile button behavior depends on authentication
+                if (profileBtn) {
+                    // Remove any existing click listeners and add new one
+                    profileBtn.addEventListener('click', async () => {
+                        const { data: { session } } = await supabaseAuth.auth.getSession();
+                        if (session) {
+                            window.location.href = 'profile.html';
+                        } else {
+                            const currentUrl = encodeURIComponent(window.location.href);
+                            window.location.href = `login.html?redirect=${currentUrl}`;
+                        }
+                    });
+                }
+                
+                // Logo click
+                document.querySelector('.logo').addEventListener('click', () => {
+                    window.location.href = 'index.html';
                 });
             }
             
@@ -1861,27 +2427,6 @@
                 
                 // In a real app, navigate to video player
                 console.log('Playing:', contentData.title);
-            }
-            
-            // ✅ HANDLE DOWNLOAD PRESSED
-            function handleDownloadPressed() {
-                if (!contentData) return;
-                
-                downloadModalText.textContent = `Download "${contentData.title}" for offline viewing?`;
-                downloadModal.style.display = 'flex';
-            }
-            
-            // ✅ START DOWNLOAD
-            function startDownload() {
-                downloadModal.style.display = 'none';
-                
-                // Show download progress
-                showToast('Download started...', 'info');
-                
-                // Simulate download
-                setTimeout(() => {
-                    showToast('Download completed successfully!', 'success');
-                }, 3000);
             }
             
             // ✅ TOGGLE FAVORITE
@@ -1922,34 +2467,102 @@
                 }
             }
             
-            // ✅ TOGGLE SUBSCRIPTION
-            function toggleSubscription() {
-                isSubscribed = !isSubscribed;
+            // ✅ TOGGLE CONNECTION
+            async function toggleConnection() {
+                const { data: { session } } = await supabaseAuth.auth.getSession();
                 
-                if (isSubscribed) {
-                    subscribeBtn.innerHTML = '<i class="fas fa-user-check"></i><span>Subscribed</span>';
-                    subscribeBtn.classList.add('subscribed');
-                    showToast('Subscribed successfully!', 'success');
-                } else {
-                    subscribeBtn.innerHTML = '<i class="fas fa-user-plus"></i><span>Subscribe</span>';
-                    subscribeBtn.classList.remove('subscribed');
-                    showToast('Unsubscribed', 'info');
+                if (!session) {
+                    showToast('Please sign in to connect with creators', 'warning');
+                    const currentUrl = encodeURIComponent(window.location.href);
+                    window.location.href = `login.html?redirect=${currentUrl}`;
+                    return;
+                }
+                
+                if (!creatorId) {
+                    showToast('Creator information not available', 'error');
+                    return;
+                }
+                
+                try {
+                    if (isConnected) {
+                        // Delete connection
+                        const success = await contentSupabase.deleteConnection(session.user.id, creatorId);
+                        if (success) {
+                            isConnected = false;
+                            connectBtn.innerHTML = '<i class="fas fa-user-plus"></i><span>Connect</span>';
+                            connectBtn.classList.remove('connected');
+                            showToast('Disconnected from creator', 'success');
+                            
+                            // Update connector count
+                            const connectorCount = await contentSupabase.getConnectorCount(creatorId);
+                            creatorConnectors.textContent = `${connectorCount} connectors`;
+                        } else {
+                            showToast('Failed to disconnect', 'error');
+                        }
+                    } else {
+                        // Create connection
+                        const success = await contentSupabase.createConnection(session.user.id, creatorId);
+                        if (success) {
+                            isConnected = true;
+                            connectBtn.innerHTML = '<i class="fas fa-user-check"></i><span>Connected</span>';
+                            connectBtn.classList.add('connected');
+                            showToast('Connected with creator!', 'success');
+                            
+                            // Update connector count
+                            const connectorCount = await contentSupabase.getConnectorCount(creatorId);
+                            creatorConnectors.textContent = `${connectorCount} connectors`;
+                        } else {
+                            showToast('Failed to connect', 'error');
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error toggling connection:', error);
+                    showToast('Error processing connection', 'error');
                 }
             }
             
             // ✅ ADD COMMENT
-            function addComment() {
+            async function addComment() {
+                const { data: { session } } = await supabaseAuth.auth.getSession();
+                
+                if (!session) {
+                    showToast('Please sign in to comment', 'warning');
+                    const currentUrl = encodeURIComponent(window.location.href);
+                    window.location.href = `login.html?redirect=${currentUrl}`;
+                    return;
+                }
+                
                 const commentText = commentInput.value.trim();
                 if (!commentText) {
                     showToast('Please enter a comment', 'warning');
                     return;
                 }
                 
+                // Get user profile for comment
+                let userName = 'You';
+                let userAvatar = null;
+                
+                try {
+                    const { data: profile, error } = await supabaseAuth
+                        .from('user_profiles')
+                        .select('full_name, username, avatar_url')
+                        .eq('id', session.user.id)
+                        .maybeSingle();
+                    
+                    if (!error && profile) {
+                        userName = profile.full_name || profile.username || 'You';
+                        userAvatar = profile.avatar_url;
+                    }
+                } catch (error) {
+                    console.log('Error getting user profile for comment:', error);
+                }
+                
                 // Create a sample comment
                 const newComment = {
                     id: Date.now().toString(),
                     comment_text: commentText,
-                    author_name: 'You',
+                    author_name: userName,
+                    author_avatar: userAvatar,
                     created_at: new Date().toISOString(),
                     like_count: 0
                 };
@@ -1988,10 +2601,17 @@
                     const userName = comment.author_name || 'User';
                     const createdAt = comment.created_at ? formatCommentTime(comment.created_at) : 'Recently';
                     
+                    // Create avatar HTML
+                    let avatarHtml = '<i class="fas fa-user-circle"></i>';
+                    if (comment.author_avatar) {
+                        const avatarUrl = contentSupabase.fixMediaUrl(comment.author_avatar);
+                        avatarHtml = `<img src="${avatarUrl}" alt="${userName}" style="width: 100%; height: 100%; object-fit: cover;">`;
+                    }
+                    
                     commentEl.innerHTML = `
                         <div class="comment-header">
                             <div class="comment-avatar-sm">
-                                <i class="fas fa-user-circle"></i>
+                                ${avatarHtml}
                             </div>
                             <div class="comment-user">
                                 <strong>${userName}</strong>
@@ -2195,7 +2815,15 @@
                     <span>${message}</span>
                 `;
                 
-                toastContainer.appendChild(toast);
+                if (!toastContainer) {
+                    // Create toast container if it doesn't exist
+                    const newContainer = document.createElement('div');
+                    newContainer.id = 'toast-container';
+                    document.body.appendChild(newContainer);
+                    newContainer.appendChild(toast);
+                } else {
+                    toastContainer.appendChild(toast);
+                }
                 
                 // Remove toast after 3 seconds
                 setTimeout(() => {
@@ -2223,6 +2851,47 @@
             }, 500);
             
             console.log('✅ Content detail script loaded');
+            
+            // Listen for auth state changes
+            supabaseAuth.auth.onAuthStateChange((event, session) => {
+                console.log('Auth state changed:', event);
+                
+                if (event === 'SIGNED_IN') {
+                    console.log('User signed in');
+                    // Reload profile picture
+                    if (session?.user) {
+                        loadUserProfilePicture(session.user);
+                        loadUserCommentAvatar(session.user);
+                        
+                        // Check connection status
+                        if (creatorId) {
+                            checkConnectionStatus(session.user.id, creatorId);
+                        }
+                    }
+                } else if (event === 'SIGNED_OUT') {
+                    console.log('User signed out');
+                    // Reset profile button to placeholder
+                    if (profileBtn) {
+                        profileBtn.innerHTML = `
+                            <div class="profile-placeholder">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                                </svg>
+                            </div>
+                        `;
+                    }
+                    
+                    // Reset user comment avatar
+                    if (userCommentAvatar) {
+                        userCommentAvatar.innerHTML = '<i class="fas fa-user-circle"></i>';
+                    }
+                    
+                    // Reset connection status
+                    isConnected = false;
+                    connectBtn.innerHTML = '<i class="fas fa-user-plus"></i><span>Connect</span>';
+                    connectBtn.classList.remove('connected');
+                }
+            });
         });
     </script>
 </body>
