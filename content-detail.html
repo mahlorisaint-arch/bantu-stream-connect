@@ -310,6 +310,7 @@
             height: 300px;
             background: linear-gradient(45deg, #0A1128, #002855);
             position: relative;
+            cursor: pointer;
         }
         
         .hero-poster img {
@@ -327,6 +328,42 @@
             color: var(--bantu-blue);
             font-size: 4rem;
             background: var(--card-bg);
+        }
+        
+        .play-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        .hero-poster:hover .play-overlay {
+            opacity: 1;
+        }
+        
+        .play-icon-large {
+            width: 70px;
+            height: 70px;
+            background: rgba(245, 158, 11, 0.9);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--deep-black);
+            font-size: 2rem;
+            transform: scale(0.8);
+            transition: all 0.3s ease;
+        }
+        
+        .hero-poster:hover .play-icon-large {
+            transform: scale(1);
         }
         
         .hero-info {
@@ -1321,6 +1358,11 @@
                     <div class="poster-placeholder" id="posterPlaceholder">
                         <i class="fas fa-play-circle"></i>
                     </div>
+                    <div class="play-overlay">
+                        <div class="play-icon-large">
+                            <i class="fas fa-play"></i>
+                        </div>
+                    </div>
                 </div>
                 <div class="hero-info">
                     <h1 id="contentTitle">Loading...</h1>
@@ -2226,10 +2268,17 @@
                 creatorName.textContent = creator;
                 creatorDisplayName.textContent = creator;
                 
-                // Set poster image
+                // Set poster image with play overlay
                 if (contentData.thumbnail_url) {
                     const thumbnailUrl = contentSupabase.fixMediaUrl(contentData.thumbnail_url);
-                    posterPlaceholder.innerHTML = `<img src="${thumbnailUrl}" alt="${contentData.title}" style="width: 100%; height: 100%; object-fit: cover;">`;
+                    posterPlaceholder.innerHTML = `
+                        <img src="${thumbnailUrl}" alt="${contentData.title}" style="width: 100%; height: 100%; object-fit: cover;">
+                        <div class="play-overlay">
+                            <div class="play-icon-large">
+                                <i class="fas fa-play"></i>
+                            </div>
+                        </div>
+                    `;
                 }
                 
                 // Set creator avatar
@@ -2438,8 +2487,11 @@
             
             // ✅ SETUP EVENT LISTENERS
             function setupEventListeners() {
-                // Play button
+                // Play button - Navigate to video player
                 playBtn.addEventListener('click', handlePlayPressed);
+                
+                // Hero poster click - also navigate to video player
+                heroPoster.addEventListener('click', handlePlayPressed);
                 
                 // Favorite button
                 favoriteBtn.addEventListener('click', toggleFavorite);
@@ -2512,14 +2564,12 @@
                 });
             }
             
-            // ✅ HANDLE PLAY PRESSED
+            // ✅ HANDLE PLAY PRESSED - NOW NAVIGATES TO VIDEO PLAYER
             function handlePlayPressed() {
                 if (!contentData) return;
                 
-                showToast(`Playing "${contentData.title}"`, 'success');
-                
-                // In a real app, navigate to video player
-                console.log('Playing:', contentData.title);
+                // Navigate to video player with current content ID
+                window.location.href = `video-player.html?id=${currentContentId}`;
             }
             
             // ✅ TOGGLE FAVORITE
