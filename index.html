@@ -1229,15 +1229,32 @@
                     
                     // Then try to get user profile from user_profiles table
                     try {
-                        // First check what columns exist in the user_profiles table
+                        // Query the user_profiles table using id (which matches auth.users.id)
                         const { data: profile, error: profileError } = await supabaseAuth
                             .from('user_profiles')
                             .select('*')
-                            .or(`id.eq.${user.id},user_id.eq.${user.id}`)  // Try both id and user_id columns
+                            .eq('id', user.id)  // Use 'id' column, not 'user_id'
                             .maybeSingle();  // Use maybeSingle to avoid throwing error if no results
                         
                         if (profileError) {
                             console.log('Profile query error:', profileError);
+                            
+                            // Try creators table as fallback
+                            try {
+                                const { data: creatorProfile, error: creatorError } = await supabaseAuth
+                                    .from('creators')
+                                    .select('*')
+                                    .eq('id', user.id)
+                                    .maybeSingle();
+                                
+                                if (!creatorError && creatorProfile) {
+                                    console.log('Found creator profile:', creatorProfile);
+                                    // Creators table doesn't have avatar_url, so we keep using initials
+                                }
+                            } catch (creatorErr) {
+                                console.log('No creator profile found either');
+                            }
+                            
                             return; // Keep using initials
                         }
                         
@@ -1246,7 +1263,11 @@
                             let avatarUrl = profile.avatar_url;
                             if (!avatarUrl.startsWith('http')) {
                                 // Try to construct the proper URL
-                                avatarUrl = `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/${avatarUrl.replace(/^\/+/, '')}`;
+                                if (avatarUrl.startsWith('avatars/')) {
+                                    avatarUrl = `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/${avatarUrl}`;
+                                } else {
+                                    avatarUrl = `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/avatars/${avatarUrl}`;
+                                }
                             }
                             
                             // Create img element for profile picture
@@ -1263,9 +1284,24 @@
                                 `;
                             };
                             
+                            profileImg.onload = function() {
+                                // Image loaded successfully
+                                console.log('Profile image loaded successfully');
+                            };
+                            
                             // Clear placeholder and add image
                             profileBtn.innerHTML = '';
                             profileBtn.appendChild(profileImg);
+                        } else {
+                            // Profile exists but no avatar_url, check full_name for better initials
+                            if (profile && profile.full_name) {
+                                const nameInitials = getInitialsFromName(profile.full_name);
+                                profileBtn.innerHTML = `
+                                    <div class="profile-placeholder">
+                                        ${nameInitials}
+                                    </div>
+                                `;
+                            }
                         }
                         
                     } catch (error) {
@@ -1286,6 +1322,16 @@
                     return parts.substring(0, 2).toUpperCase();
                 }
                 return email.charAt(0).toUpperCase();
+            }
+            
+            // Helper function to get initials from full name
+            function getInitialsFromName(fullName) {
+                if (!fullName) return 'U';
+                const names = fullName.split(' ');
+                if (names.length >= 2) {
+                    return (names[0].charAt(0) + names[names.length - 1].charAt(0)).toUpperCase();
+                }
+                return fullName.charAt(0).toUpperCase();
             }
             
             // ✅ FETCH HOME FEED CONTENT
@@ -1794,4 +1840,3 @@
     </script>
 </body>
 </html>
-
