@@ -13,8 +13,11 @@
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
+    <!-- Supabase JS SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
     <style>
-        /* Color Theme (from Flutter app) */
+        /* Color Theme - Same as index.html */
         :root {
             --deep-black: #0A0E12;
             --deep-navy: #0F172A;
@@ -24,10 +27,17 @@
             --warm-gold: #F59E0B;
             --error-color: #EF4444;
             --success-color: #10B981;
-            --glow-blue-1: #00A3FF;
-            --glow-blue-2: #0066FF;
-            --glow-purple: #8B5CF6;
-            --glow-pink: #EC4899;
+            --glow-cycle-1: #00A3FF;
+            --glow-cycle-2: #0066FF;
+            --glow-cycle-3: #8B5CF6;
+            --glow-cycle-4: #EC4899;
+            --card-bg: rgba(15, 23, 42, 0.6);
+            --card-border: rgba(148, 163, 184, 0.2);
+            --hover-overlay: rgba(255, 255, 255, 0.05);
+            --active-overlay: rgba(245, 158, 11, 0.1);
+            --indigo: #4F46E5;
+            --gold-glow: rgba(245, 158, 11, 0.3);
+            --blue-glow: rgba(29, 78, 216, 0.3);
         }
         
         * {
@@ -38,7 +48,7 @@
         
         body {
             font-family: 'Inter', sans-serif;
-            background: linear-gradient(135deg, #001F54 0%, #0A0E3F 50%, #000000 100%);
+            background: var(--deep-black);
             color: var(--soft-white);
             min-height: 100vh;
             overflow-x: hidden;
@@ -51,7 +61,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: linear-gradient(135deg, #001F54 0%, #0A0E3F 50%, #000000 100%);
+            background: var(--deep-black);
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -64,7 +74,7 @@
             height: 50px;
             border: 3px solid rgba(255, 255, 255, 0.1);
             border-radius: 50%;
-            border-top-color: var(--warm-gold);
+            border-top-color: var(--bantu-blue);
             animation: spin 1s linear infinite;
             margin-bottom: 20px;
         }
@@ -73,33 +83,85 @@
             to { transform: rotate(360deg); }
         }
         
-        /* Glassmorphism Effects */
-        .glassmorphism {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 16px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        /* Animated Background - Same as index.html */
+        .animated-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            overflow: hidden;
         }
         
-        .glassmorphism-gold {
-            background: rgba(245, 158, 11, 0.1);
-            backdrop-filter: blur(10px);
-            border: 2px solid rgba(245, 158, 11, 0.3);
-            border-radius: 16px;
-            box-shadow: 0 8px 32px rgba(245, 158, 11, 0.2);
+        .glow-cycle {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(60px);
+            opacity: 0.1;
+            animation: float 8s infinite ease-in-out;
         }
         
-        /* Header */
+        .glow-1 {
+            width: 400px;
+            height: 400px;
+            background: var(--glow-cycle-1);
+            top: 10%;
+            left: 5%;
+            animation-delay: 0s;
+        }
+        
+        .glow-2 {
+            width: 300px;
+            height: 300px;
+            background: var(--glow-cycle-2);
+            top: 60%;
+            right: 10%;
+            animation-delay: 2s;
+        }
+        
+        .glow-3 {
+            width: 350px;
+            height: 350px;
+            background: var(--glow-cycle-3);
+            bottom: 10%;
+            left: 20%;
+            animation-delay: 4s;
+        }
+        
+        .glow-4 {
+            width: 250px;
+            height: 250px;
+            background: var(--glow-cycle-4);
+            top: 20%;
+            right: 20%;
+            animation-delay: 6s;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0) scale(1); }
+            50% { transform: translateY(-20px) scale(1.05); }
+        }
+        
+        /* Main Container */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 24px;
+            position: relative;
+            z-index: 2;
+            padding-bottom: 100px;
+        }
+        
+        /* Header - Updated to match index.html style */
         .header {
-            background: rgba(0, 31, 84, 0.9);
-            backdrop-filter: blur(10px);
-            padding: 15px 20px;
+            background: rgba(10, 14, 18, 0.9);
+            backdrop-filter: blur(20px);
+            padding: 16px 20px;
             position: sticky;
             top: 0;
             z-index: 100;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            border-bottom: 1px solid var(--card-border);
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -109,26 +171,36 @@
             display: flex;
             align-items: center;
             gap: 12px;
+            cursor: pointer;
         }
         
         .logo-icon {
-            width: 32px;
-            height: 32px;
-            background: linear-gradient(135deg, #4dabf7 0%, #748ffc 100%);
-            border-radius: 8px;
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
             display: flex;
             align-items: center;
             justify-content: center;
+            box-shadow: 0 0 32px rgba(29, 78, 216, 0.3);
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
         
         .logo-text {
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 700;
             font-size: 18px;
-            font-weight: 600;
+            background: linear-gradient(to right, var(--soft-white), var(--bantu-blue));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            letter-spacing: 0.5px;
         }
         
         .header-actions {
             display: flex;
             gap: 10px;
+            align-items: center;
         }
         
         .icon-btn {
@@ -137,7 +209,7 @@
             border-radius: 50%;
             background: rgba(255, 255, 255, 0.1);
             border: 1px solid rgba(255, 255, 255, 0.2);
-            color: white;
+            color: var(--soft-white);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -150,53 +222,95 @@
             transform: translateY(-2px);
         }
         
-        /* Main Container */
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
+        .search-btn {
+            color: var(--warm-gold);
         }
         
-        /* Creator Header Section */
+        .profile-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            cursor: pointer;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 14px;
+        }
+        
+        .profile-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(29, 78, 216, 0.3);
+        }
+        
+        .profile-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .profile-placeholder {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+            color: white;
+            font-size: 16px;
+        }
+        
+        /* Creator Header Section - Updated style */
         .creator-header {
-            background: linear-gradient(135deg, #0A1128 0%, #002855 100%);
-            border-radius: 20px;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 24px;
             padding: 40px;
             margin-bottom: 30px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
             position: relative;
             overflow: hidden;
+            border-top: 2px solid var(--warm-gold);
         }
         
         .creator-header::before {
             content: '';
             position: absolute;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: radial-gradient(circle, rgba(245, 158, 11, 0.1) 0%, transparent 70%);
-            animation: rotate 20s linear infinite;
-            z-index: 0;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            background: linear-gradient(45deg, var(--warm-gold), var(--bantu-blue), var(--warm-gold));
+            border-radius: 26px;
+            z-index: -1;
+            opacity: 0.1;
+            animation: pulse-glow 3s infinite alternate;
         }
         
-        @keyframes rotate {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+        @keyframes pulse-glow {
+            0% { opacity: 0.1; }
+            100% { opacity: 0.3; }
         }
         
         .creator-info {
-            position: relative;
-            z-index: 1;
             display: flex;
             align-items: center;
             gap: 30px;
+            position: relative;
+            z-index: 1;
         }
         
         @media (max-width: 768px) {
             .creator-info {
                 flex-direction: column;
                 text-align: center;
+                gap: 20px;
             }
         }
         
@@ -212,7 +326,8 @@
             border-radius: 50%;
             overflow: hidden;
             border: 4px solid var(--warm-gold);
-            box-shadow: 0 0 30px rgba(245, 158, 11, 0.3);
+            box-shadow: 0 0 30px var(--gold-glow);
+            background: var(--card-bg);
         }
         
         .avatar-container img {
@@ -232,6 +347,7 @@
             font-size: 12px;
             font-weight: bold;
             box-shadow: 0 4px 15px rgba(245, 158, 11, 0.4);
+            z-index: 2;
         }
         
         .creator-details {
@@ -243,7 +359,9 @@
             font-size: 32px;
             font-weight: 700;
             margin-bottom: 10px;
-            color: var(--warm-gold);
+            background: linear-gradient(135deg, var(--soft-white), var(--warm-gold));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
         
         .creator-username {
@@ -255,11 +373,11 @@
         .creator-bio {
             font-size: 16px;
             line-height: 1.6;
-            color: rgba(255, 255, 255, 0.8);
+            color: rgba(248, 250, 252, 0.8);
             margin-bottom: 20px;
         }
         
-        /* Stats Section */
+        /* Stats Section - Updated style */
         .stats-section {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
@@ -274,17 +392,19 @@
         }
         
         .stat-card {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 15px;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 20px;
             padding: 25px;
             text-align: center;
             transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
         }
         
         .stat-card:hover {
             transform: translateY(-5px);
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            border-color: rgba(245, 158, 11, 0.3);
         }
         
         .stat-number {
@@ -300,7 +420,7 @@
             color: var(--slate-grey);
         }
         
-        /* Action Buttons */
+        /* Action Buttons - Updated style */
         .action-buttons {
             display: flex;
             gap: 20px;
@@ -326,11 +446,13 @@
             gap: 10px;
             transition: all 0.3s ease;
             border: none;
+            backdrop-filter: blur(10px);
         }
         
         .connect-btn {
-            background: linear-gradient(135deg, var(--warm-gold), #f97316);
-            color: var(--deep-black);
+            background: linear-gradient(135deg, var(--warm-gold), var(--bantu-blue));
+            color: var(--soft-white);
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
         
         .connect-btn:hover:not(:disabled) {
@@ -339,8 +461,9 @@
         }
         
         .connected-btn {
-            background: linear-gradient(135deg, #10B981, #059669);
+            background: linear-gradient(135deg, var(--success-color), #059669);
             color: white;
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
         
         .connected-btn:hover:not(:disabled) {
@@ -349,14 +472,15 @@
         }
         
         .share-btn {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            color: white;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            color: var(--soft-white);
         }
         
         .share-btn:hover:not(:disabled) {
             background: rgba(255, 255, 255, 0.1);
             transform: translateY(-3px);
+            border-color: var(--warm-gold);
         }
         
         .action-btn:disabled {
@@ -364,7 +488,7 @@
             cursor: not-allowed;
         }
         
-        /* Content Section */
+        /* Content Section - Updated style */
         .content-section {
             margin-bottom: 40px;
         }
@@ -380,7 +504,9 @@
             font-family: 'Orbitron', sans-serif;
             font-size: 24px;
             font-weight: 700;
-            color: var(--soft-white);
+            background: linear-gradient(135deg, var(--soft-white), var(--warm-gold));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
         
         .content-count {
@@ -388,16 +514,17 @@
             color: var(--slate-grey);
         }
         
-        /* Content Grid */
+        /* Content Grid - Updated to match index.html style */
         .content-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
             gap: 20px;
         }
         
         @media (max-width: 768px) {
             .content-grid {
-                grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+                grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+                gap: 15px;
             }
         }
         
@@ -408,25 +535,26 @@
         }
         
         .content-card {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 15px;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 20px;
             overflow: hidden;
             transition: all 0.3s ease;
             cursor: pointer;
             text-decoration: none;
             color: inherit;
+            backdrop-filter: blur(10px);
         }
         
         .content-card:hover {
             transform: translateY(-8px);
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
-            border-color: rgba(255, 255, 255, 0.3);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+            border-color: rgba(245, 158, 11, 0.3);
         }
         
         .card-thumbnail {
             position: relative;
-            height: 160px;
+            height: 140px;
             overflow: hidden;
         }
         
@@ -499,6 +627,7 @@
             -webkit-box-orient: vertical;
             overflow: hidden;
             min-height: 40px;
+            color: var(--soft-white);
         }
         
         .card-meta {
@@ -508,11 +637,15 @@
             color: var(--slate-grey);
         }
         
-        /* Empty State */
+        /* Empty State - Updated to match index.html style */
         .empty-state {
             text-align: center;
             padding: 50px 20px;
-            color: rgba(255, 255, 255, 0.5);
+            color: var(--slate-grey);
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            backdrop-filter: blur(10px);
         }
         
         .empty-icon {
@@ -521,30 +654,33 @@
             color: rgba(255, 255, 255, 0.2);
         }
         
-        /* Toast */
+        /* Toast - Updated to match index.html style */
         .toast {
             position: fixed;
             bottom: 20px;
             right: 20px;
             padding: 15px 25px;
-            border-radius: 10px;
-            color: white;
+            border-radius: 12px;
+            color: var(--soft-white);
             font-weight: 500;
             z-index: 1000;
             animation: slideIn 0.3s ease;
             max-width: 300px;
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--card-border);
         }
         
         .toast.error {
-            background: linear-gradient(135deg, #ff6b6b 0%, #c92a2a 100%);
+            background: rgba(239, 68, 68, 0.9);
         }
         
         .toast.success {
-            background: linear-gradient(135deg, #51cf66 0%, #2b8a3e 100%);
+            background: rgba(16, 185, 129, 0.9);
         }
         
         .toast.info {
-            background: linear-gradient(135deg, #4dabf7 0%, #748ffc 100%);
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
         }
         
         @keyframes slideIn {
@@ -558,7 +694,7 @@
             }
         }
         
-        /* Modal */
+        /* Modal - Updated style */
         .modal {
             position: fixed;
             top: 0;
@@ -570,6 +706,7 @@
             align-items: center;
             justify-content: center;
             z-index: 2000;
+            backdrop-filter: blur(5px);
         }
         
         .modal.active {
@@ -577,14 +714,15 @@
         }
         
         .modal-content {
-            background: linear-gradient(135deg, #001F54 0%, #0A0E3F 100%);
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
             border-radius: 20px;
             padding: 40px;
             max-width: 500px;
             width: 90%;
             max-height: 80vh;
             overflow-y: auto;
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
         }
         
         .modal-title {
@@ -593,6 +731,9 @@
             margin-bottom: 20px;
             color: var(--soft-white);
             text-align: center;
+            background: linear-gradient(135deg, var(--soft-white), var(--warm-gold));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
         
         .connectors-list {
@@ -609,6 +750,7 @@
             background: rgba(255, 255, 255, 0.05);
             border-radius: 10px;
             margin-bottom: 10px;
+            border: 1px solid var(--card-border);
         }
         
         .connector-avatar {
@@ -616,6 +758,7 @@
             height: 40px;
             border-radius: 50%;
             overflow: hidden;
+            border: 2px solid var(--warm-gold);
         }
         
         .connector-avatar img {
@@ -631,6 +774,7 @@
         .connector-name {
             font-weight: 600;
             margin-bottom: 5px;
+            color: var(--soft-white);
         }
         
         .connector-username {
@@ -655,13 +799,78 @@
         }
         
         .modal-btn.close {
-            background: linear-gradient(135deg, var(--warm-gold), #f97316);
-            color: var(--deep-black);
+            background: linear-gradient(135deg, var(--warm-gold), var(--bantu-blue));
+            color: var(--soft-white);
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
         
         .modal-btn.close:hover {
             transform: translateY(-2px);
             box-shadow: 0 4px 15px rgba(245, 158, 11, 0.4);
+        }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: var(--deep-navy);
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: var(--bantu-blue);
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--warm-gold);
+        }
+        
+        /* Footer - Updated to match index.html style */
+        .footer {
+            border-top: 1px solid var(--card-border);
+            padding: 30px 20px;
+            text-align: center;
+            color: var(--slate-grey);
+            background: rgba(10, 14, 18, 0.9);
+            backdrop-filter: blur(10px);
+            margin-top: 50px;
+        }
+        
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .footer-links a {
+            color: var(--warm-gold);
+            text-decoration: none;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+        
+        .footer-links a:hover {
+            color: var(--soft-white);
+            text-decoration: underline;
+        }
+        
+        .footer-contact {
+            margin-top: 20px;
+            font-size: 14px;
+            color: var(--slate-grey);
+        }
+        
+        .footer-contact a {
+            color: var(--warm-gold);
+            text-decoration: none;
+        }
+        
+        .footer-contact a:hover {
+            text-decoration: underline;
         }
     </style>
 </head>
@@ -670,6 +879,14 @@
     <div id="loading" class="loading-screen">
         <div class="spinner"></div>
         <div id="loading-text">Loading Creator Channel...</div>
+    </div>
+
+    <!-- Animated Background -->
+    <div class="animated-bg">
+        <div class="glow-cycle glow-1"></div>
+        <div class="glow-cycle glow-2"></div>
+        <div class="glow-cycle glow-3"></div>
+        <div class="glow-cycle glow-4"></div>
     </div>
 
     <!-- Connectors Modal -->
@@ -689,18 +906,34 @@
     <div id="app" style="display: none;">
         <!-- Header -->
         <header class="header">
-            <div class="logo">
+            <div class="logo" onclick="window.location.href='index.html'">
                 <div class="logo-icon">
-                    <i class="fas fa-user-circle" style="color: white;"></i>
+                    <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect width="40" height="40" rx="8" fill="#0F172A"/>
+                        <path d="M8 20 L12 16 L16 22 L20 18 L24 24 L28 20 L32 26" stroke="url(#pulse-gradient)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                        <circle cx="32" cy="26" r="3" fill="#F59E0B"/>
+                        <defs>
+                            <linearGradient id="pulse-gradient" x1="8" y1="20" x2="32" y2="26" gradientUnits="userSpaceOnUse">
+                                <stop stop-color="#1D4ED8"/>
+                                <stop offset="1" stop-color="#F59E0B"/>
+                            </linearGradient>
+                        </defs>
+                    </svg>
                 </div>
-                <div class="logo-text">Creator Channel</div>
+                <div class="logo-text">BANTU STREAM CONNECT</div>
             </div>
             <div class="header-actions">
-                <button id="back-btn" class="icon-btn" title="Go Back" onclick="window.history.back()">
-                    <i class="fas fa-arrow-left"></i>
+                <button id="search-btn" class="icon-btn search-btn" title="Search">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                    </svg>
                 </button>
-                <button id="home-btn" class="icon-btn" title="Home" onclick="window.location.href='index.html'">
-                    <i class="fas fa-home"></i>
+                <button id="profile-btn" class="profile-btn" title="Profile">
+                    <div class="profile-placeholder">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                        </svg>
+                    </div>
                 </button>
             </div>
         </header>
@@ -773,15 +1006,31 @@
                 </div>
             </section>
         </main>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>Bantu Stream Connect © 2025 • Built in South Africa</p>
+            <div class="footer-links">
+                <a href="data-deletion-request.html">Data Deletion Request</a>
+                <a href="delete-account.html">Delete Account</a>
+                <a href="empowerment.html">Empowerment</a>
+                <a href="blog.html">Blog</a>
+                <a href="privacy-policy.html">Privacy Policy</a>
+                <a href="thank-you.html">Thank You</a>
+            </div>
+            <div class="footer-contact">
+                Need help? Contact us at <a href="mailto:support@bantustreamconnect.com">support@bantustreamconnect.com</a>
+            </div>
+        </footer>
     </div>
 
     <!-- Toast Container -->
     <div id="toast-container"></div>
 
-    <!-- SIMPLE SUPABASE CLIENT -->
+    <!-- SIMPLE SUPABASE CLIENT FOR CONTENT QUERIES -->
     <script>
-        // Simple Supabase REST client (no AuthClient dependency)
-        class SimpleSupabaseClient {
+        // Simple Supabase REST client for content queries (not authentication)
+        class ContentSupabaseClient {
             constructor(url, key) {
                 this.url = url;
                 this.key = key;
@@ -891,191 +1140,28 @@
                     throw error;
                 }
             }
-            
-            // Get current user session
-            async getSession() {
-                try {
-                    // Check if we have a stored session
-                    const session = localStorage.getItem('supabase.auth.token');
-                    if (!session) return null;
-                    
-                    return JSON.parse(session);
-                } catch (error) {
-                    console.error('Error getting session:', error);
-                    return null;
-                }
-            }
-            
-            // Get current user
-            async getCurrentUser() {
-                const session = await this.getSession();
-                if (!session) return null;
-                
-                // Extract user from session
-                try {
-                    const sessionData = JSON.parse(session);
-                    return sessionData.user || null;
-                } catch (error) {
-                    console.error('Error parsing user session:', error);
-                    return null;
-                }
-            }
-            
-            // Get user profile
-            async getUserProfile(userId) {
-                try {
-                    const profiles = await this.query('user_profiles', {
-                        where: { user_id: userId },
-                        limit: 1
-                    });
-                    
-                    return profiles.length > 0 ? profiles[0] : null;
-                } catch (error) {
-                    console.error('Error getting user profile:', error);
-                    return null;
-                }
-            }
-            
-            // Check if user is connected
-            async isUserConnected(connectorId, connectedId, connectionType = 'creator') {
-                try {
-                    const connections = await this.query('user_connections', {
-                        where: {
-                            connector_id: connectorId,
-                            connected_id: connectedId,
-                            connection_type: connectionType
-                        },
-                        limit: 1
-                    });
-                    
-                    return connections.length > 0;
-                } catch (error) {
-                    console.error('Error checking connection:', error);
-                    return false;
-                }
-            }
-            
-            // Connect users
-            async connectUsers(connectorId, connectedId, connectionType = 'creator') {
-                const connectionData = {
-                    connector_id: connectorId,
-                    connected_id: connectedId,
-                    connection_type: connectionType,
-                    created_at: new Date().toISOString()
-                };
-                
-                return await this.insert('user_connections', connectionData);
-            }
-            
-            // Disconnect users
-            async disconnectUsers(connectorId, connectedId, connectionType = 'creator') {
-                return await this.delete('user_connections', {
-                    connector_id: connectorId,
-                    connected_id: connectedId,
-                    connection_type: connectionType
-                });
-            }
-            
-            // Get connection count
-            async getConnectionCount(userId, connectionType = 'creator') {
-                try {
-                    const response = await fetch(
-                        `${this.url}/rest/v1/user_connections?connected_id=eq.${userId}&connection_type=eq.${connectionType}&select=id`,
-                        {
-                            headers: {
-                                'apikey': this.key,
-                                'Authorization': `Bearer ${this.key}`,
-                                'Content-Type': 'application/json'
-                            }
-                        }
-                    );
-                    
-                    if (response.ok) {
-                        const data = await response.json();
-                        return data.length;
-                    }
-                    return 0;
-                } catch (error) {
-                    console.error('Error getting connection count:', error);
-                    return 0;
-                }
-            }
-            
-            // Get connectors list
-            async getConnectorsList(userId, connectionType = 'creator') {
-                try {
-                    // First get connection IDs
-                    const connections = await this.query('user_connections', {
-                        where: {
-                            connected_id: userId,
-                            connection_type: connectionType
-                        },
-                        select: 'connector_id'
-                    });
-                    
-                    if (connections.length === 0) return [];
-                    
-                    // Get user profiles for each connector
-                    const connectorIds = connections.map(c => c.connector_id);
-                    const profiles = await this.query('user_profiles', {
-                        where: { user_id: { in: `(${connectorIds.join(',')})` } }
-                    });
-                    
-                    return profiles;
-                } catch (error) {
-                    console.error('Error getting connectors list:', error);
-                    return [];
-                }
-            }
-            
-            // Get creator content
-            async getCreatorContent(creatorId) {
-                try {
-                    // Try Content table first (capital C)
-                    let content = [];
-                    try {
-                        content = await this.query('Content', {
-                            where: { user_id: creatorId, status: 'published' },
-                            orderBy: 'created_at',
-                            order: 'desc',
-                            limit: 50
-                        });
-                    } catch (error) {
-                        // Try lowercase table
-                        content = await this.query('content', {
-                            where: { user_id: creatorId, status: 'published' },
-                            orderBy: 'created_at',
-                            order: 'desc',
-                            limit: 50
-                        });
-                    }
-                    
-                    return content;
-                } catch (error) {
-                    console.error('Error getting creator content:', error);
-                    return [];
-                }
-            }
-            
-            // Fix media URL helper
-            fixMediaUrl(url) {
-                if (!url) return '';
-                if (url.startsWith('http')) return url;
-                return `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/${url.replace(/^\/+/, '')}`;
-            }
         }
         
-        // Initialize simple Supabase client
-        const supabase = new SimpleSupabaseClient(
+        // Initialize content Supabase client
+        const contentSupabase = new ContentSupabaseClient(
             'https://ydnxqnbjoshvxteevemc.supabase.co',
             'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U'
         );
         
-        console.log('✅ Simple Supabase client initialized');
+        console.log('✅ Content Supabase client initialized');
     </script>
 
-    <!-- Creator Channel JavaScript -->
+    <!-- Authentication and Creator Channel JavaScript -->
     <script>
+        // Supabase Configuration (same as index.html)
+        const SUPABASE_URL = 'https://ydnxqnbjoshvxteevemc.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U';
+
+        // Initialize Supabase client for authentication
+        const supabaseAuth = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        
+        console.log('✅ Supabase Auth client initialized');
+
         // Wait for DOM to be ready
         document.addEventListener('DOMContentLoaded', async () => {
             console.log('👤 Creator Channel Initializing...');
@@ -1087,12 +1173,13 @@
             let isConnected = false;
             let currentUser = null;
             let connectorCount = 0;
-            let isLoading = true;
             
             // DOM Elements
             const loadingScreen = document.getElementById('loading');
             const loadingText = document.getElementById('loading-text');
             const app = document.getElementById('app');
+            const profileBtn = document.getElementById('profile-btn');
+            const searchBtn = document.getElementById('search-btn');
             const connectBtn = document.getElementById('connect-btn');
             const shareBtn = document.getElementById('share-btn');
             const connectorsModal = document.getElementById('connectors-modal');
@@ -1100,7 +1187,6 @@
             
             // ✅ SHOW/HIDE LOADING
             function setLoading(loading, text = '') {
-                isLoading = loading;
                 if (text) loadingText.textContent = text;
                 
                 if (loading) {
@@ -1121,13 +1207,121 @@
                 toast.textContent = message;
                 
                 const container = document.getElementById('toast-container');
-                container.appendChild(toast);
+                if (!container) {
+                    const newContainer = document.createElement('div');
+                    newContainer.id = 'toast-container';
+                    document.body.appendChild(newContainer);
+                    newContainer.appendChild(toast);
+                } else {
+                    container.appendChild(toast);
+                }
                 
                 setTimeout(() => {
                     toast.style.opacity = '0';
                     toast.style.transform = 'translateX(100%)';
                     setTimeout(() => toast.remove(), 300);
                 }, 3000);
+            }
+            
+            // ✅ LOAD USER PROFILE PICTURE - FIXED VERSION (same as index.html)
+            async function loadUserProfilePicture(user) {
+                try {
+                    if (!user || !profileBtn) return;
+                    
+                    // First, update the profile button with email initials as fallback
+                    const userInitials = getInitials(user.email);
+                    profileBtn.innerHTML = `
+                        <div class="profile-placeholder">
+                            ${userInitials}
+                        </div>
+                    `;
+                    
+                    // Then try to get user profile from user_profiles table
+                    try {
+                        // Query the user_profiles table using id (which matches auth.users.id)
+                        const { data: profile, error: profileError } = await supabaseAuth
+                            .from('user_profiles')
+                            .select('*')
+                            .eq('id', user.id)
+                            .maybeSingle();
+                        
+                        if (profileError) {
+                            console.log('Profile query error:', profileError);
+                            return; // Keep using initials
+                        }
+                        
+                        if (profile && profile.avatar_url) {
+                            // Fix avatar URL
+                            let avatarUrl = profile.avatar_url;
+                            if (!avatarUrl.startsWith('http')) {
+                                if (avatarUrl.startsWith('avatars/')) {
+                                    avatarUrl = `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/${avatarUrl}`;
+                                } else {
+                                    avatarUrl = `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/avatars/${avatarUrl}`;
+                                }
+                            }
+                            
+                            // Create img element for profile picture
+                            const profileImg = document.createElement('img');
+                            profileImg.className = 'profile-img';
+                            profileImg.src = avatarUrl;
+                            profileImg.alt = 'Profile Picture';
+                            profileImg.onerror = function() {
+                                // If image fails to load, keep using initials
+                                this.parentElement.innerHTML = `
+                                    <div class="profile-placeholder">
+                                        ${userInitials}
+                                    </div>
+                                `;
+                            };
+                            
+                            profileImg.onload = function() {
+                                console.log('Profile image loaded successfully');
+                            };
+                            
+                            // Clear placeholder and add image
+                            profileBtn.innerHTML = '';
+                            profileBtn.appendChild(profileImg);
+                        } else {
+                            // Profile exists but no avatar_url, check full_name for better initials
+                            if (profile && profile.full_name) {
+                                const nameInitials = getInitialsFromName(profile.full_name);
+                                profileBtn.innerHTML = `
+                                    <div class="profile-placeholder">
+                                        ${nameInitials}
+                                    </div>
+                                `;
+                            }
+                        }
+                        
+                    } catch (error) {
+                        console.log('No user profile found or error fetching profile:', error);
+                        // Keep using initials if profile fetch fails
+                    }
+                    
+                } catch (error) {
+                    console.error('Error loading user profile picture:', error);
+                }
+            }
+            
+            // Helper function to get initials from email
+            function getInitials(email) {
+                if (!email) return 'U';
+                const parts = email.split('@')[0];
+                if (parts.length >= 2) {
+                    return parts.substring(0, 2).toUpperCase();
+                }
+                return email.charAt(0).toUpperCase();
+            }
+            
+            // Helper function to get initials from full name
+            function getInitialsFromName(fullName) {
+                if (!fullName) return 'U';
+                const names = fullName.split(' ');
+                if (names.length >= 2) {
+                    return (names[0].charAt(0) + names[names.length - 1].charAt(0)).toUpperCase();
+                }
+                return fullName.charAt(0).toUpperCase();
             }
             
             // ✅ GET URL PARAMETERS
@@ -1162,6 +1356,13 @@
                 }
             }
             
+            // ✅ FIX MEDIA URL
+            function fixMediaUrl(url) {
+                if (!url) return '';
+                if (url.startsWith('http')) return url;
+                return `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/${url.replace(/^\/+/, '')}`;
+            }
+            
             // ✅ LOAD CREATOR DATA
             async function loadCreatorData() {
                 try {
@@ -1174,29 +1375,103 @@
                     }
                     
                     // Load current user
-                    currentUser = await supabase.getCurrentUser();
+                    const { data: { session } } = await supabaseAuth.auth.getSession();
+                    if (session) {
+                        currentUser = session.user;
+                    }
                     
-                    // Load creator profile
+                    // Load creator profile from user_profiles table
                     loadingText.textContent = 'Loading creator profile...';
-                    creatorProfile = await supabase.getUserProfile(creatorId);
-                    
-                    if (!creatorProfile) {
-                        showToast('Creator not found', 'error');
+                    try {
+                        const { data: profile, error: profileError } = await supabaseAuth
+                            .from('user_profiles')
+                            .select('*')
+                            .eq('id', creatorId)
+                            .maybeSingle();
+                        
+                        if (profileError || !profile) {
+                            // Try creators table as fallback
+                            const { data: creatorData } = await supabaseAuth
+                                .from('creators')
+                                .select('*')
+                                .eq('id', creatorId)
+                                .maybeSingle();
+                            
+                            if (creatorData) {
+                                creatorProfile = {
+                                    id: creatorData.id,
+                                    full_name: creatorData.name || 'Creator',
+                                    username: creatorData.username || 'creator',
+                                    bio: creatorData.bio || 'No bio available',
+                                    avatar_url: creatorData.avatar_url,
+                                    is_founder: creatorData.is_founder || false
+                                };
+                            } else {
+                                showToast('Creator not found', 'error');
+                                window.history.back();
+                                return;
+                            }
+                        } else {
+                            creatorProfile = profile;
+                        }
+                    } catch (error) {
+                        console.error('Error loading creator profile:', error);
+                        showToast('Failed to load creator profile', 'error');
                         window.history.back();
                         return;
                     }
                     
                     // Load creator content
                     loadingText.textContent = 'Loading creator content...';
-                    creatorContent = await supabase.getCreatorContent(creatorId);
+                    try {
+                        // Try Content table first (capital C)
+                        creatorContent = await contentSupabase.query('Content', {
+                            where: { user_id: creatorId, status: 'published' },
+                            orderBy: 'created_at',
+                            order: 'desc',
+                            limit: 50
+                        });
+                    } catch (error) {
+                        // Try lowercase table
+                        creatorContent = await contentSupabase.query('content', {
+                            where: { user_id: creatorId, status: 'published' },
+                            orderBy: 'created_at',
+                            order: 'desc',
+                            limit: 50
+                        });
+                    }
                     
                     // Check if current user is connected
                     if (currentUser) {
-                        isConnected = await supabase.isUserConnected(currentUser.id, creatorId, 'creator');
+                        try {
+                            const { data: connections } = await supabaseAuth
+                                .from('user_connections')
+                                .select('*')
+                                .eq('connector_id', currentUser.id)
+                                .eq('connected_id', creatorId)
+                                .eq('connection_type', 'creator')
+                                .limit(1);
+                            
+                            isConnected = connections && connections.length > 0;
+                        } catch (error) {
+                            console.error('Error checking connection:', error);
+                            isConnected = false;
+                        }
                     }
                     
                     // Get connector count
-                    connectorCount = await supabase.getConnectionCount(creatorId, 'creator');
+                    try {
+                        const { data: connectors, error: countError } = await supabaseAuth
+                            .from('user_connections')
+                            .select('id', { count: 'exact' })
+                            .eq('connected_id', creatorId)
+                            .eq('connection_type', 'creator');
+                        
+                        connectorCount = connectors ? connectors.length : 0;
+                    } catch (error) {
+                        console.error('Error getting connector count:', error);
+                        connectorCount = 0;
+                    }
                     
                     console.log('✅ Creator data loaded:', {
                         profile: creatorProfile,
@@ -1231,7 +1506,7 @@
                 
                 // Set avatar
                 const avatarUrl = creatorProfile.avatar_url 
-                    ? supabase.fixMediaUrl(creatorProfile.avatar_url)
+                    ? fixMediaUrl(creatorProfile.avatar_url)
                     : 'https://images.unsplash.com/photo-1633332755192-727a05c4013d?w=400&h=400&fit=crop';
                 
                 document.getElementById('creator-avatar').src = avatarUrl;
@@ -1312,7 +1587,7 @@
                 // Add content cards
                 creatorContent.forEach(content => {
                     const thumbnailUrl = content.thumbnail_url 
-                        ? supabase.fixMediaUrl(content.thumbnail_url)
+                        ? fixMediaUrl(content.thumbnail_url)
                         : 'https://images.unsplash.com/photo-1574717024653-61fd2cf4d44d?w=400&h=225&fit=crop';
                     
                     const contentCard = document.createElement('a');
@@ -1365,7 +1640,16 @@
                 }
                 
                 try {
-                    await supabase.connectUsers(currentUser.id, creatorId, 'creator');
+                    const { error } = await supabaseAuth
+                        .from('user_connections')
+                        .insert({
+                            connector_id: currentUser.id,
+                            connected_id: creatorId,
+                            connection_type: 'creator',
+                            created_at: new Date().toISOString()
+                        });
+                    
+                    if (error) throw error;
                     
                     isConnected = true;
                     connectorCount++;
@@ -1384,7 +1668,14 @@
             // ✅ HANDLE DISCONNECT
             async function handleDisconnect() {
                 try {
-                    await supabase.disconnectUsers(currentUser.id, creatorId, 'creator');
+                    const { error } = await supabaseAuth
+                        .from('user_connections')
+                        .delete()
+                        .eq('connector_id', currentUser.id)
+                        .eq('connected_id', creatorId)
+                        .eq('connection_type', 'creator');
+                    
+                    if (error) throw error;
                     
                     isConnected = false;
                     connectorCount = Math.max(0, connectorCount - 1);
@@ -1431,19 +1722,29 @@
             // ✅ SHOW CONNECTORS MODAL
             async function showConnectorsModal() {
                 try {
-                    const connectors = await supabase.getConnectorsList(creatorId, 'creator');
+                    const { data: connectors, error } = await supabaseAuth
+                        .from('user_connections')
+                        .select(`
+                            connector_id,
+                            user_profiles!inner(*)
+                        `)
+                        .eq('connected_id', creatorId)
+                        .eq('connection_type', 'creator');
+                    
+                    if (error) throw error;
                     
                     const modalTitle = document.getElementById('modal-title');
                     const connectorsList = document.getElementById('connectors-list');
                     
-                    modalTitle.textContent = `Connectors (${connectors.length})`;
+                    const connectorProfiles = connectors.map(c => c.user_profiles);
+                    modalTitle.textContent = `Connectors (${connectorProfiles.length})`;
                     
-                    if (connectors.length === 0) {
+                    if (connectorProfiles.length === 0) {
                         connectorsList.innerHTML = '<div class="empty-state">No connectors yet</div>';
                     } else {
-                        connectorsList.innerHTML = connectors.map(connector => {
+                        connectorsList.innerHTML = connectorProfiles.map(connector => {
                             const avatarUrl = connector.avatar_url 
-                                ? supabase.fixMediaUrl(connector.avatar_url)
+                                ? fixMediaUrl(connector.avatar_url)
                                 : 'https://images.unsplash.com/photo-1633332755192-727a05c4013d?w=400&h=400&fit=crop';
                             
                             return `
@@ -1473,6 +1774,18 @@
                 try {
                     setLoading(true, 'Loading Creator Channel...');
                     
+                    // Initialize auth and check if user is logged in
+                    const { data: { session }, error } = await supabaseAuth.auth.getSession();
+                    const isAuthenticated = !!session;
+                    
+                    if (isAuthenticated) {
+                        console.log('✅ User authenticated:', session.user.email);
+                        currentUser = session.user;
+                        await loadUserProfilePicture(session.user);
+                    } else {
+                        console.log('⚠️ User not authenticated, showing public creator channel');
+                    }
+                    
                     // Load creator data
                     await loadCreatorData();
                     
@@ -1493,6 +1806,25 @@
             
             // ✅ SETUP EVENT LISTENERS
             function setupEventListeners() {
+                // Search button - redirect to content-library.html
+                if (searchBtn) {
+                    searchBtn.addEventListener('click', () => {
+                        window.location.href = 'content-library.html';
+                    });
+                }
+                
+                // Profile button behavior depends on authentication
+                document.addEventListener('click', async (e) => {
+                    if (e.target.closest('#profile-btn')) {
+                        const { data: { session } } = await supabaseAuth.auth.getSession();
+                        if (session) {
+                            window.location.href = 'profile.html';
+                        } else {
+                            window.location.href = 'login.html?redirect=creator-channel.html?id=' + creatorId;
+                        }
+                    }
+                });
+                
                 // Share button
                 shareBtn.addEventListener('click', handleShare);
                 
@@ -1514,6 +1846,37 @@
             
             // Initialize the app
             await initializeCreatorChannel();
+            
+            // Listen for auth state changes (same as index.html)
+            supabaseAuth.auth.onAuthStateChange((event, session) => {
+                console.log('Auth state changed:', event);
+                
+                if (event === 'SIGNED_IN') {
+                    console.log('User signed in');
+                    currentUser = session.user;
+                    // Reload profile picture
+                    if (session?.user) {
+                        loadUserProfilePicture(session.user);
+                        // Update connect button state
+                        updateConnectButton();
+                    }
+                } else if (event === 'SIGNED_OUT') {
+                    console.log('User signed out');
+                    currentUser = null;
+                    // Reset profile button to placeholder
+                    if (profileBtn) {
+                        profileBtn.innerHTML = `
+                            <div class="profile-placeholder">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                                </svg>
+                            </div>
+                        `;
+                    }
+                    // Update connect button
+                    updateConnectButton();
+                }
+            });
         });
     </script>
 </body>
