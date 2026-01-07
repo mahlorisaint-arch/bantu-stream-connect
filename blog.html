@@ -17,6 +17,9 @@
             'bantu-text': '#e2e8f0',
             'pulse-blue': '#3b82f6',
             'pulse-gold': '#fbbf24',
+            'stranger-red': '#e62429',
+            'stranger-blue': '#0c0c4c',
+            'stranger-yellow': '#ffd700',
             'heritage-brown': '#8B4513',
             'storytelling-purple': '#7C3AED',
             'extraction-red': '#DC2626',
@@ -37,6 +40,7 @@
           fontFamily: {
             sans: ['Inter', 'system-ui', 'sans-serif'],
             serif: ['Georgia', 'serif'],
+            stranger: ['Bebas Neue', 'Impact', 'sans-serif'],
           },
         }
       }
@@ -90,6 +94,20 @@
 
     .blog-card:hover:before {
       left: 100%;
+    }
+
+    /* Stranger Things glow effect */
+    @keyframes stranger-glow {
+      0%, 100% {
+        text-shadow: 0 0 10px rgba(230, 36, 41, 0.5);
+      }
+      50% {
+        text-shadow: 0 0 20px rgba(230, 36, 41, 0.8);
+      }
+    }
+
+    .stranger-glow {
+      animation: stranger-glow 2s infinite ease-in-out;
     }
 
     /* Pulsing animation for Pulse posts */
@@ -148,48 +166,53 @@
         Bantu Insights: Building Africa's Digital Future
       </h1>
       
-      <!-- Hero Post: The Vault of Genius (Most Recent) -->
-      <div class="bg-bantu-dark border border-bantu-accent/40 rounded-xl shadow-2xl overflow-hidden md:flex fade-in category-music">
+      <!-- Hero Post: Stranger Things 5 Review (FEATURED) -->
+      <div class="bg-gradient-to-br from-stranger-blue/30 via-bantu-dark to-stranger-red/10 border-2 border-stranger-red/40 rounded-xl shadow-2xl overflow-hidden md:flex fade-in category-entertainment">
         <div class="md:w-1/2 relative">
-          <img src="assets/blog/Ian-Reigns-blog.png" 
-               alt="Ian Reigns - Built Different Album Cover"
+          <img src="assets/blog/stranger-things.jpg" 
+               alt="Stranger Things Season 5 - The Final Battle"
                class="w-full h-72 md:h-full object-cover transition-transform duration-700 hover:scale-105"
-               onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?auto=format&fit=crop&w=1200&q=80'">
+               onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1489599809516-9827b6d1cf13?auto=format&fit=crop&w=1200&q=80'">
           <div class="absolute top-4 left-4 flex flex-wrap gap-2">
-            <span class="inline-flex items-center px-3 py-1 text-sm font-medium rounded-full text-white bg-gradient-to-r from-pink-500 to-purple-600">
+            <span class="inline-flex items-center px-3 py-1 text-sm font-medium rounded-full text-white bg-gradient-to-r from-stranger-red to-stranger-blue">
               <i data-lucide="star" class="w-3 h-3 mr-1"></i>
               FEATURED REVIEW
             </span>
-            <span class="inline-flex items-center px-3 py-1 text-sm font-medium rounded-full bg-pink-500/20 text-pink-400">
-              <i data-lucide="music" class="w-3 h-3 mr-1"></i>
-              Music & Culture
+            <span class="inline-flex items-center px-3 py-1 text-sm font-medium rounded-full bg-stranger-red/20 text-stranger-red">
+              <i data-lucide="tv" class="w-3 h-3 mr-1"></i>
+              Television & Film
+            </span>
+            <span class="inline-flex items-center px-3 py-1 text-sm font-medium rounded-full bg-stranger-blue/20 text-stranger-blue">
+              <i data-lucide="heart" class="w-3 h-3 mr-1"></i>
+              Cultural Analysis
             </span>
           </div>
         </div>
         <div class="md:w-1/2 p-6 sm:p-10 flex flex-col justify-center">
-          <h2 class="text-3xl sm:text-4xl font-bold text-white mb-4 leading-tight hover:text-bantu-accent transition duration-200 cursor-pointer">
-            The Vault of Genius: Why Ian Reigns' 'Built Different' Is the Masterpiece We Must Protect
+          <h2 class="text-3xl sm:text-4xl font-bold text-white mb-4 leading-tight hover:text-stranger-red transition duration-200 cursor-pointer">
+            <span class="stranger-glow">BEYOND THE GATE:</span><br>
+            The Definitive Review of Stranger Things 5
           </h2>
-          <p class="text-lg text-pulse-gold mb-3 font-medium">Cultural Commentary & Music Review</p>
+          <p class="text-lg text-stranger-yellow mb-3 font-medium">Cultural Phenomenon & Character Analysis</p>
           <p class="text-bantu-text/70 mb-6 line-clamp-3">
-            "There are albums you listen to, and then there are albums that listen back." Ian Reigns' new body of work, 'Built Different,' is a sonic declaration of excellence that transcends genre and market noise. This is IP permanence in sonic form—a collection of valuable jewels for the vault.
+            A veteran critic's comprehensive analysis of the epic conclusion that has redefined television. From the devastating love story of Lucas & Max to the viral "Conformity Gate" theory, this review explores how the Duffer Brothers delivered a final chapter that is both devastatingly ambitious and profoundly human.
           </p>
           <div class="flex items-center text-sm mb-4">
             <div class="flex items-center mr-6 text-bantu-text/70">
               <i data-lucide="user" class="w-4 h-4 mr-2"></i>
-              <span>Mahlori Mhlanga, Founder</span>
+              <span>Mahlori Mhlanga, Founder & Industry Veteran</span>
             </div>
             <div class="flex items-center text-bantu-text/70">
               <i data-lucide="calendar" class="w-4 h-4 mr-2"></i>
-              <span>05/01/2026</span>
+              <span>06/01/2026</span>
             </div>
           </div>
           <div class="flex items-center justify-between">
             <div class="flex items-center text-bantu-text/70">
               <i data-lucide="clock" class="w-4 h-4 mr-2"></i>
-              <span>8 min read</span>
+              <span>15 min read • 2500 words</span>
             </div>
-            <a href="the-vault-of-genius.html" class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-pink-500 to-purple-600 text-white font-bold rounded-lg hover:opacity-90 transition duration-300 transform hover:scale-105">
+            <a href="stranger-things-5.html" class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-stranger-red to-stranger-blue text-white font-bold rounded-lg hover:opacity-90 transition duration-300 transform hover:scale-105">
               Read Full Review
               <i data-lucide="arrow-right" class="w-4 h-4 ml-2"></i>
             </a>
@@ -206,7 +229,111 @@
       
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
         
-        <!-- Post 1: From Johannesburg to Durban to Cape Town -->
+        <!-- Post 1: Pulse and Stream -->
+        <article class="bg-bantu-dark border border-bantu-text/20 rounded-xl overflow-hidden shadow-lg blog-card category-platform pulse-animation">
+          <div class="relative overflow-hidden">
+            <img src="assets/blog/pulse-login.png" 
+                 alt="Bantu Pulse Platform Interface - Your Intelligent Network for Discovery"
+                 class="w-full h-48 object-cover transition-transform duration-500 hover:scale-110"
+                 onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1611224923853-80b023f02d71?auto=format&fit=crop&w=600&q=80'">
+            <div class="absolute top-3 left-3">
+              <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gradient-to-r from-blue-500 to-indigo-600 text-white">
+                <i data-lucide="zap" class="w-3 h-3 mr-1"></i>
+                Platform Doctrine
+              </span>
+            </div>
+          </div>
+          <div class="p-6">
+            <h3 class="text-xl font-bold text-white mb-3 leading-snug hover:text-bantu-accent transition duration-200 cursor-pointer">
+              Pulse and Stream: Understanding Your New Digital Rhythm
+            </h3>
+            <p class="text-bantu-text/70 text-sm line-clamp-3 mb-4">
+              A revolutionary framework for sustainable creation and strategic connection. Discover how Bantu's separation of Pulse (for discovery) and Stream (for permanence) creates a natural rhythm that moves you from chaos to clarity.
+            </p>
+            <div class="flex flex-wrap gap-1 mt-2">
+              <span class="text-xs px-2 py-1 rounded-full bg-blue-500/10 text-blue-500">
+                Pulse Platform
+              </span>
+              <span class="text-xs px-2 py-1 rounded-full bg-indigo-500/10 text-indigo-500">
+                Stream Platform
+              </span>
+              <span class="text-xs px-2 py-1 rounded-full bg-cyan-500/10 text-cyan-500">
+                Digital Rhythm
+              </span>
+            </div>
+            <div class="flex items-center justify-between mt-4 pt-4 border-t border-bantu-text/10">
+              <div class="flex items-center text-xs text-bantu-text/50">
+                <i data-lucide="user" class="w-3 h-3 mr-1"></i>
+                <span>Mahlori Mhlanga, Founder</span>
+              </div>
+              <div class="flex items-center text-xs text-bantu-text/50">
+                <i data-lucide="clock" class="w-3 h-3 mr-1"></i>
+                <span>8 min read</span>
+              </div>
+            </div>
+            <div class="mt-4 flex justify-between items-center">
+              <span class="text-xs text-bantu-text/50">07/01/2026</span>
+              <a href="pulse-and-stream.html" class="inline-flex items-center text-bantu-accent text-sm font-medium hover:underline">
+                Read Article
+                <i data-lucide="arrow-right" class="w-3 h-3 ml-1"></i>
+              </a>
+            </div>
+          </div>
+        </article>
+
+        <!-- Post 2: The Vault of Genius (Ian Reigns) -->
+        <article class="bg-bantu-dark border border-bantu-text/20 rounded-xl overflow-hidden shadow-lg blog-card category-music">
+          <div class="relative overflow-hidden">
+            <img src="assets/blog/Ian-Reigns-blog.png" 
+                 alt="Ian Reigns - Built Different Album Cover"
+                 class="w-full h-48 object-cover transition-transform duration-500 hover:scale-110"
+                 onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?auto=format&fit=crop&w=600&q=80'">
+            <div class="absolute top-3 left-3">
+              <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-pink-500/20 text-pink-500">
+                <i data-lucide="music" class="w-3 h-3 mr-1"></i>
+                Music & Culture
+              </span>
+            </div>
+          </div>
+          <div class="p-6">
+            <h3 class="text-xl font-bold text-white mb-3 leading-snug hover:text-bantu-accent transition duration-200 cursor-pointer">
+              The Vault of Genius: Why Ian Reigns' 'Built Different' Is the Masterpiece We Must Protect
+            </h3>
+            <p class="text-bantu-text/70 text-sm line-clamp-3 mb-4">
+              "There are albums you listen to, and then there are albums that listen back." Ian Reigns' new body of work, 'Built Different,' is a sonic declaration of excellence that transcends genre and market noise.
+            </p>
+            <div class="flex flex-wrap gap-1 mt-2">
+              <span class="text-xs px-2 py-1 rounded-full bg-pink-500/10 text-pink-500">
+                Music Review
+              </span>
+              <span class="text-xs px-2 py-1 rounded-full bg-purple-500/10 text-purple-500">
+                Cultural Commentary
+              </span>
+              <span class="text-xs px-2 py-1 rounded-full bg-bantu-accent/10 text-bantu-accent">
+                Creator Economy
+              </span>
+            </div>
+            <div class="flex items-center justify-between mt-4 pt-4 border-t border-bantu-text/10">
+              <div class="flex items-center text-xs text-bantu-text/50">
+                <i data-lucide="user" class="w-3 h-3 mr-1"></i>
+                <span>Mahlori Mhlanga, Founder</span>
+              </div>
+              <div class="flex items-center text-xs text-bantu-text/50">
+                <i data-lucide="clock" class="w-3 h-3 mr-1"></i>
+                <span>8 min read</span>
+              </div>
+            </div>
+            <div class="mt-4 flex justify-between items-center">
+              <span class="text-xs text-bantu-text/50">05/01/2026</span>
+              <a href="the-vault-of-genius.html" class="inline-flex items-center text-bantu-accent text-sm font-medium hover:underline">
+                Read Article
+                <i data-lucide="arrow-right" class="w-3 h-3 ml-1"></i>
+              </a>
+            </div>
+          </div>
+        </article>
+
+        <!-- Post 3: From Johannesburg to Durban to Cape Town -->
         <article class="bg-bantu-dark border border-bantu-text/20 rounded-xl overflow-hidden shadow-lg blog-card category-culture">
           <div class="relative overflow-hidden">
             <img src="assets/blog/resource-not-creator-quote.png" 
@@ -231,7 +358,7 @@
               <span class="text-xs px-2 py-1 rounded-full bg-culture-red/10 text-culture-red">
                 Cultural Preservation
               </span>
-              <span class="text-xs px-2 py-1 rounded-full bg-heritage-gold/10 text-heritage-gold">
+              <span class="text-xs px-2 py-1 rounded-full bg-heritage-brown/10 text-heritage-brown">
                 Community Threads
               </span>
               <span class="text-xs px-2 py-1 rounded-full bg-community-green/10 text-community-green">
@@ -258,7 +385,7 @@
           </div>
         </article>
 
-        <!-- Post 2: Global Engine with Local Roots -->
+        <!-- Post 4: Global Engine with Local Roots -->
         <article class="bg-bantu-dark border border-bantu-text/20 rounded-xl overflow-hidden shadow-lg blog-card category-founder">
           <div class="relative overflow-hidden">
             <img src="assets/blog/day-one-desk-hero.jpg" 
@@ -310,7 +437,7 @@
           </div>
         </article>
 
-        <!-- Post 3: Digital Passport -->
+        <!-- Post 5: Digital Passport -->
         <article class="bg-bantu-dark border border-bantu-text/20 rounded-xl overflow-hidden shadow-lg blog-card category-sovereignty">
           <div class="relative overflow-hidden">
             <img src="assets/blog/AQOIpn75cg3XwD0_9nYN1XYAf6hi47LRcYwerJ10a_1zfFn-wcpj7JGqNkEdEvjZrWsklnS6eF2Qsk_w-JW4xaCI.jpeg" 
@@ -362,7 +489,7 @@
           </div>
         </article>
 
-        <!-- Post 4: The Cost of Exploitation -->
+        <!-- Post 6: The Cost of Exploitation -->
         <article class="bg-bantu-dark border border-bantu-text/20 rounded-xl overflow-hidden shadow-lg blog-card category-economic">
           <div class="relative overflow-hidden">
             <img src="assets/blog/exploitation-hero.jpg" 
@@ -414,7 +541,7 @@
           </div>
         </article>
 
-        <!-- Post 5: Behind the Scenes Journey -->
+        <!-- Post 7: Behind the Scenes Journey -->
         <article class="bg-bantu-dark border border-bantu-text/20 rounded-xl overflow-hidden shadow-lg blog-card category-founder">
           <div class="relative overflow-hidden">
             <img src="assets/blog/IMG_20251107_000832_201.webp" 
@@ -463,7 +590,7 @@
           </div>
         </article>
 
-        <!-- Post 6: The Unwritten Chapters -->
+        <!-- Post 8: The Unwritten Chapters -->
         <article class="bg-bantu-dark border border-bantu-text/20 rounded-xl overflow-hidden shadow-lg blog-card category-storytelling">
           <div class="relative overflow-hidden">
             <img src="assets/20251228_202549.jpg" 
@@ -515,7 +642,22 @@
           </div>
         </article>
 
-        <!-- Post 7: DNA of Disruption -->
+        <!-- Newsletter CTA Card -->
+        <div class="md:col-span-2 lg:col-span-1 flex items-center justify-center p-8 bg-gradient-to-br from-bantu-primary/10 to-bantu-accent/10 border-2 border-dashed border-bantu-primary rounded-xl shadow-inner fade-in">
+          <div class="text-center">
+            <i data-lucide="mail" class="w-12 h-12 text-bantu-primary mx-auto mb-4"></i>
+            <h3 class="text-2xl font-bold text-white mb-3">Never Miss an Update</h3>
+            <p class="text-bantu-text/70 mb-6">Subscribe to get the latest insights on African innovation, creator economy trends, and platform updates directly in your inbox.</p>
+            <div class="flex flex-col gap-3">
+              <input type="email" placeholder="Your email address" class="w-full px-4 py-3 rounded-lg bg-white/10 border border-bantu-text/30 text-white placeholder-bantu-text/50 focus:outline-none focus:border-bantu-accent">
+              <button class="w-full px-6 py-3 bg-bantu-accent text-bantu-dark font-bold rounded-lg hover:bg-yellow-500 transition duration-300">
+                Subscribe Now
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Additional Older Posts -->
         <article class="bg-bantu-dark border border-bantu-text/20 rounded-xl overflow-hidden shadow-lg blog-card category-tech">
           <div class="relative overflow-hidden">
             <img src="assets/blog/African-tech.jpeg" 
@@ -567,7 +709,6 @@
           </div>
         </article>
 
-        <!-- Post 8: Welcome to Bantu Stream Connect -->
         <article class="bg-bantu-dark border border-bantu-text/20 rounded-xl overflow-hidden shadow-lg blog-card category-platform">
           <div class="relative overflow-hidden">
             <img src="assets/blog/new-explore-screen.png" 
@@ -619,100 +760,6 @@
           </div>
         </article>
 
-        <!-- Newsletter CTA Card -->
-        <div class="md:col-span-2 lg:col-span-1 flex items-center justify-center p-8 bg-gradient-to-br from-bantu-primary/10 to-bantu-accent/10 border-2 border-dashed border-bantu-primary rounded-xl shadow-inner fade-in">
-          <div class="text-center">
-            <i data-lucide="mail" class="w-12 h-12 text-bantu-primary mx-auto mb-4"></i>
-            <h3 class="text-2xl font-bold text-white mb-3">Never Miss an Update</h3>
-            <p class="text-bantu-text/70 mb-6">Subscribe to get the latest insights on African innovation, creator economy trends, and platform updates directly in your inbox.</p>
-            <div class="flex flex-col gap-3">
-              <input type="email" placeholder="Your email address" class="w-full px-4 py-3 rounded-lg bg-white/10 border border-bantu-text/30 text-white placeholder-bantu-text/50 focus:outline-none focus:border-bantu-accent">
-              <button class="w-full px-6 py-3 bg-bantu-accent text-bantu-dark font-bold rounded-lg hover:bg-yellow-500 transition duration-300">
-                Subscribe Now
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <!-- Additional Older Posts (Optional Placeholders) -->
-        <article class="bg-bantu-dark border border-bantu-text/20 rounded-xl overflow-hidden shadow-lg blog-card">
-          <div class="relative overflow-hidden">
-            <img src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=600&q=80" 
-                 alt="African Creator Economy"
-                 class="w-full h-48 object-cover transition-transform duration-500 hover:scale-110">
-            <div class="absolute top-3 left-3">
-              <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-500/20 text-green-500">
-                <i data-lucide="leaf" class="w-3 h-3 mr-1"></i>
-                Sustainability
-              </span>
-            </div>
-          </div>
-          <div class="p-6">
-            <h3 class="text-xl font-bold text-white mb-3 leading-snug hover:text-bantu-accent transition duration-200 cursor-pointer">
-              Why the 90/10 Split is the Only Model for African Creator Sustainability
-            </h3>
-            <p class="text-bantu-text/70 text-sm line-clamp-3 mb-4">
-              We break down the flawed economics of global streaming platforms and present the definitive case for revenue ownership as the key driver for continental growth and quality content production.
-            </p>
-            <div class="flex items-center justify-between mt-4 pt-4 border-t border-bantu-text/10">
-              <div class="flex items-center text-xs text-bantu-text/50">
-                <i data-lucide="user" class="w-3 h-3 mr-1"></i>
-                <span>Thabo Mbele</span>
-              </div>
-              <div class="flex items-center text-xs text-bantu-text/50">
-                <i data-lucide="clock" class="w-3 h-3 mr-1"></i>
-                <span>8 min read</span>
-              </div>
-            </div>
-            <div class="mt-4 flex justify-between items-center">
-              <span class="text-xs text-bantu-text/50">October 2025</span>
-              <a href="#" class="inline-flex items-center text-bantu-accent text-sm font-medium hover:underline">
-                Coming Soon
-                <i data-lucide="arrow-right" class="w-3 h-3 ml-1"></i>
-              </a>
-            </div>
-          </div>
-        </article>
-
-        <article class="bg-bantu-dark border border-bantu-text/20 rounded-xl overflow-hidden shadow-lg blog-card">
-          <div class="relative overflow-hidden">
-            <img src="https://images.unsplash.com/photo-1511379938547-c1f69419868d?auto=format&fit=crop&w=600&q=80" 
-                 alt="African Music Industry"
-                 class="w-full h-48 object-cover transition-transform duration-500 hover:scale-110">
-            <div class="absolute top-3 left-3">
-              <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-pink-500/20 text-pink-500">
-                <i data-lucide="music" class="w-3 h-3 mr-1"></i>
-                Creative Industries
-              </span>
-            </div>
-          </div>
-          <div class="p-6">
-            <h3 class="text-xl font-bold text-white mb-3 leading-snug hover:text-bantu-accent transition duration-200 cursor-pointer">
-              Decoding the Amapiano Economy: Beyond the Dance Floor
-            </h3>
-            <p class="text-bantu-text/70 text-sm line-clamp-3 mb-4">
-              A deep dive into how Amapiano creators are utilizing new digital ownership models to secure their financial futures in a global market.
-            </p>
-            <div class="flex items-center justify-between mt-4 pt-4 border-t border-bantu-text/10">
-              <div class="flex items-center text-xs text-bantu-text/50">
-                <i data-lucide="user" class="w-3 h-3 mr-1"></i>
-                <span>Lerato Mokoena</span>
-              </div>
-              <div class="flex items-center text-xs text-bantu-text/50">
-                <i data-lucide="clock" class="w-3 h-3 mr-1"></i>
-                <span>5 min read</span>
-              </div>
-            </div>
-            <div class="mt-4 flex justify-between items-center">
-              <span class="text-xs text-bantu-text/50">September 2025</span>
-              <a href="#" class="inline-flex items-center text-bantu-accent text-sm font-medium hover:underline">
-                Coming Soon
-                <i data-lucide="arrow-right" class="w-3 h-3 ml-1"></i>
-              </a>
-            </div>
-          </div>
-        </article>
-
       </div>
       
       <!-- View All Articles Button -->
@@ -731,6 +778,26 @@
       <h2 class="text-3xl font-bold text-white mb-12 text-center">Explore by Topic</h2>
       
       <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+        <!-- Television & Film -->
+        <a href="#tv" class="bg-gradient-to-br from-stranger-red/10 to-stranger-blue/10 backdrop-blur-sm border border-stranger-red/30 hover:border-stranger-red rounded-xl p-6 flex flex-col items-center text-center transition duration-300 transform hover:-translate-y-2 shadow-lg">
+          <div class="w-16 h-16 rounded-full bg-stranger-red/10 flex items-center justify-center mb-4">
+            <i data-lucide="tv" class="w-8 h-8 text-stranger-red"></i>
+          </div>
+          <h3 class="text-lg font-bold text-white mb-2">Television & Film</h3>
+          <p class="text-sm text-bantu-text/70">Reviews & cultural analysis</p>
+          <span class="mt-3 text-xs text-stranger-red">1 Article</span>
+        </a>
+
+        <!-- Platform Doctrine -->
+        <a href="#platform" class="bg-bantu-dark/80 backdrop-blur-sm border border-pulse-blue/30 hover:border-pulse-blue rounded-xl p-6 flex flex-col items-center text-center transition duration-300 transform hover:-translate-y-2 shadow-lg">
+          <div class="w-16 h-16 rounded-full bg-pulse-blue/10 flex items-center justify-center mb-4">
+            <i data-lucide="zap" class="w-8 h-8 text-pulse-blue"></i>
+          </div>
+          <h3 class="text-lg font-bold text-white mb-2">Platform Doctrine</h3>
+          <p class="text-sm text-bantu-text/70">Infrastructure & frameworks</p>
+          <span class="mt-3 text-xs text-pulse-blue">2 Articles</span>
+        </a>
+
         <!-- Founder's Notes -->
         <a href="#founder" class="bg-bantu-dark/80 backdrop-blur-sm border border-bantu-accent/30 hover:border-bantu-accent rounded-xl p-6 flex flex-col items-center text-center transition duration-300 transform hover:-translate-y-2 shadow-lg">
           <div class="w-16 h-16 rounded-full bg-bantu-accent/10 flex items-center justify-center mb-4">
@@ -739,26 +806,6 @@
           <h3 class="text-lg font-bold text-white mb-2">Founder's Notes</h3>
           <p class="text-sm text-bantu-text/70">Behind-the-scenes insights</p>
           <span class="mt-3 text-xs text-bantu-accent">5 Articles</span>
-        </a>
-
-        <!-- Cultural Threads -->
-        <a href="#culture" class="bg-bantu-dark/80 backdrop-blur-sm border border-identity-blue/30 hover:border-identity-blue rounded-xl p-6 flex flex-col items-center text-center transition duration-300 transform hover:-translate-y-2 shadow-lg">
-          <div class="w-16 h-16 rounded-full bg-identity-blue/10 flex items-center justify-center mb-4">
-            <i data-lucide="globe" class="w-8 h-8 text-identity-blue"></i>
-          </div>
-          <h3 class="text-lg font-bold text-white mb-2">Cultural Threads</h3>
-          <p class="text-sm text-bantu-text/70">Digital identity & heritage</p>
-          <span class="mt-3 text-xs text-identity-blue">3 Articles</span>
-        </a>
-
-        <!-- Platform Launches -->
-        <a href="#platform" class="bg-bantu-dark/80 backdrop-blur-sm border border-pulse-blue/30 hover:border-pulse-blue rounded-xl p-6 flex flex-col items-center text-center transition duration-300 transform hover:-translate-y-2 shadow-lg">
-          <div class="w-16 h-16 rounded-full bg-pulse-blue/10 flex items-center justify-center mb-4">
-            <i data-lucide="zap" class="w-8 h-8 text-pulse-blue"></i>
-          </div>
-          <h3 class="text-lg font-bold text-white mb-2">Platform Launches</h3>
-          <p class="text-sm text-bantu-text/70">Latest releases & updates</p>
-          <span class="mt-3 text-xs text-pulse-blue">2 Articles</span>
         </a>
 
         <!-- Music & Culture -->
