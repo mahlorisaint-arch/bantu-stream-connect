@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bantu Connect Pulse - No DNA, Just RSA</title>
     
+    <!-- Content Security Policy -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; img-src 'self' data: https: blob:; media-src 'self' https: blob:; connect-src 'self' https://ydnxqnbjoshvxteevemc.supabase.co;">
+    
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -89,6 +92,16 @@
             to { transform: rotate(360deg); }
         }
         
+        /* Reduced motion support */
+        @media (prefers-reduced-motion: reduce) {
+            .spinner,
+            .glow-cycle,
+            .pulse-connect-btn.connecting,
+            .notification-btn.has-unread::after {
+                animation: none;
+            }
+        }
+        
         /* Animated Background */
         .animated-bg {
             position: fixed;
@@ -106,6 +119,7 @@
             filter: blur(60px);
             opacity: 0.1;
             animation: float 8s infinite ease-in-out;
+            will-change: transform;
         }
         
         .glow-1 {
@@ -151,7 +165,7 @@
         
         /* Main Container - Glassmorphism */
         .container {
-            max-width: 600px;
+            max-width: 100%;
             margin: 0 auto;
             padding: 16px;
             position: relative;
@@ -160,6 +174,18 @@
             background: rgba(10, 14, 18, 0.6);
             backdrop-filter: blur(20px);
             min-height: 100vh;
+        }
+        
+        @media (min-width: 768px) {
+            .container {
+                max-width: 600px;
+            }
+        }
+        
+        @media (min-width: 1024px) {
+            .container {
+                max-width: 800px;
+            }
         }
         
         /* Header - Glassmorphism */
@@ -217,7 +243,7 @@
             gap: 16px;
         }
         
-        /* UPDATED: Notification button with real-time indicator (exactly like profile.html) */
+        /* UPDATED: Notification button with real-time indicator */
         .notification-btn {
             background: rgba(255, 255, 255, 0.05);
             border: 1px solid var(--glass-border);
@@ -233,12 +259,18 @@
             justify-content: center;
             backdrop-filter: blur(10px);
             position: relative;
+            outline: none;
         }
         
-        .notification-btn:hover {
+        .notification-btn:hover,
+        .notification-btn:focus {
             color: var(--soft-white);
             background: rgba(255, 255, 255, 0.1);
             border-color: var(--bantu-blue);
+        }
+        
+        .notification-btn:focus-visible {
+            box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.3);
         }
         
         /* NEW: Notification Dot Indicator */
@@ -279,11 +311,17 @@
             position: relative;
             overflow: hidden;
             backdrop-filter: blur(10px);
+            outline: none;
         }
         
-        .user-avatar:hover {
+        .user-avatar:hover,
+        .user-avatar:focus {
             border-color: var(--warm-gold);
             transform: scale(1.05);
+        }
+        
+        .user-avatar:focus-visible {
+            box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.3);
         }
         
         .user-avatar img {
@@ -319,11 +357,17 @@
             border-radius: 12px;
             transition: all 0.3s ease;
             position: relative;
+            outline: none;
         }
         
-        .tab:hover {
+        .tab:hover,
+        .tab:focus {
             color: var(--soft-white);
             background-color: var(--hover-overlay);
+        }
+        
+        .tab:focus-visible {
+            box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.3);
         }
         
         .tab.active {
@@ -357,11 +401,17 @@
             align-items: center;
             gap: 16px;
             backdrop-filter: blur(10px);
+            outline: none;
         }
         
-        .create-pulse-prompt:hover {
+        .create-pulse-prompt:hover,
+        .create-pulse-prompt:focus {
             border-color: var(--bantu-blue);
             box-shadow: 0 0 32px rgba(29, 78, 216, 0.3);
+        }
+        
+        .create-pulse-prompt:focus-visible {
+            box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.3);
         }
         
         .prompt-avatar {
@@ -488,7 +538,7 @@
             margin-top: 4px;
         }
         
-        /* UPDATED: Connect Button - Smaller and more futuristic with Glassmorphism */
+        /* UPDATED: Connect Button */
         .pulse-connect-btn {
             width: 32px;
             height: 32px;
@@ -507,12 +557,18 @@
             z-index: 10;
             backdrop-filter: blur(10px);
             box-shadow: 0 0 15px rgba(245, 158, 11, 0.2);
+            outline: none;
         }
         
-        .pulse-connect-btn:hover {
+        .pulse-connect-btn:hover,
+        .pulse-connect-btn:focus {
             background: rgba(245, 158, 11, 0.1);
             transform: scale(1.1);
             box-shadow: 0 0 25px rgba(245, 158, 11, 0.4);
+        }
+        
+        .pulse-connect-btn:focus-visible {
+            box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.3);
         }
         
         .pulse-connect-btn.connected {
@@ -551,7 +607,7 @@
             }
         }
         
-        /* More options button for user's own pulses - Glassmorphism */
+        /* More options button */
         .pulse-more-options {
             position: absolute;
             right: 20px;
@@ -565,11 +621,17 @@
             border-radius: 8px;
             transition: all 0.3s ease;
             z-index: 10;
+            outline: none;
         }
         
-        .pulse-more-options:hover {
+        .pulse-more-options:hover,
+        .pulse-more-options:focus {
             color: var(--soft-white);
             background: var(--hover-overlay);
+        }
+        
+        .pulse-more-options:focus-visible {
+            box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.3);
         }
         
         .pulse-options-menu {
@@ -608,7 +670,8 @@
             backdrop-filter: blur(10px);
         }
         
-        .pulse-option-item:hover {
+        .pulse-option-item:hover,
+        .pulse-option-item:focus {
             background: var(--hover-overlay);
         }
         
@@ -664,7 +727,7 @@
             display: block;
         }
         
-        /* Custom Video Controls - Glassmorphism */
+        /* Custom Video Controls */
         .video-controls-overlay {
             position: absolute;
             bottom: 0;
@@ -768,73 +831,7 @@
             width: 50%;
         }
         
-        /* Image Placeholder - Glassmorphism */
-        .image-placeholder {
-            width: 100%;
-            aspect-ratio: 9/16;
-            background: linear-gradient(135deg, var(--deep-navy), var(--deep-black));
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--slate-grey);
-            backdrop-filter: blur(10px);
-        }
-        
-        /* Linked Content - Glassmorphism */
-        .linked-content {
-            background-color: rgba(15, 23, 42, 0.8);
-            border: 1px solid var(--glass-border);
-            border-radius: 12px;
-            padding: 12px;
-            margin-top: 16px;
-            backdrop-filter: blur(10px);
-        }
-        
-        .linked-content-label {
-            font-size: 12px;
-            color: var(--slate-grey);
-            margin-bottom: 8px;
-        }
-        
-        .linked-content-card {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 12px;
-            background-color: rgba(10, 14, 18, 0.5);
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            border: 1px solid var(--glass-border);
-            backdrop-filter: blur(10px);
-        }
-        
-        .linked-content-card:hover {
-            background-color: rgba(29, 78, 216, 0.1);
-            border-color: var(--bantu-blue);
-        }
-        
-        .content-thumbnail {
-            width: 60px;
-            height: 60px;
-            border-radius: 8px;
-            background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
-            flex-shrink: 0;
-            backdrop-filter: blur(10px);
-        }
-        
-        .content-info h4 {
-            font-size: 14px;
-            margin-bottom: 4px;
-            color: var(--soft-white);
-        }
-        
-        .content-info p {
-            font-size: 12px;
-            color: var(--slate-grey);
-        }
-        
-        /* Pulse Actions - Glassmorphism */
+        /* Pulse Actions */
         .pulse-actions {
             display: flex;
             padding: 12px 20px;
@@ -859,12 +856,18 @@
             border-radius: 8px;
             transition: all 0.3s ease;
             backdrop-filter: blur(10px);
+            outline: none;
         }
         
-        .action-button:hover {
+        .action-button:hover,
+        .action-button:focus {
             color: var(--soft-white);
             background-color: var(--hover-overlay);
             border-color: var(--bantu-blue);
+        }
+        
+        .action-button:focus-visible {
+            box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.3);
         }
         
         .action-button.liked {
@@ -887,7 +890,7 @@
             backdrop-filter: blur(10px);
         }
         
-        /* Floating Create Button - Glassmorphism */
+        /* Floating Create Button */
         .floating-create-btn {
             position: fixed;
             bottom: 80px;
@@ -907,11 +910,17 @@
             transition: all 0.3s ease;
             z-index: 1000;
             backdrop-filter: blur(10px);
+            outline: none;
         }
         
-        .floating-create-btn:hover {
+        .floating-create-btn:hover,
+        .floating-create-btn:focus {
             transform: scale(1.1) rotate(90deg);
             box-shadow: 0 0 40px rgba(29, 78, 216, 0.5);
+        }
+        
+        .floating-create-btn:focus-visible {
+            box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.5);
         }
         
         /* Tab Content */
@@ -923,7 +932,7 @@
             display: block;
         }
         
-        /* Create Pulse Modal - Glassmorphism */
+        /* Create Pulse Modal */
         .modal-overlay {
             position: fixed;
             top: 0;
@@ -1237,7 +1246,7 @@
             cursor: not-allowed;
         }
         
-        /* Toast Notifications - Glassmorphism */
+        /* Toast Notifications */
         .toast-container {
             position: fixed;
             top: 20px;
@@ -1277,7 +1286,7 @@
             }
         }
         
-        /* Bottom Navigation - Glassmorphism */
+        /* Bottom Navigation */
         .bottom-nav {
             position: fixed;
             bottom: 0;
@@ -1319,19 +1328,6 @@
             font-size: 20px;
         }
         
-        /* Edit Pulse Modal - Glassmorphism */
-        .edit-modal {
-            background: var(--glass-bg);
-            border-radius: 24px;
-            max-width: 500px;
-            width: 90%;
-            max-height: 90vh;
-            overflow-y: auto;
-            border: 1px solid var(--glass-border);
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-            backdrop-filter: blur(20px);
-        }
-        
         /* Infinite Scroll Loading Indicator */
         .loading-more {
             text-align: center;
@@ -1348,6 +1344,32 @@
             width: 30px;
             height: 30px;
             margin: 0 auto 10px;
+        }
+        
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--slate-grey);
+        }
+        
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+        
+        /* Error State */
+        .error-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--slate-grey);
+        }
+        
+        .error-state-icon {
+            font-size: 48px;
+            margin-bottom: 20px;
+            color: var(--error-color);
         }
         
         /* Responsive */
@@ -1384,7 +1406,6 @@
                 top: 20px;
             }
             
-            /* Mobile video player adjustments */
             .media-container.has-media {
                 margin-left: -12px;
                 margin-right: -12px;
@@ -1432,18 +1453,17 @@
         <header class="header">
             <div class="logo-container">
                 <div class="logo-icon">
-                    <img src="assets/icon/pulse.png" alt="Pulse">
+                    <img src="assets/icon/pulse.png" alt="Pulse Logo">
                 </div>
                 <div class="logo-text">BANTU CONNECT PULSE</div>
             </div>
             
             <div class="user-section">
-                <!-- UPDATED: Notification button with gold dot indicator (exactly like profile.html) -->
-                <button class="notification-btn" id="notificationBtn" onclick="window.location.href='notifications.html'">
+                <button class="notification-btn" id="notificationBtn" onclick="window.location.href='notifications.html'" aria-label="Notifications">
                     <i class="far fa-bell"></i>
                 </button>
-                <div class="user-avatar" id="user-avatar">
-                    <img id="user-avatar-img">
+                <div class="user-avatar" id="user-avatar" role="button" tabindex="0" aria-label="User profile">
+                    <img id="user-avatar-img" alt="User avatar">
                     <span id="avatar-initials">AB</span>
                 </div>
             </div>
@@ -1451,15 +1471,15 @@
         
         <!-- Tabs Navigation -->
         <div class="tabs-container">
-            <button class="tab active" data-tab="pulse">Pulse</button>
-            <button class="tab" data-tab="trending">Trending</button>
-            <button class="tab" data-tab="connectors">Connectors</button>
+            <button class="tab active" data-tab="pulse" aria-label="Pulse feed">Pulse</button>
+            <button class="tab" data-tab="trending" aria-label="Trending content">Trending</button>
+            <button class="tab" data-tab="connectors" aria-label="Connectors feed">Connectors</button>
         </div>
         
         <!-- Create Pulse Prompt -->
-        <div class="create-pulse-prompt" id="createPrompt">
+        <div class="create-pulse-prompt" id="createPrompt" role="button" tabindex="0" aria-label="Create new pulse">
             <div class="prompt-avatar" id="prompt-avatar">
-                <img id="prompt-avatar-img">
+                <img id="prompt-avatar-img" alt="Your avatar">
                 <span>AB</span>
             </div>
             <div class="prompt-text">What's moving the culture?</div>
@@ -1479,35 +1499,41 @@
         
         <!-- Trending Tab -->
         <div class="tab-content" id="trending-feed">
-            <div style="padding: 40px 20px; text-align: center; color: var(--slate-grey);">
-                <h3 style="color: var(--soft-white); margin-bottom: 10px;">Trending Pulses</h3>
-                <p>Discover what's moving the culture across Africa and the diaspora. Trending content appears here based on engagement and velocity.</p>
+            <div class="empty-state">
+                <div class="empty-state-icon">
+                    <i class="fas fa-chart-line"></i>
+                </div>
+                <h3>Trending Pulses</h3>
+                <p>Discover what's moving the culture across Africa and the diaspora.</p>
             </div>
         </div>
         
         <!-- Connectors Tab -->
         <div class="tab-content" id="connectors-feed">
-            <div style="padding: 40px 20px; text-align: center; color: var(--slate-grey);">
-                <h3 style="color: var(--soft-white); margin-bottom: 10px;">Connectors Feed</h3>
-                <p>Trusted voices you're connected to. Build meaningful creator relationships and discover collaborative opportunities.</p>
+            <div class="empty-state">
+                <div class="empty-state-icon">
+                    <i class="fas fa-users"></i>
+                </div>
+                <h3>Connectors Feed</h3>
+                <p>Trusted voices you're connected to. Build meaningful creator relationships.</p>
             </div>
         </div>
         
         <!-- Bottom Navigation -->
         <div class="bottom-nav">
-            <button class="nav-item active" onclick="window.location.href='pulse-feed.html'">
+            <button class="nav-item active" onclick="window.location.href='pulse-feed.html'" aria-label="Home">
                 <i class="fas fa-home nav-icon"></i>
                 <span>Home</span>
             </button>
-            <button class="nav-item" onclick="window.location.href='search.html'">
+            <button class="nav-item" onclick="window.location.href='search.html'" aria-label="Search">
                 <i class="fas fa-search nav-icon"></i>
                 <span>Search</span>
             </button>
-            <button class="nav-item" onclick="window.location.href='profile.html'">
+            <button class="nav-item" onclick="window.location.href='profile.html'" aria-label="Profile">
                 <i class="fas fa-user nav-icon"></i>
                 <span>Profile</span>
             </button>
-            <button class="nav-item" onclick="window.location.href='saved.html'">
+            <button class="nav-item" onclick="window.location.href='saved.html'" aria-label="Saved">
                 <i class="fas fa-bookmark nav-icon"></i>
                 <span>Saved</span>
             </button>
@@ -1515,19 +1541,19 @@
     </div>
     
     <!-- Floating Create Button -->
-    <button class="floating-create-btn" id="createPulseBtn">
+    <button class="floating-create-btn" id="createPulseBtn" aria-label="Create pulse">
         <i class="fas fa-plus"></i>
     </button>
 
     <!-- Toast Container -->
-    <div id="toast-container" class="toast-container"></div>
+    <div id="toast-container" class="toast-container" aria-live="polite"></div>
 
     <!-- Create Pulse Modal -->
     <div id="createModal" class="modal-overlay">
         <div class="create-modal">
             <div class="modal-header">
                 <h3 class="modal-title">Drop a Pulse</h3>
-                <button class="close-modal" id="closeModal">
+                <button class="close-modal" id="closeModal" aria-label="Close modal">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
@@ -1535,7 +1561,7 @@
                 <form class="create-form" id="createForm">
                     <div class="form-row">
                         <div class="pulse-avatar" id="modal-avatar">
-                            <img id="modal-avatar-img">
+                            <img id="modal-avatar-img" alt="Your avatar">
                             <span>AB</span>
                         </div>
                         <textarea 
@@ -1543,26 +1569,26 @@
                             id="caption" 
                             placeholder="What's moving the culture?"
                             maxlength="500"
+                            aria-label="Pulse caption"
                         ></textarea>
                     </div>
                     
-                    <div class="media-upload-section" id="mediaUpload">
+                    <div class="media-upload-section" id="mediaUpload" role="button" tabindex="0">
                         <div class="upload-icon">
                             <i class="fas fa-cloud-upload-alt"></i>
                         </div>
                         <div class="upload-text">Add photo or video</div>
                         <div class="upload-hint">Supports vertical video (9:16)</div>
-                        <input type="file" id="mediaInput" accept="image/*,video/*" style="display: none;">
+                        <input type="file" id="mediaInput" accept="image/avif,image/webp,image/jpeg,image/png,image/gif,video/mp4,video/quicktime" style="display: none;">
                     </div>
                     
                     <div id="mediaPreview" class="media-preview" style="display: none;">
-                        <!-- Media preview will be inserted here -->
-                        <button type="button" class="remove-media" id="removeMedia">
+                        <button type="button" class="remove-media" id="removeMedia" aria-label="Remove media">
                             <i class="fas fa-times"></i>
                         </button>
                     </div>
                     
-                    <div class="series-toggle" id="seriesToggle">
+                    <div class="series-toggle" id="seriesToggle" role="button" tabindex="0">
                         <div class="toggle-label">
                             <div>Start a Pulse Series</div>
                             <div class="toggle-description">Tell a story over time</div>
@@ -1576,6 +1602,7 @@
                             class="series-input" 
                             id="seriesTitle" 
                             placeholder="Give your series a name (optional)"
+                            aria-label="Series title"
                         >
                         <div class="toggle-description">
                             Series help your audience follow your story.
@@ -1595,7 +1622,7 @@
         <div class="create-modal">
             <div class="modal-header">
                 <h3 class="modal-title">Edit Pulse</h3>
-                <button class="close-modal" id="closeEditModal">
+                <button class="close-modal" id="closeEditModal" aria-label="Close modal">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
@@ -1603,7 +1630,7 @@
                 <form class="create-form" id="editForm">
                     <div class="form-row">
                         <div class="pulse-avatar" id="edit-modal-avatar">
-                            <img id="edit-modal-avatar-img">
+                            <img id="edit-modal-avatar-img" alt="Your avatar">
                             <span>AB</span>
                         </div>
                         <textarea 
@@ -1611,21 +1638,21 @@
                             id="editCaption" 
                             placeholder="What's moving the culture?"
                             maxlength="500"
+                            aria-label="Edit pulse caption"
                         ></textarea>
                     </div>
                     
-                    <div class="media-upload-section" id="editMediaUpload">
+                    <div class="media-upload-section" id="editMediaUpload" role="button" tabindex="0">
                         <div class="upload-icon">
                             <i class="fas fa-cloud-upload-alt"></i>
                         </div>
                         <div class="upload-text">Change photo or video</div>
                         <div class="upload-hint">Supports vertical video (9:16)</div>
-                        <input type="file" id="editMediaInput" accept="image/*,video/*" style="display: none;">
+                        <input type="file" id="editMediaInput" accept="image/avif,image/webp,image/jpeg,image/png,image/gif,video/mp4,video/quicktime" style="display: none;">
                     </div>
                     
                     <div id="editMediaPreview" class="media-preview" style="display: none;">
-                        <!-- Media preview will be inserted here -->
-                        <button type="button" class="remove-media" id="editRemoveMedia">
+                        <button type="button" class="remove-media" id="editRemoveMedia" aria-label="Remove media">
                             <i class="fas fa-times"></i>
                         </button>
                     </div>
@@ -1637,9 +1664,10 @@
                             class="series-input" 
                             id="editSeriesTitle" 
                             placeholder="Edit series name"
+                            aria-label="Edit series title"
                         >
                         <div class="toggle-description">
-                            Edit the title of your pulse series. This will update the name for all pulses in this series.
+                            Edit the title of your pulse series.
                         </div>
                         <div style="margin-top: 10px; display: flex; gap: 10px;">
                             <button type="button" class="modal-btn modal-btn-cancel" id="removeFromSeries" style="font-size: 12px; padding: 8px 12px;">
@@ -1666,7 +1694,6 @@
 
         let supabaseClient = null;
         let isInitialized = false;
-        let forceLoadTimeout = null;
         let currentUserId = null;
         let currentSession = null;
         let editingPulseId = null;
@@ -1674,8 +1701,8 @@
         let editingSeriesId = null;
         let editingSeriesTitle = null;
         let editingPulseData = null;
-        let userConnections = new Set(); // Store connected user IDs
-        let videoPlayers = new Map(); // Store video player instances
+        let userConnections = new Set();
+        let videoPlayers = new Map();
         
         // Infinite scroll variables
         let isFeedLoading = false;
@@ -1684,38 +1711,48 @@
         const PULSES_PER_PAGE = 10;
         let isLoadingMore = false;
         
-        // Store pulses in memory for better management
+        // Store pulses in memory
         let allPulses = [];
         let displayedPulseIds = new Set();
 
-        // FIXED: Simple and efficient scroll handling
+        // AbortController for fetch operations
+        let fetchController = null;
         let scrollThrottleTimeout = null;
         let isScrollListenerActive = true;
+        let scrollListener = null;
 
-        // Simple throttle function
-        function throttle(func, wait) {
-            let timeout = null;
-            let previous = 0;
-            
+        // Debounce function
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+
+        // Throttle function
+        function throttle(func, limit) {
+            let inThrottle;
             return function() {
-                const now = Date.now();
-                const remaining = wait - (now - previous);
-                
-                if (remaining <= 0 || remaining > wait) {
-                    if (timeout) {
-                        clearTimeout(timeout);
-                        timeout = null;
-                    }
-                    previous = now;
-                    func.apply(this, arguments);
-                } else if (!timeout) {
-                    timeout = setTimeout(() => {
-                        previous = Date.now();
-                        timeout = null;
-                        func.apply(this, arguments);
-                    }, remaining);
+                const args = arguments;
+                const context = this;
+                if (!inThrottle) {
+                    func.apply(context, args);
+                    inThrottle = true;
+                    setTimeout(() => inThrottle = false, limit);
                 }
             };
+        }
+
+        // HTML sanitization function
+        function sanitizeHTML(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
         }
 
         async function initialize() {
@@ -1730,7 +1767,6 @@
                         detectSessionInUrl: true
                     }
                 });
-                console.log('Supabase client created');
                 
                 // Check session
                 const { data: { session }, error } = await supabaseClient.auth.getSession();
@@ -1740,7 +1776,6 @@
                 }
                 
                 if (!session) {
-                    // No session, redirect to login
                     window.location.href = 'login.html';
                     return;
                 }
@@ -1749,7 +1784,7 @@
                 currentUserId = session.user.id;
                 currentSession = session;
                 
-                // Load user profile with avatar
+                // Load user profile
                 await loadUserProfile();
                 
                 // Fetch user connections
@@ -1765,68 +1800,57 @@
                 document.getElementById('loading').style.display = 'none';
                 document.getElementById('content').style.display = 'block';
                 
-                // Set initialized flag and clear timeout
                 isInitialized = true;
-                if (forceLoadTimeout) {
-                    clearTimeout(forceLoadTimeout);
-                }
                 
-                // Initialize the feed functionality
+                // Initialize the feed
                 initializeFeed(session);
                 
             } catch (error) {
                 console.error('Error:', error);
                 document.getElementById('loading-text').textContent = 'Error loading. Please refresh.';
                 
-                // Still show content after delay
+                // Fallback to show content
                 setTimeout(() => {
                     isInitialized = true;
-                    if (forceLoadTimeout) {
-                        clearTimeout(forceLoadTimeout);
-                    }
-                    
                     document.getElementById('loading').style.display = 'none';
                     document.getElementById('content').style.display = 'block';
-                    
-                    // Set up basic event listeners
                     setupBasicEventListeners();
                 }, 2000);
             }
         }
         
-        // FIXED: Setup infinite scroll with proper throttling
+        // Setup infinite scroll with AbortController support
         function setupInfiniteScroll() {
-            // Use a throttled scroll handler
-            const throttledScrollCheck = throttle(() => {
+            // Remove existing listener if any
+            if (scrollListener) {
+                window.removeEventListener('scroll', scrollListener);
+            }
+            
+            // Create throttled scroll handler
+            scrollListener = throttle(() => {
                 if (!isLoadingMore && hasMorePulses && isScrollListenerActive) {
                     checkScrollPosition();
                 }
             }, 200);
             
-            window.addEventListener('scroll', throttledScrollCheck, { passive: true });
-            
-            // Clean up on page unload
-            window.addEventListener('beforeunload', () => {
-                window.removeEventListener('scroll', throttledScrollCheck);
-            });
+            window.addEventListener('scroll', scrollListener, { passive: true });
         }
         
-        // FIXED: Check if we need to load more pulses
+        // Check scroll position
         function checkScrollPosition() {
-            // Don't check if already loading or no more pulses
             if (isLoadingMore || !hasMorePulses || !isScrollListenerActive) return;
             
             const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
             const scrollHeight = document.documentElement.scrollHeight;
             const clientHeight = document.documentElement.clientHeight;
             
-            // Load more when 300px from bottom
-            if (scrollHeight - (scrollTop + clientHeight) < 300) {
+            // Load more when 500px from bottom
+            if (scrollHeight - (scrollTop + clientHeight) < 500) {
                 loadMorePulses();
             }
         }
         
-        // FIXED: Load more pulses with better performance
+        // Load more pulses with AbortController
         async function loadMorePulses() {
             if (isLoadingMore || !hasMorePulses) return;
             
@@ -1839,8 +1863,16 @@
                     loadingIndicator.classList.add('active');
                 }
                 
+                // Cancel previous fetch if exists
+                if (fetchController) {
+                    fetchController.abort();
+                }
+                
+                // Create new AbortController
+                fetchController = new AbortController();
+                
                 // Fetch next batch of pulses
-                const newPulses = await fetchPulses(PULSES_PER_PAGE, currentOffset);
+                const newPulses = await fetchPulses(PULSES_PER_PAGE, currentOffset, fetchController.signal);
                 
                 // If no more pulses, stop infinite scroll
                 if (!newPulses || newPulses.length === 0) {
@@ -1851,11 +1883,10 @@
                     return;
                 }
                 
-                // Filter out any pulses already displayed
+                // Filter out duplicates
                 const uniquePulses = newPulses.filter(pulse => !displayedPulseIds.has(pulse.id));
                 
                 if (uniquePulses.length === 0) {
-                    // No new unique pulses
                     currentOffset += PULSES_PER_PAGE;
                     hasMorePulses = false;
                     if (loadingIndicator) {
@@ -1864,13 +1895,13 @@
                     return;
                 }
                 
-                // Update offset for next load
+                // Update offset
                 currentOffset += PULSES_PER_PAGE;
                 
                 // Check which pulses user has liked
                 const likedPulses = await checkUserLikes(uniquePulses.map(p => p.id));
                 
-                // Display the new pulses
+                // Display new pulses
                 displayMorePulses(uniquePulses, likedPulses);
                 
                 // Hide loading indicator
@@ -1878,15 +1909,18 @@
                     loadingIndicator.classList.remove('active');
                 }
                 
-                // If we got fewer pulses than requested, we might be at the end
+                // Check if we're at the end
                 if (uniquePulses.length < PULSES_PER_PAGE) {
                     hasMorePulses = false;
                 }
                 
             } catch (error) {
-                console.error('Error loading more pulses:', error);
+                if (error.name === 'AbortError') {
+                    console.log('Fetch aborted');
+                } else {
+                    console.error('Error loading more pulses:', error);
+                }
                 
-                // Hide loading indicator on error
                 const loadingIndicator = document.getElementById('loading-more');
                 if (loadingIndicator) {
                     loadingIndicator.classList.remove('active');
@@ -1897,7 +1931,7 @@
             }
         }
         
-        // Display additional pulses (for infinite scroll)
+        // Display additional pulses
         function displayMorePulses(pulses, likedPulses) {
             if (!pulses || pulses.length === 0) return;
             
@@ -1905,7 +1939,6 @@
             const fragment = document.createDocumentFragment();
             
             pulses.forEach(pulse => {
-                // Skip if already displayed
                 if (displayedPulseIds.has(pulse.id)) return;
                 
                 const pulseCard = createPulseCard(pulse, likedPulses);
@@ -1916,7 +1949,7 @@
             
             pulseFeedContainer.appendChild(fragment);
             
-            // Setup lazy loading for new media
+            // Setup lazy loading
             setupLazyLoading();
         }
         
@@ -1930,15 +1963,13 @@
                     .eq('is_read', false);
                 
                 if (countError) {
-                    console.log('pulse_notifications table might not exist, using fallback');
+                    console.log('Using fallback for notifications');
                     updateNotificationIndicator(false);
                     return;
                 }
                 
                 const hasUnread = count > 0;
                 updateNotificationIndicator(hasUnread);
-                
-                console.log(`Found ${count} unread notifications`);
                 
             } catch (error) {
                 console.error('Error checking unread notifications:', error);
@@ -1974,7 +2005,7 @@
                             filter: `target_user_id=eq.${currentUserId}`
                         },
                         (payload) => {
-                            console.log('New notification received (real-time):', payload);
+                            console.log('New notification:', payload);
                             updateNotificationIndicator(true);
                             showToast('New notification!', 'success');
                         }
@@ -1994,7 +2025,7 @@
                         }
                     )
                     .subscribe((status) => {
-                        console.log('Notification subscription status:', status);
+                        console.log('Notification subscription:', status);
                     });
                     
             } catch (error) {
@@ -2058,6 +2089,7 @@
                             if (img) {
                                 img.src = avatarImgSrc;
                                 img.style.display = 'block';
+                                img.setAttribute('alt', 'User avatar');
                             }
                             if (initialsEl) initialsEl.style.display = 'none';
                         };
@@ -2093,10 +2125,12 @@
                             img.style.cssText = 'width: 100%; height: 100%; border-radius: 50%; object-fit: cover;';
                             promptAvatar.appendChild(img);
                             img.src = avatarImgSrc;
+                            img.setAttribute('alt', 'Your avatar');
                             promptInitials.style.display = 'none';
                         } else {
                             promptImg.src = avatarImgSrc;
                             promptImg.style.display = 'block';
+                            promptImg.setAttribute('alt', 'Your avatar');
                             promptInitials.style.display = 'none';
                         }
                     } else {
@@ -2109,14 +2143,6 @@
                 // Update modal avatars
                 updateAvatar('modal-avatar', 'modal-avatar-img', 'modal-avatar-initials');
                 updateAvatar('edit-modal-avatar', 'edit-modal-avatar-img', 'edit-modal-avatar-initials');
-                
-                if (avatarImgSrc) {
-                    const link = document.createElement('link');
-                    link.rel = 'preload';
-                    link.as = 'image';
-                    link.href = avatarImgSrc;
-                    document.head.appendChild(link);
-                }
                 
             } catch (error) {
                 console.log('Error loading user profile:', error);
@@ -2152,8 +2178,6 @@
                         userConnections.add(connection.connected_id);
                     });
                 }
-                
-                console.log('User connections loaded:', userConnections.size);
                 
             } catch (error) {
                 console.error('Error loading user connections:', error);
@@ -2192,7 +2216,7 @@
                     setTimeout(() => {
                         connectBtn.classList.remove('connected');
                         connectBtn.classList.remove('connecting');
-                        connectBtn.innerHTML = '<i class="fas fa-user-plus"></i>';
+                        connectBtn.innerHTML = '<i class="fas fa-user-plus" aria-hidden="true"></i>';
                         connectBtn.disabled = false;
                     }, 600);
                     
@@ -2220,7 +2244,7 @@
                     setTimeout(() => {
                         connectBtn.classList.add('connected');
                         connectBtn.classList.remove('connecting');
-                        connectBtn.innerHTML = '<i class="fas fa-user-check"></i>';
+                        connectBtn.innerHTML = '<i class="fas fa-user-check" aria-hidden="true"></i>';
                         connectBtn.disabled = false;
                     }, 600);
                     
@@ -2272,9 +2296,10 @@
         function showToast(message, type = 'error') {
             const toast = document.createElement('div');
             toast.className = `toast ${type}`;
+            toast.setAttribute('role', 'alert');
             toast.innerHTML = `
-                <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i>
-                <span>${message}</span>
+                <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}" aria-hidden="true"></i>
+                <span>${sanitizeHTML(message)}</span>
             `;
             
             const container = document.getElementById('toast-container');
@@ -2337,7 +2362,7 @@
             const commentsBtn = pulseCard.querySelector('.comment-btn');
             const commentsCount = pulseCard.querySelector('.comments-count');
             
-            commentsBtn.innerHTML = `<i class="fas fa-comment"></i> ${realCount}`;
+            commentsBtn.innerHTML = `<i class="fas fa-comment" aria-hidden="true"></i> ${realCount}`;
             
             if (commentsCount) {
                 commentsCount.textContent = `${realCount} ${realCount === 1 ? 'comment' : 'comments'}`;
@@ -2353,7 +2378,7 @@
             
             const currentText = sharesBtn.textContent.trim();
             const currentCount = parseInt(currentText.match(/\d+/)?.[0]) || 0;
-            sharesBtn.innerHTML = `<i class="fas fa-share"></i> ${currentCount + increment}`;
+            sharesBtn.innerHTML = `<i class="fas fa-share" aria-hidden="true"></i> ${currentCount + increment}`;
             
             if (sharesStats) {
                 const statsCurrent = parseInt(sharesStats.textContent.match(/\d+/)?.[0]) || 0;
@@ -2361,7 +2386,7 @@
             }
         }
         
-        // FIXED: Handle like with immediate count update
+        // Handle like with immediate count update
         async function handleLike(pulseId, e) {
             if (e) e.stopPropagation();
             
@@ -2443,33 +2468,30 @@
                     }
                 }
                 
-                // Update UI immediately with new count
+                // Update UI immediately
                 updateLikeUI(pulseId, isLiked, newLikesCount);
                 
             } catch (error) {
-                console.error('❌ Like error:', error);
+                console.error('Like error:', error);
                 showToast('Failed to like pulse', 'error');
             }
         }
         
-        // FIXED: Update like UI with immediate count
+        // Update like UI
         function updateLikeUI(pulseId, isLiked, exactLikesCount) {
             const pulseCard = document.querySelector(`[data-pulse-id="${pulseId}"]`);
             if (!pulseCard) return;
             
             const likeBtn = pulseCard.querySelector('.like-btn');
-            const likeIcon = pulseCard.querySelector('.fa-heart');
             const likesCount = pulseCard.querySelector('.likes-count');
             
             if (likeBtn) {
                 if (isLiked) {
                     likeBtn.classList.add('liked');
-                    if (likeIcon) likeIcon.style.color = 'var(--warm-gold)';
                 } else {
                     likeBtn.classList.remove('liked');
-                    if (likeIcon) likeIcon.style.color = '';
                 }
-                likeBtn.innerHTML = `<i class="fas fa-heart" ${isLiked ? 'style="color: var(--warm-gold);"' : ''}></i> ${exactLikesCount}`;
+                likeBtn.innerHTML = `<i class="fas fa-heart" aria-hidden="true"></i> ${exactLikesCount}`;
             }
             
             if (likesCount) {
@@ -2494,7 +2516,7 @@
                     <div class="create-modal" style="max-width: 500px;">
                         <div class="modal-header">
                             <h3 class="modal-title">Add Comment</h3>
-                            <button class="close-modal" id="closeCommentModal">
+                            <button class="close-modal" id="closeCommentModal" aria-label="Close modal">
                                 <i class="fas fa-times"></i>
                             </button>
                         </div>
@@ -2506,6 +2528,7 @@
                                     placeholder="Write your comment..."
                                     maxlength="500"
                                     rows="3"
+                                    aria-label="Comment text"
                                 ></textarea>
                                 <div class="modal-footer" style="border-top: none; padding-top: 0;">
                                     <button type="submit" class="modal-btn modal-btn-post">Post Comment</button>
@@ -2542,7 +2565,7 @@
                             .insert({
                                 pulse_id: pulseId,
                                 user_id: session.user.id,
-                                comment_text: commentText,
+                                comment_text: sanitizeHTML(commentText),
                                 likes_count: 0
                             });
                         
@@ -2554,13 +2577,13 @@
                         updateCommentCount(pulseId, 1);
                         
                     } catch (error) {
-                        console.error('❌ Comment error:', error);
+                        console.error('Comment error:', error);
                         showToast('Failed to post comment', 'error');
                     }
                 });
                 
             } catch (error) {
-                console.error('❌ Comment modal error:', error);
+                console.error('Comment modal error:', error);
                 showToast('Failed to open comment', 'error');
             }
         }
@@ -2582,7 +2605,7 @@
                     <div class="create-modal" style="max-width: 500px;">
                         <div class="modal-header">
                             <h3 class="modal-title">Share Pulse</h3>
-                            <button class="close-modal" id="closeShareModal">
+                            <button class="close-modal" id="closeShareModal" aria-label="Close modal">
                                 <i class="fas fa-times"></i>
                             </button>
                         </div>
@@ -2591,10 +2614,10 @@
                                 <h4 style="margin-bottom: 20px; color: var(--soft-white);">Share Options</h4>
                                 <div style="display: flex; gap: 12px; margin-bottom: 24px; justify-content: center;">
                                     <button class="modal-btn modal-btn-post" id="shareInternal" style="flex: 1;">
-                                        <i class="fas fa-users"></i> Internal
+                                        <i class="fas fa-users" aria-hidden="true"></i> Internal
                                     </button>
                                     <button class="modal-btn modal-btn-post" id="shareExternal" style="flex: 1;">
-                                        <i class="fas fa-external-link-alt"></i> External
+                                        <i class="fas fa-external-link-alt" aria-hidden="true"></i> External
                                     </button>
                                 </div>
                                 <div style="background: rgba(10, 14, 18, 0.6); padding: 16px; border-radius: 12px; margin-top: 20px;">
@@ -2607,8 +2630,8 @@
                                             value="${window.location.origin}/pulse-content-detail.html?id=${pulseId}"
                                             style="flex: 1; padding: 12px; background: var(--deep-black); border: 1px solid var(--card-border); border-radius: 8px; color: var(--soft-white);"
                                         >
-                                        <button class="modal-btn modal-btn-post" id="copyLink">
-                                            <i class="fas fa-copy"></i>
+                                        <button class="modal-btn modal-btn-post" id="copyLink" aria-label="Copy link">
+                                            <i class="fas fa-copy" aria-hidden="true"></i>
                                         </button>
                                     </div>
                                 </div>
@@ -2652,7 +2675,7 @@
                         updateShareCount(pulseId, 1);
                         
                     } catch (error) {
-                        console.error('❌ Share error:', error);
+                        console.error('Share error:', error);
                         showToast('Failed to share pulse', 'error');
                     }
                 });
@@ -2684,7 +2707,7 @@
                         }
                         
                     } catch (error) {
-                        console.error('❌ Share error:', error);
+                        console.error('Share error:', error);
                         showToast('Failed to share pulse', 'error');
                     }
                 });
@@ -2696,7 +2719,7 @@
                 });
                 
             } catch (error) {
-                console.error('❌ Share modal error:', error);
+                console.error('Share modal error:', error);
                 showToast('Failed to open share options', 'error');
             }
         }
@@ -2766,7 +2789,7 @@
                 
             } catch (error) {
                 console.error('Error deleting pulse:', error);
-                showToast('Failed to delete pulse. Please check RLS policies in Supabase.', 'error');
+                showToast('Failed to delete pulse.', 'error');
             }
         }
         
@@ -2801,6 +2824,7 @@
                     } else {
                         const img = document.createElement('img');
                         img.src = pulse.media_url;
+                        img.alt = 'Pulse media';
                         img.style.width = '100%';
                         img.style.borderRadius = '12px';
                         editMediaPreview.appendChild(img);
@@ -2997,15 +3021,14 @@
                 
                 if (error) throw error;
                 
-                console.log('✅ Pulse updated:', editingPulseId);
                 showToast('Pulse updated successfully!', 'success');
                 
                 closeEditModalFunc();
                 setTimeout(() => loadInitialPulses(), 500);
                 
             } catch (error) {
-                console.error('❌ Update pulse error:', error);
-                showToast('Failed to update pulse. Please try again.', 'error');
+                console.error('Update pulse error:', error);
+                showToast('Failed to update pulse.', 'error');
             }
         }
         
@@ -3036,7 +3059,7 @@
                 };
                 
             } catch (error) {
-                console.error('❌ Upload error:', error);
+                console.error('Upload error:', error);
                 throw error;
             }
         }
@@ -3097,19 +3120,19 @@
                 e.stopPropagation();
                 if (videoElement.paused) {
                     videoElement.play();
-                    playPauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
+                    playPauseBtn.innerHTML = '<i class="fas fa-pause" aria-hidden="true"></i>';
                 } else {
                     videoElement.pause();
-                    playPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
+                    playPauseBtn.innerHTML = '<i class="fas fa-play" aria-hidden="true"></i>';
                 }
             });
             
             videoElement.addEventListener('play', () => {
-                playPauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
+                playPauseBtn.innerHTML = '<i class="fas fa-pause" aria-hidden="true"></i>';
             });
             
             videoElement.addEventListener('pause', () => {
-                playPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
+                playPauseBtn.innerHTML = '<i class="fas fa-play" aria-hidden="true"></i>';
             });
             
             videoElement.addEventListener('timeupdate', updateTimeDisplay);
@@ -3122,10 +3145,10 @@
                 if (e.target === mediaContainer || e.target.classList.contains('video-controls-overlay')) {
                     if (videoElement.paused) {
                         videoElement.play();
-                        playPauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
+                        playPauseBtn.innerHTML = '<i class="fas fa-pause" aria-hidden="true"></i>';
                     } else {
                         videoElement.pause();
-                        playPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
+                        playPauseBtn.innerHTML = '<i class="fas fa-play" aria-hidden="true"></i>';
                     }
                 }
             });
@@ -3142,8 +3165,8 @@
                 e.stopPropagation();
                 videoElement.muted = !videoElement.muted;
                 muteBtn.innerHTML = videoElement.muted ? 
-                    '<i class="fas fa-volume-mute"></i>' : 
-                    '<i class="fas fa-volume-up"></i>';
+                    '<i class="fas fa-volume-mute" aria-hidden="true"></i>' : 
+                    '<i class="fas fa-volume-up" aria-hidden="true"></i>';
             });
             
             volumeSlider.addEventListener('click', (e) => {
@@ -3155,26 +3178,8 @@
                 videoElement.muted = volume === 0;
                 volumeSliderFilled.style.width = `${volume * 100}%`;
                 muteBtn.innerHTML = volume === 0 ? 
-                    '<i class="fas fa-volume-mute"></i>' : 
-                    '<i class="fas fa-volume-up"></i>';
-            });
-            
-            mediaContainer.addEventListener('mouseenter', () => {
-                const controls = controlsContainer.querySelector('.video-controls-overlay');
-                if (controls) {
-                    controls.style.opacity = '1';
-                }
-            });
-            
-            mediaContainer.addEventListener('mouseleave', () => {
-                const controls = controlsContainer.querySelector('.video-controls-overlay');
-                if (controls && !videoElement.paused) {
-                    setTimeout(() => {
-                        if (!mediaContainer.matches(':hover')) {
-                            controls.style.opacity = '0';
-                        }
-                    }, 1000);
-                }
+                    '<i class="fas fa-volume-mute" aria-hidden="true"></i>' : 
+                    '<i class="fas fa-volume-up" aria-hidden="true"></i>';
             });
             
             videoPlayers.set(videoId, {
@@ -3198,156 +3203,167 @@
             });
         }
         
-        // FIXED: Reliable pulse fetching function
-async function fetchPulses(limit = 10, offset = 0) {
-    if (isFeedLoading) {
-        console.log('Already loading, skipping...');
-        return [];
-    }
-    
-    try {
-        isFeedLoading = true;
-        console.log(`Fetching pulses: limit=${limit}, offset=${offset}`);
-        
-        // 1. Fetch pulses with a timeout
-        const timeoutPromise = new Promise((_, reject) => {
-            setTimeout(() => reject(new Error('Request timeout')), 8000);
-        });
-        
-        const fetchPromise = supabaseClient
-            .from('pulses')
-            .select('*')
-            .is('deleted_at', null)
-            .order('created_at', { ascending: false })
-            .range(offset, offset + limit - 1);
-        
-        const { data: pulsesData, error: pulsesError } = await Promise.race([
-            fetchPromise,
-            timeoutPromise
-        ]);
-        
-        if (pulsesError) {
-            console.error('❌ Pulse fetch error:', pulsesError);
+        // Optimized pulse fetching with AbortController
+        async function fetchPulses(limit = 10, offset = 0, signal = null) {
+            if (isFeedLoading) {
+                return [];
+            }
             
-            // Handle auth errors
-            if (pulsesError.message.includes('JWT') || pulsesError.code === 'PGRST301') {
-                console.log('Auth error detected, refreshing session...');
-                const { data: { session }, error: refreshError } = await supabaseClient.auth.refreshSession();
+            try {
+                isFeedLoading = true;
                 
-                if (refreshError) {
-                    console.error('Auth refresh failed:', refreshError);
-                    showToast('Session expired. Please login again.', 'error');
-                    setTimeout(() => {
-                        window.location.href = 'login.html';
-                    }, 2000);
-                    return [];
-                }
+                // Create timeout with AbortController
+                const timeoutController = new AbortController();
+                const timeoutId = setTimeout(() => {
+                    timeoutController.abort();
+                }, 10000);
                 
-                // Retry once with new session
-                console.log('Retrying with refreshed session...');
-                const retryResult = await supabaseClient
+                // Combine signals
+                const combinedSignal = signal || timeoutController.signal;
+                
+                // Fetch pulses
+                const pulsesPromise = supabaseClient
                     .from('pulses')
                     .select('*')
                     .is('deleted_at', null)
                     .order('created_at', { ascending: false })
                     .range(offset, offset + limit - 1);
                 
-                if (retryResult.error) {
-                    console.error('Retry failed:', retryResult.error);
+                const { data: pulsesData, error: pulsesError } = await pulsesPromise;
+                
+                clearTimeout(timeoutId);
+                
+                if (pulsesError) {
+                    if (pulsesError.message.includes('JWT') || pulsesError.code === 'PGRST301') {
+                        console.log('Auth error, refreshing session...');
+                        const { data: { session }, error: refreshError } = await supabaseClient.auth.refreshSession();
+                        
+                        if (refreshError) {
+                            console.error('Auth refresh failed:', refreshError);
+                            showToast('Session expired. Please login again.', 'error');
+                            setTimeout(() => {
+                                window.location.href = 'login.html';
+                            }, 2000);
+                            return [];
+                        }
+                        
+                        // Retry with new session
+                        const retryResult = await supabaseClient
+                            .from('pulses')
+                            .select('*')
+                            .is('deleted_at', null)
+                            .order('created_at', { ascending: false })
+                            .range(offset, offset + limit - 1);
+                        
+                        if (retryResult.error) {
+                            console.error('Retry failed:', retryResult.error);
+                            return [];
+                        }
+                        
+                        pulsesData = retryResult.data;
+                    } else {
+                        throw pulsesError;
+                    }
+                }
+                
+                if (!pulsesData || pulsesData.length === 0) {
                     return [];
                 }
                 
-                pulsesData = retryResult.data;
-            } else {
-                throw pulsesError;
+                // Batch operations
+                const userIds = [...new Set(pulsesData.map(p => p.user_id))];
+                const pulseIds = pulsesData.map(p => p.id);
+                
+                // Fetch user profiles
+                let userProfilesMap = {};
+                if (userIds.length > 0) {
+                    const { data: profilesData, error: profilesError } = await supabaseClient
+                        .from('user_profiles')
+                        .select('id, email, full_name, username, role, avatar_url')
+                        .in('id', userIds);
+                    
+                    if (!profilesError && profilesData) {
+                        profilesData.forEach(profile => {
+                            userProfilesMap[profile.id] = profile;
+                        });
+                    }
+                }
+                
+                // Fetch likes count
+                const { data: likesData, error: likesError } = await supabaseClient
+                    .from('pulse_likes')
+                    .select('pulse_id')
+                    .in('pulse_id', pulseIds);
+                
+                const likesCountMap = {};
+                if (!likesError && likesData) {
+                    likesData.forEach(like => {
+                        likesCountMap[like.pulse_id] = (likesCountMap[like.pulse_id] || 0) + 1;
+                    });
+                }
+                
+                // Fetch comments count
+                const { data: commentsData, error: commentsError } = await supabaseClient
+                    .from('pulse_comments')
+                    .select('pulse_id')
+                    .in('pulse_id', pulseIds)
+                    .eq('is_removed', false);
+                
+                const commentsCountMap = {};
+                if (!commentsError && commentsData) {
+                    commentsData.forEach(comment => {
+                        commentsCountMap[comment.pulse_id] = (commentsCountMap[comment.pulse_id] || 0) + 1;
+                    });
+                }
+                
+                // Enrich pulses
+                const enrichedPulses = pulsesData.map(pulse => ({
+                    ...pulse,
+                    user_profiles: userProfilesMap[pulse.user_id] || {
+                        id: pulse.user_id,
+                        email: 'user@example.com',
+                        full_name: 'User',
+                        username: 'user',
+                        role: 'creator',
+                        avatar_url: null
+                    },
+                    actual_likes_count: likesCountMap[pulse.id] || 0,
+                    actual_comments_count: commentsCountMap[pulse.id] || 0
+                }));
+                
+                return enrichedPulses;
+                
+            } catch (error) {
+                if (error.name === 'AbortError') {
+                    console.log('Fetch aborted');
+                } else {
+                    console.error('Error in fetchPulses:', error);
+                }
+                return [];
+            } finally {
+                isFeedLoading = false;
             }
         }
         
-        if (!pulsesData || pulsesData.length === 0) {
-            console.log('No pulses found');
-            return [];
-        }
-        
-        // 2. Get unique user IDs
-        const userIds = [...new Set(pulsesData.map(p => p.user_id))];
-        
-        // 3. Batch fetch user profiles
-        let userProfilesMap = {};
-        if (userIds.length > 0) {
-            const { data: profilesData, error: profilesError } = await supabaseClient
-                .from('user_profiles')
-                .select('id, email, full_name, username, role, avatar_url')
-                .in('id', userIds);
-            
-            if (!profilesError && profilesData) {
-                profilesData.forEach(profile => {
-                    userProfilesMap[profile.id] = profile;
-                });
-            }
-        }
-        
-        // 4. Get pulse IDs for batch operations
-        const pulseIds = pulsesData.map(p => p.id);
-        
-        // 5. Batch fetch likes count (single query)
-        const { data: likesData, error: likesError } = await supabaseClient
-            .from('pulse_likes')
-            .select('pulse_id')
-            .in('pulse_id', pulseIds);
-        
-        const likesCountMap = {};
-        if (!likesError && likesData) {
-            likesData.forEach(like => {
-                likesCountMap[like.pulse_id] = (likesCountMap[like.pulse_id] || 0) + 1;
-            });
-        }
-        
-        // 6. Batch fetch comments count (single query)
-        const { data: commentsData, error: commentsError } = await supabaseClient
-            .from('pulse_comments')
-            .select('pulse_id')
-            .in('pulse_id', pulseIds)
-            .eq('is_removed', false);
-        
-        const commentsCountMap = {};
-        if (!commentsError && commentsData) {
-            commentsData.forEach(comment => {
-                commentsCountMap[comment.pulse_id] = (commentsCountMap[comment.pulse_id] || 0) + 1;
-            });
-        }
-        
-        // 7. Enrich pulses with all data
-        const enrichedPulses = pulsesData.map(pulse => ({
-            ...pulse,
-            user_profiles: userProfilesMap[pulse.user_id] || {
-                id: pulse.user_id,
-                email: 'user@example.com',
-                full_name: 'User',
-                username: 'user',
-                role: 'creator',
-                avatar_url: null
-            },
-            actual_likes_count: likesCountMap[pulse.id] || 0,
-            actual_comments_count: commentsCountMap[pulse.id] || 0
-        }));
-        
-        console.log(`✅ Successfully fetched ${enrichedPulses.length} pulses`);
-        return enrichedPulses;
-        
-    } catch (error) {
-        console.error('❌ Fatal error in fetchPulses:', error);
-        return [];
-    } finally {
-        isFeedLoading = false;
-    }
-}
-        
-        // FIXED: displayPulses function - NO loading messages, just show pulses
+        // Display pulses
         function displayPulses(pulses, likedPulses) {
             const pulseFeedContainer = document.getElementById('pulse-feed-container');
             
             if (!pulses || pulses.length === 0) {
-                // Just return if no pulses - don't show any message
+                // Show empty state
+                pulseFeedContainer.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">
+                            <i class="far fa-newspaper"></i>
+                        </div>
+                        <h3>No pulses yet</h3>
+                        <p>Be the first to drop a pulse and start the conversation!</p>
+                        <button class="modal-btn modal-btn-post" onclick="document.getElementById('createPulseBtn').click()" style="margin-top: 20px;">
+                            Create First Pulse
+                        </button>
+                    </div>
+                `;
+                hasMorePulses = false;
                 return;
             }
             
@@ -3361,7 +3377,6 @@ async function fetchPulses(limit = 10, offset = 0) {
             const fragment = document.createDocumentFragment();
             
             pulses.forEach(pulse => {
-                // Skip if already displayed
                 if (displayedPulseIds.has(pulse.id)) return;
                 
                 const pulseCard = createPulseCard(pulse, likedPulses);
@@ -3372,11 +3387,9 @@ async function fetchPulses(limit = 10, offset = 0) {
             
             pulseFeedContainer.appendChild(fragment);
             
-            // Update offset for infinite scroll
             currentOffset = displayedPulseIds.size;
             hasMorePulses = pulses.length >= PULSES_PER_PAGE;
             
-            // Setup lazy loading
             setupLazyLoading();
         }
         
@@ -3427,9 +3440,10 @@ async function fetchPulses(limit = 10, offset = 0) {
             const isLiked = likedPulses.has(pulse.id);
             const isConnected = userConnections.has(pulse.user_id);
             
-            const card = document.createElement('div');
+            const card = document.createElement('article');
             card.className = 'pulse-card';
             card.dataset.pulseId = pulse.id;
+            card.setAttribute('aria-label', `Pulse by ${fullName}`);
             
             let clickTimer;
             card.addEventListener('click', (e) => {
@@ -3451,8 +3465,8 @@ async function fetchPulses(limit = 10, offset = 0) {
                 const connectIcon = isConnected ? 'fa-user-check' : 'fa-user-plus';
                 const connectClass = isConnected ? 'connected' : '';
                 connectBtnHTML = `
-                    <button class="pulse-connect-btn ${connectClass}" data-creator-id="${pulse.user_id}">
-                        <i class="fas ${connectIcon}"></i>
+                    <button class="pulse-connect-btn ${connectClass}" data-creator-id="${pulse.user_id}" aria-label="${isConnected ? 'Disconnect from' : 'Connect with'} ${fullName}">
+                        <i class="fas ${connectIcon}" aria-hidden="true"></i>
                     </button>
                 `;
             }
@@ -3460,16 +3474,16 @@ async function fetchPulses(limit = 10, offset = 0) {
             let moreOptionsHTML = '';
             if (isOwnPulse) {
                 moreOptionsHTML = `
-                    <button class="pulse-more-options" data-pulse-id="${pulse.id}">
-                        <i class="fas fa-ellipsis-h"></i>
+                    <button class="pulse-more-options" data-pulse-id="${pulse.id}" aria-label="More options">
+                        <i class="fas fa-ellipsis-h" aria-hidden="true"></i>
                     </button>
                     <div class="pulse-options-menu" id="options-menu-${pulse.id}">
                         <button class="pulse-option-item edit-option" data-pulse-id="${pulse.id}">
-                            <i class="fas fa-edit"></i>
+                            <i class="fas fa-edit" aria-hidden="true"></i>
                             Edit
                         </button>
                         <button class="pulse-option-item delete delete-option" data-pulse-id="${pulse.id}">
-                            <i class="fas fa-trash"></i>
+                            <i class="fas fa-trash" aria-hidden="true"></i>
                             Delete
                         </button>
                     </div>
@@ -3485,26 +3499,27 @@ async function fetchPulses(limit = 10, offset = 0) {
                                    data-video-id="video-${pulse.id}" 
                                    preload="none" 
                                    playsinline
-                                   data-src="${pulse.media_url}">
+                                   data-src="${pulse.media_url}"
+                                   aria-label="Video content">
                                 Your browser does not support the video tag.
                             </video>
                             <div class="video-controls-overlay">
-                                <div class="video-progress">
+                                <div class="video-progress" aria-label="Video progress">
                                     <div class="video-progress-filled"></div>
                                 </div>
                                 <div class="video-controls">
                                     <div class="video-left-controls">
-                                        <button class="video-control-btn play-pause-btn">
-                                            <i class="fas fa-play"></i>
+                                        <button class="video-control-btn play-pause-btn" aria-label="Play/pause">
+                                            <i class="fas fa-play" aria-hidden="true"></i>
                                         </button>
                                         <div class="video-time">0:00 / 0:00</div>
                                     </div>
                                     <div class="video-right-controls">
                                         <div class="video-volume">
-                                            <button class="video-control-btn mute-btn">
-                                                <i class="fas fa-volume-up"></i>
+                                            <button class="video-control-btn mute-btn" aria-label="Mute/unmute">
+                                                <i class="fas fa-volume-up" aria-hidden="true"></i>
                                             </button>
-                                            <div class="volume-slider">
+                                            <div class="volume-slider" aria-label="Volume slider">
                                                 <div class="volume-slider-filled"></div>
                                             </div>
                                         </div>
@@ -3528,12 +3543,12 @@ async function fetchPulses(limit = 10, offset = 0) {
             
             card.innerHTML = `
                 <div class="pulse-header">
-                    <div class="pulse-avatar" style="${avatarUrl ? `background-image: url('${avatarUrl}'); background-size: cover; background-position: center;` : ''}">
+                    <div class="pulse-avatar" style="${avatarUrl ? `background-image: url('${avatarUrl}'); background-size: cover; background-position: center;` : ''}" aria-label="${fullName}'s avatar">
                         ${avatarUrl ? '' : initials}
                     </div>
                     <div class="pulse-creator-info">
                         <div class="creator-name">
-                            ${fullName}
+                            ${sanitizeHTML(fullName)}
                             ${role === 'creator' ? '<span class="creator-badge">Creator</span>' : ''}
                             ${role === 'admin' ? '<span class="creator-badge" style="background: rgba(239, 68, 68, 0.2); color: var(--error-color); border-color: rgba(239, 68, 68, 0.3);">Admin</span>' : ''}
                         </div>
@@ -3550,33 +3565,20 @@ async function fetchPulses(limit = 10, offset = 0) {
                 ` : ''}
                 
                 <div class="pulse-content">
-                    ${pulse.caption ? `<p class="pulse-text">${pulse.caption}</p>` : ''}
+                    ${pulse.caption ? `<p class="pulse-text">${sanitizeHTML(pulse.caption)}</p>` : ''}
                     
                     ${mediaHTML}
-                    
-                    ${pulse.linked_content_id ? `
-                        <div class="linked-content">
-                            <div class="linked-content-label">Linked content</div>
-                                <div class="linked-content-card">
-                                    <div class="content-thumbnail"></div>
-                                    <div class="content-info">
-                                        <h4>${pulse.linked_content_type || 'Content'}</h4>
-                                        <p>Tap to watch or listen</p>
-                                    </div>
-                                </div>
-                            </div>
-                    ` : ''}
                 </div>
                 
                 <div class="pulse-actions">
-                    <button class="action-button like-btn ${isLiked ? 'liked' : ''}" data-pulse-id="${pulse.id}">
-                        <i class="fas fa-heart" ${isLiked ? 'style="color: var(--warm-gold);"' : ''}></i> ${actualLikesCount}
+                    <button class="action-button like-btn ${isLiked ? 'liked' : ''}" data-pulse-id="${pulse.id}" aria-label="${isLiked ? 'Unlike' : 'Like'} this pulse">
+                        <i class="fas fa-heart" aria-hidden="true"></i> ${actualLikesCount}
                     </button>
-                    <button class="action-button comment-btn" data-pulse-id="${pulse.id}">
-                        <i class="fas fa-comment"></i> ${actualCommentsCount}
+                    <button class="action-button comment-btn" data-pulse-id="${pulse.id}" aria-label="Comment on this pulse">
+                        <i class="fas fa-comment" aria-hidden="true"></i> ${actualCommentsCount}
                     </button>
-                    <button class="action-button share-btn" data-pulse-id="${pulse.id}">
-                        <i class="fas fa-share"></i> ${pulse.shares_count || 0}
+                    <button class="action-button share-btn" data-pulse-id="${pulse.id}" aria-label="Share this pulse">
+                        <i class="fas fa-share" aria-hidden="true"></i> ${pulse.shares_count || 0}
                     </button>
                 </div>
                 
@@ -3664,12 +3666,21 @@ async function fetchPulses(limit = 10, offset = 0) {
             pauseAllVideos();
             videoPlayers.clear();
             
-            if (forceLoadTimeout) {
-                clearTimeout(forceLoadTimeout);
+            if (fetchController) {
+                fetchController.abort();
+            }
+            
+            if (scrollListener) {
+                window.removeEventListener('scroll', scrollListener);
+            }
+            
+            if (scrollThrottleTimeout) {
+                clearTimeout(scrollThrottleTimeout);
             }
         }
         
         window.addEventListener('beforeunload', cleanupResources);
+        window.addEventListener('pagehide', cleanupResources);
         
         document.addEventListener('visibilitychange', () => {
             if (document.hidden) {
@@ -3677,81 +3688,94 @@ async function fetchPulses(limit = 10, offset = 0) {
             }
         });
 
-        // FIXED: loadInitialPulses function - NO loading messages
+        // Load initial pulses
         async function loadInitialPulses() {
-    console.log('Loading initial pulses...');
-    
-    // Reset everything
-    currentOffset = 0;
-    displayedPulseIds.clear();
-    allPulses = [];
-    hasMorePulses = true;
-    
-    const pulseFeedContainer = document.getElementById('pulse-feed-container');
-    if (!pulseFeedContainer) {
-        console.error('Pulse feed container not found!');
-        return;
-    }
-    
-    // Show loading state
-    pulseFeedContainer.innerHTML = `
-        <div style="text-align: center; padding: 40px; color: var(--slate-grey);">
-            <div class="spinner" style="margin: 0 auto 20px;"></div>
-            <div>Loading feed...</div>
-        </div>
-    `;
-    
-    try {
-        const pulses = await fetchPulses(PULSES_PER_PAGE, 0);
-        
-        if (pulses.length === 0) {
-            // Show empty state
+            console.log('Loading initial pulses...');
+            
+            // Reset everything
+            currentOffset = 0;
+            displayedPulseIds.clear();
+            allPulses = [];
+            hasMorePulses = true;
+            
+            const pulseFeedContainer = document.getElementById('pulse-feed-container');
+            if (!pulseFeedContainer) {
+                console.error('Pulse feed container not found!');
+                return;
+            }
+            
+            // Show loading state
             pulseFeedContainer.innerHTML = `
-                <div style="text-align: center; padding: 60px 20px; color: var(--slate-grey);">
-                    <div style="font-size: 48px; margin-bottom: 20px; opacity: 0.5;">
-                        <i class="far fa-newspaper"></i>
-                    </div>
-                    <h3 style="color: var(--soft-white); margin-bottom: 10px;">No pulses yet</h3>
-                    <p>Be the first to drop a pulse and start the conversation!</p>
-                    <button class="modal-btn modal-btn-post" onclick="document.getElementById('createPulseBtn').click()" style="margin-top: 20px;">
-                        Create First Pulse
-                    </button>
+                <div style="text-align: center; padding: 40px; color: var(--slate-grey);">
+                    <div class="spinner" style="margin: 0 auto 20px;"></div>
+                    <div>Loading feed...</div>
                 </div>
             `;
-            hasMorePulses = false;
-            return;
+            
+            try {
+                // Cancel any ongoing fetch
+                if (fetchController) {
+                    fetchController.abort();
+                }
+                
+                // Create new AbortController
+                fetchController = new AbortController();
+                
+                const pulses = await fetchPulses(PULSES_PER_PAGE, 0, fetchController.signal);
+                
+                if (pulses.length === 0) {
+                    // Show empty state
+                    pulseFeedContainer.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-state-icon">
+                                <i class="far fa-newspaper"></i>
+                            </div>
+                            <h3>No pulses yet</h3>
+                            <p>Be the first to drop a pulse and start the conversation!</p>
+                            <button class="modal-btn modal-btn-post" onclick="document.getElementById('createPulseBtn').click()" style="margin-top: 20px;">
+                                Create First Pulse
+                            </button>
+                        </div>
+                    `;
+                    hasMorePulses = false;
+                    return;
+                }
+                
+                // Get liked status
+                const likedPulses = await checkUserLikes(pulses.map(p => p.id));
+                
+                // Clear loading
+                pulseFeedContainer.innerHTML = '';
+                
+                // Display pulses
+                displayPulses(pulses, likedPulses);
+                
+                console.log(`Displayed ${pulses.length} initial pulses`);
+                
+            } catch (error) {
+                if (error.name === 'AbortError') {
+                    console.log('Initial load aborted');
+                    return;
+                }
+                
+                console.error('Error loading initial pulses:', error);
+                
+                // Show error state
+                pulseFeedContainer.innerHTML = `
+                    <div class="error-state">
+                        <div class="error-state-icon">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </div>
+                        <h3>Failed to load feed</h3>
+                        <p>Please check your connection and try again.</p>
+                        <button class="modal-btn modal-btn-post" onclick="loadInitialPulses()" style="margin-top: 20px;">
+                            <i class="fas fa-redo"></i> Retry
+                        </button>
+                    </div>
+                `;
+            }
         }
         
-        // Get liked status
-        const likedPulses = await checkUserLikes(pulses.map(p => p.id));
-        
-        // Clear loading
-        pulseFeedContainer.innerHTML = '';
-        
-        // Display pulses
-        displayPulses(pulses, likedPulses);
-        
-        console.log(`✅ Displayed ${pulses.length} initial pulses`);
-        
-    } catch (error) {
-        console.error('Error loading initial pulses:', error);
-        
-        // Show error state
-        pulseFeedContainer.innerHTML = `
-            <div style="text-align: center; padding: 60px 20px; color: var(--slate-grey);">
-                <div style="font-size: 48px; margin-bottom: 20px; color: var(--error-color);">
-                    <i class="fas fa-exclamation-triangle"></i>
-                </div>
-                <h3 style="color: var(--soft-white); margin-bottom: 10px;">Failed to load feed</h3>
-                <p>Please check your connection and try again.</p>
-                <button class="modal-btn modal-btn-post" onclick="loadInitialPulses()" style="margin-top: 20px;">
-                    <i class="fas fa-redo"></i> Retry
-                </button>
-            </div>
-        `;
-    }
-}
-
         function initializeFeed(session) {
             let selectedMedia = null;
             let isSeriesMode = false;
@@ -3816,7 +3840,7 @@ async function fetchPulses(limit = 10, offset = 0) {
                     
                     return existingProfile;
                 } catch (error) {
-                    console.warn('⚠️ Profile check error:', error);
+                    console.warn('Profile check error:', error);
                     return null;
                 }
             }
@@ -3824,7 +3848,7 @@ async function fetchPulses(limit = 10, offset = 0) {
             function setLoading(loading) {
                 if (loading) {
                     postPulseBtn.disabled = true;
-                    postPulseBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Posting...';
+                    postPulseBtn.innerHTML = '<i class="fas fa-spinner fa-spin" aria-hidden="true"></i> Posting...';
                 } else {
                     updatePostButton();
                     postPulseBtn.innerHTML = 'Post Pulse';
@@ -3883,7 +3907,7 @@ async function fetchPulses(limit = 10, offset = 0) {
                     
                     const pulseData = {
                         user_id: session.user.id,
-                        caption: caption || null,
+                        caption: sanitizeHTML(caption) || null,
                         media_url: mediaData?.url || null,
                         media_type: mediaData?.type || 'none',
                         aspect_ratio: '9:16',
@@ -3947,7 +3971,7 @@ async function fetchPulses(limit = 10, offset = 0) {
                             pulseData.series_order = seriesOrder;
                             
                         } catch (seriesError) {
-                            console.error('❌ Series creation error:', seriesError);
+                            console.error('Series creation error:', seriesError);
                             showToast('Created pulse without series', 'error');
                         }
                     }
@@ -3974,7 +3998,6 @@ async function fetchPulses(limit = 10, offset = 0) {
                         }
                     }
                     
-                    console.log('✅ Pulse created:', pulse.id);
                     showToast('Pulse posted successfully!', 'success');
                     
                     closeCreateModal();
@@ -3983,13 +4006,14 @@ async function fetchPulses(limit = 10, offset = 0) {
                     loadInitialPulses();
                     
                 } catch (error) {
-                    console.error('❌ Create pulse error:', error);
+                    console.error('Create pulse error:', error);
                     showToast('Failed to post pulse: ' + error.message, 'error');
                 } finally {
                     setLoading(false);
                 }
             }
             
+            // Event listeners
             createPrompt.addEventListener('click', openCreateModal);
             createPulseBtn.addEventListener('click', openCreateModal);
             closeModal.addEventListener('click', closeCreateModal);
@@ -4007,7 +4031,7 @@ async function fetchPulses(limit = 10, offset = 0) {
                 const file = e.target.files[0];
                 if (!file) return;
                 
-                const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'video/mp4', 'video/quicktime'];
+                const validTypes = ['image/avif', 'image/webp', 'image/jpeg', 'image/png', 'image/gif', 'video/mp4', 'video/quicktime'];
                 if (!validTypes.includes(file.type)) {
                     showToast('Please select a valid image or video file', 'error');
                     return;
@@ -4034,6 +4058,7 @@ async function fetchPulses(limit = 10, offset = 0) {
                     } else {
                         const img = document.createElement('img');
                         img.src = e.target.result;
+                        img.alt = 'Media preview';
                         img.style.width = '100%';
                         img.style.borderRadius = '12px';
                         mediaPreview.appendChild(img);
@@ -4083,7 +4108,7 @@ async function fetchPulses(limit = 10, offset = 0) {
                 const file = e.target.files[0];
                 if (!file) return;
                 
-                const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'video/mp4', 'video/quicktime'];
+                const validTypes = ['image/avif', 'image/webp', 'image/jpeg', 'image/png', 'image/gif', 'video/mp4', 'video/quicktime'];
                 if (!validTypes.includes(file.type)) {
                     showToast('Please select a valid image or video file', 'error');
                     return;
@@ -4110,6 +4135,7 @@ async function fetchPulses(limit = 10, offset = 0) {
                     } else {
                         const img = document.createElement('img');
                         img.src = e.target.result;
+                        img.alt = 'Media preview';
                         img.style.width = '100%';
                         img.style.borderRadius = '12px';
                         editMediaPreview.appendChild(img);
@@ -4148,7 +4174,7 @@ async function fetchPulses(limit = 10, offset = 0) {
             });
             
             supabaseClient.auth.onAuthStateChange((event, session) => {
-                console.log('🔐 Auth state changed:', event);
+                console.log('Auth state changed:', event);
                 
                 if (event === 'SIGNED_OUT') {
                     window.location.href = 'login.html';
@@ -4158,26 +4184,11 @@ async function fetchPulses(limit = 10, offset = 0) {
             // Load initial pulses
             loadInitialPulses();
             
-            // Setup infinite scroll AFTER initial load
+            // Setup infinite scroll
             setTimeout(() => {
                 setupInfiniteScroll();
             }, 100);
         }
-        
-        forceLoadTimeout = setTimeout(() => {
-            if (!isInitialized) {
-                console.log('Timeout reached - forcing content display');
-                document.getElementById('loading-text').textContent = 'Taking longer than expected...';
-                
-                setTimeout(() => {
-                    isInitialized = true;
-                    document.getElementById('loading').style.display = 'none';
-                    document.getElementById('content').style.display = 'block';
-                    
-                    setupBasicEventListeners();
-                }, 3000);
-            }
-        }, 7000);
         
         document.addEventListener('DOMContentLoaded', initialize);
     </script>
