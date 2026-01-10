@@ -249,7 +249,11 @@
             gap: 16px;
         }
         
-        /* Notification button with real-time indicator - UPDATED */
+        /* ============================================== */
+        /* FIX FOR BUTTON DISPLAY ISSUES */
+        /* ============================================== */
+
+        /* Fix for notification button */
         .notification-btn {
             background: rgba(255, 255, 255, 0.05) !important;
             border: 1px solid var(--glass-border) !important;
@@ -299,7 +303,7 @@
             100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
         }
         
-        /* User avatar - UPDATED */
+        /* Fix for user avatar */
         .user-avatar {
             width: 44px !important;
             height: 44px !important;
@@ -340,7 +344,7 @@
             display: none;
         }
         
-        /* Tabs Navigation - Glassmorphism - UPDATED */
+        /* Fix for tabs */
         .tabs-container {
             display: flex !important;
             background: var(--glass-bg) !important;
@@ -398,7 +402,7 @@
             border-radius: 2px;
         }
         
-        /* Create Pulse Prompt - Glassmorphism - UPDATED */
+        /* Fix for create pulse prompt */
         .create-pulse-prompt {
             background: var(--glass-bg) !important;
             border: 1px solid var(--glass-border) !important;
@@ -550,7 +554,7 @@
             margin-top: 4px;
         }
         
-        /* Connect Button - UPDATED */
+        /* Fix for connect button */
         .pulse-connect-btn {
             width: 32px !important;
             height: 32px !important;
@@ -756,7 +760,7 @@
             display: block;
         }
         
-        /* Pulse Actions - Updated for BANTU PULSE - UPDATED */
+        /* Fix for pulse action buttons */
         .pulse-actions {
             display: flex;
             padding: 12px 20px;
@@ -1030,7 +1034,7 @@
             backdrop-filter: blur(10px);
         }
         
-        /* Floating Create Button - UPDATED */
+        /* Fix for floating create button */
         .floating-create-btn {
             position: fixed !important;
             bottom: 80px !important;
@@ -1431,7 +1435,7 @@
             }
         }
         
-        /* Bottom Navigation - UPDATED */
+        /* Fix for bottom navigation */
         .bottom-nav {
             position: fixed !important;
             bottom: 0 !important;
@@ -1519,10 +1523,6 @@
             color: var(--error-color);
         }
         
-        /* ============================================== */
-        /* FIX FOR BUTTON DISPLAY ISSUES */
-        /* ============================================== */
-        
         /* Force all buttons to be visible */
         button {
             visibility: visible !important;
@@ -1534,6 +1534,34 @@
         
         /* Force visibility of all interactive elements */
         #content {
+            visibility: visible !important;
+            opacity: 1 !important;
+        }
+        
+        /* EMERGENCY FIX - Add this at the very end of your CSS */
+        body #content * {
+            visibility: visible !important;
+            opacity: 1 !important;
+            display: block !important;
+        }
+
+        body #content button,
+        body #content .floating-create-btn,
+        body #content .notification-btn,
+        body #content .user-avatar,
+        body #content .create-pulse-prompt,
+        body #content .tabs-container,
+        body #content .bottom-nav {
+            display: flex !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+        }
+
+        /* Override any hidden styles */
+        [style*="display: none"],
+        [style*="visibility: hidden"],
+        [style*="opacity: 0"] {
+            display: flex !important;
             visibility: visible !important;
             opacity: 1 !important;
         }
@@ -1989,6 +2017,44 @@
             return text.replace(/@(\w+)/g, (match, username) => {
                 return `<span class="mention" data-username="${username}">@${username}</span>`;
             });
+        }
+
+        // Debug function to fix button visibility
+        function fixButtonVisibility() {
+            console.log('Fixing button visibility...');
+            
+            // Force show all buttons
+            document.querySelectorAll('button').forEach(btn => {
+                btn.style.display = 'flex';
+                btn.style.visibility = 'visible';
+                btn.style.opacity = '1';
+            });
+            
+            // Force show floating create button
+            const floatingBtn = document.getElementById('createPulseBtn');
+            if (floatingBtn) {
+                floatingBtn.style.display = 'flex';
+                floatingBtn.style.visibility = 'visible';
+                floatingBtn.style.opacity = '1';
+            }
+            
+            // Force show notification button
+            const notifBtn = document.getElementById('notificationBtn');
+            if (notifBtn) {
+                notifBtn.style.display = 'flex';
+                notifBtn.style.visibility = 'visible';
+                notifBtn.style.opacity = '1';
+            }
+            
+            // Force show bottom nav
+            const bottomNav = document.querySelector('.bottom-nav');
+            if (bottomNav) {
+                bottomNav.style.display = 'flex';
+                bottomNav.style.visibility = 'visible';
+                bottomNav.style.opacity = '1';
+            }
+            
+            console.log('Button visibility fix applied');
         }
 
         async function initialize() {
@@ -2881,7 +2947,7 @@
             }
         }
         
-        // Handle Save
+        // Handle Save - UPDATED to use saved_pulses
         async function handleSave(pulseId) {
             try {
                 const { data: { session } } = await supabaseClient.auth.getSession();
@@ -2889,44 +2955,60 @@
                     showToast('Please login to save pulses', 'error');
                     return;
                 }
-                
-                // Check if already saved
+
+                // Check if already saved - UPDATED table name
                 const { data: existingSave } = await supabaseClient
-                    .from('pulse_saves')
+                    .from('saved_pulses')
                     .select('id')
                     .eq('pulse_id', pulseId)
                     .eq('user_id', session.user.id)
                     .single();
-                
+
                 if (existingSave) {
                     // Remove save
                     const { error } = await supabaseClient
-                        .from('pulse_saves')
+                        .from('saved_pulses')
                         .delete()
                         .eq('id', existingSave.id);
-                    
+
                     if (error) throw error;
-                    
+
                     showToast('Removed from saved', 'success');
                     updateSaveUI(pulseId, false);
                 } else {
                     // Add save
                     const { error } = await supabaseClient
-                        .from('pulse_saves')
+                        .from('saved_pulses')
                         .insert({
                             pulse_id: pulseId,
                             user_id: session.user.id
                         });
-                    
+
                     if (error) throw error;
-                    
+
                     showToast('Pulse saved!', 'success');
                     updateSaveUI(pulseId, true);
                 }
-                
+
             } catch (error) {
                 console.error('Save error:', error);
-                showToast('Failed to save pulse', 'error');
+                // If it's a "no rows" error (not found), it means not saved yet
+                if (error.code === 'PGRST116') {
+                    // Add save
+                    const { error: insertError } = await supabaseClient
+                        .from('saved_pulses')
+                        .insert({
+                            pulse_id: pulseId,
+                            user_id: session.user.id
+                        });
+
+                    if (insertError) throw insertError;
+
+                    showToast('Pulse saved!', 'success');
+                    updateSaveUI(pulseId, true);
+                } else {
+                    showToast('Failed to save pulse', 'error');
+                }
             }
         }
         
@@ -3291,7 +3373,7 @@
             }
         }
         
-        // Check user interactions (taps, saves, repulses, etc.)
+        // Check user interactions (taps, saves, repulses, etc.) - UPDATED
         async function checkUserInteractions(pulseIds) {
             try {
                 const { data: { session } } = await supabaseClient.auth.getSession();
@@ -3315,7 +3397,7 @@
                         .in('pulse_id', pulseIds)
                         .eq('user_id', session.user.id),
                     supabaseClient
-                        .from('pulse_saves')
+                        .from('saved_pulses') // UPDATED table name
                         .select('pulse_id')
                         .in('pulse_id', pulseIds)
                         .eq('user_id', session.user.id),
@@ -4766,6 +4848,8 @@
                 
                 if (event === 'SIGNED_OUT') {
                     window.location.href = 'login.html';
+                } else if (event === 'SIGNED_IN') {
+                    setTimeout(fixButtonVisibility, 500);
                 }
             });
             
@@ -4778,6 +4862,12 @@
             }, 100);
         }
         
+        // Call this after page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(fixButtonVisibility, 1000);
+            setTimeout(fixButtonVisibility, 3000); // Double check after 3 seconds
+        });
+
         document.addEventListener('DOMContentLoaded', initialize);
     </script>
 </body>
