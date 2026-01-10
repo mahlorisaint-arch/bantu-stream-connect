@@ -970,6 +970,154 @@
             gap: 4px;
         }
         
+        /* UPDATED: Reaction Menu for Long Press */
+        .reaction-menu {
+            position: absolute;
+            bottom: 60px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 12px;
+            display: none;
+            gap: 12px;
+            z-index: 1001;
+            min-width: 150px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(20px);
+            animation: slideUp 0.3s ease;
+        }
+
+        .reaction-menu.active {
+            display: flex;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateX(-50%) translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(-50%) translateY(0);
+            }
+        }
+
+        .reaction-option {
+            padding: 12px 16px;
+            border: 1px solid var(--glass-border);
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--soft-white);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            min-width: 60px;
+            font-size: 14px;
+            font-weight: 500;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .reaction-option:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .reaction-option.awe {
+            border-color: var(--glowing-blue);
+            background: rgba(0, 149, 255, 0.1);
+        }
+
+        .reaction-option.awe:hover {
+            background: rgba(0, 149, 255, 0.2);
+        }
+
+        .reaction-option.banger {
+            border-color: var(--glowing-gold);
+            background: rgba(255, 179, 0, 0.1);
+        }
+
+        .reaction-option.banger:hover {
+            background: rgba(255, 179, 0, 0.2);
+        }
+
+        /* Lightning Animation for Awe */
+        @keyframes lightningGlow {
+            0% {
+                text-shadow: 0 0 5px var(--glowing-blue),
+                             0 0 10px var(--glowing-blue),
+                             0 0 15px var(--glowing-blue);
+                transform: scale(1);
+            }
+            50% {
+                text-shadow: 0 0 20px var(--glowing-blue),
+                             0 0 30px var(--glowing-blue),
+                             0 0 40px var(--glowing-blue);
+                transform: scale(1.2);
+            }
+            100% {
+                text-shadow: 0 0 5px var(--glowing-blue),
+                             0 0 10px var(--glowing-blue),
+                             0 0 15px var(--glowing-blue);
+                transform: scale(1);
+            }
+        }
+
+        /* Flame Animation for Banger */
+        @keyframes flameGlow {
+            0% {
+                text-shadow: 0 0 5px var(--glowing-gold),
+                             0 0 10px var(--glowing-gold),
+                             0 0 15px var(--glowing-gold);
+                transform: scale(1);
+            }
+            50% {
+                text-shadow: 0 0 20px var(--glowing-gold),
+                             0 0 30px var(--glowing-gold),
+                             0 0 40px var(--glowing-gold);
+                transform: scale(1.2);
+            }
+            100% {
+                text-shadow: 0 0 5px var(--glowing-gold),
+                             0 0 10px var(--glowing-gold),
+                             0 0 15px var(--glowing-gold);
+                transform: scale(1);
+            }
+        }
+
+        .reaction-option.awe.active i {
+            animation: lightningGlow 0.6s ease;
+        }
+
+        .reaction-option.banger.active i {
+            animation: flameGlow 0.6s ease;
+        }
+
+        .reaction-icon {
+            font-size: 16px;
+        }
+
+        /* UPDATED: Re-Pulse Button in Actions */
+        .repulse-btn {
+            position: relative;
+        }
+
+        .repulse-btn.repulsed {
+            color: var(--repulse-color);
+            border-color: rgba(245, 158, 11, 0.3);
+            background: rgba(245, 158, 11, 0.1);
+        }
+
+        /* Re-Pulse Stats */
+        .repulses-count {
+            color: var(--slate-grey);
+        }
+        
         /* NEW: AK Menu */
         .ak-menu {
             position: absolute;
@@ -1631,6 +1779,18 @@
                 grid-template-columns: repeat(2, 1fr);
             }
             
+            .reaction-menu {
+                min-width: 140px;
+                gap: 8px;
+                padding: 10px;
+            }
+            
+            .reaction-option {
+                padding: 10px 12px;
+                font-size: 13px;
+                min-width: 50px;
+            }
+            
             .pulse-actions {
                 gap: 2px;
             }
@@ -1955,6 +2115,9 @@
         let longPressThreshold = 500; // ms
         let currentTapMenuPulseId = null;
         let currentRepulseModal = null;
+        
+        // NEW: Reaction menu variable
+        let currentReactionMenuPulseId = null;
 
         // Debounce function
         function debounce(func, wait) {
@@ -2186,13 +2349,14 @@
         async function getUserInteractions(pulseIds) {
             try {
                 const { data: { session } } = await supabaseClient.auth.getSession();
-                if (!session) return { taps: new Set(), saves: new Set(), aks: new Map(), repulses: new Set() };
+                if (!session) return { taps: new Set(), saves: new Set(), aks: new Map(), repulses: new Set(), reactions: new Map() };
                 
                 const interactions = {
                     taps: new Set(),
                     saves: new Set(),
                     aks: new Map(),
-                    repulses: new Set()
+                    repulses: new Set(),
+                    reactions: new Map()
                 };
                 
                 // Fetch taps
@@ -2239,11 +2403,22 @@
                     repulses.forEach(repulse => interactions.repulses.add(repulse.pulse_id));
                 }
                 
+                // Fetch reactions
+                const { data: reactions } = await supabaseClient
+                    .from('pulse_reactions')
+                    .select('pulse_id, reaction_type')
+                    .in('pulse_id', pulseIds)
+                    .eq('user_id', session.user.id);
+                
+                if (reactions) {
+                    reactions.forEach(reaction => interactions.reactions.set(reaction.pulse_id, reaction.reaction_type));
+                }
+                
                 return interactions;
                 
             } catch (error) {
                 console.error('Error getting user interactions:', error);
-                return { taps: new Set(), saves: new Set(), aks: new Map(), repulses: new Set() };
+                return { taps: new Set(), saves: new Set(), aks: new Map(), repulses: new Set(), reactions: new Map() };
             }
         }
         
@@ -2796,49 +2971,56 @@
             }
         }
         
-        // Handle AK (Acknowledge)
-        async function handleAK(pulseId, akType, e) {
+        // Handle Reaction (Awe or Banger)
+        async function handleReaction(pulseId, reactionType, e) {
             if (e) e.stopPropagation();
             
             try {
                 const { data: { session } } = await supabaseClient.auth.getSession();
                 if (!session) {
-                    showToast('Please login to acknowledge pulses', 'error');
+                    showToast('Please login to react to pulses', 'error');
                     return;
                 }
                 
-                // Check if already has an AK for this pulse (per type)
-                const { data: existingAK } = await supabaseClient
-                    .from('pulse_aks')
-                    .select('id, ak_type')
+                // Check if already has this reaction
+                const { data: existingReaction } = await supabaseClient
+                    .from('pulse_reactions')
+                    .select('id, reaction_type')
                     .eq('pulse_id', pulseId)
                     .eq('user_id', session.user.id)
-                    .eq('ak_type', akType)
+                    .eq('reaction_type', reactionType)
                     .single();
                 
-                if (existingAK) {
-                    // Remove AK
+                // Visual feedback
+                const reactionBtn = e.currentTarget;
+                reactionBtn.classList.add('active');
+                
+                if (existingReaction) {
+                    // Remove reaction
                     const { error } = await supabaseClient
-                        .from('pulse_aks')
+                        .from('pulse_reactions')
                         .delete()
-                        .eq('id', existingAK.id);
+                        .eq('id', existingReaction.id);
                     
                     if (error) throw error;
                     
-                    showToast('Acknowledgment removed', 'success');
+                    // Remove active class after animation
+                    setTimeout(() => {
+                        reactionBtn.classList.remove('active');
+                    }, 600);
+                    
+                    // No toast for removal (intentional, respectful)
                 } else {
-                    // Add AK
+                    // Add reaction
                     const { error } = await supabaseClient
-                        .from('pulse_aks')
+                        .from('pulse_reactions')
                         .insert({
                             pulse_id: pulseId,
                             user_id: session.user.id,
-                            ak_type: akType
+                            reaction_type: reactionType
                         });
                     
                     if (error) throw error;
-                    
-                    showToast(`You acknowledged with ${akType}`, 'success');
                     
                     // Create notification for pulse creator
                     const { data: pulse } = await supabaseClient
@@ -2848,28 +3030,115 @@
                         .single();
                     
                     if (pulse && pulse.user_id !== session.user.id) {
+                        const actorName = session.user.email.split('@')[0];
+                        let message = '';
+                        
+                        if (reactionType === 'awe') {
+                            message = `${actorName} is in awe of your pulse.`;
+                        } else if (reactionType === 'banger') {
+                            message = `${actorName} considers your pulse a banger.`;
+                        }
+                        
                         await createNotification(
-                            'ak',
+                            'reaction',
                             session.user.id,
                             pulse.user_id,
                             pulseId,
                             null,
-                            `${session.user.email.split('@')[0]} acknowledged your pulse with ${akType}`
+                            message
                         );
                     }
+                    
+                    // Remove active class after animation
+                    setTimeout(() => {
+                        reactionBtn.classList.remove('active');
+                    }, 600);
+                    
+                    // No success toast (intentional, not performative)
                 }
                 
-                // Close AK menu
-                closeAKMenu();
+                // Close reaction menu
+                closeReactionMenu();
                 
             } catch (error) {
-                console.error('AK error:', error);
-                showToast('Failed to acknowledge pulse', 'error');
+                console.error('Reaction error:', error);
+                // No error toast (intentional)
+            }
+        }
+        
+        // Show Reaction Menu (for long press)
+        function showReactionMenu(pulseId, event) {
+            closeReactionMenu(); // Close any open menu
+            
+            const pulseCard = document.querySelector(`[data-pulse-id="${pulseId}"]`);
+            if (!pulseCard) return;
+            
+            // Create reaction menu
+            const reactionMenu = document.createElement('div');
+            reactionMenu.className = 'reaction-menu';
+            reactionMenu.id = `reaction-menu-${pulseId}`;
+            
+            reactionMenu.innerHTML = `
+                <button class="reaction-option awe" data-reaction-type="awe" data-pulse-id="${pulseId}" aria-label="React with Awe">
+                    <i class="fas fa-bolt reaction-icon" aria-hidden="true"></i>
+                    <span>Awe</span>
+                </button>
+                <button class="reaction-option banger" data-reaction-type="banger" data-pulse-id="${pulseId}" aria-label="React with Banger">
+                    <i class="fas fa-fire reaction-icon" aria-hidden="true"></i>
+                    <span>Banger</span>
+                </button>
+            `;
+            
+            pulseCard.appendChild(reactionMenu);
+            reactionMenu.classList.add('active');
+            
+            // Position menu near the tap button
+            const tapBtn = pulseCard.querySelector('.tap-btn');
+            if (tapBtn && event) {
+                const rect = tapBtn.getBoundingClientRect();
+                const cardRect = pulseCard.getBoundingClientRect();
+                reactionMenu.style.position = 'absolute';
+                reactionMenu.style.left = '50%';
+                reactionMenu.style.bottom = `${rect.height + 10}px`;
+            }
+            
+            currentReactionMenuPulseId = pulseId;
+            
+            // Add event listeners for reaction options
+            reactionMenu.querySelectorAll('.reaction-option').forEach(option => {
+                option.addEventListener('click', (e) => {
+                    const reactionType = e.currentTarget.dataset.reactionType;
+                    handleReaction(pulseId, reactionType, e);
+                });
+            });
+            
+            // Close menu when clicking outside
+            setTimeout(() => {
+                document.addEventListener('click', closeReactionMenuOnClickOutside);
+            }, 10);
+        }
+
+        // Close Reaction Menu
+        function closeReactionMenu() {
+            if (currentReactionMenuPulseId) {
+                const menu = document.querySelector(`#reaction-menu-${currentReactionMenuPulseId}`);
+                if (menu) {
+                    menu.remove();
+                }
+                currentReactionMenuPulseId = null;
+            }
+            document.removeEventListener('click', closeReactionMenuOnClickOutside);
+        }
+
+        function closeReactionMenuOnClickOutside(e) {
+            const menu = document.querySelector(`#reaction-menu-${currentReactionMenuPulseId}`);
+            if (menu && !menu.contains(e.target)) {
+                closeReactionMenu();
             }
         }
         
         // Handle Re-Pulse
-        async function handleRePulse(pulseId, context = null, isSoft = true, e) {
+        async function handleRePulse(pulseId, context = null, e) {
             if (e) e.stopPropagation();
             
             try {
@@ -2887,6 +3156,8 @@
                     .eq('user_id', session.user.id)
                     .single();
                 
+                let isRepulsed;
+                
                 if (existingRePulse) {
                     // Remove re-pulse
                     const { error } = await supabaseClient
@@ -2896,6 +3167,7 @@
                     
                     if (error) throw error;
                     
+                    isRepulsed = false;
                     showToast('Re-pulse removed', 'success');
                 } else {
                     // Add re-pulse
@@ -2905,12 +3177,12 @@
                             pulse_id: pulseId,
                             user_id: session.user.id,
                             context: context,
-                            is_soft: isSoft
+                            created_at: new Date().toISOString()
                         });
                     
                     if (error) throw error;
                     
-                    showToast(isSoft ? 'Re-pulsed!' : 'Re-pulsed with context!', 'success');
+                    isRepulsed = true;
                     
                     // Create notification for pulse creator
                     const { data: pulse } = await supabaseClient
@@ -2920,16 +3192,30 @@
                         .single();
                     
                     if (pulse && pulse.user_id !== session.user.id) {
+                        const actorName = session.user.email.split('@')[0];
+                        let message = `${actorName} re-pulsed your pulse`;
+                        
+                        if (context) {
+                            message += ' with added context.';
+                        } else {
+                            message += '.';
+                        }
+                        
                         await createNotification(
                             'repulse',
                             session.user.id,
                             pulse.user_id,
                             pulseId,
                             null,
-                            `${session.user.email.split('@')[0]} re-pulsed your pulse`
+                            message
                         );
                     }
+                    
+                    showToast(context ? 'Re-pulsed with context!' : 'Re-pulsed!', 'success');
                 }
+                
+                // Update UI immediately
+                updateRePulseUI(pulseId, isRepulsed);
                 
                 // Close re-pulse modal if open
                 if (currentRepulseModal) {
@@ -2940,6 +3226,27 @@
             } catch (error) {
                 console.error('Re-pulse error:', error);
                 showToast('Failed to re-pulse', 'error');
+            }
+        }
+        
+        // Update re-pulse UI
+        function updateRePulseUI(pulseId, isRepulsed) {
+            const pulseCard = document.querySelector(`[data-pulse-id="${pulseId}"]`);
+            if (!pulseCard) return;
+            
+            const repulseBtn = pulseCard.querySelector('.repulse-btn');
+            const repulseCount = pulseCard.querySelector('.repulses-count');
+            
+            if (repulseBtn) {
+                if (isRepulsed) {
+                    repulseBtn.classList.add('repulsed');
+                    repulseBtn.innerHTML = '<i class="fas fa-retweet" aria-hidden="true"></i> Re-Pulsed';
+                } else {
+                    repulseBtn.classList.remove('repulsed');
+                    // Update count
+                    const currentCount = parseInt(repulseBtn.textContent.match(/\d+/)?.[0]) || 0;
+                    repulseBtn.innerHTML = `<i class="fas fa-retweet" aria-hidden="true"></i> ${currentCount - 1}`;
+                }
             }
         }
         
@@ -3471,75 +3778,6 @@
             }
         }
         
-        // Show AK Menu
-        function showAKMenu(pulseId, event) {
-            closeAKMenu(); // Close any open menu
-            
-            const pulseCard = document.querySelector(`[data-pulse-id="${pulseId}"]`);
-            if (!pulseCard) return;
-            
-            // Create AK menu
-            const akMenu = document.createElement('div');
-            akMenu.className = 'ak-menu';
-            akMenu.id = `ak-menu-${pulseId}`;
-            
-            const akOptions = ['awe', 'siyabonga', 'sawubona', 'resonates', 'wisdom', 'culture'];
-            
-            akMenu.innerHTML = `
-                ${akOptions.map(option => 
-                    `<button class="ak-option" data-ak-type="${option}" data-pulse-id="${pulseId}">${option.charAt(0).toUpperCase() + option.slice(1)}</button>`
-                ).join('')}
-            `;
-            
-            pulseCard.appendChild(akMenu);
-            akMenu.style.display = 'grid';
-            akMenu.classList.add('active');
-            
-            // Position menu near the tap button
-            const tapBtn = pulseCard.querySelector('.tap-btn');
-            if (tapBtn && event) {
-                const rect = tapBtn.getBoundingClientRect();
-                akMenu.style.position = 'fixed';
-                akMenu.style.left = `${rect.left}px`;
-                akMenu.style.bottom = `${window.innerHeight - rect.top + 10}px`;
-                akMenu.style.transform = 'translateX(-50%)';
-            }
-            
-            currentTapMenuPulseId = pulseId;
-            
-            // Add event listeners for AK options
-            akMenu.querySelectorAll('.ak-option').forEach(option => {
-                option.addEventListener('click', (e) => {
-                    const akType = e.target.dataset.akType;
-                    handleAK(pulseId, akType, e);
-                });
-            });
-            
-            // Close menu when clicking outside
-            setTimeout(() => {
-                document.addEventListener('click', closeAKMenuOnClickOutside);
-            }, 10);
-        }
-        
-        // Close AK Menu
-        function closeAKMenu() {
-            if (currentTapMenuPulseId) {
-                const menu = document.querySelector(`#ak-menu-${currentTapMenuPulseId}`);
-                if (menu) {
-                    menu.remove();
-                }
-                currentTapMenuPulseId = null;
-            }
-            document.removeEventListener('click', closeAKMenuOnClickOutside);
-        }
-        
-        function closeAKMenuOnClickOutside(e) {
-            const menu = document.querySelector(`#ak-menu-${currentTapMenuPulseId}`);
-            if (menu && !menu.contains(e.target)) {
-                closeAKMenu();
-            }
-        }
-        
         // Show Re-Pulse Modal
         function showRePulseModal(pulseId, event) {
             if (currentRepulseModal) {
@@ -3596,26 +3834,28 @@
             const contextualRepulseBtn = repulseModal.querySelector('#contextualRepulse');
             
             softRepulseBtn.addEventListener('click', (e) => {
-                handleRePulse(pulseId, null, true, e);
+                handleRePulse(pulseId, null, e);
             });
             
             contextualRepulseBtn.addEventListener('click', (e) => {
                 const context = repulseModal.querySelector('#repulseContext').value.trim();
-                handleRePulse(pulseId, context, false, e);
+                handleRePulse(pulseId, context, e);
             });
         }
         
-        // Setup tap button event handlers
+        // Setup tap button event handlers with long press for reactions
         function setupTapButtonEvents(tapBtn, pulseId) {
             let tapTimer;
             let isLongPress = false;
+            let touchStartTime;
             
             const startTimer = (e) => {
                 isLongPress = false;
+                touchStartTime = Date.now();
                 tapTimer = setTimeout(() => {
                     isLongPress = true;
-                    showAKMenu(pulseId, e);
-                }, longPressThreshold);
+                    showReactionMenu(pulseId, e);
+                }, 500); // 500ms for long press
             };
             
             const clearTapTimer = () => {
@@ -3624,7 +3864,9 @@
             
             const handleTapEnd = (e) => {
                 clearTapTimer();
-                if (!isLongPress) {
+                const touchDuration = Date.now() - touchStartTime;
+                
+                if (!isLongPress && touchDuration < 500) {
                     handleTap(pulseId, e);
                 }
             };
@@ -3958,7 +4200,7 @@
                 
                 // Fetch taps count
                 const { data: tapsData, error: tapsError } = await supabaseClient
-                    .from('pulse_taks')
+                    .from('pulse_taps')
                     .select('pulse_id')
                     .in('pulse_id', pulseIds);
                 
@@ -3983,10 +4225,10 @@
                     });
                 }
                 
-                // Fetch repulses count
+                // Fetch repulses count and context
                 const { data: repulsesData, error: repulsesError } = await supabaseClient
                     .from('pulse_repulses')
-                    .select('pulse_id, context, is_soft, user_id')
+                    .select('pulse_id, context')
                     .in('pulse_id', pulseIds);
                 
                 const repulsesCountMap = {};
@@ -3994,14 +4236,12 @@
                 if (!repulsesError && repulsesData) {
                     repulsesData.forEach(repulse => {
                         repulsesCountMap[repulse.pulse_id] = (repulsesCountMap[repulse.pulse_id] || 0) + 1;
-                        if (repulse.context && !repulse.is_soft) {
+                        if (repulse.context) {
                             if (!repulsesContextMap[repulse.pulse_id]) {
                                 repulsesContextMap[repulse.pulse_id] = [];
                             }
                             repulsesContextMap[repulse.pulse_id].push({
-                                context: repulse.context,
-                                user_id: repulse.user_id,
-                                is_soft: repulse.is_soft
+                                context: repulse.context
                             });
                         }
                     });
@@ -4120,6 +4360,7 @@
             const isSaved = userInteractions.saves.has(pulse.id);
             const userAK = userInteractions.aks.get(pulse.id);
             const isRepulsed = userInteractions.repulses.has(pulse.id);
+            const userReaction = userInteractions.reactions.get(pulse.id);
             
             const isSeries = pulse.series_id && pulse.series_order;
             const hasMedia = pulse.media_url;
@@ -4141,6 +4382,7 @@
                     !e.target.closest('.pulse-more-options') && 
                     !e.target.closest('.pulse-options-menu') &&
                     !e.target.closest('.ak-menu') &&
+                    !e.target.closest('.reaction-menu') &&
                     !e.target.closest('.repulse-context')) {
                     
                     clickTimer = setTimeout(() => {
@@ -4247,7 +4489,7 @@
             let repulseContextHTML = '';
             if (pulse.repulse_contexts && pulse.repulse_contexts.length > 0) {
                 const latestContext = pulse.repulse_contexts[pulse.repulse_contexts.length - 1];
-                if (latestContext.context && !latestContext.is_soft) {
+                if (latestContext.context) {
                     repulseContextHTML = `
                         <div class="repulse-context">
                             <div class="repulse-context-user">Re-Pulsed with context:</div>
@@ -4295,11 +4537,11 @@
                     <button class="action-button comment-btn" data-pulse-id="${pulse.id}" aria-label="Comment on this pulse">
                         <i class="fas fa-comment" aria-hidden="true"></i> ${pulse.comments_count || 0}
                     </button>
+                    <button class="action-button repulse-btn ${isRepulsed ? 'repulsed' : ''}" data-pulse-id="${pulse.id}" aria-label="${isRepulsed ? 'Remove re-pulse' : 'Re-pulse this'}">
+                        <i class="fas fa-retweet" aria-hidden="true"></i> ${pulse.repulses_count || 0}
+                    </button>
                     <button class="action-button save-btn ${isSaved ? 'saved' : ''}" data-pulse-id="${pulse.id}" aria-label="${isSaved ? 'Remove from saved' : 'Save this pulse'}">
                         <i class="${isSaved ? 'fas' : 'far'} fa-bookmark" aria-hidden="true"></i> ${isSaved ? 'Saved' : 'Save'}
-                    </button>
-                    <button class="action-button share-btn" data-pulse-id="${pulse.id}" aria-label="Share this pulse">
-                        <i class="fas fa-share" aria-hidden="true"></i> ${pulse.repulses_count || 0}
                     </button>
                 </div>
                 
@@ -4332,16 +4574,21 @@
             const tapBtn = card.querySelector('.tap-btn');
             const commentBtn = card.querySelector('.comment-btn');
             const saveBtn = card.querySelector('.save-btn');
-            const shareBtn = card.querySelector('.share-btn');
+            const repulseBtn = card.querySelector('.repulse-btn');
             
-            // Setup tap button with long press
+            // Setup tap button with long press for reactions
             if (tapBtn) {
                 setupTapButtonEvents(tapBtn, pulse.id);
             }
             
             saveBtn.addEventListener('click', (e) => handleSave(pulse.id, e));
             commentBtn.addEventListener('click', (e) => handleComment(pulse.id, e));
-            shareBtn.addEventListener('click', (e) => handleShare(pulse.id, e));
+            
+            // Setup repulse button event listener
+            repulseBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                showRePulseModal(pulse.id, e);
+            });
             
             const connectBtn = card.querySelector('.pulse-connect-btn');
             if (connectBtn) {
@@ -4406,7 +4653,7 @@
                 clearTimeout(scrollThrottleTimeout);
             }
             
-            closeAKMenu();
+            closeReactionMenu();
             if (currentRepulseModal) {
                 currentRepulseModal.remove();
                 currentRepulseModal = null;
