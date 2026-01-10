@@ -3585,10 +3585,10 @@
                     .from('pulses')
                     .select(`
                         *,
-                        user_profiles!pulses_user_id_fkey (
+                        user_profiles (
                             id, email, full_name, username, role, avatar_url
                         ),
-                        pulse_series!pulses_series_id_fkey (*)
+                        pulse_series (*)
                     `)
                     .is('deleted_at', null)
                     .order('created_at', { ascending: false })
@@ -4442,9 +4442,6 @@
                         media_url: mediaData?.url || null,
                         media_type: mediaData?.type || 'none',
                         aspect_ratio: '9:16',
-                        taps_count: 0,
-                        comments_count: 0,
-                        repulses_count: 0
                     };
                     
                     let seriesId = null;
