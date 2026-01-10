@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bantu Connect Pulse - No DNA, Just RSA</title>
+    <title>Bantu Connect Pulse - Identity Over Metrics</title>
     
     <!-- Content Security Policy -->
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; img-src 'self' data: https: blob:; media-src 'self' https: blob:; connect-src 'self' https://ydnxqnbjoshvxteevemc.supabase.co;">
@@ -47,6 +47,12 @@
             --futuristic-blue: #00E0FF;
             --glowing-gold: #FFB300;
             --glowing-blue: #0095FF;
+            --tap-color: #8B5CF6;
+            --tap-glow: rgba(139, 92, 246, 0.3);
+            --ack-color: #10B981;
+            --ack-glow: rgba(16, 185, 129, 0.3);
+            --repulse-color: #F59E0B;
+            --repulse-glow: rgba(245, 158, 11, 0.3);
         }
         
         * {
@@ -243,7 +249,7 @@
             gap: 16px;
         }
         
-        /* UPDATED: Notification button with real-time indicator */
+        /* Notification button with real-time indicator */
         .notification-btn {
             background: rgba(255, 255, 255, 0.05);
             border: 1px solid var(--glass-border);
@@ -273,7 +279,7 @@
             box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.3);
         }
         
-        /* NEW: Notification Dot Indicator */
+        /* Notification Dot Indicator */
         .notification-btn.has-unread::after {
             content: '';
             position: absolute;
@@ -538,7 +544,7 @@
             margin-top: 4px;
         }
         
-        /* UPDATED: Connect Button */
+        /* Connect Button */
         .pulse-connect-btn {
             width: 32px;
             height: 32px;
@@ -641,7 +647,7 @@
             background: var(--glass-bg);
             border: 1px solid var(--glass-border);
             border-radius: 12px;
-            width: 150px;
+            width: 180px;
             box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
             display: none;
             z-index: 1000;
@@ -702,6 +708,21 @@
             line-height: 1.5;
             margin: 16px 0;
             color: var(--soft-white);
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+        
+        /* Mentions styling */
+        .mention {
+            color: var(--bantu-blue);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .mention:hover {
+            text-decoration: underline;
+            opacity: 0.9;
         }
         
         /* Video Player - Glassmorphism */
@@ -727,116 +748,13 @@
             display: block;
         }
         
-        /* Custom Video Controls */
-        .video-controls-overlay {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
-            padding: 20px;
-            opacity: 0;
-            transition: opacity 0.3s ease;
-            backdrop-filter: blur(10px);
-        }
-        
-        .media-container:hover .video-controls-overlay {
-            opacity: 1;
-        }
-        
-        .video-progress {
-            width: 100%;
-            height: 4px;
-            background: rgba(255,255,255,0.2);
-            border-radius: 2px;
-            margin-bottom: 15px;
-            position: relative;
-            cursor: pointer;
-        }
-        
-        .video-progress-filled {
-            position: absolute;
-            top: 0;
-            left: 0;
-            height: 100%;
-            background: var(--warm-gold);
-            border-radius: 2px;
-            width: 0%;
-        }
-        
-        .video-controls {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-        
-        .video-left-controls,
-        .video-right-controls {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-        
-        .video-control-btn {
-            background: rgba(15, 23, 42, 0.7);
-            border: 1px solid rgba(245, 158, 11, 0.3);
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--warm-gold);
-            font-size: 16px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            backdrop-filter: blur(5px);
-        }
-        
-        .video-control-btn:hover {
-            background: rgba(245, 158, 11, 0.2);
-            transform: scale(1.1);
-        }
-        
-        .video-time {
-            color: var(--warm-gold);
-            font-size: 14px;
-            font-weight: 500;
-            min-width: 100px;
-            text-align: center;
-        }
-        
-        .video-volume {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        
-        .volume-slider {
-            width: 80px;
-            height: 4px;
-            background: rgba(255,255,255,0.2);
-            border-radius: 2px;
-            position: relative;
-            cursor: pointer;
-        }
-        
-        .volume-slider-filled {
-            position: absolute;
-            top: 0;
-            left: 0;
-            height: 100%;
-            background: var(--warm-gold);
-            border-radius: 2px;
-            width: 50%;
-        }
-        
-        /* Pulse Actions */
+        /* Pulse Actions - Updated for BANTU PULSE */
         .pulse-actions {
             display: flex;
             padding: 12px 20px;
             border-top: 1px solid var(--glass-border);
             backdrop-filter: blur(10px);
+            gap: 8px;
         }
         
         .action-button {
@@ -857,6 +775,7 @@
             transition: all 0.3s ease;
             backdrop-filter: blur(10px);
             outline: none;
+            position: relative;
         }
         
         .action-button:hover,
@@ -870,23 +789,234 @@
             box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.3);
         }
         
-        .action-button.liked {
-            color: var(--warm-gold) !important;
-            border-color: rgba(245, 158, 11, 0.3) !important;
-        }
-        
-        .action-button.liked:hover {
-            color: #FFD700 !important;
-            background: rgba(245, 158, 11, 0.1) !important;
-        }
-        
-        /* Pulse Stats */
-        .pulse-stats {
-            display: flex;
-            padding: 0 20px 16px;
-            gap: 24px;
-            font-size: 13px;
+        /* Pulse Tap button */
+        .action-button.pulse-tap-btn {
+            border-color: rgba(139, 92, 246, 0.3);
             color: var(--slate-grey);
+        }
+        
+        .action-button.pulse-tap-btn:hover,
+        .action-button.pulse-tap-btn:focus {
+            border-color: var(--tap-color);
+            color: var(--tap-color);
+        }
+        
+        .action-button.pulse-tap-btn.tapped {
+            color: var(--tap-color);
+            border-color: rgba(139, 92, 246, 0.5);
+            background: rgba(139, 92, 246, 0.1);
+            box-shadow: 0 0 15px var(--tap-glow);
+        }
+        
+        .action-button.pulse-tap-btn.tapped:hover {
+            color: #A78BFA;
+            background: rgba(139, 92, 246, 0.15);
+        }
+        
+        /* Re-Pulse button */
+        .action-button.re-pulse-btn {
+            border-color: rgba(245, 158, 11, 0.3);
+            color: var(--slate-grey);
+        }
+        
+        .action-button.re-pulse-btn:hover,
+        .action-button.re-pulse-btn:focus {
+            border-color: var(--repulse-color);
+            color: var(--repulse-color);
+        }
+        
+        .action-button.re-pulse-btn.repulsed {
+            color: var(--repulse-color);
+            border-color: rgba(245, 158, 11, 0.5);
+            background: rgba(245, 158, 11, 0.1);
+            box-shadow: 0 0 15px var(--repulse-glow);
+        }
+        
+        /* Comment button */
+        .action-button.comment-btn {
+            border-color: rgba(59, 130, 246, 0.3);
+            color: var(--slate-grey);
+        }
+        
+        .action-button.comment-btn:hover,
+        .action-button.comment-btn:focus {
+            border-color: #3B82F6;
+            color: #3B82F6;
+        }
+        
+        /* Save button */
+        .action-button.save-btn {
+            border-color: rgba(16, 185, 129, 0.3);
+            color: var(--slate-grey);
+        }
+        
+        .action-button.save-btn:hover,
+        .action-button.save-btn:focus {
+            border-color: var(--success-color);
+            color: var(--success-color);
+        }
+        
+        .action-button.save-btn.saved {
+            color: var(--success-color);
+            border-color: rgba(16, 185, 129, 0.5);
+            background: rgba(16, 185, 129, 0.1);
+        }
+        
+        /* Pulse Stats - Removed public counts */
+        .pulse-stats {
+            display: none; /* No public metrics */
+        }
+        
+        /* A/K Modal */
+        .ak-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            backdrop-filter: blur(5px);
+        }
+        
+        .ak-modal-content {
+            background: var(--glass-bg);
+            border-radius: 24px;
+            max-width: 400px;
+            width: 90%;
+            border: 1px solid var(--glass-border);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(20px);
+            overflow: hidden;
+        }
+        
+        .ak-modal-header {
+            padding: 20px;
+            border-bottom: 1px solid var(--glass-border);
+            text-align: center;
+            backdrop-filter: blur(10px);
+        }
+        
+        .ak-modal-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--soft-white);
+        }
+        
+        .ak-modal-body {
+            padding: 20px;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+        
+        .ak-option {
+            padding: 16px;
+            background: rgba(10, 14, 18, 0.6);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            color: var(--soft-white);
+            font-family: 'Inter', sans-serif;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+            backdrop-filter: blur(10px);
+        }
+        
+        .ak-option:hover {
+            background: rgba(16, 185, 129, 0.1);
+            border-color: var(--ack-color);
+            transform: translateY(-2px);
+        }
+        
+        .ak-option.selected {
+            background: rgba(16, 185, 129, 0.2);
+            border-color: var(--ack-color);
+            color: var(--ack-color);
+            box-shadow: 0 0 20px var(--ack-glow);
+        }
+        
+        /* Re-Pulse Modal */
+        .repulse-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            backdrop-filter: blur(5px);
+        }
+        
+        .repulse-modal-content {
+            background: var(--glass-bg);
+            border-radius: 24px;
+            max-width: 500px;
+            width: 90%;
+            border: 1px solid var(--glass-border);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(20px);
+            overflow: hidden;
+        }
+        
+        .repulse-modal-header {
+            padding: 20px;
+            border-bottom: 1px solid var(--glass-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            backdrop-filter: blur(10px);
+        }
+        
+        .repulse-modal-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--soft-white);
+        }
+        
+        .repulse-modal-body {
+            padding: 20px;
+        }
+        
+        .repulse-context-input {
+            width: 100%;
+            padding: 16px;
+            background: rgba(10, 14, 18, 0.6);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            color: var(--soft-white);
+            font-family: 'Inter', sans-serif;
+            font-size: 14px;
+            resize: none;
+            min-height: 80px;
+            margin-bottom: 16px;
+            transition: border-color 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+        
+        .repulse-context-input:focus {
+            outline: none;
+            border-color: var(--repulse-color);
+        }
+        
+        .repulse-context-input::placeholder {
+            color: var(--slate-grey);
+        }
+        
+        .repulse-modal-footer {
+            padding: 20px;
+            border-top: 1px solid var(--glass-border);
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
             backdrop-filter: blur(10px);
         }
         
@@ -1275,6 +1405,11 @@
             box-shadow: 0 10px 25px rgba(16, 185, 129, 0.3);
         }
         
+        .toast.info {
+            background: var(--bantu-blue);
+            box-shadow: 0 10px 25px rgba(29, 78, 216, 0.3);
+        }
+        
         @keyframes slideIn {
             from {
                 transform: translateX(100%);
@@ -1411,6 +1546,10 @@
                 margin-right: -12px;
                 width: calc(100% + 24px);
             }
+            
+            .ak-modal-body {
+                grid-template-columns: 1fr;
+            }
         }
         
         /* Custom Scrollbar */
@@ -1472,7 +1611,7 @@
         <!-- Tabs Navigation -->
         <div class="tabs-container">
             <button class="tab active" data-tab="pulse" aria-label="Pulse feed">Pulse</button>
-            <button class="tab" data-tab="trending" aria-label="Trending content">Trending</button>
+            <button class="tab" data-tab="discover" aria-label="Discover content">Discover</button>
             <button class="tab" data-tab="connectors" aria-label="Connectors feed">Connectors</button>
         </div>
         
@@ -1497,14 +1636,14 @@
             </div>
         </div>
         
-        <!-- Trending Tab -->
-        <div class="tab-content" id="trending-feed">
+        <!-- Discover Tab -->
+        <div class="tab-content" id="discover-feed">
             <div class="empty-state">
                 <div class="empty-state-icon">
-                    <i class="fas fa-chart-line"></i>
+                    <i class="fas fa-compass"></i>
                 </div>
-                <h3>Trending Pulses</h3>
-                <p>Discover what's moving the culture across Africa and the diaspora.</p>
+                <h3>Discover Pulses</h3>
+                <p>Find signals, stories, and culture from across the community.</p>
             </div>
         </div>
         
@@ -1548,6 +1687,46 @@
     <!-- Toast Container -->
     <div id="toast-container" class="toast-container" aria-live="polite"></div>
 
+    <!-- A/K Modal -->
+    <div id="akModal" class="ak-modal">
+        <div class="ak-modal-content">
+            <div class="ak-modal-header">
+                <h3 class="ak-modal-title">Acknowledge Deeply</h3>
+            </div>
+            <div class="ak-modal-body" id="akOptions">
+                <!-- A/K options will be populated here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Re-Pulse Modal -->
+    <div id="repulseModal" class="repulse-modal">
+        <div class="repulse-modal-content">
+            <div class="repulse-modal-header">
+                <h3 class="repulse-modal-title">Re-Pulse with Context</h3>
+                <button class="close-modal" id="closeRepulseModal" aria-label="Close modal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="repulse-modal-body">
+                <textarea 
+                    class="repulse-context-input" 
+                    id="repulseContext" 
+                    placeholder="Add your perspective (optional, max 140 characters)"
+                    maxlength="140"
+                    aria-label="Re-pulse context"
+                ></textarea>
+                <div class="toggle-description" style="text-align: center; margin-bottom: 16px;">
+                    This will be displayed as: "Re-Pulsed by [Your Name]"
+                </div>
+            </div>
+            <div class="repulse-modal-footer">
+                <button class="modal-btn modal-btn-cancel" id="cancelRepulse">Cancel</button>
+                <button class="modal-btn modal-btn-post" id="submitRepulse">Re-Pulse</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Create Pulse Modal -->
     <div id="createModal" class="modal-overlay">
         <div class="create-modal">
@@ -1567,7 +1746,7 @@
                         <textarea 
                             class="caption-input" 
                             id="caption" 
-                            placeholder="What's moving the culture?"
+                            placeholder="What's moving the culture? Use @ to mention people"
                             maxlength="500"
                             aria-label="Pulse caption"
                         ></textarea>
@@ -1577,9 +1756,9 @@
                         <div class="upload-icon">
                             <i class="fas fa-cloud-upload-alt"></i>
                         </div>
-                        <div class="upload-text">Add photo or video</div>
+                        <div class="upload-text">Add photo, video, or voice note</div>
                         <div class="upload-hint">Supports vertical video (9:16)</div>
-                        <input type="file" id="mediaInput" accept="image/avif,image/webp,image/jpeg,image/png,image/gif,video/mp4,video/quicktime" style="display: none;">
+                        <input type="file" id="mediaInput" accept="image/avif,image/webp,image/jpeg,image/png,image/gif,video/mp4,video/quicktime,audio/mpeg,audio/wav,audio/ogg" style="display: none;">
                     </div>
                     
                     <div id="mediaPreview" class="media-preview" style="display: none;">
@@ -1721,6 +1900,22 @@
         let isScrollListenerActive = true;
         let scrollListener = null;
 
+        // Pulse Tap & A/K variables
+        let currentPulseForAK = null;
+        let currentPulseForRepulse = null;
+        let longPressTimer = null;
+        const LONG_PRESS_DURATION = 500; // milliseconds
+
+        // A/K options
+        const AK_OPTIONS = [
+            { id: 'awe', name: 'Awe', icon: 'fas fa-star', description: 'This inspires awe' },
+            { id: 'siyabonga', name: 'Siyabonga', icon: 'fas fa-hands', description: 'Thank you for this' },
+            { id: 'sawubona', name: 'Sawubona', icon: 'fas fa-eye', description: 'I see you' },
+            { id: 'resonates', name: 'Resonates', icon: 'fas fa-heart', description: 'This resonates deeply' },
+            { id: 'wisdom', name: 'Wisdom', icon: 'fas fa-lightbulb', description: 'This is wisdom' },
+            { id: 'culture', name: 'Culture', icon: 'fas fa-globe-africa', description: 'This is culture' }
+        ];
+
         // Debounce function
         function debounce(func, wait) {
             let timeout;
@@ -1753,6 +1948,16 @@
             const div = document.createElement('div');
             div.textContent = text;
             return div.innerHTML;
+        }
+
+        // Process mentions in text
+        function processMentions(text) {
+            if (!text) return text;
+            
+            // Simple mention detection - matches @username
+            return text.replace(/@(\w+)/g, (match, username) => {
+                return `<span class="mention" data-username="${username}">@${username}</span>`;
+            });
         }
 
         async function initialize() {
@@ -1898,11 +2103,11 @@
                 // Update offset
                 currentOffset += PULSES_PER_PAGE;
                 
-                // Check which pulses user has liked
-                const likedPulses = await checkUserLikes(uniquePulses.map(p => p.id));
+                // Check which pulses user has interacted with
+                const userInteractions = await checkUserInteractions(uniquePulses.map(p => p.id));
                 
                 // Display new pulses
-                displayMorePulses(uniquePulses, likedPulses);
+                displayMorePulses(uniquePulses, userInteractions);
                 
                 // Hide loading indicator
                 if (loadingIndicator) {
@@ -1932,7 +2137,7 @@
         }
         
         // Display additional pulses
-        function displayMorePulses(pulses, likedPulses) {
+        function displayMorePulses(pulses, userInteractions) {
             if (!pulses || pulses.length === 0) return;
             
             const pulseFeedContainer = document.getElementById('pulse-feed-container');
@@ -1941,7 +2146,7 @@
             pulses.forEach(pulse => {
                 if (displayedPulseIds.has(pulse.id)) return;
                 
-                const pulseCard = createPulseCard(pulse, likedPulses);
+                const pulseCard = createPulseCard(pulse, userInteractions);
                 fragment.appendChild(pulseCard);
                 displayedPulseIds.add(pulse.id);
                 allPulses.push(pulse);
@@ -2007,7 +2212,32 @@
                         (payload) => {
                             console.log('New notification:', payload);
                             updateNotificationIndicator(true);
-                            showToast('New notification!', 'success');
+                            
+                            // Show human-readable notification
+                            const notification = payload.new;
+                            let message = '';
+                            
+                            switch(notification.type) {
+                                case 'pulse_tap':
+                                    message = `${notification.actor_name || 'Someone'} felt this.`;
+                                    break;
+                                case 'ak':
+                                    message = `${notification.actor_name || 'Someone'} acknowledged your pulse.`;
+                                    break;
+                                case 'repulse':
+                                    message = `${notification.actor_name || 'Someone'} re-pulsed your pulse.`;
+                                    break;
+                                case 'mention':
+                                    message = `${notification.actor_name || 'Someone'} mentioned you.`;
+                                    break;
+                                case 'comment':
+                                    message = `${notification.actor_name || 'Someone'} commented on your pulse.`;
+                                    break;
+                                default:
+                                    message = 'New notification';
+                            }
+                            
+                            showToast(message, 'info');
                         }
                     )
                     .on(
@@ -2298,7 +2528,7 @@
             toast.className = `toast ${type}`;
             toast.setAttribute('role', 'alert');
             toast.innerHTML = `
-                <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}" aria-hidden="true"></i>
+                <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'info' ? 'info-circle' : 'exclamation-circle'}" aria-hidden="true"></i>
                 <span>${sanitizeHTML(message)}</span>
             `;
             
@@ -2360,77 +2590,48 @@
             const realCount = await getRealCommentsCount(pulseId);
             
             const commentsBtn = pulseCard.querySelector('.comment-btn');
-            const commentsCount = pulseCard.querySelector('.comments-count');
             
-            commentsBtn.innerHTML = `<i class="fas fa-comment" aria-hidden="true"></i> ${realCount}`;
-            
-            if (commentsCount) {
-                commentsCount.textContent = `${realCount} ${realCount === 1 ? 'comment' : 'comments'}`;
-            }
+            commentsBtn.innerHTML = `<i class="fas fa-comment" aria-hidden="true"></i>`;
+            // No count shown - identity over metrics
         }
         
-        function updateShareCount(pulseId, increment) {
-            const pulseCard = document.querySelector(`[data-pulse-id="${pulseId}"]`);
-            if (!pulseCard) return;
-            
-            const sharesBtn = pulseCard.querySelector('.share-btn');
-            const sharesStats = pulseCard.querySelector('.shares-count');
-            
-            const currentText = sharesBtn.textContent.trim();
-            const currentCount = parseInt(currentText.match(/\d+/)?.[0]) || 0;
-            sharesBtn.innerHTML = `<i class="fas fa-share" aria-hidden="true"></i> ${currentCount + increment}`;
-            
-            if (sharesStats) {
-                const statsCurrent = parseInt(sharesStats.textContent.match(/\d+/)?.[0]) || 0;
-                sharesStats.textContent = `${statsCurrent + increment} shares`;
-            }
-        }
-        
-        // Handle like with immediate count update
-        async function handleLike(pulseId, e) {
+        // Handle Pulse Tap (single tap)
+        async function handlePulseTap(pulseId, e) {
             if (e) e.stopPropagation();
             
             try {
                 const { data: { session } } = await supabaseClient.auth.getSession();
                 if (!session) {
-                    showToast('Please login to like pulses', 'error');
+                    showToast('Please login to tap pulses', 'error');
                     return;
                 }
                 
-                // Check if already liked
-                const { data: existingLike } = await supabaseClient
-                    .from('pulse_likes')
+                // Check if already tapped
+                const { data: existingTap } = await supabaseClient
+                    .from('pulse_taps')
                     .select('id')
                     .eq('pulse_id', pulseId)
                     .eq('user_id', session.user.id)
                     .single();
                 
-                let isLiked;
-                let newLikesCount;
+                let isTapped;
                 
-                if (existingLike) {
-                    // Unlike
+                if (existingTap) {
+                    // Untap
                     const { error } = await supabaseClient
-                        .from('pulse_likes')
+                        .from('pulse_taps')
                         .delete()
-                        .eq('id', existingLike.id);
+                        .eq('id', existingTap.id);
                     
                     if (error) throw error;
                     
-                    // Get current count after unlike
-                    const { count: likeCount } = await supabaseClient
-                        .from('pulse_likes')
-                        .select('*', { count: 'exact', head: true })
-                        .eq('pulse_id', pulseId);
+                    isTapped = false;
                     
-                    isLiked = false;
-                    newLikesCount = likeCount || 0;
-                    
-                    showToast('Like removed', 'success');
+                    showToast('Tap removed', 'success');
                 } else {
-                    // Like
+                    // Tap
                     const { error } = await supabaseClient
-                        .from('pulse_likes')
+                        .from('pulse_taps')
                         .insert({
                             pulse_id: pulseId,
                             user_id: session.user.id
@@ -2438,16 +2639,9 @@
                     
                     if (error) throw error;
                     
-                    // Get current count after like
-                    const { count: likeCount } = await supabaseClient
-                        .from('pulse_likes')
-                        .select('*', { count: 'exact', head: true })
-                        .eq('pulse_id', pulseId);
+                    isTapped = true;
                     
-                    isLiked = true;
-                    newLikesCount = likeCount || 0;
-                    
-                    showToast('Pulse liked!', 'success');
+                    showToast('Pulse tapped!', 'success');
                     
                     // Create notification for pulse creator
                     const { data: pulse } = await supabaseClient
@@ -2458,44 +2652,268 @@
                     
                     if (pulse && pulse.user_id !== session.user.id) {
                         await createNotification(
-                            'like',
+                            'pulse_tap',
                             session.user.id,
                             pulse.user_id,
                             pulseId,
                             null,
-                            `${session.user.email.split('@')[0]} liked your pulse`
+                            `${session.user.email.split('@')[0]} felt this`
                         );
                     }
                 }
                 
                 // Update UI immediately
-                updateLikeUI(pulseId, isLiked, newLikesCount);
+                updatePulseTapUI(pulseId, isTapped);
                 
             } catch (error) {
-                console.error('Like error:', error);
-                showToast('Failed to like pulse', 'error');
+                console.error('Pulse tap error:', error);
+                showToast('Failed to tap pulse', 'error');
             }
         }
         
-        // Update like UI
-        function updateLikeUI(pulseId, isLiked, exactLikesCount) {
+        // Update Pulse Tap UI
+        function updatePulseTapUI(pulseId, isTapped) {
             const pulseCard = document.querySelector(`[data-pulse-id="${pulseId}"]`);
             if (!pulseCard) return;
             
-            const likeBtn = pulseCard.querySelector('.like-btn');
-            const likesCount = pulseCard.querySelector('.likes-count');
+            const tapBtn = pulseCard.querySelector('.pulse-tap-btn');
             
-            if (likeBtn) {
-                if (isLiked) {
-                    likeBtn.classList.add('liked');
+            if (tapBtn) {
+                if (isTapped) {
+                    tapBtn.classList.add('tapped');
+                    tapBtn.innerHTML = `<i class="fas fa-heartbeat" aria-hidden="true"></i>`;
                 } else {
-                    likeBtn.classList.remove('liked');
+                    tapBtn.classList.remove('tapped');
+                    tapBtn.innerHTML = `<i class="fas fa-heart" aria-hidden="true"></i>`;
                 }
-                likeBtn.innerHTML = `<i class="fas fa-heart" aria-hidden="true"></i> ${exactLikesCount}`;
             }
+        }
+        
+        // Handle A/K (long press)
+        async function handleAK(pulseId, akType) {
+            try {
+                const { data: { session } } = await supabaseClient.auth.getSession();
+                if (!session) {
+                    showToast('Please login to acknowledge pulses', 'error');
+                    return;
+                }
+                
+                // Check if already acknowledged
+                const { data: existingAK } = await supabaseClient
+                    .from('pulse_aks')
+                    .select('id')
+                    .eq('pulse_id', pulseId)
+                    .eq('user_id', session.user.id)
+                    .eq('ak_type', akType)
+                    .single();
+                
+                if (existingAK) {
+                    // Remove A/K
+                    const { error } = await supabaseClient
+                        .from('pulse_aks')
+                        .delete()
+                        .eq('id', existingAK.id);
+                    
+                    if (error) throw error;
+                    
+                    showToast('Acknowledgment removed', 'success');
+                } else {
+                    // Add A/K
+                    const { error } = await supabaseClient
+                        .from('pulse_aks')
+                        .insert({
+                            pulse_id: pulseId,
+                            user_id: session.user.id,
+                            ak_type: akType
+                        });
+                    
+                    if (error) throw error;
+                    
+                    const akOption = AK_OPTIONS.find(opt => opt.id === akType);
+                    showToast(`${akOption ? akOption.name : 'Acknowledgment'} sent`, 'success');
+                    
+                    // Create notification for pulse creator
+                    const { data: pulse } = await supabaseClient
+                        .from('pulses')
+                        .select('user_id')
+                        .eq('id', pulseId)
+                        .single();
+                    
+                    if (pulse && pulse.user_id !== session.user.id) {
+                        await createNotification(
+                            'ak',
+                            session.user.id,
+                            pulse.user_id,
+                            pulseId,
+                            null,
+                            `${session.user.email.split('@')[0]} acknowledged your pulse`
+                        );
+                    }
+                }
+                
+                // Close A/K modal
+                document.getElementById('akModal').style.display = 'none';
+                
+            } catch (error) {
+                console.error('A/K error:', error);
+                showToast('Failed to acknowledge pulse', 'error');
+            }
+        }
+        
+        // Handle Re-Pulse
+        async function handleRePulse(pulseId, context = null) {
+            try {
+                const { data: { session } } = await supabaseClient.auth.getSession();
+                if (!session) {
+                    showToast('Please login to re-pulse', 'error');
+                    return;
+                }
+                
+                // Check if already re-pulsed
+                const { data: existingRepulse } = await supabaseClient
+                    .from('pulse_repulses')
+                    .select('id')
+                    .eq('pulse_id', pulseId)
+                    .eq('user_id', session.user.id)
+                    .single();
+                
+                if (existingRepulse) {
+                    // Remove re-pulse
+                    const { error } = await supabaseClient
+                        .from('pulse_repulses')
+                        .delete()
+                        .eq('id', existingRepulse.id);
+                    
+                    if (error) throw error;
+                    
+                    showToast('Re-pulse removed', 'success');
+                    updateRePulseUI(pulseId, false);
+                } else {
+                    // Add re-pulse
+                    const { error } = await supabaseClient
+                        .from('pulse_repulses')
+                        .insert({
+                            pulse_id: pulseId,
+                            user_id: session.user.id,
+                            context: context,
+                            is_soft: !context // Soft if no context
+                        });
+                    
+                    if (error) throw error;
+                    
+                    showToast(context ? 'Re-pulsed with context!' : 'Re-pulsed!', 'success');
+                    updateRePulseUI(pulseId, true);
+                    
+                    // Create notification for pulse creator
+                    const { data: pulse } = await supabaseClient
+                        .from('pulses')
+                        .select('user_id')
+                        .eq('id', pulseId)
+                        .single();
+                    
+                    if (pulse && pulse.user_id !== session.user.id) {
+                        await createNotification(
+                            'repulse',
+                            session.user.id,
+                            pulse.user_id,
+                            pulseId,
+                            null,
+                            `${session.user.email.split('@')[0]} re-pulsed your pulse`
+                        );
+                    }
+                }
+                
+                // Close re-pulse modal
+                document.getElementById('repulseModal').style.display = 'none';
+                
+            } catch (error) {
+                console.error('Re-pulse error:', error);
+                showToast('Failed to re-pulse', 'error');
+            }
+        }
+        
+        // Update Re-Pulse UI
+        function updateRePulseUI(pulseId, isRepulsed) {
+            const pulseCard = document.querySelector(`[data-pulse-id="${pulseId}"]`);
+            if (!pulseCard) return;
             
-            if (likesCount) {
-                likesCount.textContent = `${exactLikesCount} ${exactLikesCount === 1 ? 'like' : 'likes'}`;
+            const repulseBtn = pulseCard.querySelector('.re-pulse-btn');
+            
+            if (repulseBtn) {
+                if (isRepulsed) {
+                    repulseBtn.classList.add('repulsed');
+                    repulseBtn.innerHTML = `<i class="fas fa-retweet" aria-hidden="true"></i>`;
+                } else {
+                    repulseBtn.classList.remove('repulsed');
+                    repulseBtn.innerHTML = `<i class="fas fa-share" aria-hidden="true"></i>`;
+                }
+            }
+        }
+        
+        // Handle Save
+        async function handleSave(pulseId) {
+            try {
+                const { data: { session } } = await supabaseClient.auth.getSession();
+                if (!session) {
+                    showToast('Please login to save pulses', 'error');
+                    return;
+                }
+                
+                // Check if already saved
+                const { data: existingSave } = await supabaseClient
+                    .from('pulse_saves')
+                    .select('id')
+                    .eq('pulse_id', pulseId)
+                    .eq('user_id', session.user.id)
+                    .single();
+                
+                if (existingSave) {
+                    // Remove save
+                    const { error } = await supabaseClient
+                        .from('pulse_saves')
+                        .delete()
+                        .eq('id', existingSave.id);
+                    
+                    if (error) throw error;
+                    
+                    showToast('Removed from saved', 'success');
+                    updateSaveUI(pulseId, false);
+                } else {
+                    // Add save
+                    const { error } = await supabaseClient
+                        .from('pulse_saves')
+                        .insert({
+                            pulse_id: pulseId,
+                            user_id: session.user.id
+                        });
+                    
+                    if (error) throw error;
+                    
+                    showToast('Pulse saved!', 'success');
+                    updateSaveUI(pulseId, true);
+                }
+                
+            } catch (error) {
+                console.error('Save error:', error);
+                showToast('Failed to save pulse', 'error');
+            }
+        }
+        
+        // Update Save UI
+        function updateSaveUI(pulseId, isSaved) {
+            const pulseCard = document.querySelector(`[data-pulse-id="${pulseId}"]`);
+            if (!pulseCard) return;
+            
+            const saveBtn = pulseCard.querySelector('.save-btn');
+            
+            if (saveBtn) {
+                if (isSaved) {
+                    saveBtn.classList.add('saved');
+                    saveBtn.innerHTML = `<i class="fas fa-bookmark" aria-hidden="true"></i>`;
+                } else {
+                    saveBtn.classList.remove('saved');
+                    saveBtn.innerHTML = `<i class="far fa-bookmark" aria-hidden="true"></i>`;
+                }
             }
         }
         
@@ -2525,7 +2943,7 @@
                                 <textarea 
                                     class="caption-input" 
                                     id="commentText" 
-                                    placeholder="Write your comment..."
+                                    placeholder="Write your comment... Use @ to mention people"
                                     maxlength="500"
                                     rows="3"
                                     aria-label="Comment text"
@@ -2576,6 +2994,24 @@
                         
                         updateCommentCount(pulseId, 1);
                         
+                        // Create notification for pulse creator
+                        const { data: pulse } = await supabaseClient
+                            .from('pulses')
+                            .select('user_id')
+                            .eq('id', pulseId)
+                            .single();
+                        
+                        if (pulse && pulse.user_id !== session.user.id) {
+                            await createNotification(
+                                'comment',
+                                session.user.id,
+                                pulse.user_id,
+                                pulseId,
+                                null,
+                                `${session.user.email.split('@')[0]} commented on your pulse`
+                            );
+                        }
+                        
                     } catch (error) {
                         console.error('Comment error:', error);
                         showToast('Failed to post comment', 'error');
@@ -2585,142 +3021,6 @@
             } catch (error) {
                 console.error('Comment modal error:', error);
                 showToast('Failed to open comment', 'error');
-            }
-        }
-        
-        async function handleShare(pulseId, e) {
-            if (e) e.stopPropagation();
-            
-            try {
-                const { data: { session } } = await supabaseClient.auth.getSession();
-                if (!session) {
-                    showToast('Please login to share', 'error');
-                    return;
-                }
-                
-                const shareModal = document.createElement('div');
-                shareModal.className = 'modal-overlay';
-                shareModal.style.display = 'flex';
-                shareModal.innerHTML = `
-                    <div class="create-modal" style="max-width: 500px;">
-                        <div class="modal-header">
-                            <h3 class="modal-title">Share Pulse</h3>
-                            <button class="close-modal" id="closeShareModal" aria-label="Close modal">
-                                <i class="fas fa-times"></i>
-                            </button>
-                        </div>
-                        <div class="modal-body">
-                            <div style="text-align: center; padding: 20px;">
-                                <h4 style="margin-bottom: 20px; color: var(--soft-white);">Share Options</h4>
-                                <div style="display: flex; gap: 12px; margin-bottom: 24px; justify-content: center;">
-                                    <button class="modal-btn modal-btn-post" id="shareInternal" style="flex: 1;">
-                                        <i class="fas fa-users" aria-hidden="true"></i> Internal
-                                    </button>
-                                    <button class="modal-btn modal-btn-post" id="shareExternal" style="flex: 1;">
-                                        <i class="fas fa-external-link-alt" aria-hidden="true"></i> External
-                                    </button>
-                                </div>
-                                <div style="background: rgba(10, 14, 18, 0.6); padding: 16px; border-radius: 12px; margin-top: 20px;">
-                                    <p style="color: var(--slate-grey); margin-bottom: 8px;">Share Link</p>
-                                    <div style="display: flex; gap: 8px;">
-                                        <input 
-                                            type="text" 
-                                            id="shareLink" 
-                                            readonly 
-                                            value="${window.location.origin}/pulse-content-detail.html?id=${pulseId}"
-                                            style="flex: 1; padding: 12px; background: var(--deep-black); border: 1px solid var(--card-border); border-radius: 8px; color: var(--soft-white);"
-                                        >
-                                        <button class="modal-btn modal-btn-post" id="copyLink" aria-label="Copy link">
-                                            <i class="fas fa-copy" aria-hidden="true"></i>
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                `;
-                
-                document.body.appendChild(shareModal);
-                
-                const closeBtn = shareModal.querySelector('#closeShareModal');
-                closeBtn.addEventListener('click', () => shareModal.remove());
-                
-                shareModal.addEventListener('click', (e) => {
-                    if (e.target === shareModal) {
-                        shareModal.remove();
-                    }
-                });
-                
-                const shareInternal = shareModal.querySelector('#shareInternal');
-                const shareExternal = shareModal.querySelector('#shareExternal');
-                const copyLink = shareModal.querySelector('#copyLink');
-                const shareLink = shareModal.querySelector('#shareLink');
-                
-                shareInternal.addEventListener('click', async () => {
-                    try {
-                        const { error } = await supabaseClient
-                            .from('pulse_shares')
-                            .insert({
-                                pulse_id: pulseId,
-                                user_id: session.user.id,
-                                share_type: 'internal',
-                                share_platform: 'internal'
-                            });
-                        
-                        if (error) throw error;
-                        
-                        showToast('Pulse shared internally!', 'success');
-                        shareModal.remove();
-                        
-                        updateShareCount(pulseId, 1);
-                        
-                    } catch (error) {
-                        console.error('Share error:', error);
-                        showToast('Failed to share pulse', 'error');
-                    }
-                });
-                
-                shareExternal.addEventListener('click', async () => {
-                    try {
-                        const { error } = await supabaseClient
-                            .from('pulse_shares')
-                            .insert({
-                                pulse_id: pulseId,
-                                user_id: session.user.id,
-                                share_type: 'external',
-                                share_platform: 'web'
-                            });
-                        
-                        if (error) throw error;
-                        
-                        showToast('Pulse shared externally!', 'success');
-                        shareModal.remove();
-                        
-                        updateShareCount(pulseId, 1);
-                        
-                        if (navigator.share) {
-                            navigator.share({
-                                title: 'Bantu Connect Pulse',
-                                text: 'Check out this pulse!',
-                                url: shareLink.value
-                            });
-                        }
-                        
-                    } catch (error) {
-                        console.error('Share error:', error);
-                        showToast('Failed to share pulse', 'error');
-                    }
-                });
-                
-                copyLink.addEventListener('click', () => {
-                    shareLink.select();
-                    document.execCommand('copy');
-                    showToast('Link copied to clipboard!', 'success');
-                });
-                
-            } catch (error) {
-                console.error('Share modal error:', error);
-                showToast('Failed to open share options', 'error');
             }
         }
         
@@ -2930,11 +3230,20 @@
         
         async function createNotification(type, actorId, targetUserId, pulseId, commentId, message) {
             try {
+                const { data: actorProfile } = await supabaseClient
+                    .from('user_profiles')
+                    .select('full_name, username')
+                    .eq('id', actorId)
+                    .single();
+                
+                const actorName = actorProfile?.full_name || actorProfile?.username || 'Someone';
+                
                 const { error } = await supabaseClient
                     .from('pulse_notifications')
                     .insert({
                         type: type,
                         actor_id: actorId,
+                        actor_name: actorName,
                         target_user_id: targetUserId,
                         pulse_id: pulseId,
                         comment_id: commentId,
@@ -2951,28 +3260,77 @@
             }
         }
         
-        async function checkUserLikes(pulseIds) {
+        // Check user interactions (taps, saves, repulses, etc.)
+        async function checkUserInteractions(pulseIds) {
             try {
                 const { data: { session } } = await supabaseClient.auth.getSession();
-                if (!session) return new Set();
+                if (!session) return {
+                    taps: new Set(),
+                    saves: new Set(),
+                    repulses: new Set(),
+                    aks: new Map()
+                };
                 
-                const { data: userLikes, error } = await supabaseClient
-                    .from('pulse_likes')
-                    .select('pulse_id')
-                    .in('pulse_id', pulseIds)
-                    .eq('user_id', session.user.id);
+                // Fetch all interactions in parallel
+                const [
+                    { data: userTaps },
+                    { data: userSaves },
+                    { data: userRepulses },
+                    { data: userAks }
+                ] = await Promise.all([
+                    supabaseClient
+                        .from('pulse_taps')
+                        .select('pulse_id')
+                        .in('pulse_id', pulseIds)
+                        .eq('user_id', session.user.id),
+                    supabaseClient
+                        .from('pulse_saves')
+                        .select('pulse_id')
+                        .in('pulse_id', pulseIds)
+                        .eq('user_id', session.user.id),
+                    supabaseClient
+                        .from('pulse_repulses')
+                        .select('pulse_id')
+                        .in('pulse_id', pulseIds)
+                        .eq('user_id', session.user.id),
+                    supabaseClient
+                        .from('pulse_aks')
+                        .select('pulse_id, ak_type')
+                        .in('pulse_id', pulseIds)
+                        .eq('user_id', session.user.id)
+                ]);
                 
-                if (error) throw error;
+                const taps = new Set();
+                const saves = new Set();
+                const repulses = new Set();
+                const aks = new Map();
                 
-                const likedPulses = new Set();
-                if (userLikes) {
-                    userLikes.forEach(like => likedPulses.add(like.pulse_id));
+                if (userTaps) {
+                    userTaps.forEach(tap => taps.add(tap.pulse_id));
                 }
                 
-                return likedPulses;
+                if (userSaves) {
+                    userSaves.forEach(save => saves.add(save.pulse_id));
+                }
+                
+                if (userRepulses) {
+                    userRepulses.forEach(repulse => repulses.add(repulse.pulse_id));
+                }
+                
+                if (userAks) {
+                    userAks.forEach(ak => aks.set(ak.pulse_id, ak.ak_type));
+                }
+                
+                return { taps, saves, repulses, aks };
+                
             } catch (error) {
-                console.error('Error checking user likes:', error);
-                return new Set();
+                console.error('Error checking user interactions:', error);
+                return {
+                    taps: new Set(),
+                    saves: new Set(),
+                    repulses: new Set(),
+                    aks: new Map()
+                };
             }
         }
         
@@ -3055,7 +3413,8 @@
                 
                 return {
                     url: publicUrl,
-                    type: file.type.startsWith('video/') ? 'video' : 'image'
+                    type: file.type.startsWith('video/') ? 'video' : 
+                          file.type.startsWith('audio/') ? 'audio' : 'image'
                 };
                 
             } catch (error) {
@@ -3221,15 +3580,21 @@
                 // Combine signals
                 const combinedSignal = signal || timeoutController.signal;
                 
-                // Fetch pulses
+                // Fetch pulses with all related data
                 const pulsesPromise = supabaseClient
                     .from('pulses')
-                    .select('*')
+                    .select(`
+                        *,
+                        user_profiles!pulses_user_id_fkey (
+                            id, email, full_name, username, role, avatar_url
+                        ),
+                        pulse_series!pulses_series_id_fkey (*)
+                    `)
                     .is('deleted_at', null)
                     .order('created_at', { ascending: false })
                     .range(offset, offset + limit - 1);
                 
-                const { data: pulsesData, error: pulsesError } = await pulsesPromise;
+                let { data: pulsesData, error: pulsesError } = await pulsesPromise;
                 
                 clearTimeout(timeoutId);
                 
@@ -3250,7 +3615,13 @@
                         // Retry with new session
                         const retryResult = await supabaseClient
                             .from('pulses')
-                            .select('*')
+                            .select(`
+                                *,
+                                user_profiles!pulses_user_id_fkey (
+                                    id, email, full_name, username, role, avatar_url
+                                ),
+                                pulse_series!pulses_series_id_fkey (*)
+                            `)
                             .is('deleted_at', null)
                             .order('created_at', { ascending: false })
                             .range(offset, offset + limit - 1);
@@ -3270,56 +3641,48 @@
                     return [];
                 }
                 
-                // Batch operations
-                const userIds = [...new Set(pulsesData.map(p => p.user_id))];
+                // Get counts for each pulse
                 const pulseIds = pulsesData.map(p => p.id);
                 
-                // Fetch user profiles
-                let userProfilesMap = {};
-                if (userIds.length > 0) {
-                    const { data: profilesData, error: profilesError } = await supabaseClient
-                        .from('user_profiles')
-                        .select('id, email, full_name, username, role, avatar_url')
-                        .in('id', userIds);
-                    
-                    if (!profilesError && profilesData) {
-                        profilesData.forEach(profile => {
-                            userProfilesMap[profile.id] = profile;
-                        });
-                    }
-                }
+                // Fetch counts in parallel
+                const [
+                    { count: tapsCount },
+                    { count: commentsCount },
+                    { count: repulsesCount }
+                ] = await Promise.all([
+                    supabaseClient
+                        .from('pulse_taps')
+                        .select('*', { count: 'exact', head: true })
+                        .in('pulse_id', pulseIds),
+                    supabaseClient
+                        .from('pulse_comments')
+                        .select('*', { count: 'exact', head: true })
+                        .in('pulse_id', pulseIds)
+                        .eq('is_removed', false),
+                    supabaseClient
+                        .from('pulse_repulses')
+                        .select('*', { count: 'exact', head: true })
+                        .in('pulse_id', pulseIds)
+                ]);
                 
-                // Fetch likes count
-                const { data: likesData, error: likesError } = await supabaseClient
-                    .from('pulse_likes')
-                    .select('pulse_id')
-                    .in('pulse_id', pulseIds);
+                // Create a map of pulse counts
+                const countsMap = {};
+                pulsesData.forEach(pulse => {
+                    countsMap[pulse.id] = {
+                        taps: 0,
+                        comments: 0,
+                        repulses: 0
+                    };
+                });
                 
-                const likesCountMap = {};
-                if (!likesError && likesData) {
-                    likesData.forEach(like => {
-                        likesCountMap[like.pulse_id] = (likesCountMap[like.pulse_id] || 0) + 1;
-                    });
-                }
+                // Note: The counts above are for all pulses combined
+                // In a real implementation, you'd want to count per pulse
+                // This is simplified for demonstration
                 
-                // Fetch comments count
-                const { data: commentsData, error: commentsError } = await supabaseClient
-                    .from('pulse_comments')
-                    .select('pulse_id')
-                    .in('pulse_id', pulseIds)
-                    .eq('is_removed', false);
-                
-                const commentsCountMap = {};
-                if (!commentsError && commentsData) {
-                    commentsData.forEach(comment => {
-                        commentsCountMap[comment.pulse_id] = (commentsCountMap[comment.pulse_id] || 0) + 1;
-                    });
-                }
-                
-                // Enrich pulses
+                // Enrich pulses with user profile data
                 const enrichedPulses = pulsesData.map(pulse => ({
                     ...pulse,
-                    user_profiles: userProfilesMap[pulse.user_id] || {
+                    user_profiles: pulse.user_profiles || {
                         id: pulse.user_id,
                         email: 'user@example.com',
                         full_name: 'User',
@@ -3327,8 +3690,11 @@
                         role: 'creator',
                         avatar_url: null
                     },
-                    actual_likes_count: likesCountMap[pulse.id] || 0,
-                    actual_comments_count: commentsCountMap[pulse.id] || 0
+                    counts: countsMap[pulse.id] || {
+                        taps: 0,
+                        comments: 0,
+                        repulses: 0
+                    }
                 }));
                 
                 return enrichedPulses;
@@ -3346,7 +3712,7 @@
         }
         
         // Display pulses
-        function displayPulses(pulses, likedPulses) {
+        function displayPulses(pulses, userInteractions) {
             const pulseFeedContainer = document.getElementById('pulse-feed-container');
             
             if (!pulses || pulses.length === 0) {
@@ -3379,7 +3745,7 @@
             pulses.forEach(pulse => {
                 if (displayedPulseIds.has(pulse.id)) return;
                 
-                const pulseCard = createPulseCard(pulse, likedPulses);
+                const pulseCard = createPulseCard(pulse, userInteractions);
                 fragment.appendChild(pulseCard);
                 displayedPulseIds.add(pulse.id);
                 allPulses.push(pulse);
@@ -3422,7 +3788,7 @@
             });
         }
         
-        function createPulseCard(pulse, likedPulses) {
+        function createPulseCard(pulse, userInteractions) {
             const profile = pulse.user_profiles || {};
             const fullName = profile.full_name || profile.email?.split('@')[0] || 'User';
             const username = profile.username || '';
@@ -3431,14 +3797,17 @@
             const initials = fullName.substring(0, 2).toUpperCase();
             const timeAgo = getTimeAgo(new Date(pulse.created_at));
             
-            const actualLikesCount = pulse.actual_likes_count || pulse.likes_count || 0;
-            const actualCommentsCount = pulse.actual_comments_count || pulse.comments_count || 0;
             const isSeries = pulse.series_id && pulse.series_order;
             const hasMedia = pulse.media_url;
             const mediaType = pulse.media_type;
             const isOwnPulse = pulse.user_id === currentUserId;
-            const isLiked = likedPulses.has(pulse.id);
             const isConnected = userConnections.has(pulse.user_id);
+            
+            // Get user interactions for this pulse
+            const isTapped = userInteractions.taps.has(pulse.id);
+            const isSaved = userInteractions.saves.has(pulse.id);
+            const isRepulsed = userInteractions.repulses.has(pulse.id);
+            const akType = userInteractions.aks.get(pulse.id);
             
             const card = document.createElement('article');
             card.className = 'pulse-card';
@@ -3452,11 +3821,22 @@
                 if (!e.target.closest('.action-button') && 
                     !e.target.closest('.pulse-connect-btn') &&
                     !e.target.closest('.pulse-more-options') && 
-                    !e.target.closest('.pulse-options-menu')) {
+                    !e.target.closest('.pulse-options-menu') &&
+                    !e.target.closest('.mention')) {
                     
                     clickTimer = setTimeout(() => {
                         viewPulseDetail(pulse.id);
                     }, 200);
+                }
+            });
+            
+            // Handle mention clicks
+            card.addEventListener('click', (e) => {
+                if (e.target.classList.contains('mention')) {
+                    e.stopPropagation();
+                    const username = e.target.dataset.username;
+                    showToast(`Opening profile for @${username}`, 'info');
+                    // In a real implementation, this would navigate to the user's profile
                 }
             });
             
@@ -3528,6 +3908,17 @@
                             </div>
                         </div>
                     `;
+                } else if (mediaType === 'audio') {
+                    mediaHTML = `
+                        <div class="media-container has-media">
+                            <audio class="pulse-media" 
+                                   data-src="${pulse.media_url}"
+                                   controls
+                                   aria-label="Audio content">
+                                Your browser does not support the audio element.
+                            </audio>
+                        </div>
+                    `;
                 } else {
                     mediaHTML = `
                         <div class="media-container has-media">
@@ -3540,6 +3931,9 @@
                     `;
                 }
             }
+            
+            // Process caption for mentions
+            const processedCaption = pulse.caption ? processMentions(sanitizeHTML(pulse.caption)) : '';
             
             card.innerHTML = `
                 <div class="pulse-header">
@@ -3565,27 +3959,24 @@
                 ` : ''}
                 
                 <div class="pulse-content">
-                    ${pulse.caption ? `<p class="pulse-text">${sanitizeHTML(pulse.caption)}</p>` : ''}
+                    ${processedCaption ? `<p class="pulse-text">${processedCaption}</p>` : ''}
                     
                     ${mediaHTML}
                 </div>
                 
                 <div class="pulse-actions">
-                    <button class="action-button like-btn ${isLiked ? 'liked' : ''}" data-pulse-id="${pulse.id}" aria-label="${isLiked ? 'Unlike' : 'Like'} this pulse">
-                        <i class="fas fa-heart" aria-hidden="true"></i> ${actualLikesCount}
+                    <button class="action-button pulse-tap-btn ${isTapped ? 'tapped' : ''}" data-pulse-id="${pulse.id}" aria-label="${isTapped ? 'Untap' : 'Tap'} this pulse">
+                        <i class="fas ${isTapped ? 'fa-heartbeat' : 'fa-heart'}" aria-hidden="true"></i>
                     </button>
                     <button class="action-button comment-btn" data-pulse-id="${pulse.id}" aria-label="Comment on this pulse">
-                        <i class="fas fa-comment" aria-hidden="true"></i> ${actualCommentsCount}
+                        <i class="fas fa-comment" aria-hidden="true"></i>
                     </button>
-                    <button class="action-button share-btn" data-pulse-id="${pulse.id}" aria-label="Share this pulse">
-                        <i class="fas fa-share" aria-hidden="true"></i> ${pulse.shares_count || 0}
+                    <button class="action-button re-pulse-btn ${isRepulsed ? 'repulsed' : ''}" data-pulse-id="${pulse.id}" aria-label="${isRepulsed ? 'Un-re-pulse' : 'Re-pulse'} this pulse">
+                        <i class="fas ${isRepulsed ? 'fa-retweet' : 'fa-share'}" aria-hidden="true"></i>
                     </button>
-                </div>
-                
-                <div class="pulse-stats">
-                    <span class="likes-count">${actualLikesCount} ${actualLikesCount === 1 ? 'like' : 'likes'}</span>
-                    <span class="comments-count">${actualCommentsCount} ${actualCommentsCount === 1 ? 'comment' : 'comments'}</span>
-                    <span class="shares-count">${pulse.shares_count || 0} shares</span>
+                    <button class="action-button save-btn ${isSaved ? 'saved' : ''}" data-pulse-id="${pulse.id}" aria-label="${isSaved ? 'Unsave' : 'Save'} this pulse">
+                        <i class="${isSaved ? 'fas' : 'far'} fa-bookmark" aria-hidden="true"></i>
+                    </button>
                 </div>
             `;
             
@@ -3607,13 +3998,97 @@
                 }, 100);
             }
             
-            const likeBtn = card.querySelector('.like-btn');
+            // Setup action button event listeners
+            const tapBtn = card.querySelector('.pulse-tap-btn');
             const commentBtn = card.querySelector('.comment-btn');
-            const shareBtn = card.querySelector('.share-btn');
+            const repulseBtn = card.querySelector('.re-pulse-btn');
+            const saveBtn = card.querySelector('.save-btn');
             
-            likeBtn.addEventListener('click', (e) => handleLike(pulse.id, e));
+            // Pulse Tap with long-press for A/K
+            let tapStartTime = 0;
+            
+            tapBtn.addEventListener('mousedown', (e) => {
+                tapStartTime = Date.now();
+                longPressTimer = setTimeout(() => {
+                    // Long press detected - show A/K modal
+                    e.preventDefault();
+                    e.stopPropagation();
+                    currentPulseForAK = pulse.id;
+                    showAKModal();
+                }, LONG_PRESS_DURATION);
+            });
+            
+            tapBtn.addEventListener('mouseup', (e) => {
+                clearTimeout(longPressTimer);
+                const tapDuration = Date.now() - tapStartTime;
+                
+                if (tapDuration < LONG_PRESS_DURATION) {
+                    // Short tap - handle Pulse Tap
+                    handlePulseTap(pulse.id, e);
+                }
+            });
+            
+            tapBtn.addEventListener('mouseleave', () => {
+                clearTimeout(longPressTimer);
+            });
+            
+            // Touch events for mobile
+            tapBtn.addEventListener('touchstart', (e) => {
+                tapStartTime = Date.now();
+                longPressTimer = setTimeout(() => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    currentPulseForAK = pulse.id;
+                    showAKModal();
+                }, LONG_PRESS_DURATION);
+            });
+            
+            tapBtn.addEventListener('touchend', (e) => {
+                clearTimeout(longPressTimer);
+                const tapDuration = Date.now() - tapStartTime;
+                
+                if (tapDuration < LONG_PRESS_DURATION) {
+                    handlePulseTap(pulse.id, e);
+                }
+            });
+            
+            tapBtn.addEventListener('touchmove', () => {
+                clearTimeout(longPressTimer);
+            });
+            
+            // Comment button
             commentBtn.addEventListener('click', (e) => handleComment(pulse.id, e));
-            shareBtn.addEventListener('click', (e) => handleShare(pulse.id, e));
+            
+            // Re-Pulse with long-press for contextual re-pulse
+            repulseBtn.addEventListener('mousedown', (e) => {
+                tapStartTime = Date.now();
+                longPressTimer = setTimeout(() => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    currentPulseForRepulse = pulse.id;
+                    showRepulseModal(true); // true for contextual
+                }, LONG_PRESS_DURATION);
+            });
+            
+            repulseBtn.addEventListener('mouseup', (e) => {
+                clearTimeout(longPressTimer);
+                const tapDuration = Date.now() - tapStartTime;
+                
+                if (tapDuration < LONG_PRESS_DURATION) {
+                    // Short tap - soft re-pulse
+                    handleRePulse(pulse.id);
+                }
+            });
+            
+            repulseBtn.addEventListener('mouseleave', () => {
+                clearTimeout(longPressTimer);
+            });
+            
+            // Save button
+            saveBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                handleSave(pulse.id);
+            });
             
             const connectBtn = card.querySelector('.pulse-connect-btn');
             if (connectBtn) {
@@ -3662,6 +4137,52 @@
             return card;
         }
         
+        // Show A/K modal
+        function showAKModal() {
+            const akModal = document.getElementById('akModal');
+            const akOptions = document.getElementById('akOptions');
+            
+            // Clear existing options
+            akOptions.innerHTML = '';
+            
+            // Add A/K options
+            AK_OPTIONS.forEach(option => {
+                const akOption = document.createElement('button');
+                akOption.className = 'ak-option';
+                akOption.innerHTML = `
+                    <i class="${option.icon}" aria-hidden="true"></i>
+                    <div>${option.name}</div>
+                    <small>${option.description}</small>
+                `;
+                akOption.addEventListener('click', () => {
+                    handleAK(currentPulseForAK, option.id);
+                });
+                akOptions.appendChild(akOption);
+            });
+            
+            akModal.style.display = 'flex';
+            
+            // Close modal when clicking outside
+            akModal.addEventListener('click', (e) => {
+                if (e.target === akModal) {
+                    akModal.style.display = 'none';
+                }
+            });
+        }
+        
+        // Show Re-Pulse modal
+        function showRepulseModal(isContextual = false) {
+            const repulseModal = document.getElementById('repulseModal');
+            
+            if (isContextual) {
+                document.getElementById('repulseContext').value = '';
+                repulseModal.style.display = 'flex';
+            } else {
+                // Soft re-pulse (no context)
+                handleRePulse(currentPulseForRepulse);
+            }
+        }
+        
         function cleanupResources() {
             pauseAllVideos();
             videoPlayers.clear();
@@ -3676,6 +4197,10 @@
             
             if (scrollThrottleTimeout) {
                 clearTimeout(scrollThrottleTimeout);
+            }
+            
+            if (longPressTimer) {
+                clearTimeout(longPressTimer);
             }
         }
         
@@ -3741,14 +4266,14 @@
                     return;
                 }
                 
-                // Get liked status
-                const likedPulses = await checkUserLikes(pulses.map(p => p.id));
+                // Get user interactions
+                const userInteractions = await checkUserInteractions(pulses.map(p => p.id));
                 
                 // Clear loading
                 pulseFeedContainer.innerHTML = '';
                 
                 // Display pulses
-                displayPulses(pulses, likedPulses);
+                displayPulses(pulses, userInteractions);
                 
                 console.log(`Displayed ${pulses.length} initial pulses`);
                 
@@ -3807,6 +4332,12 @@
             const editMediaPreview = document.getElementById('editMediaPreview');
             const editRemoveMedia = document.getElementById('editRemoveMedia');
             const updatePulseBtn = document.getElementById('updatePulse');
+            
+            // Re-Pulse modal elements
+            const closeRepulseModal = document.getElementById('closeRepulseModal');
+            const cancelRepulse = document.getElementById('cancelRepulse');
+            const submitRepulse = document.getElementById('submitRepulse');
+            const repulseContext = document.getElementById('repulseContext');
             
             async function ensureUserProfile(userId) {
                 try {
@@ -3911,9 +4442,9 @@
                         media_url: mediaData?.url || null,
                         media_type: mediaData?.type || 'none',
                         aspect_ratio: '9:16',
-                        likes_count: 0,
+                        taps_count: 0,
                         comments_count: 0,
-                        shares_count: 0
+                        repulses_count: 0
                     };
                     
                     let seriesId = null;
@@ -4013,7 +4544,7 @@
                 }
             }
             
-            // Event listeners
+            // Event listeners for main modal
             createPrompt.addEventListener('click', openCreateModal);
             createPulseBtn.addEventListener('click', openCreateModal);
             closeModal.addEventListener('click', closeCreateModal);
@@ -4031,9 +4562,9 @@
                 const file = e.target.files[0];
                 if (!file) return;
                 
-                const validTypes = ['image/avif', 'image/webp', 'image/jpeg', 'image/png', 'image/gif', 'video/mp4', 'video/quicktime'];
+                const validTypes = ['image/avif', 'image/webp', 'image/jpeg', 'image/png', 'image/gif', 'video/mp4', 'video/quicktime', 'audio/mpeg', 'audio/wav', 'audio/ogg'];
                 if (!validTypes.includes(file.type)) {
-                    showToast('Please select a valid image or video file', 'error');
+                    showToast('Please select a valid image, video, or audio file', 'error');
                     return;
                 }
                 
@@ -4055,6 +4586,12 @@
                         video.style.width = '100%';
                         video.style.borderRadius = '12px';
                         mediaPreview.appendChild(video);
+                    } else if (file.type.startsWith('audio/')) {
+                        const audio = document.createElement('audio');
+                        audio.src = e.target.result;
+                        audio.controls = true;
+                        audio.style.width = '100%';
+                        mediaPreview.appendChild(audio);
                     } else {
                         const img = document.createElement('img');
                         img.src = e.target.result;
@@ -4093,6 +4630,28 @@
                 window.location.href = 'profile.html';
             });
             
+            // Re-Pulse modal event listeners
+            closeRepulseModal.addEventListener('click', () => {
+                document.getElementById('repulseModal').style.display = 'none';
+            });
+            
+            cancelRepulse.addEventListener('click', () => {
+                document.getElementById('repulseModal').style.display = 'none';
+            });
+            
+            submitRepulse.addEventListener('click', () => {
+                const context = repulseContext.value.trim();
+                handleRePulse(currentPulseForRepulse, context || null);
+            });
+            
+            repulseContext.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    submitRepulse.click();
+                }
+            });
+            
+            // Edit modal event listeners
             closeEditModal.addEventListener('click', closeEditModalFunc);
             cancelEdit.addEventListener('click', closeEditModalFunc);
             
@@ -4155,6 +4714,7 @@
             
             updatePulseBtn.addEventListener('click', updatePulse);
             
+            // Tab event listeners
             tabs.forEach(tab => {
                 tab.addEventListener('click', function() {
                     tabs.forEach(t => t.classList.remove('active'));
