@@ -970,12 +970,12 @@
             gap: 4px;
         }
         
-        /* UPDATED: Reaction Menu for Long Press */
+        /* UPDATED: Reaction Menu for Long Press - FIXED */
         .reaction-menu {
             position: absolute;
             bottom: 60px;
-            left: 50%;
-            transform: translateX(-50%);
+            left: 0;
+            transform: translateX(0);
             background: var(--glass-bg);
             border: 1px solid var(--glass-border);
             border-radius: 16px;
@@ -996,11 +996,11 @@
         @keyframes slideUp {
             from {
                 opacity: 0;
-                transform: translateX(-50%) translateY(20px);
+                transform: translateY(20px);
             }
             to {
                 opacity: 1;
-                transform: translateX(-50%) translateY(0);
+                transform: translateY(0);
             }
         }
 
@@ -1166,7 +1166,7 @@
             color: white;
         }
         
-        /* NEW: Re-Pulse Modal */
+        /* NEW: Re-Pulse Modal - FIXED */
         .repulse-modal {
             background: var(--glass-bg);
             border-radius: 16px;
@@ -1398,6 +1398,76 @@
         }
         
         .caption-input::placeholder {
+            color: var(--slate-grey);
+        }
+        
+        /* NEW: Mention Suggestions Dropdown */
+        .mention-suggestions {
+            position: absolute;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 10000;
+            display: none;
+            flex-direction: column;
+            backdrop-filter: blur(20px);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+        }
+        
+        .mention-suggestions.active {
+            display: flex;
+        }
+        
+        .mention-suggestion {
+            padding: 12px 16px;
+            color: var(--soft-white);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border-bottom: 1px solid var(--glass-border);
+        }
+        
+        .mention-suggestion:last-child {
+            border-bottom: none;
+        }
+        
+        .mention-suggestion:hover {
+            background: var(--hover-overlay);
+        }
+        
+        .mention-suggestion.selected {
+            background: rgba(29, 78, 216, 0.2);
+        }
+        
+        .mention-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 12px;
+            color: var(--soft-white);
+            flex-shrink: 0;
+        }
+        
+        .mention-info {
+            flex: 1;
+        }
+        
+        .mention-username {
+            font-weight: 600;
+            font-size: 14px;
+        }
+        
+        .mention-name {
+            font-size: 12px;
             color: var(--slate-grey);
         }
         
@@ -1800,6 +1870,12 @@
                 font-size: 12px;
                 gap: 4px;
             }
+            
+            .mention-suggestions {
+                max-width: 90vw;
+                left: 5vw !important;
+                right: 5vw !important;
+            }
         }
         
         /* Custom Scrollbar */
@@ -1953,13 +2029,16 @@
                             <img id="modal-avatar-img" alt="Your avatar">
                             <span>AB</span>
                         </div>
-                        <textarea 
-                            class="caption-input" 
-                            id="caption" 
-                            placeholder="What's moving the culture? Use @ to mention people"
-                            maxlength="500"
-                            aria-label="Pulse caption"
-                        ></textarea>
+                        <div style="flex: 1; position: relative;">
+                            <textarea 
+                                class="caption-input" 
+                                id="caption" 
+                                placeholder="What's moving the culture? Use @ to mention people"
+                                maxlength="500"
+                                aria-label="Pulse caption"
+                            ></textarea>
+                            <div class="mention-suggestions" id="mentionSuggestions"></div>
+                        </div>
                     </div>
                     
                     <div class="media-upload-section" id="mediaUpload" role="button" tabindex="0">
@@ -2022,13 +2101,16 @@
                             <img id="edit-modal-avatar-img" alt="Your avatar">
                             <span>AB</span>
                         </div>
-                        <textarea 
-                            class="caption-input" 
-                            id="editCaption" 
-                            placeholder="What's moving the culture?"
-                            maxlength="500"
-                            aria-label="Edit pulse caption"
-                        ></textarea>
+                        <div style="flex: 1; position: relative;">
+                            <textarea 
+                                class="caption-input" 
+                                id="editCaption" 
+                                placeholder="What's moving the culture? Use @ to mention people"
+                                maxlength="500"
+                                aria-label="Edit pulse caption"
+                            ></textarea>
+                            <div class="mention-suggestions" id="editMentionSuggestions"></div>
+                        </div>
                     </div>
                     
                     <div class="media-upload-section" id="editMediaUpload" role="button" tabindex="0">
@@ -2118,6 +2200,13 @@
         
         // NEW: Reaction menu variable
         let currentReactionMenuPulseId = null;
+        
+        // NEW: Mention variables
+        let mentionSuggestions = [];
+        let currentMentionIndex = -1;
+        let isMentionActive = false;
+        let currentMentionSearch = '';
+        let mentionTimeout = null;
 
         // Debounce function
         function debounce(func, wait) {
@@ -2167,6 +2256,217 @@
             }
             
             return { text: parsedText, mentions };
+        }
+
+        // NEW: Fetch user suggestions for mentions
+        async function fetchUserSuggestions(searchTerm) {
+            try {
+                if (!searchTerm || searchTerm.length < 1) {
+                    return [];
+                }
+                
+                const { data, error } = await supabaseClient
+                    .from('user_profiles')
+                    .select('id, username, full_name, avatar_url')
+                    .or(`username.ilike.%${searchTerm}%,full_name.ilike.%${searchTerm}%`)
+                    .limit(10);
+                
+                if (error) throw error;
+                
+                return data || [];
+            } catch (error) {
+                console.error('Error fetching user suggestions:', error);
+                return [];
+            }
+        }
+
+        // NEW: Show mention suggestions
+        function showMentionSuggestions(textarea, suggestions, cursorPos) {
+            const suggestionsContainer = textarea.nextElementSibling;
+            if (!suggestionsContainer || !suggestionsContainer.classList.contains('mention-suggestions')) {
+                return;
+            }
+            
+            suggestionsContainer.innerHTML = '';
+            
+            if (suggestions.length === 0) {
+                suggestionsContainer.classList.remove('active');
+                return;
+            }
+            
+            suggestions.forEach((user, index) => {
+                const suggestion = document.createElement('div');
+                suggestion.className = 'mention-suggestion';
+                suggestion.dataset.userId = user.id;
+                suggestion.dataset.username = user.username;
+                suggestion.innerHTML = `
+                    <div class="mention-avatar">
+                        ${user.avatar_url ? `<img src="${user.avatar_url}" alt="${user.username}" style="width: 100%; height: 100%; border-radius: 50%;">` : user.username.charAt(0).toUpperCase()}
+                    </div>
+                    <div class="mention-info">
+                        <div class="mention-username">@${user.username}</div>
+                        <div class="mention-name">${user.full_name || user.username}</div>
+                    </div>
+                `;
+                
+                suggestion.addEventListener('click', () => {
+                    insertMention(textarea, user.username);
+                });
+                
+                suggestionsContainer.appendChild(suggestion);
+            });
+            
+            // Position the suggestions dropdown
+            const textareaRect = textarea.getBoundingClientRect();
+            suggestionsContainer.style.left = '0';
+            suggestionsContainer.style.top = `${textareaRect.height + 5}px`;
+            suggestionsContainer.style.width = `${textareaRect.width}px`;
+            suggestionsContainer.classList.add('active');
+            
+            currentMentionIndex = -1;
+        }
+
+        // NEW: Insert mention into textarea
+        function insertMention(textarea, username) {
+            const text = textarea.value;
+            const cursorPos = textarea.selectionStart;
+            
+            // Find the last @ position before cursor
+            let lastAtPos = -1;
+            for (let i = cursorPos - 1; i >= 0; i--) {
+                if (text[i] === '@' && (i === 0 || text[i - 1] === ' ' || text[i - 1] === '\n')) {
+                    lastAtPos = i;
+                    break;
+                }
+            }
+            
+            if (lastAtPos === -1) return;
+            
+            // Replace from @ to cursor with @username
+            const before = text.substring(0, lastAtPos);
+            const after = text.substring(cursorPos);
+            textarea.value = before + '@' + username + ' ' + after;
+            
+            // Set cursor position after the inserted mention
+            const newCursorPos = lastAtPos + username.length + 2; // +2 for @ and space
+            textarea.selectionStart = textarea.selectionEnd = newCursorPos;
+            
+            // Hide suggestions
+            const suggestionsContainer = textarea.nextElementSibling;
+            if (suggestionsContainer && suggestionsContainer.classList.contains('mention-suggestions')) {
+                suggestionsContainer.classList.remove('active');
+            }
+            
+            // Focus back on textarea
+            textarea.focus();
+        }
+
+        // NEW: Handle text input for mentions
+        function handleMentionInput(textarea, e) {
+            if (mentionTimeout) {
+                clearTimeout(mentionTimeout);
+            }
+            
+            mentionTimeout = setTimeout(async () => {
+                const text = textarea.value;
+                const cursorPos = textarea.selectionStart;
+                
+                // Find if we're typing after an @ symbol
+                let searchStart = cursorPos - 1;
+                while (searchStart >= 0 && text[searchStart] !== '@') {
+                    // If we hit a space or newline, we're not in a mention
+                    if (text[searchStart] === ' ' || text[searchStart] === '\n') {
+                        searchStart = -1;
+                        break;
+                    }
+                    searchStart--;
+                }
+                
+                if (searchStart >= 0 && text[searchStart] === '@') {
+                    // Check if @ is at beginning or preceded by space/newline
+                    if (searchStart === 0 || text[searchStart - 1] === ' ' || text[searchStart - 1] === '\n') {
+                        const searchTerm = text.substring(searchStart + 1, cursorPos);
+                        currentMentionSearch = searchTerm;
+                        
+                        if (searchTerm.length >= 1) {
+                            const suggestions = await fetchUserSuggestions(searchTerm);
+                            showMentionSuggestions(textarea, suggestions, cursorPos);
+                        } else {
+                            // Hide suggestions if search term is empty
+                            const suggestionsContainer = textarea.nextElementSibling;
+                            if (suggestionsContainer && suggestionsContainer.classList.contains('mention-suggestions')) {
+                                suggestionsContainer.classList.remove('active');
+                            }
+                        }
+                    } else {
+                        // Hide suggestions if @ is part of another word
+                        const suggestionsContainer = textarea.nextElementSibling;
+                        if (suggestionsContainer && suggestionsContainer.classList.contains('mention-suggestions')) {
+                            suggestionsContainer.classList.remove('active');
+                        }
+                    }
+                } else {
+                    // Hide suggestions if no @ found
+                    const suggestionsContainer = textarea.nextElementSibling;
+                    if (suggestionsContainer && suggestionsContainer.classList.contains('mention-suggestions')) {
+                        suggestionsContainer.classList.remove('active');
+                    }
+                }
+            }, 300);
+        }
+
+        // NEW: Handle keyboard navigation for mentions
+        function handleMentionKeydown(textarea, e) {
+            const suggestionsContainer = textarea.nextElementSibling;
+            if (!suggestionsContainer || !suggestionsContainer.classList.contains('active')) {
+                return;
+            }
+            
+            const suggestions = suggestionsContainer.querySelectorAll('.mention-suggestion');
+            if (suggestions.length === 0) return;
+            
+            switch (e.key) {
+                case 'ArrowDown':
+                    e.preventDefault();
+                    if (currentMentionIndex < suggestions.length - 1) {
+                        if (currentMentionIndex >= 0) {
+                            suggestions[currentMentionIndex].classList.remove('selected');
+                        }
+                        currentMentionIndex++;
+                        suggestions[currentMentionIndex].classList.add('selected');
+                    }
+                    break;
+                    
+                case 'ArrowUp':
+                    e.preventDefault();
+                    if (currentMentionIndex > 0) {
+                        suggestions[currentMentionIndex].classList.remove('selected');
+                        currentMentionIndex--;
+                        suggestions[currentMentionIndex].classList.add('selected');
+                    }
+                    break;
+                    
+                case 'Enter':
+                    e.preventDefault();
+                    if (currentMentionIndex >= 0 && currentMentionIndex < suggestions.length) {
+                        const username = suggestions[currentMentionIndex].dataset.username;
+                        insertMention(textarea, username);
+                    }
+                    break;
+                    
+                case 'Escape':
+                    e.preventDefault();
+                    suggestionsContainer.classList.remove('active');
+                    break;
+                    
+                case 'Tab':
+                    e.preventDefault();
+                    if (currentMentionIndex >= 0 && currentMentionIndex < suggestions.length) {
+                        const username = suggestions[currentMentionIndex].dataset.username;
+                        insertMention(textarea, username);
+                    }
+                    break;
+            }
         }
 
         async function initialize() {
@@ -2395,12 +2695,20 @@
                 // Fetch repulses
                 const { data: repulses } = await supabaseClient
                     .from('pulse_repulses')
-                    .select('pulse_id')
+                    .select('pulse_id, is_soft, context')
                     .in('pulse_id', pulseIds)
                     .eq('user_id', session.user.id);
                 
                 if (repulses) {
-                    repulses.forEach(repulse => interactions.repulses.add(repulse.pulse_id));
+                    repulses.forEach(repulse => {
+                        interactions.repulses.add(repulse.pulse_id);
+                        // Store repulse data for UI updates
+                        interactions.repulseData = interactions.repulseData || new Map();
+                        interactions.repulseData.set(repulse.pulse_id, {
+                            is_soft: repulse.is_soft,
+                            context: repulse.context
+                        });
+                    });
                 }
                 
                 // Fetch reactions
@@ -2971,7 +3279,7 @@
             }
         }
         
-        // Handle Reaction (Awe or Banger)
+        // Handle Reaction (Awe or Banger) - FIXED
         async function handleReaction(pulseId, reactionType, e) {
             if (e) e.stopPropagation();
             
@@ -3066,7 +3374,7 @@
             }
         }
         
-        // Show Reaction Menu (for long press)
+        // Show Reaction Menu (for long press) - FIXED
         function showReactionMenu(pulseId, event) {
             closeReactionMenu(); // Close any open menu
             
@@ -3094,11 +3402,11 @@
             
             // Position menu near the tap button
             const tapBtn = pulseCard.querySelector('.tap-btn');
-            if (tapBtn && event) {
+            if (tapBtn) {
                 const rect = tapBtn.getBoundingClientRect();
                 const cardRect = pulseCard.getBoundingClientRect();
                 reactionMenu.style.position = 'absolute';
-                reactionMenu.style.left = '50%';
+                reactionMenu.style.left = '0';
                 reactionMenu.style.bottom = `${rect.height + 10}px`;
             }
             
@@ -3132,13 +3440,13 @@
 
         function closeReactionMenuOnClickOutside(e) {
             const menu = document.querySelector(`#reaction-menu-${currentReactionMenuPulseId}`);
-            if (menu && !menu.contains(e.target)) {
+            if (menu && !menu.contains(e.target) && !e.target.closest('.tap-btn')) {
                 closeReactionMenu();
             }
         }
         
-        // Handle Re-Pulse
-        async function handleRePulse(pulseId, context = null, e) {
+        // Handle Re-Pulse - FIXED
+        async function handleRePulse(pulseId, context = null, isSoft = true, e) {
             if (e) e.stopPropagation();
             
             try {
@@ -3151,7 +3459,7 @@
                 // Check if already re-pulsed
                 const { data: existingRePulse } = await supabaseClient
                     .from('pulse_repulses')
-                    .select('id')
+                    .select('id, is_soft, context')
                     .eq('pulse_id', pulseId)
                     .eq('user_id', session.user.id)
                     .single();
@@ -3177,10 +3485,14 @@
                             pulse_id: pulseId,
                             user_id: session.user.id,
                             context: context,
+                            is_soft: isSoft,
                             created_at: new Date().toISOString()
                         });
                     
-                    if (error) throw error;
+                    if (error) {
+                        console.error('Re-pulse insert error:', error);
+                        throw error;
+                    }
                     
                     isRepulsed = true;
                     
@@ -3195,7 +3507,7 @@
                         const actorName = session.user.email.split('@')[0];
                         let message = `${actorName} re-pulsed your pulse`;
                         
-                        if (context) {
+                        if (context && !isSoft) {
                             message += ' with added context.';
                         } else {
                             message += '.';
@@ -3211,11 +3523,11 @@
                         );
                     }
                     
-                    showToast(context ? 'Re-pulsed with context!' : 'Re-pulsed!', 'success');
+                    showToast(context && !isSoft ? 'Re-pulsed with context!' : 'Re-pulsed!', 'success');
                 }
                 
                 // Update UI immediately
-                updateRePulseUI(pulseId, isRepulsed);
+                updateRePulseUI(pulseId, isRepulsed, isSoft, context);
                 
                 // Close re-pulse modal if open
                 if (currentRepulseModal) {
@@ -3230,7 +3542,7 @@
         }
         
         // Update re-pulse UI
-        function updateRePulseUI(pulseId, isRepulsed) {
+        function updateRePulseUI(pulseId, isRepulsed, isSoft = true, context = null) {
             const pulseCard = document.querySelector(`[data-pulse-id="${pulseId}"]`);
             if (!pulseCard) return;
             
@@ -3245,7 +3557,7 @@
                     repulseBtn.classList.remove('repulsed');
                     // Update count
                     const currentCount = parseInt(repulseBtn.textContent.match(/\d+/)?.[0]) || 0;
-                    repulseBtn.innerHTML = `<i class="fas fa-retweet" aria-hidden="true"></i> ${currentCount - 1}`;
+                    repulseBtn.innerHTML = `<i class="fas fa-retweet" aria-hidden="true"></i> ${Math.max(0, currentCount - 1)}`;
                 }
             }
         }
@@ -3349,14 +3661,17 @@
                         </div>
                         <div class="modal-body">
                             <form id="commentForm">
-                                <textarea 
-                                    class="caption-input" 
-                                    id="commentText" 
-                                    placeholder="Write your comment... Use @ to mention people"
-                                    maxlength="500"
-                                    rows="3"
-                                    aria-label="Comment text"
-                                ></textarea>
+                                <div style="position: relative;">
+                                    <textarea 
+                                        class="caption-input" 
+                                        id="commentText" 
+                                        placeholder="Write your comment... Use @ to mention people"
+                                        maxlength="500"
+                                        rows="3"
+                                        aria-label="Comment text"
+                                    ></textarea>
+                                    <div class="mention-suggestions" id="commentMentionSuggestions"></div>
+                                </div>
                                 <div class="modal-footer" style="border-top: none; padding-top: 0;">
                                     <button type="submit" class="modal-btn modal-btn-post">Post Comment</button>
                                 </div>
@@ -3375,6 +3690,11 @@
                         commentModal.remove();
                     }
                 });
+                
+                // Setup mention functionality for comment textarea
+                const commentTextarea = commentModal.querySelector('#commentText');
+                commentTextarea.addEventListener('input', (e) => handleMentionInput(commentTextarea, e));
+                commentTextarea.addEventListener('keydown', (e) => handleMentionKeydown(commentTextarea, e));
                 
                 const commentForm = commentModal.querySelector('#commentForm');
                 commentForm.addEventListener('submit', async (e) => {
@@ -3778,7 +4098,7 @@
             }
         }
         
-        // Show Re-Pulse Modal
+        // Show Re-Pulse Modal - FIXED
         function showRePulseModal(pulseId, event) {
             if (currentRepulseModal) {
                 currentRepulseModal.remove();
@@ -3834,16 +4154,16 @@
             const contextualRepulseBtn = repulseModal.querySelector('#contextualRepulse');
             
             softRepulseBtn.addEventListener('click', (e) => {
-                handleRePulse(pulseId, null, e);
+                handleRePulse(pulseId, null, true, e);
             });
             
             contextualRepulseBtn.addEventListener('click', (e) => {
                 const context = repulseModal.querySelector('#repulseContext').value.trim();
-                handleRePulse(pulseId, context, e);
+                handleRePulse(pulseId, context, false, e);
             });
         }
         
-        // Setup tap button event handlers with long press for reactions
+        // Setup tap button event handlers with long press for reactions - FIXED
         function setupTapButtonEvents(tapBtn, pulseId) {
             let tapTimer;
             let isLongPress = false;
@@ -4225,10 +4545,10 @@
                     });
                 }
                 
-                // Fetch repulses count and context
+                // Fetch repulses count and context - UPDATED for new schema
                 const { data: repulsesData, error: repulsesError } = await supabaseClient
                     .from('pulse_repulses')
-                    .select('pulse_id, context')
+                    .select('pulse_id, context, is_soft, created_at, user_id')
                     .in('pulse_id', pulseIds);
                 
                 const repulsesCountMap = {};
@@ -4236,12 +4556,14 @@
                 if (!repulsesError && repulsesData) {
                     repulsesData.forEach(repulse => {
                         repulsesCountMap[repulse.pulse_id] = (repulsesCountMap[repulse.pulse_id] || 0) + 1;
-                        if (repulse.context) {
+                        if (repulse.context && !repulse.is_soft) {
                             if (!repulsesContextMap[repulse.pulse_id]) {
                                 repulsesContextMap[repulse.pulse_id] = [];
                             }
                             repulsesContextMap[repulse.pulse_id].push({
-                                context: repulse.context
+                                context: repulse.context,
+                                user_id: repulse.user_id,
+                                created_at: repulse.created_at
                             });
                         }
                     });
@@ -4361,6 +4683,9 @@
             const userAK = userInteractions.aks.get(pulse.id);
             const isRepulsed = userInteractions.repulses.has(pulse.id);
             const userReaction = userInteractions.reactions.get(pulse.id);
+            
+            // Get repulse data if exists
+            const repulseData = userInteractions.repulseData ? userInteractions.repulseData.get(pulse.id) : null;
             
             const isSeries = pulse.series_id && pulse.series_order;
             const hasMedia = pulse.media_url;
@@ -4485,10 +4810,14 @@
                 }
             }
             
-            // Add repulse context if available
+            // Add repulse context if available - UPDATED for new schema
             let repulseContextHTML = '';
             if (pulse.repulse_contexts && pulse.repulse_contexts.length > 0) {
-                const latestContext = pulse.repulse_contexts[pulse.repulse_contexts.length - 1];
+                // Sort by creation date to get the latest
+                const sortedContexts = pulse.repulse_contexts.sort((a, b) => 
+                    new Date(b.created_at) - new Date(a.created_at)
+                );
+                const latestContext = sortedContexts[0];
                 if (latestContext.context) {
                     repulseContextHTML = `
                         <div class="repulse-context">
@@ -4497,6 +4826,17 @@
                         </div>
                     `;
                 }
+            }
+            
+            // Check if user has repulsed this pulse with context
+            const userRepulseContext = repulseData && !repulseData.is_soft ? repulseData.context : null;
+            if (userRepulseContext && !repulseContextHTML) {
+                repulseContextHTML = `
+                    <div class="repulse-context">
+                        <div class="repulse-context-user">Your Re-Pulse context:</div>
+                        <div>${sanitizeHTML(userRepulseContext)}</div>
+                    </div>
+                `;
             }
             
             card.innerHTML = `
@@ -4584,7 +4924,7 @@
             saveBtn.addEventListener('click', (e) => handleSave(pulse.id, e));
             commentBtn.addEventListener('click', (e) => handleComment(pulse.id, e));
             
-            // Setup repulse button event listener
+            // Setup repulse button event listener - FIXED
             repulseBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 showRePulseModal(pulse.id, e);
@@ -4857,6 +5197,12 @@
                 toggleSwitch.classList.remove('active');
                 seriesOptions.classList.remove('active');
                 updatePostButton();
+                
+                // Hide mention suggestions
+                const mentionSuggestions = document.getElementById('mentionSuggestions');
+                if (mentionSuggestions) {
+                    mentionSuggestions.classList.remove('active');
+                }
             }
             
             async function createPulse() {
@@ -5006,6 +5352,21 @@
                 }
             });
             
+            // Setup mention functionality for caption input
+            captionInput.addEventListener('input', (e) => {
+                handleMentionInput(captionInput, e);
+                updatePostButton();
+            });
+            
+            captionInput.addEventListener('keydown', (e) => handleMentionKeydown(captionInput, e));
+            
+            // Setup mention functionality for edit caption input
+            const editCaptionInput = document.getElementById('editCaption');
+            if (editCaptionInput) {
+                editCaptionInput.addEventListener('input', (e) => handleMentionInput(editCaptionInput, e));
+                editCaptionInput.addEventListener('keydown', (e) => handleMentionKeydown(editCaptionInput, e));
+            }
+            
             mediaUpload.addEventListener('click', () => mediaInput.click());
             
             mediaInput.addEventListener('change', (e) => {
@@ -5078,8 +5439,6 @@
                 seriesOptions.classList.toggle('active', isSeriesMode);
             });
             
-            captionInput.addEventListener('input', updatePostButton);
-            
             postPulseBtn.addEventListener('click', createPulse);
             
             userAvatar.addEventListener('click', () => {
@@ -5101,7 +5460,7 @@
                 const file = e.target.files[0];
                 if (!file) return;
                 
-                const validTypes = ['image/avif', 'image/webp', 'image/jpeg', 'image/png', 'image/gif', 'video/mp4', 'video/quicktime', 'audio/*'];
+                const validTypes = ['image/avif', 'image/webp', 'image/jpeg,image/png,image/gif,video/mp4,video/quicktime,audio/*'];
                 if (!validTypes.includes(file.type) && !file.type.startsWith('audio/')) {
                     showToast('Please select a valid image, video, or audio file', 'error');
                     return;
@@ -5123,7 +5482,7 @@
                         video.src = e.target.result;
                         video.controls = true;
                         video.style.width = '100%';
-                        video.style.borderRadius = '12px';
+                        video.style.border-radius: '12px';
                         editMediaPreview.appendChild(video);
                     } else if (file.type.startsWith('audio/')) {
                         const audioContainer = document.createElement('div');
@@ -5142,7 +5501,7 @@
                         img.src = e.target.result;
                         img.alt = 'Media preview';
                         img.style.width = '100%';
-                        img.style.borderRadius = '12px';
+                        img.style.border-radius: '12px';
                         editMediaPreview.appendChild(img);
                     }
                     
