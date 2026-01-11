@@ -970,7 +970,7 @@
             gap: 4px;
         }
         
-        /* UPDATED: Reaction Menu for Long Press */
+        /* UPDATED: Reaction Menu for Long Press - FIXED POSITIONING */
         .reaction-menu {
             position: absolute;
             bottom: 60px;
@@ -1734,7 +1734,7 @@
             color: var(--error-color);
         }
         
-        /* NEW: Mentions Dropdown */
+        /* UPDATED: Mentions Dropdown - Better Positioning */
         .mentions-dropdown {
             position: absolute;
             background: var(--glass-bg);
@@ -2209,6 +2209,8 @@
         let currentMentionSearch = '';
         let mentionStartPosition = -1;
         let isMentioning = false;
+        let currentMentionTarget = null;
+        let currentMentionDropdown = null;
 
         // Debounce function
         function debounce(func, wait) {
@@ -3141,12 +3143,18 @@
             }
         }
         
-        // Show Reaction Menu (for long press)
+        // Show Reaction Menu (for long press) - FIXED VERSION
         function showReactionMenu(pulseId, event) {
             closeReactionMenu(); // Close any open menu
             
             const pulseCard = document.querySelector(`[data-pulse-id="${pulseId}"]`);
             if (!pulseCard) return;
+            
+            // Get the tap button position
+            const tapBtn = pulseCard.querySelector('.tap-btn');
+            if (!tapBtn) return;
+            
+            const tapBtnRect = tapBtn.getBoundingClientRect();
             
             // Create reaction menu
             const reactionMenu = document.createElement('div');
@@ -3164,20 +3172,22 @@
                 </button>
             `;
             
-            pulseCard.appendChild(reactionMenu);
+            document.body.appendChild(reactionMenu);
+            
+            // Position menu above the tap button
+            const menuRect = reactionMenu.getBoundingClientRect();
+            const leftPosition = tapBtnRect.left + (tapBtnRect.width / 2) - (menuRect.width / 2);
+            const topPosition = tapBtnRect.top - menuRect.height - 10;
+            
+            reactionMenu.style.position = 'fixed';
+            reactionMenu.style.top = `${topPosition}px`;
+            reactionMenu.style.left = `${leftPosition}px`;
+            reactionMenu.style.zIndex = '10000';
+            
             reactionMenu.classList.add('active');
             
-            // Position menu near the tap button
-            const tapBtn = pulseCard.querySelector('.tap-btn');
-            if (tapBtn) {
-                const rect = tapBtn.getBoundingClientRect();
-                const cardRect = pulseCard.getBoundingClientRect();
-                reactionMenu.style.position = 'absolute';
-                reactionMenu.style.left = '50%';
-                reactionMenu.style.bottom = `${rect.height + 10}px`;
-            }
-            
             currentReactionMenuPulseId = pulseId;
+            currentReactionMenuElement = reactionMenu;
             
             // Add event listeners for reaction options
             reactionMenu.querySelectorAll('.reaction-option').forEach(option => {
@@ -3206,9 +3216,11 @@
         }
 
         function closeReactionMenuOnClickOutside(e) {
-            const menu = document.querySelector(`#reaction-menu-${currentReactionMenuPulseId}`);
-            if (menu && !menu.contains(e.target)) {
-                closeReactionMenu();
+            if (currentReactionMenuPulseId) {
+                const menu = document.querySelector(`#reaction-menu-${currentReactionMenuPulseId}`);
+                if (menu && !menu.contains(e.target) && !e.target.closest('.tap-btn')) {
+                    closeReactionMenu();
+                }
             }
         }
         
@@ -4254,8 +4266,18 @@
                 
                 // Fetch pulses with user details
                 const pulsesPromise = supabaseClient
-                    .from('pulses_with_user_details')
-                    .select('*')
+                    .from('pulses')
+                    .select(`
+                        *,
+                        user_profiles (
+                            id,
+                            username,
+                            full_name,
+                            avatar_url,
+                            email,
+                            role
+                        )
+                    `)
                     .order('created_at', { ascending: false })
                     .range(offset, offset + limit - 1);
                 
@@ -4279,8 +4301,18 @@
                         
                         // Retry with new session
                         const retryResult = await supabaseClient
-                            .from('pulses_with_user_details')
-                            .select('*')
+                            .from('pulses')
+                            .select(`
+                                *,
+                                user_profiles (
+                                    id,
+                                    username,
+                                    full_name,
+                                    avatar_url,
+                                    email,
+                                    role
+                                )
+                            `)
                             .order('created_at', { ascending: false })
                             .range(offset, offset + limit - 1);
                         
@@ -4368,6 +4400,7 @@
                 // Enrich pulses
                 const enrichedPulses = pulsesData.map(pulse => ({
                     ...pulse,
+                    ...pulse.user_profiles,
                     taps_count: tapsCountMap[pulse.id] || 0,
                     comments_count: commentsCountMap[pulse.id] || 0,
                     repulses_count: repulsesCountMap[pulse.id] || 0,
@@ -4466,29 +4499,36 @@
             });
         }
         
-        // NEW: Search usernames for mentions
+        // UPDATED: Search usernames for mentions - Better implementation
         async function searchUsernames(query) {
             try {
                 const { data: { session } } = await supabaseClient.auth.getSession();
                 if (!session) return [];
+                
+                // Clean the query - remove @ if present
+                query = query.replace('@', '').trim();
+                if (!query || query.length < 1) return [];
                 
                 const { data, error } = await supabaseClient
                     .from('user_profiles')
                     .select('id, username, full_name')
                     .or(`username.ilike.%${query}%,full_name.ilike.%${query}%`)
                     .neq('id', session.user.id) // Don't show current user
-                    .limit(10);
+                    .limit(5); // Limit to 5 suggestions
                 
-                if (error) throw error;
+                if (error) {
+                    console.error('Error searching usernames:', error);
+                    return [];
+                }
                 
                 return data || [];
             } catch (error) {
-                console.error('Error searching usernames:', error);
+                console.error('Error in searchUsernames:', error);
                 return [];
             }
         }
         
-        // NEW: Setup mentions functionality
+        // UPDATED: Setup mentions functionality - Improved version
         function setupMentions(textarea, dropdown, container) {
             let currentSearch = '';
             let mentionStart = -1;
@@ -4497,78 +4537,153 @@
                 const value = textarea.value;
                 const cursorPos = textarea.selectionStart;
                 
+                // Hide dropdown if it's showing
+                if (currentMentionDropdown && currentMentionDropdown !== dropdown) {
+                    currentMentionDropdown.classList.remove('active');
+                }
+                currentMentionDropdown = dropdown;
+                
                 // Find if we're typing after @
+                let foundAt = -1;
                 for (let i = cursorPos - 1; i >= 0; i--) {
-                    if (value[i] === '@' && (i === 0 || value[i - 1] === ' ' || value[i - 1] === '\n')) {
-                        mentionStart = i;
-                        currentSearch = value.substring(i + 1, cursorPos);
+                    if (value[i] === '@' && (i === 0 || value[i - 1] === ' ' || value[i - 1] === '\n' || value[i - 1] === '')) {
+                        foundAt = i;
                         break;
                     }
                 }
                 
-                if (mentionStart !== -1 && currentSearch.length > 0) {
-                    // Search for usernames
-                    const users = await searchUsernames(currentSearch);
+                if (foundAt !== -1) {
+                    mentionStart = foundAt;
+                    currentSearch = value.substring(foundAt + 1, cursorPos);
                     
-                    if (users.length > 0) {
-                        // Show dropdown
-                        dropdown.innerHTML = '';
-                        users.forEach(user => {
-                            const mentionItem = document.createElement('div');
-                            mentionItem.className = 'mention-item';
-                            mentionItem.innerHTML = `
-                                <div class="mention-avatar">${user.full_name?.substring(0, 2).toUpperCase() || user.username?.substring(0, 2).toUpperCase() || 'U'}</div>
-                                <div class="mention-info">
-                                    <div class="mention-username">@${user.username || 'user'}</div>
-                                    <div class="mention-name">${user.full_name || ''}</div>
-                                </div>
-                            `;
-                            
-                            mentionItem.addEventListener('click', () => {
-                                const before = value.substring(0, mentionStart);
-                                const after = value.substring(cursorPos);
-                                textarea.value = before + '@' + user.username + ' ' + after;
-                                dropdown.classList.remove('active');
+                    // Only search if we have at least 1 character after @
+                    if (currentSearch.length > 0) {
+                        const users = await searchUsernames(currentSearch);
+                        
+                        if (users.length > 0) {
+                            // Show dropdown
+                            dropdown.innerHTML = '';
+                            users.forEach(user => {
+                                const mentionItem = document.createElement('div');
+                                mentionItem.className = 'mention-item';
+                                mentionItem.innerHTML = `
+                                    <div class="mention-avatar">${user.full_name?.substring(0, 2).toUpperCase() || user.username?.substring(0, 2).toUpperCase() || 'U'}</div>
+                                    <div class="mention-info">
+                                        <div class="mention-username">@${user.username || 'user'}</div>
+                                        <div class="mention-name">${user.full_name || ''}</div>
+                                    </div>
+                                `;
                                 
-                                // Set cursor after the mention
-                                const newCursorPos = mentionStart + user.username.length + 2;
-                                setTimeout(() => {
-                                    textarea.focus();
-                                    textarea.setSelectionRange(newCursorPos, newCursorPos);
-                                }, 10);
+                                mentionItem.addEventListener('click', () => {
+                                    const before = value.substring(0, mentionStart);
+                                    const after = value.substring(cursorPos);
+                                    const username = user.username || 'user';
+                                    textarea.value = before + '@' + username + ' ' + after;
+                                    dropdown.classList.remove('active');
+                                    
+                                    // Set cursor after the mention
+                                    const newCursorPos = mentionStart + username.length + 2;
+                                    setTimeout(() => {
+                                        textarea.focus();
+                                        textarea.setSelectionRange(newCursorPos, newCursorPos);
+                                    }, 10);
+                                    
+                                    currentMentionTarget = null;
+                                    currentMentionDropdown = null;
+                                });
+                                
+                                dropdown.appendChild(mentionItem);
                             });
                             
-                            dropdown.appendChild(mentionItem);
-                        });
-                        
-                        // Position dropdown
-                        const rect = textarea.getBoundingClientRect();
-                        const containerRect = container.getBoundingClientRect();
-                        
-                        dropdown.style.position = 'absolute';
-                        dropdown.style.top = `${rect.bottom - containerRect.top}px`;
-                        dropdown.style.left = `${rect.left - containerRect.left}px`;
-                        dropdown.style.width = `${rect.width}px`;
-                        dropdown.classList.add('active');
+                            // Position dropdown near cursor
+                            const textareaRect = textarea.getBoundingClientRect();
+                            const containerRect = container.getBoundingClientRect();
+                            
+                            // Calculate approximate cursor position
+                            const textBeforeCursor = value.substring(0, cursorPos);
+                            const tempDiv = document.createElement('div');
+                            tempDiv.style.cssText = `
+                                position: absolute;
+                                top: -9999px;
+                                left: -9999px;
+                                width: ${textarea.offsetWidth}px;
+                                font: ${getComputedStyle(textarea).font};
+                                white-space: pre-wrap;
+                                word-wrap: break-word;
+                            `;
+                            tempDiv.textContent = textBeforeCursor;
+                            document.body.appendChild(tempDiv);
+                            
+                            const cursorX = tempDiv.offsetWidth;
+                            const cursorY = tempDiv.offsetHeight;
+                            document.body.removeChild(tempDiv);
+                            
+                            dropdown.style.position = 'absolute';
+                            dropdown.style.top = `${textareaRect.top + cursorY - containerRect.top + 25}px`;
+                            dropdown.style.left = `${textareaRect.left + cursorX - containerRect.left - 100}px`;
+                            dropdown.style.width = '200px';
+                            dropdown.style.zIndex = '10000';
+                            dropdown.classList.add('active');
+                            
+                            currentMentionTarget = textarea;
+                        } else {
+                            dropdown.classList.remove('active');
+                        }
                     } else {
                         dropdown.classList.remove('active');
                     }
                 } else {
                     dropdown.classList.remove('active');
+                    mentionStart = -1;
+                    currentSearch = '';
                 }
-            }, 300));
+            }, 200));
             
             // Hide dropdown when clicking outside
             document.addEventListener('click', (e) => {
-                if (!textarea.contains(e.target) && !dropdown.contains(e.target)) {
+                if (dropdown.classList.contains('active') && 
+                    !dropdown.contains(e.target) && 
+                    e.target !== textarea) {
                     dropdown.classList.remove('active');
+                    currentMentionTarget = null;
+                    currentMentionDropdown = null;
                 }
             });
             
             // Handle escape key
             textarea.addEventListener('keydown', (e) => {
-                if (e.key === 'Escape') {
+                if (e.key === 'Escape' && dropdown.classList.contains('active')) {
                     dropdown.classList.remove('active');
+                    currentMentionTarget = null;
+                    currentMentionDropdown = null;
+                }
+                
+                // Handle arrow keys in dropdown
+                if (dropdown.classList.contains('active') && (e.key === 'ArrowDown' || e.key === 'ArrowUp' || e.key === 'Enter')) {
+                    e.preventDefault();
+                    const items = dropdown.querySelectorAll('.mention-item');
+                    let currentIndex = -1;
+                    
+                    items.forEach((item, index) => {
+                        if (item.classList.contains('selected')) {
+                            currentIndex = index;
+                            item.classList.remove('selected');
+                        }
+                    });
+                    
+                    if (e.key === 'ArrowDown') {
+                        currentIndex = (currentIndex + 1) % items.length;
+                    } else if (e.key === 'ArrowUp') {
+                        currentIndex = currentIndex <= 0 ? items.length - 1 : currentIndex - 1;
+                    } else if (e.key === 'Enter' && currentIndex >= 0) {
+                        items[currentIndex].click();
+                        return;
+                    }
+                    
+                    if (currentIndex >= 0) {
+                        items[currentIndex].classList.add('selected');
+                        items[currentIndex].scrollIntoView({ block: 'nearest' });
+                    }
                 }
             });
         }
@@ -5121,16 +5236,19 @@
                         }
                     }
                     
+                    // FIXED: Remove reactions_count from pulseData as it doesn't exist in the table
                     const pulseData = {
                         user_id: session.user.id,
                         caption: sanitizeHTML(caption) || null,
                         media_url: mediaData?.url || null,
                         media_type: mediaData?.type || 'none',
                         aspect_ratio: '9:16',
-                        taps_count: 0,
+                        likes_count: 0,
                         comments_count: 0,
+                        shares_count: 0,
+                        taps_count: 0,
                         repulses_count: 0,
-                        reactions_count: 0
+                        engagement_score: 0
                     };
                     
                     let seriesId = null;
@@ -5186,6 +5304,7 @@
                             
                             pulseData.series_id = seriesId;
                             pulseData.series_order = seriesOrder;
+                            pulseData.is_series_start = seriesOrder === 1;
                             
                         } catch (seriesError) {
                             console.error('Series creation error:', seriesError);
@@ -5199,7 +5318,10 @@
                         .select()
                         .single();
                     
-                    if (error) throw error;
+                    if (error) {
+                        console.error('Create pulse error:', error);
+                        throw error;
+                    }
                     
                     if (seriesId) {
                         try {
