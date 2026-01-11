@@ -970,12 +970,12 @@
             gap: 4px;
         }
         
-        /* UPDATED: Reaction Menu for Long Press - FIXED */
+        /* UPDATED: Reaction Menu for Long Press */
         .reaction-menu {
             position: absolute;
             bottom: 60px;
-            left: 0;
-            transform: translateX(0);
+            left: 50%;
+            transform: translateX(-50%);
             background: var(--glass-bg);
             border: 1px solid var(--glass-border);
             border-radius: 16px;
@@ -996,11 +996,11 @@
         @keyframes slideUp {
             from {
                 opacity: 0;
-                transform: translateY(20px);
+                transform: translateX(-50%) translateY(20px);
             }
             to {
                 opacity: 1;
-                transform: translateY(0);
+                transform: translateX(-50%) translateY(0);
             }
         }
 
@@ -1166,7 +1166,7 @@
             color: white;
         }
         
-        /* NEW: Re-Pulse Modal - FIXED */
+        /* NEW: Re-Pulse Modal */
         .repulse-modal {
             background: var(--glass-bg);
             border-radius: 16px;
@@ -1398,76 +1398,6 @@
         }
         
         .caption-input::placeholder {
-            color: var(--slate-grey);
-        }
-        
-        /* NEW: Mention Suggestions Dropdown */
-        .mention-suggestions {
-            position: absolute;
-            background: var(--glass-bg);
-            border: 1px solid var(--glass-border);
-            border-radius: 12px;
-            max-height: 200px;
-            overflow-y: auto;
-            z-index: 10000;
-            display: none;
-            flex-direction: column;
-            backdrop-filter: blur(20px);
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
-        }
-        
-        .mention-suggestions.active {
-            display: flex;
-        }
-        
-        .mention-suggestion {
-            padding: 12px 16px;
-            color: var(--soft-white);
-            cursor: pointer;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            border-bottom: 1px solid var(--glass-border);
-        }
-        
-        .mention-suggestion:last-child {
-            border-bottom: none;
-        }
-        
-        .mention-suggestion:hover {
-            background: var(--hover-overlay);
-        }
-        
-        .mention-suggestion.selected {
-            background: rgba(29, 78, 216, 0.2);
-        }
-        
-        .mention-avatar {
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 600;
-            font-size: 12px;
-            color: var(--soft-white);
-            flex-shrink: 0;
-        }
-        
-        .mention-info {
-            flex: 1;
-        }
-        
-        .mention-username {
-            font-weight: 600;
-            font-size: 14px;
-        }
-        
-        .mention-name {
-            font-size: 12px;
             color: var(--slate-grey);
         }
         
@@ -1804,6 +1734,80 @@
             color: var(--error-color);
         }
         
+        /* NEW: Mentions Dropdown */
+        .mentions-dropdown {
+            position: absolute;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 2001;
+            min-width: 200px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(20px);
+            display: none;
+        }
+        
+        .mentions-dropdown.active {
+            display: block;
+        }
+        
+        .mention-item {
+            padding: 10px 16px;
+            cursor: pointer;
+            color: var(--soft-white);
+            border-bottom: 1px solid var(--glass-border);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.2s ease;
+        }
+        
+        .mention-item:hover {
+            background: var(--hover-overlay);
+        }
+        
+        .mention-item:last-child {
+            border-bottom: none;
+        }
+        
+        .mention-avatar {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 12px;
+            color: var(--soft-white);
+            flex-shrink: 0;
+        }
+        
+        .mention-info {
+            flex: 1;
+            min-width: 0;
+        }
+        
+        .mention-username {
+            font-weight: 600;
+            font-size: 14px;
+            color: var(--soft-white);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .mention-name {
+            font-size: 12px;
+            color: var(--slate-grey);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
         /* Responsive */
         @media (max-width: 768px) {
             .container {
@@ -1871,10 +1875,9 @@
                 gap: 4px;
             }
             
-            .mention-suggestions {
-                max-width: 90vw;
-                left: 5vw !important;
-                right: 5vw !important;
+            .mentions-dropdown {
+                min-width: 180px;
+                max-height: 150px;
             }
         }
         
@@ -2029,17 +2032,17 @@
                             <img id="modal-avatar-img" alt="Your avatar">
                             <span>AB</span>
                         </div>
-                        <div style="flex: 1; position: relative;">
-                            <textarea 
-                                class="caption-input" 
-                                id="caption" 
-                                placeholder="What's moving the culture? Use @ to mention people"
-                                maxlength="500"
-                                aria-label="Pulse caption"
-                            ></textarea>
-                            <div class="mention-suggestions" id="mentionSuggestions"></div>
-                        </div>
+                        <textarea 
+                            class="caption-input" 
+                            id="caption" 
+                            placeholder="What's moving the culture? Use @ to mention people"
+                            maxlength="500"
+                            aria-label="Pulse caption"
+                        ></textarea>
                     </div>
+                    
+                    <!-- Mentions Dropdown -->
+                    <div class="mentions-dropdown" id="mentionsDropdown"></div>
                     
                     <div class="media-upload-section" id="mediaUpload" role="button" tabindex="0">
                         <div class="upload-icon">
@@ -2101,17 +2104,17 @@
                             <img id="edit-modal-avatar-img" alt="Your avatar">
                             <span>AB</span>
                         </div>
-                        <div style="flex: 1; position: relative;">
-                            <textarea 
-                                class="caption-input" 
-                                id="editCaption" 
-                                placeholder="What's moving the culture? Use @ to mention people"
-                                maxlength="500"
-                                aria-label="Edit pulse caption"
-                            ></textarea>
-                            <div class="mention-suggestions" id="editMentionSuggestions"></div>
-                        </div>
+                        <textarea 
+                            class="caption-input" 
+                            id="editCaption" 
+                            placeholder="What's moving the culture?"
+                            maxlength="500"
+                            aria-label="Edit pulse caption"
+                        ></textarea>
                     </div>
+                    
+                    <!-- Mentions Dropdown for Edit -->
+                    <div class="mentions-dropdown" id="editMentionsDropdown"></div>
                     
                     <div class="media-upload-section" id="editMediaUpload" role="button" tabindex="0">
                         <div class="upload-icon">
@@ -2198,15 +2201,14 @@
         let currentTapMenuPulseId = null;
         let currentRepulseModal = null;
         
-        // NEW: Reaction menu variable
+        // Reaction menu variable
         let currentReactionMenuPulseId = null;
         
-        // NEW: Mention variables
-        let mentionSuggestions = [];
-        let currentMentionIndex = -1;
-        let isMentionActive = false;
+        // Mentions variables
+        let mentionsTimeout = null;
         let currentMentionSearch = '';
-        let mentionTimeout = null;
+        let mentionStartPosition = -1;
+        let isMentioning = false;
 
         // Debounce function
         function debounce(func, wait) {
@@ -2256,217 +2258,6 @@
             }
             
             return { text: parsedText, mentions };
-        }
-
-        // NEW: Fetch user suggestions for mentions
-        async function fetchUserSuggestions(searchTerm) {
-            try {
-                if (!searchTerm || searchTerm.length < 1) {
-                    return [];
-                }
-                
-                const { data, error } = await supabaseClient
-                    .from('user_profiles')
-                    .select('id, username, full_name, avatar_url')
-                    .or(`username.ilike.%${searchTerm}%,full_name.ilike.%${searchTerm}%`)
-                    .limit(10);
-                
-                if (error) throw error;
-                
-                return data || [];
-            } catch (error) {
-                console.error('Error fetching user suggestions:', error);
-                return [];
-            }
-        }
-
-        // NEW: Show mention suggestions
-        function showMentionSuggestions(textarea, suggestions, cursorPos) {
-            const suggestionsContainer = textarea.nextElementSibling;
-            if (!suggestionsContainer || !suggestionsContainer.classList.contains('mention-suggestions')) {
-                return;
-            }
-            
-            suggestionsContainer.innerHTML = '';
-            
-            if (suggestions.length === 0) {
-                suggestionsContainer.classList.remove('active');
-                return;
-            }
-            
-            suggestions.forEach((user, index) => {
-                const suggestion = document.createElement('div');
-                suggestion.className = 'mention-suggestion';
-                suggestion.dataset.userId = user.id;
-                suggestion.dataset.username = user.username;
-                suggestion.innerHTML = `
-                    <div class="mention-avatar">
-                        ${user.avatar_url ? `<img src="${user.avatar_url}" alt="${user.username}" style="width: 100%; height: 100%; border-radius: 50%;">` : user.username.charAt(0).toUpperCase()}
-                    </div>
-                    <div class="mention-info">
-                        <div class="mention-username">@${user.username}</div>
-                        <div class="mention-name">${user.full_name || user.username}</div>
-                    </div>
-                `;
-                
-                suggestion.addEventListener('click', () => {
-                    insertMention(textarea, user.username);
-                });
-                
-                suggestionsContainer.appendChild(suggestion);
-            });
-            
-            // Position the suggestions dropdown
-            const textareaRect = textarea.getBoundingClientRect();
-            suggestionsContainer.style.left = '0';
-            suggestionsContainer.style.top = `${textareaRect.height + 5}px`;
-            suggestionsContainer.style.width = `${textareaRect.width}px`;
-            suggestionsContainer.classList.add('active');
-            
-            currentMentionIndex = -1;
-        }
-
-        // NEW: Insert mention into textarea
-        function insertMention(textarea, username) {
-            const text = textarea.value;
-            const cursorPos = textarea.selectionStart;
-            
-            // Find the last @ position before cursor
-            let lastAtPos = -1;
-            for (let i = cursorPos - 1; i >= 0; i--) {
-                if (text[i] === '@' && (i === 0 || text[i - 1] === ' ' || text[i - 1] === '\n')) {
-                    lastAtPos = i;
-                    break;
-                }
-            }
-            
-            if (lastAtPos === -1) return;
-            
-            // Replace from @ to cursor with @username
-            const before = text.substring(0, lastAtPos);
-            const after = text.substring(cursorPos);
-            textarea.value = before + '@' + username + ' ' + after;
-            
-            // Set cursor position after the inserted mention
-            const newCursorPos = lastAtPos + username.length + 2; // +2 for @ and space
-            textarea.selectionStart = textarea.selectionEnd = newCursorPos;
-            
-            // Hide suggestions
-            const suggestionsContainer = textarea.nextElementSibling;
-            if (suggestionsContainer && suggestionsContainer.classList.contains('mention-suggestions')) {
-                suggestionsContainer.classList.remove('active');
-            }
-            
-            // Focus back on textarea
-            textarea.focus();
-        }
-
-        // NEW: Handle text input for mentions
-        function handleMentionInput(textarea, e) {
-            if (mentionTimeout) {
-                clearTimeout(mentionTimeout);
-            }
-            
-            mentionTimeout = setTimeout(async () => {
-                const text = textarea.value;
-                const cursorPos = textarea.selectionStart;
-                
-                // Find if we're typing after an @ symbol
-                let searchStart = cursorPos - 1;
-                while (searchStart >= 0 && text[searchStart] !== '@') {
-                    // If we hit a space or newline, we're not in a mention
-                    if (text[searchStart] === ' ' || text[searchStart] === '\n') {
-                        searchStart = -1;
-                        break;
-                    }
-                    searchStart--;
-                }
-                
-                if (searchStart >= 0 && text[searchStart] === '@') {
-                    // Check if @ is at beginning or preceded by space/newline
-                    if (searchStart === 0 || text[searchStart - 1] === ' ' || text[searchStart - 1] === '\n') {
-                        const searchTerm = text.substring(searchStart + 1, cursorPos);
-                        currentMentionSearch = searchTerm;
-                        
-                        if (searchTerm.length >= 1) {
-                            const suggestions = await fetchUserSuggestions(searchTerm);
-                            showMentionSuggestions(textarea, suggestions, cursorPos);
-                        } else {
-                            // Hide suggestions if search term is empty
-                            const suggestionsContainer = textarea.nextElementSibling;
-                            if (suggestionsContainer && suggestionsContainer.classList.contains('mention-suggestions')) {
-                                suggestionsContainer.classList.remove('active');
-                            }
-                        }
-                    } else {
-                        // Hide suggestions if @ is part of another word
-                        const suggestionsContainer = textarea.nextElementSibling;
-                        if (suggestionsContainer && suggestionsContainer.classList.contains('mention-suggestions')) {
-                            suggestionsContainer.classList.remove('active');
-                        }
-                    }
-                } else {
-                    // Hide suggestions if no @ found
-                    const suggestionsContainer = textarea.nextElementSibling;
-                    if (suggestionsContainer && suggestionsContainer.classList.contains('mention-suggestions')) {
-                        suggestionsContainer.classList.remove('active');
-                    }
-                }
-            }, 300);
-        }
-
-        // NEW: Handle keyboard navigation for mentions
-        function handleMentionKeydown(textarea, e) {
-            const suggestionsContainer = textarea.nextElementSibling;
-            if (!suggestionsContainer || !suggestionsContainer.classList.contains('active')) {
-                return;
-            }
-            
-            const suggestions = suggestionsContainer.querySelectorAll('.mention-suggestion');
-            if (suggestions.length === 0) return;
-            
-            switch (e.key) {
-                case 'ArrowDown':
-                    e.preventDefault();
-                    if (currentMentionIndex < suggestions.length - 1) {
-                        if (currentMentionIndex >= 0) {
-                            suggestions[currentMentionIndex].classList.remove('selected');
-                        }
-                        currentMentionIndex++;
-                        suggestions[currentMentionIndex].classList.add('selected');
-                    }
-                    break;
-                    
-                case 'ArrowUp':
-                    e.preventDefault();
-                    if (currentMentionIndex > 0) {
-                        suggestions[currentMentionIndex].classList.remove('selected');
-                        currentMentionIndex--;
-                        suggestions[currentMentionIndex].classList.add('selected');
-                    }
-                    break;
-                    
-                case 'Enter':
-                    e.preventDefault();
-                    if (currentMentionIndex >= 0 && currentMentionIndex < suggestions.length) {
-                        const username = suggestions[currentMentionIndex].dataset.username;
-                        insertMention(textarea, username);
-                    }
-                    break;
-                    
-                case 'Escape':
-                    e.preventDefault();
-                    suggestionsContainer.classList.remove('active');
-                    break;
-                    
-                case 'Tab':
-                    e.preventDefault();
-                    if (currentMentionIndex >= 0 && currentMentionIndex < suggestions.length) {
-                        const username = suggestions[currentMentionIndex].dataset.username;
-                        insertMention(textarea, username);
-                    }
-                    break;
-            }
         }
 
         async function initialize() {
@@ -2612,7 +2403,7 @@
                 // Update offset
                 currentOffset += PULSES_PER_PAGE;
                 
-                // Check which pulses user has tapped, saved, AK'd
+                // Check which pulses user has tapped, saved, repulsed, and reacted
                 const userInteractions = await getUserInteractions(uniquePulses.map(p => p.id));
                 
                 // Display new pulses
@@ -2649,12 +2440,11 @@
         async function getUserInteractions(pulseIds) {
             try {
                 const { data: { session } } = await supabaseClient.auth.getSession();
-                if (!session) return { taps: new Set(), saves: new Set(), aks: new Map(), repulses: new Set(), reactions: new Map() };
+                if (!session) return { taps: new Set(), saves: new Set(), repulses: new Set(), reactions: new Map() };
                 
                 const interactions = {
                     taps: new Set(),
                     saves: new Set(),
-                    aks: new Map(),
                     repulses: new Set(),
                     reactions: new Map()
                 };
@@ -2681,34 +2471,15 @@
                     saves.forEach(save => interactions.saves.add(save.pulse_id));
                 }
                 
-                // Fetch AKs
-                const { data: aks } = await supabaseClient
-                    .from('pulse_aks')
-                    .select('pulse_id, ak_type')
-                    .in('pulse_id', pulseIds)
-                    .eq('user_id', session.user.id);
-                
-                if (aks) {
-                    aks.forEach(ak => interactions.aks.set(ak.pulse_id, ak.ak_type));
-                }
-                
                 // Fetch repulses
                 const { data: repulses } = await supabaseClient
                     .from('pulse_repulses')
-                    .select('pulse_id, is_soft, context')
+                    .select('pulse_id')
                     .in('pulse_id', pulseIds)
                     .eq('user_id', session.user.id);
                 
                 if (repulses) {
-                    repulses.forEach(repulse => {
-                        interactions.repulses.add(repulse.pulse_id);
-                        // Store repulse data for UI updates
-                        interactions.repulseData = interactions.repulseData || new Map();
-                        interactions.repulseData.set(repulse.pulse_id, {
-                            is_soft: repulse.is_soft,
-                            context: repulse.context
-                        });
-                    });
+                    repulses.forEach(repulse => interactions.repulses.add(repulse.pulse_id));
                 }
                 
                 // Fetch reactions
@@ -2726,7 +2497,7 @@
                 
             } catch (error) {
                 console.error('Error getting user interactions:', error);
-                return { taps: new Set(), saves: new Set(), aks: new Map(), repulses: new Set(), reactions: new Map() };
+                return { taps: new Set(), saves: new Set(), repulses: new Set(), reactions: new Map() };
             }
         }
         
@@ -3279,7 +3050,7 @@
             }
         }
         
-        // Handle Reaction (Awe or Banger) - FIXED
+        // Handle Reaction (Awe or Banger)
         async function handleReaction(pulseId, reactionType, e) {
             if (e) e.stopPropagation();
             
@@ -3317,7 +3088,6 @@
                         reactionBtn.classList.remove('active');
                     }, 600);
                     
-                    // No toast for removal (intentional, respectful)
                 } else {
                     // Add reaction
                     const { error } = await supabaseClient
@@ -3361,8 +3131,6 @@
                     setTimeout(() => {
                         reactionBtn.classList.remove('active');
                     }, 600);
-                    
-                    // No success toast (intentional, not performative)
                 }
                 
                 // Close reaction menu
@@ -3370,11 +3138,10 @@
                 
             } catch (error) {
                 console.error('Reaction error:', error);
-                // No error toast (intentional)
             }
         }
         
-        // Show Reaction Menu (for long press) - FIXED
+        // Show Reaction Menu (for long press)
         function showReactionMenu(pulseId, event) {
             closeReactionMenu(); // Close any open menu
             
@@ -3406,7 +3173,7 @@
                 const rect = tapBtn.getBoundingClientRect();
                 const cardRect = pulseCard.getBoundingClientRect();
                 reactionMenu.style.position = 'absolute';
-                reactionMenu.style.left = '0';
+                reactionMenu.style.left = '50%';
                 reactionMenu.style.bottom = `${rect.height + 10}px`;
             }
             
@@ -3440,13 +3207,13 @@
 
         function closeReactionMenuOnClickOutside(e) {
             const menu = document.querySelector(`#reaction-menu-${currentReactionMenuPulseId}`);
-            if (menu && !menu.contains(e.target) && !e.target.closest('.tap-btn')) {
+            if (menu && !menu.contains(e.target)) {
                 closeReactionMenu();
             }
         }
         
-        // Handle Re-Pulse - FIXED
-        async function handleRePulse(pulseId, context = null, isSoft = true, e) {
+        // Handle Re-Pulse - FIXED VERSION
+        async function handleRePulse(pulseId, context = null, e) {
             if (e) e.stopPropagation();
             
             try {
@@ -3459,7 +3226,7 @@
                 // Check if already re-pulsed
                 const { data: existingRePulse } = await supabaseClient
                     .from('pulse_repulses')
-                    .select('id, is_soft, context')
+                    .select('id')
                     .eq('pulse_id', pulseId)
                     .eq('user_id', session.user.id)
                     .single();
@@ -3478,14 +3245,14 @@
                     isRepulsed = false;
                     showToast('Re-pulse removed', 'success');
                 } else {
-                    // Add re-pulse
+                    // Add re-pulse with is_soft flag
                     const { error } = await supabaseClient
                         .from('pulse_repulses')
                         .insert({
                             pulse_id: pulseId,
                             user_id: session.user.id,
                             context: context,
-                            is_soft: isSoft,
+                            is_soft: !context, // Set is_soft to false if context is provided
                             created_at: new Date().toISOString()
                         });
                     
@@ -3507,7 +3274,7 @@
                         const actorName = session.user.email.split('@')[0];
                         let message = `${actorName} re-pulsed your pulse`;
                         
-                        if (context && !isSoft) {
+                        if (context) {
                             message += ' with added context.';
                         } else {
                             message += '.';
@@ -3523,11 +3290,11 @@
                         );
                     }
                     
-                    showToast(context && !isSoft ? 'Re-pulsed with context!' : 'Re-pulsed!', 'success');
+                    showToast(context ? 'Re-pulsed with context!' : 'Re-pulsed!', 'success');
                 }
                 
                 // Update UI immediately
-                updateRePulseUI(pulseId, isRepulsed, isSoft, context);
+                updateRePulseUI(pulseId, isRepulsed);
                 
                 // Close re-pulse modal if open
                 if (currentRepulseModal) {
@@ -3535,19 +3302,29 @@
                     currentRepulseModal = null;
                 }
                 
+                // Reload the pulse to show updated context
+                setTimeout(() => {
+                    const pulseCard = document.querySelector(`[data-pulse-id="${pulseId}"]`);
+                    if (pulseCard) {
+                        // Remove and reload this pulse card
+                        pulseCard.remove();
+                        displayedPulseIds.delete(pulseId);
+                        loadMorePulses();
+                    }
+                }, 500);
+                
             } catch (error) {
                 console.error('Re-pulse error:', error);
-                showToast('Failed to re-pulse', 'error');
+                showToast('Failed to re-pulse: ' + error.message, 'error');
             }
         }
         
         // Update re-pulse UI
-        function updateRePulseUI(pulseId, isRepulsed, isSoft = true, context = null) {
+        function updateRePulseUI(pulseId, isRepulsed) {
             const pulseCard = document.querySelector(`[data-pulse-id="${pulseId}"]`);
             if (!pulseCard) return;
             
             const repulseBtn = pulseCard.querySelector('.repulse-btn');
-            const repulseCount = pulseCard.querySelector('.repulses-count');
             
             if (repulseBtn) {
                 if (isRepulsed) {
@@ -3555,8 +3332,9 @@
                     repulseBtn.innerHTML = '<i class="fas fa-retweet" aria-hidden="true"></i> Re-Pulsed';
                 } else {
                     repulseBtn.classList.remove('repulsed');
-                    // Update count
-                    const currentCount = parseInt(repulseBtn.textContent.match(/\d+/)?.[0]) || 0;
+                    // Get current count and decrement by 1
+                    const currentText = repulseBtn.textContent.trim();
+                    const currentCount = parseInt(currentText.match(/\d+/)?.[0]) || 0;
                     repulseBtn.innerHTML = `<i class="fas fa-retweet" aria-hidden="true"></i> ${Math.max(0, currentCount - 1)}`;
                 }
             }
@@ -3661,17 +3439,16 @@
                         </div>
                         <div class="modal-body">
                             <form id="commentForm">
-                                <div style="position: relative;">
-                                    <textarea 
-                                        class="caption-input" 
-                                        id="commentText" 
-                                        placeholder="Write your comment... Use @ to mention people"
-                                        maxlength="500"
-                                        rows="3"
-                                        aria-label="Comment text"
-                                    ></textarea>
-                                    <div class="mention-suggestions" id="commentMentionSuggestions"></div>
-                                </div>
+                                <textarea 
+                                    class="caption-input" 
+                                    id="commentText" 
+                                    placeholder="Write your comment... Use @ to mention people"
+                                    maxlength="500"
+                                    rows="3"
+                                    aria-label="Comment text"
+                                ></textarea>
+                                <!-- Mentions Dropdown for Comments -->
+                                <div class="mentions-dropdown" id="commentMentionsDropdown"></div>
                                 <div class="modal-footer" style="border-top: none; padding-top: 0;">
                                     <button type="submit" class="modal-btn modal-btn-post">Post Comment</button>
                                 </div>
@@ -3691,15 +3468,16 @@
                     }
                 });
                 
-                // Setup mention functionality for comment textarea
-                const commentTextarea = commentModal.querySelector('#commentText');
-                commentTextarea.addEventListener('input', (e) => handleMentionInput(commentTextarea, e));
-                commentTextarea.addEventListener('keydown', (e) => handleMentionKeydown(commentTextarea, e));
-                
                 const commentForm = commentModal.querySelector('#commentForm');
+                const commentTextarea = commentModal.querySelector('#commentText');
+                const commentMentionsDropdown = commentModal.querySelector('#commentMentionsDropdown');
+                
+                // Setup mentions for comment textarea
+                setupMentions(commentTextarea, commentMentionsDropdown, commentModal);
+                
                 commentForm.addEventListener('submit', async (e) => {
                     e.preventDefault();
-                    const commentText = commentModal.querySelector('#commentText').value.trim();
+                    const commentText = commentTextarea.value.trim();
                     
                     if (!commentText) {
                         showToast('Please enter a comment', 'error');
@@ -4069,6 +3847,12 @@
                 
                 document.getElementById('editModal').style.display = 'flex';
                 
+                // Setup mentions for edit modal
+                const editCaption = document.getElementById('editCaption');
+                const editMentionsDropdown = document.getElementById('editMentionsDropdown');
+                const editModal = document.getElementById('editModal');
+                setupMentions(editCaption, editMentionsDropdown, editModal);
+                
             } catch (error) {
                 console.error('Error loading pulse for edit:', error);
                 showToast('Failed to load pulse for editing', 'error');
@@ -4098,7 +3882,7 @@
             }
         }
         
-        // Show Re-Pulse Modal - FIXED
+        // Show Re-Pulse Modal - FIXED VERSION
         function showRePulseModal(pulseId, event) {
             if (currentRepulseModal) {
                 currentRepulseModal.remove();
@@ -4125,7 +3909,7 @@
                     ></textarea>
                     <div class="repulse-modal-actions">
                         <button class="repulse-btn soft" id="softRepulse" data-pulse-id="${pulseId}">
-                            Re-Pulse
+                            Re-Pulse (No Context)
                         </button>
                         <button class="repulse-btn" id="contextualRepulse" data-pulse-id="${pulseId}">
                             Re-Pulse with Context
@@ -4154,16 +3938,16 @@
             const contextualRepulseBtn = repulseModal.querySelector('#contextualRepulse');
             
             softRepulseBtn.addEventListener('click', (e) => {
-                handleRePulse(pulseId, null, true, e);
+                handleRePulse(pulseId, null, e);
             });
             
             contextualRepulseBtn.addEventListener('click', (e) => {
                 const context = repulseModal.querySelector('#repulseContext').value.trim();
-                handleRePulse(pulseId, context, false, e);
+                handleRePulse(pulseId, context, e);
             });
         }
         
-        // Setup tap button event handlers with long press for reactions - FIXED
+        // Setup tap button event handlers with long press for reactions - FIXED VERSION
         function setupTapButtonEvents(tapBtn, pulseId) {
             let tapTimer;
             let isLongPress = false;
@@ -4175,7 +3959,7 @@
                 tapTimer = setTimeout(() => {
                     isLongPress = true;
                     showReactionMenu(pulseId, e);
-                }, 500); // 500ms for long press
+                }, longPressThreshold); // 500ms for long press
             };
             
             const clearTapTimer = () => {
@@ -4186,7 +3970,7 @@
                 clearTapTimer();
                 const touchDuration = Date.now() - touchStartTime;
                 
-                if (!isLongPress && touchDuration < 500) {
+                if (!isLongPress && touchDuration < longPressThreshold) {
                     handleTap(pulseId, e);
                 }
             };
@@ -4545,10 +4329,10 @@
                     });
                 }
                 
-                // Fetch repulses count and context - UPDATED for new schema
+                // Fetch repulses count and context
                 const { data: repulsesData, error: repulsesError } = await supabaseClient
                     .from('pulse_repulses')
-                    .select('pulse_id, context, is_soft, created_at, user_id')
+                    .select('pulse_id, context, user_id')
                     .in('pulse_id', pulseIds);
                 
                 const repulsesCountMap = {};
@@ -4556,16 +4340,28 @@
                 if (!repulsesError && repulsesData) {
                     repulsesData.forEach(repulse => {
                         repulsesCountMap[repulse.pulse_id] = (repulsesCountMap[repulse.pulse_id] || 0) + 1;
-                        if (repulse.context && !repulse.is_soft) {
+                        if (repulse.context) {
                             if (!repulsesContextMap[repulse.pulse_id]) {
                                 repulsesContextMap[repulse.pulse_id] = [];
                             }
                             repulsesContextMap[repulse.pulse_id].push({
                                 context: repulse.context,
-                                user_id: repulse.user_id,
-                                created_at: repulse.created_at
+                                user_id: repulse.user_id
                             });
                         }
+                    });
+                }
+                
+                // Fetch reactions count
+                const { data: reactionsData, error: reactionsError } = await supabaseClient
+                    .from('pulse_reactions')
+                    .select('pulse_id')
+                    .in('pulse_id', pulseIds);
+                
+                const reactionsCountMap = {};
+                if (!reactionsError && reactionsData) {
+                    reactionsData.forEach(reaction => {
+                        reactionsCountMap[reaction.pulse_id] = (reactionsCountMap[reaction.pulse_id] || 0) + 1;
                     });
                 }
                 
@@ -4575,7 +4371,8 @@
                     taps_count: tapsCountMap[pulse.id] || 0,
                     comments_count: commentsCountMap[pulse.id] || 0,
                     repulses_count: repulsesCountMap[pulse.id] || 0,
-                    repulse_contexts: repulsesContextMap[pulse.id] || []
+                    repulse_contexts: repulsesContextMap[pulse.id] || [],
+                    reactions_count: reactionsCountMap[pulse.id] || 0
                 }));
                 
                 return enrichedPulses;
@@ -4669,6 +4466,113 @@
             });
         }
         
+        // NEW: Search usernames for mentions
+        async function searchUsernames(query) {
+            try {
+                const { data: { session } } = await supabaseClient.auth.getSession();
+                if (!session) return [];
+                
+                const { data, error } = await supabaseClient
+                    .from('user_profiles')
+                    .select('id, username, full_name')
+                    .or(`username.ilike.%${query}%,full_name.ilike.%${query}%`)
+                    .neq('id', session.user.id) // Don't show current user
+                    .limit(10);
+                
+                if (error) throw error;
+                
+                return data || [];
+            } catch (error) {
+                console.error('Error searching usernames:', error);
+                return [];
+            }
+        }
+        
+        // NEW: Setup mentions functionality
+        function setupMentions(textarea, dropdown, container) {
+            let currentSearch = '';
+            let mentionStart = -1;
+            
+            textarea.addEventListener('input', debounce(async (e) => {
+                const value = textarea.value;
+                const cursorPos = textarea.selectionStart;
+                
+                // Find if we're typing after @
+                for (let i = cursorPos - 1; i >= 0; i--) {
+                    if (value[i] === '@' && (i === 0 || value[i - 1] === ' ' || value[i - 1] === '\n')) {
+                        mentionStart = i;
+                        currentSearch = value.substring(i + 1, cursorPos);
+                        break;
+                    }
+                }
+                
+                if (mentionStart !== -1 && currentSearch.length > 0) {
+                    // Search for usernames
+                    const users = await searchUsernames(currentSearch);
+                    
+                    if (users.length > 0) {
+                        // Show dropdown
+                        dropdown.innerHTML = '';
+                        users.forEach(user => {
+                            const mentionItem = document.createElement('div');
+                            mentionItem.className = 'mention-item';
+                            mentionItem.innerHTML = `
+                                <div class="mention-avatar">${user.full_name?.substring(0, 2).toUpperCase() || user.username?.substring(0, 2).toUpperCase() || 'U'}</div>
+                                <div class="mention-info">
+                                    <div class="mention-username">@${user.username || 'user'}</div>
+                                    <div class="mention-name">${user.full_name || ''}</div>
+                                </div>
+                            `;
+                            
+                            mentionItem.addEventListener('click', () => {
+                                const before = value.substring(0, mentionStart);
+                                const after = value.substring(cursorPos);
+                                textarea.value = before + '@' + user.username + ' ' + after;
+                                dropdown.classList.remove('active');
+                                
+                                // Set cursor after the mention
+                                const newCursorPos = mentionStart + user.username.length + 2;
+                                setTimeout(() => {
+                                    textarea.focus();
+                                    textarea.setSelectionRange(newCursorPos, newCursorPos);
+                                }, 10);
+                            });
+                            
+                            dropdown.appendChild(mentionItem);
+                        });
+                        
+                        // Position dropdown
+                        const rect = textarea.getBoundingClientRect();
+                        const containerRect = container.getBoundingClientRect();
+                        
+                        dropdown.style.position = 'absolute';
+                        dropdown.style.top = `${rect.bottom - containerRect.top}px`;
+                        dropdown.style.left = `${rect.left - containerRect.left}px`;
+                        dropdown.style.width = `${rect.width}px`;
+                        dropdown.classList.add('active');
+                    } else {
+                        dropdown.classList.remove('active');
+                    }
+                } else {
+                    dropdown.classList.remove('active');
+                }
+            }, 300));
+            
+            // Hide dropdown when clicking outside
+            document.addEventListener('click', (e) => {
+                if (!textarea.contains(e.target) && !dropdown.contains(e.target)) {
+                    dropdown.classList.remove('active');
+                }
+            });
+            
+            // Handle escape key
+            textarea.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    dropdown.classList.remove('active');
+                }
+            });
+        }
+        
         function createPulseCard(pulse, userInteractions) {
             const profile = pulse;
             const fullName = profile.full_name || profile.email?.split('@')[0] || 'User';
@@ -4680,12 +4584,8 @@
             
             const isTapped = userInteractions.taps.has(pulse.id);
             const isSaved = userInteractions.saves.has(pulse.id);
-            const userAK = userInteractions.aks.get(pulse.id);
             const isRepulsed = userInteractions.repulses.has(pulse.id);
             const userReaction = userInteractions.reactions.get(pulse.id);
-            
-            // Get repulse data if exists
-            const repulseData = userInteractions.repulseData ? userInteractions.repulseData.get(pulse.id) : null;
             
             const isSeries = pulse.series_id && pulse.series_order;
             const hasMedia = pulse.media_url;
@@ -4706,7 +4606,6 @@
                     !e.target.closest('.pulse-connect-btn') &&
                     !e.target.closest('.pulse-more-options') && 
                     !e.target.closest('.pulse-options-menu') &&
-                    !e.target.closest('.ak-menu') &&
                     !e.target.closest('.reaction-menu') &&
                     !e.target.closest('.repulse-context')) {
                     
@@ -4810,33 +4709,28 @@
                 }
             }
             
-            // Add repulse context if available - UPDATED for new schema
+            // Add repulse context if available
             let repulseContextHTML = '';
             if (pulse.repulse_contexts && pulse.repulse_contexts.length > 0) {
-                // Sort by creation date to get the latest
-                const sortedContexts = pulse.repulse_contexts.sort((a, b) => 
-                    new Date(b.created_at) - new Date(a.created_at)
-                );
-                const latestContext = sortedContexts[0];
+                // Get the most recent repulse with context
+                const latestContext = pulse.repulse_contexts[pulse.repulse_contexts.length - 1];
                 if (latestContext.context) {
+                    // Try to get the username of the user who added the context
+                    let contextUsername = 'Someone';
+                    if (latestContext.user_id) {
+                        const contextUser = allPulses.find(p => p.user_id === latestContext.user_id);
+                        if (contextUser) {
+                            contextUsername = contextUser.username || contextUser.full_name || 'Someone';
+                        }
+                    }
+                    
                     repulseContextHTML = `
                         <div class="repulse-context">
-                            <div class="repulse-context-user">Re-Pulsed with context:</div>
-                            <div>${sanitizeHTML(latestContext.context)}</div>
+                            <div class="repulse-context-user">@${contextUsername} re-pulsed with context:</div>
+                            <div>"${sanitizeHTML(latestContext.context)}"</div>
                         </div>
                     `;
                 }
-            }
-            
-            // Check if user has repulsed this pulse with context
-            const userRepulseContext = repulseData && !repulseData.is_soft ? repulseData.context : null;
-            if (userRepulseContext && !repulseContextHTML) {
-                repulseContextHTML = `
-                    <div class="repulse-context">
-                        <div class="repulse-context-user">Your Re-Pulse context:</div>
-                        <div>${sanitizeHTML(userRepulseContext)}</div>
-                    </div>
-                `;
             }
             
             card.innerHTML = `
@@ -4889,6 +4783,7 @@
                     ${pulse.taps_count > 0 ? `<span class="stat-item">${pulse.taps_count} felt</span>` : ''}
                     ${pulse.comments_count > 0 ? `<span class="stat-item">${pulse.comments_count} comments</span>` : ''}
                     ${pulse.repulses_count > 0 ? `<span class="stat-item">${pulse.repulses_count} re-pulses</span>` : ''}
+                    ${pulse.reactions_count > 0 ? `<span class="stat-item">${pulse.reactions_count} reactions</span>` : ''}
                 </div>
             `;
             
@@ -4924,7 +4819,7 @@
             saveBtn.addEventListener('click', (e) => handleSave(pulse.id, e));
             commentBtn.addEventListener('click', (e) => handleComment(pulse.id, e));
             
-            // Setup repulse button event listener - FIXED
+            // Setup repulse button event listener
             repulseBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 showRePulseModal(pulse.id, e);
@@ -5197,12 +5092,6 @@
                 toggleSwitch.classList.remove('active');
                 seriesOptions.classList.remove('active');
                 updatePostButton();
-                
-                // Hide mention suggestions
-                const mentionSuggestions = document.getElementById('mentionSuggestions');
-                if (mentionSuggestions) {
-                    mentionSuggestions.classList.remove('active');
-                }
             }
             
             async function createPulse() {
@@ -5240,7 +5129,8 @@
                         aspect_ratio: '9:16',
                         taps_count: 0,
                         comments_count: 0,
-                        repulses_count: 0
+                        repulses_count: 0,
+                        reactions_count: 0
                     };
                     
                     let seriesId = null;
@@ -5352,21 +5242,6 @@
                 }
             });
             
-            // Setup mention functionality for caption input
-            captionInput.addEventListener('input', (e) => {
-                handleMentionInput(captionInput, e);
-                updatePostButton();
-            });
-            
-            captionInput.addEventListener('keydown', (e) => handleMentionKeydown(captionInput, e));
-            
-            // Setup mention functionality for edit caption input
-            const editCaptionInput = document.getElementById('editCaption');
-            if (editCaptionInput) {
-                editCaptionInput.addEventListener('input', (e) => handleMentionInput(editCaptionInput, e));
-                editCaptionInput.addEventListener('keydown', (e) => handleMentionKeydown(editCaptionInput, e));
-            }
-            
             mediaUpload.addEventListener('click', () => mediaInput.click());
             
             mediaInput.addEventListener('change', (e) => {
@@ -5439,6 +5314,8 @@
                 seriesOptions.classList.toggle('active', isSeriesMode);
             });
             
+            captionInput.addEventListener('input', updatePostButton);
+            
             postPulseBtn.addEventListener('click', createPulse);
             
             userAvatar.addEventListener('click', () => {
@@ -5460,7 +5337,7 @@
                 const file = e.target.files[0];
                 if (!file) return;
                 
-                const validTypes = ['image/avif', 'image/webp', 'image/jpeg,image/png,image/gif,video/mp4,video/quicktime,audio/*'];
+                const validTypes = ['image/avif', 'image/webp, image/jpeg, image/png, image/gif, video/mp4, video/quicktime, audio/*'];
                 if (!validTypes.includes(file.type) && !file.type.startsWith('audio/')) {
                     showToast('Please select a valid image, video, or audio file', 'error');
                     return;
@@ -5482,7 +5359,7 @@
                         video.src = e.target.result;
                         video.controls = true;
                         video.style.width = '100%';
-                        video.style.border-radius: '12px';
+                        video.style.borderRadius = '12px';
                         editMediaPreview.appendChild(video);
                     } else if (file.type.startsWith('audio/')) {
                         const audioContainer = document.createElement('div');
@@ -5501,7 +5378,7 @@
                         img.src = e.target.result;
                         img.alt = 'Media preview';
                         img.style.width = '100%';
-                        img.style.border-radius: '12px';
+                        img.style.borderRadius = '12px';
                         editMediaPreview.appendChild(img);
                     }
                     
@@ -5536,6 +5413,10 @@
                     }
                 });
             });
+            
+            // Setup mentions for create modal
+            const mentionsDropdown = document.getElementById('mentionsDropdown');
+            setupMentions(captionInput, mentionsDropdown, createModal);
             
             supabaseClient.auth.onAuthStateChange((event, session) => {
                 console.log('Auth state changed:', event);
