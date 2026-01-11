@@ -2438,69 +2438,70 @@
         }
         
         // Get user interactions for pulses
-        async function getUserInteractions(pulseIds) {
-            try {
-                const { data: { session } } = await supabaseClient.auth.getSession();
-                if (!session) return { taps: new Set(), saves: new Set(), repulses: new Set(), reactions: new Map() };
-                
-                const interactions = {
-                    taps: new Set(),
-                    saves: new Set(),
-                    repulses: new Set(),
-                    reactions: new Map()
-                };
-                
-                // Fetch taps
-                const { data: taps } = await supabaseClient
-                    .from('pulse_taps')
-                    .select('pulse_id')
-                    .in('pulse_id', pulseIds)
-                    .eq('user_id', session.user.id);
-                
-                if (taps) {
-                    taps.forEach(tap => interactions.taps.add(tap.pulse_id));
-                }
-                
-                // Fetch saves
-                const { data: saves } = await supabaseClient
-                    .from('saved_pulses')
-                    .select('pulse_id')
-                    .in('pulse_id', pulseIds)
-                    .eq('user_id', session.user.id);
-                
-                if (saves) {
-                    saves.forEach(save => interactions.saves.add(save.pulse_id));
-                }
-                
-                // Fetch repulses
-                const { data: repulses } = await supabaseClient
-                    .from('pulse_repulses')
-                    .select('pulse_id')
-                    .in('pulse_id', pulseIds)
-                    .eq('user_id', session.user.id);
-                
-                if (repulses) {
-                    repulses.forEach(repulse => interactions.repulses.add(repulse.pulse_id));
-                }
-                
-                // Fetch reactions
-                const { data: reactions } = await supabaseClient
-                    .from('pulse_reactions')
-                    .select('pulse_id, reaction_type')
-                    .in('pulse_id', pulseIds)
-                    .eq('user_id', session.user.id);
-                
-                if (reactions) {
-                    reactions.forEach(reaction => interactions.reactions.set(reaction.pulse_id, reaction.reaction_type));
-                }
-                
-                return interactions;
-                
-            } catch (error) {
-                console.error('Error getting user interactions:', error);
-                return { taps: new Set(), saves: new Set(), repulses: new Set(), reactions: new Map() };
-            }
+        // Get user interactions for pulses
+async function getUserInteractions(pulseIds) {
+    try {
+        const { data: { session } } = await supabaseClient.auth.getSession();
+        if (!session) return { taps: new Set(), saves: new Set(), repulses: new Set(), reactions: new Map() };
+        
+        const interactions = {
+            taps: new Set(),
+            saves: new Set(),
+            repulses: new Set(),
+            reactions: new Map()
+        };
+        
+        // Fetch taps
+        const { data: taps } = await supabaseClient
+            .from('pulse_taps')
+            .select('pulse_id')
+            .in('pulse_id', pulseIds)
+            .eq('user_id', session.user.id);
+        
+        if (taps) {
+            taps.forEach(tap => interactions.taps.add(tap.pulse_id));
         }
+        
+        // Fetch saves
+        const { data: saves } = await supabaseClient
+            .from('saved_pulses')
+            .select('pulse_id')
+            .in('pulse_id', pulseIds)
+            .eq('user_id', session.user.id);
+        
+        if (saves) {
+            saves.forEach(save => interactions.saves.add(save.pulse_id));
+        }
+        
+        // Fetch repulses
+        const { data: repulses } = await supabaseClient
+            .from('pulse_repulses')
+            .select('pulse_id')
+            .in('pulse_id', pulseIds)
+            .eq('user_id', session.user.id);
+        
+        if (repulses) {
+            repulses.forEach(repulse => interactions.repulses.add(repulse.pulse_id));
+        }
+        
+        // Fetch reactions
+        const { data: reactions } = await supabaseClient
+            .from('pulse_reactions')
+            .select('pulse_id, reaction_type')
+            .in('pulse_id', pulseIds)
+            .eq('user_id', session.user.id);
+        
+        if (reactions) {
+            reactions.forEach(reaction => interactions.reactions.set(reaction.pulse_id, reaction.reaction_type));
+        }
+        
+        return interactions;
+        
+    } catch (error) {
+        console.error('Error getting user interactions:', error);
+        return { taps: new Set(), saves: new Set(), repulses: new Set(), reactions: new Map() };
+    }
+}
         
         // Display additional pulses
         function displayMorePulses(pulses, userInteractions) {
@@ -2925,20 +2926,27 @@
         }
         
         async function updateCommentCount(pulseId, increment) {
-            const pulseCard = document.querySelector(`[data-pulse-id="${pulseId}"]`);
-            if (!pulseCard) return;
-            
-            const realCount = await getRealCommentsCount(pulseId);
-            
-            const commentsBtn = pulseCard.querySelector('.comment-btn');
-            const commentsCount = pulseCard.querySelector('.comments-count');
-            
+    try {
+        const pulseCard = document.querySelector(`[data-pulse-id="${pulseId}"]`);
+        if (!pulseCard) return;
+        
+        const realCount = await getRealCommentsCount(pulseId);
+        
+        const commentsBtn = pulseCard.querySelector('.comment-btn');
+        const commentsCount = pulseCard.querySelector('.comments-count');
+        
+        if (commentsBtn) {
             commentsBtn.innerHTML = `<i class="fas fa-comment" aria-hidden="true"></i> ${realCount}`;
-            
-            if (commentsCount) {
-                commentsCount.textContent = `${realCount} ${realCount === 1 ? 'comment' : 'comments'}`;
-            }
         }
+        
+        if (commentsCount) {
+            commentsCount.textContent = `${realCount} ${realCount === 1 ? 'comment' : 'comments'}`;
+        }
+        
+    } catch (error) {
+        console.error('Error updating comment count:', error);
+    }
+}
         
         function updateShareCount(pulseId, increment) {
             const pulseCard = document.querySelector(`[data-pulse-id="${pulseId}"]`);
@@ -3432,123 +3440,200 @@
         }
         
         async function handleComment(pulseId, e) {
-            if (e) e.stopPropagation();
+    if (e) e.stopPropagation();
+    
+    try {
+        const { data: { session } } = await supabaseClient.auth.getSession();
+        if (!session) {
+            showToast('Please login to comment', 'error');
+            return;
+        }
+        
+        const commentModal = document.createElement('div');
+        commentModal.className = 'modal-overlay';
+        commentModal.style.display = 'flex';
+        commentModal.innerHTML = `
+            <div class="create-modal" style="max-width: 500px;">
+                <div class="modal-header">
+                    <h3 class="modal-title">Add Comment</h3>
+                    <button class="close-modal" id="closeCommentModal" aria-label="Close modal">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form id="commentForm">
+                        <div class="form-row" style="align-items: flex-start;">
+                            <div class="pulse-avatar" style="margin-top: 5px;">
+                                <span>${getUserInitials(session.user).substring(0, 2)}</span>
+                            </div>
+                            <textarea 
+                                class="caption-input" 
+                                id="commentText" 
+                                placeholder="Write your comment... Use @ to mention people"
+                                maxlength="500"
+                                rows="3"
+                                aria-label="Comment text"
+                                style="min-height: 80px;"
+                            ></textarea>
+                        </div>
+                        <!-- Mentions Dropdown for Comments -->
+                        <div class="mentions-dropdown" id="commentMentionsDropdown"></div>
+                        <div class="modal-footer" style="border-top: none; padding-top: 20px;">
+                            <button type="submit" class="modal-btn modal-btn-post" id="submitComment">Post Comment</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(commentModal);
+        
+        const closeBtn = commentModal.querySelector('#closeCommentModal');
+        closeBtn.addEventListener('click', () => commentModal.remove());
+        
+        commentModal.addEventListener('click', (e) => {
+            if (e.target === commentModal) {
+                commentModal.remove();
+            }
+        });
+        
+        const commentForm = commentModal.querySelector('#commentForm');
+        const commentTextarea = commentModal.querySelector('#commentText');
+        const commentMentionsDropdown = commentModal.querySelector('#commentMentionsDropdown');
+        const submitBtn = commentModal.querySelector('#submitComment');
+        
+        // Setup mentions for comment textarea
+        setupMentions(commentTextarea, commentMentionsDropdown, commentModal);
+        
+        let isSubmitting = false;
+        
+        commentForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            if (isSubmitting) return;
+            
+            const commentText = commentTextarea.value.trim();
+            
+            if (!commentText) {
+                showToast('Please enter a comment', 'error');
+                return;
+            }
             
             try {
-                const { data: { session } } = await supabaseClient.auth.getSession();
-                if (!session) {
-                    showToast('Please login to comment', 'error');
-                    return;
+                isSubmitting = true;
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin" aria-hidden="true"></i> Posting...';
+                
+                // FIXED: Use the correct table structure for pulse_comments
+                const { error } = await supabaseClient
+                    .from('pulse_comments')
+                    .insert({
+                        pulse_id: pulseId,
+                        user_id: session.user.id,
+                        comment_text: sanitizeHTML(commentText),
+                        created_at: new Date().toISOString()
+                    });
+                
+                if (error) {
+                    console.error('Comment insert error:', error);
+                    
+                    // Try alternative approach if the first fails
+                    const { error: altError } = await supabaseClient
+                        .from('pulse_comments')
+                        .insert({
+                            pulse_id: pulseId,
+                            user_id: session.user.id,
+                            comment_text: sanitizeHTML(commentText),
+                            likes_count: 0,
+                            created_at: new Date().toISOString(),
+                            updated_at: new Date().toISOString()
+                        });
+                    
+                    if (altError) {
+                        throw altError;
+                    }
                 }
                 
-                const commentModal = document.createElement('div');
-                commentModal.className = 'modal-overlay';
-                commentModal.style.display = 'flex';
-                commentModal.innerHTML = `
-                    <div class="create-modal" style="max-width: 500px;">
-                        <div class="modal-header">
-                            <h3 class="modal-title">Add Comment</h3>
-                            <button class="close-modal" id="closeCommentModal" aria-label="Close modal">
-                                <i class="fas fa-times"></i>
-                            </button>
-                        </div>
-                        <div class="modal-body">
-                            <form id="commentForm">
-                                <textarea 
-                                    class="caption-input" 
-                                    id="commentText" 
-                                    placeholder="Write your comment... Use @ to mention people"
-                                    maxlength="500"
-                                    rows="3"
-                                    aria-label="Comment text"
-                                ></textarea>
-                                <!-- Mentions Dropdown for Comments -->
-                                <div class="mentions-dropdown" id="commentMentionsDropdown"></div>
-                                <div class="modal-footer" style="border-top: none; padding-top: 0;">
-                                    <button type="submit" class="modal-btn modal-btn-post">Post Comment</button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-                `;
-                
-                document.body.appendChild(commentModal);
-                
-                const closeBtn = commentModal.querySelector('#closeCommentModal');
-                closeBtn.addEventListener('click', () => commentModal.remove());
-                
-                commentModal.addEventListener('click', (e) => {
-                    if (e.target === commentModal) {
-                        commentModal.remove();
-                    }
-                });
-                
-                const commentForm = commentModal.querySelector('#commentForm');
-                const commentTextarea = commentModal.querySelector('#commentText');
-                const commentMentionsDropdown = commentModal.querySelector('#commentMentionsDropdown');
-                
-                // Setup mentions for comment textarea
-                setupMentions(commentTextarea, commentMentionsDropdown, commentModal);
-                
-                commentForm.addEventListener('submit', async (e) => {
-                    e.preventDefault();
-                    const commentText = commentTextarea.value.trim();
-                    
-                    if (!commentText) {
-                        showToast('Please enter a comment', 'error');
-                        return;
-                    }
-                    
+                // Handle mentions in comment
+                const mentions = parseMentions(commentText).mentions;
+                for (const mention of mentions) {
                     try {
-                        const { error } = await supabaseClient
-                            .from('pulse_comments')
-                            .insert({
-                                pulse_id: pulseId,
-                                user_id: session.user.id,
-                                comment_text: sanitizeHTML(commentText),
-                                likes_count: 0
-                            });
+                        const username = mention.replace('@', '');
+                        const { data: mentionedUser } = await supabaseClient
+                            .from('user_profiles')
+                            .select('id')
+                            .eq('username', username)
+                            .single();
                         
-                        if (error) throw error;
-                        
-                        // Handle mentions in comment
-                        const mentions = parseMentions(commentText).mentions;
-                        for (const mention of mentions) {
-                            const username = mention.replace('@', '');
-                            const { data: mentionedUser } = await supabaseClient
-                                .from('user_profiles')
-                                .select('id')
-                                .eq('username', username)
-                                .single();
-                            
-                            if (mentionedUser && mentionedUser.id !== session.user.id) {
-                                await createNotification(
-                                    'mention',
-                                    session.user.id,
-                                    mentionedUser.id,
-                                    pulseId,
-                                    null,
-                                    `${session.user.email.split('@')[0]} mentioned you in a comment.`
-                                );
-                            }
+                        if (mentionedUser && mentionedUser.id !== session.user.id) {
+                            await createNotification(
+                                'mention',
+                                session.user.id,
+                                mentionedUser.id,
+                                pulseId,
+                                null,
+                                `${session.user.email.split('@')[0]} mentioned you in a comment.`
+                            );
                         }
-                        
-                        showToast('Comment posted successfully!', 'success');
-                        commentModal.remove();
-                        
-                        updateCommentCount(pulseId, 1);
-                        
-                    } catch (error) {
-                        console.error('Comment error:', error);
-                        showToast('Failed to post comment', 'error');
+                    } catch (mentionError) {
+                        console.warn('Could not create mention notification:', mentionError);
                     }
-                });
+                }
+                
+                // Create notification for pulse creator (if not the commenter)
+                const { data: pulse } = await supabaseClient
+                    .from('pulses')
+                    .select('user_id')
+                    .eq('id', pulseId)
+                    .single();
+                
+                if (pulse && pulse.user_id !== session.user.id) {
+                    await createNotification(
+                        'comment',
+                        session.user.id,
+                        pulse.user_id,
+                        pulseId,
+                        null,
+                        `${session.user.email.split('@')[0]} commented on your pulse.`
+                    );
+                }
+                
+                showToast('Comment posted successfully!', 'success');
+                commentModal.remove();
+                
+                // Update comment count
+                await updateCommentCount(pulseId, 1);
+                
+                // Refresh the specific pulse card to show updated comment count
+                const pulseCard = document.querySelector(`[data-pulse-id="${pulseId}"]`);
+                if (pulseCard) {
+                    const commentBtn = pulseCard.querySelector('.comment-btn');
+                    const currentCount = parseInt(commentBtn.textContent.match(/\d+/)?.[0]) || 0;
+                    commentBtn.innerHTML = `<i class="fas fa-comment" aria-hidden="true"></i> ${currentCount + 1}`;
+                }
                 
             } catch (error) {
-                console.error('Comment modal error:', error);
-                showToast('Failed to open comment', 'error');
+                console.error('Comment error:', error);
+                showToast('Failed to post comment: ' + (error.message || 'Unknown error'), 'error');
+                
+                // Re-enable submit button
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = 'Post Comment';
+            } finally {
+                isSubmitting = false;
             }
-        }
+        });
+        
+        // Focus on textarea when modal opens
+        setTimeout(() => {
+            commentTextarea.focus();
+        }, 100);
+        
+    } catch (error) {
+        console.error('Comment modal error:', error);
+        showToast('Failed to open comment dialog', 'error');
+    }
+}
         
         async function handleShare(pulseId, e) {
             if (e) e.stopPropagation();
@@ -5215,164 +5300,202 @@
             }
             
             async function createPulse() {
-                try {
-                    const { data: { session } } = await supabaseClient.auth.getSession();
-                    if (!session) throw new Error('No session');
+    try {
+        const { data: { session } } = await supabaseClient.auth.getSession();
+        if (!session) throw new Error('No session');
+        
+        await ensureUserProfile(session.user.id);
+        
+        const caption = captionInput.value.trim();
+        const seriesTitle = seriesTitleInput.value.trim();
+        
+        if (!caption && !selectedMedia) {
+            showToast('Please add a caption or media to create a pulse', 'error');
+            return;
+        }
+        
+        if (caption.length > 500) {
+            showToast('Caption must be less than 500 characters', 'error');
+            return;
+        }
+        
+        let mediaData = null;
+        if (selectedMedia) {
+            setLoading(true);
+            try {
+                mediaData = await uploadMedia(selectedMedia);
+            } catch (uploadError) {
+                showToast('Failed to upload media: ' + uploadError.message, 'error');
+                setLoading(false);
+                return;
+            }
+        }
+        
+        // FIXED: Removed reactions_count from pulseData as it doesn't exist in table
+        const pulseData = {
+            user_id: session.user.id,
+            caption: sanitizeHTML(caption) || null,
+            media_url: mediaData?.url || null,
+            media_type: mediaData?.type || 'none',
+            aspect_ratio: '9:16',
+            likes_count: 0,
+            comments_count: 0,
+            shares_count: 0,
+            taps_count: 0,
+            repulses_count: 0
+        };
+        
+        let seriesId = null;
+        let seriesOrder = 1;
+        
+        if (isSeriesMode && seriesTitle) {
+            try {
+                const { data: existingSeries, error: seriesError } = await supabaseClient
+                    .from('pulse_series')
+                    .select('id, current_part')
+                    .eq('creator_id', session.user.id)
+                    .eq('title', seriesTitle)
+                    .maybeSingle();
+                
+                if (seriesError && seriesError.code !== 'PGRST116') {
+                    console.warn('Series check error:', seriesError);
+                }
+                
+                if (existingSeries) {
+                    seriesId = existingSeries.id;
+                    seriesOrder = existingSeries.current_part + 1;
                     
-                    await ensureUserProfile(session.user.id);
-                    
-                    const caption = captionInput.value.trim();
-                    const seriesTitle = seriesTitleInput.value.trim();
-                    
-                    if (caption.length > 500) {
-                        showToast('Caption must be less than 500 characters', 'error');
-                        return;
-                    }
-                    
-                    let mediaData = null;
-                    if (selectedMedia) {
-                        setLoading(true);
-                        try {
-                            mediaData = await uploadMedia(selectedMedia);
-                        } catch (uploadError) {
-                            showToast('Failed to upload media: ' + uploadError.message, 'error');
-                            setLoading(false);
-                            return;
-                        }
-                    }
-                    
-                    // FIXED: Remove reactions_count from pulseData as it doesn't exist in the table
-                    const pulseData = {
-                        user_id: session.user.id,
-                        caption: sanitizeHTML(caption) || null,
-                        media_url: mediaData?.url || null,
-                        media_type: mediaData?.type || 'none',
-                        aspect_ratio: '9:16'
-                        // Removed reactions_count as it doesn't exist in the pulses table
-                    };
-                    
-                    let seriesId = null;
-                    let seriesOrder = 1;
-                    
-                    if (isSeriesMode && seriesTitle) {
-                        try {
-                            const { data: existingSeries, error: seriesError } = await supabaseClient
-                                .from('pulse_series')
-                                .select('id, current_part')
-                                .eq('creator_id', session.user.id)
-                                .eq('title', seriesTitle)
-                                .maybeSingle();
-                            
-                            if (seriesError && seriesError.code !== 'PGRST116') {
-                                console.warn('Series check error:', seriesError);
-                            }
-                            
-                            if (existingSeries) {
-                                seriesId = existingSeries.id;
-                                seriesOrder = existingSeries.current_part + 1;
-                                
-                                await supabaseClient
-                                    .from('pulse_series')
-                                    .update({ 
-                                        current_part: seriesOrder,
-                                        updated_at: new Date().toISOString()
-                                    })
-                                    .eq('id', seriesId);
-                            } else {
-                                const { data: newSeries, error: createError } = await supabaseClient
-                                    .from('pulse_series')
-                                    .insert({
-                                        creator_id: session.user.id,
-                                        title: seriesTitle,
-                                        description: `Series by ${session.user.email}`,
-                                        total_parts: 1,
-                                        current_part: 1,
-                                        is_completed: false,
-                                        is_archived: false,
-                                        followers_count: 0,
-                                        total_views: 0,
-                                        created_at: new Date().toISOString(),
-                                        updated_at: new Date().toISOString()
-                                    })
-                                    .select()
-                                    .single();
-                                
-                                if (createError) throw createError;
-                                seriesId = newSeries.id;
-                                seriesOrder = 1;
-                            }
-                            
-                            pulseData.series_id = seriesId;
-                            pulseData.series_order = seriesOrder;
-                            pulseData.is_series_start = (seriesOrder === 1);
-                            
-                        } catch (seriesError) {
-                            console.error('Series creation error:', seriesError);
-                            showToast('Created pulse without series', 'error');
-                        }
-                    }
-                    
-                    const { data: pulse, error } = await supabaseClient
-                        .from('pulses')
-                        .insert(pulseData)
+                    await supabaseClient
+                        .from('pulse_series')
+                        .update({ 
+                            current_part: seriesOrder,
+                            updated_at: new Date().toISOString()
+                        })
+                        .eq('id', seriesId);
+                } else {
+                    const { data: newSeries, error: createError } = await supabaseClient
+                        .from('pulse_series')
+                        .insert({
+                            creator_id: session.user.id,
+                            title: seriesTitle,
+                            description: `Series by ${session.user.email}`,
+                            total_parts: 1,
+                            current_part: 1,
+                            is_completed: false,
+                            is_archived: false,
+                            followers_count: 0,
+                            total_views: 0,
+                            created_at: new Date().toISOString(),
+                            updated_at: new Date().toISOString()
+                        })
                         .select()
                         .single();
                     
-                    if (error) {
-                        console.error('Create pulse error details:', error);
-                        throw error;
-                    }
-                    
-                    if (seriesId) {
-                        try {
-                            await supabaseClient
-                                .from('pulse_series_items')
-                                .insert({
-                                    series_id: seriesId,
-                                    pulse_id: pulse.id,
-                                    sequence_order: seriesOrder
-                                });
-                        } catch (itemError) {
-                            console.warn('Could not create series item:', itemError);
-                        }
-                    }
-                    
-                    // Handle mentions and create notifications
-                    const mentions = parseMentions(caption).mentions;
-                    for (const mention of mentions) {
-                        const username = mention.replace('@', '');
-                        const { data: mentionedUser } = await supabaseClient
-                            .from('user_profiles')
-                            .select('id')
-                            .eq('username', username)
-                            .single();
-                        
-                        if (mentionedUser && mentionedUser.id !== session.user.id) {
-                            await createNotification(
-                                'mention',
-                                session.user.id,
-                                mentionedUser.id,
-                                pulse.id,
-                                null,
-                                `${session.user.email.split('@')[0]} mentioned you in a pulse.`
-                            );
-                        }
-                    }
-                    
-                    showToast('Pulse posted successfully!', 'success');
-                    
-                    closeCreateModal();
-                    
-                    // Reload feed
-                    loadInitialPulses();
-                    
-                } catch (error) {
-                    console.error('Create pulse error:', error);
-                    showToast('Failed to post pulse: ' + error.message, 'error');
-                } finally {
-                    setLoading(false);
+                    if (createError) throw createError;
+                    seriesId = newSeries.id;
+                    seriesOrder = 1;
                 }
+                
+                pulseData.series_id = seriesId;
+                pulseData.series_order = seriesOrder;
+                pulseData.is_series_start = (seriesOrder === 1);
+                
+            } catch (seriesError) {
+                console.error('Series creation error:', seriesError);
+                showToast('Created pulse without series', 'error');
             }
+        }
+        
+        console.log('Creating pulse with data:', pulseData);
+        
+        const { data: pulse, error } = await supabaseClient
+            .from('pulses')
+            .insert(pulseData)
+            .select()
+            .single();
+        
+        if (error) {
+            console.error('Create pulse error details:', error);
+            
+            // Handle specific Supabase errors
+            if (error.code === 'PGRST204') {
+                // Remove any problematic fields and retry
+                delete pulseData.reactions_count;
+                delete pulseData.engagement_score;
+                delete pulseData.is_featured;
+                
+                const retryResult = await supabaseClient
+                    .from('pulses')
+                    .insert(pulseData)
+                    .select()
+                    .single();
+                
+                if (retryResult.error) {
+                    throw retryResult.error;
+                }
+                
+                pulse = retryResult.data;
+            } else {
+                throw error;
+            }
+        }
+        
+        if (seriesId) {
+            try {
+                await supabaseClient
+                    .from('pulse_series_items')
+                    .insert({
+                        series_id: seriesId,
+                        pulse_id: pulse.id,
+                        sequence_order: seriesOrder
+                    });
+            } catch (itemError) {
+                console.warn('Could not create series item:', itemError);
+            }
+        }
+        
+        // Handle mentions and create notifications
+        const mentions = parseMentions(caption).mentions;
+        for (const mention of mentions) {
+            const username = mention.replace('@', '');
+            try {
+                const { data: mentionedUser } = await supabaseClient
+                    .from('user_profiles')
+                    .select('id')
+                    .eq('username', username)
+                    .single();
+                
+                if (mentionedUser && mentionedUser.id !== session.user.id) {
+                    await createNotification(
+                        'mention',
+                        session.user.id,
+                        mentionedUser.id,
+                        pulse.id,
+                        null,
+                        `${session.user.email.split('@')[0]} mentioned you in a pulse.`
+                    );
+                }
+            } catch (mentionError) {
+                console.warn('Could not create mention notification:', mentionError);
+            }
+        }
+        
+        showToast('Pulse posted successfully!', 'success');
+        
+        closeCreateModal();
+        
+        // Reload feed to show the new pulse
+        setTimeout(() => {
+            loadInitialPulses();
+        }, 1000);
+        
+    } catch (error) {
+        console.error('Create pulse error:', error);
+        showToast('Failed to post pulse: ' + error.message, 'error');
+    } finally {
+        setLoading(false);
+    }
+}
             
             // Event listeners
             createPrompt.addEventListener('click', openCreateModal);
