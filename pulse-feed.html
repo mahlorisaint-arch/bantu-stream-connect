@@ -5,30 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bantu Connect Pulse - No DNA, Just RSA</title>
     
-    <!-- Updated Content Security Policy - Added Font Awesome domains -->
-    <meta http-equiv="Content-Security-Policy" content="
-        default-src 'self'; 
-        style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; 
-        font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; 
-        script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; 
-        img-src 'self' data: https: blob:; 
-        media-src 'self' https: blob:; 
-        connect-src 'self' https://ydnxqnbjoshvxteevemc.supabase.co;
-    ">
+    <!-- Content Security Policy -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; img-src 'self' data: https: blob:; media-src 'self' https: blob:; connect-src 'self' https://ydnxqnbjoshvxteevemc.supabase.co;">
     
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Orbitron:wght@400;500;600;700&display=swap" rel="stylesheet">
     
-    <!-- Font Awesome with integrity check -->
-    <link 
-        rel="stylesheet" 
-        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" 
-        integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" 
-        crossorigin="anonymous" 
-        referrerpolicy="no-referrer"
-    >
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <!-- Supabase JS SDK -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -61,10 +47,6 @@
             --futuristic-blue: #00E0FF;
             --glowing-gold: #FFB300;
             --glowing-blue: #0095FF;
-            --tap-color: #10B981;
-            --ak-color: #8B5CF6;
-            --repulse-color: #F59E0B;
-            --save-color: #EC4899;
         }
         
         * {
@@ -115,8 +97,7 @@
             .spinner,
             .glow-cycle,
             .pulse-connect-btn.connecting,
-            .notification-btn.has-unread::after,
-            .tap-btn.tapped .tap-icon {
+            .notification-btn.has-unread::after {
                 animation: none;
             }
         }
@@ -480,7 +461,6 @@
             transition: all 0.3s ease;
             cursor: pointer;
             backdrop-filter: blur(10px);
-            position: relative;
         }
         
         .pulse-card:hover {
@@ -724,24 +704,6 @@
             color: var(--soft-white);
         }
         
-        /* NEW: Re-Pulse Context */
-        .repulse-context {
-            background: rgba(245, 158, 11, 0.1);
-            border-left: 3px solid var(--warm-gold);
-            padding: 12px 16px;
-            margin: 12px 0;
-            border-radius: 0 8px 8px 0;
-            font-style: italic;
-            color: var(--warm-gold);
-            font-size: 14px;
-        }
-        
-        .repulse-context-user {
-            font-weight: 600;
-            margin-bottom: 4px;
-            color: var(--soft-white);
-        }
-        
         /* Video Player - Glassmorphism */
         .media-container {
             width: 100%;
@@ -869,13 +831,12 @@
             width: 50%;
         }
         
-        /* NEW: Pulse Actions - Updated for BANTU CONNECT */
+        /* Pulse Actions */
         .pulse-actions {
             display: flex;
             padding: 12px 20px;
             border-top: 1px solid var(--glass-border);
             backdrop-filter: blur(10px);
-            gap: 4px;
         }
         
         .action-button {
@@ -883,21 +844,19 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 6px;
+            gap: 8px;
             padding: 10px;
             background: rgba(255, 255, 255, 0.05);
             border: 1px solid var(--glass-border);
             color: var(--slate-grey);
             font-family: 'Inter', sans-serif;
             font-weight: 500;
-            font-size: 13px;
+            font-size: 14px;
             cursor: pointer;
             border-radius: 8px;
             transition: all 0.3s ease;
             backdrop-filter: blur(10px);
             outline: none;
-            min-height: 44px;
-            position: relative;
         }
         
         .action-button:hover,
@@ -911,343 +870,24 @@
             box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.3);
         }
         
-        /* Tap Button */
-        .tap-btn {
-            position: relative;
+        .action-button.liked {
+            color: var(--warm-gold) !important;
+            border-color: rgba(245, 158, 11, 0.3) !important;
         }
         
-        .tap-btn.tapped {
-            color: var(--tap-color);
-            border-color: rgba(16, 185, 129, 0.3);
-            background: rgba(16, 185, 129, 0.1);
+        .action-button.liked:hover {
+            color: #FFD700 !important;
+            background: rgba(245, 158, 11, 0.1) !important;
         }
         
-        .tap-btn.tapped .tap-icon {
-            animation: tapPulse 0.5s ease;
-        }
-        
-        @keyframes tapPulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.3); }
-            100% { transform: scale(1); }
-        }
-        
-        /* Comment Button */
-        .comment-btn {
-            position: relative;
-        }
-        
-        /* Save Button */
-        .save-btn {
-            position: relative;
-        }
-        
-        .save-btn.saved {
-            color: var(--save-color);
-            border-color: rgba(236, 72, 153, 0.3);
-            background: rgba(236, 72, 153, 0.1);
-        }
-        
-        /* Share Button */
-        .share-btn {
-            position: relative;
-        }
-        
-        /* Pulse Stats - Updated for BANTU CONNECT */
+        /* Pulse Stats */
         .pulse-stats {
             display: flex;
             padding: 0 20px 16px;
-            gap: 16px;
-            font-size: 12px;
+            gap: 24px;
+            font-size: 13px;
             color: var(--slate-grey);
             backdrop-filter: blur(10px);
-            flex-wrap: wrap;
-        }
-        
-        .stat-item {
-            display: flex;
-            align-items: center;
-            gap: 4px;
-        }
-        
-        /* UPDATED: Reaction Menu for Long Press - FIXED POSITIONING */
-        .reaction-menu {
-            position: fixed;
-            background: var(--glass-bg);
-            border: 1px solid var(--glass-border);
-            border-radius: 16px;
-            padding: 12px;
-            display: none;
-            gap: 12px;
-            z-index: 1001;
-            min-width: 150px;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
-            backdrop-filter: blur(20px);
-            animation: slideUp 0.3s ease;
-            transform: translateX(-50%);
-        }
-
-        .reaction-menu.active {
-            display: flex;
-        }
-
-        @keyframes slideUp {
-            from {
-                opacity: 0;
-                transform: translateX(-50%) translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateX(-50%) translateY(0);
-            }
-        }
-
-        .reaction-option {
-            padding: 12px 16px;
-            border: 1px solid var(--glass-border);
-            background: rgba(255, 255, 255, 0.05);
-            color: var(--soft-white);
-            border-radius: 12px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            min-width: 60px;
-            font-size: 14px;
-            font-weight: 500;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .reaction-option:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-        }
-
-        .reaction-option.awe {
-            border-color: var(--glowing-blue);
-            background: rgba(0, 149, 255, 0.1);
-        }
-
-        .reaction-option.awe:hover {
-            background: rgba(0, 149, 255, 0.2);
-        }
-
-        .reaction-option.banger {
-            border-color: var(--glowing-gold);
-            background: rgba(255, 179, 0, 0.1);
-        }
-
-        .reaction-option.banger:hover {
-            background: rgba(255, 179, 0, 0.2);
-        }
-
-        /* Lightning Animation for Awe */
-        @keyframes lightningGlow {
-            0% {
-                text-shadow: 0 0 5px var(--glowing-blue),
-                             0 0 10px var(--glowing-blue),
-                             0 0 15px var(--glowing-blue);
-                transform: scale(1);
-            }
-            50% {
-                text-shadow: 0 0 20px var(--glowing-blue),
-                             0 0 30px var(--glowing-blue),
-                             0 0 40px var(--glowing-blue);
-                transform: scale(1.2);
-            }
-            100% {
-                text-shadow: 0 0 5px var(--glowing-blue),
-                             0 0 10px var(--glowing-blue),
-                             0 0 15px var(--glowing-blue);
-                transform: scale(1);
-            }
-        }
-
-        /* Flame Animation for Banger */
-        @keyframes flameGlow {
-            0% {
-                text-shadow: 0 0 5px var(--glowing-gold),
-                             0 0 10px var(--glowing-gold),
-                             0 0 15px var(--glowing-gold);
-                transform: scale(1);
-            }
-            50% {
-                text-shadow: 0 0 20px var(--glowing-gold),
-                             0 0 30px var(--glowing-gold),
-                             0 0 40px var(--glowing-gold);
-                transform: scale(1.2);
-            }
-            100% {
-                text-shadow: 0 0 5px var(--glowing-gold),
-                             0 0 10px var(--glowing-gold),
-                             0 0 15px var(--glowing-gold);
-                transform: scale(1);
-            }
-        }
-
-        .reaction-option.awe.active i {
-            animation: lightningGlow 0.6s ease;
-        }
-
-        .reaction-option.banger.active i {
-            animation: flameGlow 0.6s ease;
-        }
-
-        .reaction-icon {
-            font-size: 16px;
-        }
-
-        /* UPDATED: Re-Pulse Button in Actions */
-        .repulse-btn {
-            position: relative;
-        }
-
-        .repulse-btn.repulsed {
-            color: var(--repulse-color);
-            border-color: rgba(245, 158, 11, 0.3);
-            background: rgba(245, 158, 11, 0.1);
-        }
-
-        /* Re-Pulse Stats */
-        .repulses-count {
-            color: var(--slate-grey);
-        }
-        
-        /* NEW: AK Menu */
-        .ak-menu {
-            position: absolute;
-            bottom: 60px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: var(--glass-bg);
-            border: 1px solid var(--glass-border);
-            border-radius: 16px;
-            padding: 16px;
-            display: none;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 8px;
-            z-index: 1001;
-            min-width: 250px;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
-            backdrop-filter: blur(20px);
-        }
-        
-        .ak-menu.active {
-            display: grid;
-        }
-        
-        .ak-option {
-            padding: 10px;
-            border: 1px solid var(--glass-border);
-            background: rgba(255, 255, 255, 0.05);
-            color: var(--soft-white);
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            text-align: center;
-            font-size: 12px;
-            font-weight: 500;
-        }
-        
-        .ak-option:hover {
-            background: var(--ak-color);
-            border-color: var(--ak-color);
-            transform: translateY(-2px);
-        }
-        
-        .ak-option.selected {
-            background: var(--ak-color);
-            border-color: var(--ak-color);
-            color: white;
-        }
-        
-        /* NEW: Re-Pulse Modal */
-        .repulse-modal {
-            background: var(--glass-bg);
-            border-radius: 16px;
-            padding: 24px;
-            min-width: 300px;
-            max-width: 400px;
-            border: 1px solid var(--glass-border);
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-            backdrop-filter: blur(20px);
-        }
-        
-        .repulse-modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-        
-        .repulse-modal-title {
-            font-size: 18px;
-            font-weight: 600;
-            color: var(--soft-white);
-        }
-        
-        .repulse-modal-close {
-            background: none;
-            border: none;
-            color: var(--slate-grey);
-            font-size: 18px;
-            cursor: pointer;
-        }
-        
-        .repulse-context-input {
-            width: 100%;
-            padding: 12px;
-            background: rgba(10, 14, 18, 0.6);
-            border: 1px solid var(--glass-border);
-            border-radius: 8px;
-            color: var(--soft-white);
-            font-family: 'Inter', sans-serif;
-            font-size: 14px;
-            resize: vertical;
-            min-height: 80px;
-            margin-bottom: 16px;
-        }
-        
-        .repulse-context-input:focus {
-            outline: none;
-            border-color: var(--repulse-color);
-        }
-        
-        .repulse-modal-actions {
-            display: flex;
-            gap: 12px;
-        }
-        
-        .repulse-btn {
-            flex: 1;
-            padding: 12px;
-            border-radius: 8px;
-            border: 1px solid var(--repulse-color);
-            background: rgba(245, 158, 11, 0.1);
-            color: var(--repulse-color);
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-        
-        .repulse-btn:hover {
-            background: var(--repulse-color);
-            color: white;
-        }
-        
-        .repulse-btn.soft {
-            border-color: var(--slate-grey);
-            background: rgba(255, 255, 255, 0.05);
-            color: var(--slate-grey);
-        }
-        
-        .repulse-btn.soft:hover {
-            border-color: var(--repulse-color);
-            background: rgba(245, 158, 11, 0.2);
-            color: var(--repulse-color);
         }
         
         /* Floating Create Button */
@@ -1363,7 +1003,6 @@
             display: flex;
             flex-direction: column;
             gap: 20px;
-            position: relative;
         }
         
         .form-row {
@@ -1733,86 +1372,6 @@
             color: var(--error-color);
         }
         
-        /* UPDATED: Mentions Dropdown - Better Positioning */
-        .mentions-dropdown {
-            position: absolute;
-            background: var(--glass-bg);
-            border: 1px solid var(--glass-border);
-            border-radius: 12px;
-            max-height: 200px;
-            overflow-y: auto;
-            z-index: 10000;
-            min-width: 200px;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
-            backdrop-filter: blur(20px);
-            display: none;
-        }
-        
-        .mentions-dropdown.active {
-            display: block;
-        }
-        
-        .mention-item {
-            padding: 10px 16px;
-            cursor: pointer;
-            color: var(--soft-white);
-            border-bottom: 1px solid var(--glass-border);
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            transition: all 0.2s ease;
-        }
-        
-        .mention-item:hover {
-            background: var(--hover-overlay);
-        }
-        
-        .mention-item:last-child {
-            border-bottom: none;
-        }
-        
-        /* UPDATED: Mention avatar styling with profile pictures */
-        .mention-avatar {
-            width: 30px;
-            height: 30px;
-            border-radius: 50%;
-            overflow: hidden;
-            flex-shrink: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
-        }
-
-        .mention-avatar img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            border-radius: 50%;
-        }
-
-        .mention-info {
-            flex: 1;
-            min-width: 0;
-        }
-
-        .mention-username {
-            font-weight: 600;
-            font-size: 14px;
-            color: var(--soft-white);
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .mention-name {
-            font-size: 12px;
-            color: var(--slate-grey);
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-        
         /* Responsive */
         @media (max-width: 768px) {
             .container {
@@ -1851,38 +1410,6 @@
                 margin-left: -12px;
                 margin-right: -12px;
                 width: calc(100% + 24px);
-            }
-            
-            .ak-menu {
-                min-width: 200px;
-                grid-template-columns: repeat(2, 1fr);
-            }
-            
-            .reaction-menu {
-                min-width: 140px;
-                gap: 8px;
-                padding: 10px;
-            }
-            
-            .reaction-option {
-                padding: 10px 12px;
-                font-size: 13px;
-                min-width: 50px;
-            }
-            
-            .pulse-actions {
-                gap: 2px;
-            }
-            
-            .action-button {
-                padding: 8px;
-                font-size: 12px;
-                gap: 4px;
-            }
-            
-            .mentions-dropdown {
-                min-width: 180px;
-                max-height: 150px;
             }
         }
         
@@ -2040,22 +1567,19 @@
                         <textarea 
                             class="caption-input" 
                             id="caption" 
-                            placeholder="What's moving the culture? Use @ to mention people"
+                            placeholder="What's moving the culture?"
                             maxlength="500"
                             aria-label="Pulse caption"
                         ></textarea>
                     </div>
                     
-                    <!-- Mentions Dropdown -->
-                    <div class="mentions-dropdown" id="mentionsDropdown"></div>
-                    
                     <div class="media-upload-section" id="mediaUpload" role="button" tabindex="0">
                         <div class="upload-icon">
                             <i class="fas fa-cloud-upload-alt"></i>
                         </div>
-                        <div class="upload-text">Add photo, video, or voice note</div>
+                        <div class="upload-text">Add photo or video</div>
                         <div class="upload-hint">Supports vertical video (9:16)</div>
-                        <input type="file" id="mediaInput" accept="image/avif,image/webp,image/jpeg,image/png,image/gif,video/mp4,video/quicktime,audio/*" style="display: none;">
+                        <input type="file" id="mediaInput" accept="image/avif,image/webp,image/jpeg,image/png,image/gif,video/mp4,video/quicktime" style="display: none;">
                     </div>
                     
                     <div id="mediaPreview" class="media-preview" style="display: none;">
@@ -2118,16 +1642,13 @@
                         ></textarea>
                     </div>
                     
-                    <!-- Mentions Dropdown for Edit -->
-                    <div class="mentions-dropdown" id="editMentionsDropdown"></div>
-                    
                     <div class="media-upload-section" id="editMediaUpload" role="button" tabindex="0">
                         <div class="upload-icon">
                             <i class="fas fa-cloud-upload-alt"></i>
                         </div>
                         <div class="upload-text">Change photo or video</div>
                         <div class="upload-hint">Supports vertical video (9:16)</div>
-                        <input type="file" id="editMediaInput" accept="image/avif,image/webp,image/jpeg,image/png,image/gif,video/mp4,video/quicktime,audio/*" style="display: none;">
+                        <input type="file" id="editMediaInput" accept="image/avif,image/webp,image/jpeg,image/png,image/gif,video/mp4,video/quicktime" style="display: none;">
                     </div>
                     
                     <div id="editMediaPreview" class="media-preview" style="display: none;">
@@ -2200,23 +1721,6 @@
         let isScrollListenerActive = true;
         let scrollListener = null;
 
-        // Tap tracking variables
-        let tapTimers = new Map();
-        let longPressThreshold = 500; // ms
-        let currentTapMenuPulseId = null;
-        let currentRepulseModal = null;
-        
-        // Reaction menu variable
-        let currentReactionMenuPulseId = null;
-        let reactionMenu = null;
-        
-        // Mentions variables
-        let mentionsTimeout = null;
-        let currentMentionSearch = '';
-        let mentionStartPosition = -1;
-        let isMentioning = false;
-        let mentionedUsers = new Set(); // Track mentioned users for notifications
-
         // Debounce function
         function debounce(func, wait) {
             let timeout;
@@ -2249,22 +1753,6 @@
             const div = document.createElement('div');
             div.textContent = text;
             return div.innerHTML;
-        }
-
-        // Parse mentions in text and extract usernames
-        function parseMentions(text) {
-            if (!text) return { text: '', mentions: [] };
-            
-            const mentionRegex = /@(\w+)/g;
-            const mentions = [];
-            let parsedText = text;
-            let match;
-            
-            while ((match = mentionRegex.exec(text)) !== null) {
-                mentions.push(match[1]);
-            }
-            
-            return { text: parsedText, mentions };
         }
 
         async function initialize() {
@@ -2410,11 +1898,11 @@
                 // Update offset
                 currentOffset += PULSES_PER_PAGE;
                 
-                // Check which pulses user has tapped, saved, repulsed, and reacted
-                const userInteractions = await getUserInteractions(uniquePulses.map(p => p.id));
+                // Check which pulses user has liked
+                const likedPulses = await checkUserLikes(uniquePulses.map(p => p.id));
                 
                 // Display new pulses
-                displayMorePulses(uniquePulses, userInteractions);
+                displayMorePulses(uniquePulses, likedPulses);
                 
                 // Hide loading indicator
                 if (loadingIndicator) {
@@ -2443,73 +1931,8 @@
             }
         }
         
-        // Get user interactions for pulses
-        async function getUserInteractions(pulseIds) {
-            try {
-                const { data: { session } } = await supabaseClient.auth.getSession();
-                if (!session) return { taps: new Set(), saves: new Set(), repulses: new Set(), reactions: new Map() };
-                
-                const interactions = {
-                    taps: new Set(),
-                    saves: new Set(),
-                    repulses: new Set(),
-                    reactions: new Map()
-                };
-                
-                // Fetch taps
-                const { data: taps } = await supabaseClient
-                    .from('pulse_taps')
-                    .select('pulse_id')
-                    .in('pulse_id', pulseIds)
-                    .eq('user_id', session.user.id);
-                
-                if (taps) {
-                    taps.forEach(tap => interactions.taps.add(tap.pulse_id));
-                }
-                
-                // Fetch saves
-                const { data: saves } = await supabaseClient
-                    .from('saved_pulses')
-                    .select('pulse_id')
-                    .in('pulse_id', pulseIds)
-                    .eq('user_id', session.user.id);
-                
-                if (saves) {
-                    saves.forEach(save => interactions.saves.add(save.pulse_id));
-                }
-                
-                // Fetch repulses
-                const { data: repulses } = await supabaseClient
-                    .from('pulse_repulses')
-                    .select('pulse_id')
-                    .in('pulse_id', pulseIds)
-                    .eq('user_id', session.user.id);
-                
-                if (repulses) {
-                    repulses.forEach(repulse => interactions.repulses.add(repulse.pulse_id));
-                }
-                
-                // Fetch reactions
-                const { data: reactions } = await supabaseClient
-                    .from('pulse_reactions')
-                    .select('pulse_id, reaction_type')
-                    .in('pulse_id', pulseIds)
-                    .eq('user_id', session.user.id);
-                
-                if (reactions) {
-                    reactions.forEach(reaction => interactions.reactions.set(reaction.pulse_id, reaction.reaction_type));
-                }
-                
-                return interactions;
-                
-            } catch (error) {
-                console.error('Error getting user interactions:', error);
-                return { taps: new Set(), saves: new Set(), repulses: new Set(), reactions: new Map() };
-            }
-        }
-        
         // Display additional pulses
-        function displayMorePulses(pulses, userInteractions) {
+        function displayMorePulses(pulses, likedPulses) {
             if (!pulses || pulses.length === 0) return;
             
             const pulseFeedContainer = document.getElementById('pulse-feed-container');
@@ -2518,7 +1941,7 @@
             pulses.forEach(pulse => {
                 if (displayedPulseIds.has(pulse.id)) return;
                 
-                const pulseCard = createPulseCard(pulse, userInteractions);
+                const pulseCard = createPulseCard(pulse, likedPulses);
                 fragment.appendChild(pulseCard);
                 displayedPulseIds.add(pulse.id);
                 allPulses.push(pulse);
@@ -2963,43 +2386,51 @@
             }
         }
         
-        // Handle Tap (Primary Dopamine Loop)
-        async function handleTap(pulseId, e) {
+        // Handle like with immediate count update
+        async function handleLike(pulseId, e) {
             if (e) e.stopPropagation();
             
             try {
                 const { data: { session } } = await supabaseClient.auth.getSession();
                 if (!session) {
-                    showToast('Please login to tap pulses', 'error');
+                    showToast('Please login to like pulses', 'error');
                     return;
                 }
                 
-                // Check if already tapped
-                const { data: existingTap } = await supabaseClient
-                    .from('pulse_taps')
+                // Check if already liked
+                const { data: existingLike } = await supabaseClient
+                    .from('pulse_likes')
                     .select('id')
                     .eq('pulse_id', pulseId)
                     .eq('user_id', session.user.id)
                     .single();
                 
-                let isTapped;
+                let isLiked;
+                let newLikesCount;
                 
-                if (existingTap) {
-                    // Untap
+                if (existingLike) {
+                    // Unlike
                     const { error } = await supabaseClient
-                        .from('pulse_taps')
+                        .from('pulse_likes')
                         .delete()
-                        .eq('id', existingTap.id);
+                        .eq('id', existingLike.id);
                     
                     if (error) throw error;
                     
-                    isTapped = false;
+                    // Get current count after unlike
+                    const { count: likeCount } = await supabaseClient
+                        .from('pulse_likes')
+                        .select('*', { count: 'exact', head: true })
+                        .eq('pulse_id', pulseId);
                     
-                    showToast('Tap removed', 'success');
+                    isLiked = false;
+                    newLikesCount = likeCount || 0;
+                    
+                    showToast('Like removed', 'success');
                 } else {
-                    // Tap
+                    // Like
                     const { error } = await supabaseClient
-                        .from('pulse_taps')
+                        .from('pulse_likes')
                         .insert({
                             pulse_id: pulseId,
                             user_id: session.user.id
@@ -3007,9 +2438,16 @@
                     
                     if (error) throw error;
                     
-                    isTapped = true;
+                    // Get current count after like
+                    const { count: likeCount } = await supabaseClient
+                        .from('pulse_likes')
+                        .select('*', { count: 'exact', head: true })
+                        .eq('pulse_id', pulseId);
                     
-                    showToast('Pulse tapped!', 'success');
+                    isLiked = true;
+                    newLikesCount = likeCount || 0;
+                    
+                    showToast('Pulse liked!', 'success');
                     
                     // Create notification for pulse creator
                     const { data: pulse } = await supabaseClient
@@ -3020,424 +2458,47 @@
                     
                     if (pulse && pulse.user_id !== session.user.id) {
                         await createNotification(
-                            'tap',
+                            'like',
                             session.user.id,
                             pulse.user_id,
                             pulseId,
                             null,
-                            `${session.user.email.split('@')[0]} felt this pulse`
+                            `${session.user.email.split('@')[0]} liked your pulse`
                         );
                     }
                 }
                 
                 // Update UI immediately
-                updateTapUI(pulseId, isTapped);
+                updateLikeUI(pulseId, isLiked, newLikesCount);
                 
             } catch (error) {
-                console.error('Tap error:', error);
-                showToast('Failed to tap pulse', 'error');
+                console.error('Like error:', error);
+                showToast('Failed to like pulse', 'error');
             }
         }
         
-        // Update tap UI
-        function updateTapUI(pulseId, isTapped) {
+        // Update like UI
+        function updateLikeUI(pulseId, isLiked, exactLikesCount) {
             const pulseCard = document.querySelector(`[data-pulse-id="${pulseId}"]`);
             if (!pulseCard) return;
             
-            const tapBtn = pulseCard.querySelector('.tap-btn');
+            const likeBtn = pulseCard.querySelector('.like-btn');
+            const likesCount = pulseCard.querySelector('.likes-count');
             
-            if (tapBtn) {
-                if (isTapped) {
-                    tapBtn.classList.add('tapped');
-                    tapBtn.innerHTML = '<i class="fas fa-hand-point-up tap-icon" aria-hidden="true"></i> Felt';
+            if (likeBtn) {
+                if (isLiked) {
+                    likeBtn.classList.add('liked');
                 } else {
-                    tapBtn.classList.remove('tapped');
-                    tapBtn.innerHTML = '<i class="far fa-hand-point-up tap-icon" aria-hidden="true"></i> Feel';
+                    likeBtn.classList.remove('liked');
                 }
+                likeBtn.innerHTML = `<i class="fas fa-heart" aria-hidden="true"></i> ${exactLikesCount}`;
+            }
+            
+            if (likesCount) {
+                likesCount.textContent = `${exactLikesCount} ${exactLikesCount === 1 ? 'like' : 'likes'}`;
             }
         }
         
-        // Handle Reaction (Awe or Banger)
-        async function handleReaction(pulseId, reactionType, e) {
-            if (e) e.stopPropagation();
-            
-            try {
-                const { data: { session } } = await supabaseClient.auth.getSession();
-                if (!session) {
-                    showToast('Please login to react to pulses', 'error');
-                    return;
-                }
-                
-                // Check if already has this reaction
-                const { data: existingReaction } = await supabaseClient
-                    .from('pulse_reactions')
-                    .select('id, reaction_type')
-                    .eq('pulse_id', pulseId)
-                    .eq('user_id', session.user.id)
-                    .eq('reaction_type', reactionType)
-                    .single();
-                
-                // Visual feedback
-                const reactionBtn = e.currentTarget;
-                reactionBtn.classList.add('active');
-                
-                if (existingReaction) {
-                    // Remove reaction
-                    const { error } = await supabaseClient
-                        .from('pulse_reactions')
-                        .delete()
-                        .eq('id', existingReaction.id);
-                    
-                    if (error) throw error;
-                    
-                    // Remove active class after animation
-                    setTimeout(() => {
-                        reactionBtn.classList.remove('active');
-                    }, 600);
-                    
-                } else {
-                    // Add reaction
-                    const { error } = await supabaseClient
-                        .from('pulse_reactions')
-                        .insert({
-                            pulse_id: pulseId,
-                            user_id: session.user.id,
-                            reaction_type: reactionType
-                        });
-                    
-                    if (error) throw error;
-                    
-                    // Create notification for pulse creator
-                    const { data: pulse } = await supabaseClient
-                        .from('pulses')
-                        .select('user_id')
-                        .eq('id', pulseId)
-                        .single();
-                    
-                    if (pulse && pulse.user_id !== session.user.id) {
-                        const actorName = session.user.email.split('@')[0];
-                        let message = '';
-                        
-                        if (reactionType === 'awe') {
-                            message = `${actorName} is in awe of your pulse.`;
-                        } else if (reactionType === 'banger') {
-                            message = `${actorName} considers your pulse a banger.`;
-                        }
-                        
-                        await createNotification(
-                            'reaction',
-                            session.user.id,
-                            pulse.user_id,
-                            pulseId,
-                            null,
-                            message
-                        );
-                    }
-                    
-                    // Remove active class after animation
-                    setTimeout(() => {
-                        reactionBtn.classList.remove('active');
-                    }, 600);
-                }
-                
-                // Close reaction menu
-                closeReactionMenu();
-                
-            } catch (error) {
-                console.error('Reaction error:', error);
-            }
-        }
-        
-        // Show Reaction Menu (for long press) - FIXED VERSION
-        function showReactionMenu(pulseId, event) {
-            closeReactionMenu(); // Close any open menu
-            
-            const pulseCard = document.querySelector(`[data-pulse-id="${pulseId}"]`);
-            if (!pulseCard) return;
-            
-            // Get the tap button position
-            const tapBtn = pulseCard.querySelector('.tap-btn');
-            if (!tapBtn) return;
-            
-            const rect = tapBtn.getBoundingClientRect();
-            
-            // Create reaction menu
-            reactionMenu = document.createElement('div');
-            reactionMenu.className = 'reaction-menu';
-            reactionMenu.id = `reaction-menu-${pulseId}`;
-            
-            reactionMenu.innerHTML = `
-                <button class="reaction-option awe" data-reaction-type="awe" data-pulse-id="${pulseId}" aria-label="React with Awe">
-                    <i class="fas fa-bolt reaction-icon" aria-hidden="true"></i>
-                    <span>Awe</span>
-                </button>
-                <button class="reaction-option banger" data-reaction-type="banger" data-pulse-id="${pulseId}" aria-label="React with Banger">
-                    <i class="fas fa-fire reaction-icon" aria-hidden="true"></i>
-                    <span>Banger</span>
-                </button>
-            `;
-            
-            document.body.appendChild(reactionMenu);
-            
-            // Position the menu above the tap button
-            const menuHeight = 70; // Approximate height
-            const menuWidth = 150; // Approximate width
-            
-            let top = rect.top - menuHeight - 10;
-            let left = rect.left + (rect.width / 2) - (menuWidth / 2);
-            
-            // Ensure menu stays within viewport
-            if (top < 10) top = rect.bottom + 10;
-            if (left < 10) left = 10;
-            if (left + menuWidth > window.innerWidth - 10) {
-                left = window.innerWidth - menuWidth - 10;
-            }
-            
-            reactionMenu.style.top = `${top}px`;
-            reactionMenu.style.left = `${left}px`;
-            
-            // Show with animation
-            setTimeout(() => {
-                reactionMenu.classList.add('active');
-            }, 10);
-            
-            currentReactionMenuPulseId = pulseId;
-            
-            // Add event listeners for reaction options
-            reactionMenu.querySelectorAll('.reaction-option').forEach(option => {
-                option.addEventListener('click', (e) => {
-                    const reactionType = e.currentTarget.dataset.reactionType;
-                    handleReaction(pulseId, reactionType, e);
-                });
-            });
-            
-            // Close menu when clicking outside
-            setTimeout(() => {
-                document.addEventListener('click', closeReactionMenuOnClickOutside);
-                document.addEventListener('touchstart', closeReactionMenuOnClickOutside);
-            }, 10);
-        }
-
-        // Close Reaction Menu
-        function closeReactionMenu() {
-            if (reactionMenu) {
-                reactionMenu.classList.remove('active');
-                setTimeout(() => {
-                    if (reactionMenu && reactionMenu.parentNode) {
-                        reactionMenu.parentNode.removeChild(reactionMenu);
-                    }
-                    reactionMenu = null;
-                }, 300);
-            }
-            currentReactionMenuPulseId = null;
-            document.removeEventListener('click', closeReactionMenuOnClickOutside);
-            document.removeEventListener('touchstart', closeReactionMenuOnClickOutside);
-        }
-
-        function closeReactionMenuOnClickOutside(e) {
-            if (reactionMenu && !reactionMenu.contains(e.target)) {
-                closeReactionMenu();
-            }
-        }
-        
-        // Handle Re-Pulse
-        async function handleRePulse(pulseId, context = null, e) {
-            if (e) e.stopPropagation();
-            
-            try {
-                const { data: { session } } = await supabaseClient.auth.getSession();
-                if (!session) {
-                    showToast('Please login to re-pulse', 'error');
-                    return;
-                }
-                
-                // Check if already re-pulsed
-                const { data: existingRePulse } = await supabaseClient
-                    .from('pulse_repulses')
-                    .select('id')
-                    .eq('pulse_id', pulseId)
-                    .eq('user_id', session.user.id)
-                    .single();
-                
-                let isRepulsed;
-                
-                if (existingRePulse) {
-                    // Remove re-pulse
-                    const { error } = await supabaseClient
-                        .from('pulse_repulses')
-                        .delete()
-                        .eq('id', existingRePulse.id);
-                    
-                    if (error) throw error;
-                    
-                    isRepulsed = false;
-                    showToast('Re-pulse removed', 'success');
-                } else {
-                    // Add re-pulse
-                    const { error } = await supabaseClient
-                        .from('pulse_repulses')
-                        .insert({
-                            pulse_id: pulseId,
-                            user_id: session.user.id,
-                            context: context,
-                            created_at: new Date().toISOString()
-                        });
-                    
-                    if (error) throw error;
-                    
-                    isRepulsed = true;
-                    
-                    // Create notification for pulse creator
-                    const { data: pulse } = await supabaseClient
-                        .from('pulses')
-                        .select('user_id')
-                        .eq('id', pulseId)
-                        .single();
-                    
-                    if (pulse && pulse.user_id !== session.user.id) {
-                        const actorName = session.user.email.split('@')[0];
-                        let message = `${actorName} re-pulsed your pulse`;
-                        
-                        if (context) {
-                            message += ' with added context.';
-                        } else {
-                            message += '.';
-                        }
-                        
-                        await createNotification(
-                            'repulse',
-                            session.user.id,
-                            pulse.user_id,
-                            pulseId,
-                            null,
-                            message
-                        );
-                    }
-                    
-                    showToast(context ? 'Re-pulsed with context!' : 'Re-pulsed!', 'success');
-                }
-                
-                // Update UI immediately
-                updateRePulseUI(pulseId, isRepulsed);
-                
-                // Close re-pulse modal if open
-                if (currentRepulseModal) {
-                    currentRepulseModal.remove();
-                    currentRepulseModal = null;
-                }
-                
-                // Reload the pulse to show updated context
-                setTimeout(() => {
-                    const pulseCard = document.querySelector(`[data-pulse-id="${pulseId}"]`);
-                    if (pulseCard) {
-                        // Remove and reload this pulse card
-                        pulseCard.remove();
-                        displayedPulseIds.delete(pulseId);
-                        loadMorePulses();
-                    }
-                }, 500);
-                
-            } catch (error) {
-                console.error('Re-pulse error:', error);
-                showToast('Failed to re-pulse: ' + error.message, 'error');
-            }
-        }
-        
-        // Update re-pulse UI
-        function updateRePulseUI(pulseId, isRepulsed) {
-            const pulseCard = document.querySelector(`[data-pulse-id="${pulseId}"]`);
-            if (!pulseCard) return;
-            
-            const repulseBtn = pulseCard.querySelector('.repulse-btn');
-            
-            if (repulseBtn) {
-                if (isRepulsed) {
-                    repulseBtn.classList.add('repulsed');
-                    repulseBtn.innerHTML = '<i class="fas fa-retweet" aria-hidden="true"></i> Re-Pulsed';
-                } else {
-                    repulseBtn.classList.remove('repulsed');
-                    repulseBtn.innerHTML = '<i class="fas fa-retweet" aria-hidden="true"></i> Re-Pulse';
-                }
-            }
-        }
-        
-        // Handle Save
-        async function handleSave(pulseId, e) {
-            if (e) e.stopPropagation();
-            
-            try {
-                const { data: { session } } = await supabaseClient.auth.getSession();
-                if (!session) {
-                    showToast('Please login to save pulses', 'error');
-                    return;
-                }
-                
-                // Check if already saved
-                const { data: existingSave } = await supabaseClient
-                    .from('saved_pulses')
-                    .select('id')
-                    .eq('pulse_id', pulseId)
-                    .eq('user_id', session.user.id)
-                    .single();
-                
-                let isSaved;
-                
-                if (existingSave) {
-                    // Remove save
-                    const { error } = await supabaseClient
-                        .from('saved_pulses')
-                        .delete()
-                        .eq('id', existingSave.id);
-                    
-                    if (error) throw error;
-                    
-                    isSaved = false;
-                    
-                    showToast('Removed from saved', 'success');
-                } else {
-                    // Add save
-                    const { error } = await supabaseClient
-                        .from('saved_pulses')
-                        .insert({
-                            pulse_id: pulseId,
-                            user_id: session.user.id
-                        });
-                    
-                    if (error) throw error;
-                    
-                    isSaved = true;
-                    
-                    showToast('Pulse saved!', 'success');
-                }
-                
-                // Update UI immediately
-                updateSaveUI(pulseId, isSaved);
-                
-            } catch (error) {
-                console.error('Save error:', error);
-                showToast('Failed to save pulse', 'error');
-            }
-        }
-        
-        // Update save UI
-        function updateSaveUI(pulseId, isSaved) {
-            const pulseCard = document.querySelector(`[data-pulse-id="${pulseId}"]`);
-            if (!pulseCard) return;
-            
-            const saveBtn = pulseCard.querySelector('.save-btn');
-            
-            if (saveBtn) {
-                if (isSaved) {
-                    saveBtn.classList.add('saved');
-                    saveBtn.innerHTML = '<i class="fas fa-bookmark" aria-hidden="true"></i> Saved';
-                } else {
-                    saveBtn.classList.remove('saved');
-                    saveBtn.innerHTML = '<i class="far fa-bookmark" aria-hidden="true"></i> Save';
-                }
-            }
-        }
-        
-        // UPDATED: Handle Comment with Mentions functionality
         async function handleComment(pulseId, e) {
             if (e) e.stopPropagation();
             
@@ -3459,18 +2520,17 @@
                                 <i class="fas fa-times"></i>
                             </button>
                         </div>
-                        <div class="modal-body" style="position: relative;">
+                        <div class="modal-body">
                             <form id="commentForm">
                                 <textarea 
                                     class="caption-input" 
                                     id="commentText" 
-                                    placeholder="Write your comment... Use @ to mention people"
+                                    placeholder="Write your comment..."
                                     maxlength="500"
                                     rows="3"
                                     aria-label="Comment text"
                                 ></textarea>
-                                <div class="mentions-dropdown" id="commentMentionsDropdown"></div>
-                                <div class="modal-footer" style="border-top: none; padding-top: 20px;">
+                                <div class="modal-footer" style="border-top: none; padding-top: 0;">
                                     <button type="submit" class="modal-btn modal-btn-post">Post Comment</button>
                                 </div>
                             </form>
@@ -3489,24 +2549,13 @@
                     }
                 });
                 
-                // Setup mentions for comment textarea
-                setTimeout(() => {
-                    const commentTextarea = commentModal.querySelector('#commentText');
-                    const commentMentionsDropdown = commentModal.querySelector('#commentMentionsDropdown');
-                    const commentModalBody = commentModal.querySelector('.modal-body');
-                    
-                    if (commentTextarea && commentMentionsDropdown && commentModalBody) {
-                        setupMentions(commentTextarea, commentMentionsDropdown, commentModalBody);
-                    }
-                }, 10);
-                
                 const commentForm = commentModal.querySelector('#commentForm');
                 commentForm.addEventListener('submit', async (e) => {
                     e.preventDefault();
                     const commentText = commentModal.querySelector('#commentText').value.trim();
                     
                     if (!commentText) {
-                        showToast('Please add a comment', 'error');
+                        showToast('Please enter a comment', 'error');
                         return;
                     }
                     
@@ -3520,36 +2569,7 @@
                                 likes_count: 0
                             });
                         
-                        if (error) {
-                            if (error.message.includes('check constraint')) {
-                                showToast('Comment cannot be empty', 'error');
-                            } else {
-                                throw error;
-                            }
-                            return;
-                        }
-                        
-                        // Handle mentions in comment
-                        const mentions = parseMentions(commentText).mentions;
-                        for (const mention of mentions) {
-                            const username = mention.replace('@', '');
-                            const { data: mentionedUser } = await supabaseClient
-                                .from('user_profiles')
-                                .select('id')
-                                .eq('username', username)
-                                .single();
-                            
-                            if (mentionedUser && mentionedUser.id !== session.user.id) {
-                                await createNotification(
-                                    'comment_mention',
-                                    session.user.id,
-                                    mentionedUser.id,
-                                    pulseId,
-                                    null,
-                                    `${session.user.email.split('@')[0]} mentioned you in a comment.`
-                                );
-                            }
-                        }
+                        if (error) throw error;
                         
                         showToast('Comment posted successfully!', 'success');
                         commentModal.remove();
@@ -3558,7 +2578,7 @@
                         
                     } catch (error) {
                         console.error('Comment error:', error);
-                        showToast('Failed to post comment: ' + error.message, 'error');
+                        showToast('Failed to post comment', 'error');
                     }
                 });
                 
@@ -3902,12 +2922,6 @@
                 
                 document.getElementById('editModal').style.display = 'flex';
                 
-                // Setup mentions for edit modal
-                const editCaption = document.getElementById('editCaption');
-                const editMentionsDropdown = document.getElementById('editMentionsDropdown');
-                const editModal = document.getElementById('editModal');
-                setupMentions(editCaption, editMentionsDropdown, editModal);
-                
             } catch (error) {
                 console.error('Error loading pulse for edit:', error);
                 showToast('Failed to load pulse for editing', 'error');
@@ -3937,128 +2951,29 @@
             }
         }
         
-        // Show Re-Pulse Modal
-        function showRePulseModal(pulseId, event) {
-            if (currentRepulseModal) {
-                currentRepulseModal.remove();
-            }
-            
-            const repulseModal = document.createElement('div');
-            repulseModal.className = 'modal-overlay';
-            repulseModal.style.display = 'flex';
-            
-            repulseModal.innerHTML = `
-                <div class="repulse-modal">
-                    <div class="repulse-modal-header">
-                        <h3 class="repulse-modal-title">Re-Pulse</h3>
-                        <button class="repulse-modal-close" id="closeRepulseModal" aria-label="Close modal">
-                            <i class="fas fa-times"></i>
-                        </button>
-                    </div>
-                    <textarea 
-                        class="repulse-context-input" 
-                        id="repulseContext" 
-                        placeholder="Add your thoughts (optional, max 140 chars)"
-                        maxlength="140"
-                        aria-label="Re-pulse context"
-                    ></textarea>
-                    <div class="repulse-modal-actions">
-                        <button class="repulse-btn soft" id="softRepulse" data-pulse-id="${pulseId}">
-                            Re-Pulse (No Context)
-                        </button>
-                        <button class="repulse-btn" id="contextualRepulse" data-pulse-id="${pulseId}">
-                            Re-Pulse with Context
-                        </button>
-                    </div>
-                </div>
-            `;
-            
-            document.body.appendChild(repulseModal);
-            currentRepulseModal = repulseModal;
-            
-            const closeBtn = repulseModal.querySelector('#closeRepulseModal');
-            closeBtn.addEventListener('click', () => {
-                repulseModal.remove();
-                currentRepulseModal = null;
-            });
-            
-            repulseModal.addEventListener('click', (e) => {
-                if (e.target === repulseModal) {
-                    repulseModal.remove();
-                    currentRepulseModal = null;
-                }
-            });
-            
-            const softRepulseBtn = repulseModal.querySelector('#softRepulse');
-            const contextualRepulseBtn = repulseModal.querySelector('#contextualRepulse');
-            
-            softRepulseBtn.addEventListener('click', (e) => {
-                handleRePulse(pulseId, null, e);
-            });
-            
-            contextualRepulseBtn.addEventListener('click', (e) => {
-                const context = repulseModal.querySelector('#repulseContext').value.trim();
-                handleRePulse(pulseId, context, e);
-            });
-        }
-        
-        // Setup tap button event handlers with long press for reactions - FIXED VERSION
-        function setupTapButtonEvents(tapBtn, pulseId) {
-            let tapTimer;
-            let isLongPress = false;
-            let touchStartTime;
-            
-            const startTimer = (e) => {
-                isLongPress = false;
-                touchStartTime = Date.now();
-                tapTimer = setTimeout(() => {
-                    isLongPress = true;
-                    showReactionMenu(pulseId, e);
-                }, longPressThreshold);
-            };
-            
-            const clearTapTimer = () => {
-                clearTimeout(tapTimer);
-            };
-            
-            const handleTapEnd = (e) => {
-                clearTapTimer();
-                const touchDuration = Date.now() - touchStartTime;
+        async function checkUserLikes(pulseIds) {
+            try {
+                const { data: { session } } = await supabaseClient.auth.getSession();
+                if (!session) return new Set();
                 
-                if (!isLongPress && touchDuration < longPressThreshold) {
-                    handleTap(pulseId, e);
+                const { data: userLikes, error } = await supabaseClient
+                    .from('pulse_likes')
+                    .select('pulse_id')
+                    .in('pulse_id', pulseIds)
+                    .eq('user_id', session.user.id);
+                
+                if (error) throw error;
+                
+                const likedPulses = new Set();
+                if (userLikes) {
+                    userLikes.forEach(like => likedPulses.add(like.pulse_id));
                 }
-            };
-            
-            // Touch events for mobile
-            tapBtn.addEventListener('touchstart', (e) => {
-                e.preventDefault();
-                startTimer(e);
-            }, { passive: false });
-            
-            tapBtn.addEventListener('touchend', (e) => {
-                e.preventDefault();
-                handleTapEnd(e);
-            });
-            
-            tapBtn.addEventListener('touchmove', clearTapTimer);
-            tapBtn.addEventListener('touchcancel', clearTapTimer);
-            
-            // Mouse events for desktop
-            tapBtn.addEventListener('mousedown', (e) => {
-                startTimer(e);
-            });
-            
-            tapBtn.addEventListener('mouseup', (e) => {
-                handleTapEnd(e);
-            });
-            
-            tapBtn.addEventListener('mouseleave', clearTapTimer);
-            
-            // Context menu prevention
-            tapBtn.addEventListener('contextmenu', (e) => {
-                e.preventDefault();
-            });
+                
+                return likedPulses;
+            } catch (error) {
+                console.error('Error checking user likes:', error);
+                return new Set();
+            }
         }
         
         async function updatePulse() {
@@ -4106,28 +3021,6 @@
                 
                 if (error) throw error;
                 
-                // Handle mentions in updated pulse
-                const mentions = parseMentions(caption).mentions;
-                for (const mention of mentions) {
-                    const username = mention.replace('@', '');
-                    const { data: mentionedUser } = await supabaseClient
-                        .from('user_profiles')
-                        .select('id')
-                        .eq('username', username)
-                        .single();
-                    
-                    if (mentionedUser && mentionedUser.id !== currentUserId) {
-                        await createNotification(
-                            'mention',
-                            currentUserId,
-                            mentionedUser.id,
-                            editingPulseId,
-                            null,
-                            `${currentSession.user.email.split('@')[0]} mentioned you in a pulse.`
-                        );
-                    }
-                }
-                
                 showToast('Pulse updated successfully!', 'success');
                 
                 closeEditModalFunc();
@@ -4162,8 +3055,7 @@
                 
                 return {
                     url: publicUrl,
-                    type: file.type.startsWith('video/') ? 'video' : 
-                          file.type.startsWith('audio/') ? 'audio' : 'image'
+                    type: file.type.startsWith('video/') ? 'video' : 'image'
                 };
                 
             } catch (error) {
@@ -4329,10 +3221,11 @@
                 // Combine signals
                 const combinedSignal = signal || timeoutController.signal;
                 
-                // Fetch pulses with user details
+                // Fetch pulses
                 const pulsesPromise = supabaseClient
-                    .from('pulses_with_user_details')
+                    .from('pulses')
                     .select('*')
+                    .is('deleted_at', null)
                     .order('created_at', { ascending: false })
                     .range(offset, offset + limit - 1);
                 
@@ -4356,8 +3249,9 @@
                         
                         // Retry with new session
                         const retryResult = await supabaseClient
-                            .from('pulses_with_user_details')
+                            .from('pulses')
                             .select('*')
+                            .is('deleted_at', null)
                             .order('created_at', { ascending: false })
                             .range(offset, offset + limit - 1);
                         
@@ -4377,18 +3271,34 @@
                 }
                 
                 // Batch operations
+                const userIds = [...new Set(pulsesData.map(p => p.user_id))];
                 const pulseIds = pulsesData.map(p => p.id);
                 
-                // Fetch taps count
-                const { data: tapsData, error: tapsError } = await supabaseClient
-                    .from('pulse_taps')
+                // Fetch user profiles
+                let userProfilesMap = {};
+                if (userIds.length > 0) {
+                    const { data: profilesData, error: profilesError } = await supabaseClient
+                        .from('user_profiles')
+                        .select('id, email, full_name, username, role, avatar_url')
+                        .in('id', userIds);
+                    
+                    if (!profilesError && profilesData) {
+                        profilesData.forEach(profile => {
+                            userProfilesMap[profile.id] = profile;
+                        });
+                    }
+                }
+                
+                // Fetch likes count
+                const { data: likesData, error: likesError } = await supabaseClient
+                    .from('pulse_likes')
                     .select('pulse_id')
                     .in('pulse_id', pulseIds);
                 
-                const tapsCountMap = {};
-                if (!tapsError && tapsData) {
-                    tapsData.forEach(tap => {
-                        tapsCountMap[tap.pulse_id] = (tapsCountMap[tap.pulse_id] || 0) + 1;
+                const likesCountMap = {};
+                if (!likesError && likesData) {
+                    likesData.forEach(like => {
+                        likesCountMap[like.pulse_id] = (likesCountMap[like.pulse_id] || 0) + 1;
                     });
                 }
                 
@@ -4406,50 +3316,19 @@
                     });
                 }
                 
-                // Fetch repulses count and context
-                const { data: repulsesData, error: repulsesError } = await supabaseClient
-                    .from('pulse_repulses')
-                    .select('pulse_id, context, user_id')
-                    .in('pulse_id', pulseIds);
-                
-                const repulsesCountMap = {};
-                const repulsesContextMap = {};
-                if (!repulsesError && repulsesData) {
-                    repulsesData.forEach(repulse => {
-                        repulsesCountMap[repulse.pulse_id] = (repulsesCountMap[repulse.pulse_id] || 0) + 1;
-                        if (repulse.context) {
-                            if (!repulsesContextMap[repulse.pulse_id]) {
-                                repulsesContextMap[repulse.pulse_id] = [];
-                            }
-                            repulsesContextMap[repulse.pulse_id].push({
-                                context: repulse.context,
-                                user_id: repulse.user_id
-                            });
-                        }
-                    });
-                }
-                
-                // Fetch reactions count
-                const { data: reactionsData, error: reactionsError } = await supabaseClient
-                    .from('pulse_reactions')
-                    .select('pulse_id')
-                    .in('pulse_id', pulseIds);
-                
-                const reactionsCountMap = {};
-                if (!reactionsError && reactionsData) {
-                    reactionsData.forEach(reaction => {
-                        reactionsCountMap[reaction.pulse_id] = (reactionsCountMap[reaction.pulse_id] || 0) + 1;
-                    });
-                }
-                
                 // Enrich pulses
                 const enrichedPulses = pulsesData.map(pulse => ({
                     ...pulse,
-                    taps_count: tapsCountMap[pulse.id] || 0,
-                    comments_count: commentsCountMap[pulse.id] || 0,
-                    repulses_count: repulsesCountMap[pulse.id] || 0,
-                    repulse_contexts: repulsesContextMap[pulse.id] || [],
-                    reactions_count: reactionsCountMap[pulse.id] || 0
+                    user_profiles: userProfilesMap[pulse.user_id] || {
+                        id: pulse.user_id,
+                        email: 'user@example.com',
+                        full_name: 'User',
+                        username: 'user',
+                        role: 'creator',
+                        avatar_url: null
+                    },
+                    actual_likes_count: likesCountMap[pulse.id] || 0,
+                    actual_comments_count: commentsCountMap[pulse.id] || 0
                 }));
                 
                 return enrichedPulses;
@@ -4467,7 +3346,7 @@
         }
         
         // Display pulses
-        function displayPulses(pulses, userInteractions) {
+        function displayPulses(pulses, likedPulses) {
             const pulseFeedContainer = document.getElementById('pulse-feed-container');
             
             if (!pulses || pulses.length === 0) {
@@ -4500,7 +3379,7 @@
             pulses.forEach(pulse => {
                 if (displayedPulseIds.has(pulse.id)) return;
                 
-                const pulseCard = createPulseCard(pulse, userInteractions);
+                const pulseCard = createPulseCard(pulse, likedPulses);
                 fragment.appendChild(pulseCard);
                 displayedPulseIds.add(pulse.id);
                 allPulses.push(pulse);
@@ -4543,180 +3422,8 @@
             });
         }
         
-        // FIXED: Updated searchUsernames function to include avatar_url
-        async function searchUsernames(query) {
-            try {
-                const { data: { session } } = await supabaseClient.auth.getSession();
-                if (!session) return [];
-                
-                const { data, error } = await supabaseClient
-                    .from('user_profiles')
-                    .select('id, username, full_name, avatar_url')
-                    .or(`username.ilike.%${query}%,full_name.ilike.%${query}%`)
-                    .neq('id', session.user.id) // Don't show current user
-                    .limit(10);
-                
-                if (error) throw error;
-                
-                return data || [];
-            } catch (error) {
-                console.error('Error searching usernames:', error);
-                return [];
-            }
-        }
-        
-        // FIXED: Updated setupMentions function with profile pictures
-        function setupMentions(textarea, dropdown, container) {
-            let currentSearch = '';
-            let mentionStart = -1;
-            let lastAtPos = -1;
-            
-            // Clear existing event listeners
-            const newTextarea = textarea.cloneNode(true);
-            textarea.parentNode.replaceChild(newTextarea, textarea);
-            textarea = newTextarea;
-            
-            // Handle input with better mention detection
-            textarea.addEventListener('input', debounce(async (e) => {
-                const value = textarea.value;
-                const cursorPos = textarea.selectionStart;
-                
-                // Find the last @ before cursor
-                for (let i = cursorPos - 1; i >= 0; i--) {
-                    if (value[i] === '@') {
-                        // Check if @ is at start or preceded by space/newline
-                        if (i === 0 || value[i - 1] === ' ' || value[i - 1] === '\n' || value[i - 1] === '\t') {
-                            mentionStart = i;
-                            currentSearch = value.substring(i + 1, cursorPos);
-                            break;
-                        }
-                    }
-                }
-                
-                if (mentionStart !== -1 && currentSearch.length > 0) {
-                    // Search for usernames
-                    const users = await searchUsernames(currentSearch);
-                    
-                    if (users.length > 0) {
-                        // Show dropdown
-                        dropdown.innerHTML = '';
-                        users.forEach(user => {
-                            const mentionItem = document.createElement('div');
-                            mentionItem.className = 'mention-item';
-                            mentionItem.dataset.username = user.username;
-                            
-                            // FIXED: Show actual profile picture if available
-                            const avatarContent = user.avatar_url 
-                                ? `<img src="${user.avatar_url}" alt="${user.username}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`
-                                : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--bantu-blue),var(--warm-gold));color:white;font-weight:600;font-size:12px;">
-                                      ${(user.full_name?.substring(0, 2) || user.username?.substring(0, 2) || 'U').toUpperCase()}
-                                   </div>`;
-                            
-                            mentionItem.innerHTML = `
-                                <div class="mention-avatar" style="width:30px;height:30px;border-radius:50%;overflow:hidden;flex-shrink:0;">
-                                    ${avatarContent}
-                                </div>
-                                <div class="mention-info">
-                                    <div class="mention-username">@${user.username || 'user'}</div>
-                                    <div class="mention-name">${user.full_name || ''}</div>
-                                </div>
-                            `;
-                            
-                            mentionItem.addEventListener('click', () => {
-                                const before = value.substring(0, mentionStart);
-                                const after = value.substring(cursorPos);
-                                const username = user.username;
-                                textarea.value = before + '@' + username + ' ' + after;
-                                dropdown.classList.remove('active');
-                                
-                                // Track mentioned user
-                                mentionedUsers.add(user.id);
-                                
-                                // Set cursor after the mention
-                                const newCursorPos = mentionStart + username.length + 2;
-                                setTimeout(() => {
-                                    textarea.focus();
-                                    textarea.setSelectionRange(newCursorPos, newCursorPos);
-                                }, 10);
-                            });
-                            
-                            dropdown.appendChild(mentionItem);
-                        });
-                        
-                        // Position dropdown below textarea
-                        const rect = textarea.getBoundingClientRect();
-                        const containerRect = container.getBoundingClientRect();
-                        
-                        dropdown.style.position = 'absolute';
-                        dropdown.style.top = `${rect.bottom - containerRect.top + 5}px`;
-                        dropdown.style.left = `${rect.left - containerRect.left}px`;
-                        dropdown.style.width = `${rect.width}px`;
-                        dropdown.style.maxHeight = '200px';
-                        dropdown.style.overflowY = 'auto';
-                        dropdown.classList.add('active');
-                        
-                        // Ensure dropdown stays within modal bounds
-                        const dropdownHeight = dropdown.offsetHeight;
-                        const modalBottom = containerRect.top + container.offsetHeight;
-                        if (rect.bottom + dropdownHeight > modalBottom) {
-                            dropdown.style.top = `${rect.top - containerRect.top - dropdownHeight - 5}px`;
-                        }
-                    } else {
-                        dropdown.classList.remove('active');
-                    }
-                } else {
-                    dropdown.classList.remove('active');
-                }
-            }, 300));
-            
-            // Handle keydown for better UX
-            textarea.addEventListener('keydown', (e) => {
-                if (dropdown.classList.contains('active')) {
-                    if (e.key === 'ArrowDown' || e.key === 'ArrowUp' || e.key === 'Enter' || e.key === 'Escape') {
-                        e.preventDefault();
-                        
-                        const items = dropdown.querySelectorAll('.mention-item');
-                        let currentIndex = -1;
-                        
-                        items.forEach((item, index) => {
-                            if (item.classList.contains('selected')) {
-                                currentIndex = index;
-                            }
-                        });
-                        
-                        if (e.key === 'ArrowDown') {
-                            currentIndex = (currentIndex + 1) % items.length;
-                        } else if (e.key === 'ArrowUp') {
-                            currentIndex = (currentIndex - 1 + items.length) % items.length;
-                        } else if (e.key === 'Enter' && currentIndex >= 0) {
-                            items[currentIndex].click();
-                            return;
-                        } else if (e.key === 'Escape') {
-                            dropdown.classList.remove('active');
-                            return;
-                        }
-                        
-                        items.forEach(item => item.classList.remove('selected'));
-                        if (currentIndex >= 0) {
-                            items[currentIndex].classList.add('selected');
-                            items[currentIndex].scrollIntoView({ block: 'nearest' });
-                        }
-                    }
-                }
-            });
-            
-            // Hide dropdown when clicking outside
-            document.addEventListener('click', (e) => {
-                if (!textarea.contains(e.target) && !dropdown.contains(e.target)) {
-                    dropdown.classList.remove('active');
-                }
-            });
-            
-            return textarea;
-        }
-        
-        function createPulseCard(pulse, userInteractions) {
-            const profile = pulse;
+        function createPulseCard(pulse, likedPulses) {
+            const profile = pulse.user_profiles || {};
             const fullName = profile.full_name || profile.email?.split('@')[0] || 'User';
             const username = profile.username || '';
             const avatarUrl = profile.avatar_url;
@@ -4724,15 +3431,13 @@
             const initials = fullName.substring(0, 2).toUpperCase();
             const timeAgo = getTimeAgo(new Date(pulse.created_at));
             
-            const isTapped = userInteractions.taps.has(pulse.id);
-            const isSaved = userInteractions.saves.has(pulse.id);
-            const isRepulsed = userInteractions.repulses.has(pulse.id);
-            const userReaction = userInteractions.reactions.get(pulse.id);
-            
+            const actualLikesCount = pulse.actual_likes_count || pulse.likes_count || 0;
+            const actualCommentsCount = pulse.actual_comments_count || pulse.comments_count || 0;
             const isSeries = pulse.series_id && pulse.series_order;
             const hasMedia = pulse.media_url;
             const mediaType = pulse.media_type;
             const isOwnPulse = pulse.user_id === currentUserId;
+            const isLiked = likedPulses.has(pulse.id);
             const isConnected = userConnections.has(pulse.user_id);
             
             const card = document.createElement('article');
@@ -4747,9 +3452,7 @@
                 if (!e.target.closest('.action-button') && 
                     !e.target.closest('.pulse-connect-btn') &&
                     !e.target.closest('.pulse-more-options') && 
-                    !e.target.closest('.pulse-options-menu') &&
-                    !e.target.closest('.reaction-menu') &&
-                    !e.target.closest('.repulse-context')) {
+                    !e.target.closest('.pulse-options-menu')) {
                     
                     clickTimer = setTimeout(() => {
                         viewPulseDetail(pulse.id);
@@ -4825,19 +3528,6 @@
                             </div>
                         </div>
                     `;
-                } else if (mediaType === 'audio') {
-                    mediaHTML = `
-                        <div class="media-container has-media" style="background: var(--deep-navy); display: flex; align-items: center; justify-content: center;">
-                            <div style="text-align: center; padding: 40px;">
-                                <i class="fas fa-microphone" style="font-size: 48px; color: var(--warm-gold); margin-bottom: 20px;"></i>
-                                <p style="color: var(--soft-white);">Voice Pulse</p>
-                                <audio controls style="width: 100%; margin-top: 20px;">
-                                    <source src="${pulse.media_url}" type="audio/mpeg">
-                                    Your browser does not support the audio element.
-                                </audio>
-                            </div>
-                        </div>
-                    `;
                 } else {
                     mediaHTML = `
                         <div class="media-container has-media">
@@ -4849,35 +3539,6 @@
                         </div>
                     `;
                 }
-            }
-            
-            // Add repulse context if available
-            let repulseContextHTML = '';
-            if (pulse.repulse_contexts && pulse.repulse_contexts.length > 0) {
-                const latestContext = pulse.repulse_contexts[pulse.repulse_contexts.length - 1];
-                if (latestContext.context) {
-                    let contextUsername = 'Someone';
-                    if (latestContext.user_id) {
-                        const contextUser = allPulses.find(p => p.user_id === latestContext.user_id);
-                        if (contextUser) {
-                            contextUsername = contextUser.username || contextUser.full_name || 'Someone';
-                        }
-                    }
-                    
-                    repulseContextHTML = `
-                        <div class="repulse-context">
-                            <div class="repulse-context-user">@${contextUsername} re-pulsed with context:</div>
-                            <div>"${sanitizeHTML(latestContext.context)}"</div>
-                        </div>
-                    `;
-                }
-            }
-            
-            // Process caption for mentions
-            let processedCaption = pulse.caption || '';
-            if (pulse.caption) {
-                // Simple mention highlighting
-                processedCaption = pulse.caption.replace(/@(\w+)/g, '<span style="color: var(--bantu-blue); font-weight: 500;">@$1</span>');
             }
             
             card.innerHTML = `
@@ -4904,33 +3565,27 @@
                 ` : ''}
                 
                 <div class="pulse-content">
-                    ${processedCaption ? `<p class="pulse-text">${processedCaption}</p>` : ''}
-                    
-                    ${repulseContextHTML}
+                    ${pulse.caption ? `<p class="pulse-text">${sanitizeHTML(pulse.caption)}</p>` : ''}
                     
                     ${mediaHTML}
                 </div>
                 
                 <div class="pulse-actions">
-                    <button class="action-button tap-btn ${isTapped ? 'tapped' : ''}" data-pulse-id="${pulse.id}" aria-label="${isTapped ? 'Untap' : 'Tap'} this pulse">
-                        <i class="${isTapped ? 'fas' : 'far'} fa-hand-point-up tap-icon" aria-hidden="true"></i> ${isTapped ? 'Felt' : 'Feel'}
+                    <button class="action-button like-btn ${isLiked ? 'liked' : ''}" data-pulse-id="${pulse.id}" aria-label="${isLiked ? 'Unlike' : 'Like'} this pulse">
+                        <i class="fas fa-heart" aria-hidden="true"></i> ${actualLikesCount}
                     </button>
                     <button class="action-button comment-btn" data-pulse-id="${pulse.id}" aria-label="Comment on this pulse">
-                        <i class="fas fa-comment" aria-hidden="true"></i> ${pulse.comments_count || 0}
+                        <i class="fas fa-comment" aria-hidden="true"></i> ${actualCommentsCount}
                     </button>
-                    <button class="action-button repulse-btn ${isRepulsed ? 'repulsed' : ''}" data-pulse-id="${pulse.id}" aria-label="${isRepulsed ? 'Remove re-pulse' : 'Re-pulse this'}">
-                        <i class="fas fa-retweet" aria-hidden="true"></i> ${pulse.repulses_count || 0}
-                    </button>
-                    <button class="action-button save-btn ${isSaved ? 'saved' : ''}" data-pulse-id="${pulse.id}" aria-label="${isSaved ? 'Remove from saved' : 'Save this pulse'}">
-                        <i class="${isSaved ? 'fas' : 'far'} fa-bookmark" aria-hidden="true"></i> ${isSaved ? 'Saved' : 'Save'}
+                    <button class="action-button share-btn" data-pulse-id="${pulse.id}" aria-label="Share this pulse">
+                        <i class="fas fa-share" aria-hidden="true"></i> ${pulse.shares_count || 0}
                     </button>
                 </div>
                 
                 <div class="pulse-stats">
-                    ${pulse.taps_count > 0 ? `<span class="stat-item">${pulse.taps_count} felt</span>` : ''}
-                    ${pulse.comments_count > 0 ? `<span class="stat-item">${pulse.comments_count} comments</span>` : ''}
-                    ${pulse.repulses_count > 0 ? `<span class="stat-item">${pulse.repulses_count} re-pulses</span>` : ''}
-                    ${pulse.reactions_count > 0 ? `<span class="stat-item">${pulse.reactions_count} reactions</span>` : ''}
+                    <span class="likes-count">${actualLikesCount} ${actualLikesCount === 1 ? 'like' : 'likes'}</span>
+                    <span class="comments-count">${actualCommentsCount} ${actualCommentsCount === 1 ? 'comment' : 'comments'}</span>
+                    <span class="shares-count">${pulse.shares_count || 0} shares</span>
                 </div>
             `;
             
@@ -4952,25 +3607,13 @@
                 }, 100);
             }
             
-            // Set up event listeners
-            const tapBtn = card.querySelector('.tap-btn');
+            const likeBtn = card.querySelector('.like-btn');
             const commentBtn = card.querySelector('.comment-btn');
-            const saveBtn = card.querySelector('.save-btn');
-            const repulseBtn = card.querySelector('.repulse-btn');
+            const shareBtn = card.querySelector('.share-btn');
             
-            // Setup tap button with long press for reactions
-            if (tapBtn) {
-                setupTapButtonEvents(tapBtn, pulse.id);
-            }
-            
-            saveBtn.addEventListener('click', (e) => handleSave(pulse.id, e));
+            likeBtn.addEventListener('click', (e) => handleLike(pulse.id, e));
             commentBtn.addEventListener('click', (e) => handleComment(pulse.id, e));
-            
-            // Setup repulse button event listener
-            repulseBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                showRePulseModal(pulse.id, e);
-            });
+            shareBtn.addEventListener('click', (e) => handleShare(pulse.id, e));
             
             const connectBtn = card.querySelector('.pulse-connect-btn');
             if (connectBtn) {
@@ -5034,12 +3677,6 @@
             if (scrollThrottleTimeout) {
                 clearTimeout(scrollThrottleTimeout);
             }
-            
-            closeReactionMenu();
-            if (currentRepulseModal) {
-                currentRepulseModal.remove();
-                currentRepulseModal = null;
-            }
         }
         
         window.addEventListener('beforeunload', cleanupResources);
@@ -5050,52 +3687,6 @@
                 pauseAllVideos();
             }
         });
-
-        // ============ REPLACED FUNCTIONS START HERE ============
-
-        // 1. REPLACE the `updatePostButton()` function
-        // FIXED: Updated updatePostButton function - properly checks for text content
-        function updatePostButton() {
-            const caption = document.getElementById('caption').value.trim();
-            const hasContent = caption.length > 0 || !!window.selectedMedia; // Text OR media
-            
-            const postPulseBtn = document.getElementById('postPulse');
-            if (postPulseBtn) {
-                postPulseBtn.disabled = !hasContent;
-                
-                // Debug logging
-                console.log('updatePostButton:', {
-                    caption: caption,
-                    captionLength: caption.length,
-                    hasContent: hasContent,
-                    buttonDisabled: postPulseBtn.disabled,
-                    selectedMedia: !!window.selectedMedia
-                });
-            }
-        }
-        
-        // Helper function to check button state
-        function debugButtonState() {
-            const postPulseBtn = document.getElementById('postPulse');
-            const caption = document.getElementById('caption').value.trim();
-            
-            console.log('Button Debug:', {
-                buttonExists: !!postPulseBtn,
-                captionLength: caption.length,
-                buttonDisabled: postPulseBtn ? postPulseBtn.disabled : 'N/A',
-                buttonHTML: postPulseBtn ? postPulseBtn.innerHTML : 'N/A',
-                selectedMedia: !!window.selectedMedia
-            });
-        }
-        
-        // 2. REPLACE the `createPulse()` function in initializeFeed
-        // This will be replaced in the initializeFeed function below
-
-        // 3. REPLACE the `openCreateModal()` function in initializeFeed
-        // This will be replaced in the initializeFeed function below
-
-        // 4. REPLACE the `closeCreateModal()` function in initializeFeed
-        // This will be replaced in the initializeFeed function below
 
         // Load initial pulses
         async function loadInitialPulses() {
@@ -5150,14 +3741,14 @@
                     return;
                 }
                 
-                // Get user interactions
-                const userInteractions = await getUserInteractions(pulses.map(p => p.id));
+                // Get liked status
+                const likedPulses = await checkUserLikes(pulses.map(p => p.id));
                 
                 // Clear loading
                 pulseFeedContainer.innerHTML = '';
                 
                 // Display pulses
-                displayPulses(pulses, userInteractions);
+                displayPulses(pulses, likedPulses);
                 
                 console.log(`Displayed ${pulses.length} initial pulses`);
                 
@@ -5186,11 +3777,8 @@
         }
         
         function initializeFeed(session) {
-            window.selectedMedia = null;
+            let selectedMedia = null;
             let isSeriesMode = false;
-            
-            // FIXED: Add debug logging
-            console.log('Initializing feed...');
             
             const createPrompt = document.getElementById('createPrompt');
             const createPulseBtn = document.getElementById('createPulseBtn');
@@ -5257,11 +3845,7 @@
                 }
             }
             
-            // FIXED: Replace the setLoading() function
             function setLoading(loading) {
-                const postPulseBtn = document.getElementById('postPulse');
-                if (!postPulseBtn) return;
-                
                 if (loading) {
                     postPulseBtn.disabled = true;
                     postPulseBtn.innerHTML = '<i class="fas fa-spinner fa-spin" aria-hidden="true"></i> Posting...';
@@ -5271,47 +3855,29 @@
                 }
             }
             
-            // 3. REPLACE the `openCreateModal()` function
-            // FIXED: Updated openCreateModal function - ensure textarea is properly reset
+            function updatePostButton() {
+                const hasContent = captionInput.value.trim() || selectedMedia;
+                postPulseBtn.disabled = !hasContent;
+            }
+            
             function openCreateModal() {
                 createModal.style.display = 'flex';
                 captionInput.focus();
-                
-                // FIXED: Clear any existing text and ensure button state is correct
-                captionInput.value = '';
-                window.selectedMedia = null;
-                mediaPreview.style.display = 'none';
-                mediaPreview.innerHTML = '';
-                mediaInput.value = '';
-                
-                // Give time for DOM to update, then update button state
-                setTimeout(() => {
-                    updatePostButton();
-                    console.log('Modal opened, button state updated');
-                }, 100);
             }
             
-            // 4. REPLACE the `closeCreateModal()` function
-            // FIXED: Updated closeCreateModal function - proper cleanup
             function closeCreateModal() {
                 createModal.style.display = 'none';
                 captionInput.value = '';
                 seriesTitleInput.value = '';
-                window.selectedMedia = null;
+                selectedMedia = null;
                 mediaPreview.style.display = 'none';
                 mediaPreview.innerHTML = '';
-                mediaInput.value = '';
                 isSeriesMode = false;
                 toggleSwitch.classList.remove('active');
                 seriesOptions.classList.remove('active');
-                
-                // FIXED: Force button update after cleanup
-                setTimeout(updatePostButton, 50);
-                mentionedUsers.clear();
+                updatePostButton();
             }
             
-            // 2. REPLACE the `createPulse()` function
-            // FIXED: Updated createPulse function with proper validation
             async function createPulse() {
                 try {
                     const { data: { session } } = await supabaseClient.auth.getSession();
@@ -5322,22 +3888,16 @@
                     const caption = captionInput.value.trim();
                     const seriesTitle = seriesTitleInput.value.trim();
                     
-                    // FIXED: Add back proper validation
-                    if (!caption && !window.selectedMedia) {
-                        showToast('Please add text or media to your pulse', 'error');
-                        return;
-                    }
-                    
                     if (caption.length > 500) {
                         showToast('Caption must be less than 500 characters', 'error');
                         return;
                     }
                     
                     let mediaData = null;
-                    if (window.selectedMedia) {
+                    if (selectedMedia) {
                         setLoading(true);
                         try {
-                            mediaData = await uploadMedia(window.selectedMedia);
+                            mediaData = await uploadMedia(selectedMedia);
                         } catch (uploadError) {
                             showToast('Failed to upload media: ' + uploadError.message, 'error');
                             setLoading(false);
@@ -5345,13 +3905,15 @@
                         }
                     }
                     
-                    // FIXED: Remove reactions_count from pulseData as it doesn't exist in the table
                     const pulseData = {
                         user_id: session.user.id,
                         caption: sanitizeHTML(caption) || null,
                         media_url: mediaData?.url || null,
                         media_type: mediaData?.type || 'none',
-                        aspect_ratio: '9:16'
+                        aspect_ratio: '9:16',
+                        likes_count: 0,
+                        comments_count: 0,
+                        shares_count: 0
                     };
                     
                     let seriesId = null;
@@ -5407,7 +3969,6 @@
                             
                             pulseData.series_id = seriesId;
                             pulseData.series_order = seriesOrder;
-                            pulseData.is_series_start = (seriesOrder === 1);
                             
                         } catch (seriesError) {
                             console.error('Series creation error:', seriesError);
@@ -5415,31 +3976,13 @@
                         }
                     }
                     
-                    // FIXED: Log the data being sent
-                    console.log('Posting pulse with data:', pulseData);
-                    
                     const { data: pulse, error } = await supabaseClient
                         .from('pulses')
                         .insert(pulseData)
                         .select()
                         .single();
                     
-                    if (error) {
-                        console.error('Create pulse error details:', error);
-                        
-                        // FIXED: Handle specific error messages better
-                        if (error.message.includes('caption') || error.message.includes('text')) {
-                            showToast('Pulse must have either text or media', 'error');
-                        } else if (error.message.includes('JWT')) {
-                            showToast('Session expired. Please login again.', 'error');
-                            setTimeout(() => {
-                                window.location.href = 'login.html';
-                            }, 2000);
-                        } else {
-                            showToast('Failed to post pulse: ' + error.message, 'error');
-                        }
-                        return;
-                    }
+                    if (error) throw error;
                     
                     if (seriesId) {
                         try {
@@ -5452,28 +3995,6 @@
                                 });
                         } catch (itemError) {
                             console.warn('Could not create series item:', itemError);
-                        }
-                    }
-                    
-                    // Handle mentions and create notifications
-                    const mentions = parseMentions(caption).mentions;
-                    for (const mention of mentions) {
-                        const username = mention.replace('@', '');
-                        const { data: mentionedUser } = await supabaseClient
-                            .from('user_profiles')
-                            .select('id')
-                            .eq('username', username)
-                            .single();
-                        
-                        if (mentionedUser && mentionedUser.id !== session.user.id) {
-                            await createNotification(
-                                'mention',
-                                session.user.id,
-                                mentionedUser.id,
-                                pulse.id,
-                                null,
-                                `${session.user.email.split('@')[0]} mentioned you in a pulse.`
-                            );
                         }
                     }
                     
@@ -5492,56 +4013,6 @@
                 }
             }
             
-            // 7. WORKAROUND function - Alternative createPulse function with better text capture
-            async function createPulseAlt() {
-                try {
-                    // Get text directly from the DOM to ensure we have the latest value
-                    const captionElement = document.getElementById('caption');
-                    const caption = captionElement ? captionElement.value.trim() : '';
-                    
-                    console.log('createPulseAlt - Caption from DOM:', {
-                        rawValue: captionElement ? captionElement.value : 'no element',
-                        trimmedValue: caption,
-                        length: caption.length
-                    });
-                    
-                    if (!caption && !window.selectedMedia) {
-                        showToast('Please add text or media to your pulse', 'error');
-                        return;
-                    }
-                    
-                    // Rest of your createPulse logic...
-                    // Call the main createPulse function
-                    return await createPulse();
-                } catch (error) {
-                    console.error('Error in createPulseAlt:', error);
-                    showToast('Failed to post pulse: ' + error.message, 'error');
-                }
-            }
-            
-            // 6. FIXED: Event listeners for caption input - ensure they're working
-            // Replace the existing captionInput event listeners
-            captionInput.addEventListener('input', function(e) {
-                console.log('Input event fired, value:', e.target.value);
-                updatePostButton();
-            });
-
-            captionInput.addEventListener('change', function(e) {
-                console.log('Change event fired, value:', e.target.value);
-                updatePostButton();
-            });
-
-            captionInput.addEventListener('keyup', function(e) {
-                console.log('Keyup event fired, value:', e.target.value);
-                updatePostButton();
-            });
-
-            // Also add paste event
-            captionInput.addEventListener('paste', function(e) {
-                console.log('Paste event fired');
-                setTimeout(updatePostButton, 10);
-            });
-            
             // Event listeners
             createPrompt.addEventListener('click', openCreateModal);
             createPulseBtn.addEventListener('click', openCreateModal);
@@ -5556,14 +4027,13 @@
             
             mediaUpload.addEventListener('click', () => mediaInput.click());
             
-            // FIXED: Media input change event - media is optional
             mediaInput.addEventListener('change', (e) => {
                 const file = e.target.files[0];
                 if (!file) return;
                 
-                const validTypes = ['image/avif', 'image/webp', 'image/jpeg', 'image/png', 'image/gif', 'video/mp4', 'video/quicktime', 'audio/*'];
-                if (!validTypes.includes(file.type) && !file.type.startsWith('audio/')) {
-                    showToast('Please select a valid image, video, or audio file', 'error');
+                const validTypes = ['image/avif', 'image/webp', 'image/jpeg', 'image/png', 'image/gif', 'video/mp4', 'video/quicktime'];
+                if (!validTypes.includes(file.type)) {
+                    showToast('Please select a valid image or video file', 'error');
                     return;
                 }
                 
@@ -5572,7 +4042,7 @@
                     return;
                 }
                 
-                window.selectedMedia = file;
+                selectedMedia = file;
                 
                 const reader = new FileReader();
                 reader.onload = (e) => {
@@ -5585,18 +4055,6 @@
                         video.style.width = '100%';
                         video.style.borderRadius = '12px';
                         mediaPreview.appendChild(video);
-                    } else if (file.type.startsWith('audio/')) {
-                        const audioContainer = document.createElement('div');
-                        audioContainer.style.cssText = 'text-align: center; padding: 20px;';
-                        audioContainer.innerHTML = `
-                            <i class="fas fa-microphone" style="font-size: 48px; color: var(--warm-gold); margin-bottom: 20px;"></i>
-                            <p style="color: var(--soft-white); margin-bottom: 10px;">Voice Pulse</p>
-                            <audio controls style="width: 100%;">
-                                <source src="${e.target.result}" type="${file.type}">
-                                Your browser does not support the audio element.
-                            </audio>
-                        `;
-                        mediaPreview.appendChild(audioContainer);
                     } else {
                         const img = document.createElement('img');
                         img.src = e.target.result;
@@ -5610,17 +4068,15 @@
                 };
                 reader.readAsDataURL(file);
                 
-                // FIXED: Update button state after media is selected
-                setTimeout(updatePostButton, 100);
+                updatePostButton();
             });
             
             removeMedia.addEventListener('click', () => {
-                window.selectedMedia = null;
+                selectedMedia = null;
                 mediaPreview.style.display = 'none';
                 mediaPreview.innerHTML = '';
                 mediaInput.value = '';
-                // FIXED: Update button state when media is removed
-                setTimeout(updatePostButton, 100);
+                updatePostButton();
             });
             
             seriesToggle.addEventListener('click', () => {
@@ -5628,6 +4084,8 @@
                 toggleSwitch.classList.toggle('active', isSeriesMode);
                 seriesOptions.classList.toggle('active', isSeriesMode);
             });
+            
+            captionInput.addEventListener('input', updatePostButton);
             
             postPulseBtn.addEventListener('click', createPulse);
             
@@ -5650,9 +4108,9 @@
                 const file = e.target.files[0];
                 if (!file) return;
                 
-                const validTypes = ['image/avif,image/webp,image/jpeg,image/png,image/gif,video/mp4,video/quicktime,audio/*'];
-                if (!validTypes.includes(file.type) && !file.type.startsWith('audio/')) {
-                    showToast('Please select a valid image, video, or audio file', 'error');
+                const validTypes = ['image/avif', 'image/webp', 'image/jpeg', 'image/png', 'image/gif', 'video/mp4', 'video/quicktime'];
+                if (!validTypes.includes(file.type)) {
+                    showToast('Please select a valid image or video file', 'error');
                     return;
                 }
                 
@@ -5674,18 +4132,6 @@
                         video.style.width = '100%';
                         video.style.borderRadius = '12px';
                         editMediaPreview.appendChild(video);
-                    } else if (file.type.startsWith('audio/')) {
-                        const audioContainer = document.createElement('div');
-                        audioContainer.style.cssText = 'text-align: center; padding: 20px;';
-                        audioContainer.innerHTML = `
-                            <i class="fas fa-microphone" style="font-size: 48px; color: var(--warm-gold); margin-bottom: 20px;"></i>
-                            <p style="color: var(--soft-white); margin-bottom: 10px;">Voice Pulse</p>
-                            <audio controls style="width: 100%;">
-                                <source src="${e.target.result}" type="${file.type}">
-                                Your browser does not support the audio element.
-                            </audio>
-                        `;
-                        editMediaPreview.appendChild(audioContainer);
                     } else {
                         const img = document.createElement('img');
                         img.src = e.target.result;
@@ -5727,10 +4173,6 @@
                 });
             });
             
-            // Setup mentions for create modal
-            const mentionsDropdown = document.getElementById('mentionsDropdown');
-            setupMentions(captionInput, mentionsDropdown, createModal.querySelector('.modal-body'));
-            
             supabaseClient.auth.onAuthStateChange((event, session) => {
                 console.log('Auth state changed:', event);
                 
@@ -5747,31 +4189,6 @@
                 setupInfiniteScroll();
             }, 100);
         }
-        
-        // 5. ADD debug function at the end of your script
-        // Debug function to check textarea behavior
-        function debugTextarea() {
-            const captionInput = document.getElementById('caption');
-            const postPulseBtn = document.getElementById('postPulse');
-            
-            console.log('Textarea Debug:', {
-                value: captionInput.value,
-                trimmedValue: captionInput.value.trim(),
-                length: captionInput.value.length,
-                trimmedLength: captionInput.value.trim().length,
-                placeholder: captionInput.placeholder,
-                disabled: captionInput.disabled,
-                readOnly: captionInput.readOnly,
-                buttonDisabled: postPulseBtn ? postPulseBtn.disabled : 'N/A'
-            });
-            
-            // Also simulate a keypress to see if it registers
-            const event = new Event('input', { bubbles: true });
-            captionInput.dispatchEvent(event);
-            console.log('Dispatched input event');
-        }
-
-        // Add this to your console to test: debugTextarea()
         
         document.addEventListener('DOMContentLoaded', initialize);
     </script>
