@@ -5051,10 +5051,13 @@
             }
         });
 
-        // FIXED: Updated updatePostButton function - text-only pulses are now allowed
+        // ============ REPLACED FUNCTIONS START HERE ============
+
+        // 1. REPLACE the `updatePostButton()` function
+        // FIXED: Updated updatePostButton function - properly checks for text content
         function updatePostButton() {
             const caption = document.getElementById('caption').value.trim();
-            const hasContent = caption.length > 0; // Text-only is now sufficient
+            const hasContent = caption.length > 0 || !!window.selectedMedia; // Text OR media
             
             const postPulseBtn = document.getElementById('postPulse');
             if (postPulseBtn) {
@@ -5065,7 +5068,8 @@
                     caption: caption,
                     captionLength: caption.length,
                     hasContent: hasContent,
-                    buttonDisabled: postPulseBtn.disabled
+                    buttonDisabled: postPulseBtn.disabled,
+                    selectedMedia: !!window.selectedMedia
                 });
             }
         }
@@ -5084,6 +5088,15 @@
             });
         }
         
+        // 2. REPLACE the `createPulse()` function in initializeFeed
+        // This will be replaced in the initializeFeed function below
+
+        // 3. REPLACE the `openCreateModal()` function in initializeFeed
+        // This will be replaced in the initializeFeed function below
+
+        // 4. REPLACE the `closeCreateModal()` function in initializeFeed
+        // This will be replaced in the initializeFeed function below
+
         // Load initial pulses
         async function loadInitialPulses() {
             console.log('Loading initial pulses...');
@@ -5258,18 +5271,28 @@
                 }
             }
             
-            // FIXED: Replace the openCreateModal() function
+            // 3. REPLACE the `openCreateModal()` function
+            // FIXED: Updated openCreateModal function - ensure textarea is properly reset
             function openCreateModal() {
                 createModal.style.display = 'flex';
                 captionInput.focus();
                 
-                // FIXED: Reset button state when modal opens
+                // FIXED: Clear any existing text and ensure button state is correct
+                captionInput.value = '';
+                window.selectedMedia = null;
+                mediaPreview.style.display = 'none';
+                mediaPreview.innerHTML = '';
+                mediaInput.value = '';
+                
+                // Give time for DOM to update, then update button state
                 setTimeout(() => {
                     updatePostButton();
                     console.log('Modal opened, button state updated');
                 }, 100);
             }
             
+            // 4. REPLACE the `closeCreateModal()` function
+            // FIXED: Updated closeCreateModal function - proper cleanup
             function closeCreateModal() {
                 createModal.style.display = 'none';
                 captionInput.value = '';
@@ -5277,14 +5300,18 @@
                 window.selectedMedia = null;
                 mediaPreview.style.display = 'none';
                 mediaPreview.innerHTML = '';
+                mediaInput.value = '';
                 isSeriesMode = false;
                 toggleSwitch.classList.remove('active');
                 seriesOptions.classList.remove('active');
-                updatePostButton();
+                
+                // FIXED: Force button update after cleanup
+                setTimeout(updatePostButton, 50);
                 mentionedUsers.clear();
             }
             
-            // FIXED: Replace the createPulse() function
+            // 2. REPLACE the `createPulse()` function
+            // FIXED: Updated createPulse function with proper validation
             async function createPulse() {
                 try {
                     const { data: { session } } = await supabaseClient.auth.getSession();
@@ -5295,9 +5322,16 @@
                     const caption = captionInput.value.trim();
                     const seriesTitle = seriesTitleInput.value.trim();
                     
-                    // FIXED: Remove the validation that was causing issues
-                    // Just proceed with posting, backend will handle validation
-                    // Don't show error toast here, let the backend handle it
+                    // FIXED: Add back proper validation
+                    if (!caption && !window.selectedMedia) {
+                        showToast('Please add text or media to your pulse', 'error');
+                        return;
+                    }
+                    
+                    if (caption.length > 500) {
+                        showToast('Caption must be less than 500 characters', 'error');
+                        return;
+                    }
                     
                     let mediaData = null;
                     if (window.selectedMedia) {
@@ -5381,6 +5415,9 @@
                         }
                     }
                     
+                    // FIXED: Log the data being sent
+                    console.log('Posting pulse with data:', pulseData);
+                    
                     const { data: pulse, error } = await supabaseClient
                         .from('pulses')
                         .insert(pulseData)
@@ -5391,7 +5428,7 @@
                         console.error('Create pulse error details:', error);
                         
                         // FIXED: Handle specific error messages better
-                        if (error.message.includes('caption')) {
+                        if (error.message.includes('caption') || error.message.includes('text')) {
                             showToast('Pulse must have either text or media', 'error');
                         } else if (error.message.includes('JWT')) {
                             showToast('Session expired. Please login again.', 'error');
@@ -5455,7 +5492,56 @@
                 }
             }
             
-            // FIXED: Replace the event listeners section
+            // 7. WORKAROUND function - Alternative createPulse function with better text capture
+            async function createPulseAlt() {
+                try {
+                    // Get text directly from the DOM to ensure we have the latest value
+                    const captionElement = document.getElementById('caption');
+                    const caption = captionElement ? captionElement.value.trim() : '';
+                    
+                    console.log('createPulseAlt - Caption from DOM:', {
+                        rawValue: captionElement ? captionElement.value : 'no element',
+                        trimmedValue: caption,
+                        length: caption.length
+                    });
+                    
+                    if (!caption && !window.selectedMedia) {
+                        showToast('Please add text or media to your pulse', 'error');
+                        return;
+                    }
+                    
+                    // Rest of your createPulse logic...
+                    // Call the main createPulse function
+                    return await createPulse();
+                } catch (error) {
+                    console.error('Error in createPulseAlt:', error);
+                    showToast('Failed to post pulse: ' + error.message, 'error');
+                }
+            }
+            
+            // 6. FIXED: Event listeners for caption input - ensure they're working
+            // Replace the existing captionInput event listeners
+            captionInput.addEventListener('input', function(e) {
+                console.log('Input event fired, value:', e.target.value);
+                updatePostButton();
+            });
+
+            captionInput.addEventListener('change', function(e) {
+                console.log('Change event fired, value:', e.target.value);
+                updatePostButton();
+            });
+
+            captionInput.addEventListener('keyup', function(e) {
+                console.log('Keyup event fired, value:', e.target.value);
+                updatePostButton();
+            });
+
+            // Also add paste event
+            captionInput.addEventListener('paste', function(e) {
+                console.log('Paste event fired');
+                setTimeout(updatePostButton, 10);
+            });
+            
             // Event listeners
             createPrompt.addEventListener('click', openCreateModal);
             createPulseBtn.addEventListener('click', openCreateModal);
@@ -5542,19 +5628,6 @@
                 toggleSwitch.classList.toggle('active', isSeriesMode);
                 seriesOptions.classList.toggle('active', isSeriesMode);
             });
-            
-            // FIXED: Call updatePostButton on caption input with better event handling
-            captionInput.addEventListener('input', updatePostButton);
-            captionInput.addEventListener('change', updatePostButton);
-            captionInput.addEventListener('keyup', updatePostButton);
-            
-            // FIXED: Also call updatePostButton when modal opens
-            const originalOpenCreateModal = openCreateModal;
-            openCreateModal = function() {
-                originalOpenCreateModal();
-                // Give time for DOM to update, then check button state
-                setTimeout(updatePostButton, 200);
-            };
             
             postPulseBtn.addEventListener('click', createPulse);
             
@@ -5674,6 +5747,31 @@
                 setupInfiniteScroll();
             }, 100);
         }
+        
+        // 5. ADD debug function at the end of your script
+        // Debug function to check textarea behavior
+        function debugTextarea() {
+            const captionInput = document.getElementById('caption');
+            const postPulseBtn = document.getElementById('postPulse');
+            
+            console.log('Textarea Debug:', {
+                value: captionInput.value,
+                trimmedValue: captionInput.value.trim(),
+                length: captionInput.value.length,
+                trimmedLength: captionInput.value.trim().length,
+                placeholder: captionInput.placeholder,
+                disabled: captionInput.disabled,
+                readOnly: captionInput.readOnly,
+                buttonDisabled: postPulseBtn ? postPulseBtn.disabled : 'N/A'
+            });
+            
+            // Also simulate a keypress to see if it registers
+            const event = new Event('input', { bubbles: true });
+            captionInput.dispatchEvent(event);
+            console.log('Dispatched input event');
+        }
+
+        // Add this to your console to test: debugTextarea()
         
         document.addEventListener('DOMContentLoaded', initialize);
     </script>
