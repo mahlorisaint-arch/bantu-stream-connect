@@ -3437,7 +3437,7 @@
             }
         }
         
-        // FIXED: Updated handleComment function to remove validation error
+        // UPDATED: Handle Comment with Mentions functionality
         async function handleComment(pulseId, e) {
             if (e) e.stopPropagation();
             
@@ -3459,7 +3459,7 @@
                                 <i class="fas fa-times"></i>
                             </button>
                         </div>
-                        <div class="modal-body">
+                        <div class="modal-body" style="position: relative;">
                             <form id="commentForm">
                                 <textarea 
                                     class="caption-input" 
@@ -3469,7 +3469,8 @@
                                     rows="3"
                                     aria-label="Comment text"
                                 ></textarea>
-                                <div class="modal-footer" style="border-top: none; padding-top: 0;">
+                                <div class="mentions-dropdown" id="commentMentionsDropdown"></div>
+                                <div class="modal-footer" style="border-top: none; padding-top: 20px;">
                                     <button type="submit" class="modal-btn modal-btn-post">Post Comment</button>
                                 </div>
                             </form>
@@ -3488,14 +3489,26 @@
                     }
                 });
                 
+                // Setup mentions for comment textarea
+                setTimeout(() => {
+                    const commentTextarea = commentModal.querySelector('#commentText');
+                    const commentMentionsDropdown = commentModal.querySelector('#commentMentionsDropdown');
+                    const commentModalBody = commentModal.querySelector('.modal-body');
+                    
+                    if (commentTextarea && commentMentionsDropdown && commentModalBody) {
+                        setupMentions(commentTextarea, commentMentionsDropdown, commentModalBody);
+                    }
+                }, 10);
+                
                 const commentForm = commentModal.querySelector('#commentForm');
                 commentForm.addEventListener('submit', async (e) => {
                     e.preventDefault();
                     const commentText = commentModal.querySelector('#commentText').value.trim();
                     
-                    // FIXED: Remove the validation that was causing "please add comment" error
-                    // Just proceed with posting, even empty comments can be valid in some cases
-                    // or will be handled by backend validation
+                    if (!commentText) {
+                        showToast('Please add a comment', 'error');
+                        return;
+                    }
                     
                     try {
                         const { error } = await supabaseClient
@@ -3514,6 +3527,28 @@
                                 throw error;
                             }
                             return;
+                        }
+                        
+                        // Handle mentions in comment
+                        const mentions = parseMentions(commentText).mentions;
+                        for (const mention of mentions) {
+                            const username = mention.replace('@', '');
+                            const { data: mentionedUser } = await supabaseClient
+                                .from('user_profiles')
+                                .select('id')
+                                .eq('username', username)
+                                .single();
+                            
+                            if (mentionedUser && mentionedUser.id !== session.user.id) {
+                                await createNotification(
+                                    'comment_mention',
+                                    session.user.id,
+                                    mentionedUser.id,
+                                    pulseId,
+                                    null,
+                                    `${session.user.email.split('@')[0]} mentioned you in a comment.`
+                                );
+                            }
                         }
                         
                         showToast('Comment posted successfully!', 'success');
@@ -5104,12 +5139,11 @@
             }
         }
         
-        // FIXED: Updated updatePostButton function
+        // UPDATED: Fixed updatePostButton function - text-only pulses are now allowed
         function updatePostButton() {
             const caption = document.getElementById('caption').value.trim();
-            const hasContent = caption.length > 0 || (window.selectedMedia !== null && window.selectedMedia !== undefined);
+            const hasContent = caption.length > 0; // Text-only is now sufficient
             
-            // FIXED: Enable button when there's content
             const postPulseBtn = document.getElementById('postPulse');
             postPulseBtn.disabled = !hasContent;
             
@@ -5117,7 +5151,6 @@
             console.log('updatePostButton:', {
                 caption: caption,
                 captionLength: caption.length,
-                selectedMedia: !!window.selectedMedia,
                 hasContent: hasContent,
                 buttonDisabled: postPulseBtn.disabled
             });
@@ -5205,12 +5238,12 @@
                 }
             }
             
-            // FIXED: Make sure updatePostButton is called when modal opens
+            // UPDATED: Make sure updatePostButton is called when modal opens
             function openCreateModal() {
                 createModal.style.display = 'flex';
                 captionInput.focus();
                 
-                // FIXED: Ensure button state is updated when modal opens
+                // UPDATED: Ensure button state is updated when modal opens
                 setTimeout(() => {
                     updatePostButton();
                 }, 100);
@@ -5240,6 +5273,11 @@
                     const caption = captionInput.value.trim();
                     const seriesTitle = seriesTitleInput.value.trim();
                     
+                    if (!caption) {
+                        showToast('Please add a caption for your pulse', 'error');
+                        return;
+                    }
+                    
                     if (caption.length > 500) {
                         showToast('Caption must be less than 500 characters', 'error');
                         return;
@@ -5257,14 +5295,13 @@
                         }
                     }
                     
-                    // FIXED: Remove reactions_count from pulseData as it doesn't exist in the table
+                    // UPDATED: Remove reactions_count from pulseData as it doesn't exist in the table
                     const pulseData = {
                         user_id: session.user.id,
                         caption: sanitizeHTML(caption) || null,
                         media_url: mediaData?.url || null,
                         media_type: mediaData?.type || 'none',
                         aspect_ratio: '9:16'
-                        // Removed reactions_count as it doesn't exist in the pulses table
                     };
                     
                     let seriesId = null;
@@ -5404,7 +5441,7 @@
             
             mediaUpload.addEventListener('click', () => mediaInput.click());
             
-            // FIXED: Updated media input change event to also call updatePostButton
+            // UPDATED: Media input change event - media is optional
             mediaInput.addEventListener('change', (e) => {
                 const file = e.target.files[0];
                 if (!file) return;
@@ -5457,9 +5494,6 @@
                     mediaPreview.style.display = 'block';
                 };
                 reader.readAsDataURL(file);
-                
-                // FIXED: Make sure to call updatePostButton
-                updatePostButton();
             });
             
             removeMedia.addEventListener('click', () => {
@@ -5467,8 +5501,6 @@
                 mediaPreview.style.display = 'none';
                 mediaPreview.innerHTML = '';
                 mediaInput.value = '';
-                // FIXED: Call updatePostButton when media is removed
-                updatePostButton();
             });
             
             seriesToggle.addEventListener('click', () => {
@@ -5477,9 +5509,8 @@
                 seriesOptions.classList.toggle('active', isSeriesMode);
             });
             
-            // FIXED: Add this event listener after your existing event listeners in initializeFeed function:
+            // UPDATED: Call updatePostButton on caption input
             captionInput.addEventListener('input', () => {
-                console.log('Caption input changed:', captionInput.value);
                 updatePostButton();
             });
             
