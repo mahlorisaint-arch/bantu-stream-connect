@@ -724,7 +724,7 @@
             color: var(--soft-white);
         }
         
-        /* UPDATED: Re-Pulse Context */
+        /* UPDATED: Re-Pulse Context with username */
         .repulse-context {
             background: rgba(245, 158, 11, 0.1);
             border-left: 3px solid var(--warm-gold);
@@ -742,54 +742,117 @@
             color: var(--soft-white);
         }
         
-        /* NEW: Multiple Re-Pulses Container */
-        .repulses-container {
-            margin: 12px 0;
-            border-radius: 8px;
-            overflow: hidden;
-        }
-        
-        .repulse-item {
-            padding: 10px 16px;
-            border-left: 3px solid var(--warm-gold);
-            background: rgba(245, 158, 11, 0.05);
-            margin-bottom: 4px;
-        }
-        
-        .repulse-item:last-child {
-            margin-bottom: 0;
-        }
-        
-        .repulse-item-user {
-            font-weight: 600;
-            color: var(--soft-white);
-            font-size: 14px;
-        }
-        
-        .repulse-item-context {
-            color: var(--warm-gold);
-            font-size: 13px;
-            margin-top: 4px;
-            font-style: italic;
-        }
-        
-        .show-more-repulses {
+        /* NEW: Expand/Collapse for multiple re-pulses */
+        .repulse-expand-toggle {
             background: none;
             border: none;
-            color: var(--slate-grey);
+            color: var(--warm-gold);
             font-size: 12px;
             cursor: pointer;
-            padding: 8px 16px;
-            text-align: left;
-            width: 100%;
+            margin-top: 8px;
+            padding: 4px 8px;
+            border-radius: 4px;
+            transition: all 0.3s ease;
             display: flex;
             align-items: center;
-            gap: 6px;
-            transition: color 0.3s ease;
+            gap: 4px;
         }
         
-        .show-more-repulses:hover {
+        .repulse-expand-toggle:hover {
+            background: rgba(245, 158, 11, 0.1);
+        }
+        
+        .repulse-hidden-contexts {
+            display: none;
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px solid rgba(245, 158, 11, 0.2);
+        }
+        
+        .repulse-hidden-contexts.expanded {
+            display: block;
+        }
+        
+        /* NEW: Mention styling */
+        .mention {
+            color: var(--bantu-blue);
+            font-weight: 600;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .mention:hover {
+            color: var(--warm-gold);
+            text-decoration: underline;
+        }
+        
+        /* NEW: Autocomplete dropdown for mentions */
+        .mention-autocomplete {
+            position: absolute;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 8px;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 2000;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(20px);
+            display: none;
+        }
+        
+        .mention-suggestion {
+            padding: 10px 15px;
+            border-bottom: 1px solid var(--glass-border);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.3s ease;
+        }
+        
+        .mention-suggestion:hover,
+        .mention-suggestion.selected {
+            background: var(--hover-overlay);
+        }
+        
+        .mention-suggestion-avatar {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
             color: var(--soft-white);
+            flex-shrink: 0;
+        }
+        
+        .mention-suggestion-username {
+            font-weight: 600;
+            color: var(--soft-white);
+        }
+        
+        .mention-suggestion-name {
+            color: var(--slate-grey);
+            font-size: 12px;
+        }
+        
+        /* NEW: Character counter for mentions */
+        .mention-counter {
+            font-size: 12px;
+            color: var(--slate-grey);
+            margin-top: 4px;
+            text-align: right;
+        }
+        
+        .mention-counter.warning {
+            color: var(--warm-gold);
+        }
+        
+        .mention-counter.error {
+            color: var(--error-color);
         }
         
         /* Video Player - Glassmorphism */
@@ -1302,68 +1365,6 @@
             color: var(--repulse-color);
         }
         
-        /* NEW: Mentions Autocomplete */
-        .mentions-autocomplete {
-            position: absolute;
-            background: var(--glass-bg);
-            border: 1px solid var(--glass-border);
-            border-radius: 12px;
-            max-height: 200px;
-            overflow-y: auto;
-            z-index: 10000;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
-            backdrop-filter: blur(20px);
-            display: none;
-        }
-        
-        .mention-item {
-            padding: 12px;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            cursor: pointer;
-            transition: background 0.3s ease;
-        }
-        
-        .mention-item:hover {
-            background: var(--hover-overlay);
-        }
-        
-        .mention-avatar {
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--soft-white);
-            font-weight: 600;
-            font-size: 12px;
-        }
-        
-        .mention-username {
-            font-weight: 600;
-            color: var(--soft-white);
-        }
-        
-        .mention-fullname {
-            font-size: 12px;
-            color: var(--slate-grey);
-        }
-        
-        /* Mention links in text */
-        .mention-link {
-            color: var(--bantu-blue);
-            text-decoration: none;
-            font-weight: 600;
-            cursor: pointer;
-        }
-        
-        .mention-link:hover {
-            text-decoration: underline;
-        }
-        
         /* Floating Create Button */
         .floating-create-btn {
             position: fixed;
@@ -1502,7 +1503,6 @@
             min-height: 100px;
             transition: border-color 0.3s ease;
             backdrop-filter: blur(10px);
-            position: relative;
         }
         
         .caption-input:focus {
@@ -1913,11 +1913,6 @@
                 font-size: 12px;
                 gap: 4px;
             }
-            
-            .mentions-autocomplete {
-                max-width: 90%;
-                left: 5% !important;
-            }
         }
         
         /* Custom Scrollbar */
@@ -2071,14 +2066,17 @@
                             <img id="modal-avatar-img" alt="Your avatar">
                             <span>AB</span>
                         </div>
-                        <textarea 
-                            class="caption-input" 
-                            id="caption" 
-                            placeholder="What's moving the culture? Use @ to mention people"
-                            maxlength="500"
-                            aria-label="Pulse caption"
-                        ></textarea>
-                        <div class="mentions-autocomplete" id="caption-mentions"></div>
+                        <div style="position: relative; flex: 1;">
+                            <textarea 
+                                class="caption-input" 
+                                id="caption" 
+                                placeholder="What's moving the culture? Use @ to mention people"
+                                maxlength="500"
+                                aria-label="Pulse caption"
+                            ></textarea>
+                            <div id="mentionCounter" class="mention-counter">0/10 mentions</div>
+                            <div id="mentionAutocomplete" class="mention-autocomplete"></div>
+                        </div>
                     </div>
                     
                     <div class="media-upload-section" id="mediaUpload" role="button" tabindex="0">
@@ -2141,14 +2139,17 @@
                             <img id="edit-modal-avatar-img" alt="Your avatar">
                             <span>AB</span>
                         </div>
-                        <textarea 
-                            class="caption-input" 
-                            id="editCaption" 
-                            placeholder="What's moving the culture?"
-                            maxlength="500"
-                            aria-label="Edit pulse caption"
-                        ></textarea>
-                        <div class="mentions-autocomplete" id="edit-caption-mentions"></div>
+                        <div style="position: relative; flex: 1;">
+                            <textarea 
+                                class="caption-input" 
+                                id="editCaption" 
+                                placeholder="What's moving the culture? Use @ to mention people"
+                                maxlength="500"
+                                aria-label="Edit pulse caption"
+                            ></textarea>
+                            <div id="editMentionCounter" class="mention-counter">0/10 mentions</div>
+                            <div id="editMentionAutocomplete" class="mention-autocomplete"></div>
+                        </div>
                     </div>
                     
                     <div class="media-upload-section" id="editMediaUpload" role="button" tabindex="0">
@@ -2239,11 +2240,13 @@
         // NEW: Reaction menu variable
         let currentReactionMenuPulseId = null;
         
-        // NEW: Mentions variables
-        let currentMentionsAutocomplete = null;
-        let lastMentionQuery = '';
-        let mentionSearchTimeout = null;
-        let mentionedUsers = new Set();
+        // NEW: Mention autocomplete variables
+        let mentionAutocompleteActive = false;
+        let mentionSuggestions = [];
+        let currentMentionStart = -1;
+        let currentMentionQuery = '';
+        let mentionAbortController = null;
+        let mentionDebounceTimeout = null;
 
         // Debounce function
         function debounce(func, wait) {
@@ -2279,7 +2282,7 @@
             return div.innerHTML;
         }
 
-        // Parse mentions in text and convert to links
+        // NEW: Parse mentions in text with clickable links
         function parseMentions(text) {
             if (!text) return { text: '', mentions: [] };
             
@@ -2293,236 +2296,262 @@
                 mentions.push(match[1]);
             }
             
-            // Replace mentions with clickable links
-            parsedText = parsedText.replace(/@(\w+)/g, '<a href="profile.html?username=$1" class="mention-link" onclick="event.stopPropagation(); window.location.href=\'profile.html?username=$1\'">@$1</a>');
+            // Convert mentions to clickable links
+            parsedText = parsedText.replace(/@(\w+)/g, '<span class="mention" data-username="$1" onclick="navigateToProfile(\'$1\')">@$1</span>');
             
             return { text: parsedText, mentions };
         }
 
-        // Search users for mentions autocomplete
-        async function searchUsers(query) {
+        // NEW: Navigate to profile when mention is clicked
+        function navigateToProfile(username) {
+            event.stopPropagation();
+            window.location.href = `profile.html?username=${username}`;
+        }
+
+        // NEW: Count mentions in text
+        function countMentions(text) {
+            if (!text) return 0;
+            const mentionRegex = /@(\w+)/g;
+            const matches = text.match(mentionRegex);
+            return matches ? matches.length : 0;
+        }
+
+        // NEW: Update mention counter
+        function updateMentionCounter(textarea, counterId) {
+            const count = countMentions(textarea.value);
+            const counter = document.getElementById(counterId);
+            if (counter) {
+                counter.textContent = `${count}/10 mentions`;
+                if (count >= 10) {
+                    counter.classList.add('error');
+                    counter.classList.remove('warning');
+                } else if (count >= 8) {
+                    counter.classList.add('warning');
+                    counter.classList.remove('error');
+                } else {
+                    counter.classList.remove('warning', 'error');
+                }
+            }
+            return count;
+        }
+
+        // NEW: Fetch user suggestions for mentions
+        async function fetchMentionSuggestions(query) {
+            if (!query || query.length < 1) return [];
+            
             try {
-                const { data, error } = await supabaseClient
+                // Cancel previous request if exists
+                if (mentionAbortController) {
+                    mentionAbortController.abort();
+                }
+                
+                mentionAbortController = new AbortController();
+                
+                const { data: users, error } = await supabaseClient
                     .from('user_profiles')
                     .select('id, username, full_name, avatar_url')
                     .ilike('username', `%${query}%`)
                     .limit(10);
-
+                
                 if (error) throw error;
-                return data || [];
+                
+                return users || [];
             } catch (error) {
-                console.error('Error searching users:', error);
+                if (error.name !== 'AbortError') {
+                    console.error('Error fetching mention suggestions:', error);
+                }
                 return [];
             }
         }
 
-        // Show mentions autocomplete
-        function showMentionsAutocomplete(textarea, query, position) {
-            if (currentMentionsAutocomplete) {
-                currentMentionsAutocomplete.remove();
+        // NEW: Show mention autocomplete
+        function showMentionAutocomplete(textarea, containerId, cursorPosition, query) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+            
+            // Clear any existing debounce
+            if (mentionDebounceTimeout) {
+                clearTimeout(mentionDebounceTimeout);
             }
             
-            if (!query || query.length < 1) {
-                return;
-            }
-            
-            // Create autocomplete dropdown
-            const autocomplete = document.createElement('div');
-            autocomplete.className = 'mentions-autocomplete';
-            autocomplete.id = 'mentions-autocomplete';
-            
-            // Position near cursor
-            const rect = textarea.getBoundingClientRect();
-            autocomplete.style.position = 'absolute';
-            autocomplete.style.left = `${rect.left}px`;
-            autocomplete.style.top = `${rect.bottom}px`;
-            autocomplete.style.width = `${rect.width}px`;
-            
-            // Add loading state
-            autocomplete.innerHTML = '<div class="mention-item">Searching...</div>';
-            
-            document.body.appendChild(autocomplete);
-            currentMentionsAutocomplete = autocomplete;
-            
-            // Search users
-            clearTimeout(mentionSearchTimeout);
-            mentionSearchTimeout = setTimeout(async () => {
-                const users = await searchUsers(query);
+            // Debounce the search
+            mentionDebounceTimeout = setTimeout(async () => {
+                const suggestions = await fetchMentionSuggestions(query);
+                mentionSuggestions = suggestions;
                 
-                if (users.length === 0) {
-                    autocomplete.innerHTML = '<div class="mention-item">No users found</div>';
+                if (suggestions.length === 0) {
+                    container.innerHTML = '';
+                    container.style.display = 'none';
+                    mentionAutocompleteActive = false;
                     return;
                 }
                 
-                autocomplete.innerHTML = '';
-                users.forEach(user => {
-                    const item = document.createElement('div');
-                    item.className = 'mention-item';
-                    item.dataset.username = user.username;
-                    item.innerHTML = `
-                        <div class="mention-avatar">
-                            ${user.avatar_url ? `<img src="${user.avatar_url}" alt="${user.username}" style="width:100%;height:100%;border-radius:50%;">` : user.username.charAt(0).toUpperCase()}
+                // Build suggestions HTML
+                container.innerHTML = suggestions.map((user, index) => `
+                    <div class="mention-suggestion ${index === 0 ? 'selected' : ''}" 
+                         data-username="${user.username}"
+                         data-user-id="${user.id}"
+                         onclick="insertMention('${textarea.id}', '${containerId}', '${user.username}')">
+                        <div class="mention-suggestion-avatar" style="${user.avatar_url ? `background-image: url('${user.avatar_url}'); background-size: cover;` : ''}">
+                            ${user.avatar_url ? '' : (user.full_name || user.username).substring(0, 2).toUpperCase()}
                         </div>
                         <div>
-                            <div class="mention-username">@${user.username}</div>
-                            <div class="mention-fullname">${user.full_name || ''}</div>
+                            <div class="mention-suggestion-username">@${user.username}</div>
+                            <div class="mention-suggestion-name">${user.full_name || ''}</div>
                         </div>
-                    `;
-                    
-                    item.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        insertMention(textarea, user.username, position);
-                        autocomplete.remove();
-                        currentMentionsAutocomplete = null;
-                    });
-                    
-                    autocomplete.appendChild(item);
-                });
+                    </div>
+                `).join('');
+                
+                // Position the autocomplete dropdown
+                const textareaRect = textarea.getBoundingClientRect();
+                const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+                
+                container.style.position = 'fixed';
+                container.style.top = `${textareaRect.bottom + scrollTop}px`;
+                container.style.left = `${textareaRect.left}px`;
+                container.style.width = `${textareaRect.width}px`;
+                container.style.display = 'block';
+                container.style.zIndex = '2000';
+                
+                mentionAutocompleteActive = true;
+                
+                // Add keyboard navigation
+                container.dataset.textareaId = textarea.id;
+                container.dataset.containerId = containerId;
             }, 300);
         }
 
-        // Insert mention into textarea
-        function insertMention(textarea, username, position) {
-            const text = textarea.value;
-            const before = text.substring(0, position);
-            const after = text.substring(position);
-            
-            // Find the @ symbol position
-            const atPos = before.lastIndexOf('@');
-            if (atPos === -1) return;
-            
-            // Replace @query with @username
-            const newText = before.substring(0, atPos) + '@' + username + ' ' + after;
-            textarea.value = newText;
-            
-            // Update cursor position
-            const newCursorPos = atPos + username.length + 2;
-            textarea.focus();
-            textarea.setSelectionRange(newCursorPos, newCursorPos);
-            
-            // Trigger input event
-            textarea.dispatchEvent(new Event('input'));
-            
-            // Add to mentioned users
-            mentionedUsers.add(username);
+        // NEW: Hide mention autocomplete
+        function hideMentionAutocomplete(containerId) {
+            const container = document.getElementById(containerId);
+            if (container) {
+                container.style.display = 'none';
+                mentionAutocompleteActive = false;
+                mentionSuggestions = [];
+            }
         }
 
-        // Setup mentions autocomplete for textarea
-        function setupMentionsAutocomplete(textarea, autocompleteId) {
-            textarea.addEventListener('input', (e) => {
-                const value = textarea.value;
-                const cursorPos = textarea.selectionStart;
+        // NEW: Insert mention into textarea
+        function insertMention(textareaId, containerId, username) {
+            const textarea = document.getElementById(textareaId);
+            if (!textarea) return;
+            
+            const value = textarea.value;
+            const before = value.substring(0, currentMentionStart);
+            const after = value.substring(currentMentionStart + currentMentionQuery.length + 1);
+            
+            textarea.value = before + '@' + username + ' ' + after;
+            textarea.focus();
+            
+            // Move cursor after the inserted mention
+            const newCursorPos = before.length + username.length + 2;
+            textarea.setSelectionRange(newCursorPos, newCursorPos);
+            
+            // Update mention counter
+            if (textareaId === 'caption') {
+                updateMentionCounter(textarea, 'mentionCounter');
+            } else if (textareaId === 'editCaption') {
+                updateMentionCounter(textarea, 'editMentionCounter');
+            } else if (textareaId === 'commentText') {
+                // Update comment mention counter if exists
+                const counter = document.querySelector('#commentMentionCounter');
+                if (counter) {
+                    updateMentionCounter(textarea, 'commentMentionCounter');
+                }
+            } else if (textareaId === 'repulseContext') {
+                // Update repulse mention counter if exists
+                const counter = document.querySelector('#repulseMentionCounter');
+                if (counter) {
+                    updateMentionCounter(textarea, 'repulseMentionCounter');
+                }
+            }
+            
+            hideMentionAutocomplete(containerId);
+            
+            // Trigger input event for validation
+            textarea.dispatchEvent(new Event('input'));
+        }
+
+        // NEW: Setup mention autocomplete for a textarea
+        function setupMentionAutocomplete(textarea, autocompleteId, counterId) {
+            textarea.addEventListener('input', function(e) {
+                // Update mention counter
+                updateMentionCounter(this, counterId);
                 
-                // Find @ mention
-                const textBeforeCursor = value.substring(0, cursorPos);
-                const atPos = textBeforeCursor.lastIndexOf('@');
+                // Check for @ mention
+                const cursorPos = this.selectionStart;
+                const textBeforeCursor = this.value.substring(0, cursorPos);
+                const lastAtIndex = textBeforeCursor.lastIndexOf('@');
                 
-                if (atPos !== -1) {
-                    // Check if @ is not part of another word
-                    const charBefore = textBeforeCursor.charAt(atPos - 1);
-                    if (atPos === 0 || charBefore === ' ' || charBefore === '\n') {
-                        const query = textBeforeCursor.substring(atPos + 1);
-                        showMentionsAutocomplete(textarea, query, cursorPos);
+                // Check if @ is preceded by space or is at start
+                if (lastAtIndex >= 0 && 
+                    (lastAtIndex === 0 || textBeforeCursor[lastAtIndex - 1] === ' ' || 
+                     textBeforeCursor[lastAtIndex - 1] === '\n' || textBeforeCursor[lastAtIndex - 1] === '\t')) {
+                    
+                    // Get the query after @
+                    const query = textBeforeCursor.substring(lastAtIndex + 1);
+                    const lastSpace = query.lastIndexOf(' ');
+                    
+                    if (lastSpace === -1) {
+                        currentMentionStart = lastAtIndex;
+                        currentMentionQuery = query;
+                        showMentionAutocomplete(this, autocompleteId, cursorPos, query);
                         return;
                     }
                 }
                 
-                // Close autocomplete if open
-                if (currentMentionsAutocomplete) {
-                    currentMentionsAutocomplete.remove();
-                    currentMentionsAutocomplete = null;
+                // Hide autocomplete if no @ detected
+                hideMentionAutocomplete(autocompleteId);
+            });
+            
+            // Handle keyboard navigation
+            textarea.addEventListener('keydown', function(e) {
+                const autocomplete = document.getElementById(autocompleteId);
+                if (!autocomplete || autocomplete.style.display === 'none') return;
+                
+                const selected = autocomplete.querySelector('.mention-suggestion.selected');
+                if (!selected) return;
+                
+                switch (e.key) {
+                    case 'ArrowDown':
+                        e.preventDefault();
+                        const next = selected.nextElementSibling;
+                        if (next && next.classList.contains('mention-suggestion')) {
+                            selected.classList.remove('selected');
+                            next.classList.add('selected');
+                            next.scrollIntoView({ block: 'nearest' });
+                        }
+                        break;
+                        
+                    case 'ArrowUp':
+                        e.preventDefault();
+                        const prev = selected.previousElementSibling;
+                        if (prev && prev.classList.contains('mention-suggestion')) {
+                            selected.classList.remove('selected');
+                            prev.classList.add('selected');
+                            prev.scrollIntoView({ block: 'nearest' });
+                        }
+                        break;
+                        
+                    case 'Enter':
+                        e.preventDefault();
+                        const username = selected.dataset.username;
+                        insertMention(this.id, autocompleteId, username);
+                        break;
+                        
+                    case 'Escape':
+                        e.preventDefault();
+                        hideMentionAutocomplete(autocompleteId);
+                        break;
                 }
             });
             
-            textarea.addEventListener('keydown', (e) => {
-                if (e.key === 'Escape' && currentMentionsAutocomplete) {
-                    currentMentionsAutocomplete.remove();
-                    currentMentionsAutocomplete = null;
+            // Hide autocomplete when clicking outside
+            document.addEventListener('click', function(e) {
+                if (!autocomplete.contains(e.target) && e.target !== textarea) {
+                    hideMentionAutocomplete(autocompleteId);
                 }
             });
-            
-            // Close autocomplete when clicking outside
-            document.addEventListener('click', (e) => {
-                if (currentMentionsAutocomplete && !currentMentionsAutocomplete.contains(e.target) && e.target !== textarea) {
-                    currentMentionsAutocomplete.remove();
-                    currentMentionsAutocomplete = null;
-                }
-            });
-        }
-
-        // Extract mentions from text
-        function extractMentions(text) {
-            if (!text) return [];
-            const mentionRegex = /@(\w+)/g;
-            const mentions = [];
-            let match;
-            while ((match = mentionRegex.exec(text)) !== null) {
-                mentions.push(match[1]);
-            }
-            return [...new Set(mentions)]; // Remove duplicates
-        }
-
-        // Create mention notifications
-        async function createMentionNotifications(text, actorId, pulseId, commentId = null, repulseId = null) {
-            try {
-                const mentions = extractMentions(text);
-                
-                // Anti-abuse: max 10 mentions per pulse
-                if (mentions.length > 10) {
-                    console.warn('Too many mentions:', mentions.length);
-                    mentions.splice(10); // Keep only first 10
-                }
-                
-                const { data: { session } } = await supabaseClient.auth.getSession();
-                if (!session) return;
-                
-                const actorName = session.user.email.split('@')[0];
-                
-                // Get current user's username for profile lookup
-                const { data: actorProfile } = await supabaseClient
-                    .from('user_profiles')
-                    .select('username')
-                    .eq('id', actorId)
-                    .single();
-                
-                const actorUsername = actorProfile?.username || actorName;
-                
-                for (const username of mentions) {
-                    // Get user ID from username
-                    const { data: user } = await supabaseClient
-                        .from('user_profiles')
-                        .select('id')
-                        .eq('username', username)
-                        .single();
-                    
-                    if (!user) continue;
-                    
-                    // Skip if mentioning self
-                    if (user.id === actorId) continue;
-                    
-                    // Check if user has muted the actor
-                    const { data: muteCheck } = await supabaseClient
-                        .from('user_mutes')
-                        .select('id')
-                        .eq('muter_id', user.id)
-                        .eq('muted_id', actorId)
-                        .single();
-                    
-                    if (muteCheck) continue; // Skip if muted
-                    
-                    // Create notification
-                    await createNotification(
-                        'mention',
-                        actorId,
-                        user.id,
-                        pulseId,
-                        commentId,
-                        `You were mentioned by ${actorUsername}.`
-                    );
-                }
-            } catch (error) {
-                console.error('Error creating mention notifications:', error);
-            }
         }
 
         async function initialize() {
@@ -3493,7 +3522,7 @@
             }
         }
         
-        // UPDATED: Handle Re-Pulse with self-check
+        // Handle Re-Pulse
         async function handleRePulse(pulseId, context = null, e) {
             if (e) e.stopPropagation();
             
@@ -3504,14 +3533,16 @@
                     return;
                 }
                 
-                // Check if user is trying to re-pulse their own pulse
-                const { data: pulse } = await supabaseClient
+                // Check if the pulse belongs to the current user
+                const { data: pulse, error: pulseError } = await supabaseClient
                     .from('pulses')
                     .select('user_id')
                     .eq('id', pulseId)
                     .single();
-                
-                if (pulse && pulse.user_id === session.user.id) {
+
+                if (pulseError) throw pulseError;
+
+                if (pulse.user_id === session.user.id) {
                     showToast('Not allowed to re-pulse your own pulses', 'error');
                     return;
                 }
@@ -3538,6 +3569,13 @@
                     isRepulsed = false;
                     showToast('Re-pulse removed', 'success');
                 } else {
+                    // Check mention count
+                    const mentionCount = countMentions(context || '');
+                    if (mentionCount > 10) {
+                        showToast('Cannot mention more than 10 users in a re-pulse', 'error');
+                        return;
+                    }
+                    
                     // Add re-pulse
                     const { error } = await supabaseClient
                         .from('pulse_repulses')
@@ -3553,13 +3591,7 @@
                     isRepulsed = true;
                     
                     // Create notification for pulse creator
-                    const { data: pulse } = await supabaseClient
-                        .from('pulses')
-                        .select('user_id')
-                        .eq('id', pulseId)
-                        .single();
-                    
-                    if (pulse && pulse.user_id !== session.user.id) {
+                    if (pulse.user_id !== session.user.id) {
                         const actorName = session.user.email.split('@')[0];
                         let message = `${actorName} re-pulsed your pulse`;
                         
@@ -3579,9 +3611,31 @@
                         );
                     }
                     
-                    // Create notifications for mentions in re-pulse context
+                    // Create notifications for mentioned users
                     if (context) {
-                        await createMentionNotifications(context, session.user.id, pulseId, null, pulseId);
+                        const mentions = parseMentions(context).mentions;
+                        for (const username of mentions) {
+                            try {
+                                const { data: mentionedUser } = await supabaseClient
+                                    .from('user_profiles')
+                                    .select('id')
+                                    .eq('username', username)
+                                    .single();
+                                
+                                if (mentionedUser && mentionedUser.id !== session.user.id && mentionedUser.id !== pulse.user_id) {
+                                    await createNotification(
+                                        'mention',
+                                        session.user.id,
+                                        mentionedUser.id,
+                                        pulseId,
+                                        null,
+                                        `${session.user.email.split('@')[0]} mentioned you in a re-pulse`
+                                    );
+                                }
+                            } catch (err) {
+                                console.error('Error creating mention notification:', err);
+                            }
+                        }
                     }
                     
                     showToast(context ? 'Re-pulsed with context!' : 'Re-pulsed!', 'success');
@@ -3596,7 +3650,7 @@
                     currentRepulseModal = null;
                 }
                 
-                // Reload feed to show updated re-pulses
+                // Reload the pulse to show updated re-pulse context
                 setTimeout(() => loadInitialPulses(), 500);
                 
             } catch (error) {
@@ -3725,15 +3779,18 @@
                         </div>
                         <div class="modal-body">
                             <form id="commentForm">
-                                <textarea 
-                                    class="caption-input" 
-                                    id="commentText" 
-                                    placeholder="Write your comment... Use @ to mention people"
-                                    maxlength="500"
-                                    rows="3"
-                                    aria-label="Comment text"
-                                ></textarea>
-                                <div class="mentions-autocomplete" id="comment-mentions"></div>
+                                <div style="position: relative;">
+                                    <textarea 
+                                        class="caption-input" 
+                                        id="commentText" 
+                                        placeholder="Write your comment... Use @ to mention people"
+                                        maxlength="500"
+                                        rows="3"
+                                        aria-label="Comment text"
+                                    ></textarea>
+                                    <div id="commentMentionCounter" class="mention-counter">0/10 mentions</div>
+                                    <div id="commentMentionAutocomplete" class="mention-autocomplete"></div>
+                                </div>
                                 <div class="modal-footer" style="border-top: none; padding-top: 0;">
                                     <button type="submit" class="modal-btn modal-btn-post">Post Comment</button>
                                 </div>
@@ -3744,6 +3801,10 @@
                 
                 document.body.appendChild(commentModal);
                 
+                // Setup mention autocomplete for comment
+                const commentTextarea = commentModal.querySelector('#commentText');
+                setupMentionAutocomplete(commentTextarea, 'commentMentionAutocomplete', 'commentMentionCounter');
+                
                 const closeBtn = commentModal.querySelector('#closeCommentModal');
                 closeBtn.addEventListener('click', () => commentModal.remove());
                 
@@ -3752,10 +3813,6 @@
                         commentModal.remove();
                     }
                 });
-                
-                // Setup mentions autocomplete for comment
-                const commentTextarea = commentModal.querySelector('#commentText');
-                setupMentionsAutocomplete(commentTextarea, 'comment-mentions');
                 
                 const commentForm = commentModal.querySelector('#commentForm');
                 commentForm.addEventListener('submit', async (e) => {
@@ -3767,25 +3824,74 @@
                         return;
                     }
                     
+                    // Check mention count
+                    const mentionCount = countMentions(commentText);
+                    if (mentionCount > 10) {
+                        showToast('Cannot mention more than 10 users in a comment', 'error');
+                        return;
+                    }
+                    
                     try {
-                        const { error } = await supabaseClient
+                        const { data: comment, error } = await supabaseClient
                             .from('pulse_comments')
                             .insert({
                                 pulse_id: pulseId,
                                 user_id: session.user.id,
-                                comment_text: sanitizeHTML(commentText),
+                                comment_text: commentText,
                                 likes_count: 0
-                            });
+                            })
+                            .select()
+                            .single();
                         
                         if (error) throw error;
                         
                         showToast('Comment posted successfully!', 'success');
                         commentModal.remove();
                         
-                        updateCommentCount(pulseId, 1);
+                        // Create notification for pulse creator
+                        const { data: pulse } = await supabaseClient
+                            .from('pulses')
+                            .select('user_id')
+                            .eq('id', pulseId)
+                            .single();
                         
-                        // Create notifications for mentions in comment
-                        await createMentionNotifications(commentText, session.user.id, pulseId, pulseId);
+                        if (pulse && pulse.user_id !== session.user.id) {
+                            await createNotification(
+                                'comment',
+                                session.user.id,
+                                pulse.user_id,
+                                pulseId,
+                                comment.id,
+                                `${session.user.email.split('@')[0]} commented on your pulse`
+                            );
+                        }
+                        
+                        // Create notifications for mentioned users
+                        const mentions = parseMentions(commentText).mentions;
+                        for (const username of mentions) {
+                            try {
+                                const { data: mentionedUser } = await supabaseClient
+                                    .from('user_profiles')
+                                    .select('id')
+                                    .eq('username', username)
+                                    .single();
+                                
+                                if (mentionedUser && mentionedUser.id !== session.user.id && mentionedUser.id !== pulse.user_id) {
+                                    await createNotification(
+                                        'mention',
+                                        session.user.id,
+                                        mentionedUser.id,
+                                        pulseId,
+                                        comment.id,
+                                        `${session.user.email.split('@')[0]} mentioned you in a comment`
+                                    );
+                                }
+                            } catch (err) {
+                                console.error('Error creating mention notification:', err);
+                            }
+                        }
+                        
+                        updateCommentCount(pulseId, 1);
                         
                     } catch (error) {
                         console.error('Comment error:', error);
@@ -4018,6 +4124,7 @@
                 editingPulseData = pulse;
                 
                 document.getElementById('editCaption').value = pulse.caption || '';
+                updateMentionCounter(document.getElementById('editCaption'), 'editMentionCounter');
                 
                 const editMediaPreview = document.getElementById('editMediaPreview');
                 editMediaPreview.style.display = 'none';
@@ -4133,9 +4240,9 @@
                 
                 document.getElementById('editModal').style.display = 'flex';
                 
-                // Setup mentions autocomplete for edit modal
-                const editCaption = document.getElementById('editCaption');
-                setupMentionsAutocomplete(editCaption, 'edit-caption-mentions');
+                // Setup mention autocomplete for edit modal
+                const editCaptionTextarea = document.getElementById('editCaption');
+                setupMentionAutocomplete(editCaptionTextarea, 'editMentionAutocomplete', 'editMentionCounter');
                 
             } catch (error) {
                 console.error('Error loading pulse for edit:', error);
@@ -4166,7 +4273,7 @@
             }
         }
         
-        // UPDATED: Show Re-Pulse Modal with mentions support
+        // Show Re-Pulse Modal
         function showRePulseModal(pulseId, event) {
             if (currentRepulseModal) {
                 currentRepulseModal.remove();
@@ -4184,14 +4291,17 @@
                             <i class="fas fa-times"></i>
                         </button>
                     </div>
-                    <textarea 
-                        class="repulse-context-input" 
-                        id="repulseContext" 
-                        placeholder="Add your thoughts (optional, max 140 chars). Use @ to mention people."
-                        maxlength="140"
-                        aria-label="Re-pulse context"
-                    ></textarea>
-                    <div class="mentions-autocomplete" id="repulse-mentions"></div>
+                    <div style="position: relative;">
+                        <textarea 
+                            class="repulse-context-input" 
+                            id="repulseContext" 
+                            placeholder="Add your thoughts (optional, max 140 chars). Use @ to mention people"
+                            maxlength="140"
+                            aria-label="Re-pulse context"
+                        ></textarea>
+                        <div id="repulseMentionCounter" class="mention-counter">0/10 mentions</div>
+                        <div id="repulseMentionAutocomplete" class="mention-autocomplete"></div>
+                    </div>
                     <div class="repulse-modal-actions">
                         <button class="repulse-btn soft" id="softRepulse" data-pulse-id="${pulseId}">
                             Re-Pulse
@@ -4206,6 +4316,10 @@
             document.body.appendChild(repulseModal);
             currentRepulseModal = repulseModal;
             
+            // Setup mention autocomplete for repulse modal
+            const repulseContextTextarea = repulseModal.querySelector('#repulseContext');
+            setupMentionAutocomplete(repulseContextTextarea, 'repulseMentionAutocomplete', 'repulseMentionCounter');
+            
             const closeBtn = repulseModal.querySelector('#closeRepulseModal');
             closeBtn.addEventListener('click', () => {
                 repulseModal.remove();
@@ -4218,10 +4332,6 @@
                     currentRepulseModal = null;
                 }
             });
-            
-            // Setup mentions autocomplete for re-pulse context
-            const repulseContext = repulseModal.querySelector('#repulseContext');
-            setupMentionsAutocomplete(repulseContext, 'repulse-mentions');
             
             const softRepulseBtn = repulseModal.querySelector('#softRepulse');
             const contextualRepulseBtn = repulseModal.querySelector('#contextualRepulse');
@@ -4301,6 +4411,13 @@
                 
                 const caption = document.getElementById('editCaption').value.trim();
                 
+                // Check mention count
+                const mentionCount = countMentions(caption);
+                if (mentionCount > 10) {
+                    showToast('Cannot mention more than 10 users in a pulse', 'error');
+                    return;
+                }
+                
                 let mediaData = null;
                 if (editSelectedMedia) {
                     mediaData = await uploadMedia(editSelectedMedia);
@@ -4339,6 +4456,31 @@
                     .eq('id', editingPulseId);
                 
                 if (error) throw error;
+                
+                // Create notifications for mentioned users
+                const mentions = parseMentions(caption).mentions;
+                for (const username of mentions) {
+                    try {
+                        const { data: mentionedUser } = await supabaseClient
+                            .from('user_profiles')
+                            .select('id')
+                            .eq('username', username)
+                            .single();
+                        
+                        if (mentionedUser && mentionedUser.id !== currentUserId) {
+                            await createNotification(
+                                'mention',
+                                currentUserId,
+                                mentionedUser.id,
+                                editingPulseId,
+                                null,
+                                `${currentSession.user.email.split('@')[0]} mentioned you in a pulse`
+                            );
+                        }
+                    } catch (err) {
+                        console.error('Error creating mention notification:', err);
+                    }
+                }
                 
                 showToast('Pulse updated successfully!', 'success');
                 
@@ -4523,7 +4665,7 @@
             });
         }
         
-        // UPDATED: Optimized pulse fetching with re-pulse user details
+        // Optimized pulse fetching with AbortController
         async function fetchPulses(limit = 10, offset = 0, signal = null) {
             if (isFeedLoading) {
                 return [];
@@ -4618,35 +4760,38 @@
                     });
                 }
                 
-                // UPDATED: Fetch repulses with user details
+                // Fetch repulses count and context with user info
                 const { data: repulsesData, error: repulsesError } = await supabaseClient
                     .from('pulse_repulses')
                     .select(`
                         pulse_id, 
                         context, 
                         created_at,
-                        user_id,
-                        user_profiles!pulse_repulses_user_id_fkey (username, full_name)
+                        user_profiles!pulse_repulses_user_id_fkey (
+                            username,
+                            full_name,
+                            avatar_url
+                        )
                     `)
                     .in('pulse_id', pulseIds)
-                    .order('created_at', { ascending: false });
+                    .order('created_at', { ascending: true });
                 
                 const repulsesCountMap = {};
-                const repulsesDataMap = {};
+                const repulsesContextMap = {};
                 if (!repulsesError && repulsesData) {
                     repulsesData.forEach(repulse => {
-                        const pulseId = repulse.pulse_id;
-                        repulsesCountMap[pulseId] = (repulsesCountMap[pulseId] || 0) + 1;
+                        repulsesCountMap[repulse.pulse_id] = (repulsesCountMap[repulse.pulse_id] || 0) + 1;
                         
-                        if (!repulsesDataMap[pulseId]) {
-                            repulsesDataMap[pulseId] = [];
+                        if (!repulsesContextMap[repulse.pulse_id]) {
+                            repulsesContextMap[repulse.pulse_id] = [];
                         }
                         
-                        repulsesDataMap[pulseId].push({
-                            username: repulse.user_profiles?.username || 'unknown',
-                            full_name: repulse.user_profiles?.full_name || '',
+                        repulsesContextMap[repulse.pulse_id].push({
                             context: repulse.context,
-                            created_at: repulse.created_at
+                            username: repulse.user_profiles?.username,
+                            full_name: repulse.user_profiles?.full_name,
+                            created_at: repulse.created_at,
+                            hasContext: !!repulse.context
                         });
                     });
                 }
@@ -4657,7 +4802,7 @@
                     taps_count: tapsCountMap[pulse.id] || 0,
                     comments_count: commentsCountMap[pulse.id] || 0,
                     repulses_count: repulsesCountMap[pulse.id] || 0,
-                    repulses_data: repulsesDataMap[pulse.id] || []
+                    repulse_contexts: repulsesContextMap[pulse.id] || []
                 }));
                 
                 return enrichedPulses;
@@ -4751,7 +4896,6 @@
             });
         }
         
-        // UPDATED: Create Pulse Card with re-pulse display and mentions
         function createPulseCard(pulse, userInteractions) {
             const profile = pulse;
             const fullName = profile.full_name || profile.email?.split('@')[0] || 'User';
@@ -4773,9 +4917,6 @@
             const isOwnPulse = pulse.user_id === currentUserId;
             const isConnected = userConnections.has(pulse.user_id);
             
-            // Parse mentions in pulse caption
-            const parsedCaption = parseMentions(pulse.caption || '');
-            
             const card = document.createElement('article');
             card.className = 'pulse-card';
             card.dataset.pulseId = pulse.id;
@@ -4792,9 +4933,8 @@
                     !e.target.closest('.ak-menu') &&
                     !e.target.closest('.reaction-menu') &&
                     !e.target.closest('.repulse-context') &&
-                    !e.target.closest('.repulse-item') &&
-                    !e.target.closest('.show-more-repulses') &&
-                    !e.target.closest('.mention-link')) {
+                    !e.target.closest('.mention') &&
+                    !e.target.closest('.repulse-expand-toggle')) {
                     
                     clickTimer = setTimeout(() => {
                         viewPulseDetail(pulse.id);
@@ -4896,48 +5036,71 @@
                 }
             }
             
-            // UPDATED: Re-Pulse display logic
-            let repulseDisplayHTML = '';
-            if (pulse.repulses_data && pulse.repulses_data.length > 0) {
-                // Show up to 2 re-pulses by default
-                const showAllRepulses = pulse.repulses_data.length <= 2;
-                const displayRepulses = showAllRepulses ? pulse.repulses_data : pulse.repulses_data.slice(0, 2);
+            // UPDATED: Add repulse context with usernames and expand/collapse
+            let repulseContextHTML = '';
+            if (pulse.repulse_contexts && pulse.repulse_contexts.length > 0) {
+                const hasContext = pulse.repulse_contexts.some(ctx => ctx.hasContext);
+                const hasMultiple = pulse.repulse_contexts.length > 2;
                 
-                repulseDisplayHTML = `
-                    <div class="repulses-container">
-                `;
-                
-                displayRepulses.forEach((repulse, index) => {
-                    if (repulse.context) {
-                        // Contextual re-pulse
-                        repulseDisplayHTML += `
-                            <div class="repulse-item">
-                                <div class="repulse-item-user">@${repulse.username} re-pulsed with context:</div>
-                                <div class="repulse-item-context">${sanitizeHTML(repulse.context)}</div>
-                            </div>
-                        `;
-                    } else {
-                        // Soft re-pulse
-                        repulseDisplayHTML += `
-                            <div class="repulse-item">
-                                <div class="repulse-item-user">@${repulse.username} re-pulsed this pulse</div>
+                if (hasContext) {
+                    // Show contextual re-pulses
+                    const contextualRepulses = pulse.repulse_contexts.filter(ctx => ctx.hasContext);
+                    const latestContextual = contextualRepulses[contextualRepulses.length - 1];
+                    
+                    if (latestContextual) {
+                        const otherContextual = contextualRepulses.slice(0, -1);
+                        const hasHiddenContextual = otherContextual.length > 0;
+                        
+                        repulseContextHTML = `
+                            <div class="repulse-context">
+                                <div class="repulse-context-user">@${latestContextual.username || 'user'} re-pulsed with context:</div>
+                                <div>${sanitizeHTML(latestContextual.context)}</div>
+                                ${hasMultiple ? `
+                                    <div class="repulse-hidden-contexts" id="hidden-repulses-${pulse.id}">
+                                        ${otherContextual.map(ctx => `
+                                            <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(245, 158, 11, 0.2);">
+                                                <div class="repulse-context-user">@${ctx.username || 'user'} re-pulsed with context:</div>
+                                                <div>${sanitizeHTML(ctx.context)}</div>
+                                            </div>
+                                        `).join('')}
+                                    </div>
+                                    <button class="repulse-expand-toggle" onclick="toggleHiddenRepulses('${pulse.id}')" data-pulse-id="${pulse.id}">
+                                        <i class="fas fa-chevron-down"></i>
+                                        Show ${otherContextual.length} more re-pulse${otherContextual.length !== 1 ? 's' : ''}
+                                    </button>
+                                ` : ''}
                             </div>
                         `;
                     }
-                });
-                
-                // Show "Show more" button if there are more than 2 re-pulses
-                if (!showAllRepulses) {
-                    repulseDisplayHTML += `
-                        <button class="show-more-repulses" data-pulse-id="${pulse.id}" data-expanded="false">
-                            <i class="fas fa-chevron-down"></i>
-                            Show ${pulse.repulses_data.length - 2} more re-pulses
-                        </button>
+                } else {
+                    // Show soft re-pulses
+                    const latestRepulse = pulse.repulse_contexts[pulse.repulse_contexts.length - 1];
+                    const otherRepulses = pulse.repulse_contexts.slice(0, -1);
+                    const hasHiddenRepulses = otherRepulses.length > 0;
+                    
+                    repulseContextHTML = `
+                        <div class="repulse-context">
+                            <div class="repulse-context-user">@${latestRepulse.username || 'user'} re-pulsed this pulse</div>
+                            ${hasMultiple ? `
+                                <div class="repulse-hidden-contexts" id="hidden-repulses-${pulse.id}">
+                                    ${otherRepulses.map(ctx => `
+                                        <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(245, 158, 11, 0.2);">
+                                            <div class="repulse-context-user">@${ctx.username || 'user'} re-pulsed this pulse</div>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                                <button class="repulse-expand-toggle" onclick="toggleHiddenRepulses('${pulse.id}')" data-pulse-id="${pulse.id}">
+                                    <i class="fas fa-chevron-down"></i>
+                                    Show ${otherRepulses.length} more re-pulse${otherRepulses.length !== 1 ? 's' : ''}
+                                </button>
+                            ` : ''}
+                        </div>
                     `;
                 }
-                
-                repulseDisplayHTML += `</div>`;
             }
+            
+            // Parse mentions in caption
+            const captionHTML = pulse.caption ? parseMentions(pulse.caption).text : '';
             
             card.innerHTML = `
                 <div class="pulse-header">
@@ -4963,9 +5126,9 @@
                 ` : ''}
                 
                 <div class="pulse-content">
-                    ${pulse.caption ? `<p class="pulse-text">${parsedCaption.text}</p>` : ''}
+                    ${captionHTML ? `<p class="pulse-text">${captionHTML}</p>` : ''}
                     
-                    ${repulseDisplayHTML}
+                    ${repulseContextHTML}
                     
                     ${mediaHTML}
                 </div>
@@ -4978,7 +5141,7 @@
                         <i class="fas fa-comment" aria-hidden="true"></i> ${pulse.comments_count || 0}
                     </button>
                     <button class="action-button repulse-btn ${isRepulsed ? 'repulsed' : ''}" data-pulse-id="${pulse.id}" aria-label="${isRepulsed ? 'Remove re-pulse' : 'Re-pulse this'}">
-                        <i class="fas fa-retweet" aria-hidden="true"></i> Re-Pulse
+                        <i class="fas fa-retweet" aria-hidden="true"></i> ${pulse.repulses_count || 0}
                     </button>
                     <button class="action-button save-btn ${isSaved ? 'saved' : ''}" data-pulse-id="${pulse.id}" aria-label="${isSaved ? 'Remove from saved' : 'Save this pulse'}">
                         <i class="${isSaved ? 'fas' : 'far'} fa-bookmark" aria-hidden="true"></i> ${isSaved ? 'Saved' : 'Save'}
@@ -4991,37 +5154,6 @@
                     ${pulse.repulses_count > 0 ? `<span class="stat-item">${pulse.repulses_count} re-pulses</span>` : ''}
                 </div>
             `;
-            
-            // Add event listener for "Show more" re-pulses
-            const showMoreBtn = card.querySelector('.show-more-repulses');
-            if (showMoreBtn) {
-                showMoreBtn.addEventListener('click', function(e) {
-                    e.stopPropagation();
-                    const pulseId = this.dataset.pulseId;
-                    const isExpanded = this.dataset.expanded === 'true';
-                    const repulsesContainer = this.closest('.repulses-container');
-                    
-                    if (isExpanded) {
-                        // Collapse: show only first 2
-                        const allItems = repulsesContainer.querySelectorAll('.repulse-item');
-                        allItems.forEach((item, index) => {
-                            if (index >= 2) {
-                                item.style.display = 'none';
-                            }
-                        });
-                        this.innerHTML = '<i class="fas fa-chevron-down"></i> Show ' + (allItems.length - 2) + ' more re-pulses';
-                        this.dataset.expanded = 'false';
-                    } else {
-                        // Expand: show all
-                        const allItems = repulsesContainer.querySelectorAll('.repulse-item');
-                        allItems.forEach(item => {
-                            item.style.display = 'block';
-                        });
-                        this.innerHTML = '<i class="fas fa-chevron-up"></i> Show less';
-                        this.dataset.expanded = 'true';
-                    }
-                });
-            }
             
             if (hasMedia && mediaType === 'video') {
                 setTimeout(() => {
@@ -5059,6 +5191,15 @@
             repulseBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 showRePulseModal(pulse.id, e);
+            });
+            
+            // Add click handlers for mentions in caption
+            card.querySelectorAll('.mention').forEach(mention => {
+                mention.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const username = mention.dataset.username;
+                    navigateToProfile(username);
+                });
             });
             
             const connectBtn = card.querySelector('.pulse-connect-btn');
@@ -5108,6 +5249,23 @@
             return card;
         }
         
+        // NEW: Toggle hidden re-pulses
+        function toggleHiddenRepulses(pulseId) {
+            const hiddenDiv = document.getElementById(`hidden-repulses-${pulseId}`);
+            const button = document.querySelector(`button[data-pulse-id="${pulseId}"]`);
+            
+            if (!hiddenDiv || !button) return;
+            
+            if (hiddenDiv.classList.contains('expanded')) {
+                hiddenDiv.classList.remove('expanded');
+                const count = hiddenDiv.children.length;
+                button.innerHTML = `<i class="fas fa-chevron-down"></i> Show ${count} more re-pulse${count !== 1 ? 's' : ''}`;
+            } else {
+                hiddenDiv.classList.add('expanded');
+                button.innerHTML = `<i class="fas fa-chevron-up"></i> Hide re-pulses`;
+            }
+        }
+        
         function cleanupResources() {
             pauseAllVideos();
             videoPlayers.clear();
@@ -5128,11 +5286,6 @@
             if (currentRepulseModal) {
                 currentRepulseModal.remove();
                 currentRepulseModal = null;
-            }
-            
-            if (currentMentionsAutocomplete) {
-                currentMentionsAutocomplete.remove();
-                currentMentionsAutocomplete = null;
             }
         }
         
@@ -5333,7 +5486,8 @@
                 toggleSwitch.classList.remove('active');
                 seriesOptions.classList.remove('active');
                 updatePostButton();
-                mentionedUsers.clear();
+                updateMentionCounter(captionInput, 'mentionCounter');
+                hideMentionAutocomplete('mentionAutocomplete');
             }
             
             async function createPulse() {
@@ -5351,10 +5505,10 @@
                         return;
                     }
                     
-                    // Anti-abuse: Check mention count
-                    const mentions = extractMentions(caption);
-                    if (mentions.length > 10) {
-                        showToast('Cannot mention more than 10 users per Pulse', 'error');
+                    // Check mention count
+                    const mentionCount = countMentions(caption);
+                    if (mentionCount > 10) {
+                        showToast('Cannot mention more than 10 users in a pulse', 'error');
                         return;
                     }
                     
@@ -5372,7 +5526,7 @@
                     
                     const pulseData = {
                         user_id: session.user.id,
-                        caption: sanitizeHTML(caption) || null,
+                        caption: caption || null,
                         media_url: mediaData?.url || null,
                         media_type: mediaData?.type || 'none',
                         aspect_ratio: '9:16',
@@ -5463,8 +5617,30 @@
                         }
                     }
                     
-                    // Create notifications for mentions
-                    await createMentionNotifications(caption, session.user.id, pulse.id);
+                    // Create notifications for mentioned users
+                    const mentions = parseMentions(caption).mentions;
+                    for (const username of mentions) {
+                        try {
+                            const { data: mentionedUser } = await supabaseClient
+                                .from('user_profiles')
+                                .select('id')
+                                .eq('username', username)
+                                .single();
+                            
+                            if (mentionedUser && mentionedUser.id !== session.user.id) {
+                                await createNotification(
+                                    'mention',
+                                    session.user.id,
+                                    mentionedUser.id,
+                                    pulse.id,
+                                    null,
+                                    `${session.user.email.split('@')[0]} mentioned you in a pulse`
+                                );
+                            }
+                        } catch (err) {
+                            console.error('Error creating mention notification:', err);
+                        }
+                    }
                     
                     showToast('Pulse posted successfully!', 'success');
                     
@@ -5565,10 +5741,13 @@
                 seriesOptions.classList.toggle('active', isSeriesMode);
             });
             
-            captionInput.addEventListener('input', updatePostButton);
+            captionInput.addEventListener('input', () => {
+                updatePostButton();
+                updateMentionCounter(captionInput, 'mentionCounter');
+            });
             
-            // Setup mentions autocomplete for create pulse modal
-            setupMentionsAutocomplete(captionInput, 'caption-mentions');
+            // Setup mention autocomplete for create modal
+            setupMentionAutocomplete(captionInput, 'mentionAutocomplete', 'mentionCounter');
             
             postPulseBtn.addEventListener('click', createPulse);
             
