@@ -517,6 +517,73 @@
             background: rgba(245, 158, 11, 0.2);
         }
         
+        /* NEW: Continue Series Button in Series Label */
+        .continue-series-btn {
+            background: rgba(245, 158, 11, 0.2);
+            border: 1px solid var(--warm-gold);
+            color: var(--warm-gold);
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+            margin-top: 12px;
+        }
+        
+        .continue-series-btn:hover {
+            background: rgba(245, 158, 11, 0.3);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(245, 158, 11, 0.2);
+        }
+        
+        /* NEW: Series Navigation */
+        .series-navigation {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 20px;
+            background: rgba(15, 23, 42, 0.6);
+            border-radius: 12px;
+            margin: 0 20px 16px;
+            border: 1px solid rgba(245, 158, 11, 0.2);
+        }
+        
+        .series-prev, .series-next {
+            background: rgba(245, 158, 11, 0.1);
+            border: 1px solid rgba(245, 158, 11, 0.3);
+            color: var(--warm-gold);
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+        }
+        
+        .series-prev:hover:not(:disabled),
+        .series-next:hover:not(:disabled) {
+            background: rgba(245, 158, 11, 0.2);
+            transform: translateY(-1px);
+        }
+        
+        .series-prev:disabled,
+        .series-next:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .series-title {
+            font-weight: 600;
+            color: var(--soft-white);
+            text-align: center;
+            flex: 1;
+        }
+        
         /* Media Container - Updated Video Player */
         .media-container {
             width: 100%;
@@ -1566,6 +1633,89 @@
             justify-content: flex-end;
         }
         
+        /* NEW: Continue Series Modal */
+        .continue-series-modal {
+            background: var(--glass-bg);
+            border-radius: 16px;
+            padding: 24px;
+            min-width: 300px;
+            max-width: 400px;
+            border: 1px solid var(--glass-border);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(20px);
+        }
+        
+        .continue-series-modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .continue-series-modal-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--soft-white);
+        }
+        
+        .continue-series-options {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        
+        .continue-series-option {
+            padding: 12px;
+            border: 1px solid var(--glass-border);
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: left;
+            color: var(--soft-white);
+            font-family: 'Inter', sans-serif;
+            font-size: 14px;
+        }
+        
+        .continue-series-option:hover {
+            background: var(--hover-overlay);
+            border-color: var(--warm-gold);
+        }
+        
+        .continue-series-option.active {
+            border-color: var(--warm-gold);
+            background: rgba(245, 158, 11, 0.1);
+        }
+        
+        .continue-series-option h4 {
+            font-size: 16px;
+            margin-bottom: 4px;
+            color: var(--warm-gold);
+        }
+        
+        .continue-series-option p {
+            font-size: 12px;
+            color: var(--slate-grey);
+        }
+        
+        .continue-series-input {
+            width: 100%;
+            padding: 12px;
+            background: rgba(10, 14, 18, 0.6);
+            border: 1px solid var(--glass-border);
+            border-radius: 8px;
+            color: var(--soft-white);
+            font-family: 'Inter', sans-serif;
+            font-size: 14px;
+            margin-bottom: 16px;
+        }
+        
+        .continue-series-input:focus {
+            outline: none;
+            border-color: var(--warm-gold);
+        }
+        
         /* Toast Notifications */
         .toast-container {
             position: fixed;
@@ -1689,6 +1839,17 @@
                 font-size: 12px;
                 padding: 8px 4px;
             }
+            
+            .series-navigation {
+                flex-direction: column;
+                gap: 12px;
+                align-items: stretch;
+            }
+            
+            .series-title {
+                order: -1;
+                margin-bottom: 8px;
+            }
         }
         
         /* Custom Scrollbar */
@@ -1794,19 +1955,23 @@
                         <i class="fas fa-ellipsis-h"></i>
                     </button>
                     <div class="more-menu" id="moreMenu">
+                        <!-- UPDATED: Added Edit button that works properly -->
+                        <button class="menu-item" id="editPulseBtn" style="display: none;">
+                            <i class="fas fa-edit"></i>
+                            Edit Pulse
+                        </button>
                         <button class="menu-item" id="savePulseBtn">
                             <i class="far fa-bookmark"></i>
                             Save Pulse
                         </button>
-                        <!-- UPDATED: Continue Series Button - Now properly implemented -->
+                        <!-- UPDATED: Continue Series Button -->
                         <button class="menu-item" id="continueSeriesBtn" style="display: none;">
                             <i class="fas fa-layer-group"></i>
                             Continue Series
                         </button>
-                        <!-- UPDATED: Edit Button - Now properly implemented -->
-                        <button class="menu-item" id="editPulseBtn" style="display: none;">
-                            <i class="fas fa-edit"></i>
-                            Edit Pulse
+                        <button class="menu-item" id="addToSeriesBtn" style="display: none;">
+                            <i class="fas fa-plus-circle"></i>
+                            Add to Series
                         </button>
                         <button class="menu-item" id="reportPulseBtn">
                             <i class="far fa-flag"></i>
@@ -1824,9 +1989,20 @@
                 </div>
             </div>
             
-            <!-- NEW: Series Label -->
-            <div class="series-label" id="seriesLabel" style="display: none;">
-                PULSE SERIES · Part <span id="series-part">2</span> of <span id="series-total">5</span>
+            <!-- NEW: Series Label and Navigation -->
+            <div id="series-container">
+                <!-- Series label will be inserted here -->
+            </div>
+            
+            <!-- NEW: Series Navigation -->
+            <div class="series-navigation" id="seriesNavigation" style="display: none;">
+                <button class="series-prev" id="seriesPrev" disabled>
+                    <i class="fas fa-chevron-left"></i> Previous
+                </button>
+                <div class="series-title" id="seriesTitle"></div>
+                <button class="series-next" id="seriesNext" disabled>
+                    Next <i class="fas fa-chevron-right"></i>
+                </button>
             </div>
             
             <!-- Media Container -->
@@ -2065,49 +2241,45 @@
 
     <!-- NEW: Continue Series Modal -->
     <div id="continueSeriesModal" class="modal-overlay" style="display: none;">
-        <div class="share-modal" style="max-width: 500px;">
-            <div class="modal-header">
-                <h3 class="modal-title">Continue Series</h3>
-                <button class="close-modal" id="closeContinueSeriesModal">
+        <div class="continue-series-modal">
+            <div class="continue-series-modal-header">
+                <h3 class="continue-series-modal-title">Continue Series</h3>
+                <button class="repulse-modal-close" id="closeContinueSeriesModal" aria-label="Close modal">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
-            <div class="modal-body">
-                <div style="margin-bottom: 20px;">
-                    <p>You're continuing the series "<span id="currentSeriesTitle">Untitled Series</span>"</p>
-                    <p>Next part: <strong>Part <span id="nextSeriesPart">2</span></strong></p>
-                </div>
-                <div class="modal-footer">
-                    <button class="modal-btn modal-btn-cancel" id="cancelContinueSeries">Cancel</button>
-                    <button class="modal-btn modal-btn-post" id="confirmContinueSeries">Continue Series</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- NEW: Create New Series Modal -->
-    <div id="createSeriesModal" class="modal-overlay" style="display: none;">
-        <div class="share-modal" style="max-width: 500px;">
-            <div class="modal-header">
-                <h3 class="modal-title">Create New Series</h3>
-                <button class="close-modal" id="closeCreateSeriesModal">
-                    <i class="fas fa-times"></i>
+            <div class="continue-series-options">
+                <button class="continue-series-option active" id="continueExistingSeries">
+                    <h4>Continue Existing Series</h4>
+                    <p>Add another part to your current series</p>
+                </button>
+                <button class="continue-series-option" id="startNewSeries">
+                    <h4>Start New Series</h4>
+                    <p>Create a brand new series with this pulse</p>
                 </button>
             </div>
-            <div class="modal-body">
-                <div style="margin-bottom: 20px;">
-                    <label for="seriesTitle" style="display: block; margin-bottom: 8px; color: var(--soft-white);">Series Title</label>
-                    <input type="text" id="seriesTitle" class="composer-input" placeholder="Enter series title" style="width: 100%;">
-                    
-                    <label for="seriesDescription" style="display: block; margin-bottom: 8px; margin-top: 16px; color: var(--soft-white);">Description (Optional)</label>
-                    <textarea id="seriesDescription" class="composer-input" placeholder="Describe your series" rows="3" style="width: 100%;"></textarea>
-                    
-                    <label for="totalParts" style="display: block; margin-bottom: 8px; margin-top: 16px; color: var(--soft-white);">Total Planned Parts (Max: 50)</label>
-                    <input type="number" id="totalParts" class="composer-input" placeholder="10" min="2" max="50" value="10" style="width: 100%;">
+            <div id="continueSeriesForm" style="display: block;">
+                <input type="text" class="continue-series-input" id="seriesTitleInput" placeholder="Series Title (optional)" value="Pulse Series Part">
+                <input type="number" class="continue-series-input" id="seriesPartInput" placeholder="Part Number" value="2" min="2" max="50">
+                <div class="repulse-modal-actions">
+                    <button class="modal-repulse-btn soft" id="cancelContinueSeries">
+                        Cancel
+                    </button>
+                    <button class="modal-repulse-btn" id="confirmContinueSeries">
+                        Continue Series
+                    </button>
                 </div>
-                <div class="modal-footer">
-                    <button class="modal-btn modal-btn-cancel" id="cancelCreateSeries">Cancel</button>
-                    <button class="modal-btn modal-btn-post" id="confirmCreateSeries">Create Series</button>
+            </div>
+            <div id="startNewSeriesForm" style="display: none;">
+                <input type="text" class="continue-series-input" id="newSeriesTitle" placeholder="New Series Title">
+                <input type="text" class="continue-series-input" id="newSeriesDescription" placeholder="Series Description (optional)">
+                <div class="repulse-modal-actions">
+                    <button class="modal-repulse-btn soft" id="cancelNewSeries">
+                        Cancel
+                    </button>
+                    <button class="modal-repulse-btn" id="confirmNewSeries">
+                        Create Series
+                    </button>
                 </div>
             </div>
         </div>
@@ -2178,6 +2350,11 @@
         let currentReactionMenuPulseId = null;
         let currentRepulseModal = null;
         let userConnections = new Set();
+        
+        // NEW: Series variables
+        let currentSeries = null;
+        let seriesPulses = [];
+        let currentSeriesIndex = -1;
 
         async function initialize() {
             console.log('Starting Pulse Detail initialization...');
@@ -2458,18 +2635,10 @@
             try {
                 console.log('Loading pulse:', pulseId);
                 
-                // Fetch pulse data with series information
+                // Fetch pulse data
                 const { data: pulse, error } = await supabaseClient
                     .from('pulses')
-                    .select(`
-                        *,
-                        pulse_series (
-                            id,
-                            title,
-                            total_parts,
-                            created_by
-                        )
-                    `)
+                    .select('*')
                     .eq('id', pulseId)
                     .single();
                 
@@ -2539,26 +2708,13 @@
                     }
                 }
                 
-                // Show series label if part of a series
-                if (currentPulse.series_id && currentPulse.series_order) {
-                    document.getElementById('seriesLabel').style.display = 'inline-block';
-                    document.getElementById('series-part').textContent = currentPulse.series_order;
-                    
-                    try {
-                        const { data: series } = await supabaseClient
-                            .from('pulse_series')
-                            .select('total_parts')
-                            .eq('id', currentPulse.series_id)
-                            .single();
-                        
-                        if (series?.total_parts) {
-                            document.getElementById('series-total').textContent = series.total_parts;
-                        } else {
-                            document.getElementById('series-total').textContent = '?';
-                        }
-                    } catch (error) {
-                        console.log('Could not fetch series details');
-                        document.getElementById('series-total').textContent = '?';
+                // NEW: Load series information if part of a series
+                if (currentPulse.series_id) {
+                    await loadSeriesInformation();
+                } else {
+                    // Check if user is creator and show "Add to Series" button
+                    if (currentPulse.user_id === currentUserId) {
+                        document.getElementById('addToSeriesBtn').style.display = 'flex';
                     }
                 }
                 
@@ -2636,14 +2792,14 @@
                 }
                 
                 // UPDATED: Show edit/delete buttons if user owns the pulse
-                // Also show continue series button if user is creator
                 if (currentPulse.user_id === currentUserId) {
                     document.getElementById('deletePulseBtn').style.display = 'flex';
                     document.getElementById('editPulseBtn').style.display = 'flex';
                     document.getElementById('addToSeries').style.display = 'flex';
                     
-                    // Show continue series button if user is creator
+                    // Show continue series button if creator
                     document.getElementById('continueSeriesBtn').style.display = 'flex';
+                    document.getElementById('addToSeriesBtn').style.display = 'flex';
                 }
                 
                 // NEW: Check if user has tapped, re-pulsed, or saved this pulse
@@ -2654,6 +2810,121 @@
             } catch (error) {
                 console.error('Error loading pulse:', error);
                 showToast('Failed to load pulse', 'error');
+            }
+        }
+        
+        // NEW: Load series information
+        async function loadSeriesInformation() {
+            try {
+                // Load series details
+                const { data: series } = await supabaseClient
+                    .from('pulse_series')
+                    .select('*')
+                    .eq('id', currentPulse.series_id)
+                    .single();
+                
+                if (series) {
+                    currentSeries = series;
+                    
+                    // Load all pulses in this series
+                    const { data: seriesPulsesData } = await supabaseClient
+                        .from('pulses')
+                        .select('id, series_order, caption, created_at')
+                        .eq('series_id', currentPulse.series_id)
+                        .order('series_order', { ascending: true });
+                    
+                    if (seriesPulsesData) {
+                        seriesPulses = seriesPulsesData;
+                        
+                        // Find current pulse index in series
+                        currentSeriesIndex = seriesPulses.findIndex(p => p.id === pulseId);
+                        
+                        // Update series label
+                        updateSeriesLabel();
+                        
+                        // Update series navigation
+                        updateSeriesNavigation();
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading series information:', error);
+            }
+        }
+        
+        // NEW: Update series label
+        function updateSeriesLabel() {
+            const seriesContainer = document.getElementById('series-container');
+            
+            if (!currentSeries || currentSeriesIndex === -1) return;
+            
+            const currentPart = seriesPulses[currentSeriesIndex].series_order;
+            const totalParts = seriesPulses.length;
+            
+            let seriesLabelHTML = `
+                <div class="series-label" id="seriesLabel">
+                    PULSE SERIES · Part ${currentPart} of ${totalParts}
+                </div>
+            `;
+            
+            // Add continue series button if user is the creator and not at max parts
+            if (currentPulse.user_id === currentUserId && totalParts < 50) {
+                seriesLabelHTML += `
+                    <button class="continue-series-btn" id="continueSeriesLabelBtn">
+                        <i class="fas fa-plus"></i> Add Part ${totalParts + 1}
+                    </button>
+                `;
+            }
+            
+            seriesContainer.innerHTML = seriesLabelHTML;
+            
+            // Add event listener to continue series button
+            const continueSeriesLabelBtn = document.getElementById('continueSeriesLabelBtn');
+            if (continueSeriesLabelBtn) {
+                continueSeriesLabelBtn.addEventListener('click', showContinueSeriesModal);
+            }
+        }
+        
+        // NEW: Update series navigation
+        function updateSeriesNavigation() {
+            const seriesNavigation = document.getElementById('seriesNavigation');
+            const seriesPrevBtn = document.getElementById('seriesPrev');
+            const seriesNextBtn = document.getElementById('seriesNext');
+            const seriesTitle = document.getElementById('seriesTitle');
+            
+            if (seriesPulses.length <= 1) {
+                seriesNavigation.style.display = 'none';
+                return;
+            }
+            
+            seriesNavigation.style.display = 'flex';
+            
+            // Set series title
+            seriesTitle.textContent = currentSeries?.title || `Pulse Series Part ${currentPulse.series_order}`;
+            
+            // Enable/disable previous button
+            if (currentSeriesIndex > 0) {
+                seriesPrevBtn.disabled = false;
+                seriesPrevBtn.onclick = () => navigateToSeriesPulse(currentSeriesIndex - 1);
+            } else {
+                seriesPrevBtn.disabled = true;
+                seriesPrevBtn.onclick = null;
+            }
+            
+            // Enable/disable next button
+            if (currentSeriesIndex < seriesPulses.length - 1) {
+                seriesNextBtn.disabled = false;
+                seriesNextBtn.onclick = () => navigateToSeriesPulse(currentSeriesIndex + 1);
+            } else {
+                seriesNextBtn.disabled = true;
+                seriesNextBtn.onclick = null;
+            }
+        }
+        
+        // NEW: Navigate to series pulse
+        function navigateToSeriesPulse(index) {
+            if (index >= 0 && index < seriesPulses.length) {
+                const pulse = seriesPulses[index];
+                window.location.href = `pulse-content-detail.html?id=${pulse.id}`;
             }
         }
         
@@ -3173,6 +3444,139 @@
                 const context = repulseModal.querySelector('#repulseContext').value.trim();
                 handleRePulse(pulseId, context, e);
             });
+        }
+        
+        // NEW: Show Continue Series Modal
+        function showContinueSeriesModal() {
+            const modal = document.getElementById('continueSeriesModal');
+            modal.style.display = 'flex';
+            
+            // Set default values
+            if (currentSeries) {
+                document.getElementById('seriesTitleInput').value = currentSeries.title || 'Pulse Series Part';
+                document.getElementById('seriesPartInput').value = seriesPulses.length + 1;
+            } else {
+                document.getElementById('newSeriesTitle').value = '';
+                document.getElementById('newSeriesDescription').value = '';
+            }
+            
+            // Set up event listeners
+            document.getElementById('closeContinueSeriesModal').onclick = () => {
+                modal.style.display = 'none';
+            };
+            
+            modal.onclick = (e) => {
+                if (e.target === modal) {
+                    modal.style.display = 'none';
+                }
+            };
+            
+            document.getElementById('continueExistingSeries').onclick = () => {
+                document.getElementById('continueExistingSeries').classList.add('active');
+                document.getElementById('startNewSeries').classList.remove('active');
+                document.getElementById('continueSeriesForm').style.display = 'block';
+                document.getElementById('startNewSeriesForm').style.display = 'none';
+            };
+            
+            document.getElementById('startNewSeries').onclick = () => {
+                document.getElementById('startNewSeries').classList.add('active');
+                document.getElementById('continueExistingSeries').classList.remove('active');
+                document.getElementById('continueSeriesForm').style.display = 'none';
+                document.getElementById('startNewSeriesForm').style.display = 'block';
+            };
+            
+            document.getElementById('cancelContinueSeries').onclick = () => {
+                modal.style.display = 'none';
+            };
+            
+            document.getElementById('cancelNewSeries').onclick = () => {
+                modal.style.display = 'none';
+            };
+            
+            document.getElementById('confirmContinueSeries').onclick = handleContinueSeries;
+            document.getElementById('confirmNewSeries').onclick = handleStartNewSeries;
+        }
+        
+        // NEW: Handle Continue Series
+        async function handleContinueSeries() {
+            try {
+                const seriesTitle = document.getElementById('seriesTitleInput').value.trim();
+                const partNumber = parseInt(document.getElementById('seriesPartInput').value);
+                
+                if (partNumber < 2 || partNumber > 50) {
+                    showToast('Part number must be between 2 and 50', 'error');
+                    return;
+                }
+                
+                // Update series if title changed
+                if (seriesTitle !== currentSeries?.title) {
+                    const { error: updateError } = await supabaseClient
+                        .from('pulse_series')
+                        .update({ title: seriesTitle })
+                        .eq('id', currentPulse.series_id);
+                    
+                    if (updateError) throw updateError;
+                }
+                
+                // Redirect to create pulse page with series info
+                window.location.href = `create-pulse.html?series_id=${currentPulse.series_id}&part=${partNumber}&title=${encodeURIComponent(seriesTitle)}`;
+                
+            } catch (error) {
+                console.error('Error continuing series:', error);
+                showToast('Failed to continue series', 'error');
+            }
+        }
+        
+        // NEW: Handle Start New Series
+        async function handleStartNewSeries() {
+            try {
+                const seriesTitle = document.getElementById('newSeriesTitle').value.trim();
+                const seriesDescription = document.getElementById('newSeriesDescription').value.trim();
+                
+                if (!seriesTitle) {
+                    showToast('Please enter a series title', 'error');
+                    return;
+                }
+                
+                // Create new series
+                const { data: newSeries, error: seriesError } = await supabaseClient
+                    .from('pulse_series')
+                    .insert({
+                        title: seriesTitle,
+                        description: seriesDescription,
+                        creator_id: currentUserId,
+                        total_parts: 1,
+                        created_at: new Date().toISOString()
+                    })
+                    .select()
+                    .single();
+                
+                if (seriesError) throw seriesError;
+                
+                // Update current pulse to be part of this series (part 1)
+                const { error: updateError } = await supabaseClient
+                    .from('pulses')
+                    .update({
+                        series_id: newSeries.id,
+                        series_order: 1,
+                        is_series_start: true
+                    })
+                    .eq('id', pulseId);
+                
+                if (updateError) throw updateError;
+                
+                showToast('Series created and pulse added as Part 1', 'success');
+                
+                // Close modal and reload page
+                document.getElementById('continueSeriesModal').style.display = 'none';
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1500);
+                
+            } catch (error) {
+                console.error('Error creating new series:', error);
+                showToast('Failed to create new series', 'error');
+            }
         }
         
         // NEW: Handle Re-Pulse
@@ -3853,12 +4257,12 @@
             }
         }
         
-        // UPDATED: Load comments with comment likes
+        // FIXED: Load comments with correct foreign key relationship
         async function loadComments() {
             try {
                 console.log('Loading comments for pulse:', pulseId);
                 
-                // Fetch comments with user profiles
+                // FIXED: Use direct join with user_profiles table
                 const { data: comments, error } = await supabaseClient
                     .from('pulse_comments')
                     .select(`
@@ -3900,37 +4304,9 @@
                         };
                     }));
                     
-                    // Check which comments the current user has liked
-                    const commentIds = commentsWithUsers.map(comment => comment.id);
-                    const { data: userLikes } = await supabaseClient
-                        .from('pulse_comments_likes')
-                        .select('comment_id')
-                        .eq('user_id', currentUserId)
-                        .in('comment_id', commentIds);
-                    
-                    const likedCommentIds = new Set(userLikes?.map(like => like.comment_id) || []);
-                    
-                    commentsWithUsers.forEach(comment => {
-                        comment.is_liked = likedCommentIds.has(comment.id);
-                    });
-                    
                     displayComments(commentsWithUsers);
                     return;
                 }
-                
-                // Check which comments the current user has liked
-                const commentIds = comments.map(comment => comment.id);
-                const { data: userLikes } = await supabaseClient
-                    .from('pulse_comments_likes')
-                    .select('comment_id')
-                    .eq('user_id', currentUserId)
-                    .in('comment_id', commentIds);
-                
-                const likedCommentIds = new Set(userLikes?.map(like => like.comment_id) || []);
-                
-                comments.forEach(comment => {
-                    comment.is_liked = likedCommentIds.has(comment.id);
-                });
                 
                 displayComments(comments || []);
                 
@@ -4028,7 +4404,7 @@
             commentsThread.innerHTML = commentsHTML;
         }
         
-        // UPDATED: Enhanced comment posting with mentions
+        // FIXED: Enhanced comment posting with mentions
         async function postCommentWithMentions() {
             const commentInput = document.getElementById('commentInput');
             const commentText = commentInput.value.trim();
@@ -4067,7 +4443,6 @@
                 // Clear input
                 commentInput.value = '';
                 document.getElementById('postCommentBtn').disabled = true;
-                updateMentionCounter(commentInput, 'commentMentionCounter');
                 
                 // Create notification for pulse creator
                 if (pulseCreator && pulseCreator.id !== currentUserId) {
@@ -4120,7 +4495,7 @@
             }
         }
         
-        // UPDATED: Update comment count
+        // FIXED: Update comment count
         async function updateCommentCount() {
             try {
                 const { count, error } = await supabaseClient
@@ -4143,7 +4518,7 @@
             }
         }
         
-        // FIXED: Like Comment - Updated to use pulse_comments_likes table
+        // FIXED: likeComment function - using correct table name from schema
         async function likeComment(commentId, currentLikes) {
             if (isProcessingLike[commentId]) return;
             isProcessingLike[commentId] = true;
@@ -4155,7 +4530,8 @@
                     return;
                 }
                 
-                // Check if already liked using pulse_comments_likes table
+                // FIXED: Use pulse_comments_likes table instead of comment_likes
+                // Check if already liked
                 const { data: existingLike } = await supabaseClient
                     .from('pulse_comments_likes')
                     .select('id')
@@ -4167,7 +4543,7 @@
                 const likesSpan = document.getElementById(`comment-likes-${commentId}`);
                 
                 if (existingLike) {
-                    // Unlike
+                    // Unlike - FIXED: Use pulse_comments_likes table
                     const { error } = await supabaseClient
                         .from('pulse_comments_likes')
                         .delete()
@@ -4177,9 +4553,8 @@
                     
                     likeBtn.classList.remove('liked');
                     likesSpan.textContent = currentLikes - 1;
-                    showToast('Comment unliked', 'success');
                 } else {
-                    // Like
+                    // Like - FIXED: Use pulse_comments_likes table
                     const { error } = await supabaseClient
                         .from('pulse_comments_likes')
                         .insert({
@@ -4192,7 +4567,6 @@
                     
                     likeBtn.classList.add('liked');
                     likesSpan.textContent = currentLikes + 1;
-                    showToast('Comment liked!', 'success');
                     
                     // Get comment to notify owner
                     const { data: comment } = await supabaseClient
@@ -4359,150 +4733,7 @@
             }
         }
         
-        // NEW: Continue Series Functionality
-        async function continueSeries() {
-            try {
-                const { data: { session } } = await supabaseClient.auth.getSession();
-                if (!session) {
-                    showToast('Please login to continue series', 'error');
-                    return;
-                }
-                
-                // Check if user is the creator
-                if (currentPulse.user_id !== currentUserId) {
-                    showToast('Only the creator can continue a series', 'error');
-                    return;
-                }
-                
-                // Close the more menu
-                document.getElementById('moreMenu').classList.remove('active');
-                
-                // If pulse is already part of a series, continue it
-                if (currentPulse.series_id) {
-                    // Get series details
-                    const { data: series } = await supabaseClient
-                        .from('pulse_series')
-                        .select('*')
-                        .eq('id', currentPulse.series_id)
-                        .single();
-                    
-                    if (!series) {
-                        showToast('Series not found', 'error');
-                        return;
-                    }
-                    
-                    // Check if series has reached max parts
-                    if (series.total_parts && currentPulse.series_order >= series.total_parts) {
-                        showToast('Series has reached maximum number of parts', 'error');
-                        return;
-                    }
-                    
-                    // Show confirmation modal
-                    document.getElementById('currentSeriesTitle').textContent = series.title || 'Untitled Series';
-                    document.getElementById('nextSeriesPart').textContent = (currentPulse.series_order || 1) + 1;
-                    document.getElementById('continueSeriesModal').style.display = 'flex';
-                    
-                } else {
-                    // Pulse is not part of a series, create a new series
-                    document.getElementById('createSeriesModal').style.display = 'flex';
-                }
-                
-            } catch (error) {
-                console.error('Error continuing series:', error);
-                showToast('Failed to continue series', 'error');
-            }
-        }
-        
-        // NEW: Handle confirm continue series
-        async function confirmContinueSeries() {
-            try {
-                const { data: { session } } = await supabaseClient.auth.getSession();
-                if (!session) return;
-                
-                // Get series details
-                const { data: series } = await supabaseClient
-                    .from('pulse_series')
-                    .select('*')
-                    .eq('id', currentPulse.series_id)
-                    .single();
-                
-                if (!series) {
-                    showToast('Series not found', 'error');
-                    return;
-                }
-                
-                // Update series total parts if needed
-                const nextPart = (currentPulse.series_order || 1) + 1;
-                if (series.total_parts && nextPart > series.total_parts) {
-                    await supabaseClient
-                        .from('pulse_series')
-                        .update({ total_parts: nextPart })
-                        .eq('id', series.id);
-                }
-                
-                // Redirect to create pulse page with series info
-                window.location.href = `create-pulse.html?series_id=${series.id}&part=${nextPart}&continue=true`;
-                
-            } catch (error) {
-                console.error('Error confirming continue series:', error);
-                showToast('Failed to continue series', 'error');
-            }
-        }
-        
-        // NEW: Handle create new series
-        async function confirmCreateSeries() {
-            try {
-                const { data: { session } } = await supabaseClient.auth.getSession();
-                if (!session) return;
-                
-                const seriesTitle = document.getElementById('seriesTitle').value.trim();
-                const seriesDescription = document.getElementById('seriesDescription').value.trim();
-                const totalParts = parseInt(document.getElementById('totalParts').value) || 10;
-                
-                if (!seriesTitle) {
-                    showToast('Please enter a series title', 'error');
-                    return;
-                }
-                
-                if (totalParts < 2 || totalParts > 50) {
-                    showToast('Total parts must be between 2 and 50', 'error');
-                    return;
-                }
-                
-                // Create new series
-                const { data: newSeries, error } = await supabaseClient
-                    .from('pulse_series')
-                    .insert({
-                        title: seriesTitle,
-                        description: seriesDescription,
-                        total_parts: totalParts,
-                        created_by: currentUserId,
-                        created_at: new Date().toISOString()
-                    })
-                    .select()
-                    .single();
-                
-                if (error) throw error;
-                
-                // Update current pulse to be part of this series (part 1)
-                await supabaseClient
-                    .from('pulses')
-                    .update({
-                        series_id: newSeries.id,
-                        series_order: 1
-                    })
-                    .eq('id', pulseId);
-                
-                // Redirect to create pulse page for part 2
-                window.location.href = `create-pulse.html?series_id=${newSeries.id}&part=2&continue=true`;
-                
-            } catch (error) {
-                console.error('Error creating series:', error);
-                showToast('Failed to create series', 'error');
-            }
-        }
-        
-        // UPDATED: Initialize event listeners with new features
+        // Initialize event listeners with new features
         function initializeEventListeners() {
             // More options menu
             const moreBtn = document.getElementById('moreBtn');
@@ -4626,18 +4857,24 @@
                 moreMenu.classList.remove('active');
             });
             
-            // UPDATED: Continue series button
+            // UPDATED: Continue series button in menu
             const continueSeriesBtn = document.getElementById('continueSeriesBtn');
             if (continueSeriesBtn) {
-                continueSeriesBtn.addEventListener('click', continueSeries);
+                continueSeriesBtn.addEventListener('click', showContinueSeriesModal);
+            }
+            
+            // NEW: Add to series button
+            const addToSeriesBtn = document.getElementById('addToSeriesBtn');
+            if (addToSeriesBtn) {
+                addToSeriesBtn.addEventListener('click', showContinueSeriesModal);
             }
             
             // UPDATED: Edit pulse button
             const editPulseBtn = document.getElementById('editPulseBtn');
             if (editPulseBtn) {
                 editPulseBtn.addEventListener('click', () => {
+                    window.location.href = `create-pulse.html?edit=${pulseId}`;
                     moreMenu.classList.remove('active');
-                    window.location.href = `edit-pulse.html?id=${pulseId}`;
                 });
             }
             
@@ -4660,9 +4897,7 @@
             const postCommentBtn = document.getElementById('postCommentBtn');
             
             commentInput.addEventListener('input', () => {
-                const hasText = commentInput.value.trim().length > 0;
-                postCommentBtn.disabled = !hasText;
-                updateMentionCounter(commentInput, 'commentMentionCounter');
+                postCommentBtn.disabled = commentInput.value.trim().length === 0;
             });
             
             commentInput.addEventListener('keydown', (e) => {
@@ -4713,50 +4948,6 @@
                 }
             });
             
-            // NEW: Continue Series Modal
-            const closeContinueSeriesModal = document.getElementById('closeContinueSeriesModal');
-            const cancelContinueSeries = document.getElementById('cancelContinueSeries');
-            const confirmContinueSeriesBtn = document.getElementById('confirmContinueSeries');
-            
-            closeContinueSeriesModal.addEventListener('click', () => {
-                document.getElementById('continueSeriesModal').style.display = 'none';
-            });
-            
-            cancelContinueSeries.addEventListener('click', () => {
-                document.getElementById('continueSeriesModal').style.display = 'none';
-            });
-            
-            confirmContinueSeriesBtn.addEventListener('click', confirmContinueSeries);
-            
-            const continueSeriesModal = document.getElementById('continueSeriesModal');
-            continueSeriesModal.addEventListener('click', (e) => {
-                if (e.target === continueSeriesModal) {
-                    continueSeriesModal.style.display = 'none';
-                }
-            });
-            
-            // NEW: Create Series Modal
-            const closeCreateSeriesModal = document.getElementById('closeCreateSeriesModal');
-            const cancelCreateSeries = document.getElementById('cancelCreateSeries');
-            const confirmCreateSeriesBtn = document.getElementById('confirmCreateSeries');
-            
-            closeCreateSeriesModal.addEventListener('click', () => {
-                document.getElementById('createSeriesModal').style.display = 'none';
-            });
-            
-            cancelCreateSeries.addEventListener('click', () => {
-                document.getElementById('createSeriesModal').style.display = 'none';
-            });
-            
-            confirmCreateSeriesBtn.addEventListener('click', confirmCreateSeries);
-            
-            const createSeriesModal = document.getElementById('createSeriesModal');
-            createSeriesModal.addEventListener('click', (e) => {
-                if (e.target === createSeriesModal) {
-                    createSeriesModal.style.display = 'none';
-                }
-            });
-            
             // Listen for auth changes
             supabaseClient.auth.onAuthStateChange((event, session) => {
                 console.log('🔐 Auth state changed:', event);
@@ -4767,7 +4958,7 @@
             });
         }
         
-        // Existing helper functions
+        // Existing helper functions (showToast, viewCreatorProfile, etc.)
         function handleReport() {
             showToast('Report submitted. Our team will review this pulse.', 'success');
             document.getElementById('moreMenu').classList.remove('active');
