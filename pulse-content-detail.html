@@ -1098,6 +1098,14 @@
             flex-shrink: 0;
         }
         
+        .mention-suggestion-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 50%;
+            display: none;
+        }
+        
         .mention-suggestion-username {
             font-weight: 600;
             color: var(--soft-white);
@@ -1713,7 +1721,8 @@
         .comment-avatar img,
         .creator-avatar img,
         .user-avatar img,
-        .composer-avatar img {
+        .composer-avatar img,
+        .mention-suggestion-avatar img {
             width: 100%;
             height: 100%;
             border-radius: 50%;
@@ -2762,7 +2771,7 @@
                     .select('id')
                     .eq('pulse_id', pulseId)
                     .eq('user_id', session.user.id)
-                    .single();
+                    .maybeSingle();
                 
                 let isTapped;
                 
@@ -2961,7 +2970,7 @@
                     .eq('pulse_id', pulseId)
                     .eq('user_id', session.user.id)
                     .eq('reaction_type', reactionType)
-                    .single();
+                    .maybeSingle();
                 
                 const reactionBtn = e.currentTarget;
                 reactionBtn.classList.add('active');
@@ -3119,7 +3128,7 @@
                     .select('id')
                     .eq('pulse_id', pulseId)
                     .eq('user_id', session.user.id)
-                    .single();
+                    .maybeSingle();
                 
                 let isRepulsed;
                 
@@ -3186,7 +3195,7 @@
                                     .from('user_profiles')
                                     .select('id')
                                     .eq('username', username)
-                                    .single();
+                                    .maybeSingle();
                                 
                                 if (mentionedUser && mentionedUser.id !== session.user.id && mentionedUser.id !== pulseCreator.id) {
                                     await createNotification(
@@ -3242,7 +3251,7 @@
                     .select('id')
                     .eq('pulse_id', pulseId)
                     .eq('user_id', session.user.id)
-                    .single();
+                    .maybeSingle();
                 
                 let isSaved;
                 
@@ -3524,7 +3533,7 @@
             const newCursorPos = before.length + username.length + 2;
             textarea.setSelectionRange(newCursorPos, newCursorPos);
             
-            updateMentionCounter(textarea, textareaId === 'commentInput' ? 'commentMentionCounter' : 'mentionCounter');
+            updateMentionCounter(textarea, textareaId === 'commentInput' ? 'commentMentionCounter' : 'repulseMentionCounter');
             
             hideMentionAutocomplete(containerId);
             
@@ -3844,7 +3853,7 @@
                     return;
                 }
                 
-                const { error } = await supabaseClient
+                const { data: newComment, error } = await supabaseClient
                     .from('pulse_comments')
                     .insert({
                         pulse_id: pulseId,
@@ -3861,6 +3870,7 @@
                 // Clear input
                 commentInput.value = '';
                 document.getElementById('postCommentBtn').disabled = true;
+                document.getElementById('commentMentionCounter').textContent = '0/10 mentions';
                 
                 // Create notification for pulse creator
                 if (pulseCreator && pulseCreator.id !== currentUserId) {
@@ -3869,7 +3879,7 @@
                         currentUserId,
                         pulseCreator.id,
                         pulseId,
-                        null,
+                        newComment.id,
                         `${currentSession.user.email.split('@')[0]} has commented on your pulse`
                     );
                 }
@@ -3882,7 +3892,7 @@
                             .from('user_profiles')
                             .select('id')
                             .eq('username', username)
-                            .single();
+                            .maybeSingle();
                         
                         if (mentionedUser && mentionedUser.id !== currentUserId && mentionedUser.id !== pulseCreator.id) {
                             await createNotification(
@@ -3890,7 +3900,7 @@
                                 currentUserId,
                                 mentionedUser.id,
                                 pulseId,
-                                null,
+                                newComment.id,
                                 `${currentSession.user.email.split('@')[0]} has mentioned you in a comment`
                             );
                         }
@@ -3935,25 +3945,324 @@
             }
         }
         
-        // Rest of the existing functions (loadComments, likeComment, deleteComment, etc.)
-        // ... [Previous functions remain the same but updated to use new notification system]
+        // Load comments
+        async function loadComments() {
+            try {
+                const { data: comments, error } = await supabaseClient
+                    .from('pulse_comments')
+                    .select(`
+                        *,
+                        user_profiles!pulse_comments_user_id_fkey (
+                            id,
+                            username,
+                            full_name,
+                            avatar_url
+                        )
+                    `)
+                    .eq('pulse_id', pulseId)
+                    .is('is_removed', false)
+                    .order('created_at', { ascending: true });
+                
+                if (error) throw error;
+                
+                const commentsThread = document.getElementById('commentsThread');
+                commentsThread.innerHTML = '';
+                
+                if (!comments || comments.length === 0) {
+                    commentsThread.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-icon">
+                                <i class="far fa-comments"></i>
+                            </div>
+                            <div class="empty-title">No comments yet</div>
+                            <div class="empty-description">Be the first to share your thoughts on this pulse.</div>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                // Populate comments
+                comments.forEach(comment => {
+                    const commentElement = createCommentElement(comment);
+                    commentsThread.appendChild(commentElement);
+                });
+                
+                // Update comment count
+                document.getElementById('comment-count').textContent = comments.length;
+                
+            } catch (error) {
+                console.error('Error loading comments:', error);
+                showToast('Failed to load comments', 'error');
+            }
+        }
+        
+        function createCommentElement(comment) {
+            const commentItem = document.createElement('div');
+            commentItem.className = 'comment-item';
+            commentItem.id = `comment-${comment.id}`;
+            
+            const user = comment.user_profiles || {};
+            const initials = getInitials(user.full_name || user.username || 'User');
+            const commentTime = getTimeAgo(new Date(comment.created_at));
+            
+            // Parse mentions in comment text
+            const parsedComment = parseMentions(comment.comment_text);
+            
+            commentItem.innerHTML = `
+                <div class="comment-header">
+                    <div class="comment-avatar" onclick="viewUserProfile('${user.id}')">
+                        ${user.avatar_url ? `<img src="${user.avatar_url}" alt="${user.full_name || user.username}">` : `<span>${initials}</span>`}
+                    </div>
+                    <div class="comment-meta">
+                        <div class="comment-name" onclick="viewUserProfile('${user.id}')">${user.full_name || 'User'}</div>
+                        <div class="comment-handle">@${user.username || 'user'}</div>
+                        <div class="comment-time">${commentTime}</div>
+                    </div>
+                    ${currentUserId === comment.user_id ? `
+                        <div class="comment-options">
+                            <button class="comment-options-btn" onclick="showCommentOptions('${comment.id}')">
+                                <i class="fas fa-ellipsis-h"></i>
+                            </button>
+                            <div class="comment-options-menu" id="commentOptions-${comment.id}">
+                                <button class="comment-option-item" onclick="editComment('${comment.id}')">
+                                    <i class="fas fa-edit"></i> Edit
+                                </button>
+                                <button class="comment-option-item delete" onclick="deleteComment('${comment.id}')">
+                                    <i class="fas fa-trash"></i> Delete
+                                </button>
+                            </div>
+                        </div>
+                    ` : ''}
+                </div>
+                <div class="comment-text" id="commentText-${comment.id}">${parsedComment.text}</div>
+                <div class="comment-actions">
+                    <button class="comment-action like-comment" onclick="likeComment('${comment.id}')">
+                        <i class="far fa-heart"></i> <span id="commentLikes-${comment.id}">${comment.likes_count || 0}</span>
+                    </button>
+                </div>
+            `;
+            
+            return commentItem;
+        }
+        
+        function showCommentOptions(commentId) {
+            // Hide all other comment option menus
+            document.querySelectorAll('.comment-options-menu').forEach(menu => {
+                menu.classList.remove('active');
+            });
+            
+            const optionsMenu = document.getElementById(`commentOptions-${commentId}`);
+            optionsMenu.classList.toggle('active');
+            
+            // Close menu when clicking outside
+            setTimeout(() => {
+                document.addEventListener('click', function closeMenu(e) {
+                    if (!optionsMenu.contains(e.target) && !e.target.closest(`#commentOptions-${commentId}`)) {
+                        optionsMenu.classList.remove('active');
+                        document.removeEventListener('click', closeMenu);
+                    }
+                });
+            }, 10);
+        }
+        
+        async function editComment(commentId) {
+            try {
+                const { data: comment, error } = await supabaseClient
+                    .from('pulse_comments')
+                    .select('comment_text')
+                    .eq('id', commentId)
+                    .single();
+                
+                if (error) throw error;
+                
+                editingCommentId = commentId;
+                document.getElementById('editCommentInput').value = comment.comment_text;
+                document.getElementById('editCommentModal').style.display = 'flex';
+                
+                // Close the comment options menu
+                document.getElementById(`commentOptions-${commentId}`).classList.remove('active');
+                
+            } catch (error) {
+                console.error('Error loading comment for edit:', error);
+                showToast('Failed to load comment for editing', 'error');
+            }
+        }
+        
+        async function saveEditedComment() {
+            if (!editingCommentId) return;
+            
+            const newText = document.getElementById('editCommentInput').value.trim();
+            if (!newText) {
+                showToast('Comment cannot be empty', 'error');
+                return;
+            }
+            
+            try {
+                const { error } = await supabaseClient
+                    .from('pulse_comments')
+                    .update({ 
+                        comment_text: newText,
+                        edited_at: new Date().toISOString()
+                    })
+                    .eq('id', editingCommentId);
+                
+                if (error) throw error;
+                
+                // Update the comment text in the UI
+                const commentTextElement = document.getElementById(`commentText-${editingCommentId}`);
+                const parsedComment = parseMentions(newText);
+                commentTextElement.innerHTML = parsedComment.text;
+                
+                closeEditCommentModalFunc();
+                showToast('Comment updated', 'success');
+                
+            } catch (error) {
+                console.error('Error updating comment:', error);
+                showToast('Failed to update comment', 'error');
+            }
+        }
+        
+        async function deleteComment(commentId) {
+            if (!confirm('Are you sure you want to delete this comment?')) {
+                return;
+            }
+            
+            try {
+                const { error } = await supabaseClient
+                    .from('pulse_comments')
+                    .update({ is_removed: true })
+                    .eq('id', commentId);
+                
+                if (error) throw error;
+                
+                // Remove comment from UI
+                const commentElement = document.getElementById(`comment-${commentId}`);
+                if (commentElement) {
+                    commentElement.remove();
+                }
+                
+                // Update comment count
+                await updateCommentCount();
+                
+                showToast('Comment deleted', 'success');
+                
+            } catch (error) {
+                console.error('Error deleting comment:', error);
+                showToast('Failed to delete comment', 'error');
+            }
+        }
+        
+        async function likeComment(commentId) {
+            if (isProcessingLike[commentId]) return;
+            isProcessingLike[commentId] = true;
+            
+            try {
+                const { data: { session } } = await supabaseClient.auth.getSession();
+                if (!session) {
+                    showToast('Please login to like comments', 'error');
+                    return;
+                }
+                
+                // Check if already liked
+                const { data: existingLike } = await supabaseClient
+                    .from('comment_likes')
+                    .select('id')
+                    .eq('comment_id', commentId)
+                    .eq('user_id', session.user.id)
+                    .maybeSingle();
+                
+                const likeBtn = document.querySelector(`#comment-${commentId} .like-comment`);
+                const likesCountElement = document.getElementById(`commentLikes-${commentId}`);
+                let currentLikes = parseInt(likesCountElement.textContent) || 0;
+                
+                if (existingLike) {
+                    // Unlike
+                    const { error } = await supabaseClient
+                        .from('comment_likes')
+                        .delete()
+                        .eq('id', existingLike.id);
+                    
+                    if (error) throw error;
+                    
+                    currentLikes--;
+                    likeBtn.classList.remove('liked');
+                    likeBtn.innerHTML = `<i class="far fa-heart"></i> <span id="commentLikes-${commentId}">${currentLikes}</span>`;
+                } else {
+                    // Like
+                    const { error } = await supabaseClient
+                        .from('comment_likes')
+                        .insert({
+                            comment_id: commentId,
+                            user_id: session.user.id,
+                            created_at: new Date().toISOString()
+                        });
+                    
+                    if (error) throw error;
+                    
+                    currentLikes++;
+                    likeBtn.classList.add('liked');
+                    likeBtn.innerHTML = `<i class="fas fa-heart"></i> <span id="commentLikes-${commentId}">${currentLikes}</span>`;
+                    
+                    // Create notification for comment author
+                    try {
+                        const { data: comment } = await supabaseClient
+                            .from('pulse_comments')
+                            .select('user_id')
+                            .eq('id', commentId)
+                            .single();
+                        
+                        if (comment && comment.user_id !== session.user.id) {
+                            await createNotification(
+                                'comment_like',
+                                session.user.id,
+                                comment.user_id,
+                                pulseId,
+                                commentId,
+                                `${session.user.email.split('@')[0]} liked your comment`
+                            );
+                        }
+                    } catch (err) {
+                        console.error('Error creating like notification:', err);
+                    }
+                }
+                
+                // Update comment likes count in database
+                await supabaseClient
+                    .from('pulse_comments')
+                    .update({ likes_count: currentLikes })
+                    .eq('id', commentId);
+                
+            } catch (error) {
+                console.error('Error liking comment:', error);
+            } finally {
+                isProcessingLike[commentId] = false;
+            }
+        }
+        
+        function closeEditCommentModalFunc() {
+            document.getElementById('editCommentModal').style.display = 'none';
+            editingCommentId = null;
+            document.getElementById('editCommentInput').value = '';
+        }
         
         // Initialize event listeners with new features
         function initializeEventListeners() {
-            // More options menu
+            // More options menu - FIXED: Now properly clickable
             const moreBtn = document.getElementById('moreBtn');
             const moreMenu = document.getElementById('moreMenu');
             
-            moreBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                moreMenu.classList.toggle('active');
-            });
-            
-            document.addEventListener('click', (e) => {
-                if (!moreBtn.contains(e.target) && !moreMenu.contains(e.target)) {
-                    moreMenu.classList.remove('active');
-                }
-            });
+            if (moreBtn && moreMenu) {
+                moreBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    moreMenu.classList.toggle('active');
+                });
+                
+                document.addEventListener('click', (e) => {
+                    if (!moreBtn.contains(e.target) && !moreMenu.contains(e.target)) {
+                        moreMenu.classList.remove('active');
+                    }
+                });
+            }
             
             // Video controls
             const playPauseBtn = document.getElementById('playPauseBtn');
@@ -4015,7 +4324,7 @@
                 });
             }
             
-            // NEW: Tap button with long press
+            // NEW: Tap button with long press - FIXED: Now works properly
             const tapBtn = document.getElementById('tapBtn');
             if (tapBtn) {
                 setupTapButtonEvents(tapBtn, pulseId);
@@ -4036,7 +4345,7 @@
                 });
             }
             
-            // NEW: Save button
+            // NEW: Save button - FIXED: Now works properly
             const saveBtn = document.getElementById('saveBtn');
             if (saveBtn) {
                 saveBtn.addEventListener('click', (e) => {
@@ -4057,10 +4366,12 @@
             
             // Save pulse button in menu
             const savePulseBtn = document.getElementById('savePulseBtn');
-            savePulseBtn.addEventListener('click', () => {
-                handleSave(pulseId, null);
-                moreMenu.classList.remove('active');
-            });
+            if (savePulseBtn) {
+                savePulseBtn.addEventListener('click', () => {
+                    handleSave(pulseId, null);
+                    moreMenu.classList.remove('active');
+                });
+            }
             
             // NEW: Continue series button
             const continueSeriesBtn = document.getElementById('continueSeriesBtn');
@@ -4070,11 +4381,15 @@
             
             // Report pulse button
             const reportPulseBtn = document.getElementById('reportPulseBtn');
-            reportPulseBtn.addEventListener('click', handleReport);
+            if (reportPulseBtn) {
+                reportPulseBtn.addEventListener('click', handleReport);
+            }
             
             // Mute creator button
             const muteCreatorBtn = document.getElementById('muteCreatorBtn');
-            muteCreatorBtn.addEventListener('click', handleMuteCreator);
+            if (muteCreatorBtn) {
+                muteCreatorBtn.addEventListener('click', handleMuteCreator);
+            }
             
             // Delete pulse button
             const deletePulseBtn = document.getElementById('deletePulseBtn');
@@ -4090,61 +4405,103 @@
                 });
             }
             
-            // Comment input
+            // Comment input - FIXED: Now works properly
             const commentInput = document.getElementById('commentInput');
             const postCommentBtn = document.getElementById('postCommentBtn');
             
-            commentInput.addEventListener('input', () => {
-                postCommentBtn.disabled = commentInput.value.trim().length === 0;
-            });
-            
-            commentInput.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    if (!postCommentBtn.disabled) {
-                        postCommentWithMentions();
+            if (commentInput && postCommentBtn) {
+                commentInput.addEventListener('input', () => {
+                    postCommentBtn.disabled = commentInput.value.trim().length === 0;
+                });
+                
+                commentInput.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        if (!postCommentBtn.disabled) {
+                            postCommentWithMentions();
+                        }
                     }
-                }
-            });
-            
-            // Post comment button
-            postCommentBtn.addEventListener('click', postCommentWithMentions);
+                });
+                
+                // Post comment button
+                postCommentBtn.addEventListener('click', postCommentWithMentions);
+            }
             
             // Share modal (existing)
             const closeShareModal = document.getElementById('closeShareModal');
-            closeShareModal.addEventListener('click', closeShareModalFunc);
+            if (closeShareModal) {
+                closeShareModal.addEventListener('click', closeShareModalFunc);
+            }
             
-            document.getElementById('copyLinkOption').addEventListener('click', copyLink);
-            document.getElementById('shareWhatsApp').addEventListener('click', shareToWhatsApp);
-            document.getElementById('shareTwitter').addEventListener('click', shareToTwitter);
-            document.getElementById('shareInstagram').addEventListener('click', shareToInstagram);
-            document.getElementById('shareInternal').addEventListener('click', shareInternal);
-            document.getElementById('addToSeries').addEventListener('click', addToSeries);
+            const copyLinkOption = document.getElementById('copyLinkOption');
+            if (copyLinkOption) {
+                copyLinkOption.addEventListener('click', copyLink);
+            }
             
-            document.getElementById('copyLinkBtn').addEventListener('click', copyLink);
+            const shareWhatsApp = document.getElementById('shareWhatsApp');
+            if (shareWhatsApp) {
+                shareWhatsApp.addEventListener('click', shareToWhatsApp);
+            }
+            
+            const shareTwitter = document.getElementById('shareTwitter');
+            if (shareTwitter) {
+                shareTwitter.addEventListener('click', shareToTwitter);
+            }
+            
+            const shareInstagram = document.getElementById('shareInstagram');
+            if (shareInstagram) {
+                shareInstagram.addEventListener('click', shareToInstagram);
+            }
+            
+            const shareInternal = document.getElementById('shareInternal');
+            if (shareInternal) {
+                shareInternal.addEventListener('click', shareInternal);
+            }
+            
+            const addToSeries = document.getElementById('addToSeries');
+            if (addToSeries) {
+                addToSeries.addEventListener('click', addToSeriesFunc);
+            }
+            
+            const copyLinkBtn = document.getElementById('copyLinkBtn');
+            if (copyLinkBtn) {
+                copyLinkBtn.addEventListener('click', copyLink);
+            }
             
             const shareModal = document.getElementById('shareModal');
-            shareModal.addEventListener('click', (e) => {
-                if (e.target === shareModal) {
-                    closeShareModalFunc();
-                }
-            });
+            if (shareModal) {
+                shareModal.addEventListener('click', (e) => {
+                    if (e.target === shareModal) {
+                        closeShareModalFunc();
+                    }
+                });
+            }
             
             // Edit comment modal
             const closeEditCommentModal = document.getElementById('closeEditCommentModal');
             const cancelEditComment = document.getElementById('cancelEditComment');
             const saveEditComment = document.getElementById('saveEditComment');
             
-            closeEditCommentModal.addEventListener('click', closeEditCommentModalFunc);
-            cancelEditComment.addEventListener('click', closeEditCommentModalFunc);
-            saveEditComment.addEventListener('click', saveEditedComment);
+            if (closeEditCommentModal) {
+                closeEditCommentModal.addEventListener('click', closeEditCommentModalFunc);
+            }
+            
+            if (cancelEditComment) {
+                cancelEditComment.addEventListener('click', closeEditCommentModalFunc);
+            }
+            
+            if (saveEditComment) {
+                saveEditComment.addEventListener('click', saveEditedComment);
+            }
             
             const editCommentModal = document.getElementById('editCommentModal');
-            editCommentModal.addEventListener('click', (e) => {
-                if (e.target === editCommentModal) {
-                    closeEditCommentModalFunc();
-                }
-            });
+            if (editCommentModal) {
+                editCommentModal.addEventListener('click', (e) => {
+                    if (e.target === editCommentModal) {
+                        closeEditCommentModalFunc();
+                    }
+                });
+            }
             
             // Listen for auth changes
             supabaseClient.auth.onAuthStateChange((event, session) => {
@@ -4156,7 +4513,11 @@
             });
         }
         
-        // Existing helper functions (showToast, viewCreatorProfile, etc.)
+        function addToSeriesFunc() {
+            showToast('Add to Series feature coming soon!', 'success');
+            closeShareModalFunc();
+        }
+        
         function handleReport() {
             showToast('Report submitted. Our team will review this pulse.', 'success');
             document.getElementById('moreMenu').classList.remove('active');
@@ -4238,11 +4599,13 @@
         
         function copyLink() {
             const shareLink = document.getElementById('shareLink');
-            shareLink.select();
-            document.execCommand('copy');
-            
-            showToast('Pulse link copied', 'success');
-            closeShareModalFunc();
+            if (shareLink) {
+                shareLink.select();
+                document.execCommand('copy');
+                
+                showToast('Pulse link copied', 'success');
+                closeShareModalFunc();
+            }
         }
         
         function shareToWhatsApp() {
@@ -4287,11 +4650,6 @@
             }
         }
         
-        function addToSeries() {
-            showToast('Add to Series feature coming soon!', 'success');
-            closeShareModalFunc();
-        }
-        
         function viewCreatorProfile() {
             if (pulseCreator) {
                 window.location.href = `profile.html?user_id=${pulseCreator.id}`;
@@ -4318,10 +4676,6 @@
                 setTimeout(() => toast.remove(), 300);
             }, 4000);
         }
-        
-        // Existing functions for comments (loadComments, likeComment, etc.) remain
-        // They need to be updated to use the new notification system
-        // For brevity, I've included the updated versions above
         
         // Initialize when DOM is loaded
         document.addEventListener('DOMContentLoaded', function() {
