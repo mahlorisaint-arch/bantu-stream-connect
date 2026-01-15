@@ -16,127 +16,24 @@
     <!-- Supabase JS SDK -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
+    <!-- External CSS for better performance -->
+    <link rel="stylesheet" href="css/profile-styles.css">
+    
+    <!-- Critical CSS for initial render -->
     <style>
-        /* Color Theme */
-        :root {
-            --deep-black: #0A0E12;
-            --deep-navy: #0F172A;
-            --soft-white: #F8FAFC;
-            --slate-grey: #94A3B8;
-            --bantu-blue: #1D4ED8;
-            --warm-gold: #F59E0B;
-            --error-color: #EF4444;
-            --success-color: #10B981;
-            --glow-cycle-1: #00A3FF;
-            --glow-cycle-2: #0066FF;
-            --glow-cycle-3: #8B5CF6;
-            --glow-cycle-4: #EC4899;
-            --card-bg: rgba(15, 23, 42, 0.7);
-            --card-border: rgba(148, 163, 184, 0.2);
-            --hover-overlay: rgba(255, 255, 255, 0.05);
-            --active-overlay: rgba(245, 158, 11, 0.1);
-            --deep-indigo: #4F46E5;
-            --subtle-gold: #F59E0B;
-            --muted-gray: #94a3b8;
-            --indigo-glow: rgba(79, 70, 229, 0.5);
-            --gold-glow: rgba(245, 158, 11, 0.3);
-            --glass-bg: rgba(15, 23, 42, 0.8);
-            --glass-border: rgba(255, 255, 255, 0.1);
-            /* New futuristic colors */
-            --futuristic-gold: #FFD700;
-            --futuristic-blue: #00E0FF;
-            --glowing-gold: #FFB300;
-            --glowing-blue: #0095FF;
-        }
-        
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: 'Inter', sans-serif;
-            background: var(--deep-black);
-            color: var(--soft-white);
-            min-height: 100vh;
-            overflow-x: hidden;
-        }
-        
-        /* Animated Background - Glassmorphism Blend */
-        .animated-bg {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 1;
-            overflow: hidden;
-        }
-        
-        .glow-cycle {
-            position: absolute;
-            border-radius: 50%;
-            filter: blur(60px);
-            opacity: 0.1;
-            animation: float 8s infinite ease-in-out;
-        }
-        
-        .glow-1 {
-            width: 400px;
-            height: 400px;
-            background: var(--glow-cycle-1);
-            top: 10%;
-            left: 5%;
-            animation-delay: 0s;
-        }
-        
-        .glow-2 {
-            width: 300px;
-            height: 300px;
-            background: var(--glow-cycle-2);
-            top: 60%;
-            right: 10%;
-            animation-delay: 2s;
-        }
-        
-        .glow-3 {
-            width: 350px;
-            height: 350px;
-            background: var(--glow-cycle-3);
-            bottom: 10%;
-            left: 20%;
-            animation-delay: 4s;
-        }
-        
-        .glow-4 {
-            width: 250px;
-            height: 250px;
-            background: var(--glow-cycle-4);
-            top: 20%;
-            right: 20%;
-            animation-delay: 6s;
-        }
-        
-        @keyframes float {
-            0%, 100% { transform: translateY(0) scale(1); }
-            50% { transform: translateY(-20px) scale(1.05); }
-        }
-        
-        /* Loading Screen - Glassmorphism */
+        /* Critical: Loading and initial skeleton */
         .loading-screen {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(10, 14, 18, 0.9);
+            background: #0A0E12;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             z-index: 1000;
-            backdrop-filter: blur(10px);
         }
         
         .spinner {
@@ -144,7 +41,7 @@
             height: 50px;
             border: 3px solid rgba(255, 255, 255, 0.1);
             border-radius: 50%;
-            border-top-color: var(--bantu-blue);
+            border-top-color: #1D4ED8;
             animation: spin 1s linear infinite;
             margin-bottom: 20px;
         }
@@ -153,1341 +50,35 @@
             to { transform: rotate(360deg); }
         }
         
-        /* Main Container - Glassmorphism */
-        .container {
-            max-width: 600px;
-            margin: 0 auto;
-            position: relative;
-            z-index: 2;
-            background: rgba(10, 14, 18, 0.6);
-            backdrop-filter: blur(20px);
-            min-height: 100vh;
-        }
-        
-        /* Header - Glassmorphism */
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 16px;
-            position: sticky;
-            top: 0;
-            background: rgba(15, 23, 42, 0.8);
-            backdrop-filter: blur(20px);
-            z-index: 100;
-            border-bottom: 1px solid var(--glass-border);
-        }
-        
-        .logo-container {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            cursor: pointer;
-        }
-        
-        .logo-icon {
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            overflow: hidden;
-            background: transparent;
-        }
-        
-        .logo-icon img {
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
-        }
-        
-        .logo-text {
-            font-family: 'Orbitron', sans-serif;
-            font-weight: 700;
-            font-size: 16px;
-            background: linear-gradient(to right, var(--soft-white), var(--bantu-blue));
-            -webkit-background-clip: text;
-            background-clip: text;
-            color: transparent;
-            letter-spacing: 0.5px;
-        }
-        
-        .user-section {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-        }
-        
-        .notification-btn {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid var(--glass-border);
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            color: var(--slate-grey);
-            font-size: 18px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            backdrop-filter: blur(10px);
-            position: relative;
-        }
-        
-        .notification-btn:hover {
-            color: var(--soft-white);
-            background: rgba(255, 255, 255, 0.1);
-            border-color: var(--bantu-blue);
-        }
-        
-        /* NEW: Notification Dot Indicator */
-        .notification-btn.has-unread::after {
-            content: '';
-            position: absolute;
-            top: 2px;
-            right: 2px;
-            width: 8px;
-            height: 8px;
-            background: var(--warm-gold);
-            border-radius: 50%;
-            display: block;
-            box-shadow: 0 0 8px rgba(245, 158, 11, 0.5);
-            animation: pulse-gold 2s infinite;
-        }
-        
-        @keyframes pulse-gold {
-            0% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.7); }
-            70% { box-shadow: 0 0 0 6px rgba(245, 158, 11, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
-        }
-        
-        .user-avatar {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            font-weight: 600;
-            color: var(--soft-white);
-            font-size: 14px;
-            position: relative;
-            overflow: hidden;
-            border: 2px solid rgba(255, 255, 255, 0.1);
-        }
-        
-        .user-avatar img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-        
-        /* Profile Header - Glassmorphism */
-        .profile-header {
-            padding: 20px 16px;
-            border-bottom: 1px solid var(--glass-border);
-            background: var(--glass-bg);
-            backdrop-filter: blur(10px);
-            margin: 0 16px 16px;
-            border-radius: 16px;
-            margin-top: 8px;
-        }
-        
-        .profile-top {
-            display: flex;
-            align-items: center;
-            gap: 20px;
-            margin-bottom: 16px;
-        }
-        
-        /* FEATURE 1: Pulse Identity Ring - Updated Profile Avatar with Ring */
-        .profile-avatar-container {
-            position: relative;
-            width: 86px;
-            height: 86px;
-            flex-shrink: 0;
-        }
-        
-        .profile-avatar-ring {
-            position: absolute;
-            top: -3px;
-            left: -3px;
-            width: 86px;
-            height: 86px;
-            border-radius: 50%;
-            border: 3px solid var(--deep-indigo);
-            animation: pulse-ring 4s infinite ease-in-out;
-            z-index: 1;
-        }
-        
-        /* Ring States */
-        .profile-avatar-ring.active-today {
-            border-color: var(--deep-indigo);
-            box-shadow: 0 0 20px var(--indigo-glow);
-            animation: pulse-ring 2s infinite ease-in-out;
-        }
-        
-        .profile-avatar-ring.receiving-attention {
-            border-color: var(--deep-indigo);
-            animation: gold-ripple 3s infinite;
-        }
-        
-        .profile-avatar-ring.inactive {
-            border-color: var(--muted-gray);
-            animation: none;
-            box-shadow: none;
-        }
-        
-        .profile-avatar {
-            position: relative;
-            width: 80px;
-            height: 80px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 28px;
-            font-weight: 600;
-            color: var(--soft-white);
-            overflow: hidden;
-            border: 3px solid rgba(10, 14, 18, 0.8);
-            z-index: 2;
-        }
-        
-        .profile-avatar img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-        
-        /* Ring Animations */
-        @keyframes pulse-ring {
-            0% { box-shadow: 0 0 0 0 var(--indigo-glow); }
-            50% { box-shadow: 0 0 0 10px rgba(79, 70, 229, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(79, 70, 229, 0); }
-        }
-        
-        @keyframes gold-ripple {
-            0% { 
-                box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.4),
-                           inset 0 0 0 0 rgba(245, 158, 11, 0.1);
-            }
-            50% { 
-                box-shadow: 0 0 0 8px rgba(245, 158, 11, 0),
-                           inset 0 0 0 4px rgba(245, 158, 11, 0.1);
-            }
-            100% { 
-                box-shadow: 0 0 0 0 rgba(245, 158, 11, 0),
-                           inset 0 0 0 0 rgba(245, 158, 11, 0);
-            }
-        }
-        
-        .profile-info {
-            flex: 1;
-        }
-        
-        .profile-name {
-            font-size: 20px;
-            font-weight: 700;
-            margin-bottom: 4px;
-            color: var(--soft-white);
-        }
-        
-        .profile-username {
-            font-size: 14px;
-            color: var(--slate-grey);
-            margin-bottom: 8px;
-        }
-        
-        .profile-bio {
-            font-size: 14px;
-            color: var(--soft-white);
-            line-height: 1.4;
-            margin-bottom: 12px;
-            opacity: 0.9;
-        }
-        
-        /* Action Row - Glassmorphism */
-        .action-row {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 20px;
-        }
-        
-        .action-btn {
-            flex: 1;
-            padding: 12px 16px;
-            border-radius: 12px;
-            border: 1px solid var(--glass-border);
-            background: rgba(255, 255, 255, 0.05);
-            color: var(--soft-white);
-            font-family: 'Inter', sans-serif;
-            font-weight: 600;
-            font-size: 14px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            backdrop-filter: blur(10px);
-        }
-        
-        .action-btn:hover {
-            border-color: var(--bantu-blue);
-            background: rgba(29, 78, 216, 0.1);
-            transform: translateY(-2px);
-        }
-        
-        .action-btn.primary {
-            background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
-            border: none;
-            box-shadow: 0 4px 20px rgba(29, 78, 216, 0.3);
-        }
-        
-        .action-btn.primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 25px rgba(29, 78, 216, 0.4);
-        }
-        
-        .action-btn.connected {
-            background: linear-gradient(135deg, var(--success-color), var(--bantu-blue));
-            border: none;
-            box-shadow: 0 4px 20px rgba(16, 185, 129, 0.3);
-        }
-        
-        .action-btn.connected:hover {
-            background: linear-gradient(135deg, #0ea371, var(--bantu-blue));
-            transform: translateY(-2px);
-        }
-        
-        /* Log Out Button - Glassmorphism */
-        .logout-btn {
-            position: absolute;
-            top: 20px;
-            right: 16px;
-            background: rgba(239, 68, 68, 0.1);
-            border: 1px solid rgba(239, 68, 68, 0.3);
-            color: var(--error-color);
-            font-size: 14px;
-            cursor: pointer;
-            padding: 8px 16px;
-            border-radius: 10px;
-            transition: all 0.3s ease;
-            backdrop-filter: blur(10px);
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-        
-        .logout-btn:hover {
-            color: white;
-            background: rgba(239, 68, 68, 0.3);
-            border-color: var(--error-color);
-            transform: translateY(-2px);
-            box-shadow: 0 4px 15px rgba(239, 68, 68, 0.2);
-        }
-        
-        /* Stats Row - Glassmorphism */
-        .stats-row {
-            display: flex;
-            justify-content: space-around;
-            padding: 16px 0;
-            border-top: 1px solid var(--glass-border);
-            border-bottom: 1px solid var(--glass-border);
-            background: rgba(255, 255, 255, 0.03);
-            border-radius: 12px;
-            margin: 0 -8px;
-            padding: 16px 8px;
-        }
-        
-        .stat-item {
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            padding: 8px 12px;
-            border-radius: 10px;
-            flex: 1;
-        }
-        
-        .stat-item:hover {
-            background: var(--hover-overlay);
-            transform: translateY(-2px);
-        }
-        
-        .stat-value {
-            font-size: 18px;
-            font-weight: 700;
-            color: var(--soft-white);
-            margin-bottom: 4px;
-        }
-        
-        .stat-label {
-            font-size: 12px;
-            color: var(--slate-grey);
-        }
-        
-        /* Content Tabs - Glassmorphism */
-        .tabs-container {
-            display: flex;
-            background: var(--glass-bg);
-            border-bottom: 1px solid var(--glass-border);
-            backdrop-filter: blur(10px);
-            margin: 0 16px;
-            border-radius: 12px 12px 0 0;
-            overflow: hidden;
-        }
-        
-        .tab {
-            flex: 1;
-            padding: 16px;
-            border: none;
-            background: transparent;
-            color: var(--slate-grey);
-            font-family: 'Inter', sans-serif;
-            font-weight: 600;
-            font-size: 14px;
-            cursor: pointer;
-            position: relative;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-        }
-        
-        .tab:hover {
-            color: var(--soft-white);
-            background: rgba(255, 255, 255, 0.05);
-        }
-        
-        .tab.active {
-            color: var(--soft-white);
-            background: rgba(29, 78, 216, 0.1);
-        }
-        
-        .tab.active::after {
-            content: '';
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            height: 3px;
-            background: linear-gradient(to right, var(--bantu-blue), var(--warm-gold));
-        }
-        
-        /* Tab Icons Custom Styles */
-        .tab-icon {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 20px;
-            height: 20px;
-        }
-        
-        /* Journey Icon Animation */
-        .journey-icon {
-            animation: journey-pulse 3s infinite ease-in-out;
-        }
-        
-        @keyframes journey-pulse {
-            0% {
-                filter: drop-shadow(0 0 5px var(--futuristic-blue));
-            }
-            33% {
-                filter: drop-shadow(0 0 8px var(--glowing-gold));
-            }
-            66% {
-                filter: drop-shadow(0 0 10px var(--futuristic-blue)) drop-shadow(0 0 10px var(--glowing-gold));
-            }
-            100% {
-                filter: drop-shadow(0 0 5px var(--futuristic-blue));
-            }
-        }
-        
-        /* Content Area */
-        .content-area {
-            min-height: 60vh;
-            padding: 16px;
-        }
-        
-        /* Pulse Grid - Glassmorphism */
-        .pulse-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 4px;
-        }
-        
-        @media (max-width: 400px) {
-            .pulse-grid {
-                grid-template-columns: repeat(2, 1fr);
-            }
-        }
-        
-        .pulse-item {
-            aspect-ratio: 9/16;
-            background: var(--glass-bg);
-            border: 1px solid var(--glass-border);
+        /* Skeleton loading for better perceived performance */
+        .skeleton {
+            background: linear-gradient(90deg, #0F172A 25%, #1E293B 50%, #0F172A 75%);
+            background-size: 200% 100%;
+            animation: skeleton-loading 1.5s infinite;
             border-radius: 8px;
-            position: relative;
-            cursor: pointer;
-            overflow: hidden;
-            transition: all 0.3s ease;
-            backdrop-filter: blur(10px);
         }
         
-        .pulse-item:hover {
-            transform: scale(1.02);
-            border-color: var(--warm-gold);
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        @keyframes skeleton-loading {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
         }
         
-        .pulse-item:hover .pulse-overlay {
-            opacity: 1;
-        }
-        
-        .pulse-item img,
-        .pulse-item video {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-        
-        .pulse-content-preview {
-            width: 100%;
-            height: 100%;
-            padding: 16px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: linear-gradient(135deg, var(--deep-navy), var(--deep-black));
-            color: var(--soft-white);
-            font-size: 12px;
-            line-height: 1.4;
-            text-align: center;
-            overflow: hidden;
-        }
-        
-        .pulse-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: linear-gradient(to top, rgba(0, 0, 0, 0.8), transparent);
-            display: flex;
-            align-items: flex-end;
-            justify-content: center;
-            opacity: 0;
-            transition: opacity 0.3s ease;
-            padding: 12px;
-        }
-        
-        /* UPDATED: Removed pulse-stats from showing counts - only icons remain */
-        .pulse-stats {
-            display: flex;
-            gap: 16px;
-            color: white;
-            font-size: 14px;
-            background: rgba(0, 0, 0, 0.6);
-            padding: 8px 16px;
-            border-radius: 20px;
-            backdrop-filter: blur(10px);
-        }
-        
-        .pulse-stats span {
-            display: flex;
-            align-items: center;
-            gap: 4px;
-        }
-        
-        .pulse-icon {
-            color: var(--warm-gold);
-        }
-        
-        .series-badge {
-            position: absolute;
-            top: 8px;
-            left: 8px;
-            background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
-            color: white;
-            font-size: 10px;
-            font-weight: 600;
-            padding: 4px 8px;
-            border-radius: 12px;
-            z-index: 2;
-            backdrop-filter: blur(10px);
-        }
-        
-        /* Series Grid - Glassmorphism */
-        .series-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 16px;
-        }
-        
-        @media (max-width: 400px) {
-            .series-grid {
-                grid-template-columns: 1fr;
+        /* Mobile safe areas */
+        @supports (padding: max(0px)) {
+            .bottom-nav {
+                padding-bottom: max(12px, env(safe-area-inset-bottom));
             }
         }
         
-        .series-card {
-            background: var(--glass-bg);
-            border: 1px solid var(--glass-border);
-            border-radius: 16px;
-            overflow: hidden;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            backdrop-filter: blur(10px);
-        }
-        
-        .series-card:hover {
-            transform: translateY(-4px);
-            border-color: var(--warm-gold);
-            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.3);
-        }
-        
-        .series-cover {
-            width: 100%;
-            aspect-ratio: 16/9;
-            background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .series-cover img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-        
-        .series-progress {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            height: 4px;
-            background: rgba(0, 0, 0, 0.3);
-        }
-        
-        .series-progress-fill {
-            height: 100%;
-            background: linear-gradient(to right, var(--bantu-blue), var(--warm-gold));
-            transition: width 0.3s ease;
-        }
-        
-        .series-info {
-            padding: 16px;
-        }
-        
-        .series-title {
-            font-size: 14px;
-            font-weight: 600;
-            color: var(--soft-white);
-            margin-bottom: 8px;
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-        }
-        
-        .series-meta {
-            display: flex;
-            justify-content: space-between;
-            font-size: 11px;
-            color: var(--slate-grey);
-        }
-        
-        .series-status {
-            font-size: 10px;
-            padding: 4px 8px;
-            border-radius: 10px;
-            background: var(--success-color);
-            color: white;
-            backdrop-filter: blur(10px);
-        }
-        
-        .series-status.completed {
-            background: var(--slate-grey);
-        }
-        
-        /* Links Grid - Glassmorphism */
-        .links-grid {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 12px;
-        }
-        
-        .link-card {
-            background: var(--glass-bg);
-            border: 1px solid var(--glass-border);
-            border-radius: 16px;
-            padding: 20px;
-            display: flex;
-            align-items: center;
-            gap: 16px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            backdrop-filter: blur(10px);
-        }
-        
-        .link-card:hover {
-            border-color: var(--bantu-blue);
-            transform: translateX(4px);
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
-        }
-        
-        .link-icon {
-            width: 48px;
-            height: 48px;
-            border-radius: 12px;
-            background: linear-gradient(135deg, var(--glowing-blue), var(--glowing-gold));
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 20px;
-            flex-shrink: 0;
-            box-shadow: 0 0 20px rgba(0, 149, 255, 0.5);
-        }
-        
-        .link-content {
-            flex: 1;
-        }
-        
-        .link-title {
+        /* Prevent zoom on inputs for iOS */
+        input, textarea {
             font-size: 16px;
-            font-weight: 600;
-            color: var(--soft-white);
-            margin-bottom: 4px;
-        }
-        
-        .link-description {
-            font-size: 13px;
-            color: var(--slate-grey);
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-            line-height: 1.4;
-        }
-        
-        /* FEATURE 2: Time Capsule Tab - Glassmorphism */
-        .timecapsule-container {
-            padding: 8px 0;
-        }
-        
-        .timecapsule-header {
-            margin-bottom: 24px;
-            text-align: center;
-            padding: 20px;
-            background: var(--glass-bg);
-            border: 1px solid var(--glass-border);
-            border-radius: 16px;
-            backdrop-filter: blur(10px);
-        }
-        
-        .timecapsule-title {
-            font-size: 20px;
-            font-weight: 700;
-            color: var(--soft-white);
-            margin-bottom: 8px;
-        }
-        
-        .timecapsule-subtitle {
-            font-size: 14px;
-            color: var(--slate-grey);
-            max-width: 400px;
-            margin: 0 auto;
-            line-height: 1.4;
-        }
-        
-        .memory-cards-container {
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
-        }
-        
-        .memory-card {
-            background: var(--glass-bg);
-            border: 1px solid var(--glass-border);
-            border-radius: 16px;
-            padding: 20px;
-            position: relative;
-            transition: all 0.3s ease;
-            cursor: default;
-            backdrop-filter: blur(10px);
-        }
-        
-        .memory-card:hover {
-            transform: translateY(-2px);
-            border-color: var(--warm-gold);
-            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.3);
-        }
-        
-        .memory-card-title {
-            font-size: 16px;
-            font-weight: 700;
-            color: var(--subtle-gold);
-            margin-bottom: 12px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        
-        .memory-card-title i {
-            font-size: 14px;
-        }
-        
-        .memory-card-content {
-            font-size: 14px;
-            line-height: 1.5;
-            color: var(--soft-white);
-            margin-bottom: 16px;
-            opacity: 0.9;
-        }
-        
-        .memory-card-meta {
-            font-size: 12px;
-            color: var(--slate-grey);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-        
-        .memory-card-date {
-            display: flex;
-            align-items: center;
-            gap: 4px;
-        }
-        
-        .memory-card-stats {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-        
-        .memory-card-stat {
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            color: var(--slate-grey);
-        }
-        
-        /* Empty States - Glassmorphism */
-        .empty-state {
-            padding: 60px 20px;
-            text-align: center;
-            color: var(--slate-grey);
-            background: var(--glass-bg);
-            border: 1px solid var(--glass-border);
-            border-radius: 16px;
-            backdrop-filter: blur(10px);
-        }
-        
-        .empty-icon {
-            font-size: 48px;
-            margin-bottom: 16px;
-            opacity: 0.5;
-        }
-        
-        .empty-title {
-            font-size: 16px;
-            font-weight: 600;
-            color: var(--soft-white);
-            margin-bottom: 8px;
-        }
-        
-        .empty-description {
-            font-size: 14px;
-            max-width: 300px;
-            margin: 0 auto;
-            line-height: 1.4;
-        }
-        
-        /* Edit Profile Modal - Glassmorphism */
-        .modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.8);
-            display: none;
-            align-items: center;
-            justify-content: center;
-            z-index: 2000;
-            backdrop-filter: blur(5px);
-        }
-        
-        .modal {
-            background: var(--glass-bg);
-            border-radius: 24px;
-            width: 90%;
-            max-width: 500px;
-            max-height: 90vh;
-            overflow-y: auto;
-            border: 1px solid var(--glass-border);
-            backdrop-filter: blur(20px);
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-        }
-        
-        .modal-header {
-            padding: 24px;
-            border-bottom: 1px solid var(--glass-border);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        
-        .modal-title {
-            font-size: 18px;
-            font-weight: 700;
-            color: var(--soft-white);
-        }
-        
-        .close-modal {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid var(--glass-border);
-            border-radius: 8px;
-            color: var(--slate-grey);
-            width: 36px;
-            height: 36px;
-            font-size: 18px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        
-        .close-modal:hover {
-            color: var(--soft-white);
-            border-color: var(--warm-gold);
-        }
-        
-        .modal-body {
-            padding: 24px;
-        }
-        
-        .form-group {
-            margin-bottom: 20px;
-        }
-        
-        .form-label {
-            display: block;
-            margin-bottom: 8px;
-            color: var(--soft-white);
-            font-weight: 500;
-            font-size: 14px;
-        }
-        
-        .form-input {
-            width: 100%;
-            padding: 14px;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid var(--glass-border);
-            border-radius: 12px;
-            color: var(--soft-white);
-            font-family: 'Inter', sans-serif;
-            font-size: 14px;
-            transition: all 0.3s ease;
-            backdrop-filter: blur(10px);
-        }
-        
-        .form-input:focus {
-            outline: none;
-            border-color: var(--warm-gold);
-            background: rgba(255, 255, 255, 0.08);
-        }
-        
-        .form-textarea {
-            width: 100%;
-            padding: 14px;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid var(--glass-border);
-            border-radius: 12px;
-            color: var(--soft-white);
-            font-family: 'Inter', sans-serif;
-            font-size: 14px;
-            resize: vertical;
-            min-height: 100px;
-            transition: all 0.3s ease;
-            backdrop-filter: blur(10px);
-        }
-        
-        .form-textarea:focus {
-            outline: none;
-            border-color: var(--warm-gold);
-            background: rgba(255, 255, 255, 0.08);
-        }
-        
-        /* Profile Picture Upload Styles - Glassmorphism */
-        .avatar-upload-container {
-            text-align: center;
-            margin-bottom: 20px;
-        }
-        
-        .avatar-preview-container {
-            position: relative;
-            display: inline-block;
-            margin-bottom: 16px;
-        }
-        
-        .avatar-preview {
-            width: 120px;
-            height: 120px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 36px;
-            font-weight: 600;
-            color: var(--soft-white);
-            overflow: hidden;
-            border: 3px solid var(--glass-border);
-            cursor: pointer;
-            position: relative;
-            backdrop-filter: blur(10px);
-        }
-        
-        .avatar-preview img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-        
-        .avatar-upload-btn {
-            position: absolute;
-            bottom: 0;
-            right: 0;
-            background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
-            border: none;
-            color: white;
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-        }
-        
-        .avatar-upload-btn:hover {
-            transform: scale(1.1);
-            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
-        }
-        
-        .avatar-upload-options {
-            display: flex;
-            gap: 12px;
-            justify-content: center;
-        }
-        
-        .avatar-upload-option {
-            padding: 10px 20px;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid var(--glass-border);
-            border-radius: 10px;
-            color: var(--soft-white);
-            font-size: 13px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            backdrop-filter: blur(10px);
-        }
-        
-        .avatar-upload-option:hover {
-            border-color: var(--warm-gold);
-            background: rgba(245, 158, 11, 0.1);
-            transform: translateY(-2px);
-        }
-        
-        .modal-footer {
-            padding: 24px;
-            border-top: 1px solid var(--glass-border);
-            display: flex;
-            justify-content: flex-end;
-            gap: 12px;
-        }
-        
-        .btn {
-            padding: 12px 24px;
-            border-radius: 12px;
-            border: none;
-            font-family: 'Inter', sans-serif;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            font-size: 14px;
-            backdrop-filter: blur(10px);
-        }
-        
-        .btn-secondary {
-            background: rgba(255, 255, 255, 0.05);
-            color: var(--slate-grey);
-            border: 1px solid var(--glass-border);
-        }
-        
-        .btn-secondary:hover {
-            color: var(--soft-white);
-            border-color: var(--slate-grey);
-            transform: translateY(-2px);
-        }
-        
-        .btn-primary {
-            background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
-            color: var(--soft-white);
-            box-shadow: 0 4px 20px rgba(29, 78, 216, 0.3);
-        }
-        
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 25px rgba(29, 78, 216, 0.4);
-        }
-        
-        /* Toast Notifications - Glassmorphism */
-        .toast-container {
-            position: fixed;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 2000;
-        }
-        
-        .toast {
-            background: var(--error-color);
-            color: white;
-            padding: 14px 24px;
-            border-radius: 12px;
-            margin-bottom: 10px;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            animation: slideUp 0.3s ease;
-            box-shadow: 0 10px 30px rgba(239, 68, 68, 0.3);
-            max-width: 90vw;
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-        
-        .toast.success {
-            background: var(--success-color);
-            box-shadow: 0 10px 30px rgba(16, 185, 129, 0.3);
-        }
-        
-        @keyframes slideUp {
-            from {
-                transform: translate(-50%, 100%);
-                opacity: 0;
-            }
-            to {
-                transform: translate(-50%, 0);
-                opacity: 1;
-            }
-        }
-        
-        /* Bottom Navigation - Glassmorphism */
-        .bottom-nav {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: rgba(15, 23, 42, 0.9);
-            border-top: 1px solid var(--glass-border);
-            display: flex;
-            padding: 12px 0;
-            z-index: 100;
-            backdrop-filter: blur(20px);
-        }
-        
-        .nav-item {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            gap: 4px;
-            background: none;
-            border: none;
-            color: var(--slate-grey);
-            font-size: 10px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            padding: 8px 0;
-        }
-        
-        .nav-item:hover {
-            color: var(--soft-white);
-        }
-        
-        .nav-item.active {
-            color: var(--bantu-blue);
-        }
-        
-        .nav-icon {
-            font-size: 20px;
-        }
-        
-        /* Custom Scrollbar */
-        ::-webkit-scrollbar {
-            width: 8px;
-        }
-        
-        ::-webkit-scrollbar-track {
-            background: rgba(15, 23, 42, 0.5);
-            border-radius: 4px;
-        }
-        
-        ::-webkit-scrollbar-thumb {
-            background: var(--bantu-blue);
-            border-radius: 4px;
-        }
-        
-        ::-webkit-scrollbar-thumb:hover {
-            background: var(--warm-gold);
-        }
-        
-        /* Responsive */
-        @media (max-width: 768px) {
-            .container {
-                padding-bottom: 80px;
-            }
-            
-            .header {
-                padding: 12px 16px;
-            }
-            
-            .profile-header {
-                padding: 16px;
-                margin: 0 8px 8px;
-            }
-            
-            .profile-avatar {
-                width: 70px;
-                height: 70px;
-            }
-            
-            .profile-avatar-container {
-                width: 76px;
-                height: 76px;
-            }
-            
-            .profile-avatar-ring {
-                width: 76px;
-                height: 76px;
-            }
-            
-            .profile-name {
-                font-size: 18px;
-            }
-            
-            .logout-btn {
-                top: 16px;
-                right: 12px;
-                padding: 6px 12px;
-                font-size: 13px;
-            }
-            
-            .modal {
-                width: 95%;
-                margin: 16px;
-            }
-            
-            .timecapsule-container {
-                padding: 0;
-            }
-            
-            .tabs-container {
-                margin: 0 8px;
-            }
-            
-            .content-area {
-                padding: 12px 8px;
-            }
-        }
-        
-        /* Verified Badge */
-        .verified-badge {
-            display: inline-block;
-            margin-left: 4px;
-            color: var(--bantu-blue);
-            font-size: 12px;
-        }
-        
-        /* Creator Badge */
-        .creator-badge {
-            display: inline-block;
-            margin-left: 8px;
-            padding: 4px 10px;
-            background: rgba(245, 158, 11, 0.2);
-            color: var(--warm-gold);
-            border-radius: 12px;
-            font-size: 10px;
-            font-weight: 600;
-            border: 1px solid rgba(245, 158, 11, 0.3);
-            backdrop-filter: blur(10px);
-        }
-        
-        /* Upload Cover Button */
-        .upload-cover-btn {
-            position: absolute;
-            bottom: 10px;
-            right: 10px;
-            background: rgba(0, 0, 0, 0.7);
-            border: none;
-            color: white;
-            padding: 6px 12px;
-            border-radius: 6px;
-            font-size: 12px;
-            cursor: pointer;
-            display: none;
-            z-index: 10;
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-        
-        .pulse-item:hover .upload-cover-btn {
-            display: block;
-        }
-        
-        /* Tab Content */
-        .tab-content {
-            display: none;
-        }
-        
-        .tab-content.active {
-            display: block;
-        }
-        
-        /* Pulse Tab Icon */
-        .pulse-tab-icon {
-            width: 20px;
-            height: 20px;
-            position: relative;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        
-        .pulse-tab-icon svg {
-            width: 100%;
-            height: 100%;
         }
     </style>
 </head>
 <body>
     <!-- Animated Background -->
-    <div class="animated-bg">
+    <div class="animated-bg" aria-hidden="true">
         <div class="glow-cycle glow-1"></div>
         <div class="glow-cycle glow-2"></div>
         <div class="glow-cycle glow-3"></div>
@@ -1497,16 +88,16 @@
     <!-- Loading Screen -->
     <div id="loading" class="loading-screen">
         <div class="spinner"></div>
-        <div id="loading-text">Loading Profile...</div>
+        <div id="loading-text" aria-live="polite">Loading Profile...</div>
     </div>
 
     <!-- Main Container -->
     <div class="container" id="content" style="display: none;">
         <!-- Header -->
         <header class="header">
-            <div class="logo-container" onclick="window.location.href='pulse-feed.html'">
+            <div class="logo-container" onclick="window.location.href='pulse-feed.html'" role="button" tabindex="0" aria-label="Go to home">
                 <div class="logo-icon">
-                    <svg width="32" height="32" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <svg width="32" height="32" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                         <rect width="40" height="40" rx="8" fill="#0F172A"/>
                         <path d="M8 20 L12 16 L16 22 L20 18 L24 24 L28 20 L32 26" stroke="url(#pulse-gradient)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
                         <circle cx="32" cy="26" r="3" fill="#F59E0B"/>
@@ -1522,13 +113,14 @@
             </div>
             
             <div class="user-section">
-                <!-- UPDATED: Notification button with real-time indicator -->
-                <button class="notification-btn" id="notificationBtn" onclick="window.location.href='notifications.html'">
-                    <i class="far fa-bell"></i>
+                <!-- Notification button with real-time indicator -->
+                <button class="notification-btn" id="notificationBtn" onclick="window.location.href='notifications.html'" aria-label="Notifications">
+                    <i class="far fa-bell" aria-hidden="true"></i>
+                    <span class="sr-only">Notifications</span>
                 </button>
-                <div class="user-avatar" id="user-avatar" onclick="window.location.href='profile.html'">
-                    <img id="user-avatar-img">
-                    <span id="avatar-initials">AB</span>
+                <div class="user-avatar" id="user-avatar" onclick="window.location.href='profile.html'" role="button" tabindex="0" aria-label="Your profile">
+                    <img id="user-avatar-img" alt="Your profile picture">
+                    <span id="avatar-initials" class="sr-only">User initials</span>
                 </div>
             </div>
         </header>
@@ -1536,66 +128,68 @@
         <!-- Profile Header -->
         <div class="profile-header">
             <div class="profile-top">
-                <!-- FEATURE 1: Pulse Identity Ring Container -->
+                <!-- Pulse Identity Ring Container -->
                 <div class="profile-avatar-container">
-                    <div class="profile-avatar-ring" id="profile-avatar-ring"></div>
+                    <div class="profile-avatar-ring" id="profile-avatar-ring" aria-hidden="true"></div>
                     <div class="profile-avatar" id="profile-avatar">
-                        <img id="profile-avatar-img">
-                        <span id="profile-avatar-initials">AB</span>
+                        <img id="profile-avatar-img" alt="Profile picture">
+                        <span id="profile-avatar-initials" class="sr-only">Profile initials</span>
                     </div>
                 </div>
                 
                 <div class="profile-info">
-                    <div class="profile-name" id="profile-name">
-                        Loading...
+                    <h1 class="profile-name" id="profile-name">
+                        <span class="skeleton" style="width: 120px; height: 24px; display: inline-block;"></span>
                         <span class="creator-badge" id="creator-badge" style="display: none;">CREATOR</span>
+                    </h1>
+                    <div class="profile-username" id="profile-username" aria-label="Username">
+                        <span class="skeleton" style="width: 80px; height: 16px; display: inline-block;"></span>
                     </div>
-                    <div class="profile-username" id="profile-username">@user</div>
-                    <div class="profile-bio" id="profile-bio">
-                        Loading bio...
+                    <div class="profile-bio" id="profile-bio" aria-label="Bio">
+                        <span class="skeleton" style="width: 100%; height: 40px; display: block;"></span>
                     </div>
                 </div>
             </div>
             
-            <!-- Log Out Button (Owner Only) - Changed from Edit to Log Out -->
-            <button class="logout-btn" id="logoutBtn" style="display: none;">
-                <i class="fas fa-sign-out-alt"></i> Log Out
+            <!-- Log Out Button (Owner Only) -->
+            <button class="logout-btn" id="logoutBtn" style="display: none;" aria-label="Log out">
+                <i class="fas fa-sign-out-alt" aria-hidden="true"></i> Log Out
             </button>
             
             <!-- Action Row -->
             <div class="action-row" id="actionRow">
-                <button class="action-btn primary" id="connectBtn">
-                    <i class="fas fa-plus"></i> Connect
+                <button class="action-btn primary" id="connectBtn" aria-label="Connect with user">
+                    <i class="fas fa-plus" aria-hidden="true"></i> Connect
                 </button>
-                <button class="action-btn" id="messageBtn" style="display: none;">
-                    <i class="far fa-envelope"></i> Message
+                <button class="action-btn" id="messageBtn" style="display: none;" aria-label="Send message">
+                    <i class="far fa-envelope" aria-hidden="true"></i> Message
                 </button>
-                <button class="action-btn" id="shareBtn">
-                    <i class="fas fa-share"></i> Share
+                <button class="action-btn" id="shareBtn" aria-label="Share profile">
+                    <i class="fas fa-share" aria-hidden="true"></i> Share
                 </button>
             </div>
             
             <!-- Stats Row -->
             <div class="stats-row">
-                <div class="stat-item" onclick="viewPulses()">
+                <button class="stat-item" onclick="viewPulses()" aria-label="View pulses, count: loading">
                     <div class="stat-value" id="statPulses">0</div>
                     <div class="stat-label">Pulses</div>
-                </div>
-                <div class="stat-item" onclick="viewSeriesTab()">
+                </button>
+                <button class="stat-item" onclick="viewSeriesTab()" aria-label="View series, count: loading">
                     <div class="stat-value" id="statSeries">0</div>
                     <div class="stat-label">Series</div>
-                </div>
-                <div class="stat-item" onclick="viewConnectors()">
+                </button>
+                <button class="stat-item" onclick="viewConnectors()" aria-label="View connectors, count: loading">
                     <div class="stat-value" id="statConnectors">0</div>
                     <div class="stat-label">Connectors</div>
-                </div>
+                </button>
             </div>
         </div>
         
         <!-- Content Tabs -->
-        <div class="tabs-container">
-            <button class="tab active" data-tab="pulse">
-                <div class="pulse-tab-icon">
+        <div class="tabs-container" role="tablist" aria-label="Profile content sections">
+            <button class="tab active" data-tab="pulse" role="tab" aria-selected="true" aria-controls="pulse-tab">
+                <div class="pulse-tab-icon" aria-hidden="true">
                     <svg width="20" height="20" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <rect width="40" height="40" rx="8" fill="#0F172A"/>
                         <path d="M8 20 L12 16 L16 22 L20 18 L24 24 L28 20 L32 26" stroke="url(#pulse-tab-gradient)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
@@ -1611,15 +205,11 @@
                 <span>Pulses</span>
             </button>
             
-            <!-- UPDATED: Series Tab with new icon -->
-            <button class="tab" data-tab="series">
-                <div class="tab-icon">
+            <button class="tab" data-tab="series" role="tab" aria-selected="false" aria-controls="series-tab">
+                <div class="tab-icon" aria-hidden="true">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <!-- First layer: Futuristic glowing gold -->
                         <rect x="3" y="15" width="18" height="6" rx="2" fill="#FFD700" filter="url(#gold-glow)"/>
-                        <!-- Second layer: Gradient of glowing gold and futuristic blue -->
                         <rect x="4" y="10" width="16" height="6" rx="2" fill="url(#layer-gradient)"/>
-                        <!-- Third layer: Futuristic blue -->
                         <rect x="5" y="5" width="14" height="6" rx="2" fill="#00E0FF" filter="url(#blue-glow)"/>
                         <defs>
                             <filter id="gold-glow" x="-20%" y="-20%" width="140%" height="140%">
@@ -1650,9 +240,8 @@
                 <span>Series</span>
             </button>
             
-            <!-- UPDATED: Links Tab with new icon -->
-            <button class="tab" data-tab="links">
-                <div class="tab-icon">
+            <button class="tab" data-tab="links" role="tab" aria-selected="false" aria-controls="links-tab">
+                <div class="tab-icon" aria-hidden="true">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path d="M10 13C10.4295 13.5741 10.9774 14.0491 11.6066 14.3929C12.2357 14.7367 12.9315 14.9411 13.6467 14.9923C14.3618 15.0435 15.0796 14.9403 15.7513 14.6897C16.4231 14.4392 17.0331 14.047 17.54 13.54L20.54 10.54C21.4508 9.59699 21.9548 8.33397 21.9434 7.02299C21.932 5.71201 21.4061 4.45794 20.4791 3.5309C19.5521 2.60386 18.298 2.07802 16.987 2.06663C15.676 2.05524 14.413 2.55921 13.47 3.47L11.75 5.18" stroke="url(#links-gradient)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                         <path d="M14 11C13.5705 10.4259 13.0226 9.95085 12.3934 9.60707C11.7642 9.26329 11.0685 9.05889 10.3533 9.00768C9.63815 8.95647 8.92037 9.05971 8.24861 9.31026C7.57685 9.5608 6.96688 9.953 6.46 10.46L3.46 13.46C2.54921 14.403 2.04524 15.666 2.05663 16.977C2.06802 18.288 2.59386 19.5421 3.5209 20.4691C4.44794 21.3961 5.70201 21.922 7.01299 21.9334C8.32397 21.9448 9.58699 21.4408 10.53 20.53L12.24 18.82" stroke="url(#links-gradient)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -1667,10 +256,9 @@
                 <span>Links</span>
             </button>
             
-            <!-- FEATURE 2: Time Capsule Tab (Only visible for own profile) -->
-            <!-- UPDATED: Journey Tab with new pulsing icon -->
-            <button class="tab" data-tab="timecapsule" id="timecapsuleTab" style="display: none;">
-                <div class="tab-icon journey-icon">
+            <!-- Journey Tab (Only visible for own profile) -->
+            <button class="tab" data-tab="timecapsule" id="timecapsuleTab" style="display: none;" role="tab" aria-selected="false" aria-controls="timecapsule-tab">
+                <div class="tab-icon journey-icon" aria-hidden="true">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="url(#journey-gradient)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                         <path d="M12 6V12L16 14" stroke="url(#journey-gradient)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -1689,28 +277,28 @@
         <!-- Content Area -->
         <div class="content-area">
             <!-- Pulse Tab -->
-            <div class="tab-content active" id="pulse-tab">
+            <div class="tab-content active" id="pulse-tab" role="tabpanel" aria-labelledby="pulse-tab">
                 <div class="pulse-grid" id="pulseGrid">
                     <!-- Pulses will be loaded here -->
                 </div>
             </div>
             
             <!-- Series Tab -->
-            <div class="tab-content" id="series-tab">
+            <div class="tab-content" id="series-tab" role="tabpanel" aria-labelledby="series-tab" hidden>
                 <div class="series-grid" id="seriesGrid">
                     <!-- Series will be loaded here -->
                 </div>
             </div>
             
             <!-- Links Tab -->
-            <div class="tab-content" id="links-tab">
+            <div class="tab-content" id="links-tab" role="tabpanel" aria-labelledby="links-tab" hidden>
                 <div class="links-grid" id="linksGrid">
                     <!-- Links will be loaded here -->
                 </div>
             </div>
             
-            <!-- FEATURE 2: Time Capsule Tab -->
-            <div class="tab-content" id="timecapsule-tab">
+            <!-- Journey Tab -->
+            <div class="tab-content" id="timecapsule-tab" role="tabpanel" aria-labelledby="timecapsule-tab" hidden>
                 <div class="timecapsule-container">
                     <div class="timecapsule-header">
                         <h2 class="timecapsule-title">Your Pulse Journey</h2>
@@ -1725,1594 +313,1112 @@
     </div>
 
     <!-- Bottom Navigation -->
-    <div class="bottom-nav">
-        <button class="nav-item" onclick="window.location.href='pulse-feed.html'">
-            <i class="fas fa-home nav-icon"></i>
+    <nav class="bottom-nav" aria-label="Main navigation">
+        <button class="nav-item" onclick="window.location.href='pulse-feed.html'" aria-label="Home">
+            <i class="fas fa-home nav-icon" aria-hidden="true"></i>
             <span>Home</span>
         </button>
-        <button class="nav-item" onclick="window.location.href='search.html'">
-            <i class="fas fa-search nav-icon"></i>
+        <button class="nav-item" onclick="window.location.href='search.html'" aria-label="Search">
+            <i class="fas fa-search nav-icon" aria-hidden="true"></i>
             <span>Search</span>
         </button>
-        <button class="nav-item active">
-            <i class="fas fa-user nav-icon"></i>
+        <button class="nav-item active" aria-label="Profile (current page)" aria-current="page">
+            <i class="fas fa-user nav-icon" aria-hidden="true"></i>
             <span>Profile</span>
         </button>
-        <button class="nav-item" onclick="window.location.href='saved.html'">
-            <i class="fas fa-bookmark nav-icon"></i>
+        <button class="nav-item" onclick="window.location.href='saved.html'" aria-label="Saved items">
+            <i class="fas fa-bookmark nav-icon" aria-hidden="true"></i>
             <span>Saved</span>
         </button>
-    </div>
+    </nav>
 
     <!-- Toast Container -->
-    <div id="toast-container" class="toast-container"></div>
+    <div id="toast-container" class="toast-container" role="status" aria-live="polite"></div>
 
-    <!-- Edit Profile Modal with Profile Picture Upload -->
-    <div id="editModal" class="modal-overlay">
+    <!-- Edit Profile Modal -->
+    <div id="editModal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="editModalTitle" hidden>
         <div class="modal">
             <div class="modal-header">
-                <h3 class="modal-title">Edit Profile</h3>
-                <button class="close-modal" id="closeEditModal">
-                    <i class="fas fa-times"></i>
+                <h3 class="modal-title" id="editModalTitle">Edit Profile</h3>
+                <button class="close-modal" id="closeEditModal" aria-label="Close modal">
+                    <i class="fas fa-times" aria-hidden="true"></i>
                 </button>
             </div>
             <div class="modal-body">
                 <div class="avatar-upload-container">
                     <div class="avatar-preview-container">
-                        <div class="avatar-preview" id="avatarPreview" onclick="triggerAvatarUpload()">
-                            <img id="avatarPreviewImg">
-                            <span id="avatarPreviewInitials">AB</span>
+                        <div class="avatar-preview" id="avatarPreview" onclick="triggerAvatarUpload()" role="button" tabindex="0" aria-label="Change profile picture">
+                            <img id="avatarPreviewImg" alt="Profile preview">
+                            <span id="avatarPreviewInitials" class="sr-only">Preview initials</span>
                         </div>
-                        <button class="avatar-upload-btn" onclick="triggerAvatarUpload()">
-                            <i class="fas fa-camera"></i>
+                        <button class="avatar-upload-btn" onclick="triggerAvatarUpload()" aria-label="Upload new picture">
+                            <i class="fas fa-camera" aria-hidden="true"></i>
                         </button>
                     </div>
                     <div class="avatar-upload-options">
-                        <button class="avatar-upload-option" onclick="triggerAvatarUpload()">
-                            <i class="fas fa-upload"></i> Upload
+                        <button class="avatar-upload-option" onclick="triggerAvatarUpload()" aria-label="Upload picture">
+                            <i class="fas fa-upload" aria-hidden="true"></i> Upload
                         </button>
-                        <button class="avatar-upload-option" onclick="removeProfilePicture()">
-                            <i class="fas fa-trash"></i> Remove
+                        <button class="avatar-upload-option" onclick="removeProfilePicture()" aria-label="Remove picture">
+                            <i class="fas fa-trash" aria-hidden="true"></i> Remove
                         </button>
                     </div>
                 </div>
                 
                 <form id="editForm">
                     <div class="form-group">
-                        <label class="form-label">Display Name</label>
-                        <input type="text" class="form-input" id="editName" placeholder="Your name">
+                        <label class="form-label" for="editName">Display Name</label>
+                        <input type="text" class="form-input" id="editName" placeholder="Your name" aria-required="true">
                     </div>
                     
                     <div class="form-group">
-                        <label class="form-label">Username</label>
-                        <input type="text" class="form-input" id="editUsername" placeholder="@username">
+                        <label class="form-label" for="editUsername">Username</label>
+                        <input type="text" class="form-input" id="editUsername" placeholder="@username" aria-required="true">
                     </div>
                     
                     <div class="form-group">
-                        <label class="form-label">Bio</label>
-                        <textarea class="form-textarea" id="editBio" placeholder="Tell your story... (max 120 characters)" maxlength="120"></textarea>
+                        <label class="form-label" for="editBio">Bio</label>
+                        <textarea class="form-textarea" id="editBio" placeholder="Tell your story... (max 120 characters)" maxlength="120" aria-describedby="bio-char-count"></textarea>
+                        <div id="bio-char-count" class="char-count" aria-live="polite">0/120</div>
                     </div>
                     
-                    <!-- Hidden input for avatar URL (will be set after upload) -->
                     <input type="hidden" id="editAvatar" value="">
                 </form>
             </div>
             <div class="modal-footer">
-                <button class="btn btn-secondary" id="cancelEdit">Cancel</button>
-                <button class="btn btn-primary" id="saveEdit">Save Changes</button>
+                <button class="btn btn-secondary" id="cancelEdit" aria-label="Cancel changes">Cancel</button>
+                <button class="btn btn-primary" id="saveEdit" aria-label="Save changes">Save Changes</button>
             </div>
         </div>
     </div>
 
+    <!-- Hidden input for Supabase config (in real app, these should come from server-side) -->
+    <input type="hidden" id="supabase-config" 
+           data-url="YOUR_SUPABASE_URL_HERE" 
+           data-key="YOUR_SUPABASE_ANON_KEY_HERE">
+           <!-- IMPORTANT: Replace with actual values from server-side or environment -->
+
     <script>
-        // Initialize Supabase client with proper parameters
-        const SUPABASE_URL = 'https://ydnxqnbjoshvxteevemc.supabase.co';
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U';
+        // ============================================
+        // PROFILE MODULE - Optimized and Secured
+        // ============================================
 
-        let supabaseClient = null;
-        let currentUserId = null;
-        let currentUserProfile = null; // Store current user's profile separately
-        let isViewingOwnProfile = true;
-        let profileUserId = null;
-        let currentViewProfile = null;
-        let isConnected = false;
-        let profileAvatarFile = null;
-        let notificationsSubscription = null; // For real-time notifications
+        (function() {
+            'use strict';
 
-        // Helper function to safely get element
-        function getElement(id) {
-            const element = document.getElementById(id);
-            if (!element) {
-                console.warn(`Element with id '${id}' not found`);
-            }
-            return element;
-        }
-
-        // Helper function to safely set style
-        function safeSetStyle(element, property, value) {
-            if (element && element.style) {
-                element.style[property] = value;
-            }
-        }
-
-        // Helper function to safely set text content
-        function safeSetText(element, text) {
-            if (element) {
-                element.textContent = text;
-            }
-        }
-
-        // Helper function to safely set innerHTML
-        function safeSetHTML(element, html) {
-            if (element) {
-                element.innerHTML = html;
-            }
-        }
-
-        async function initialize() {
-            console.log('Starting Profile initialization...');
-            
-            try {
-                // Create Supabase client with proper initialization
-                supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-                console.log('Supabase client created');
+            // ============================================
+            // DOM ELEMENT CACHE
+            // ============================================
+            const DOM = {
+                // Core elements
+                loading: null,
+                content: null,
+                loadingText: null,
                 
-                // Check session
-                const { data: { session }, error } = await supabaseClient.auth.getSession();
+                // Header elements
+                notificationBtn: null,
+                userAvatarImg: null,
+                avatarInitials: null,
+                
+                // Profile elements
+                profileAvatarRing: null,
+                profileAvatarImg: null,
+                profileAvatarInitials: null,
+                profileName: null,
+                profileUsername: null,
+                profileBio: null,
+                creatorBadge: null,
+                
+                // Action elements
+                logoutBtn: null,
+                connectBtn: null,
+                messageBtn: null,
+                shareBtn: null,
+                
+                // Stats elements
+                statPulses: null,
+                statSeries: null,
+                statConnectors: null,
+                
+                // Content containers
+                pulseGrid: null,
+                seriesGrid: null,
+                linksGrid: null,
+                memoryCardsContainer: null,
+                
+                // Modal elements
+                editModal: null,
+                closeEditModal: null,
+                cancelEdit: null,
+                saveEdit: null,
+                editForm: null,
+                editName: null,
+                editUsername: null,
+                editBio: null,
+                editAvatar: null,
+                avatarPreviewImg: null,
+                avatarPreviewInitials: null,
+                bioCharCount: null,
+                
+                // Toast container
+                toastContainer: null,
+                
+                // Tab elements
+                tabs: [],
+                tabContents: {}
+            };
+
+            // ============================================
+            // STATE MANAGEMENT
+            // ============================================
+            const State = {
+                supabaseClient: null,
+                currentUserId: null,
+                currentUserProfile: null,
+                isViewingOwnProfile: true,
+                profileUserId: null,
+                currentViewProfile: null,
+                isConnected: false,
+                profileAvatarFile: null,
+                notificationsSubscription: null,
+                isInitialized: false,
+                activeTab: 'pulse',
+                cachedData: {
+                    pulses: null,
+                    series: null,
+                    links: null,
+                    journey: null
+                },
+                debounceTimers: {},
+                observer: null
+            };
+
+            // ============================================
+            // CONFIGURATION
+            // ============================================
+            const Config = {
+                // IMPORTANT: These values should come from server-side or build process
+                SUPABASE_URL: '',
+                SUPABASE_ANON_KEY: '',
+                
+                // App configuration
+                PAGINATION_LIMIT: 9,
+                DEBOUNCE_DELAY: 300,
+                CACHE_TTL: 5 * 60 * 1000, // 5 minutes
+                
+                // Feature flags
+                FEATURES: {
+                    PULSE_RING: true,
+                    JOURNEY_TAB: true,
+                    NOTIFICATIONS: true,
+                    LAZY_LOADING: true
+                }
+            };
+
+            // ============================================
+            // INITIALIZATION
+            // ============================================
+            async function initialize() {
+                console.log('🚀 Initializing Profile Module...');
+                
+                try {
+                    // 1. Cache DOM elements
+                    cacheDOMElements();
+                    
+                    // 2. Load configuration from server (in real app)
+                    await loadConfiguration();
+                    
+                    // 3. Initialize Supabase client
+                    await initializeSupabase();
+                    
+                    // 4. Check authentication
+                    await checkAuthentication();
+                    
+                    // 5. Initialize Intersection Observer for lazy loading
+                    if (Config.FEATURES.LAZY_LOADING) {
+                        initializeIntersectionObserver();
+                    }
+                    
+                    // 6. Set up event listeners
+                    initializeEventListeners();
+                    
+                    // 7. Load initial data
+                    await loadInitialData();
+                    
+                    // 8. Show content
+                    showContent();
+                    
+                    // 9. Initialize real-time features
+                    if (Config.FEATURES.NOTIFICATIONS) {
+                        initializeRealTimeFeatures();
+                    }
+                    
+                    State.isInitialized = true;
+                    console.log('✅ Profile Module initialized successfully');
+                    
+                } catch (error) {
+                    console.error('❌ Initialization failed:', error);
+                    handleInitializationError(error);
+                }
+            }
+
+            function cacheDOMElements() {
+                console.log('🔍 Caching DOM elements...');
+                
+                // Core elements
+                DOM.loading = document.getElementById('loading');
+                DOM.content = document.getElementById('content');
+                DOM.loadingText = document.getElementById('loading-text');
+                
+                // Header elements
+                DOM.notificationBtn = document.getElementById('notificationBtn');
+                DOM.userAvatarImg = document.getElementById('user-avatar-img');
+                DOM.avatarInitials = document.getElementById('avatar-initials');
+                
+                // Profile elements
+                DOM.profileAvatarRing = document.getElementById('profile-avatar-ring');
+                DOM.profileAvatarImg = document.getElementById('profile-avatar-img');
+                DOM.profileAvatarInitials = document.getElementById('profile-avatar-initials');
+                DOM.profileName = document.getElementById('profile-name');
+                DOM.profileUsername = document.getElementById('profile-username');
+                DOM.profileBio = document.getElementById('profile-bio');
+                DOM.creatorBadge = document.getElementById('creator-badge');
+                
+                // Action elements
+                DOM.logoutBtn = document.getElementById('logoutBtn');
+                DOM.connectBtn = document.getElementById('connectBtn');
+                DOM.messageBtn = document.getElementById('messageBtn');
+                DOM.shareBtn = document.getElementById('shareBtn');
+                
+                // Stats elements
+                DOM.statPulses = document.getElementById('statPulses');
+                DOM.statSeries = document.getElementById('statSeries');
+                DOM.statConnectors = document.getElementById('statConnectors');
+                
+                // Content containers
+                DOM.pulseGrid = document.getElementById('pulseGrid');
+                DOM.seriesGrid = document.getElementById('seriesGrid');
+                DOM.linksGrid = document.getElementById('linksGrid');
+                DOM.memoryCardsContainer = document.getElementById('memoryCardsContainer');
+                
+                // Modal elements
+                DOM.editModal = document.getElementById('editModal');
+                DOM.closeEditModal = document.getElementById('closeEditModal');
+                DOM.cancelEdit = document.getElementById('cancelEdit');
+                DOM.saveEdit = document.getElementById('saveEdit');
+                DOM.editForm = document.getElementById('editForm');
+                DOM.editName = document.getElementById('editName');
+                DOM.editUsername = document.getElementById('editUsername');
+                DOM.editBio = document.getElementById('editBio');
+                DOM.editAvatar = document.getElementById('editAvatar');
+                DOM.avatarPreviewImg = document.getElementById('avatarPreviewImg');
+                DOM.avatarPreviewInitials = document.getElementById('avatarPreviewInitials');
+                DOM.bioCharCount = document.getElementById('bio-char-count');
+                
+                // Toast container
+                DOM.toastContainer = document.getElementById('toast-container');
+                
+                // Cache all tabs and tab contents
+                DOM.tabs = Array.from(document.querySelectorAll('.tab'));
+                DOM.tabContents = {
+                    'pulse': document.getElementById('pulse-tab'),
+                    'series': document.getElementById('series-tab'),
+                    'links': document.getElementById('links-tab'),
+                    'timecapsule': document.getElementById('timecapsule-tab')
+                };
+                
+                console.log(`✅ Cached ${Object.keys(DOM).length} DOM elements`);
+            }
+
+            async function loadConfiguration() {
+                // In a real app, this would fetch from your server
+                // For now, we'll use the hidden input or environment
+                const configElement = document.getElementById('supabase-config');
+                
+                if (configElement && configElement.dataset.url && configElement.dataset.key) {
+                    Config.SUPABASE_URL = configElement.dataset.url;
+                    Config.SUPABASE_ANON_KEY = configElement.dataset.key;
+                } else {
+                    // Fallback for development - SET THESE IN YOUR ENVIRONMENT
+                    Config.SUPABASE_URL = window.ENV?.SUPABASE_URL || '';
+                    Config.SUPABASE_ANON_KEY = window.ENV?.SUPABASE_ANON_KEY || '';
+                    
+                    if (!Config.SUPABASE_URL || !Config.SUPABASE_ANON_KEY) {
+                        throw new Error('Supabase configuration missing. Please set SUPABASE_URL and SUPABASE_ANON_KEY.');
+                    }
+                }
+                
+                console.log('✅ Configuration loaded');
+            }
+
+            async function initializeSupabase() {
+                if (!Config.SUPABASE_URL || !Config.SUPABASE_ANON_KEY) {
+                    throw new Error('Supabase credentials not configured');
+                }
+                
+                State.supabaseClient = window.supabase.createClient(
+                    Config.SUPABASE_URL,
+                    Config.SUPABASE_ANON_KEY,
+                    {
+                        auth: {
+                            persistSession: true,
+                            autoRefreshToken: true
+                        }
+                    }
+                );
+                
+                console.log('✅ Supabase client initialized');
+            }
+
+            async function checkAuthentication() {
+                const { data: { session }, error } = await State.supabaseClient.auth.getSession();
                 
                 if (error) {
-                    throw error;
+                    throw new Error(`Authentication error: ${error.message}`);
                 }
                 
                 if (!session) {
-                    // No session, redirect to login
                     window.location.href = 'login.html';
                     return;
                 }
                 
-                console.log('User authenticated:', session.user.email);
-                currentUserId = session.user.id;
+                State.currentUserId = session.user.id;
+                console.log(`✅ Authenticated as: ${session.user.email}`);
+            }
+
+            // ============================================
+            // DATA LOADING
+            // ============================================
+            async function loadInitialData() {
+                console.log('📊 Loading initial data...');
                 
-                // FIX 1: Always load current user's profile for header
-                await loadCurrentUserProfile(session.user);
+                // 1. Load current user profile for header
+                await loadCurrentUserProfile();
                 
-                // Check if viewing own profile or another user's profile
-                const urlParams = new URLSearchParams(window.location.search);
-                profileUserId = urlParams.get('user_id');
+                // 2. Determine which profile to view
+                await determineProfileView();
                 
-                if (profileUserId) {
-                    isViewingOwnProfile = profileUserId === currentUserId;
-                } else {
-                    profileUserId = currentUserId;
-                    isViewingOwnProfile = true;
-                }
-                
-                // Load the profile being viewed
+                // 3. Load viewed profile data
                 await loadViewProfile();
                 
-                // Check connection status
-                if (!isViewingOwnProfile) {
-                    await checkConnectionStatus();
+                // 4. Load initial tab content
+                await loadActiveTabContent();
+                
+                console.log('✅ Initial data loaded');
+            }
+
+            async function loadCurrentUserProfile() {
+                try {
+                    const { data: profile, error } = await State.supabaseClient
+                        .from('user_profiles')
+                        .select('*')
+                        .eq('id', State.currentUserId)
+                        .single();
+                    
+                    if (error) {
+                        console.warn('Could not load user profile, using auth data:', error);
+                        State.currentUserProfile = {
+                            id: State.currentUserId,
+                            full_name: 'User',
+                            username: 'user',
+                            avatar_url: null,
+                            email: ''
+                        };
+                    } else {
+                        State.currentUserProfile = profile;
+                    }
+                    
+                    // Update header with current user
+                    updateHeaderAvatar(State.currentUserProfile);
+                    
+                } catch (error) {
+                    console.error('Error loading current user profile:', error);
+                    throw error;
+                }
+            }
+
+            async function determineProfileView() {
+                const urlParams = new URLSearchParams(window.location.search);
+                State.profileUserId = urlParams.get('user_id') || State.currentUserId;
+                State.isViewingOwnProfile = State.profileUserId === State.currentUserId;
+                
+                console.log(`👁️ Viewing ${State.isViewingOwnProfile ? 'own' : 'other'} profile`);
+            }
+
+            async function loadViewProfile() {
+                try {
+                    // Check cache first
+                    const cacheKey = `profile_${State.profileUserId}`;
+                    const cached = getFromCache(cacheKey);
+                    
+                    if (cached && !isCacheExpired(cached.timestamp)) {
+                        State.currentViewProfile = cached.data;
+                        console.log('📦 Using cached profile data');
+                    } else {
+                        const { data: profile, error } = await State.supabaseClient
+                            .from('user_profiles')
+                            .select('*')
+                            .eq('id', State.profileUserId)
+                            .single();
+                        
+                        if (error) throw error;
+                        
+                        State.currentViewProfile = profile;
+                        saveToCache(cacheKey, profile);
+                    }
+                    
+                    // Update UI
+                    updateProfileUI(State.currentViewProfile);
+                    
+                    // Update action buttons based on ownership
+                    updateActionButtons();
+                    
+                    // Load stats
+                    await loadProfileStats();
+                    
+                } catch (error) {
+                    console.error('Error loading view profile:', error);
+                    showToast('Failed to load profile data', 'error');
+                }
+            }
+
+            // ============================================
+            // UI UPDATES
+            // ============================================
+            function updateHeaderAvatar(profile) {
+                if (!profile || !DOM.userAvatarImg || !DOM.avatarInitials) return;
+                
+                const initials = getInitials(profile.full_name || profile.email || 'User');
+                
+                if (profile.avatar_url) {
+                    DOM.userAvatarImg.src = profile.avatar_url;
+                    DOM.userAvatarImg.alt = `${profile.full_name || profile.username}'s profile picture`;
+                    DOM.userAvatarImg.style.display = 'block';
+                    DOM.avatarInitials.style.display = 'none';
+                } else {
+                    DOM.userAvatarImg.style.display = 'none';
+                    DOM.avatarInitials.style.display = 'flex';
+                    DOM.avatarInitials.textContent = initials;
+                }
+            }
+
+            function updateProfileUI(profile) {
+                if (!profile) return;
+                
+                // Update name
+                if (DOM.profileName) {
+                    DOM.profileName.innerHTML = '';
+                    const nameSpan = document.createElement('span');
+                    nameSpan.textContent = profile.full_name || 'User';
+                    DOM.profileName.appendChild(nameSpan);
+                    
+                    // Add creator badge if applicable
+                    if (profile.role === 'creator' && DOM.creatorBadge) {
+                        DOM.creatorBadge.style.display = 'inline-block';
+                        DOM.profileName.appendChild(DOM.creatorBadge);
+                    }
                 }
                 
-                // NEW: Check for unread notifications
-                await checkUnreadNotifications();
+                // Update username
+                if (DOM.profileUsername) {
+                    DOM.profileUsername.textContent = profile.username ? `@${profile.username}` : '@user';
+                    DOM.profileUsername.setAttribute('aria-label', `Username: ${profile.username}`);
+                }
                 
-                // NEW: Subscribe to real-time notifications
-                subscribeToNotifications();
+                // Update bio with character limit
+                if (DOM.profileBio) {
+                    const bio = profile.bio || '';
+                    const truncatedBio = bio.length > 120 ? bio.substring(0, 117) + '...' : bio;
+                    DOM.profileBio.textContent = truncatedBio;
+                }
                 
-                // Hide loading, show content
-                safeSetStyle(getElement('loading'), 'display', 'none');
-                safeSetStyle(getElement('content'), 'display', 'block');
+                // Update profile avatar
+                updateProfileAvatar(profile);
+            }
+
+            function updateProfileAvatar(profile) {
+                if (!DOM.profileAvatarImg || !DOM.profileAvatarInitials) return;
                 
-                // Initialize event listeners
-                initializeEventListeners();
+                const initials = getInitials(profile.full_name || profile.email || 'User');
                 
-                // Load initial content
-                loadPulses();
+                if (profile.avatar_url) {
+                    DOM.profileAvatarImg.src = profile.avatar_url;
+                    DOM.profileAvatarImg.alt = `${profile.full_name || profile.username}'s profile picture`;
+                    DOM.profileAvatarImg.style.display = 'block';
+                    DOM.profileAvatarInitials.style.display = 'none';
+                } else {
+                    DOM.profileAvatarImg.style.display = 'none';
+                    DOM.profileAvatarInitials.style.display = 'flex';
+                    DOM.profileAvatarInitials.textContent = initials;
+                }
                 
-                // FEATURE 1: Initialize Pulse Identity Ring
-                if (isViewingOwnProfile) {
+                // Initialize pulse identity ring for own profile
+                if (State.isViewingOwnProfile && Config.FEATURES.PULSE_RING) {
                     initializePulseIdentityRing();
                 }
+            }
+
+            function updateActionButtons() {
+                if (!DOM.connectBtn) return;
                 
-                // FEATURE 2: Show Time Capsule tab for own profile
-                if (isViewingOwnProfile) {
-                    document.getElementById('timecapsuleTab').style.display = 'flex';
+                if (State.isViewingOwnProfile) {
+                    // Owner sees manage button
+                    DOM.connectBtn.innerHTML = '<i class="fas fa-cog"></i> Manage';
+                    DOM.connectBtn.onclick = openEditModal;
+                    
+                    // Show logout button
+                    if (DOM.logoutBtn) {
+                        DOM.logoutBtn.style.display = 'flex';
+                    }
+                    
+                    // Show journey tab if feature enabled
+                    const journeyTab = document.getElementById('timecapsuleTab');
+                    if (journeyTab && Config.FEATURES.JOURNEY_TAB) {
+                        journeyTab.style.display = 'flex';
+                    }
+                } else {
+                    // Other users see connect/disconnect button
+                    updateConnectionButton();
+                }
+            }
+
+            // ============================================
+            // TAB MANAGEMENT
+            // ============================================
+            async function loadActiveTabContent() {
+                // Debounce tab switching
+                debounce(`tab_${State.activeTab}`, async () => {
+                    switch (State.activeTab) {
+                        case 'pulse':
+                            await loadPulses();
+                            break;
+                        case 'series':
+                            await loadSeries();
+                            break;
+                        case 'links':
+                            await loadLinks();
+                            break;
+                        case 'timecapsule':
+                            if (State.isViewingOwnProfile) {
+                                await loadJourney();
+                            }
+                            break;
+                    }
+                }, Config.DEBOUNCE_DELAY);
+            }
+
+            async function loadPulses() {
+                try {
+                    // Show skeleton loading
+                    showSkeletonGrid(DOM.pulseGrid, 9);
+                    
+                    const { data: pulses, error } = await State.supabaseClient
+                        .from('pulses')
+                        .select('*')
+                        .eq('user_id', State.profileUserId)
+                        .is('deleted_at', null)
+                        .order('created_at', { ascending: false })
+                        .limit(Config.PAGINATION_LIMIT);
+                    
+                    if (error) throw error;
+                    
+                    renderPulses(pulses || []);
+                    
+                    // Cache for quick switching
+                    State.cachedData.pulses = {
+                        data: pulses,
+                        timestamp: Date.now()
+                    };
+                    
+                } catch (error) {
+                    console.error('Error loading pulses:', error);
+                    showEmptyState(DOM.pulseGrid, 'pulse', 'Failed to load pulses');
+                }
+            }
+
+            function renderPulses(pulses) {
+                if (!DOM.pulseGrid) return;
+                
+                if (!pulses || pulses.length === 0) {
+                    showEmptyState(DOM.pulseGrid, 'pulse', 
+                        State.isViewingOwnProfile ? 
+                        'Share your first cultural moment!' : 
+                        'No pulses to show yet.'
+                    );
+                    return;
                 }
                 
-            } catch (error) {
-                console.error('Error:', error);
-                safeSetText(getElement('loading-text'), 'Error loading profile. Please refresh.');
+                DOM.pulseGrid.innerHTML = '';
                 
-                // Still show content after delay
+                pulses.forEach(pulse => {
+                    const pulseItem = createPulseElement(pulse);
+                    DOM.pulseGrid.appendChild(pulseItem);
+                });
+                
+                // Initialize lazy loading for images
+                if (Config.FEATURES.LAZY_LOADING && State.observer) {
+                    document.querySelectorAll('.pulse-item img').forEach(img => {
+                        State.observer.observe(img);
+                    });
+                }
+            }
+
+            function createPulseElement(pulse) {
+                const pulseItem = document.createElement('div');
+                pulseItem.className = 'pulse-item';
+                pulseItem.setAttribute('data-pulse-id', pulse.id);
+                pulseItem.setAttribute('role', 'button');
+                pulseItem.setAttribute('tabindex', '0');
+                pulseItem.setAttribute('aria-label', `View pulse: ${pulse.caption?.substring(0, 50) || 'Cultural moment'}`);
+                
+                let seriesBadge = '';
+                if (pulse.series_id) {
+                    seriesBadge = `<div class="series-badge">Series · Part ${pulse.series_order || 1}</div>`;
+                }
+                
+                pulseItem.innerHTML = `
+                    ${seriesBadge}
+                    <div class="pulse-overlay">
+                        <div class="pulse-stats">
+                            <span class="pulse-icon"><i class="fas fa-heart"></i></span>
+                            <span class="pulse-icon"><i class="fas fa-comment"></i></span>
+                        </div>
+                    </div>
+                `;
+                
+                // Add media with lazy loading
+                if (pulse.media_url) {
+                    if (pulse.media_type === 'video') {
+                        const video = document.createElement('video');
+                        video.src = pulse.media_url;
+                        video.muted = true;
+                        video.playsInline = true;
+                        video.loading = 'lazy';
+                        video.style.cssText = 'width:100%;height:100%;object-fit:cover;';
+                        pulseItem.prepend(video);
+                    } else {
+                        const img = document.createElement('img');
+                        img.src = pulse.media_url;
+                        img.alt = pulse.caption || 'Cultural moment';
+                        img.loading = 'lazy';
+                        img.style.cssText = 'width:100%;height:100%;object-fit:cover;';
+                        pulseItem.prepend(img);
+                    }
+                } else {
+                    const captionPreview = document.createElement('div');
+                    captionPreview.className = 'pulse-content-preview';
+                    const captionText = pulse.caption ? 
+                        (pulse.caption.length > 100 ? pulse.caption.substring(0, 97) + '...' : pulse.caption) :
+                        'No media';
+                    captionPreview.textContent = captionText;
+                    pulseItem.prepend(captionPreview);
+                }
+                
+                pulseItem.addEventListener('click', () => {
+                    window.location.href = `pulse-content-detail.html?id=${pulse.id}`;
+                });
+                
+                // Keyboard accessibility
+                pulseItem.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        window.location.href = `pulse-content-detail.html?id=${pulse.id}`;
+                    }
+                });
+                
+                return pulseItem;
+            }
+
+            // ============================================
+            // FEATURE: PULSE IDENTITY RING
+            // ============================================
+            async function initializePulseIdentityRing() {
+                if (!Config.FEATURES.PULSE_RING || !DOM.profileAvatarRing) return;
+                
+                try {
+                    const twelveHoursAgo = new Date();
+                    twelveHoursAgo.setHours(twelveHoursAgo.getHours() - 12);
+                    
+                    // Check recent activity
+                    const { data: recentPulses } = await State.supabaseClient
+                        .from('pulses')
+                        .select('id')
+                        .eq('user_id', State.currentUserId)
+                        .gte('created_at', twelveHoursAgo.toISOString())
+                        .limit(1);
+                    
+                    const { data: recentComments } = await State.supabaseClient
+                        .from('pulse_comments')
+                        .select('id')
+                        .in('pulse_id', 
+                            State.supabaseClient
+                                .from('pulses')
+                                .select('id')
+                                .eq('user_id', State.currentUserId)
+                        )
+                        .gte('created_at', twelveHoursAgo.toISOString())
+                        .limit(1);
+                    
+                    const isActiveToday = recentPulses && recentPulses.length > 0;
+                    const isReceivingAttention = recentComments && recentComments.length > 0;
+                    
+                    // Update ring state
+                    DOM.profileAvatarRing.className = 'profile-avatar-ring ' + (
+                        isActiveToday && isReceivingAttention ? 'receiving-attention' :
+                        isActiveToday ? 'active-today' : 'inactive'
+                    );
+                    
+                } catch (error) {
+                    console.error('Error initializing pulse ring:', error);
+                    DOM.profileAvatarRing.className = 'profile-avatar-ring inactive';
+                }
+            }
+
+            // ============================================
+            // FEATURE: JOURNEY TAB
+            // ============================================
+            async function loadJourney() {
+                if (!State.isViewingOwnProfile) return;
+                
+                try {
+                    showSkeletonCards(DOM.memoryCardsContainer, 4);
+                    
+                    const memories = await fetchJourneyMemories();
+                    renderJourneyMemories(memories);
+                    
+                    State.cachedData.journey = {
+                        data: memories,
+                        timestamp: Date.now()
+                    };
+                    
+                } catch (error) {
+                    console.error('Error loading journey:', error);
+                    showEmptyState(DOM.memoryCardsContainer, 'journey', 
+                        'Start creating pulses to build your personal archive!'
+                    );
+                }
+            }
+
+            // ============================================
+            // REAL-TIME FEATURES
+            // ============================================
+            function initializeRealTimeFeatures() {
+                if (!Config.FEATURES.NOTIFICATIONS) return;
+                
+                // Check for unread notifications
+                checkUnreadNotifications();
+                
+                // Subscribe to notifications
+                subscribeToNotifications();
+                
+                // Set up visibility change handler
+                document.addEventListener('visibilitychange', handleVisibilityChange);
+            }
+
+            async function checkUnreadNotifications() {
+                try {
+                    const { count, error } = await State.supabaseClient
+                        .from('pulse_notifications')
+                        .select('*', { count: 'exact', head: true })
+                        .eq('target_user_id', State.currentUserId)
+                        .eq('is_read', false);
+                    
+                    if (!error && count > 0) {
+                        updateNotificationIndicator(true);
+                    }
+                } catch (error) {
+                    console.log('Notifications table might not exist');
+                }
+            }
+
+            function updateNotificationIndicator(hasUnread) {
+                if (DOM.notificationBtn) {
+                    DOM.notificationBtn.classList.toggle('has-unread', hasUnread);
+                }
+            }
+
+            // ============================================
+            // PERFORMANCE OPTIMIZATIONS
+            // ============================================
+            function initializeIntersectionObserver() {
+                State.observer = new IntersectionObserver((entries) => {
+                    entries.forEach(entry => {
+                        if (entry.isIntersecting) {
+                            const img = entry.target;
+                            img.src = img.dataset.src;
+                            img.classList.remove('lazy');
+                            State.observer.unobserve(img);
+                        }
+                    });
+                }, {
+                    rootMargin: '50px',
+                    threshold: 0.1
+                });
+            }
+
+            function debounce(id, func, delay) {
+                clearTimeout(State.debounceTimers[id]);
+                State.debounceTimers[id] = setTimeout(func, delay);
+            }
+
+            // ============================================
+            // CACHE MANAGEMENT
+            // ============================================
+            function saveToCache(key, data) {
+                try {
+                    const cacheItem = {
+                        data: data,
+                        timestamp: Date.now()
+                    };
+                    sessionStorage.setItem(`pulse_${key}`, JSON.stringify(cacheItem));
+                } catch (error) {
+                    console.warn('Cache save failed:', error);
+                }
+            }
+
+            function getFromCache(key) {
+                try {
+                    const cached = sessionStorage.getItem(`pulse_${key}`);
+                    return cached ? JSON.parse(cached) : null;
+                } catch (error) {
+                    console.warn('Cache read failed:', error);
+                    return null;
+                }
+            }
+
+            function isCacheExpired(timestamp) {
+                return Date.now() - timestamp > Config.CACHE_TTL;
+            }
+
+            // ============================================
+            // UI UTILITIES
+            // ============================================
+            function showContent() {
+                if (DOM.loading) DOM.loading.style.display = 'none';
+                if (DOM.content) DOM.content.style.display = 'block';
+            }
+
+            function showSkeletonGrid(container, count) {
+                if (!container) return;
+                
+                container.innerHTML = '';
+                for (let i = 0; i < count; i++) {
+                    const skeleton = document.createElement('div');
+                    skeleton.className = 'pulse-item skeleton';
+                    container.appendChild(skeleton);
+                }
+            }
+
+            function showSkeletonCards(container, count) {
+                if (!container) return;
+                
+                container.innerHTML = '';
+                for (let i = 0; i < count; i++) {
+                    const skeleton = document.createElement('div');
+                    skeleton.className = 'memory-card skeleton';
+                    skeleton.style.height = '120px';
+                    container.appendChild(skeleton);
+                }
+            }
+
+            function showEmptyState(container, type, message) {
+                if (!container) return;
+                
+                const icons = {
+                    pulse: 'fas fa-pulse',
+                    series: 'fas fa-layer-group',
+                    links: 'fas fa-link',
+                    journey: 'fas fa-history'
+                };
+                
+                container.innerHTML = `
+                    <div class="empty-state" style="grid-column: 1/-1; padding: 60px 20px;">
+                        <div class="empty-icon">
+                            <i class="${icons[type] || 'fas fa-inbox'}"></i>
+                        </div>
+                        <div class="empty-title">No ${type === 'pulse' ? 'Pulses' : type === 'journey' ? 'Journey Data' : type} Yet</div>
+                        <div class="empty-description">
+                            ${message}
+                        </div>
+                    </div>
+                `;
+            }
+
+            function showToast(message, type = 'error') {
+                if (!DOM.toastContainer) return;
+                
+                const toast = document.createElement('div');
+                toast.className = `toast ${type}`;
+                toast.setAttribute('role', 'alert');
+                toast.innerHTML = `
+                    <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i>
+                    <span>${message}</span>
+                `;
+                
+                DOM.toastContainer.appendChild(toast);
+                
                 setTimeout(() => {
-                    safeSetStyle(getElement('loading'), 'display', 'none');
-                    safeSetStyle(getElement('content'), 'display', 'block');
+                    toast.style.opacity = '0';
+                    setTimeout(() => {
+                        if (toast.parentNode === DOM.toastContainer) {
+                            DOM.toastContainer.removeChild(toast);
+                        }
+                    }, 300);
+                }, 4000);
+            }
+
+            // ============================================
+            // EVENT HANDLERS
+            // ============================================
+            function initializeEventListeners() {
+                // Tab switching
+                DOM.tabs.forEach(tab => {
+                    tab.addEventListener('click', handleTabSwitch);
+                });
+                
+                // Logout
+                if (DOM.logoutBtn) {
+                    DOM.logoutBtn.addEventListener('click', handleLogout);
+                }
+                
+                // Share button
+                if (DOM.shareBtn) {
+                    DOM.shareBtn.addEventListener('click', shareProfile);
+                }
+                
+                // Modal controls
+                if (DOM.closeEditModal) {
+                    DOM.closeEditModal.addEventListener('click', () => toggleModal(false));
+                }
+                
+                if (DOM.cancelEdit) {
+                    DOM.cancelEdit.addEventListener('click', () => toggleModal(false));
+                }
+                
+                if (DOM.saveEdit) {
+                    DOM.saveEdit.addEventListener('click', saveProfile);
+                }
+                
+                // Bio character counter
+                if (DOM.editBio) {
+                    DOM.editBio.addEventListener('input', updateBioCharCount);
+                }
+                
+                // Window events
+                window.addEventListener('pagehide', cleanup);
+                window.addEventListener('beforeunload', cleanup);
+                
+                console.log('✅ Event listeners initialized');
+            }
+
+            function handleTabSwitch(event) {
+                const tab = event.currentTarget;
+                const tabId = tab.dataset.tab;
+                
+                // Update UI
+                DOM.tabs.forEach(t => {
+                    t.classList.remove('active');
+                    t.setAttribute('aria-selected', 'false');
+                });
+                
+                Object.values(DOM.tabContents).forEach(content => {
+                    if (content) {
+                        content.classList.remove('active');
+                        content.hidden = true;
+                    }
+                });
+                
+                tab.classList.add('active');
+                tab.setAttribute('aria-selected', 'true');
+                
+                const content = DOM.tabContents[tabId];
+                if (content) {
+                    content.classList.add('active');
+                    content.hidden = false;
+                }
+                
+                // Update state and load content
+                State.activeTab = tabId;
+                loadActiveTabContent();
+            }
+
+            // ============================================
+            // HELPER FUNCTIONS
+            // ============================================
+            function getInitials(name) {
+                if (!name) return 'U';
+                return name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+            }
+
+            function handleInitializationError(error) {
+                if (DOM.loadingText) {
+                    DOM.loadingText.textContent = 'Error loading profile. Please refresh.';
+                }
+                
+                // Fallback after delay
+                setTimeout(() => {
+                    showContent();
                     initializeEventListeners();
                     loadSampleData();
                 }, 2000);
             }
-        }
-        
-        // NEW: Check for unread notifications
-        async function checkUnreadNotifications() {
-            try {
-                // First check if the pulse_notifications table exists
-                const { count, error: countError } = await supabaseClient
-                    .from('pulse_notifications')
-                    .select('*', { count: 'exact', head: true })
-                    .eq('target_user_id', currentUserId)
-                    .eq('is_read', false);
-                
-                if (countError) {
-                    console.log('pulse_notifications table might not exist, using fallback');
-                    // Table might not exist, use fallback logic
-                    updateNotificationIndicator(false); // No indicator if table doesn't exist
-                    return;
+
+            // ============================================
+            // CLEANUP
+            // ============================================
+            function cleanup() {
+                // Cleanup subscriptions
+                if (State.notificationsSubscription && State.supabaseClient) {
+                    State.supabaseClient.removeChannel(State.notificationsSubscription);
                 }
                 
-                const hasUnread = count > 0;
-                updateNotificationIndicator(hasUnread);
-                
-                console.log(`Found ${count} unread notifications`);
-                
-            } catch (error) {
-                console.error('Error checking unread notifications:', error);
-                updateNotificationIndicator(false);
-            }
-        }
-        
-        // NEW: Update notification indicator
-        function updateNotificationIndicator(hasUnread) {
-            const notificationBtn = document.getElementById('notificationBtn');
-            if (notificationBtn) {
-                if (hasUnread) {
-                    notificationBtn.classList.add('has-unread');
-                } else {
-                    notificationBtn.classList.remove('has-unread');
-                }
-            }
-        }
-        
-        // NEW: Subscribe to real-time notifications
-        function subscribeToNotifications() {
-            if (!supabaseClient || !currentUserId) return;
-            
-            try {
-                notificationsSubscription = supabaseClient
-                    .channel('profile-notifications')
-                    .on(
-                        'postgres_changes',
-                        {
-                            event: 'INSERT',
-                            schema: 'public',
-                            table: 'pulse_notifications',
-                            filter: `target_user_id=eq.${currentUserId}`
-                        },
-                        (payload) => {
-                            console.log('New notification received (real-time):', payload);
-                            // Show gold dot indicator
-                            updateNotificationIndicator(true);
-                            
-                            // Optional: Show a toast notification
-                            showToast('New notification!', 'success');
-                        }
-                    )
-                    .on(
-                        'postgres_changes',
-                        {
-                            event: 'UPDATE',
-                            schema: 'public',
-                            table: 'pulse_notifications',
-                            filter: `target_user_id=eq.${currentUserId}`
-                        },
-                        (payload) => {
-                            // Check if notification was marked as read
-                            if (payload.new.is_read === true && payload.old.is_read === false) {
-                                // Re-check all notifications to update indicator
-                                checkUnreadNotifications();
-                            }
-                        }
-                    )
-                    .subscribe((status) => {
-                        console.log('Notification subscription status:', status);
-                    });
-                    
-            } catch (error) {
-                console.error('Error setting up notification subscription:', error);
-            }
-        }
-        
-        // NEW: Clean up subscription when leaving page
-        function cleanupNotificationsSubscription() {
-            if (notificationsSubscription) {
-                supabaseClient.removeChannel(notificationsSubscription);
-                notificationsSubscription = null;
-            }
-        }
-        
-        // FIX 1: Load current user's profile for header
-        async function loadCurrentUserProfile(user) {
-            try {
-                const { data: profile, error } = await supabaseClient
-                    .from('user_profiles')
-                    .select('*')
-                    .eq('id', user.id)
-                    .single();
-                
-                if (error) {
-                    console.error('Error loading current user profile:', error);
-                    // Create a basic profile object from auth data
-                    currentUserProfile = {
-                        id: user.id,
-                        full_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'User',
-                        username: user.user_metadata?.username || user.email?.split('@')[0] || 'user',
-                        avatar_url: user.user_metadata?.avatar_url,
-                        email: user.email
-                    };
-                } else {
-                    currentUserProfile = profile;
+                // Cleanup observer
+                if (State.observer) {
+                    State.observer.disconnect();
                 }
                 
-                // Update header avatar with current user's avatar
-                updateHeaderAvatar(currentUserProfile);
-                
-            } catch (error) {
-                console.error('Error in loadCurrentUserProfile:', error);
-                // Create basic profile from auth data
-                currentUserProfile = {
-                    id: user.id,
-                    full_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'User',
-                    username: user.user_metadata?.username || user.email?.split('@')[0] || 'user',
-                    avatar_url: user.user_metadata?.avatar_url,
-                    email: user.email
-                };
-                updateHeaderAvatar(currentUserProfile);
-            }
-        }
-        
-        function updateHeaderAvatar(profile) {
-            const headerAvatarImg = document.getElementById('user-avatar-img');
-            const headerInitials = document.getElementById('avatar-initials');
-            const initials = getInitials(profile.full_name || profile.email || 'User');
-            
-            if (profile.avatar_url) {
-                headerAvatarImg.src = profile.avatar_url;
-                headerAvatarImg.style.display = 'block';
-                headerAvatarImg.alt = profile.full_name || profile.username || 'User';
-                headerInitials.style.display = 'none';
-            } else {
-                headerAvatarImg.style.display = 'none';
-                headerInitials.style.display = 'flex';
-                headerInitials.textContent = initials;
-            }
-        }
-        
-        async function loadViewProfile() {
-            try {
-                // Load the profile being viewed
-                const { data: profile, error } = await supabaseClient
-                    .from('user_profiles')
-                    .select('*')
-                    .eq('id', profileUserId)
-                    .single();
-                
-                if (error) throw error;
-                
-                currentViewProfile = profile;
-                
-                // Update UI with profile data
-                const profileNameElement = document.getElementById('profile-name');
-                if (profileNameElement) {
-                    profileNameElement.textContent = profile.full_name || 'User';
-                }
-                
-                const creatorBadge = document.getElementById('creator-badge');
-                if (creatorBadge) {
-                    if (profile.role === 'creator') {
-                        creatorBadge.style.display = 'inline-block';
-                    } else {
-                        creatorBadge.style.display = 'none';
-                    }
-                }
-                
-                const profileUsernameElement = document.getElementById('profile-username');
-                if (profileUsernameElement) {
-                    profileUsernameElement.textContent = profile.username ? `@${profile.username}` : '@user';
-                }
-                
-                // Truncate bio if too long
-                const bio = profile.bio || '';
-                const truncatedBio = bio.length > 120 ? bio.substring(0, 117) + '...' : bio;
-                const profileBioElement = document.getElementById('profile-bio');
-                if (profileBioElement) {
-                    profileBioElement.textContent = truncatedBio;
-                }
-                
-                const initials = getInitials(profile.full_name || profile.email || 'User');
-                
-                // Set profile avatar
-                const profileAvatarImg = document.getElementById('profile-avatar-img');
-                const profileAvatarInitials = document.getElementById('profile-avatar-initials');
-                
-                if (profileAvatarImg && profileAvatarInitials) {
-                    if (profile.avatar_url) {
-                        profileAvatarImg.src = profile.avatar_url;
-                        profileAvatarImg.style.display = 'block';
-                        profileAvatarImg.alt = profile.full_name || profile.username || 'User';
-                        profileAvatarInitials.style.display = 'none';
-                    } else {
-                        profileAvatarImg.style.display = 'none';
-                        profileAvatarInitials.style.display = 'flex';
-                        profileAvatarInitials.textContent = initials;
-                    }
-                }
-                
-                // Show log out button for own profile
-                if (isViewingOwnProfile) {
-                    const logoutBtn = document.getElementById('logoutBtn');
-                    if (logoutBtn) {
-                        logoutBtn.style.display = 'flex';
-                    }
-                    
-                    // Update action buttons for owner - Manage button opens edit modal
-                    const connectBtn = getElement('connectBtn');
-                    if (connectBtn) {
-                        connectBtn.innerHTML = '<i class="fas fa-cog"></i> Manage';
-                        connectBtn.onclick = () => {
-                            openEditModal();
-                        };
-                    }
-                } else {
-                    // Setup connection button for other users
-                    setupConnectionButton();
-                }
-                
-                // Load stats
-                await loadProfileStats();
-                
-            } catch (error) {
-                console.error('Error loading profile:', error);
-                showToast('Failed to load profile', 'error');
-            }
-        }
-        
-        function getInitials(name) {
-            if (!name) return 'U';
-            return name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
-        }
-        
-        async function loadProfileStats() {
-            try {
-                // Get pulses count
-                const { data: pulses, error: pulsesError } = await supabaseClient
-                    .from('pulses')
-                    .select('id', { count: 'exact' })
-                    .eq('user_id', profileUserId)
-                    .is('deleted_at', null);
-                
-                const pulsesCount = getElement('statPulses');
-                if (pulsesCount) {
-                    safeSetText(pulsesCount, pulses && !pulsesError ? pulses.length.toLocaleString() : '0');
-                }
-                
-                // Get series count
-                const { data: series, error: seriesError } = await supabaseClient
-                    .from('pulse_series')
-                    .select('id', { count: 'exact' })
-                    .eq('creator_id', profileUserId)
-                    .eq('is_archived', false);
-                
-                const seriesCount = getElement('statSeries');
-                if (seriesCount) {
-                    safeSetText(seriesCount, series && !seriesError ? series.length.toLocaleString() : '0');
-                }
-                
-                // Get connectors count
-                const { data: connectors, error: connectorsError } = await supabaseClient
-                    .from('connectors')
-                    .select('id', { count: 'exact' })
-                    .eq('connected_id', profileUserId);
-                
-                const connectorsCount = getElement('statConnectors');
-                if (connectorsCount) {
-                    safeSetText(connectorsCount, connectors && !connectorsError ? connectors.length.toLocaleString() : '0');
-                }
-                
-            } catch (error) {
-                console.error('Error loading stats:', error);
-            }
-        }
-        
-        async function checkConnectionStatus() {
-            try {
-                const { data, error } = await supabaseClient
-                    .from('connectors')
-                    .select('id')
-                    .eq('connector_id', currentUserId)
-                    .eq('connected_id', profileUserId)
-                    .single();
-                
-                if (error && error.code !== 'PGRST116') { // PGRST116 is "no rows returned"
-                    console.error('Connection check error:', error);
-                    return false;
-                }
-                
-                isConnected = !!data;
-                return isConnected;
-            } catch (error) {
-                console.error('Error checking connection status:', error);
-                return false;
-            }
-        }
-        
-        function initializeEventListeners() {
-            // Tabs
-            const tabs = document.querySelectorAll('.tab');
-            if (tabs.length > 0) {
-                tabs.forEach(tab => {
-                    tab.addEventListener('click', function() {
-                        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-                        this.classList.add('active');
-                        
-                        document.querySelectorAll('.tab-content').forEach(content => {
-                            content.classList.remove('active');
-                        });
-                        
-                        const tabId = this.getAttribute('data-tab');
-                        const tabContent = document.getElementById(`${tabId}-tab`);
-                        if (tabContent) {
-                            tabContent.classList.add('active');
-                        }
-                        
-                        // Load appropriate content
-                        if (tabId === 'pulse') {
-                            loadPulses();
-                        } else if (tabId === 'series') {
-                            loadSeries();
-                        } else if (tabId === 'links') {
-                            loadLinks();
-                        } else if (tabId === 'timecapsule') {
-                            loadTimeCapsule();
-                        }
-                    });
+                // Clear debounce timers
+                Object.keys(State.debounceTimers).forEach(key => {
+                    clearTimeout(State.debounceTimers[key]);
                 });
+                
+                console.log('🧹 Cleanup completed');
             }
-            
-            // Log Out button
-            const logoutBtn = document.getElementById('logoutBtn');
-            if (logoutBtn) {
-                logoutBtn.addEventListener('click', handleLogout);
-            }
-            
-            // Edit modal
-            const closeEditModal = document.getElementById('closeEditModal');
-            const cancelEdit = document.getElementById('cancelEdit');
-            
-            if (closeEditModal) {
-                closeEditModal.addEventListener('click', () => {
-                    const editModal = document.getElementById('editModal');
-                    if (editModal) {
-                        editModal.style.display = 'none';
-                    }
-                });
-            }
-            
-            if (cancelEdit) {
-                cancelEdit.addEventListener('click', () => {
-                    const editModal = document.getElementById('editModal');
-                    if (editModal) {
-                        editModal.style.display = 'none';
-                    }
-                });
-            }
-            
-            // Save edit
-            const saveEditBtn = document.getElementById('saveEdit');
-            if (saveEditBtn) {
-                saveEditBtn.addEventListener('click', saveProfile);
-            }
-            
-            // Share button
-            const shareBtn = document.getElementById('shareBtn');
-            if (shareBtn) {
-                shareBtn.addEventListener('click', shareProfile);
-            }
-            
-            // Message button is hidden (per requirement)
-            const messageBtn = document.getElementById('messageBtn');
-            if (messageBtn) {
-                messageBtn.style.display = 'none';
-            }
-            
-            // NEW: Notification button click handler
-            const notificationBtn = document.getElementById('notificationBtn');
-            if (notificationBtn) {
-                notificationBtn.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    window.location.href = 'notifications.html';
-                });
-            }
-            
-            // Listen for auth changes
-            if (supabaseClient) {
-                supabaseClient.auth.onAuthStateChange((event, session) => {
-                    console.log('🔐 Auth state changed:', event);
-                    
-                    if (event === 'SIGNED_OUT') {
-                        // Clean up subscription
-                        cleanupNotificationsSubscription();
-                        window.location.href = 'login.html';
-                    } else if (event === 'SIGNED_IN' || event === 'USER_UPDATED') {
-                        // Reload profile data if user updates
-                        if (session && session.user.id === currentUserId) {
-                            loadCurrentUserProfile(session.user);
-                            // Re-check notifications
-                            checkUnreadNotifications();
-                        }
-                    }
-                });
-            }
-            
-            // Clean up subscription when page is unloaded
-            window.addEventListener('beforeunload', cleanupNotificationsSubscription);
-        }
-        
-        // Log Out Function
-        async function handleLogout() {
-            try {
-                // Show confirmation dialog
-                if (!confirm('Are you sure you want to log out?')) {
-                    return;
-                }
-                
-                // Show loading state
-                const logoutBtn = document.getElementById('logoutBtn');
-                if (logoutBtn) {
-                    logoutBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Logging out...';
-                    logoutBtn.disabled = true;
-                }
-                
-                // Clean up subscription
-                cleanupNotificationsSubscription();
-                
-                // Sign out from Supabase
-                const { error } = await supabaseClient.auth.signOut();
-                
-                if (error) {
-                    throw error;
-                }
-                
-                // Show success message
-                showToast('Successfully logged out!', 'success');
-                
-                // Redirect to login page after a short delay
-                setTimeout(() => {
-                    window.location.href = 'login.html';
-                }, 1500);
-                
-            } catch (error) {
-                console.error('Error logging out:', error);
-                
-                // Reset logout button
-                const logoutBtn = document.getElementById('logoutBtn');
-                if (logoutBtn) {
-                    logoutBtn.innerHTML = '<i class="fas fa-sign-out-alt"></i> Log Out';
-                    logoutBtn.disabled = false;
-                }
-                
-                showToast('Failed to log out. Please try again.', 'error');
-            }
-        }
-        
-        function openEditModal() {
-            const editModal = document.getElementById('editModal');
-            const profile = isViewingOwnProfile ? currentViewProfile : currentUserProfile;
-            
-            // Set form values
-            document.getElementById('editName').value = profile.full_name || '';
-            document.getElementById('editUsername').value = profile.username || '';
-            document.getElementById('editBio').value = profile.bio || '';
-            document.getElementById('editAvatar').value = profile.avatar_url || '';
-            
-            // Set avatar preview
-            const avatarPreviewImg = document.getElementById('avatarPreviewImg');
-            const avatarPreviewInitials = document.getElementById('avatarPreviewInitials');
-            
-            if (profile.avatar_url) {
-                avatarPreviewImg.src = profile.avatar_url;
-                avatarPreviewImg.style.display = 'block';
-                avatarPreviewInitials.style.display = 'none';
-            } else {
-                const initials = getInitials(profile.full_name || profile.email || 'User');
-                avatarPreviewImg.style.display = 'none';
-                avatarPreviewInitials.style.display = 'flex';
-                avatarPreviewInitials.textContent = initials;
-            }
-            
-            editModal.style.display = 'flex';
-        }
-        
-        async function setupConnectionButton() {
-            const isConnected = await checkConnectionStatus();
-            const connectBtn = getElement('connectBtn');
-            
-            if (!connectBtn) return;
-            
-            if (isConnected) {
-                safeSetHTML(connectBtn, '<i class="fas fa-check"></i> Connected');
-                connectBtn.classList.add('connected');
-                connectBtn.classList.remove('primary');
-                connectBtn.onclick = () => disconnect();
-            } else {
-                safeSetHTML(connectBtn, '<i class="fas fa-plus"></i> Connect');
-                connectBtn.classList.remove('connected');
-                connectBtn.classList.add('primary');
-                connectBtn.onclick = () => connect();
-            }
-        }
-        
-        async function connect() {
-            try {
-                const { error } = await supabaseClient
-                    .from('connectors')
-                    .insert({
-                        connector_id: currentUserId,
-                        connected_id: profileUserId,
-                        connection_type: 'creator'
-                    });
-                
-                if (error) throw error;
-                
-                showToast('Connected successfully!', 'success');
-                isConnected = true;
-                setupConnectionButton();
-                
-                // Update connectors count
-                await loadProfileStats();
-                
-            } catch (error) {
-                console.error('Error connecting:', error);
-                showToast('Failed to connect', 'error');
-            }
-        }
-        
-        async function disconnect() {
-            try {
-                const { error } = await supabaseClient
-                    .from('connectors')
-                    .delete()
-                    .eq('connector_id', currentUserId)
-                    .eq('connected_id', profileUserId);
-                
-                if (error) throw error;
-                
-                showToast('Disconnected', 'success');
-                isConnected = false;
-                setupConnectionButton();
-                
-                // Update connectors count
-                await loadProfileStats();
-                
-            } catch (error) {
-                console.error('Error disconnecting:', error);
-                showToast('Failed to disconnect', 'error');
-            }
-        }
-        
-        async function shareProfile() {
-            const profileUrl = window.location.href;
-            const profileName = currentViewProfile?.full_name || 'User';
-            const profileUsername = currentViewProfile?.username ? `@${currentViewProfile.username}` : '';
-            
-            const shareData = {
-                title: `${profileName}'s Profile`,
-                text: `Check out ${profileName} ${profileUsername} on Bantu Connect Pulse!`,
-                url: profileUrl
+
+            // ============================================
+            // PUBLIC API (for inline onclick handlers)
+            // ============================================
+            window.viewPulses = function() {
+                const pulseTab = document.querySelector('.tab[data-tab="pulse"]');
+                if (pulseTab) pulseTab.click();
             };
             
-            if (navigator.share) {
-                try {
-                    await navigator.share(shareData);
-                } catch (error) {
-                    console.log('Sharing cancelled:', error);
-                }
-            } else {
-                // Fallback: copy to clipboard
-                try {
-                    await navigator.clipboard.writeText(profileUrl);
-                    showToast('Profile link copied to clipboard!', 'success');
-                } catch (error) {
-                    console.error('Failed to copy:', error);
-                    showToast('Failed to share profile', 'error');
-                }
-            }
-        }
-        
-        async function loadPulses() {
-            try {
-                const { data: pulses, error } = await supabaseClient
-                    .from('pulses')
-                    .select('*')
-                    .eq('user_id', profileUserId)
-                    .is('deleted_at', null)
-                    .order('created_at', { ascending: false })
-                    .limit(9);
-                
-                if (error) throw error;
-                
-                const container = getElement('pulseGrid');
-                if (!container) return;
-                
-                if (!pulses || pulses.length === 0) {
-                    safeSetHTML(container, `
-                        <div class="empty-state" style="grid-column: 1/-1; padding: 60px 20px;">
-                            <div class="empty-icon">
-                                <svg width="48" height="48" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <rect width="40" height="40" rx="8" fill="#0F172A"/>
-                                    <path d="M8 20 L12 16 L16 22 L20 18 L24 24 L28 20 L32 26" stroke="#4B5563" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-                                    <circle cx="32" cy="26" r="3" fill="#4B5563"/>
-                                </svg>
-                            </div>
-                            <div class="empty-title">No Pulses Yet</div>
-                            <div class="empty-description">
-                                ${isViewingOwnProfile ? 'Share your first cultural moment!' : 'No pulses to show yet.'}
-                            </div>
-                        </div>
-                    `);
-                    return;
-                }
-                
-                container.innerHTML = '';
-                
-                pulses.forEach(pulse => {
-                    const pulseItem = document.createElement('div');
-                    pulseItem.className = 'pulse-item';
-                    pulseItem.setAttribute('data-pulse-id', pulse.id);
-                    
-                    // Check if it's part of a series
-                    let seriesBadge = '';
-                    if (pulse.series_id) {
-                        seriesBadge = `<div class="series-badge">Series · Part ${pulse.series_order || 1}</div>`;
-                    }
-                    
-                    // UPDATED: Removed pulse comments and likes count - only showing icons without numbers
-                    pulseItem.innerHTML = `
-                        ${seriesBadge}
-                        <div class="pulse-overlay">
-                            <div class="pulse-stats">
-                                <span class="pulse-icon"><i class="fas fa-heart"></i></span>
-                                <span class="pulse-icon"><i class="fas fa-comment"></i></span>
-                            </div>
-                        </div>
-                    `;
-                    
-                    // Add media if available
-                    if (pulse.media_url) {
-                        if (pulse.media_type === 'video') {
-                            const video = document.createElement('video');
-                            video.src = pulse.media_url;
-                            video.muted = true;
-                            video.playsInline = true;
-                            safeSetStyle(video, 'width', '100%');
-                            safeSetStyle(video, 'height', '100%');
-                            safeSetStyle(video, 'objectFit', 'cover');
-                            pulseItem.prepend(video);
-                        } else {
-                            const img = document.createElement('img');
-                            img.src = pulse.media_url;
-                            img.alt = 'Pulse';
-                            safeSetStyle(img, 'width', '100%');
-                            safeSetStyle(img, 'height', '100%');
-                            safeSetStyle(img, 'objectFit', 'cover');
-                            pulseItem.prepend(img);
-                        }
-                    } else {
-                        // Show caption preview if no media
-                        const captionPreview = document.createElement('div');
-                        captionPreview.className = 'pulse-content-preview';
-                        const captionText = pulse.caption ? 
-                            (pulse.caption.length > 100 ? pulse.caption.substring(0, 97) + '...' : pulse.caption) :
-                            'No media';
-                        safeSetText(captionPreview, captionText);
-                        pulseItem.prepend(captionPreview);
-                    }
-                    
-                    // Redirect to pulse-content-detail.html when clicked
-                    pulseItem.addEventListener('click', () => {
-                        window.location.href = `pulse-content-detail.html?id=${pulse.id}`;
-                    });
-                    
-                    container.appendChild(pulseItem);
-                });
-                
-            } catch (error) {
-                console.error('Error loading pulses:', error);
-                showToast('Failed to load pulses', 'error');
-            }
-        }
-        
-        async function loadSeries() {
-            try {
-                const { data: series, error } = await supabaseClient
-                    .from('pulse_series')
-                    .select('*')
-                    .eq('creator_id', profileUserId)
-                    .eq('is_archived', false)
-                    .order('created_at', { ascending: false });
-                
-                if (error) throw error;
-                
-                const container = getElement('seriesGrid');
-                if (!container) return;
-                
-                if (!series || series.length === 0) {
-                    safeSetHTML(container, `
-                        <div class="empty-state" style="grid-column: 1/-1; padding: 60px 20px;">
-                            <div class="empty-icon">
-                                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <rect x="3" y="15" width="18" height="6" rx="2" fill="#4B5563"/>
-                                    <rect x="4" y="10" width="16" height="6" rx="2" fill="#6B7280"/>
-                                    <rect x="5" y="5" width="14" height="6" rx="2" fill="#9CA3AF"/>
-                                </svg>
-                            </div>
-                            <div class="empty-title">No Series Yet</div>
-                            <div class="empty-description">
-                                ${isViewingOwnProfile ? 'Start your first storytelling series!' : 'No series to show yet.'}
-                            </div>
-                        </div>
-                    `);
-                    return;
-                }
-                
-                container.innerHTML = '';
-                
-                series.forEach(s => {
-                    const seriesCard = document.createElement('div');
-                    seriesCard.className = 'series-card';
-                    seriesCard.setAttribute('data-series-id', s.id);
-                    seriesCard.innerHTML = `
-                        <div class="series-cover">
-                            ${s.cover_image_url ? `<img src="${s.cover_image_url}" alt="${s.title}">` : ''}
-                            <div class="series-progress">
-                                <div class="series-progress-fill" style="width: ${Math.min((s.current_part || 0) / (s.total_parts || 1) * 100, 100)}%"></div>
-                            </div>
-                        </div>
-                        <div class="series-info">
-                            <div class="series-title">${s.title || 'Untitled Series'}</div>
-                            <div class="series-meta">
-                                <span>${s.current_part || 0}/${s.total_parts || '∞'} parts</span>
-                                <span class="series-status ${s.is_completed ? 'completed' : ''}">
-                                    ${s.is_completed ? 'Completed' : 'Active'}
-                                </span>
-                            </div>
-                        </div>
-                    `;
-                    
-                    // Get first pulse in series and redirect to it
-                    seriesCard.addEventListener('click', async () => {
-                        try {
-                            // Get the first pulse in this series
-                            const { data: firstPulse, error: pulseError } = await supabaseClient
-                                .from('pulses')
-                                .select('id')
-                                .eq('series_id', s.id)
-                                .order('series_order', { ascending: true })
-                                .limit(1)
-                                .single();
-                            
-                            if (pulseError || !firstPulse) {
-                                showToast('No pulses in this series yet', 'error');
-                                return;
-                            }
-                            
-                            // Redirect to the first pulse detail
-                            window.location.href = `pulse-content-detail.html?id=${firstPulse.id}`;
-                        } catch (error) {
-                            console.error('Error loading series pulse:', error);
-                            showToast('Could not open series', 'error');
-                        }
-                    });
-                    
-                    container.appendChild(seriesCard);
-                });
-                
-            } catch (error) {
-                console.error('Error loading series:', error);
-                showToast('Failed to load series', 'error');
-            }
-        }
-        
-        async function loadLinks() {
-            try {
-                const { data: pulses, error } = await supabaseClient
-                    .from('pulses')
-                    .select('*')
-                    .eq('user_id', profileUserId)
-                    .not('linked_content_id', 'is', null)
-                    .order('created_at', { ascending: false })
-                    .limit(10);
-                
-                if (error) throw error;
-                
-                const container = getElement('linksGrid');
-                if (!container) return;
-                
-                if (!pulses || pulses.length === 0) {
-                    safeSetHTML(container, `
-                        <div class="empty-state" style="grid-column: 1/-1; padding: 60px 20px;">
-                            <div class="empty-icon">
-                                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <path d="M10 13C10.4295 13.5741 10.9774 14.0491 11.6066 14.3929C12.2357 14.7367 12.9315 14.9411 13.6467 14.9923C14.3618 15.0435 15.0796 14.9403 15.7513 14.6897C16.4231 14.4392 17.0331 14.047 17.54 13.54L20.54 10.54C21.4508 9.59699 21.9548 8.33397 21.9434 7.02299C21.932 5.71201 21.4061 4.45794 20.4791 3.5309C19.5521 2.60386 18.298 2.07802 16.987 2.06663C15.676 2.05524 14.413 2.55921 13.47 3.47L11.75 5.18" stroke="#6B7280" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                    <path d="M14 11C13.5705 10.4259 13.0226 9.95085 12.3934 9.60707C11.7642 9.26329 11.0685 9.05889 10.3533 9.00768C9.63815 8.95647 8.92037 9.05971 8.24861 9.31026C7.57685 9.5608 6.96688 9.953 6.46 10.46L3.46 13.46C2.54921 14.403 2.04524 15.666 2.05663 16.977C2.06802 18.288 2.59386 19.5421 3.5209 20.4691C4.44794 21.3961 5.70201 21.922 7.01299 21.9334C8.32397 21.9448 9.58699 21.4408 10.53 20.53L12.24 18.82" stroke="#6B7280" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                </svg>
-                            </div>
-                            <div class="empty-title">No Linked Content</div>
-                            <div class="empty-description">
-                                ${isViewingOwnProfile ? 'Link your Bantu Stream content to your pulses!' : 'No linked content yet.'}
-                            </div>
-                        </div>
-                    `);
-                    return;
-                }
-                
-                container.innerHTML = '';
-                
-                pulses.forEach(pulse => {
-                    const linkCard = document.createElement('div');
-                    linkCard.className = 'link-card';
-                    
-                    let icon = 'fas fa-link';
-                    let title = 'Linked Content';
-                    
-                    if (pulse.linked_content_type === 'music') {
-                        icon = 'fas fa-music';
-                        title = 'Music';
-                    } else if (pulse.linked_content_type === 'film') {
-                        icon = 'fas fa-film';
-                        title = 'Film';
-                    } else if (pulse.linked_content_type === 'podcast') {
-                        icon = 'fas fa-podcast';
-                        title = 'Podcast';
-                    }
-                    
-                    linkCard.innerHTML = `
-                        <div class="link-icon">
-                            <i class="${icon}"></i>
-                        </div>
-                        <div class="link-content">
-                            <div class="link-title">${title}</div>
-                            <div class="link-description">${pulse.caption || 'Linked content'}</div>
-                        </div>
-                    `;
-                    
-                    // Redirect to pulse detail for linked content
-                    linkCard.addEventListener('click', () => {
-                        window.location.href = `pulse-content-detail.html?id=${pulse.id}`;
-                    });
-                    
-                    container.appendChild(linkCard);
-                });
-                
-            } catch (error) {
-                console.error('Error loading links:', error);
-            }
-        }
-        
-        // FEATURE 1: Pulse Identity Ring Functions - FIXED to avoid 404 errors
-        async function initializePulseIdentityRing() {
-            try {
-                const ring = document.getElementById('profile-avatar-ring');
-                if (!ring) return;
-                
-                // Check user activity in the last 12 hours
-                const twelveHoursAgo = new Date();
-                twelveHoursAgo.setHours(twelveHoursAgo.getHours() - 12);
-                
-                // Check for recent pulses (existing table)
-                const { data: recentPulses } = await supabaseClient
-                    .from('pulses')
-                    .select('id')
-                    .eq('user_id', currentUserId)
-                    .gte('created_at', twelveHoursAgo.toISOString())
-                    .limit(1);
-                
-                // Check for recent comments on user's pulses
-                const { data: recentComments } = await supabaseClient
-                    .from('pulse_comments')
-                    .select('id')
-                    .eq('pulse_id', function() {
-                        // Subquery to get user's pulses
-                        return supabaseClient
-                            .from('pulses')
-                            .select('id')
-                            .eq('user_id', currentUserId);
-                    })
-                    .gte('created_at', twelveHoursAgo.toISOString())
-                    .limit(1);
-                
-                // Check for recent likes on user's pulses
-                const { data: recentLikes } = await supabaseClient
-                    .from('pulse_likes')
-                    .select('id')
-                    .eq('pulse_id', function() {
-                        // Subquery to get user's pulses
-                        return supabaseClient
-                            .from('pulses')
-                            .select('id')
-                            .eq('user_id', currentUserId);
-                    })
-                    .gte('created_at', twelveHoursAgo.toISOString())
-                    .limit(1);
-                
-                const isActiveToday = recentPulses && recentPulses.length > 0;
-                const isReceivingAttention = (recentComments && recentComments.length > 0) || 
-                                           (recentLikes && recentLikes.length > 0);
-                
-                // Set ring state
-                if (isActiveToday && isReceivingAttention) {
-                    ring.className = 'profile-avatar-ring receiving-attention';
-                } else if (isActiveToday) {
-                    ring.className = 'profile-avatar-ring active-today';
-                } else {
-                    ring.className = 'profile-avatar-ring inactive';
-                }
-                
-            } catch (error) {
-                console.error('Error initializing pulse identity ring:', error);
-                // Default to inactive state
-                const ring = document.getElementById('profile-avatar-ring');
-                if (ring) {
-                    ring.className = 'profile-avatar-ring inactive';
-                }
-            }
-        }
-        
-        // FEATURE 2: Time Capsule Functions - FIXED to avoid 404 and 400 errors
-        async function loadTimeCapsule() {
-            if (!isViewingOwnProfile) return;
-            
-            try {
-                const container = document.getElementById('memoryCardsContainer');
-                if (!container) return;
-                
-                container.innerHTML = '<div class="empty-state"><div class="spinner" style="margin: 0 auto 20px;"></div><div>Loading your journey...</div></div>';
-                
-                const memoryCards = [];
-                
-                // Get user's first pulse
-                const { data: firstPulse } = await supabaseClient
-                    .from('pulses')
-                    .select('*')
-                    .eq('user_id', currentUserId)
-                    .is('deleted_at', null)
-                    .order('created_at', { ascending: true })
-                    .limit(1)
-                    .single();
-                
-                if (firstPulse) {
-                    memoryCards.push({
-                        type: 'first_pulse',
-                        title: 'Your First Pulse',
-                        icon: 'fas fa-star',
-                        content: firstPulse.caption ? 
-                            (firstPulse.caption.length > 80 ? firstPulse.caption.substring(0, 77) + '...' : firstPulse.caption) : 
-                            'Your very first cultural moment',
-                        date: new Date(firstPulse.created_at),
-                        stats: {
-                            likes: firstPulse.likes_count || 0,
-                            comments: firstPulse.comments_count || 0
-                        }
-                    });
-                }
-                
-                // Get most liked pulse (instead of most saved to avoid table errors)
-                const { data: mostLikedPulse } = await supabaseClient
-                    .from('pulses')
-                    .select('*')
-                    .eq('user_id', currentUserId)
-                    .is('deleted_at', null)
-                    .order('likes_count', { ascending: false })
-                    .limit(1)
-                    .single();
-                
-                if (mostLikedPulse && mostLikedPulse.likes_count > 0) {
-                    memoryCards.push({
-                        type: 'most_liked',
-                        title: 'Most Liked Pulse',
-                        icon: 'fas fa-heart',
-                        content: mostLikedPulse.caption ? 
-                            (mostLikedPulse.caption.length > 80 ? mostLikedPulse.caption.substring(0, 77) + '...' : mostLikedPulse.caption) : 
-                            'Most loved by your community',
-                        date: new Date(mostLikedPulse.created_at),
-                        stats: {
-                            likes: mostLikedPulse.likes_count || 0,
-                            comments: mostLikedPulse.comments_count || 0
-                        }
-                    });
-                }
-                
-                // Get total pulses count
-                const { data: pulsesCountData } = await supabaseClient
-                    .from('pulses')
-                    .select('id', { count: 'exact' })
-                    .eq('user_id', currentUserId)
-                    .is('deleted_at', null);
-                
-                if (pulsesCountData) {
-                    memoryCards.push({
-                        type: 'milestone',
-                        title: 'Cultural Moments Shared',
-                        icon: 'fas fa-mountain',
-                        content: `You've shared ${pulsesCountData.length || 0} pulses with your community`,
-                        date: new Date()
-                    });
-                }
-                
-                // Get join date
-                const { data: userProfile } = await supabaseClient
-                    .from('user_profiles')
-                    .select('created_at')
-                    .eq('id', currentUserId)
-                    .single();
-                
-                if (userProfile && userProfile.created_at) {
-                    const joinDate = new Date(userProfile.created_at);
-                    const now = new Date();
-                    const months = (now.getFullYear() - joinDate.getFullYear()) * 12 + (now.getMonth() - joinDate.getMonth());
-                    
-                    if (months > 0) {
-                        memoryCards.push({
-                            type: 'anniversary',
-                            title: 'Pulse Journey',
-                            icon: 'fas fa-calendar',
-                            content: `You've been sharing cultural moments for ${months} month${months !== 1 ? 's' : ''}`,
-                            date: joinDate
-                        });
-                    }
-                }
-                
-                // Get series count if any
-                const { data: seriesData } = await supabaseClient
-                    .from('pulse_series')
-                    .select('id', { count: 'exact' })
-                    .eq('creator_id', currentUserId)
-                    .eq('is_archived', false);
-                
-                if (seriesData && seriesData.length > 0) {
-                    memoryCards.push({
-                        type: 'series',
-                        title: 'Storytelling Series',
-                        icon: 'fas fa-layer-group',
-                        content: `Created ${seriesData.length} storytelling series`,
-                        date: new Date()
-                    });
-                }
-                
-                // Display memory cards
-                if (memoryCards.length === 0) {
-                    container.innerHTML = `
-                        <div class="empty-state">
-                            <div class="empty-icon">
-                                <i class="fas fa-history"></i>
-                            </div>
-                            <div class="empty-title">No Journey Data Yet</div>
-                            <div class="empty-description">
-                                Start creating pulses to build your personal archive!
-                            </div>
-                        </div>
-                    `;
-                    return;
-                }
-                
-                container.innerHTML = '';
-                
-                memoryCards.forEach(card => {
-                    const memoryCard = document.createElement('div');
-                    memoryCard.className = 'memory-card';
-                    
-                    let statsHTML = '';
-                    if (card.stats) {
-                        const statItems = [];
-                        if (card.stats.likes !== undefined) {
-                            statItems.push(`<span class="memory-card-stat"><i class="fas fa-heart"></i> ${card.stats.likes}</span>`);
-                        }
-                        if (card.stats.comments !== undefined) {
-                            statItems.push(`<span class="memory-card-stat"><i class="fas fa-comment"></i> ${card.stats.comments}</span>`);
-                        }
-                        if (card.stats.saves !== undefined) {
-                            statItems.push(`<span class="memory-card-stat"><i class="fas fa-bookmark"></i> ${card.stats.saves}</span>`);
-                        }
-                        if (statItems.length > 0) {
-                            statsHTML = `<div class="memory-card-stats">${statItems.join('')}</div>`;
-                        }
-                    }
-                    
-                    memoryCard.innerHTML = `
-                        <div class="memory-card-title">
-                            <i class="${card.icon}"></i>
-                            ${card.title}
-                        </div>
-                        <div class="memory-card-content">
-                            ${card.content}
-                        </div>
-                        <div class="memory-card-meta">
-                            <span class="memory-card-date">
-                                <i class="far fa-calendar"></i>
-                                ${card.date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
-                            </span>
-                            ${statsHTML}
-                        </div>
-                    `;
-                    
-                    container.appendChild(memoryCard);
-                });
-                
-            } catch (error) {
-                console.error('Error loading time capsule:', error);
-                const container = document.getElementById('memoryCardsContainer');
-                if (container) {
-                    container.innerHTML = `
-                        <div class="empty-state">
-                            <div class="empty-title">Couldn't Load Journey</div>
-                            <div class="empty-description">
-                                Please try again later
-                            </div>
-                        </div>
-                    `;
-                }
-            }
-        }
-        
-        // Profile Picture Upload Functions
-        function triggerAvatarUpload() {
-            const input = document.createElement('input');
-            input.type = 'file';
-            input.accept = 'image/*';
-            input.onchange = handleAvatarUpload;
-            input.click();
-        }
-        
-        async function handleAvatarUpload(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-            
-            // Validate file
-            if (!file.type.startsWith('image/')) {
-                showToast('Please select an image file', 'error');
-                return;
-            }
-            
-            if (file.size > 5 * 1024 * 1024) { // 5MB limit
-                showToast('Image must be less than 5MB', 'error');
-                return;
-            }
-            
-            // Show preview
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const avatarPreviewImg = document.getElementById('avatarPreviewImg');
-                const avatarPreviewInitials = document.getElementById('avatarPreviewInitials');
-                
-                avatarPreviewImg.src = e.target.result;
-                avatarPreviewImg.style.display = 'block';
-                avatarPreviewInitials.style.display = 'none';
-                
-                // Store file for upload
-                profileAvatarFile = file;
-                
-                // Upload to Supabase
-                uploadAvatarToSupabase(file);
+            window.viewSeriesTab = function() {
+                const seriesTab = document.querySelector('.tab[data-tab="series"]');
+                if (seriesTab) seriesTab.click();
             };
-            reader.readAsDataURL(file);
-        }
-        
-        async function uploadAvatarToSupabase(file) {
-            try {
-                showToast('Uploading profile picture...', 'success');
-                
-                // Upload to Supabase storage
-                const fileExt = file.name.split('.').pop();
-                const fileName = `${currentUserId}-${Date.now()}.${fileExt}`;
-                const filePath = `profile-avatars/${fileName}`;
-                
-                const { error: uploadError } = await supabaseClient.storage
-                    .from('avatars')
-                    .upload(filePath, file, {
-                        upsert: true
-                    });
-                
-                if (uploadError) {
-                    // Try with a different bucket name
-                    const { error: uploadError2 } = await supabaseClient.storage
-                        .from('profile-pictures')
-                        .upload(filePath, file, {
-                            upsert: true
-                        });
-                    
-                    if (uploadError2) throw uploadError2;
-                    
-                    // Get public URL from second bucket
-                    const { data: { publicUrl } } = supabaseClient.storage
-                        .from('profile-pictures')
-                        .getPublicUrl(filePath);
-                    
-                    document.getElementById('editAvatar').value = publicUrl;
-                } else {
-                    // Get public URL
-                    const { data: { publicUrl } } = supabaseClient.storage
-                        .from('avatars')
-                        .getPublicUrl(filePath);
-                    
-                    document.getElementById('editAvatar').value = publicUrl;
-                }
-                
-                showToast('Profile picture uploaded!', 'success');
-                
-            } catch (error) {
-                console.error('Error uploading avatar:', error);
-                
-                // Fallback: Use a data URL temporarily
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    document.getElementById('editAvatar').value = e.target.result;
-                    showToast('Profile picture saved locally. Will sync when connected.', 'success');
-                };
-                reader.readAsDataURL(file);
+            
+            window.viewConnectors = function() {
+                showToast('Connectors list feature coming soon!', 'success');
+            };
+            
+            window.triggerAvatarUpload = function() {
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.accept = 'image/*';
+                input.onchange = handleAvatarUpload;
+                input.click();
+            };
+
+            // ============================================
+            // STARTUP
+            // ============================================
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', initialize);
+            } else {
+                initialize();
             }
-        }
-        
-        function removeProfilePicture() {
-            const avatarPreviewImg = document.getElementById('avatarPreviewImg');
-            const avatarPreviewInitials = document.getElementById('avatarPreviewInitials');
-            const profile = isViewingOwnProfile ? currentViewProfile : currentUserProfile;
-            const initials = getInitials(profile.full_name || profile.email || 'User');
-            
-            avatarPreviewImg.style.display = 'none';
-            avatarPreviewInitials.style.display = 'flex';
-            avatarPreviewInitials.textContent = initials;
-            
-            // Clear avatar URL
-            document.getElementById('editAvatar').value = '';
-            profileAvatarFile = null;
-            
-            showToast('Profile picture removed', 'success');
-        }
-        
-        async function saveProfile() {
-            try {
-                const name = getElement('editName')?.value || '';
-                const username = getElement('editUsername')?.value || '';
-                const bio = getElement('editBio')?.value || '';
-                const avatar = getElement('editAvatar')?.value || '';
-                
-                // Update user_profiles table
-                const { error: profileError } = await supabaseClient
-                    .from('user_profiles')
-                    .update({ 
-                        full_name: name,
-                        username: username.replace('@', ''),
-                        bio: bio,
-                        avatar_url: avatar || null,
-                        updated_at: new Date().toISOString()
-                    })
-                    .eq('id', currentUserId);
-                
-                if (profileError) {
-                    // Try upsert if update fails
-                    const { error: upsertError } = await supabaseClient
-                        .from('user_profiles')
-                        .upsert({ 
-                            id: currentUserId,
-                            full_name: name,
-                            username: username.replace('@', ''),
-                            bio: bio,
-                            avatar_url: avatar || null,
-                            email: currentUserProfile?.email || '',
-                            updated_at: new Date().toISOString()
-                        }, {
-                            onConflict: 'id'
-                        });
-                    
-                    if (upsertError) throw upsertError;
-                }
-                
-                showToast('Profile updated successfully', 'success');
-                
-                const editModal = getElement('editModal');
-                if (editModal) {
-                    safeSetStyle(editModal, 'display', 'none');
-                }
-                
-                // Reload both profiles
-                await loadCurrentUserProfile({ id: currentUserId, email: currentUserProfile?.email });
-                if (isViewingOwnProfile) {
-                    await loadViewProfile();
-                }
-                
-            } catch (error) {
-                console.error('Error saving profile:', error);
-                showToast('Failed to save profile', 'error');
-            }
-        }
-        
-        function viewPulses() {
-            const pulseTab = document.querySelector('.tab[data-tab="pulse"]');
-            if (pulseTab) {
-                pulseTab.click();
-            }
-        }
-        
-        function viewSeriesTab() {
-            const seriesTab = document.querySelector('.tab[data-tab="series"]');
-            if (seriesTab) {
-                seriesTab.click();
-            }
-        }
-        
-        function viewConnectors() {
-            showToast('Connectors list feature coming soon!', 'success');
-        }
-        
-        function showToast(message, type = 'error') {
-            const toast = document.createElement('div');
-            toast.className = `toast ${type}`;
-            toast.innerHTML = `
-                <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i>
-                <span>${message}</span>
-            `;
-            
-            const container = getElement('toast-container');
-            if (!container) return;
-            
-            container.appendChild(toast);
-            
-            setTimeout(() => {
-                toast.style.opacity = '0';
-                setTimeout(() => {
-                    if (toast.parentNode === container) {
-                        container.removeChild(toast);
-                    }
-                }, 300);
-            }, 4000);
-        }
-        
-        function loadSampleData() {
-            // Load sample data for demo
-            safeSetText(getElement('profile-name'), 'Sample User');
-            safeSetText(getElement('profile-username'), '@sampleuser');
-            
-            if (isViewingOwnProfile) {
-                const logoutBtn = getElement('logoutBtn');
-                if (logoutBtn) {
-                    logoutBtn.style.display = 'flex';
-                }
-            }
-            
-            // Load sample pulses grid
-            const container = getElement('pulseGrid');
-            if (!container) return;
-            
-            container.innerHTML = '';
-            
-            for (let i = 0; i < 9; i++) {
-                const pulseItem = document.createElement('div');
-                pulseItem.className = 'pulse-item';
-                pulseItem.style.background = i % 3 === 0 ? 'linear-gradient(135deg, var(--bantu-blue), var(--warm-gold))' : 
-                                        i % 3 === 1 ? 'linear-gradient(135deg, var(--glow-cycle-1), var(--glow-cycle-3))' :
-                                        'linear-gradient(135deg, var(--glow-cycle-2), var(--glow-cycle-4))';
-                pulseItem.style.opacity = '0.3';
-                container.appendChild(pulseItem);
-            }
-        }
-        
-        // Start initialization when DOM is fully loaded
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', initialize);
-        } else {
-            initialize();
-        }
+
+        })();
     </script>
 </body>
 </html>
