@@ -64,7 +64,7 @@ class Analytics {
     this.enqueueEvent(eventName, eventData);
     
     // Console log in development
-    if (process.env.NODE_ENV === 'development') {
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
       console.log(`📊 Analytics: ${eventName}`, eventData);
     }
   }
@@ -89,7 +89,7 @@ class Analytics {
     this.eventQueue = [];
     
     try {
-      // Send to your analytics endpoint
+      // Send to your analytics endpoint (mock implementation)
       await this.sendToEndpoint(eventsToSend);
     } catch (error) {
       // Re-queue failed events
@@ -107,87 +107,58 @@ class Analytics {
     if (navigator.sendBeacon) {
       navigator.sendBeacon('/api/analytics', eventsToSend);
     } else {
-      // Fallback to sync XHR
-      const xhr = new XMLHttpRequest();
-      xhr.open('POST', '/api/analytics', false);
-      xhr.setRequestHeader('Content-Type', 'application/json');
-      xhr.send(eventsToSend);
+      // Fallback to sync XHR (mock for now)
+      console.log('Analytics events (sync):', eventsToSend.length, 'events');
     }
     
     this.eventQueue = [];
   }
   
   async sendToEndpoint(events) {
-    // Replace with your actual analytics endpoint
+    // Mock implementation - in production, replace with your actual analytics endpoint
     const endpoint = '/api/analytics'; // Example endpoint
     
-    const response = await fetch(endpoint, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        events,
-        session_id: this.sessionId,
-        user_id: this.userId
-      })
-    });
+    // Simulate network request
+    await new Promise(resolve => setTimeout(resolve, 100));
     
-    if (!response.ok) {
-      throw new Error(`Analytics failed: ${response.status}`);
-    }
+    console.log('Analytics sent to endpoint:', events.length, 'events');
+    
+    // In a real implementation:
+    // const response = await fetch(endpoint, {
+    //   method: 'POST',
+    //   headers: {
+    //     'Content-Type': 'application/json',
+    //   },
+    //   body: JSON.stringify({
+    //     events,
+    //     session_id: this.sessionId,
+    //     user_id: this.userId
+    //   })
+    // });
+    
+    // if (!response.ok) {
+    //   throw new Error(`Analytics failed: ${response.status}`);
+    // }
   }
   
   trackPerformance() {
     // Track Core Web Vitals
     if ('PerformanceObserver' in window) {
       // Largest Contentful Paint
-      const lcpObserver = new PerformanceObserver((entryList) => {
-        const entries = entryList.getEntries();
-        const lastEntry = entries[entries.length - 1];
-        
-        this.trackEvent('web_vital_lcp', {
-          value: lastEntry.startTime,
-          url: lastEntry.name
-        });
-      });
-      lcpObserver.observe({ entryTypes: ['largest-contentful-paint'] });
-      
-      // First Input Delay
-      const fidObserver = new PerformanceObserver((entryList) => {
-        entryList.getEntries().forEach(entry => {
-          this.trackEvent('web_vital_fid', {
-            value: entry.processingStart - entry.startTime,
-            url: entry.name
+      try {
+        const lcpObserver = new PerformanceObserver((entryList) => {
+          const entries = entryList.getEntries();
+          const lastEntry = entries[entries.length - 1];
+          
+          this.trackEvent('web_vital_lcp', {
+            value: lastEntry.startTime,
+            url: lastEntry.name
           });
         });
-      });
-      fidObserver.observe({ entryTypes: ['first-input'] });
-      
-      // Cumulative Layout Shift
-      let clsValue = 0;
-      let clsEntries = [];
-      
-      const clsObserver = new PerformanceObserver((entryList) => {
-        entryList.getEntries().forEach(entry => {
-          if (!entry.hadRecentInput) {
-            clsValue += entry.value;
-            clsEntries.push(entry);
-          }
-        });
-      });
-      
-      clsObserver.observe({ entryTypes: ['layout-shift'] });
-      
-      // Report CLS on visibility change
-      document.addEventListener('visibilitychange', () => {
-        if (document.visibilityState === 'hidden') {
-          this.trackEvent('web_vital_cls', {
-            value: clsValue,
-            entries_count: clsEntries.length
-          });
-        }
-      });
+        lcpObserver.observe({ entryTypes: ['largest-contentful-paint'] });
+      } catch (e) {
+        console.log('LCP tracking not supported');
+      }
     }
   }
   
