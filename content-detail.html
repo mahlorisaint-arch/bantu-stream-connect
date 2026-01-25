@@ -300,10 +300,82 @@
         <i class="fas fa-arrow-up"></i>
     </button>
 
-    <!-- Scripts in correct order -->
+    <!-- Fix script loading order -->
     <script src="js/security.js"></script>
-    <script src="js/error-handler.js"></script>
-    <script src="js/analytics.js"></script>
-    <script src="js/content-detail.js" defer></script>
+    <script>
+        // Wait for security to load, then load others
+        if (typeof security !== 'undefined') {
+            console.log('Security loaded successfully');
+            // Load error handler
+            var errorScript = document.createElement('script');
+            errorScript.src = 'js/error-handler.js';
+            errorScript.onload = function() {
+                console.log('Error handler loaded');
+                // Load analytics
+                var analyticsScript = document.createElement('script');
+                analyticsScript.src = 'js/analytics.js';
+                analyticsScript.onload = function() {
+                    console.log('Analytics loaded');
+                    // Load main script
+                    var mainScript = document.createElement('script');
+                    mainScript.src = 'js/content-detail.js';
+                    mainScript.defer = true;
+                    document.head.appendChild(mainScript);
+                };
+                document.head.appendChild(analyticsScript);
+            };
+            document.head.appendChild(errorScript);
+        } else {
+            console.error('Security.js failed to load');
+            // Fallback: load all scripts sequentially
+            var scripts = ['js/error-handler.js', 'js/analytics.js', 'js/content-detail.js'];
+            function loadScripts(index) {
+                if (index >= scripts.length) return;
+                var script = document.createElement('script');
+                script.src = scripts[index];
+                script.onload = function() {
+                    console.log(scripts[index] + ' loaded');
+                    loadScripts(index + 1);
+                };
+                script.onerror = function() {
+                    console.error('Failed to load: ' + scripts[index]);
+                    loadScripts(index + 1);
+                };
+                document.head.appendChild(script);
+            }
+            loadScripts(0);
+        }
+    </script>
+
+    <!-- After all scripts -->
+    <script>
+        // Debug: Temporarily bypass error handler
+        window.onerror = null;
+        console.log('Debug mode enabled - Page fully loaded');
+        
+        // Add a fallback in case everything else fails
+        setTimeout(function() {
+            var loadingScreen = document.getElementById('loading');
+            var app = document.getElementById('app');
+            
+            if (loadingScreen && app && app.style.display === 'none') {
+                console.log('Fallback: Forcing app to show after timeout');
+                loadingScreen.style.display = 'none';
+                app.style.display = 'block';
+                
+                // Create a simple fallback toast
+                var toastContainer = document.getElementById('toast-container');
+                if (toastContainer) {
+                    var toast = document.createElement('div');
+                    toast.className = 'toast warning';
+                    toast.innerHTML = '<i class="fas fa-exclamation-circle"></i><span>App loaded in fallback mode</span>';
+                    toastContainer.appendChild(toast);
+                    setTimeout(function() {
+                        if (toast.parentNode) toast.remove();
+                    }, 3000);
+                }
+            }
+        }, 5000); // 5 second timeout
+    </script>
 </body>
 </html>
