@@ -100,13 +100,18 @@ class ErrorBoundary {
     toast.className = 'toast error';
     toast.innerHTML = `
       <i class="fas fa-exclamation-triangle"></i>
-      <span>${message}</span>
+      <span>${security.safeText(message)}</span>
     `;
     
-    document.body.appendChild(toast);
+    const container = document.getElementById('toast-container') || document.body;
+    container.appendChild(toast);
     
     // Auto-remove after 5 seconds
-    setTimeout(() => toast.remove(), 5000);
+    setTimeout(() => {
+      if (toast.parentNode) {
+        toast.remove();
+      }
+    }, 5000);
   }
   
   getUserFriendlyMessage(error, context) {
@@ -130,13 +135,18 @@ class ErrorBoundary {
   
   logError(errorData) {
     // Console in development
-    if (process.env.NODE_ENV === 'development') {
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
       console.error('🔴 Application Error:', errorData);
     }
     
     // Send to analytics
     if (window.analytics) {
-      window.analytics.track('error', errorData);
+      window.analytics.trackEvent('error_occurred', {
+        error_type: errorData.type,
+        context: errorData.context,
+        message: errorData.message,
+        url: errorData.url
+      });
     }
     
     // Store in localStorage for debugging
@@ -192,7 +202,7 @@ const safe = {
   // DOM operations
   setText: (element, text) => {
     if (element && text !== undefined) {
-      element.textContent = text;
+      element.textContent = security.safeText(text);
     }
   },
   
