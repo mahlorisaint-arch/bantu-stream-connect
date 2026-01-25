@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Debug - Check Files</title>
+</head>
+<body>
+    <h1>File Loading Debug</h1>
+    <div id="results"></div>
+    
+    <script>
+        const files = [
+            'js/security.js',
+            'js/error-handler.js', 
+            'js/analytics.js',
+            'js/content-detail.js',
+            'css/base.css',
+            'css/components.css',
+            'css/content-detail.css'
+        ];
+        
+        const results = document.getElementById('results');
+        
+        files.forEach(file => {
+            fetch(file)
+                .then(response => {
+                    if (response.ok) {
+                        results.innerHTML += `<p style="color: green;">✓ ${file} - OK</p>`;
+                    } else {
+                        results.innerHTML += `<p style="color: red;">✗ ${file} - ${response.status}</p>`;
+                    }
+                })
+                .catch(error => {
+                    results.innerHTML += `<p style="color: red;">✗ ${file} - ${error.message}</p>`;
+                });
+        });
+    </script>
+</body>
+</html>
