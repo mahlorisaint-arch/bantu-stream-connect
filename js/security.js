@@ -42,8 +42,10 @@ class Security {
   
   // Safe URL validation
   safeURL(url) {
+    if (!url) return 'about:blank';
+    
     try {
-      const parsed = new URL(url);
+      const parsed = new URL(url, window.location.origin);
       
       // Only allow safe protocols
       if (!this.safeProtocols.includes(parsed.protocol)) {
@@ -88,7 +90,26 @@ class Security {
   isSafeAttribute(tagName, attribute) {
     return this.allowedAttributes[tagName]?.includes(attribute) || false;
   }
+  
+  // Safe image rendering
+  createImage(src, alt = '', className = '') {
+    const img = document.createElement('img');
+    img.src = this.safeURL(src);
+    img.alt = this.safeText(alt);
+    if (className) {
+      img.className = this.safeText(className);
+    }
+    img.onerror = function() {
+      this.src = 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop';
+    };
+    return img;
+  }
 }
 
 // Export singleton instance
 const security = new Security();
+
+// Make available globally
+if (typeof window !== 'undefined') {
+  window.security = security;
+}
