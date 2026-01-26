@@ -1,26 +1,337 @@
-// content-detail.js - UPDATED WITH WEEK 2 INTEGRATION
+// content-detail.js - UPDATED WITH AUTHENTICATION FIXES
 
-console.log('🎬 Content Detail Screen Initializing with Week 2 Updates...');
+console.log('🎬 Content Detail Screen Initializing with Authentication Fixes...');
 
 // Global variables
 let currentContent = null;
 let currentUserId = null;
 let isAppInitialized = false;
 let enhancedVideoPlayer = null;
+let userProfile = null;
 
 // Wait for DOM and dependencies
 window.onload = function() {
-    console.log('Window loaded, starting Week 2 initialization...');
+    console.log('Window loaded, starting initialization with auth...');
     initializeWithState();
 };
+
+// ============ AUTHENTICATION FUNCTIONS ============
+
+// Update UI based on authentication status
+async function updateAuthUI() {
+    try {
+        console.log('🔄 Updating auth UI...');
+        
+        // Wait for AuthHelper to be ready
+        if (!window.AuthHelper || !window.AuthHelper.isInitialized) {
+            console.log('⚠️ AuthHelper not ready yet, waiting...');
+            setTimeout(updateAuthUI, 500);
+            return;
+        }
+        
+        const isAuthenticated = window.AuthHelper.isAuthenticated();
+        userProfile = window.AuthHelper.getUserProfile();
+        currentUserId = userProfile?.id || null;
+        
+        console.log('User authenticated:', isAuthenticated);
+        console.log('User profile:', userProfile);
+        
+        if (isAuthenticated && userProfile) {
+            // Update profile button in header
+            updateProfileButton(userProfile);
+            
+            // Update comment avatar
+            updateCommentAvatar(userProfile);
+            
+            // Update comment input placeholder
+            updateCommentInput(userProfile);
+            
+            // Update send comment handler
+            updateCommentHandler(userProfile);
+        } else {
+            // User is not authenticated
+            setupGuestUI();
+        }
+        
+        console.log('✅ Auth UI updated');
+    } catch (error) {
+        console.error('❌ Error updating auth UI:', error);
+    }
+}
+
+// Update profile button in header
+function updateProfileButton(userProfile) {
+    const profileBtn = document.getElementById('profile-btn');
+    const profilePlaceholder = document.getElementById('userProfilePlaceholder');
+    
+    if (!profileBtn || !profilePlaceholder) {
+        // Create the placeholder if it doesn't exist
+        const profileBtn = document.getElementById('profile-btn');
+        if (profileBtn) {
+            const existingPlaceholder = profileBtn.querySelector('.profile-placeholder');
+            if (!existingPlaceholder) {
+                const placeholder = document.createElement('div');
+                placeholder.className = 'profile-placeholder';
+                placeholder.id = 'userProfilePlaceholder';
+                profileBtn.appendChild(placeholder);
+            }
+        }
+        return;
+    }
+    
+    const avatarUrl = window.AuthHelper.getAvatarUrl();
+    const displayName = window.AuthHelper.getDisplayName();
+    const initial = displayName.charAt(0).toUpperCase();
+    
+    if (avatarUrl) {
+        // Show user's profile picture
+        profilePlaceholder.innerHTML = `
+            <img src="${avatarUrl}" 
+                 alt="${userProfile.full_name || 'User'}"
+                 style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover; border: 2px solid rgba(255, 255, 255, 0.3);">
+        `;
+    } else {
+        // Show user initial or icon
+        profilePlaceholder.innerHTML = `
+            <div style="
+                width: 32px; 
+                height: 32px; 
+                border-radius: 50%; 
+                background: linear-gradient(135deg, #1D4ED8, #F59E0B);
+                color: white;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-weight: bold;
+                font-size: 14px;
+            ">
+                ${initial}
+            </div>
+        `;
+    }
+    
+    // Update profile button click handler
+    profileBtn.onclick = function() {
+        window.location.href = 'profile.html';
+    };
+}
+
+// Update comment avatar
+function updateCommentAvatar(userProfile) {
+    const commentAvatar = document.getElementById('userCommentAvatar');
+    const avatarIcon = document.getElementById('commentAvatarIcon');
+    
+    // Create elements if they don't exist
+    if (!commentAvatar) return;
+    
+    const avatarUrl = window.AuthHelper.getAvatarUrl();
+    const displayName = window.AuthHelper.getDisplayName();
+    const initial = displayName.charAt(0).toUpperCase();
+    
+    if (avatarUrl) {
+        commentAvatar.innerHTML = `
+            <img src="${avatarUrl}" 
+                 alt="${displayName}"
+                 style="width: 48px; height: 48px; border-radius: 50%; object-fit: cover; border: 2px solid rgba(29, 78, 216, 0.3);">
+        `;
+    } else {
+        commentAvatar.innerHTML = `
+            <div style="
+                width: 48px; 
+                height: 48px; 
+                border-radius: 50%; 
+                background: linear-gradient(135deg, #1D4ED8, #F59E0B);
+                color: white;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-weight: bold;
+                font-size: 18px;
+                border: 2px solid rgba(29, 78, 216, 0.3);
+            ">
+                ${initial}
+            </div>
+        `;
+    }
+}
+
+// Update comment input placeholder
+function updateCommentInput(userProfile) {
+    const commentInput = document.getElementById('commentInput');
+    if (commentInput) {
+        const displayName = window.AuthHelper.getDisplayName();
+        commentInput.placeholder = `Add a comment as ${displayName}...`;
+        commentInput.disabled = false;
+    }
+}
+
+// Update comment handler to use actual user info
+function updateCommentHandler(userProfile) {
+    const sendBtn = document.getElementById('sendCommentBtn');
+    const commentInput = document.getElementById('commentInput');
+    
+    if (!sendBtn || !commentInput) return;
+    
+    // Remove existing event listeners by cloning and replacing
+    const newSendBtn = sendBtn.cloneNode(true);
+    sendBtn.parentNode.replaceChild(newSendBtn, sendBtn);
+    
+    const newCommentInput = commentInput.cloneNode(true);
+    commentInput.parentNode.replaceChild(newCommentInput, commentInput);
+    
+    // Add new event listener
+    newSendBtn.onclick = async function() {
+        await handleSendCommentWithAuth();
+    };
+    
+    newCommentInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            newSendBtn.click();
+        }
+    });
+}
+
+// Handle comment submission with authentication
+async function handleSendCommentWithAuth() {
+    if (!currentContent) {
+        showToast('No content to comment on', 'error');
+        return;
+    }
+    
+    const input = document.getElementById('commentInput');
+    const text = input?.value.trim();
+    const sendBtn = document.getElementById('sendCommentBtn');
+    
+    if (!text) {
+        showToast('Please enter a comment', 'warning');
+        return;
+    }
+    
+    // Check authentication
+    if (!window.AuthHelper || !window.AuthHelper.isAuthenticated()) {
+        const shouldLogin = confirm('You need to sign in to comment. Would you like to sign in now?');
+        if (shouldLogin) {
+            window.location.href = 'login.html?redirect=' + encodeURIComponent(window.location.href);
+        }
+        return;
+    }
+    
+    const userProfile = window.AuthHelper.getUserProfile();
+    const displayName = window.AuthHelper.getDisplayName();
+    const username = window.AuthHelper.getUsername();
+    
+    // Show loading state
+    const originalHTML = sendBtn.innerHTML;
+    sendBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+    sendBtn.disabled = true;
+    
+    try {
+        // Check if we have the virtual scroll system
+        if (window.commentsVirtualScroll && window.commentsVirtualScroll.addComment) {
+            const newComment = await window.commentsVirtualScroll.addComment(
+                text,
+                userProfile.id,
+                displayName,
+                window.AuthHelper.getAvatarUrl()
+            );
+            
+            if (newComment) {
+                input.value = '';
+                showToast('Comment added successfully!', 'success');
+            } else {
+                throw new Error('Failed to add comment via virtual scroll');
+            }
+        } else {
+            // Use SupabaseHelper directly
+            const success = await window.SupabaseHelper.addComment(
+                currentContent.id,
+                text,
+                userProfile.id,
+                displayName
+            );
+            
+            if (success) {
+                input.value = '';
+                showToast('Comment added successfully!', 'success');
+                
+                // Refresh comments
+                if (window.commentsVirtualScroll && window.commentsVirtualScroll.loadComments) {
+                    await window.commentsVirtualScroll.loadComments(currentContent.id, true);
+                } else {
+                    const comments = await window.SupabaseHelper.getComments(currentContent.id);
+                    renderComments(comments);
+                }
+            } else {
+                throw new Error('Failed to add comment');
+            }
+        }
+    } catch (error) {
+        console.error('❌ Error adding comment:', error);
+        showToast('Failed to add comment. Please try again.', 'error');
+    } finally {
+        // Reset button state
+        sendBtn.innerHTML = originalHTML;
+        sendBtn.disabled = false;
+        input.focus();
+    }
+}
+
+// Setup UI for guest users
+function setupGuestUI() {
+    console.log('👤 Setting up guest UI');
+    
+    const profileBtn = document.getElementById('profile-btn');
+    const commentInput = document.getElementById('commentInput');
+    const sendBtn = document.getElementById('sendCommentBtn');
+    
+    if (profileBtn) {
+        profileBtn.onclick = function() {
+            window.location.href = 'login.html?redirect=' + encodeURIComponent(window.location.href);
+        };
+    }
+    
+    if (commentInput) {
+        commentInput.placeholder = 'Sign in to add a comment...';
+        commentInput.disabled = true;
+    }
+    
+    if (sendBtn) {
+        sendBtn.onclick = function() {
+            const shouldLogin = confirm('You need to sign in to comment. Would you like to sign in now?');
+            if (shouldLogin) {
+                window.location.href = 'login.html?redirect=' + encodeURIComponent(window.location.href);
+            }
+        };
+    }
+}
+
+// Listen for auth state changes
+function setupAuthListeners() {
+    // Listen for our custom authReady event
+    document.addEventListener('authReady', function(event) {
+        console.log('Auth ready event received:', event.detail);
+        updateAuthUI();
+    });
+    
+    // Also listen for DOMContentLoaded in case auth loads before our listener
+    document.addEventListener('DOMContentLoaded', function() {
+        setTimeout(updateAuthUI, 1000); // Check after 1 second
+    });
+}
+
+// ============ MAIN INITIALIZATION ============
 
 // Main initialization with state management
 async function initializeWithState() {
     if (isAppInitialized) return;
     
-    console.log('🚀 Starting app initialization with state management...');
+    console.log('🚀 Starting app initialization with authentication...');
     
     try {
+        // Setup auth listeners first
+        setupAuthListeners();
+        
         // Get content ID from URL
         const urlParams = new URLSearchParams(window.location.search);
         let contentId = urlParams.get('id');
@@ -78,8 +389,11 @@ async function initializeWithState() {
         // Hide loading and show app
         showApp();
         
+        // Update auth UI now that everything is loaded
+        setTimeout(updateAuthUI, 500);
+        
         isAppInitialized = true;
-        console.log('✅ App initialized successfully with Week 2 features');
+        console.log('✅ App initialized successfully with authentication');
         
     } catch (error) {
         console.error('❌ Error in initializeWithState:', error);
@@ -176,29 +490,43 @@ async function initializeCommentsWithVirtualScroll(contentId) {
         const commentInput = document.getElementById('commentInput');
         
         if (sendBtn && commentInput) {
-            // Replace existing handler
-            sendBtn.onclick = async () => {
-                const text = commentInput.value.trim();
+            // Remove existing handlers
+            const newSendBtn = sendBtn.cloneNode(true);
+            sendBtn.parentNode.replaceChild(newSendBtn, sendBtn);
+            
+            const newCommentInput = commentInput.cloneNode(true);
+            commentInput.parentNode.replaceChild(newCommentInput, commentInput);
+            
+            // Add new handler
+            newSendBtn.onclick = async () => {
+                const text = newCommentInput.value.trim();
                 
                 if (!text) {
                     showToast('Please enter a comment', 'warning');
                     return;
                 }
                 
-                if (!currentUserId) {
-                    showToast('Please sign in to comment', 'warning');
+                if (!window.AuthHelper || !window.AuthHelper.isAuthenticated()) {
+                    const shouldLogin = confirm('You need to sign in to comment. Would you like to sign in now?');
+                    if (shouldLogin) {
+                        window.location.href = 'login.html?redirect=' + encodeURIComponent(window.location.href);
+                    }
                     return;
                 }
+                
+                const userProfile = window.AuthHelper.getUserProfile();
+                const displayName = window.AuthHelper.getDisplayName();
                 
                 // Add comment via virtual scroll
                 const newComment = await window.commentsVirtualScroll.addComment(
                     text,
-                    currentUserId,
-                    'User'
+                    userProfile.id,
+                    displayName,
+                    window.AuthHelper.getAvatarUrl()
                 );
                 
                 if (newComment) {
-                    commentInput.value = '';
+                    newCommentInput.value = '';
                     showToast('Comment added successfully!', 'success');
                 } else {
                     showToast('Failed to add comment', 'error');
@@ -206,10 +534,10 @@ async function initializeCommentsWithVirtualScroll(contentId) {
             };
             
             // Update enter key handler
-            commentInput.addEventListener('keypress', function(e) {
+            newCommentInput.addEventListener('keypress', function(e) {
                 if (e.key === 'Enter' && !e.shiftKey) {
                     e.preventDefault();
-                    sendBtn.click();
+                    newSendBtn.click();
                 }
             });
         }
@@ -350,9 +678,18 @@ function setupUIWithState(contentId) {
     }
     
     if (connectBtn) {
-        connectBtn.addEventListener('click', () => {
+        connectBtn.addEventListener('click', async () => {
             const creatorId = currentContent?.creator_id;
             if (!creatorId) return;
+            
+            // Check if user is authenticated
+            if (!window.AuthHelper || !window.AuthHelper.isAuthenticated()) {
+                const shouldLogin = confirm('You need to sign in to connect with creators. Would you like to sign in now?');
+                if (shouldLogin) {
+                    window.location.href = 'login.html?redirect=' + encodeURIComponent(window.location.href);
+                }
+                return;
+            }
             
             const isNowConnected = window.state.toggleConnection(creatorId);
             
@@ -546,11 +883,15 @@ function useFallbackData(contentId = '68') {
     // Show app immediately
     showApp();
     
+    // Update auth UI for fallback mode
+    setTimeout(updateAuthUI, 500);
+    
     showToast('Loaded with sample data', 'info');
     isAppInitialized = true;
 }
 
-// UI Helper functions (keep existing ones, but update where needed)
+// ============ UI HELPER FUNCTIONS ============
+
 function updateLoadingText(text) {
     const el = document.getElementById('loading-text');
     if (el) el.textContent = text;
@@ -594,7 +935,7 @@ function updateContentUI(content) {
         const imgUrl = window.SupabaseHelper?.fixMediaUrl?.(content.thumbnail_url) || content.thumbnail_url;
         posterPlaceholder.innerHTML = `
             <img src="${imgUrl}" alt="${content.title}" 
-                 style="width:100%; height:100%; object-fit:cover;"
+                 style="width:100%; height:100%; object-fit:cover; border-radius: 12px;"
                  onerror="this.src='https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=800&h=450&fit=crop'">
             <div class="play-overlay">
                 <div class="play-icon-large">
@@ -658,7 +999,8 @@ function renderRelatedContent(items) {
     });
 }
 
-// Event handlers
+// ============ EVENT HANDLERS ============
+
 function handlePlay() {
     if (!currentContent) {
         showToast('No content to play', 'error');
@@ -754,7 +1096,8 @@ async function handleSendComment() {
     }
 }
 
-// Utility functions (keep existing ones)
+// ============ UTILITY FUNCTIONS ============
+
 function safeSetText(id, text) {
     const el = document.getElementById(id);
     if (el) {
@@ -884,17 +1227,51 @@ function createCommentElement(comment) {
     const div = document.createElement('div');
     div.className = 'comment-item';
     
-    const authorName = comment.author_name || comment.user_profiles?.full_name || 'User';
-    const avatarUrl = comment.user_profiles?.avatar_url;
+    // Try to get user info from AuthHelper first
+    let authorName = 'User';
+    let avatarUrl = null;
+    
+    // If comment has author info, use it
+    if (comment.author_name) {
+        authorName = comment.author_name;
+    } else if (comment.user_profiles?.full_name || comment.user_profiles?.username) {
+        authorName = comment.user_profiles.full_name || comment.user_profiles.username;
+    }
+    
+    // Get avatar URL
+    if (comment.user_profiles?.avatar_url) {
+        avatarUrl = comment.user_profiles.avatar_url;
+        // Fix URL if needed
+        if (avatarUrl && !avatarUrl.startsWith('http')) {
+            avatarUrl = `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/profile-pictures/${avatarUrl}`;
+        }
+    }
+    
     const time = formatCommentTime(comment.created_at);
     const commentText = comment.comment_text || comment.text || '';
+    const initial = authorName.charAt(0).toUpperCase();
     
     div.innerHTML = `
         <div class="comment-header">
             <div class="comment-avatar-sm">
                 ${avatarUrl ? 
-                    `<img src="${window.SupabaseHelper?.fixMediaUrl?.(avatarUrl) || avatarUrl}" alt="${authorName}">` :
-                    `<i class="fas fa-user-circle"></i>`
+                    `<img src="${avatarUrl}" alt="${authorName}" 
+                         style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover; border: 2px solid rgba(29, 78, 216, 0.2);">` :
+                    `<div style="
+                        width: 32px; 
+                        height: 32px; 
+                        border-radius: 50%; 
+                        background: linear-gradient(135deg, #1D4ED8, #F59E0B);
+                        color: white;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        font-weight: bold;
+                        font-size: 14px;
+                        border: 2px solid rgba(29, 78, 216, 0.2);
+                    ">
+                        ${initial}
+                    </div>`
                 }
             </div>
             <div class="comment-user">
@@ -934,7 +1311,8 @@ function formatCommentTime(timestamp) {
     }
 }
 
-// Setup event listeners (keep existing setupEventListeners function)
+// ============ SETUP EVENT LISTENERS ============
+
 function setupEventListeners() {
     console.log('🔧 Setting up event listeners...');
     
@@ -1014,4 +1392,4 @@ document.addEventListener('DOMContentLoaded', function() {
     setupEventListeners();
 });
 
-console.log('✅ Content detail module loaded with Week 2 integration and virtual scroll comments');
+console.log('✅ Content detail module loaded with complete authentication integration');
