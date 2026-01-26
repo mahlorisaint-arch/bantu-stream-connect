@@ -798,3 +798,454 @@
         grid-template-columns: 1fr;
     }
 }
+
+/* ============================================================================== */
+/* AUTHENTICATION UI STYLES - ADDED FOR USER PROFILE AND LOGIN INTEGRATION */
+/* ============================================================================== */
+
+/* Profile picture styles */
+.profile-placeholder {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.1);
+    transition: all 0.3s ease;
+}
+
+.profile-placeholder:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: scale(1.05);
+}
+
+.profile-placeholder img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.profile-placeholder div {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 14px;
+    color: white;
+}
+
+/* Comment avatar styles */
+.comment-avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.05);
+    border: 2px solid rgba(29, 78, 216, 0.3);
+}
+
+.comment-avatar i {
+    font-size: 40px;
+    color: #1D4ED8;
+}
+
+.comment-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.comment-avatar div {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 18px;
+    color: white;
+}
+
+/* Comment small avatar styles */
+.comment-avatar-sm {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.05);
+    border: 2px solid rgba(29, 78, 216, 0.2);
+}
+
+.comment-avatar-sm img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.comment-avatar-sm div {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 14px;
+    color: white;
+}
+
+/* Logo styles */
+.logo-icon img {
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    transition: all 0.3s ease;
+}
+
+.logo-icon img:hover {
+    transform: scale(1.05);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+}
+
+/* Authentication states for form inputs */
+textarea:disabled {
+    background: rgba(255, 255, 255, 0.05) !important;
+    cursor: not-allowed !important;
+    opacity: 0.7 !important;
+    border-color: rgba(148, 163, 184, 0.1) !important;
+}
+
+textarea:disabled::placeholder {
+    color: rgba(255, 255, 255, 0.4) !important;
+}
+
+/* Authenticated user styles */
+textarea:not(:disabled) {
+    background: rgba(255, 255, 255, 0.08) !important;
+    border-color: rgba(29, 78, 216, 0.3) !important;
+}
+
+textarea:not(:disabled):focus {
+    border-color: #1D4ED8 !important;
+    background: rgba(255, 255, 255, 0.1) !important;
+    box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.1) !important;
+}
+
+textarea:not(:disabled)::placeholder {
+    color: rgba(255, 255, 255, 0.6) !important;
+}
+
+/* Authentication prompt styling */
+.auth-prompt {
+    background: rgba(29, 78, 216, 0.1);
+    border: 1px solid rgba(29, 78, 216, 0.3);
+    border-radius: 12px;
+    padding: 16px;
+    margin: 16px 0;
+    text-align: center;
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.auth-prompt h3 {
+    font-size: 16px;
+    margin-bottom: 8px;
+    color: var(--soft-white);
+}
+
+.auth-prompt p {
+    font-size: 14px;
+    margin-bottom: 12px;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.auth-prompt button {
+    margin-top: 12px;
+    padding: 10px 20px;
+    background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+    color: var(--soft-white);
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.auth-prompt button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(29, 78, 216, 0.3);
+}
+
+/* User profile status indicators */
+.user-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    padding: 4px 8px;
+    border-radius: 12px;
+    margin-left: 8px;
+    font-weight: 500;
+}
+
+.user-status.online {
+    background: rgba(16, 185, 129, 0.2);
+    color: var(--success-color);
+}
+
+.user-status.offline {
+    background: rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.5);
+}
+
+.user-status.creator {
+    background: rgba(245, 158, 11, 0.2);
+    color: var(--warm-gold);
+}
+
+/* Gradient backgrounds for user avatars */
+.gradient-blue-gold {
+    background: linear-gradient(135deg, #1D4ED8, #F59E0B) !important;
+}
+
+.gradient-purple-pink {
+    background: linear-gradient(135deg, #8B5CF6, #EC4899) !important;
+}
+
+.gradient-green-teal {
+    background: linear-gradient(135deg, #10B981, #0D9488) !important;
+}
+
+.gradient-red-orange {
+    background: linear-gradient(135deg, #EF4444, #F59E0B) !important;
+}
+
+/* Loading state for authentication */
+.auth-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 14px;
+}
+
+.auth-loading .spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-top-color: var(--bantu-blue);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Profile button hover effects */
+.profile-btn {
+    transition: all 0.3s ease;
+}
+
+.profile-btn:hover {
+    transform: scale(1.05);
+}
+
+.profile-btn:hover .profile-placeholder {
+    border-color: var(--warm-gold);
+    box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.2);
+}
+
+/* Enhanced comment section for authenticated users */
+.authenticated .add-comment {
+    border: 1px solid rgba(29, 78, 216, 0.2);
+    background: rgba(29, 78, 216, 0.05);
+    border-radius: 16px;
+    padding: 15px;
+}
+
+.authenticated .comment-avatar {
+    border-width: 3px;
+    border-color: rgba(29, 78, 216, 0.4);
+}
+
+.authenticated .send-comment-btn {
+    background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+    box-shadow: 0 4px 12px rgba(29, 78, 216, 0.3);
+}
+
+.authenticated .send-comment-btn:hover {
+    transform: scale(1.1);
+    box-shadow: 0 6px 16px rgba(29, 78, 216, 0.4);
+}
+
+/* Guest user styling */
+.guest .add-comment {
+    opacity: 0.8;
+    position: relative;
+}
+
+.guest .add-comment::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 16px;
+    z-index: 1;
+}
+
+.guest .comment-avatar,
+.guest .comment-input-container,
+.guest .send-comment-btn {
+    position: relative;
+    z-index: 2;
+}
+
+.guest .comment-input-container textarea {
+    background: rgba(255, 255, 255, 0.03);
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+.guest .send-comment-btn {
+    background: rgba(255, 255, 255, 0.1);
+    cursor: not-allowed;
+}
+
+.guest .send-comment-btn:hover {
+    transform: none;
+    background: rgba(255, 255, 255, 0.15);
+}
+
+/* Mobile optimizations for authentication UI */
+@media (max-width: 768px) {
+    .profile-placeholder {
+        width: 28px;
+        height: 28px;
+    }
+    
+    .profile-placeholder div {
+        font-size: 12px;
+    }
+    
+    .comment-avatar {
+        width: 40px;
+        height: 40px;
+    }
+    
+    .comment-avatar i {
+        font-size: 32px;
+    }
+    
+    .comment-avatar div {
+        font-size: 16px;
+    }
+    
+    .comment-avatar-sm {
+        width: 28px;
+        height: 28px;
+    }
+    
+    .comment-avatar-sm div {
+        font-size: 12px;
+    }
+    
+    .auth-prompt {
+        padding: 12px;
+    }
+    
+    .auth-prompt h3 {
+        font-size: 14px;
+    }
+    
+    .auth-prompt p {
+        font-size: 12px;
+    }
+    
+    .auth-prompt button {
+        padding: 8px 16px;
+        font-size: 14px;
+    }
+}
+
+@media (max-width: 480px) {
+    .user-status {
+        font-size: 10px;
+        padding: 3px 6px;
+    }
+    
+    .auth-loading {
+        font-size: 12px;
+    }
+    
+    .auth-loading .spinner {
+        width: 14px;
+        height: 14px;
+    }
+}
+
+/* Animation for user login/logout transitions */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.user-profile-update {
+    animation: fadeIn 0.3s ease;
+}
+
+/* Special styling for creator avatars */
+.creator-avatar.authenticated {
+    border: 3px solid var(--warm-gold);
+    box-shadow: 0 0 20px rgba(245, 158, 11, 0.3);
+}
+
+/* Connection status indicator */
+.connection-status {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-left: 5px;
+}
+
+.connection-status.connected {
+    background-color: var(--success-color);
+    box-shadow: 0 0 8px rgba(16, 185, 129, 0.6);
+}
+
+.connection-status.disconnected {
+    background-color: rgba(255, 255, 255, 0.3);
+}
+
+/* Enhanced header for authenticated users */
+.authenticated-header .header-actions {
+    position: relative;
+}
+
+.authenticated-header .profile-btn::after {
+    content: '';
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    width: 10px;
+    height: 10px;
+    background: var(--success-color);
+    border-radius: 50%;
+    border: 2px solid var(--deep-navy);
+    display: none;
+}
+
+.authenticated-header.online .profile-btn::after {
+    display: block;
+}
