@@ -302,74 +302,61 @@
 
     <!-- Fix script loading order -->
     <!-- Load Supabase from CDN (already imported in supabase-client.js) -->
+        <!-- Load Supabase from CDN first -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
+    
+    <!-- Fix script loading order -->
     <script src="js/security.js"></script>
     <script>
-        // Wait for security to load, then load others
-        if (typeof security !== 'undefined') {
-            console.log('Security loaded successfully');
+        // Check if Supabase is loaded globally
+        if (typeof supabase !== 'undefined') {
+            console.log('Supabase loaded globally:', supabase);
             
-            // Load Supabase client
-            var supabaseScript = document.createElement('script');
-            supabaseScript.type = 'module';
-            supabaseScript.src = 'js/supabase-client.js';
-            supabaseScript.onload = function() {
-                console.log('Supabase client loaded');
+            // Initialize Supabase client
+            const SUPABASE_URL = 'https://ydnxqnbjoshvxteevemc.supabase.co';
+            const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U';
+            
+            // Create Supabase client
+            window.supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            console.log('Supabase client created successfully');
+            
+            // Load error handler
+            var errorScript = document.createElement('script');
+            errorScript.src = 'js/error-handler.js';
+            errorScript.onload = function() {
+                console.log('Error handler loaded');
                 
-                // Load error handler
-                var errorScript = document.createElement('script');
-                errorScript.src = 'js/error-handler.js';
-                errorScript.onload = function() {
-                    console.log('Error handler loaded');
+                // Load analytics
+                var analyticsScript = document.createElement('script');
+                analyticsScript.src = 'js/analytics.js';
+                analyticsScript.onload = function() {
+                    console.log('Analytics loaded');
                     
-                    // Load analytics
-                    var analyticsScript = document.createElement('script');
-                    analyticsScript.src = 'js/analytics.js';
-                    analyticsScript.onload = function() {
-                        console.log('Analytics loaded');
-                        
-                        // Load main script
-                        var mainScript = document.createElement('script');
-                        mainScript.src = 'js/content-detail.js';
-                        mainScript.defer = true;
-                        document.head.appendChild(mainScript);
-                    };
-                    document.head.appendChild(analyticsScript);
+                    // Load main script
+                    var mainScript = document.createElement('script');
+                    mainScript.src = 'js/content-detail.js';
+                    mainScript.defer = true;
+                    document.head.appendChild(mainScript);
                 };
-                document.head.appendChild(errorScript);
+                document.head.appendChild(analyticsScript);
             };
-            document.head.appendChild(supabaseScript);
+            document.head.appendChild(errorScript);
         } else {
-            console.error('Security.js failed to load');
-            // Fallback: load all scripts sequentially
-            var scripts = [
-                {src: 'js/supabase-client.js', type: 'module'},
-                'js/error-handler.js', 
-                'js/analytics.js', 
-                'js/content-detail.js'
-            ];
-            
+            console.error('Supabase failed to load from CDN');
+            // Fallback: load error handler and main script anyway
+            var scripts = ['js/error-handler.js', 'js/analytics.js', 'js/content-detail.js'];
             function loadScripts(index) {
                 if (index >= scripts.length) return;
-                
-                var scriptInfo = scripts[index];
                 var script = document.createElement('script');
-                
-                if (typeof scriptInfo === 'object') {
-                    script.src = scriptInfo.src;
-                    script.type = scriptInfo.type || 'text/javascript';
-                } else {
-                    script.src = scriptInfo;
-                }
-                
+                script.src = scripts[index];
                 script.onload = function() {
-                    console.log(script.src + ' loaded');
+                    console.log(scripts[index] + ' loaded');
                     loadScripts(index + 1);
                 };
                 script.onerror = function() {
-                    console.error('Failed to load: ' + script.src);
+                    console.error('Failed to load: ' + scripts[index]);
                     loadScripts(index + 1);
                 };
-                
                 document.head.appendChild(script);
             }
             loadScripts(0);
@@ -382,17 +369,33 @@
         window.onerror = null;
         console.log('Debug mode enabled - Page fully loaded');
         
-        // Check if supabase is available
+        // Show the app after 8 seconds maximum
         setTimeout(function() {
-            if (typeof supabase === 'undefined') {
-                console.error('Supabase not loaded');
-                // Try to load it directly
-                var fallbackScript = document.createElement('script');
-                fallbackScript.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
-                fallbackScript.type = 'module';
-                document.head.appendChild(fallbackScript);
+            var loadingScreen = document.getElementById('loading');
+            var app = document.getElementById('app');
+            
+            if (loadingScreen && loadingScreen.style.display !== 'none') {
+                console.log('Timeout reached - forcing app to show');
+                loadingScreen.style.display = 'none';
+                if (app) {
+                    app.style.display = 'block';
+                }
+                
+                // Show error message
+                showSimpleToast('Content loading timed out. Some features may not work.', 'warning');
             }
-        }, 2000);
+        }, 8000);
+        
+        // Simple toast function for timeout
+        function showSimpleToast(message, type) {
+            var toast = document.createElement('div');
+            toast.className = 'toast ' + (type || 'info');
+            toast.innerHTML = '<i class="fas fa-exclamation-circle"></i><span>' + message + '</span>';
+            document.body.appendChild(toast);
+            setTimeout(function() {
+                if (toast.parentNode) toast.remove();
+            }, 5000);
+        }
     </script>
 </body>
 </html>
