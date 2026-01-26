@@ -305,12 +305,12 @@
         <!-- Load Supabase from CDN first -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
     
-    <!-- Fix script loading order -->
+    <!-- Load scripts in correct order -->
     <script src="js/security.js"></script>
     <script>
-        // Check if Supabase is loaded globally
+        // Initialize Supabase immediately
         if (typeof supabase !== 'undefined') {
-            console.log('Supabase loaded globally:', supabase);
+            console.log('Supabase loaded globally');
             
             // Initialize Supabase client
             const SUPABASE_URL = 'https://ydnxqnbjoshvxteevemc.supabase.co';
@@ -320,33 +320,44 @@
             window.supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
             console.log('Supabase client created successfully');
             
-            // Load error handler
+            // Load error handler first
             var errorScript = document.createElement('script');
             errorScript.src = 'js/error-handler.js';
             errorScript.onload = function() {
                 console.log('Error handler loaded');
                 
-                // Load analytics
-                var analyticsScript = document.createElement('script');
-                analyticsScript.src = 'js/analytics.js';
-                analyticsScript.onload = function() {
-                    console.log('Analytics loaded');
+                // Load supabase-helper
+                var helperScript = document.createElement('script');
+                helperScript.src = 'js/supabase-helper.js';
+                helperScript.onload = function() {
+                    console.log('Supabase helper loaded');
                     
-                    // Load main script
-                    var mainScript = document.createElement('script');
-                    mainScript.src = 'js/content-detail.js';
-                    mainScript.defer = true;
-                    document.head.appendChild(mainScript);
+                    // Load analytics
+                    var analyticsScript = document.createElement('script');
+                    analyticsScript.src = 'js/analytics.js';
+                    analyticsScript.onload = function() {
+                        console.log('Analytics loaded');
+                        
+                        // Finally load the main content-detail script
+                        var mainScript = document.createElement('script');
+                        mainScript.src = 'js/content-detail.js';
+                        document.head.appendChild(mainScript);
+                    };
+                    document.head.appendChild(analyticsScript);
                 };
-                document.head.appendChild(analyticsScript);
+                document.head.appendChild(helperScript);
             };
             document.head.appendChild(errorScript);
         } else {
-            console.error('Supabase failed to load from CDN');
-            // Fallback: load error handler and main script anyway
-            var scripts = ['js/error-handler.js', 'js/analytics.js', 'js/content-detail.js'];
+            console.error('Supabase failed to load');
+            
+            // Load scripts in order anyway
+            var scripts = ['js/error-handler.js', 'js/supabase-helper.js', 'js/analytics.js', 'js/content-detail.js'];
             function loadScripts(index) {
-                if (index >= scripts.length) return;
+                if (index >= scripts.length) {
+                    console.log('All scripts loaded');
+                    return;
+                }
                 var script = document.createElement('script');
                 script.src = scripts[index];
                 script.onload = function() {
@@ -365,37 +376,19 @@
 
     <!-- After all scripts -->
     <script>
-        // Debug: Temporarily bypass error handler
-        window.onerror = null;
-        console.log('Debug mode enabled - Page fully loaded');
-        
-        // Show the app after 8 seconds maximum
+        // Fallback timeout to show app
         setTimeout(function() {
             var loadingScreen = document.getElementById('loading');
             var app = document.getElementById('app');
             
             if (loadingScreen && loadingScreen.style.display !== 'none') {
-                console.log('Timeout reached - forcing app to show');
+                console.log('Fallback timeout - showing app anyway');
                 loadingScreen.style.display = 'none';
                 if (app) {
                     app.style.display = 'block';
                 }
-                
-                // Show error message
-                showSimpleToast('Content loading timed out. Some features may not work.', 'warning');
             }
-        }, 8000);
-        
-        // Simple toast function for timeout
-        function showSimpleToast(message, type) {
-            var toast = document.createElement('div');
-            toast.className = 'toast ' + (type || 'info');
-            toast.innerHTML = '<i class="fas fa-exclamation-circle"></i><span>' + message + '</span>';
-            document.body.appendChild(toast);
-            setTimeout(function() {
-                if (toast.parentNode) toast.remove();
-            }, 5000);
-        }
+        }, 10000);
     </script>
 </body>
 </html>
