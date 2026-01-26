@@ -144,11 +144,102 @@ async function fetchContentDetails(contentId) {
             window.state.updateWatchHistory(contentId, 0, currentContent.duration || 3600);
         }
         
+        // Initialize comments with virtual scroll
+        await initializeCommentsWithVirtualScroll(contentId);
+        
         return currentContent;
         
     } catch (error) {
         console.error('❌ Error fetching content:', error);
         throw error;
+    }
+}
+
+// Initialize comments with virtual scroll - WEEK 2 ADDITION
+async function initializeCommentsWithVirtualScroll(contentId) {
+    try {
+        // Initialize virtual scroll for comments
+        if (window.initCommentsVirtualScroll) {
+            window.commentsVirtualScroll = window.initCommentsVirtualScroll(contentId);
+        }
+        
+        if (!window.commentsVirtualScroll) {
+            console.warn('⚠️ Virtual scroll not initialized, falling back to regular comments');
+            // Fallback to regular comments
+            const comments = await window.SupabaseHelper.getComments(contentId);
+            renderComments(comments);
+            return;
+        }
+        
+        // Update send comment handler
+        const sendBtn = document.getElementById('sendCommentBtn');
+        const commentInput = document.getElementById('commentInput');
+        
+        if (sendBtn && commentInput) {
+            // Replace existing handler
+            sendBtn.onclick = async () => {
+                const text = commentInput.value.trim();
+                
+                if (!text) {
+                    showToast('Please enter a comment', 'warning');
+                    return;
+                }
+                
+                if (!currentUserId) {
+                    showToast('Please sign in to comment', 'warning');
+                    return;
+                }
+                
+                // Add comment via virtual scroll
+                const newComment = await window.commentsVirtualScroll.addComment(
+                    text,
+                    currentUserId,
+                    'User'
+                );
+                
+                if (newComment) {
+                    commentInput.value = '';
+                    showToast('Comment added successfully!', 'success');
+                } else {
+                    showToast('Failed to add comment', 'error');
+                }
+            };
+            
+            // Update enter key handler
+            commentInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendBtn.click();
+                }
+            });
+        }
+        
+        // Update refresh button
+        const refreshBtn = document.getElementById('refreshCommentsBtn');
+        if (refreshBtn) {
+            refreshBtn.onclick = async () => {
+                showToast('Refreshing comments...', 'info');
+                if (window.commentsVirtualScroll && window.commentsVirtualScroll.loadComments) {
+                    await window.commentsVirtualScroll.loadComments(contentId, true);
+                    showToast('Comments refreshed!', 'success');
+                } else {
+                    // Fallback to regular refresh
+                    const comments = await window.SupabaseHelper.getComments(contentId);
+                    renderComments(comments);
+                    showToast('Comments refreshed!', 'success');
+                }
+            };
+        }
+        
+        console.log('✅ Comments virtual scroll initialized');
+        
+    } catch (error) {
+        console.error('❌ Error initializing virtual scroll:', error);
+        // Fallback to regular comments
+        if (window.SupabaseHelper) {
+            const comments = await window.SupabaseHelper.getComments(contentId);
+            renderComments(comments);
+        }
     }
 }
 
@@ -622,6 +713,7 @@ function handlePlay() {
     }, 100);
 }
 
+// Legacy comment handler (kept for fallback)
 async function handleSendComment() {
     if (!currentContent) {
         showToast('No content to comment on', 'error');
@@ -758,6 +850,90 @@ function showToast(message, type = 'info') {
     }, 3000);
 }
 
+// Render comments function (for fallback when virtual scroll is not available)
+function renderComments(comments) {
+    const container = document.getElementById('commentsList');
+    const noComments = document.getElementById('noComments');
+    const countEl = document.getElementById('commentsCount');
+    
+    if (!container) return;
+    
+    // Clear container
+    container.innerHTML = '';
+    
+    if (!comments || comments.length === 0) {
+        if (noComments) noComments.style.display = 'flex';
+        if (countEl) countEl.textContent = '(0)';
+        return;
+    }
+    
+    // Hide "no comments" message
+    if (noComments) noComments.style.display = 'none';
+    
+    // Update count
+    if (countEl) countEl.textContent = `(${comments.length})`;
+    
+    // Add comments
+    comments.forEach(comment => {
+        const commentEl = createCommentElement(comment);
+        container.appendChild(commentEl);
+    });
+}
+
+function createCommentElement(comment) {
+    const div = document.createElement('div');
+    div.className = 'comment-item';
+    
+    const authorName = comment.author_name || comment.user_profiles?.full_name || 'User';
+    const avatarUrl = comment.user_profiles?.avatar_url;
+    const time = formatCommentTime(comment.created_at);
+    const commentText = comment.comment_text || comment.text || '';
+    
+    div.innerHTML = `
+        <div class="comment-header">
+            <div class="comment-avatar-sm">
+                ${avatarUrl ? 
+                    `<img src="${window.SupabaseHelper?.fixMediaUrl?.(avatarUrl) || avatarUrl}" alt="${authorName}">` :
+                    `<i class="fas fa-user-circle"></i>`
+                }
+            </div>
+            <div class="comment-user">
+                <strong>${escapeHtml(authorName)}</strong>
+                <div class="comment-time">${time}</div>
+            </div>
+        </div>
+        <div class="comment-content">
+            ${escapeHtml(commentText)}
+        </div>
+    `;
+    
+    return div;
+}
+
+function formatCommentTime(timestamp) {
+    if (!timestamp) return 'Just now';
+    try {
+        const date = new Date(timestamp);
+        const now = new Date();
+        const diffMs = now - date;
+        const diffMins = Math.floor(diffMs / 60000);
+        const diffHours = Math.floor(diffMs / 3600000);
+        const diffDays = Math.floor(diffMs / 86400000);
+        
+        if (diffMins < 1) return 'Just now';
+        if (diffMins < 60) return `${diffMins} min ago`;
+        if (diffHours < 24) return `${diffHours} hour${diffHours !== 1 ? 's' : ''} ago`;
+        if (diffDays < 7) return `${diffDays} day${diffDays !== 1 ? 's' : ''} ago`;
+        
+        return date.toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric'
+        });
+    } catch {
+        return 'Recently';
+    }
+}
+
 // Setup event listeners (keep existing setupEventListeners function)
 function setupEventListeners() {
     console.log('🔧 Setting up event listeners...');
@@ -774,22 +950,7 @@ function setupEventListeners() {
         poster.onclick = handlePlay;
     }
     
-    // Send comment
-    const sendBtn = document.getElementById('sendCommentBtn');
-    if (sendBtn) {
-        sendBtn.onclick = handleSendComment;
-    }
-    
-    // Comment input enter key
-    const commentInput = document.getElementById('commentInput');
-    if (commentInput) {
-        commentInput.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                handleSendComment();
-            }
-        });
-    }
+    // Note: Comment event listeners are now set up in initializeCommentsWithVirtualScroll
     
     // Close player
     const closePlayer = document.getElementById('closePlayerBtn');
@@ -827,17 +988,7 @@ function setupEventListeners() {
         };
     }
     
-    // Refresh comments button
-    const refreshBtn = document.getElementById('refreshCommentsBtn');
-    if (refreshBtn) {
-        refreshBtn.onclick = async function() {
-            if (!currentContent) return;
-            updateLoadingText('Refreshing comments...');
-            const comments = await window.SupabaseHelper.getComments(currentContent.id);
-            renderComments(comments);
-            showToast('Comments refreshed!', 'success');
-        };
-    }
+    // Note: Refresh comments button is now set up in initializeCommentsWithVirtualScroll
     
     // Back to top button
     const backToTopBtn = document.getElementById('backToTopBtn');
@@ -863,4 +1014,4 @@ document.addEventListener('DOMContentLoaded', function() {
     setupEventListeners();
 });
 
-console.log('✅ Content detail module loaded with Week 2 integration');
+console.log('✅ Content detail module loaded with Week 2 integration and virtual scroll comments');
