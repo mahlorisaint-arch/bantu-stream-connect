@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Offline - Bantu Stream Connect</title>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #0A0E12;
+            color: #F8FAFC;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .offline-container {
+            max-width: 500px;
+        }
+        
+        .offline-icon {
+            font-size: 4rem;
+            color: #F59E0B;
+            margin-bottom: 20px;
+        }
+        
+        h1 {
+            font-family: 'Orbitron', sans-serif;
+            margin-bottom: 15px;
+            background: linear-gradient(135deg, #F8FAFC, #F59E0B);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        p {
+            color: rgba(255, 255, 255, 0.7);
+            line-height: 1.6;
+            margin-bottom: 25px;
+        }
+        
+        .actions {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        button {
+            padding: 12px 24px;
+            border-radius: 12px;
+            border: none;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .retry-btn {
+            background: linear-gradient(135deg, #1D4ED8, #F59E0B);
+            color: white;
+        }
+        
+        .cache-btn {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+        }
+        
+        .cached-content {
+            margin-top: 30px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            text-align: left;
+        }
+        
+        .cached-content h3 {
+            margin-top: 0;
+            color: #F59E0B;
+        }
+        
+        .content-list {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .content-list li {
+            padding: 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            cursor: pointer;
+        }
+        
+        .content-list li:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+        
+        .content-list li:last-child {
+            border-bottom: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="offline-container">
+        <div class="offline-icon">
+            <i class="fas fa-wifi-slash"></i>
+        </div>
+        
+        <h1>You're Offline</h1>
+        <p>It seems you've lost your internet connection. Here's what you can do:</p>
+        
+        <div class="actions">
+            <button class="retry-btn" id="retryBtn">
+                <i class="fas fa-redo"></i>
+                Retry Connection
+            </button>
+            <button class="cache-btn" id="viewCacheBtn">
+                <i class="fas fa-download"></i>
+                View Cached Content
+            </button>
+        </div>
+        
+        <div id="cachedContent" class="cached-content" style="display: none;">
+            <h3>Available Offline Content</h3>
+            <ul class="content-list" id="contentList">
+                <!-- Dynamically populated -->
+            </ul>
+        </div>
+    </div>
+    
+    <script>
+        document.getElementById('retryBtn').addEventListener('click', () => {
+            window.location.reload();
+        });
+        
+        document.getElementById('viewCacheBtn').addEventListener('click', async () => {
+            const cachedContent = document.getElementById('cachedContent');
+            const contentList = document.getElementById('contentList');
+            
+            if (cachedContent.style.display === 'none') {
+                if ('caches' in window) {
+                    try {
+                        const cache = await caches.open('bantu-stream-v1');
+                        const requests = await cache.keys();
+                        
+                        contentList.innerHTML = '';
+                        
+                        requests.forEach(request => {
+                            if (request.url.includes('content-detail')) {
+                                const li = document.createElement('li');
+                                li.textContent = 'Cached Content - ' + new URL(request.url).searchParams.get('id');
+                                li.addEventListener('click', () => {
+                                    window.location.href = request.url;
+                                });
+                                contentList.appendChild(li);
+                            }
+                        });
+                        
+                        if (contentList.children.length === 0) {
+                            contentList.innerHTML = '<li>No cached content found</li>';
+                        }
+                        
+                        cachedContent.style.display = 'block';
+                    } catch (error) {
+                        console.error('Failed to access cache:', error);
+                        contentList.innerHTML = '<li>Unable to load cached content</li>';
+                        cachedContent.style.display = 'block';
+                    }
+                } else {
+                    contentList.innerHTML = '<li>Cache not supported</li>';
+                    cachedContent.style.display = 'block';
+                }
+            } else {
+                cachedContent.style.display = 'none';
+            }
+        });
+        
+        setInterval(() => {
+            if (navigator.onLine) {
+                window.location.href = '/';
+            }
+        }, 5000);
+    </script>
+</body>
+</html>
