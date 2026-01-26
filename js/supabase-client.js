@@ -1892,3 +1892,17 @@ export function onAuthStateChange(callback) {
 
 // Initialize when imported
 initialize()
+
+// Make functions available globally for non-module scripts
+if (typeof window !== 'undefined') {
+    window.supabase = supabase;
+    window.initialize = initialize;
+    window.isInitialized = isInitialized;
+    window.generatePublicUrl = generatePublicUrl;
+    window.fixMediaUrl = fixMediaUrl;
+    window.getContentWithCreator = getContentWithCreator;
+    window.getSimilarContent = getSimilarContent;
+    window.recordContentView = recordContentView;
+    window.getCurrentUser = getCurrentUser;
+    window.isAuthenticated = isAuthenticated;
+}
