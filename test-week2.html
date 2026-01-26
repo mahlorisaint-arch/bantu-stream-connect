@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Week 2 Features Test</title>
+    <style>
+        body { font-family: Arial; padding: 20px; }
+        .test-section { margin: 20px 0; padding: 20px; border: 1px solid #ccc; }
+        button { margin: 5px; padding: 10px; }
+    </style>
+</head>
+<body>
+    <h1>Week 2 Features Test</h1>
+    
+    <div class="test-section">
+        <h2>State Management</h2>
+        <button onclick="testStateManagement()">Test State</button>
+        <button onclick="localStorage.clear(); console.log('State cleared')">Clear State</button>
+        <div id="state-output"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Video Player</h2>
+        <button onclick="testVideoPlayer()">Test Video Player</button>
+        <div id="video-output"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Keyboard Navigation</h2>
+        <button onclick="keyboardNavigation.toggleHelp()">Show Shortcuts</button>
+        <button onclick="keyboardNavigation.toggleShortcuts()">Toggle Shortcuts</button>
+    </div>
+    
+    <div class="test-section">
+        <h2>Service Worker</h2>
+        <button onclick="serviceWorkerManager.checkForUpdate()">Check for Update</button>
+        <button onclick="serviceWorkerManager.clearCache()">Clear Cache</button>
+    </div>
+    
+    <script>
+        function testStateManagement() {
+            const output = document.getElementById('state-output');
+            if (window.stateManager) {
+                const state = window.stateManager.exportState();
+                output.innerHTML = `<pre>${state}</pre>`;
+                console.log('State exported:', state);
+            } else {
+                output.innerHTML = 'State manager not available';
+            }
+        }
+        
+        function testVideoPlayer() {
+            const output = document.getElementById('video-output');
+            if (window.EnhancedVideoPlayer) {
+                output.innerHTML = 'EnhancedVideoPlayer class available ✓';
+                console.log('Video player available');
+            } else {
+                output.innerHTML = 'Video player not available';
+            }
+        }
+    </script>
+    
+    <!-- Load the scripts -->
+    <script src="js/state-manager.js"></script>
+    <script src="js/video-player.js"></script>
+    <script src="js/keyboard-navigation.js"></script>
+    <script src="js/sw-register.js"></script>
+</body>
+</html>
