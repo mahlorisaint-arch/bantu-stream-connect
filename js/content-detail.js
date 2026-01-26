@@ -9,7 +9,7 @@ let isCreatorConnected = false;
 let creatorConnectorsCount = 0;
 
 // Wait for DOM and dependencies
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', async function() {
     console.log('DOM Content Loaded');
     
     try {
@@ -29,9 +29,9 @@ document.addEventListener('DOMContentLoaded', function() {
             createAnalyticsFallback();
         }
         
-        // Check if Supabase service is available
-        if (typeof supabaseService === 'undefined') {
-            console.error('Supabase service not available. Please check supabase-client.js');
+        // Check if Supabase is available
+        if (typeof supabase === 'undefined') {
+            console.error('Supabase not available. Please check supabase-client.js');
             showToast('Database connection failed. Using sample data.', 'warning');
             
             // Use sample data as fallback
@@ -41,9 +41,22 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
         
+        // Initialize Supabase
+        try {
+            await initialize(); // From your supabase-client.js
+            console.log('Supabase initialized:', isInitialized());
+        } catch (error) {
+            console.error('Supabase initialization error:', error);
+            showToast('Database connection issue. Using sample data.', 'warning');
+            setTimeout(() => {
+                initializeWithSampleData();
+            }, 1000);
+            return;
+        }
+        
         // Now initialize the app with real data
         console.log('All dependencies ready, initializing app with real data...');
-        initializeApp();
+        await initializeApp();
         
     } catch (error) {
         console.error('Fatal error during initialization:', error);
@@ -51,7 +64,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
-// Fallback functions
+// Fallback functions (keep the same as before)
 function createSecurityFallback() {
     window.security = {
         safeText: function(input) {
@@ -138,7 +151,7 @@ function createAnalyticsFallback() {
     };
 }
 
-// Main initialization
+// Main initialization using YOUR existing supabase client
 async function initializeApp() {
     console.log('Initializing app with real data...');
     
@@ -149,22 +162,23 @@ async function initializeApp() {
         
         console.log(`Fetching content with ID: ${contentId}`);
         
-        // Get current user ID
-        currentUserId = await supabaseService.getCurrentUserId();
+        // Get current user
+        const user = getCurrentUser();
+        currentUserId = user?.id || null;
         console.log('Current user ID:', currentUserId);
         
         // Show loading state
         updateLoadingText('Fetching content...');
         
-        // Fetch content data
-        currentContent = await fetchContentData(contentId);
+        // Fetch content data using YOUR existing function
+        currentContent = await getContentWithCreator(contentId);
         
         if (!currentContent) {
             throw new Error('Failed to fetch content. Content may not exist.');
         }
         
-        // Record view
-        await supabaseService.recordView(contentId, currentUserId);
+        // Record view using YOUR existing function
+        await recordContentView(contentId);
         
         // Track page view
         if (window.track) {
@@ -174,13 +188,17 @@ async function initializeApp() {
         // Update loading text
         updateLoadingText('Loading related content...');
         
-        // Fetch related content
-        const relatedContent = await fetchRelatedContent(currentContent);
+        // Fetch related content using YOUR existing function
+        const relatedContent = await getSimilarContent({
+            currentContentId: contentId,
+            currentGenre: currentContent.genre,
+            limit: 6
+        });
         
         // Update loading text
         updateLoadingText('Loading comments...');
         
-        // Fetch comments
+        // Fetch comments using YOUR existing function (need to implement or use existing)
         const comments = await fetchComments(contentId);
         
         // Update loading text
@@ -214,7 +232,7 @@ async function initializeApp() {
     }
 }
 
-// Sample data fallback
+// Sample data fallback (keep the same)
 function initializeWithSampleData() {
     const sampleContentData = {
         id: '68',
@@ -264,38 +282,34 @@ function initializeWithSampleData() {
     showToast('Loaded with sample data', 'warning');
 }
 
-// Data fetching functions
-async function fetchContentData(contentId) {
-    console.log(`Fetching content ${contentId} from Supabase...`);
-    
-    const content = await supabaseService.getContentById(contentId);
-    
-    if (!content) {
-        console.error('No content found for ID:', contentId);
-        return null;
-    }
-    
-    console.log('Content fetched:', content);
-    return content;
-}
-
-async function fetchRelatedContent(currentContent) {
-    const relatedContent = await supabaseService.getRelatedContent(
-        currentContent.id,
-        currentContent.genre,
-        currentContent.creator_id || currentContent.user_id,
-        6
-    );
-    
-    console.log('Related content fetched:', relatedContent?.length || 0, 'items');
-    return relatedContent;
-}
-
+// Data fetching functions using YOUR existing supabase client
 async function fetchComments(contentId) {
-    const comments = await supabaseService.getComments(contentId);
-    
-    console.log('Comments fetched:', comments?.length || 0, 'comments');
-    return comments;
+    try {
+        // Using direct Supabase query since we don't have a getComments function
+        const { data, error } = await supabase
+            .from('comments')
+            .select(`
+                *,
+                user_profiles!comments_user_id_fkey (
+                    username,
+                    full_name,
+                    avatar_url
+                )
+            `)
+            .eq('content_id', contentId)
+            .order('created_at', { ascending: false });
+        
+        if (error) {
+            console.error('Error fetching comments:', error);
+            return [];
+        }
+        
+        console.log('Comments fetched:', data?.length || 0, 'comments');
+        return data || [];
+    } catch (error) {
+        console.error('Exception in fetchComments:', error);
+        return [];
+    }
 }
 
 async function checkUserInteractions(contentId, creatorId) {
@@ -304,26 +318,58 @@ async function checkUserInteractions(contentId, creatorId) {
         return;
     }
     
-    // Check if liked
-    isContentLiked = await supabaseService.checkIfLiked(contentId, currentUserId);
-    console.log('User liked content:', isContentLiked);
-    
-    // Check if favorited
-    isContentFavorited = await supabaseService.checkIfFavorited(contentId, currentUserId);
-    console.log('User favorited content:', isContentFavorited);
-    
-    // Check if connected to creator
-    if (creatorId) {
-        isCreatorConnected = await supabaseService.checkIfConnected(creatorId, currentUserId);
-        console.log('User connected to creator:', isCreatorConnected);
+    try {
+        // Check if liked
+        const { data: likeData } = await supabase
+            .from('content_likes')
+            .select('id')
+            .eq('content_id', contentId)
+            .eq('user_id', currentUserId)
+            .single();
         
-        // Get creator connectors count
-        creatorConnectorsCount = await supabaseService.getCreatorConnectorsCount(creatorId);
-        console.log('Creator connectors count:', creatorConnectorsCount);
+        isContentLiked = !!likeData;
+        console.log('User liked content:', isContentLiked);
+        
+        // Check if favorited
+        const { data: favoriteData } = await supabase
+            .from('favorites')
+            .select('id')
+            .eq('content_id', contentId)
+            .eq('user_id', currentUserId)
+            .single();
+        
+        isContentFavorited = !!favoriteData;
+        console.log('User favorited content:', isContentFavorited);
+        
+        // Check if connected to creator
+        if (creatorId) {
+            const { data: connectionData } = await supabase
+                .from('connectors')
+                .select('id')
+                .eq('connector_id', currentUserId)
+                .eq('connected_id', creatorId)
+                .eq('connection_type', 'creator')
+                .single();
+            
+            isCreatorConnected = !!connectionData;
+            console.log('User connected to creator:', isCreatorConnected);
+            
+            // Get creator connectors count
+            const { count } = await supabase
+                .from('connectors')
+                .select('id', { count: 'exact', head: true })
+                .eq('connected_id', creatorId)
+                .eq('connection_type', 'creator');
+            
+            creatorConnectorsCount = count || 0;
+            console.log('Creator connectors count:', creatorConnectorsCount);
+        }
+    } catch (error) {
+        console.error('Error checking interactions:', error);
     }
 }
 
-// UI update functions
+// UI update functions (keep the same as before)
 function updateLoadingText(text) {
     const loadingText = document.getElementById('loading-text');
     if (loadingText) {
@@ -379,38 +425,28 @@ function updateContentUI(contentData) {
     console.log('Updating UI with content data...');
     
     try {
-        // Get creator name (prefer creator profile, then user profile, then fallback)
-        let creatorName = 'Unknown Creator';
-        let creatorDisplayName = 'Unknown Creator';
-        
-        if (contentData.creators && contentData.creators.username) {
-            creatorName = contentData.creators.username;
-            creatorDisplayName = contentData.creators.username;
-        } else if (contentData.user_profiles && contentData.user_profiles.full_name) {
-            creatorName = contentData.user_profiles.full_name;
-            creatorDisplayName = contentData.user_profiles.full_name;
-        } else if (contentData.creator) {
-            creatorName = contentData.creator;
-            creatorDisplayName = contentData.creator;
-        }
+        // Get creator name
+        let creatorName = contentData.creator_display_name || contentData.creator || 'Unknown Creator';
+        let creatorDisplayName = contentData.creator_display_name || contentData.creator || 'Unknown Creator';
         
         // Update hero section
         safe.setText(document.getElementById('contentTitle'), contentData.title || 'Untitled');
         safe.setText(document.getElementById('creatorName'), creatorName);
         safe.setText(document.getElementById('creatorDisplayName'), creatorDisplayName);
-        safe.setText(document.getElementById('viewsCount'), `${contentData.views_count || 0} views`);
-        safe.setText(document.getElementById('likesCount'), `${contentData.likes_count || 0} likes`);
+        safe.setText(document.getElementById('viewsCount'), `${contentData.views_count || contentData.views || 0} views`);
+        safe.setText(document.getElementById('likesCount'), `${contentData.likes_count || contentData.likes || 0} likes`);
         
         const durationFormatted = formatDuration(contentData.duration);
         safe.setText(document.getElementById('durationText'), durationFormatted);
         safe.setText(document.getElementById('contentDurationFull'), durationFormatted);
         
-        // Set poster image
+        // Set poster image - using fixMediaUrl from your supabase-client.js
         const posterPlaceholder = document.getElementById('posterPlaceholder');
         if (posterPlaceholder) {
             posterPlaceholder.innerHTML = '';
+            const thumbnailUrl = fixMediaUrl(contentData.thumbnail_url || 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=800&h=450&fit=crop');
             const img = security.createImage(
-                contentData.thumbnail_url || 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=800&h=450&fit=crop',
+                thumbnailUrl,
                 contentData.title || 'Content'
             );
             img.style.width = '100%';
@@ -517,7 +553,7 @@ function updateContentUI(contentData) {
     }
 }
 
-// Helper functions
+// Helper functions (keep the same)
 function formatDate(dateString) {
     if (!dateString) return '-';
     try {
@@ -586,7 +622,7 @@ function showToast(message, type = 'info') {
     }, 3000);
 }
 
-// Setup event listeners
+// Setup event listeners (updated to use direct Supabase queries)
 function setupEventListeners() {
     console.log('Setting up event listeners...');
     
@@ -614,13 +650,24 @@ function setupEventListeners() {
                 
                 const newState = !isContentFavorited;
                 
-                const success = await supabaseService.toggleFavorite(
-                    currentContent.id,
-                    currentUserId,
-                    newState ? 'favorite' : 'unfavorite'
-                );
-                
-                if (success) {
+                try {
+                    if (newState) {
+                        // Add to favorites
+                        await supabase
+                            .from('favorites')
+                            .insert({
+                                user_id: currentUserId,
+                                content_id: currentContent.id
+                            });
+                    } else {
+                        // Remove from favorites
+                        await supabase
+                            .from('favorites')
+                            .delete()
+                            .eq('user_id', currentUserId)
+                            .eq('content_id', currentContent.id);
+                    }
+                    
                     isContentFavorited = newState;
                     
                     if (isContentFavorited) {
@@ -642,7 +689,8 @@ function setupEventListeners() {
                             track.contentLike(currentContent.id, 'unlike');
                         }
                     }
-                } else {
+                } catch (error) {
+                    console.error('Error updating favorites:', error);
                     showToast('Failed to update favorites', 'error');
                 }
             });
@@ -665,12 +713,20 @@ function setupEventListeners() {
                     return;
                 }
                 
-                // Get user name for comment
+                // Get user info for comment
                 let authorName = 'User';
-                if (currentContent.user_profiles && currentContent.user_profiles.full_name) {
-                    authorName = currentContent.user_profiles.full_name;
-                } else if (currentContent.creators && currentContent.creators.username) {
-                    authorName = currentContent.creators.username;
+                try {
+                    const { data: userData } = await supabase
+                        .from('user_profiles')
+                        .select('full_name, username')
+                        .eq('id', currentUserId)
+                        .single();
+                    
+                    if (userData) {
+                        authorName = userData.full_name || userData.username || 'User';
+                    }
+                } catch (error) {
+                    console.error('Error fetching user info:', error);
                 }
                 
                 const success = await addComment(commentText, authorName);
@@ -753,13 +809,26 @@ function setupEventListeners() {
                 
                 const newState = !isCreatorConnected;
                 
-                const success = await supabaseService.toggleConnection(
-                    creatorId,
-                    currentUserId,
-                    newState ? 'connect' : 'disconnect'
-                );
-                
-                if (success) {
+                try {
+                    if (newState) {
+                        // Connect
+                        await supabase
+                            .from('connectors')
+                            .insert({
+                                connector_id: currentUserId,
+                                connected_id: creatorId,
+                                connection_type: 'creator'
+                            });
+                    } else {
+                        // Disconnect
+                        await supabase
+                            .from('connectors')
+                            .delete()
+                            .eq('connector_id', currentUserId)
+                            .eq('connected_id', creatorId)
+                            .eq('connection_type', 'creator');
+                    }
+                    
                     isCreatorConnected = newState;
                     
                     if (isCreatorConnected) {
@@ -768,7 +837,13 @@ function setupEventListeners() {
                         showToast('Connected with creator!', 'success');
                         
                         // Update connectors count
-                        creatorConnectorsCount = await supabaseService.getCreatorConnectorsCount(creatorId);
+                        const { count } = await supabase
+                            .from('connectors')
+                            .select('id', { count: 'exact', head: true })
+                            .eq('connected_id', creatorId)
+                            .eq('connection_type', 'creator');
+                        
+                        creatorConnectorsCount = count || 0;
                         const creatorConnectorsEl = document.getElementById('creatorConnectors');
                         if (creatorConnectorsEl) {
                             safe.setText(creatorConnectorsEl, `${creatorConnectorsCount} connectors`);
@@ -783,7 +858,13 @@ function setupEventListeners() {
                         showToast('Disconnected from creator', 'info');
                         
                         // Update connectors count
-                        creatorConnectorsCount = await supabaseService.getCreatorConnectorsCount(creatorId);
+                        const { count } = await supabase
+                            .from('connectors')
+                            .select('id', { count: 'exact', head: true })
+                            .eq('connected_id', creatorId)
+                            .eq('connection_type', 'creator');
+                        
+                        creatorConnectorsCount = count || 0;
                         const creatorConnectorsEl = document.getElementById('creatorConnectors');
                         if (creatorConnectorsEl) {
                             safe.setText(creatorConnectorsEl, `${creatorConnectorsCount} connectors`);
@@ -793,7 +874,8 @@ function setupEventListeners() {
                             track.creatorConnect(creatorId, 'disconnect');
                         }
                     }
-                } else {
+                } catch (error) {
+                    console.error('Error updating connection:', error);
                     showToast('Failed to update connection', 'error');
                 }
             });
@@ -867,7 +949,8 @@ function handlePlayPressed() {
             return;
         }
         
-        const videoUrl = currentContent.file_url;
+        // Use fixMediaUrl from your supabase-client.js
+        const videoUrl = fixMediaUrl(currentContent.file_url);
         const inlinePlayerContainer = document.getElementById('inlinePlayer');
         const playerTitle = document.getElementById('playerTitle');
         const inlineVideoPlayer = document.getElementById('inlineVideoPlayer');
@@ -935,7 +1018,7 @@ function renderRelatedContent(relatedContent) {
             });
             
             const img = security.createImage(
-                content.thumbnail_url || 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop',
+                fixMediaUrl(content.thumbnail_url) || 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop',
                 content.title || 'Related Content'
             );
             thumbnail.appendChild(img);
@@ -979,7 +1062,7 @@ function renderRelatedContent(relatedContent) {
     }
 }
 
-// Render comments
+// Render comments (keep the same)
 function renderComments(comments) {
     const commentsList = document.getElementById('commentsList');
     const noComments = document.getElementById('noComments');
@@ -1022,7 +1105,7 @@ function renderComments(comments) {
     }
 }
 
-// Create comment element
+// Create comment element (keep the same)
 function createCommentElement(commentData) {
     const commentEl = security.createElement('div', {
         className: 'comment-item'
@@ -1040,7 +1123,7 @@ function createCommentElement(commentData) {
     let avatarContent;
     if (commentData.user_profiles && commentData.user_profiles.avatar_url) {
         const avatarImg = security.createImage(
-            commentData.user_profiles.avatar_url,
+            fixMediaUrl(commentData.user_profiles.avatar_url),
             commentData.author_name || 'User'
         );
         avatarImg.style.width = '100%';
@@ -1059,7 +1142,7 @@ function createCommentElement(commentData) {
         className: 'comment-user'
     });
     
-    const userName = security.createElement('strong', {}, commentData.author_name || 'User');
+    const userName = security.createElement('strong', {}, commentData.author_name || commentData.user_profiles?.full_name || 'User');
     const commentTime = security.createElement('div', {
         className: 'comment-time'
     }, formatCommentTime(commentData.created_at));
@@ -1106,19 +1189,24 @@ function formatCommentTime(timestamp) {
     }
 }
 
-// Add comment
+// Add comment using direct Supabase query
 async function addComment(commentText, authorName) {
     if (!currentUserId || !currentContent) return false;
     
     try {
-        const comment = await supabaseService.addComment(
-            currentContent.id,
-            commentText,
-            currentUserId,
-            authorName
-        );
+        const { data, error } = await supabase
+            .from('comments')
+            .insert({
+                content_id: currentContent.id,
+                user_id: currentUserId,
+                author_name: authorName,
+                comment_text: commentText
+            })
+            .select()
+            .single();
         
-        if (!comment) {
+        if (error) {
+            console.error('Error adding comment:', error);
             showToast('Failed to add comment', 'error');
             return false;
         }
