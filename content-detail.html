@@ -301,46 +301,75 @@
     </button>
 
     <!-- Fix script loading order -->
+    <!-- Load Supabase from CDN (already imported in supabase-client.js) -->
     <script src="js/security.js"></script>
     <script>
         // Wait for security to load, then load others
         if (typeof security !== 'undefined') {
             console.log('Security loaded successfully');
-            // Load error handler
-            var errorScript = document.createElement('script');
-            errorScript.src = 'js/error-handler.js';
-            errorScript.onload = function() {
-                console.log('Error handler loaded');
-                // Load analytics
-                var analyticsScript = document.createElement('script');
-                analyticsScript.src = 'js/analytics.js';
-                analyticsScript.onload = function() {
-                    console.log('Analytics loaded');
-                    // Load main script
-                    var mainScript = document.createElement('script');
-                    mainScript.src = 'js/content-detail.js';
-                    mainScript.defer = true;
-                    document.head.appendChild(mainScript);
+            
+            // Load Supabase client
+            var supabaseScript = document.createElement('script');
+            supabaseScript.type = 'module';
+            supabaseScript.src = 'js/supabase-client.js';
+            supabaseScript.onload = function() {
+                console.log('Supabase client loaded');
+                
+                // Load error handler
+                var errorScript = document.createElement('script');
+                errorScript.src = 'js/error-handler.js';
+                errorScript.onload = function() {
+                    console.log('Error handler loaded');
+                    
+                    // Load analytics
+                    var analyticsScript = document.createElement('script');
+                    analyticsScript.src = 'js/analytics.js';
+                    analyticsScript.onload = function() {
+                        console.log('Analytics loaded');
+                        
+                        // Load main script
+                        var mainScript = document.createElement('script');
+                        mainScript.src = 'js/content-detail.js';
+                        mainScript.defer = true;
+                        document.head.appendChild(mainScript);
+                    };
+                    document.head.appendChild(analyticsScript);
                 };
-                document.head.appendChild(analyticsScript);
+                document.head.appendChild(errorScript);
             };
-            document.head.appendChild(errorScript);
+            document.head.appendChild(supabaseScript);
         } else {
             console.error('Security.js failed to load');
             // Fallback: load all scripts sequentially
-            var scripts = ['js/error-handler.js', 'js/analytics.js', 'js/content-detail.js'];
+            var scripts = [
+                {src: 'js/supabase-client.js', type: 'module'},
+                'js/error-handler.js', 
+                'js/analytics.js', 
+                'js/content-detail.js'
+            ];
+            
             function loadScripts(index) {
                 if (index >= scripts.length) return;
+                
+                var scriptInfo = scripts[index];
                 var script = document.createElement('script');
-                script.src = scripts[index];
+                
+                if (typeof scriptInfo === 'object') {
+                    script.src = scriptInfo.src;
+                    script.type = scriptInfo.type || 'text/javascript';
+                } else {
+                    script.src = scriptInfo;
+                }
+                
                 script.onload = function() {
-                    console.log(scripts[index] + ' loaded');
+                    console.log(script.src + ' loaded');
                     loadScripts(index + 1);
                 };
                 script.onerror = function() {
-                    console.error('Failed to load: ' + scripts[index]);
+                    console.error('Failed to load: ' + script.src);
                     loadScripts(index + 1);
                 };
+                
                 document.head.appendChild(script);
             }
             loadScripts(0);
@@ -353,29 +382,17 @@
         window.onerror = null;
         console.log('Debug mode enabled - Page fully loaded');
         
-        // Add a fallback in case everything else fails
+        // Check if supabase is available
         setTimeout(function() {
-            var loadingScreen = document.getElementById('loading');
-            var app = document.getElementById('app');
-            
-            if (loadingScreen && app && app.style.display === 'none') {
-                console.log('Fallback: Forcing app to show after timeout');
-                loadingScreen.style.display = 'none';
-                app.style.display = 'block';
-                
-                // Create a simple fallback toast
-                var toastContainer = document.getElementById('toast-container');
-                if (toastContainer) {
-                    var toast = document.createElement('div');
-                    toast.className = 'toast warning';
-                    toast.innerHTML = '<i class="fas fa-exclamation-circle"></i><span>App loaded in fallback mode</span>';
-                    toastContainer.appendChild(toast);
-                    setTimeout(function() {
-                        if (toast.parentNode) toast.remove();
-                    }, 3000);
-                }
+            if (typeof supabase === 'undefined') {
+                console.error('Supabase not loaded');
+                // Try to load it directly
+                var fallbackScript = document.createElement('script');
+                fallbackScript.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+                fallbackScript.type = 'module';
+                document.head.appendChild(fallbackScript);
             }
-        }, 5000); // 5 second timeout
+        }, 2000);
     </script>
 </body>
 </html>
