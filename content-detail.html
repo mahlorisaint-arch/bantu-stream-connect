@@ -58,17 +58,10 @@
         <header class="header">
             <div class="logo" onclick="window.location.href='index.html'">
                 <div class="logo-icon">
-                    <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <rect width="40" height="40" rx="8" fill="#0F172A"/>
-                        <path d="M8 20 L12 16 L16 22 L20 18 L24 24 L28 20 L32 26" stroke="url(#pulse-gradient)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-                        <circle cx="32" cy="26" r="3" fill="#F59E0B"/>
-                        <defs>
-                            <linearGradient id="pulse-gradient" x1="8" y1="20" x2="32" y2="26" gradientUnits="userSpaceOnUse">
-                                <stop stop-color="#1D4ED8"/>
-                                <stop offset="1" stop-color="#F59E0B"/>
-                            </linearGradient>
-                        </defs>
-                    </svg>
+                    <!-- Updated Logo: Using provided image instead of SVG -->
+                    <img src="assets/icon/bantu_stream_connect_icon.png" 
+                         alt="Bantu Stream Connect Logo"
+                         style="width: 40px; height: 40px; border-radius: 8px; object-fit: contain;">
                 </div>
                 <div class="logo-text">BANTU STREAM CONNECT</div>
             </div>
@@ -79,7 +72,8 @@
                     </svg>
                 </button>
                 <button id="profile-btn" class="profile-btn" title="Profile">
-                    <div class="profile-placeholder">
+                    <!-- This will be dynamically updated with user's profile picture -->
+                    <div class="profile-placeholder" id="userProfilePlaceholder">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
                         </svg>
@@ -327,10 +321,11 @@
                     </button>
                 </div>
                 
-                <!-- Add Comment Form -->
+                <!-- Add Comment Form - UPDATED FOR AUTHENTICATION -->
                 <div class="add-comment">
                     <div class="comment-avatar" id="userCommentAvatar">
-                        <i class="fas fa-user-circle"></i>
+                        <!-- This will be dynamically updated with user's profile picture -->
+                        <i class="fas fa-user-circle" id="commentAvatarIcon" style="font-size: 40px; color: #1D4ED8;"></i>
                     </div>
                     <div class="comment-input-container">
                         <textarea 
@@ -455,18 +450,26 @@
                             helperScript.onload = function() {
                                 console.log('Supabase helper loaded');
                                 
-                                // Load service worker register
-                                var swScript = document.createElement('script');
-                                swScript.src = 'js/sw-register.js';
-                                swScript.onload = function() {
-                                    console.log('Service worker registered');
+                                // Load auth-helper
+                                var authScript = document.createElement('script');
+                                authScript.src = 'js/auth-helper.js';
+                                authScript.onload = function() {
+                                    console.log('Auth helper loaded');
                                     
-                                    // Finally load the main content-detail script
-                                    var mainScript = document.createElement('script');
-                                    mainScript.src = 'js/content-detail.js';
-                                    document.head.appendChild(mainScript);
+                                    // Load service worker register
+                                    var swScript = document.createElement('script');
+                                    swScript.src = 'js/sw-register.js';
+                                    swScript.onload = function() {
+                                        console.log('Service worker registered');
+                                        
+                                        // Finally load the main content-detail script
+                                        var mainScript = document.createElement('script');
+                                        mainScript.src = 'js/content-detail.js';
+                                        document.head.appendChild(mainScript);
+                                    };
+                                    document.head.appendChild(swScript);
                                 };
-                                document.head.appendChild(swScript);
+                                document.head.appendChild(authScript);
                             };
                             document.head.appendChild(helperScript);
                         };
@@ -487,6 +490,7 @@
                 'js/video-player.js',
                 'js/keyboard-navigation.js',
                 'js/supabase-helper.js',
+                'js/auth-helper.js',
                 'js/sw-register.js',
                 'js/content-detail.js'
             ];
