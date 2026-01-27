@@ -1,12 +1,88 @@
 # Node
 node_modules/
 package-lock.json
+.npm
+yarn-integrity
 
-# Tailwind build
+# Build outputs
+.next
+.nuxt
+dist/
+public/
+.vuepress/dist
+.serverless/
+.fusebox/
+
+# Bundler caches
+.cache/
+.parcel-cache
+
+# Dependencies
+jspm_packages/
+*.tgz
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+.env.test
+
+# API Keys and Secrets
+api/.env
+config/keys.json
+supabase-keys.txt
+api-keys.json
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Runtime data
+pids/
+*.pid
+*.seed
+*.pid.lock
+.dynamodb/
+.tern-port
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.temp
+
+# Backup files
+*.bak
+*.backup
+
+# Tailwind build (from original)
 *.log
 *.tmp
 .DS_Store
 
-# Env and configs
-.env
-.env.local
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+.vscode-test
+
+# System files
+.DS_Store
+Thumbs.db
+
+# ESLint cache
+.eslintcache
+
+# Node REPL history
+.node_repl_history
+
+# Gatsby files
+.cache/
+public
+
+# FuseBox cache
+.fusebox/
