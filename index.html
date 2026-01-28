@@ -168,14 +168,14 @@
     <!-- Toast Container -->
     <div id="toast-container"></div>
 
-    <!-- Main JavaScript -->
+        <!-- Main JavaScript -->
     <script>
         // Supabase Configuration - NO CHANGES
         const SUPABASE_URL = 'https://ydnxqnbjoshvxteevemc.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U';
 
-        // Initialize Supabase client
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        // Initialize Supabase client - FIXED: Use different variable name
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         
         console.log('✅ Bantu Stream Connect Home Feed Initialized');
 
@@ -185,6 +185,8 @@
 
         // DOM Content Loaded
         document.addEventListener('DOMContentLoaded', async () => {
+            console.log('🚀 DOM loaded, starting app...');
+            
             try {
                 // Check authentication
                 await checkAuth();
@@ -199,6 +201,8 @@
                 document.getElementById('app').style.display = 'block';
                 document.getElementById('loading').style.display = 'none';
                 
+                console.log('✅ App fully loaded');
+                
             } catch (error) {
                 console.error('Error initializing app:', error);
                 showError('Failed to load. Please refresh the page.');
@@ -208,7 +212,7 @@
         // Check authentication
         async function checkAuth() {
             try {
-                const { data: { session } } = await supabase.auth.getSession();
+                const { data: { session } } = await supabaseClient.auth.getSession();
                 
                 if (session) {
                     currentUser = session.user;
@@ -408,7 +412,9 @@
             setTimeout(() => {
                 document.querySelectorAll('.content-card').forEach(card => {
                     const contentId = card.dataset.contentId;
-                    card.addEventListener('click', () => {
+                    card.addEventListener('click', (e) => {
+                        // Don't trigger if clicking on buttons
+                        if (e.target.closest('button')) return;
                         window.location.href = `content-detail.html?id=${contentId}`;
                     });
                 });
@@ -422,9 +428,10 @@
                     <div class="card-thumbnail">
                         <img src="${item.thumbnail_url || 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop'}" 
                              alt="${item.title}"
-                             loading="lazy">
+                             loading="lazy"
+                             onerror="this.src='https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop'">
                         <div class="thumbnail-overlay"></div>
-                        <button class="share-btn" aria-label="Share" onclick="shareContent(${item.id}, event)">
+                        <button class="share-btn" aria-label="Share" onclick="shareContent(event, ${item.id})">
                             <i class="fas fa-share-alt"></i>
                         </button>
                     </div>
@@ -432,7 +439,7 @@
                         <h3 class="card-title" title="${item.title}">
                             ${item.title.length > 50 ? item.title.substring(0, 50) + '...' : item.title}
                         </h3>
-                        <button class="creator-btn" onclick="viewCreator(${item.id}, '${item.creator}', event)">
+                        <button class="creator-btn" onclick="viewCreator(event, ${item.id}, '${item.creator ? item.creator.replace(/'/g, "\\'") : 'Creator'}')">
                             <i class="fas fa-user"></i>
                             ${item.creator ? (item.creator.length > 15 ? item.creator.substring(0, 15) + '...' : item.creator) : 'Creator'}
                         </button>
@@ -459,7 +466,7 @@
         }
 
         // Share content
-        function shareContent(contentId, event) {
+        function shareContent(event, contentId) {
             if (event) event.stopPropagation();
             
             const content = contentData.find(c => c.id === contentId);
@@ -482,7 +489,7 @@
         }
 
         // View creator
-        function viewCreator(contentId, creatorName, event) {
+        function viewCreator(event, contentId, creatorName) {
             if (event) event.stopPropagation();
             
             // For now, just show a toast. You can implement creator pages later
@@ -526,7 +533,7 @@
         }
 
         // Listen for auth changes
-        supabase.auth.onAuthStateChange((event, session) => {
+        supabaseClient.auth.onAuthStateChange((event, session) => {
             if (event === 'SIGNED_IN') {
                 currentUser = session.user;
                 updateProfileButton(session.user);
@@ -546,3 +553,4 @@
     </script>
 </body>
 </html>
+
