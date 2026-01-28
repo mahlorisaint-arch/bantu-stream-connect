@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Bantu Stream Connect - Home Feed</title>
     
     <!-- Google Fonts -->
@@ -22,6 +22,8 @@
     <!-- Meta tags for better performance -->
     <meta name="description" content="Bantu Stream Connect - Discover amazing content from creators across Africa">
     <meta name="theme-color" content="#0A0E12">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎬</text></svg>">
     
     <!-- Preload critical resources -->
@@ -51,9 +53,15 @@
         <!-- Header -->
         <header class="header">
             <div class="header-container">
+                <!-- Mobile Menu Button -->
+                <button class="mobile-menu-btn" id="mobile-menu-btn" aria-label="Menu">
+                    <i class="fas fa-bars"></i>
+                </button>
+                
+                <!-- Logo -->
                 <div class="logo" onclick="window.location.href='index.html'">
                     <div class="logo-icon">
-                        <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <svg width="32" height="32" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <rect width="40" height="40" rx="8" fill="#0F172A"/>
                             <path d="M8 20 L12 16 L16 22 L20 18 L24 24 L28 20 L32 26" stroke="url(#pulse-gradient)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
                             <circle cx="32" cy="26" r="3" fill="#F59E0B"/>
@@ -65,140 +73,156 @@
                             </defs>
                         </svg>
                     </div>
-                    <div class="logo-text">BANTU STREAM CONNECT</div>
+                    <div class="logo-text">BANTU</div>
                 </div>
                 
-                <!-- Search Container -->
-                <div class="search-container" id="search-container">
-                    <div class="search-bar">
-                        <i class="fas fa-search search-icon"></i>
-                        <input 
-                            type="text" 
-                            id="global-search" 
-                            placeholder="Search content, creators, categories..." 
-                            aria-label="Search"
-                        >
-                        <div class="search-actions">
-                            <button class="search-filter-btn" id="filter-btn" aria-label="Search filters">
-                                <i class="fas fa-sliders-h"></i>
-                            </button>
-                            <button class="search-clear-btn" id="clear-search" aria-label="Clear search">
-                                <i class="fas fa-times"></i>
-                            </button>
+                <!-- Desktop Navigation -->
+                <nav class="desktop-nav">
+                    <a href="index.html" class="nav-link active"><i class="fas fa-home"></i> Home</a>
+                    <a href="explore.html" class="nav-link"><i class="fas fa-compass"></i> Explore</a>
+                    <a href="trending.html" class="nav-link"><i class="fas fa-fire"></i> Trending</a>
+                    <a href="library.html" class="nav-link"><i class="fas fa-film"></i> Library</a>
+                </nav>
+                
+                <!-- Search & User -->
+                <div class="header-right">
+                    <!-- Search Button for Mobile -->
+                    <button class="mobile-search-btn" id="mobile-search-btn" aria-label="Search">
+                        <i class="fas fa-search"></i>
+                    </button>
+                    
+                    <!-- Desktop Search -->
+                    <div class="desktop-search">
+                        <div class="search-bar">
+                            <i class="fas fa-search search-icon"></i>
+                            <input 
+                                type="text" 
+                                id="global-search" 
+                                placeholder="Search content..." 
+                                aria-label="Search"
+                            >
                         </div>
                     </div>
                     
-                    <!-- Search Filters -->
-                    <div class="search-filters-dropdown" id="search-filters">
-                        <div class="filter-section">
-                            <label for="content-type-filter">Content Type</label>
-                            <select id="content-type-filter">
-                                <option value="all">All Content</option>
-                                <option value="video">Videos</option>
-                                <option value="audio">Audio</option>
-                                <option value="live">Live Streams</option>
-                            </select>
-                        </div>
-                        
-                        <div class="filter-section">
-                            <label for="genre-filter">Genre</label>
-                            <select id="genre-filter">
-                                <option value="all">All Genres</option>
-                            </select>
-                        </div>
-                        
-                        <div class="filter-section">
-                            <label for="sort-filter">Sort By</label>
-                            <select id="sort-filter">
-                                <option value="newest">Newest</option>
-                                <option value="popular">Most Popular</option>
-                                <option value="trending">Trending</option>
-                            </select>
-                        </div>
-                        
-                        <div class="filter-actions">
-                            <button id="apply-filters" class="filter-btn apply">Apply Filters</button>
-                            <button id="reset-filters" class="filter-btn reset">Reset All</button>
-                        </div>
+                    <!-- User Actions -->
+                    <div class="user-actions">
+                        <button id="notifications-btn" class="icon-btn" aria-label="Notifications">
+                            <i class="fas fa-bell"></i>
+                            <span class="notification-badge">3</span>
+                        </button>
+                        <button id="profile-btn" class="profile-btn" aria-label="Profile">
+                            <div class="profile-placeholder">
+                                <i class="fas fa-user"></i>
+                            </div>
+                        </button>
                     </div>
                 </div>
-                
-                <!-- User Actions -->
-                <div class="user-actions">
-                    <button id="notifications-btn" class="icon-btn" aria-label="Notifications">
-                        <i class="fas fa-bell"></i>
+            </div>
+            
+            <!-- Mobile Search Bar -->
+            <div class="mobile-search-container" id="mobile-search-container">
+                <div class="mobile-search-bar">
+                    <i class="fas fa-search search-icon"></i>
+                    <input 
+                        type="text" 
+                        id="mobile-search" 
+                        placeholder="Search content, creators..." 
+                        aria-label="Search"
+                    >
+                    <button class="close-search-btn" id="close-mobile-search">
+                        <i class="fas fa-times"></i>
                     </button>
-                    <button id="profile-btn" class="profile-btn" aria-label="Profile">
-                        <div class="profile-placeholder">
-                            <i class="fas fa-user"></i>
-                        </div>
+                </div>
+            </div>
+            
+            <!-- Mobile Navigation Menu -->
+            <div class="mobile-nav" id="mobile-nav">
+                <div class="mobile-nav-header">
+                    <div class="mobile-logo">BANTU STREAM CONNECT</div>
+                    <button class="close-mobile-nav" id="close-mobile-nav">
+                        <i class="fas fa-times"></i>
                     </button>
+                </div>
+                <div class="mobile-nav-links">
+                    <a href="index.html" class="mobile-nav-link active">
+                        <i class="fas fa-home"></i>
+                        <span>Home</span>
+                    </a>
+                    <a href="explore.html" class="mobile-nav-link">
+                        <i class="fas fa-compass"></i>
+                        <span>Explore</span>
+                    </a>
+                    <a href="trending.html" class="mobile-nav-link">
+                        <i class="fas fa-fire"></i>
+                        <span>Trending</span>
+                    </a>
+                    <a href="library.html" class="mobile-nav-link">
+                        <i class="fas fa-film"></i>
+                        <span>Library</span>
+                    </a>
+                    <a href="creators.html" class="mobile-nav-link">
+                        <i class="fas fa-users"></i>
+                        <span>Creators</span>
+                    </a>
+                    <a href="profile.html" class="mobile-nav-link">
+                        <i class="fas fa-user"></i>
+                        <span>Profile</span>
+                    </a>
+                    <a href="settings.html" class="mobile-nav-link">
+                        <i class="fas fa-cog"></i>
+                        <span>Settings</span>
+                    </a>
+                </div>
+                <div class="mobile-nav-footer">
+                    <a href="help.html" class="footer-link">Help Center</a>
+                    <a href="privacy.html" class="footer-link">Privacy Policy</a>
+                    <a href="terms.html" class="footer-link">Terms of Service</a>
                 </div>
             </div>
         </header>
 
         <!-- Main Content -->
-        <main id="main-content" class="container">
-            <!-- Hero Section -->
-            <section class="hero">
+        <main id="main-content" class="main-content">
+            <!-- Hero Banner -->
+            <section class="hero-banner">
                 <div class="hero-content">
-                    <h1>Welcome to Bantu Stream Connect</h1>
-                    <p>Discover amazing content from creators across Africa</p>
+                    <h1 class="hero-title">Discover Amazing Content From Africa</h1>
+                    <p class="hero-subtitle">Stream videos, music, and live broadcasts from creators across the continent</p>
                     <div class="hero-actions">
-                        <button id="browse-all-btn" class="hero-btn">Browse All Content</button>
-                        <button id="explore-btn" class="hero-btn secondary">Explore Creators</button>
+                        <button class="hero-btn primary" onclick="window.location.href='explore.html'">
+                            <i class="fas fa-play"></i>
+                            Start Watching
+                        </button>
+                        <button class="hero-btn secondary" onclick="window.location.href='upload.html'">
+                            <i class="fas fa-upload"></i>
+                            Upload Content
+                        </button>
                     </div>
                 </div>
             </section>
 
             <!-- Content Sections -->
             <div class="content-sections">
-                <!-- Development Notice -->
-                <div class="development-notice">
-                    <div class="notice-content">
-                        <i class="fas fa-rocket"></i>
-                        <div>
-                            <h3>We're Building Something Powerful</h3>
-                            <p>Bantu Stream Connect is currently in active development. Explore what's already live!</p>
-                        </div>
-                        <button onclick="window.location.href='pulse-feed.html'" class="notice-btn">
-                            Visit Pulse Feed
-                            <i class="fas fa-arrow-right"></i>
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Recommended For You -->
-                <section id="recommended-section" class="content-section" style="display: none;">
+                <!-- Trending Now -->
+                <section class="content-section">
                     <div class="section-header">
                         <h2 class="section-title">
-                            <i class="fas fa-star"></i> Recommended For You
+                            <i class="fas fa-fire trending-icon"></i>
+                            Trending Now
                         </h2>
-                        <button class="see-all-btn" onclick="window.location.href='recommended.html'">See All</button>
-                    </div>
-                    <div class="content-grid" id="recommended-content">
-                        <!-- Recommended content will be loaded here -->
-                    </div>
-                </section>
-
-                <!-- Trending Now -->
-                <section class="content-section trending-section">
-                    <div class="section-header">
-                        <div class="trending-header">
-                            <h2 class="section-title">
-                                <i class="fas fa-fire"></i> Trending Now
-                                <span class="trending-badge">Live</span>
-                            </h2>
+                        <div class="section-actions">
                             <div class="time-filter">
-                                <button class="time-btn active" data-hours="24">Today</button>
-                                <button class="time-btn" data-hours="168">This Week</button>
-                                <button class="time-btn" data-hours="720">This Month</button>
+                                <button class="time-filter-btn active" data-hours="24">Today</button>
+                                <button class="time-filter-btn" data-hours="168">Week</button>
+                                <button class="time-filter-btn" data-hours="720">Month</button>
                             </div>
+                            <a href="trending.html" class="see-all-link">See All</a>
                         </div>
-                        <button class="see-all-btn" onclick="window.location.href='trending.html'">See All</button>
                     </div>
-                    <div class="content-grid" id="trending-content">
-                        <!-- Trending content will be loaded here -->
+                    <div class="content-scroll-container">
+                        <div class="content-horizontal-scroll" id="trending-content">
+                            <!-- Trending content will be loaded here -->
+                        </div>
                     </div>
                 </section>
 
@@ -206,95 +230,80 @@
                 <section class="content-section">
                     <div class="section-header">
                         <h2 class="section-title">
-                            <i class="fas fa-clock"></i> Latest Uploads
+                            <i class="fas fa-clock latest-icon"></i>
+                            Latest Uploads
                         </h2>
-                        <button class="see-all-btn" onclick="window.location.href='content-library.html'">See All</button>
+                        <a href="library.html?sort=newest" class="see-all-link">See All</a>
                     </div>
                     <div class="content-grid" id="latest-content">
                         <!-- Latest content will be loaded here -->
                     </div>
                 </section>
 
-                <!-- Infinite Scroll Sentinel -->
-                <div id="scroll-sentinel" class="scroll-sentinel">
-                    <div class="sentinel-spinner"></div>
-                    <p>Loading more content...</p>
-                </div>
+                <!-- Recommended For You -->
+                <section class="content-section" id="recommended-section" style="display: none;">
+                    <div class="section-header">
+                        <h2 class="section-title">
+                            <i class="fas fa-star recommended-icon"></i>
+                            Recommended For You
+                        </h2>
+                        <a href="recommended.html" class="see-all-link">See All</a>
+                    </div>
+                    <div class="content-grid" id="recommended-content">
+                        <!-- Recommended content will be loaded here -->
+                    </div>
+                </section>
+
+                <!-- Categories -->
+                <section class="content-section">
+                    <div class="section-header">
+                        <h2 class="section-title">
+                            <i class="fas fa-th-large categories-icon"></i>
+                            Browse Categories
+                        </h2>
+                    </div>
+                    <div class="categories-grid" id="categories-grid">
+                        <!-- Categories will be loaded here -->
+                    </div>
+                </section>
             </div>
 
-            <!-- Browse All CTA -->
-            <div class="browse-all-cta">
-                <div class="cta-content">
-                    <h3>Ready for More?</h3>
-                    <p>Explore thousands of videos, music, and live streams from African creators</p>
-                    <button id="browse-all-cta" class="cta-button">
-                        <i class="fas fa-compass"></i>
-                        Browse All Content
-                        <i class="fas fa-arrow-right"></i>
-                    </button>
-                </div>
+            <!-- Load More Section -->
+            <div class="load-more-section">
+                <button id="load-more-btn" class="load-more-btn">
+                    <span class="load-more-text">Load More Content</span>
+                    <i class="fas fa-chevron-down"></i>
+                </button>
             </div>
+
+            <!-- Bottom Navigation (Mobile Only) -->
+            <nav class="bottom-nav">
+                <a href="index.html" class="bottom-nav-link active">
+                    <i class="fas fa-home"></i>
+                    <span>Home</span>
+                </a>
+                <a href="explore.html" class="bottom-nav-link">
+                    <i class="fas fa-compass"></i>
+                    <span>Explore</span>
+                </a>
+                <a href="trending.html" class="bottom-nav-link">
+                    <i class="fas fa-fire"></i>
+                    <span>Trending</span>
+                </a>
+                <a href="library.html" class="bottom-nav-link">
+                    <i class="fas fa-film"></i>
+                    <span>Library</span>
+                </a>
+                <a href="profile.html" class="bottom-nav-link">
+                    <i class="fas fa-user"></i>
+                    <span>Profile</span>
+                </a>
+            </nav>
         </main>
 
-        <!-- Footer -->
-        <footer class="footer">
-            <div class="footer-container">
-                <div class="footer-section">
-                    <div class="footer-logo">
-                        <div class="logo-icon small">
-                            <svg width="30" height="30" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <rect width="40" height="40" rx="6" fill="#0F172A"/>
-                                <path d="M8 20 L12 16 L16 22 L20 18 L24 24 L28 20 L32 26" stroke="#F59E0B" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-                                <circle cx="32" cy="26" r="3" fill="#F59E0B"/>
-                            </svg>
-                        </div>
-                        <div class="footer-brand">BANTU STREAM CONNECT</div>
-                    </div>
-                    <p class="footer-tagline">Connecting Africa through content</p>
-                </div>
-                
-                <div class="footer-section">
-                    <h4>Platform</h4>
-                    <div class="footer-links">
-                        <a href="content-library.html">Content Library</a>
-                        <a href="creators.html">Creators</a>
-                        <a href="trending.html">Trending</a>
-                        <a href="categories.html">Categories</a>
-                    </div>
-                </div>
-                
-                <div class="footer-section">
-                    <h4>Support</h4>
-                    <div class="footer-links">
-                        <a href="help.html">Help Center</a>
-                        <a href="privacy-policy.html">Privacy Policy</a>
-                        <a href="terms.html">Terms of Service</a>
-                        <a href="community.html">Community Guidelines</a>
-                    </div>
-                </div>
-                
-                <div class="footer-section">
-                    <h4>Company</h4>
-                    <div class="footer-links">
-                        <a href="about.html">About Us</a>
-                        <a href="blog.html">Blog</a>
-                        <a href="careers.html">Careers</a>
-                        <a href="contact.html">Contact</a>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="footer-bottom">
-                <p>Bantu Stream Connect © 2025 • Built with ❤️ in South Africa</p>
-                <div class="footer-contact">
-                    Need help? <a href="mailto:support@bantustreamconnect.com">support@bantustreamconnect.com</a>
-                </div>
-            </div>
-        </footer>
+        <!-- Toast Container -->
+        <div id="toast-container"></div>
     </div>
-
-    <!-- Toast Container -->
-    <div id="toast-container"></div>
 
     <!-- Supabase Configuration -->
     <script>
