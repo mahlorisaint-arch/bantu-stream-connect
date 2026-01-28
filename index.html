@@ -23,6 +23,10 @@
     <meta name="description" content="Bantu Stream Connect - Discover amazing content from creators across Africa">
     <meta name="theme-color" content="#0A0E12">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎬</text></svg>">
+    
+    <!-- Preload critical resources -->
+    <link rel="preload" href="css/styles.css" as="style">
+    <link rel="preload" href="js/home-feed.js" as="script">
 </head>
 <body>
     <!-- Skip to content for accessibility -->
@@ -44,7 +48,7 @@
 
     <!-- Main Content -->
     <div id="app" style="display: none;">
-        <!-- Header -->
+        <!-- Header with Enhanced Search -->
         <header class="header">
             <div class="logo" onclick="window.location.href='index.html'">
                 <div class="logo-icon">
@@ -62,10 +66,88 @@
                 </div>
                 <div class="logo-text">BANTU STREAM CONNECT</div>
             </div>
+            
+            <!-- Enhanced Search Container -->
+            <div class="search-container" id="search-container">
+                <div class="search-bar">
+                    <i class="fas fa-search search-icon"></i>
+                    <input 
+                        type="text" 
+                        id="global-search" 
+                        placeholder="Search content, creators, categories..." 
+                        aria-label="Search"
+                    >
+                    <div class="search-actions">
+                        <button class="search-filter-btn" id="filter-btn" aria-label="Search filters">
+                            <i class="fas fa-sliders-h"></i>
+                        </button>
+                        <button class="search-clear-btn" id="clear-search" aria-label="Clear search">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Search Filters Dropdown -->
+                <div class="search-filters-dropdown" id="search-filters">
+                    <div class="filter-section">
+                        <label for="content-type-filter">Content Type</label>
+                        <select id="content-type-filter">
+                            <option value="all">All Content</option>
+                            <option value="video">Videos</option>
+                            <option value="audio">Audio</option>
+                            <option value="live">Live Streams</option>
+                        </select>
+                    </div>
+                    
+                    <div class="filter-section">
+                        <label for="genre-filter">Genre</label>
+                        <select id="genre-filter">
+                            <option value="all">All Genres</option>
+                            <!-- Will be populated dynamically -->
+                        </select>
+                    </div>
+                    
+                    <div class="filter-section">
+                        <label for="sort-filter">Sort By</label>
+                        <select id="sort-filter">
+                            <option value="relevance">Relevance</option>
+                            <option value="newest">Newest</option>
+                            <option value="popular">Most Popular</option>
+                            <option value="trending">Trending</option>
+                        </select>
+                    </div>
+                    
+                    <div class="filter-section">
+                        <label for="duration-filter">Duration</label>
+                        <select id="duration-filter">
+                            <option value="all">Any Duration</option>
+                            <option value="short">Short (&lt; 5 min)</option>
+                            <option value="medium">Medium (5-20 min)</option>
+                            <option value="long">Long (&gt; 20 min)</option>
+                        </select>
+                    </div>
+                    
+                    <div class="filter-actions">
+                        <button id="apply-filters" class="filter-btn apply">Apply Filters</button>
+                        <button id="reset-filters" class="filter-btn reset">Reset All</button>
+                    </div>
+                </div>
+                
+                <!-- Search Results Dropdown -->
+                <div class="search-results-dropdown" id="search-results">
+                    <div class="search-results-header">
+                        <h4>Search Results</h4>
+                        <button id="close-search" class="close-btn" aria-label="Close search">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div class="search-results-content" id="search-results-content">
+                        <!-- Results will be loaded here -->
+                    </div>
+                </div>
+            </div>
+            
             <div class="header-actions">
-                <button id="search-btn" class="icon-btn search-btn" aria-label="Search">
-                    <i class="fas fa-search"></i>
-                </button>
                 <button id="profile-btn" class="profile-btn" aria-label="Profile">
                     <div class="profile-placeholder">
                         <i class="fas fa-user"></i>
@@ -118,22 +200,58 @@
                 <button id="browse-all-btn" class="hero-btn">Browse All Content</button>
             </section>
 
-            <!-- Content Sections -->
+            <!-- Content Sections Container -->
             <div id="content-sections">
-                <!-- Loading skeleton -->
-                <div class="skeleton-content">
-                    <div class="section">
-                        <div class="section-header">
-                            <div class="skeleton skeleton-text" style="width: 200px; height: 30px;"></div>
-                            <div class="skeleton skeleton-text" style="width: 100px; height: 30px;"></div>
+                <!-- Recommended For You (Conditional) -->
+                <section id="recommended-section" class="section" style="display: none;">
+                    <div class="section-header">
+                        <h2 class="section-title">
+                            <i class="fas fa-star"></i> Recommended For You
+                        </h2>
+                        <button class="see-all-btn" onclick="window.location.href='recommended.html'">See All</button>
+                    </div>
+                    <div class="content-grid" id="recommended-content">
+                        <!-- Recommended content will be loaded here -->
+                    </div>
+                </section>
+
+                <!-- Trending Now (Real-time) -->
+                <section class="section trending-section">
+                    <div class="section-header">
+                        <h2 class="section-title trending-title">
+                            <i class="fas fa-fire"></i> Trending Now
+                            <span class="trending-badge">Live</span>
+                        </h2>
+                        <div class="trending-controls">
+                            <div class="time-filter">
+                                <button class="time-btn active" data-hours="24">Today</button>
+                                <button class="time-btn" data-hours="168">This Week</button>
+                                <button class="time-btn" data-hours="720">This Month</button>
+                            </div>
+                            <button class="see-all-btn" onclick="window.location.href='trending.html'">See All</button>
                         </div>
-                        <div class="content-grid">
-                            <div class="skeleton skeleton-card"></div>
-                            <div class="skeleton skeleton-card"></div>
-                            <div class="skeleton skeleton-card"></div>
-                            <div class="skeleton skeleton-card"></div>
-                            <div class="skeleton skeleton-card"></div>
-                        </div>
+                    </div>
+                    <div class="content-grid" id="trending-content">
+                        <!-- Trending content will be loaded here -->
+                    </div>
+                </section>
+
+                <!-- Latest Uploads -->
+                <section class="section">
+                    <div class="section-header">
+                        <h2 class="section-title">Latest Uploads</h2>
+                        <button class="see-all-btn" onclick="window.location.href='content-library.html'">See All</button>
+                    </div>
+                    <div class="content-grid" id="latest-content">
+                        <!-- Latest content will be loaded here -->
+                    </div>
+                </section>
+
+                <!-- Infinite Scroll Sentinel -->
+                <div id="scroll-sentinel" class="scroll-sentinel">
+                    <div class="sentinel-content">
+                        <div class="sentinel-spinner"></div>
+                        <p>Loading more content...</p>
                     </div>
                 </div>
             </div>
@@ -142,7 +260,7 @@
             <div class="browse-all-cta">
                 <button id="browse-all-cta" class="cta-button">
                     <i class="fas fa-compass"></i>
-                    Browse All Content
+                    Explore More Content
                     <i class="fas fa-arrow-right"></i>
                 </button>
             </div>
@@ -168,668 +286,13 @@
     <!-- Toast Container -->
     <div id="toast-container"></div>
 
-                       <!-- Main JavaScript - FIXED: Creator names & View counts -->
+    <!-- Supabase Configuration -->
     <script>
-        // Supabase Configuration
-        const SUPABASE_URL = 'https://ydnxqnbjoshvxteevemc.supabase.co';
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U';
-
-        // Initialize Supabase client
-        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-        
-        console.log('✅ Bantu Stream Connect Home Feed Initialized');
-
-        // Global state
-        let currentUser = null;
-        let contentData = [];
-        let creatorProfiles = {}; // Cache for creator profiles
-
-        // DOM Content Loaded
-        document.addEventListener('DOMContentLoaded', async () => {
-            console.log('🚀 DOM loaded, starting app...');
-            
-            try {
-                // Check authentication
-                await checkAuth();
-                
-                // Setup event listeners
-                setupEventListeners();
-                
-                // Load content
-                await loadContent();
-                
-                // Show the app
-                document.getElementById('app').style.display = 'block';
-                document.getElementById('loading').style.display = 'none';
-                
-                console.log('✅ App fully loaded');
-                
-            } catch (error) {
-                console.error('Error initializing app:', error);
-                showError('Failed to load. Please refresh the page.');
-            }
-        });
-
-        // Check authentication
-        async function checkAuth() {
-            try {
-                const { data: { session } } = await supabaseClient.auth.getSession();
-                
-                if (session) {
-                    currentUser = session.user;
-                    console.log('✅ User authenticated:', currentUser.email);
-                    
-                    // Update profile button
-                    updateProfileButton(session.user);
-                    
-                    showToast(`Welcome back, ${currentUser.email}!`, 'success');
-                } else {
-                    console.log('👤 User not authenticated (public mode)');
-                    
-                    // Setup profile button for login
-                    document.getElementById('profile-btn').onclick = () => {
-                        window.location.href = 'login.html?redirect=index.html';
-                    };
-                }
-            } catch (error) {
-                console.error('Auth check error:', error);
-            }
-        }
-
-        // Update profile button
-        function updateProfileButton(user) {
-            const profileBtn = document.getElementById('profile-btn');
-            if (!profileBtn) return;
-            
-            // Get initials from email
-            const initials = getInitials(user.email);
-            profileBtn.innerHTML = `
-                <div class="profile-placeholder">
-                    ${initials}
-                </div>
-            `;
-            
-            // Set click handler
-            profileBtn.onclick = () => {
-                window.location.href = 'profile.html';
-            };
-        }
-
-        // Get initials from email
-        function getInitials(email) {
-            if (!email) return 'U';
-            const parts = email.split('@')[0];
-            return parts.substring(0, 2).toUpperCase();
-        }
-
-        // Load content with creator profiles and accurate view counts
-        async function loadContent() {
-            try {
-                showLoadingState(true);
-                
-                console.log('🔄 Loading content with creator details...');
-                
-                // Try using Supabase JS client with joins
-                try {
-                    const { data: content, error } = await supabaseClient
-                        .from('Content')
-                        .select(`
-                            *,
-                            user_profiles!user_id (
-                                username,
-                                full_name,
-                                avatar_url
-                            ),
-                            creators!creator_id (
-                                username,
-                                display_name,
-                                profile_picture
-                            )
-                        `)
-                        .eq('status', 'published')
-                        .order('created_at', { ascending: false })
-                        .limit(20);
-                    
-                    if (error) {
-                        console.error('Supabase query error:', error);
-                        throw error;
-                    }
-                    
-                    if (content && content.length > 0) {
-                        // Also get view counts from content_views table
-                        await enrichContentWithViews(content);
-                        
-                        contentData = content;
-                        console.log(`✅ Loaded ${contentData.length} items with creator details`);
-                        showToast(`Loaded ${contentData.length} content items`, 'success');
-                        renderContent();
-                        showLoadingState(false);
-                        return;
-                    }
-                } catch (clientError) {
-                    console.log('Supabase client with joins failed, trying alternative...', clientError);
-                }
-                
-                // Fallback: Load content and creator profiles separately
-                await loadContentFallback();
-                
-                renderContent();
-                
-            } catch (error) {
-                console.error('Error loading content:', error);
-                contentData = getFallbackContent();
-                renderContent();
-                showToast('Using sample content. Check your connection.', 'warning');
-            } finally {
-                showLoadingState(false);
-            }
-        }
-
-        // Enrich content with accurate view counts from content_views table
-        async function enrichContentWithViews(contentItems) {
-            if (!contentItems || contentItems.length === 0) return;
-            
-            try {
-                // Get all content IDs
-                const contentIds = contentItems.map(item => item.id);
-                
-                // Query content_views table for each content item
-                const { data: viewCounts, error } = await supabaseClient
-                    .from('content_views')
-                    .select('content_id, count')
-                    .in('content_id', contentIds)
-                    .group('content_id');
-                
-                if (error) {
-                    console.error('Error fetching view counts:', error);
-                    return;
-                }
-                
-                // Create a map of content_id -> view count
-                const viewsMap = {};
-                if (viewCounts) {
-                    viewCounts.forEach(item => {
-                        viewsMap[item.content_id] = item.count;
-                    });
-                }
-                
-                // Update content items with accurate view counts
-                contentItems.forEach(item => {
-                    // Use content_views count if available, otherwise use Content.views_count
-                    const accurateViews = viewsMap[item.id] || item.views_count || 0;
-                    item.views_count = accurateViews;
-                    
-                    // Also store in a separate property if needed
-                    item.actual_views = accurateViews;
-                });
-                
-                console.log(`📊 Updated view counts for ${contentItems.length} items`);
-                
-            } catch (error) {
-                console.error('Error enriching content with views:', error);
-            }
-        }
-
-        // Fallback method to load content and creator profiles separately
-        async function loadContentFallback() {
-            try {
-                // First, load content
-                const { data: content, error: contentError } = await supabaseClient
-                    .from('Content')
-                    .select('*')
-                    .eq('status', 'published')
-                    .order('created_at', { ascending: false })
-                    .limit(20);
-                
-                if (contentError) throw contentError;
-                
-                if (!content || content.length === 0) {
-                    contentData = getFallbackContent();
-                    return;
-                }
-                
-                // Get unique creator IDs and user IDs
-                const creatorIds = [...new Set(content.map(item => item.creator_id).filter(Boolean))];
-                const userIds = [...new Set(content.map(item => item.user_id).filter(Boolean))];
-                
-                // Load creator profiles
-                const creatorProfilesMap = {};
-                
-                // Load from creators table
-                if (creatorIds.length > 0) {
-                    const { data: creators, error: creatorsError } = await supabaseClient
-                        .from('creators')
-                        .select('id, username, display_name, profile_picture')
-                        .in('id', creatorIds);
-                    
-                    if (!creatorsError && creators) {
-                        creators.forEach(creator => {
-                            creatorProfilesMap[creator.id] = {
-                                name: creator.display_name || creator.username,
-                                username: creator.username,
-                                avatar: creator.profile_picture
-                            };
-                        });
-                    }
-                }
-                
-                // Load from user_profiles table
-                if (userIds.length > 0) {
-                    const { data: userProfiles, error: userProfilesError } = await supabaseClient
-                        .from('user_profiles')
-                        .select('id, username, full_name, avatar_url')
-                        .in('id', userIds);
-                    
-                    if (!userProfilesError && userProfiles) {
-                        userProfiles.forEach(profile => {
-                            creatorProfilesMap[profile.id] = {
-                                name: profile.full_name || profile.username,
-                                username: profile.username,
-                                avatar: profile.avatar_url
-                            };
-                        });
-                    }
-                }
-                
-                // Enrich content with creator info and view counts
-                await enrichContentWithViews(content);
-                
-                // Process content with creator profiles
-                contentData = content.map(item => {
-                    let creatorInfo = {
-                        name: item.creator || 'Unknown Creator',
-                        username: null,
-                        avatar: null
-                    };
-                    
-                    // Try to get from creatorProfilesMap
-                    if (item.creator_id && creatorProfilesMap[item.creator_id]) {
-                        creatorInfo = creatorProfilesMap[item.creator_id];
-                    } else if (item.user_id && creatorProfilesMap[item.user_id]) {
-                        creatorInfo = creatorProfilesMap[item.user_id];
-                    }
-                    
-                    return {
-                        ...item,
-                        creator: creatorInfo.name,
-                        creator_username: creatorInfo.username,
-                        creator_avatar: creatorInfo.avatar,
-                        // Use the most accurate view count
-                        views: item.actual_views || item.views_count || 0
-                    };
-                });
-                
-                console.log(`✅ Loaded ${contentData.length} items via fallback method`);
-                
-            } catch (error) {
-                console.error('Fallback method failed:', error);
-                contentData = getFallbackContent();
-            }
-        }
-
-        // Process content data (legacy function, keeping for compatibility)
-        function processContentData(rawData) {
-            if (!rawData || !Array.isArray(rawData)) return [];
-            
-            return rawData.map(item => {
-                // Determine creator name
-                let creatorName = 'Unknown Creator';
-                let creatorUsername = null;
-                
-                // Check joined user_profiles data
-                if (item.user_profiles) {
-                    creatorName = item.user_profiles.full_name || item.user_profiles.username || creatorName;
-                    creatorUsername = item.user_profiles.username;
-                }
-                
-                // Check joined creators data (takes precedence)
-                if (item.creators) {
-                    creatorName = item.creators.display_name || item.creators.username || creatorName;
-                    creatorUsername = item.creators.username;
-                }
-                
-                // Fallback to creator text field
-                if (!creatorName || creatorName === 'Unknown Creator') {
-                    creatorName = item.creator || creatorName;
-                }
-                
-                return {
-                    id: item.id,
-                    title: item.title || 'Untitled',
-                    description: item.description || '',
-                    thumbnail_url: item.thumbnail_url,
-                    file_url: item.file_url,
-                    media_type: item.media_type || 'video',
-                    genre: item.genre,
-                    created_at: item.created_at,
-                    creator: creatorName,
-                    creator_username: creatorUsername,
-                    creator_id: item.creator_id,
-                    user_id: item.user_id,
-                    // Use accurate view count (from enrichment)
-                    views: item.actual_views || item.views_count || 0,
-                    likes: item.likes_count || 0,
-                    comments: item.comments_count || 0,
-                    status: item.status || 'draft',
-                    // Store joined data for later use
-                    user_profiles: item.user_profiles,
-                    creators: item.creators
-                };
-            });
-        }
-
-        // Fallback content
-        function getFallbackContent() {
-            return [
-                {
-                    id: 1,
-                    title: 'African Music Festival Highlights',
-                    description: 'Highlights from the biggest African music festival',
-                    thumbnail_url: 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop',
-                    media_type: 'video',
-                    creator: 'Music Africa',
-                    creator_username: 'musicafrica',
-                    views: 12500,
-                    likes: 890
-                },
-                {
-                    id: 2,
-                    title: 'Tech Innovation in Africa',
-                    description: 'How technology is transforming African economies',
-                    thumbnail_url: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=400&h=225&fit=crop',
-                    media_type: 'video',
-                    creator: 'Tech Africa',
-                    creator_username: 'techafrica',
-                    views: 8900,
-                    likes: 650
-                },
-                {
-                    id: 3,
-                    title: 'Traditional Dance Performance',
-                    description: 'Beautiful traditional dance from West Africa',
-                    thumbnail_url: 'https://images.unsplash.com/photo-1547153760-18fc86324498?w=400&h=225&fit=crop',
-                    media_type: 'video',
-                    creator: 'Cultural Hub',
-                    creator_username: 'culturalhub',
-                    views: 15600,
-                    likes: 1200
-                }
-            ];
-        }
-
-        // Render content
-        function renderContent() {
-            const contentSections = document.getElementById('content-sections');
-            
-            // Clear loading skeleton
-            contentSections.innerHTML = '';
-            
-            if (!contentData || contentData.length === 0) {
-                contentSections.innerHTML = `
-                    <div class="empty-state">
-                        <h3>No Content Available</h3>
-                        <p>Check back later for new content!</p>
-                    </div>
-                `;
-                return;
-            }
-            
-            // Filter only published content
-            let displayData = contentData.filter(item => item.status === 'published');
-            
-            if (displayData.length === 0) {
-                contentSections.innerHTML = `
-                    <div class="empty-state">
-                        <h3>Content Needs Publishing</h3>
-                        <p>You have ${contentData.length} items in your database, but none are marked as "published".</p>
-                        <p style="margin-top: 10px; font-size: 14px; color: var(--warm-gold);">
-                            <small>Set status='published' in Supabase to see content here.</small>
-                        </p>
-                    </div>
-                `;
-                return;
-            }
-            
-            // Get most viewed and most liked
-            const mostViewed = [...displayData].sort((a, b) => (b.views || 0) - (a.views || 0)).slice(0, 5);
-            const mostLiked = [...displayData].sort((a, b) => (b.likes || 0) - (a.likes || 0)).slice(0, 5);
-            
-            contentSections.innerHTML = `
-                <!-- Latest Uploads -->
-                <section class="section">
-                    <div class="section-header">
-                        <h2 class="section-title">Latest Uploads</h2>
-                        <button class="see-all-btn" onclick="window.location.href='content-library.html'">See All</button>
-                    </div>
-                    <div class="content-grid">
-                        ${displayData.slice(0, 5).map(item => renderContentCard(item)).join('')}
-                    </div>
-                </section>
-                
-                <!-- Most Viewed -->
-                <section class="section">
-                    <div class="section-header">
-                        <h2 class="section-title">Most Viewed</h2>
-                        <button class="see-all-btn" onclick="window.location.href='content-library.html'">See All</button>
-                    </div>
-                    <div class="content-grid">
-                        ${mostViewed.map(item => renderContentCard(item)).join('')}
-                    </div>
-                </section>
-                
-                <!-- Most Liked -->
-                <section class="section">
-                    <div class="section-header">
-                        <h2 class="section-title">Most Liked</h2>
-                        <button class="see-all-btn" onclick="window.location.href='content-library.html'">See All</button>
-                    </div>
-                    <div class="content-grid">
-                        ${mostLiked.map(item => renderContentCard(item)).join('')}
-                    </div>
-                </section>
-            `;
-            
-            // Add event listeners to cards
-            setTimeout(() => {
-                document.querySelectorAll('.content-card').forEach(card => {
-                    const contentId = card.dataset.contentId;
-                    card.addEventListener('click', (e) => {
-                        // Don't trigger if clicking on buttons
-                        if (e.target.closest('button')) return;
-                        window.location.href = `content-detail.html?id=${contentId}`;
-                    });
-                });
-            }, 100);
-        }
-
-        // Render single content card
-        function renderContentCard(item) {
-            // Default thumbnail if none provided
-            const thumbnail = item.thumbnail_url || 
-                'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop';
-            
-            // Truncate title if too long
-            const displayTitle = item.title.length > 50 ? 
-                item.title.substring(0, 50) + '...' : item.title;
-            
-            // Display creator name with @username if available
-            let displayCreator = item.creator || 'Creator';
-            if (item.creator_username) {
-                displayCreator = `@${item.creator_username}`;
-            }
-            
-            // Truncate creator name if too long
-            if (displayCreator.length > 20) {
-                displayCreator = displayCreator.substring(0, 20) + '...';
-            }
-            
-            // Get view count (use accurate views from content_views table)
-            const viewCount = item.views || item.views_count || 0;
-            const likeCount = item.likes || item.likes_count || 0;
-            
-            return `
-                <div class="content-card" data-content-id="${item.id}">
-                    <div class="card-thumbnail">
-                        <img src="${thumbnail}" 
-                             alt="${item.title}"
-                             loading="lazy"
-                             onerror="this.src='https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop'">
-                        <div class="thumbnail-overlay"></div>
-                        <button class="share-btn" aria-label="Share" onclick="shareContent(event, ${item.id})">
-                            <i class="fas fa-share-alt"></i>
-                        </button>
-                    </div>
-                    <div class="card-content">
-                        <h3 class="card-title" title="${item.title}">
-                            ${displayTitle}
-                        </h3>
-                        <button class="creator-btn" onclick="viewCreator(event, ${item.id}, '${item.creator_id || item.user_id}', '${(item.creator || '').replace(/'/g, "\\'")}')">
-                            <i class="fas fa-user"></i>
-                            ${displayCreator}
-                        </button>
-                        <div style="display: flex; gap: 10px; margin-top: 8px; font-size: 12px; color: var(--slate-grey);">
-                            <span><i class="fas fa-eye"></i> ${formatNumber(viewCount)}</span>
-                            <span><i class="fas fa-heart"></i> ${formatNumber(likeCount)}</span>
-                            ${item.comments ? `<span><i class="fas fa-comment"></i> ${formatNumber(item.comments)}</span>` : ''}
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
-
-        // Format numbers (1,234 instead of 1234)
-        function formatNumber(num) {
-            if (!num && num !== 0) return '0';
-            if (num < 1000) return num.toString();
-            if (num < 1000000) return (num / 1000).toFixed(1).replace(/\.0$/, '') + 'K';
-            return (num / 1000000).toFixed(1).replace(/\.0$/, '') + 'M';
-        }
-
-        // Setup event listeners
-        function setupEventListeners() {
-            // Search button
-            document.getElementById('search-btn').addEventListener('click', () => {
-                window.location.href = 'content-library.html';
-            });
-            
-            // Browse all buttons
-            document.getElementById('browse-all-btn').addEventListener('click', () => {
-                window.location.href = 'explore-screen.html';
-            });
-            
-            document.getElementById('browse-all-cta').addEventListener('click', () => {
-                window.location.href = 'content-library.html';
-            });
-        }
-
-        // Share content
-        function shareContent(event, contentId) {
-            if (event) event.stopPropagation();
-            
-            const content = contentData.find(c => c.id === contentId);
-            if (!content) return;
-            
-            const shareData = {
-                title: content.title,
-                text: `Check out "${content.title}" by ${content.creator} on Bantu Stream Connect`,
-                url: window.location.origin + `/content-detail.html?id=${contentId}`
-            };
-            
-            if (navigator.share) {
-                navigator.share(shareData).catch(console.error);
-            } else {
-                // Copy to clipboard as fallback
-                navigator.clipboard.writeText(shareData.url)
-                    .then(() => showToast('Link copied to clipboard!', 'success'))
-                    .catch(() => showToast('Failed to copy link', 'error'));
-            }
-        }
-
-        // View creator
-        function viewCreator(event, contentId, creatorId, creatorName) {
-            if (event) event.stopPropagation();
-            
-            // If we have creatorId, redirect to creator page
-            if (creatorId) {
-                window.location.href = `creator-channel.html?id=${creatorId}&name=${encodeURIComponent(creatorName)}`;
-            } else {
-                // Show toast as fallback
-                showToast(`Viewing ${creatorName}'s content`, 'info');
-            }
-        }
-
-        // Show loading state
-        function showLoadingState(loading) {
-            const loadingText = document.getElementById('loading-text');
-            if (loading) {
-                loadingText.textContent = 'Loading content from database...';
-            } else {
-                loadingText.textContent = 'Ready!';
-            }
-        }
-
-        // Show toast
-        function showToast(message, type = 'info') {
-            const toast = document.createElement('div');
-            toast.className = `toast ${type}`;
-            toast.textContent = message;
-            
-            const container = document.getElementById('toast-container');
-            if (container) {
-                container.appendChild(toast);
-                
-                setTimeout(() => {
-                    toast.style.opacity = '0';
-                    setTimeout(() => {
-                        if (toast.parentNode) {
-                            toast.parentNode.removeChild(toast);
-                        }
-                    }, 300);
-                }, 3000);
-            }
-        }
-
-        // Show error
-        function showError(message) {
-            const loading = document.getElementById('loading');
-            const loadingText = document.getElementById('loading-text');
-            
-            if (loadingText) {
-                loadingText.textContent = message;
-            }
-            
-            if (loading) {
-                loading.innerHTML += `
-                    <button onclick="window.location.reload()" style="margin-top: 20px; padding: 10px 20px; background: #1D4ED8; color: white; border: none; border-radius: 8px; cursor: pointer;">
-                        Refresh Page
-                    </button>
-                `;
-            }
-        }
-
-        // Listen for auth changes
-        supabaseClient.auth.onAuthStateChange((event, session) => {
-            if (event === 'SIGNED_IN') {
-                currentUser = session.user;
-                updateProfileButton(session.user);
-                showToast(`Welcome back, ${session.user.email}!`, 'success');
-            } else if (event === 'SIGNED_OUT') {
-                currentUser = null;
-                document.getElementById('profile-btn').innerHTML = `
-                    <div class="profile-placeholder">
-                        <i class="fas fa-user"></i>
-                    </div>
-                `;
-                document.getElementById('profile-btn').onclick = () => {
-                    window.location.href = 'login.html?redirect=index.html';
-                };
-            }
-        });
+        window.SUPABASE_URL = 'https://ydnxqnbjoshvxteevemc.supabase.co';
+        window.SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U';
     </script>
+    
+    <!-- Main JavaScript -->
+    <script src="js/home-feed.js" defer></script>
 </body>
 </html>
-
-
-
-
-
