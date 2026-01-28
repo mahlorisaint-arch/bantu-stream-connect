@@ -168,13 +168,13 @@
     <!-- Toast Container -->
     <div id="toast-container"></div>
 
-        <!-- Main JavaScript -->
+            <!-- Main JavaScript - FIXED for "Content" table -->
     <script>
-        // Supabase Configuration - NO CHANGES
+        // Supabase Configuration
         const SUPABASE_URL = 'https://ydnxqnbjoshvxteevemc.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U';
 
-        // Initialize Supabase client - FIXED: Use different variable name
+        // Initialize Supabase client
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         
         console.log('✅ Bantu Stream Connect Home Feed Initialized');
@@ -261,32 +261,97 @@
             return parts.substring(0, 2).toUpperCase();
         }
 
-        // Load content
+        // Load content - FIXED FOR "Content" TABLE
         async function loadContent() {
             try {
                 showLoadingState(true);
                 
-                // Try to fetch from Supabase
-                const response = await fetch(
-                    `${SUPABASE_URL}/rest/v1/content?select=*&status=eq.published&order=created_at.desc&limit=20`,
-                    {
-                        headers: {
-                            'apikey': SUPABASE_ANON_KEY,
-                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-                            'Content-Type': 'application/json'
-                        }
-                    }
-                );
+                console.log('🔄 Loading content from "Content" table...');
                 
-                if (response.ok) {
-                    contentData = await response.json();
-                    console.log(`✅ Loaded ${contentData.length} content items`);
-                } else {
-                    console.warn('Using fallback content');
-                    contentData = getFallbackContent();
+                // Method 1: Try using Supabase JS client (better for complex queries)
+                try {
+                    const { data, error } = await supabaseClient
+                        .from('Content')  // Use correct table name
+                        .select('*')
+                        .order('created_at', { ascending: false })
+                        .limit(20);
+                    
+                    if (error) {
+                        console.error('Supabase client error:', error);
+                        throw error;
+                    }
+                    
+                    if (data && data.length > 0) {
+                        contentData = processContentData(data);
+                        console.log(`✅ Loaded ${contentData.length} items via Supabase client`);
+                        showToast(`Loaded ${contentData.length} content items`, 'success');
+                        renderContent();
+                        showLoadingState(false);
+                        return;
+                    }
+                } catch (clientError) {
+                    console.log('Supabase client failed, trying REST API...', clientError);
                 }
                 
-                // Render content
+                // Method 2: Try REST API directly
+                try {
+                    // IMPORTANT: Table name must be exactly "Content" with capital C and quotes in URL
+                    // We need to encode the quotes as %22
+                    const response = await fetch(
+                        `${SUPABASE_URL}/rest/v1/%22Content%22?select=*&order=created_at.desc&limit=20`,
+                        {
+                            headers: {
+                                'apikey': SUPABASE_ANON_KEY,
+                                'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                                'Content-Type': 'application/json'
+                            },
+                            // Shorter timeout
+                            signal: AbortSignal.timeout(8000)
+                        }
+                    );
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        contentData = processContentData(data);
+                        console.log(`✅ Loaded ${contentData.length} items via REST API`);
+                        showToast(`Loaded ${contentData.length} content items`, 'success');
+                    } else {
+                        console.warn('REST API failed, status:', response.status);
+                        throw new Error('REST API failed');
+                    }
+                    
+                } catch (restError) {
+                    console.error('REST API error:', restError);
+                    
+                    // Method 3: Try without quotes (some setups might work)
+                    try {
+                        const response = await fetch(
+                            `${SUPABASE_URL}/rest/v1/Content?select=*&order=created_at.desc&limit=20`,
+                            {
+                                headers: {
+                                    'apikey': SUPABASE_ANON_KEY,
+                                    'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                                    'Content-Type': 'application/json'
+                                }
+                            }
+                        );
+                        
+                        if (response.ok) {
+                            const data = await response.json();
+                            contentData = processContentData(data);
+                            console.log(`✅ Loaded ${contentData.length} items via unquoted REST`);
+                        } else {
+                            console.warn('Unquoted REST also failed');
+                            throw new Error('All methods failed');
+                        }
+                        
+                    } catch (finalError) {
+                        console.error('All methods failed, using fallback');
+                        contentData = getFallbackContent();
+                        showToast('Connected to Supabase but no content found. Using demo data.', 'info');
+                    }
+                }
+                
                 renderContent();
                 
             } catch (error) {
@@ -297,6 +362,50 @@
             } finally {
                 showLoadingState(false);
             }
+        }
+
+        // Process content data from Supabase
+        function processContentData(rawData) {
+            if (!rawData || !Array.isArray(rawData)) {
+                console.log('No data to process');
+                return [];
+            }
+            
+            console.log('Processing', rawData.length, 'items from Supabase');
+            
+            return rawData.map(item => {
+                // Log each item to see structure
+                console.log('Content item:', item);
+                
+                // Get creator name - check multiple possible fields
+                let creatorName = 'Unknown Creator';
+                if (item.creator) {
+                    creatorName = item.creator;
+                } else if (item.creator_name) {
+                    creatorName = item.creator_name;
+                } else if (item.user_id) {
+                    // Could fetch user profile here if needed
+                    creatorName = `User ${item.user_id.substring(0, 8)}`;
+                }
+                
+                return {
+                    id: item.id,
+                    title: item.title || 'Untitled',
+                    description: item.description || '',
+                    thumbnail_url: item.thumbnail_url,
+                    file_url: item.file_url,
+                    media_type: item.media_type || 'video',
+                    genre: item.genre,
+                    created_at: item.created_at,
+                    creator: creatorName,
+                    creator_id: item.creator_id,
+                    user_id: item.user_id,
+                    views: item.views_count || 0,
+                    likes: item.likes_count || 0,
+                    comments: item.comments_count || 0,
+                    status: item.status || 'draft'
+                };
+            });
         }
 
         // Fallback content
@@ -331,26 +440,6 @@
                     creator: 'Cultural Hub',
                     views: 15600,
                     likes: 1200
-                },
-                {
-                    id: 4,
-                    title: 'African Cuisine Cooking Show',
-                    description: 'Learn to make traditional African dishes',
-                    thumbnail_url: 'https://images.unsplash.com/photo-1565958011703-44f9829ba187?w=400&h=225&fit=crop',
-                    media_type: 'video',
-                    creator: 'Chef Amina',
-                    views: 7800,
-                    likes: 540
-                },
-                {
-                    id: 5,
-                    title: 'Startup Success Stories',
-                    description: 'African entrepreneurs building successful businesses',
-                    thumbnail_url: 'https://images.unsplash.com/photo-1556761175-b413da4baf72?w=400&h=225&fit=crop',
-                    media_type: 'video',
-                    creator: 'Startup Africa',
-                    views: 11200,
-                    likes: 890
                 }
             ];
         }
@@ -359,19 +448,45 @@
         function renderContent() {
             const contentSections = document.getElementById('content-sections');
             
+            // Clear loading skeleton
+            contentSections.innerHTML = '';
+            
             if (!contentData || contentData.length === 0) {
                 contentSections.innerHTML = `
                     <div class="empty-state">
                         <h3>No Content Available</h3>
                         <p>Check back later for new content!</p>
+                        <p style="margin-top: 10px; font-size: 14px; color: var(--slate-grey);">
+                            <small>Your Content table exists but has no data yet.</small>
+                        </p>
+                    </div>
+                `;
+                return;
+            }
+            
+            // Filter only published content if status field exists
+            let displayData = contentData;
+            if (contentData[0].status) {
+                displayData = contentData.filter(item => item.status === 'published');
+                console.log(`Filtered: ${displayData.length} published items out of ${contentData.length} total`);
+            }
+            
+            if (displayData.length === 0) {
+                contentSections.innerHTML = `
+                    <div class="empty-state">
+                        <h3>Content Needs Publishing</h3>
+                        <p>You have ${contentData.length} items in your database, but none are marked as "published".</p>
+                        <p style="margin-top: 10px; font-size: 14px; color: var(--warm-gold);">
+                            <small>Set status='published' in Supabase to see content here.</small>
+                        </p>
                     </div>
                 `;
                 return;
             }
             
             // Get most viewed and most liked
-            const mostViewed = [...contentData].sort((a, b) => (b.views || 0) - (a.views || 0)).slice(0, 5);
-            const mostLiked = [...contentData].sort((a, b) => (b.likes || 0) - (a.likes || 0)).slice(0, 5);
+            const mostViewed = [...displayData].sort((a, b) => (b.views || 0) - (a.views || 0)).slice(0, 5);
+            const mostLiked = [...displayData].sort((a, b) => (b.likes || 0) - (a.likes || 0)).slice(0, 5);
             
             contentSections.innerHTML = `
                 <!-- Latest Uploads -->
@@ -381,7 +496,7 @@
                         <button class="see-all-btn" onclick="window.location.href='content-library.html'">See All</button>
                     </div>
                     <div class="content-grid">
-                        ${contentData.slice(0, 5).map(item => renderContentCard(item)).join('')}
+                        ${displayData.slice(0, 5).map(item => renderContentCard(item)).join('')}
                     </div>
                 </section>
                 
@@ -423,10 +538,22 @@
 
         // Render single content card
         function renderContentCard(item) {
+            // Default thumbnail if none provided
+            const thumbnail = item.thumbnail_url || 
+                'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop';
+            
+            // Truncate title if too long
+            const displayTitle = item.title.length > 50 ? 
+                item.title.substring(0, 50) + '...' : item.title;
+            
+            // Truncate creator name if too long
+            const displayCreator = item.creator.length > 15 ? 
+                item.creator.substring(0, 15) + '...' : item.creator;
+            
             return `
                 <div class="content-card" data-content-id="${item.id}">
                     <div class="card-thumbnail">
-                        <img src="${item.thumbnail_url || 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop'}" 
+                        <img src="${thumbnail}" 
                              alt="${item.title}"
                              loading="lazy"
                              onerror="this.src='https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop'">
@@ -437,12 +564,16 @@
                     </div>
                     <div class="card-content">
                         <h3 class="card-title" title="${item.title}">
-                            ${item.title.length > 50 ? item.title.substring(0, 50) + '...' : item.title}
+                            ${displayTitle}
                         </h3>
-                        <button class="creator-btn" onclick="viewCreator(event, ${item.id}, '${item.creator ? item.creator.replace(/'/g, "\\'") : 'Creator'}')">
+                        <button class="creator-btn" onclick="viewCreator(event, ${item.id}, '${item.creator.replace(/'/g, "\\'")}')">
                             <i class="fas fa-user"></i>
-                            ${item.creator ? (item.creator.length > 15 ? item.creator.substring(0, 15) + '...' : item.creator) : 'Creator'}
+                            ${displayCreator}
                         </button>
+                        <div style="display: flex; gap: 10px; margin-top: 8px; font-size: 12px; color: var(--slate-grey);">
+                            <span><i class="fas fa-eye"></i> ${item.views || 0}</span>
+                            <span><i class="fas fa-heart"></i> ${item.likes || 0}</span>
+                        </div>
                     </div>
                 </div>
             `;
@@ -474,7 +605,7 @@
             
             const shareData = {
                 title: content.title,
-                text: `Check out "${content.title}" on Bantu Stream Connect`,
+                text: `Check out "${content.title}" by ${content.creator} on Bantu Stream Connect`,
                 url: window.location.origin + `/content-detail.html?id=${contentId}`
             };
             
@@ -503,7 +634,7 @@
         function showLoadingState(loading) {
             const loadingText = document.getElementById('loading-text');
             if (loading) {
-                loadingText.textContent = 'Loading content...';
+                loadingText.textContent = 'Loading content from database...';
             }
         }
 
@@ -514,22 +645,36 @@
             toast.textContent = message;
             
             const container = document.getElementById('toast-container');
-            container.appendChild(toast);
-            
-            setTimeout(() => {
-                toast.style.opacity = '0';
-                setTimeout(() => toast.remove(), 300);
-            }, 3000);
+            if (container) {
+                container.appendChild(toast);
+                
+                setTimeout(() => {
+                    toast.style.opacity = '0';
+                    setTimeout(() => {
+                        if (toast.parentNode) {
+                            toast.parentNode.removeChild(toast);
+                        }
+                    }, 300);
+                }, 3000);
+            }
         }
 
         // Show error
         function showError(message) {
-            document.getElementById('loading-text').textContent = message;
-            document.getElementById('loading').innerHTML += `
-                <button onclick="window.location.reload()" style="margin-top: 20px; padding: 10px 20px; background: #1D4ED8; color: white; border: none; border-radius: 8px; cursor: pointer;">
-                    Refresh Page
-                </button>
-            `;
+            const loading = document.getElementById('loading');
+            const loadingText = document.getElementById('loading-text');
+            
+            if (loadingText) {
+                loadingText.textContent = message;
+            }
+            
+            if (loading) {
+                loading.innerHTML += `
+                    <button onclick="window.location.reload()" style="margin-top: 20px; padding: 10px 20px; background: #1D4ED8; color: white; border: none; border-radius: 8px; cursor: pointer;">
+                        Refresh Page
+                    </button>
+                `;
+            }
         }
 
         // Listen for auth changes
@@ -553,4 +698,5 @@
     </script>
 </body>
 </html>
+
 
