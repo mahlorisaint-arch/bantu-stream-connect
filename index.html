@@ -13,72 +13,21 @@
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
+    <!-- Your CSS -->
+    <link rel="stylesheet" href="css/styles.css">
+    
     <!-- Supabase JS SDK -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
-    <style>
-        /* Your existing CSS here - just copy ALL your CSS from the <style> tag */
-        /* I'm including a minimal version to ensure it works */
-        :root {
-            --deep-black: #0A0E12;
-            --deep-navy: #0F172A;
-            --soft-white: #F8FAFC;
-            --slate-grey: #94A3B8;
-            --bantu-blue: #1D4ED8;
-            --warm-gold: #F59E0B;
-        }
-        
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: 'Inter', sans-serif;
-            background: var(--deep-black);
-            color: var(--soft-white);
-            min-height: 100vh;
-            overflow-x: hidden;
-        }
-        
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 24px;
-            padding-bottom: 100px;
-        }
-        
-        .header {
-            background: rgba(10, 14, 18, 0.9);
-            padding: 16px 20px;
-            position: sticky;
-            top: 0;
-            z-index: 100;
-            border-bottom: 1px solid rgba(148, 163, 184, 0.2);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        
-        .logo {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-        
-        .logo-text {
-            font-family: 'Orbitron', sans-serif;
-            font-weight: 700;
-            font-size: 18px;
-            color: var(--soft-white);
-        }
-        
-        /* Add the REST of your CSS here - make sure to include ALL of it */
-        /* This is just a minimal version to get it working */
-    </style>
+    <!-- Meta tags for better performance -->
+    <meta name="description" content="Bantu Stream Connect - Discover amazing content from creators across Africa">
+    <meta name="theme-color" content="#0A0E12">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎬</text></svg>">
 </head>
 <body>
+    <!-- Skip to content for accessibility -->
+    <a href="#main-content" class="skip-to-content sr-only">Skip to main content</a>
+
     <!-- Loading Screen -->
     <div id="loading" class="loading-screen">
         <div class="spinner"></div>
@@ -101,17 +50,23 @@
                 <div class="logo-icon">
                     <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <rect width="40" height="40" rx="8" fill="#0F172A"/>
-                        <path d="M8 20 L12 16 L16 22 L20 18 L24 24 L28 20 L32 26" stroke="#1D4ED8" stroke-width="3" stroke-linecap="round"/>
+                        <path d="M8 20 L12 16 L16 22 L20 18 L24 24 L28 20 L32 26" stroke="url(#pulse-gradient)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
                         <circle cx="32" cy="26" r="3" fill="#F59E0B"/>
+                        <defs>
+                            <linearGradient id="pulse-gradient" x1="8" y1="20" x2="32" y2="26" gradientUnits="userSpaceOnUse">
+                                <stop stop-color="#1D4ED8"/>
+                                <stop offset="1" stop-color="#F59E0B"/>
+                            </linearGradient>
+                        </defs>
                     </svg>
                 </div>
                 <div class="logo-text">BANTU STREAM CONNECT</div>
             </div>
             <div class="header-actions">
-                <button id="search-btn" class="icon-btn search-btn" title="Search">
+                <button id="search-btn" class="icon-btn search-btn" aria-label="Search">
                     <i class="fas fa-search"></i>
                 </button>
-                <button id="profile-btn" class="profile-btn" title="Profile">
+                <button id="profile-btn" class="profile-btn" aria-label="Profile">
                     <div class="profile-placeholder">
                         <i class="fas fa-user"></i>
                     </div>
@@ -120,24 +75,37 @@
         </header>
 
         <!-- Main Content -->
-        <main class="container">
+        <main id="main-content" class="container">
             <!-- Home-Feed Development Window -->
             <div class="development-card">
                 <div class="development-header">
                     <div class="pulse-icon-container" onclick="window.location.href='pulse-feed.html'">
                         <div class="pulse-icon">
                             <svg viewBox="0 0 100 100">
-                                <path d="M20,50 C30,20 40,30 50,50 S70,80 80,50" stroke="#1D4ED8" stroke-width="3" fill="none"/>
-                                <circle cx="80" cy="50" r="4" fill="#F59E0B"/>
+                                <defs>
+                                    <linearGradient id="pulseGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                                        <stop offset="0%" stop-color="#1D4ED8" />
+                                        <stop offset="100%" stop-color="#F59E0B" />
+                                    </linearGradient>
+                                </defs>
+                                <path class="pulse-path" d="M20,50 C30,20 40,30 50,50 S70,80 80,50" />
+                                <circle class="pulse-node" cx="80" cy="50" r="4" />
                             </svg>
                         </div>
+                        <div class="pulse-ripple"></div>
                     </div>
                     
                     <div class="development-content">
                         <h2>We're Building Something Powerful</h2>
                         <div class="development-message">
                             Bantu Stream Connect is currently in active development.<br><br>
-                            Our web experience is taking shape, and our mobile app is in its final stages.
+                            Our web experience is taking shape, and our mobile app is in its final stages — preparing for public launch following our closed testing period on Google Play.<br><br>
+                            While we build, you can explore what's already live:<br>
+                            <strong>Bantu Connect Pulse</strong> — a new space to share moments, ideas, and creativity.
+                        </div>
+                        <div class="cta-hint">
+                            <i class="fas fa-arrow-right"></i>
+                            Tap the pulsing icon to begin your journey to Pulse Feed
                         </div>
                     </div>
                 </div>
@@ -152,7 +120,22 @@
 
             <!-- Content Sections -->
             <div id="content-sections">
-                <!-- Content will be loaded here -->
+                <!-- Loading skeleton -->
+                <div class="skeleton-content">
+                    <div class="section">
+                        <div class="section-header">
+                            <div class="skeleton skeleton-text" style="width: 200px; height: 30px;"></div>
+                            <div class="skeleton skeleton-text" style="width: 100px; height: 30px;"></div>
+                        </div>
+                        <div class="content-grid">
+                            <div class="skeleton skeleton-card"></div>
+                            <div class="skeleton skeleton-card"></div>
+                            <div class="skeleton skeleton-card"></div>
+                            <div class="skeleton skeleton-card"></div>
+                            <div class="skeleton skeleton-card"></div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <!-- Browse All CTA -->
@@ -185,111 +168,135 @@
     <!-- Toast Container -->
     <div id="toast-container"></div>
 
-    <!-- SIMPLE WORKING VERSION - NO CHANGES TO YOUR EXISTING SETUP -->
+    <!-- Main JavaScript -->
     <script>
-        // Supabase Configuration - KEEP YOUR EXISTING KEYS
+        // Supabase Configuration - NO CHANGES
         const SUPABASE_URL = 'https://ydnxqnbjoshvxteevemc.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U';
 
         // Initialize Supabase client
         const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         
-        console.log('✅ Supabase client initialized');
+        console.log('✅ Bantu Stream Connect Home Feed Initialized');
 
+        // Global state
+        let currentUser = null;
+        let contentData = [];
+
+        // DOM Content Loaded
         document.addEventListener('DOMContentLoaded', async () => {
-            console.log('🚀 Bantu Stream Connect Home Feed Loading...');
-            
-            // Get DOM elements
-            const loadingScreen = document.getElementById('loading');
-            const loadingText = document.getElementById('loading-text');
-            const app = document.getElementById('app');
-            const contentSections = document.getElementById('content-sections');
-            const profileBtn = document.getElementById('profile-btn');
-            
-            // Show loading
-            loadingScreen.style.display = 'flex';
-            
             try {
-                // Check if user is logged in
-                const { data: { session } } = await supabase.auth.getSession();
+                // Check authentication
+                await checkAuth();
                 
-                // Setup profile button
-                if (profileBtn) {
-                    profileBtn.onclick = () => {
-                        if (session) {
-                            window.location.href = 'profile.html';
-                        } else {
-                            window.location.href = 'login.html?redirect=index.html';
-                        }
-                    };
-                }
+                // Setup event listeners
+                setupEventListeners();
                 
-                // Fetch content
-                loadingText.textContent = 'Loading content...';
-                const content = await fetchContent();
+                // Load content
+                await loadContent();
                 
-                // Render content
-                renderContent(content);
-                
-                // Setup other buttons
-                setupButtons();
-                
-                // Hide loading and show app
-                setTimeout(() => {
-                    loadingScreen.style.display = 'none';
-                    app.style.display = 'block';
-                }, 500);
+                // Show the app
+                document.getElementById('app').style.display = 'block';
+                document.getElementById('loading').style.display = 'none';
                 
             } catch (error) {
-                console.error('Error loading app:', error);
-                loadingText.textContent = 'Error loading. Please refresh.';
-                
-                // Show app anyway after delay
-                setTimeout(() => {
-                    loadingScreen.style.display = 'none';
-                    app.style.display = 'block';
-                    contentSections.innerHTML = `
-                        <div class="empty-state">
-                            <h3>Content Loading Issue</h3>
-                            <p>Please check your connection and refresh.</p>
-                            <button onclick="window.location.reload()" style="margin-top: 20px; padding: 10px 20px; background: #1D4ED8; color: white; border: none; border-radius: 8px; cursor: pointer;">
-                                Refresh Page
-                            </button>
-                        </div>
-                    `;
-                }, 2000);
+                console.error('Error initializing app:', error);
+                showError('Failed to load. Please refresh the page.');
             }
         });
-        
-        // Simple content fetch function
-        async function fetchContent() {
+
+        // Check authentication
+        async function checkAuth() {
             try {
-                // Try to fetch from Content table
+                const { data: { session } } = await supabase.auth.getSession();
+                
+                if (session) {
+                    currentUser = session.user;
+                    console.log('✅ User authenticated:', currentUser.email);
+                    
+                    // Update profile button
+                    updateProfileButton(session.user);
+                    
+                    showToast(`Welcome back, ${currentUser.email}!`, 'success');
+                } else {
+                    console.log('👤 User not authenticated (public mode)');
+                    
+                    // Setup profile button for login
+                    document.getElementById('profile-btn').onclick = () => {
+                        window.location.href = 'login.html?redirect=index.html';
+                    };
+                }
+            } catch (error) {
+                console.error('Auth check error:', error);
+            }
+        }
+
+        // Update profile button
+        function updateProfileButton(user) {
+            const profileBtn = document.getElementById('profile-btn');
+            if (!profileBtn) return;
+            
+            // Get initials from email
+            const initials = getInitials(user.email);
+            profileBtn.innerHTML = `
+                <div class="profile-placeholder">
+                    ${initials}
+                </div>
+            `;
+            
+            // Set click handler
+            profileBtn.onclick = () => {
+                window.location.href = 'profile.html';
+            };
+        }
+
+        // Get initials from email
+        function getInitials(email) {
+            if (!email) return 'U';
+            const parts = email.split('@')[0];
+            return parts.substring(0, 2).toUpperCase();
+        }
+
+        // Load content
+        async function loadContent() {
+            try {
+                showLoadingState(true);
+                
+                // Try to fetch from Supabase
                 const response = await fetch(
                     `${SUPABASE_URL}/rest/v1/content?select=*&status=eq.published&order=created_at.desc&limit=20`,
                     {
                         headers: {
                             'apikey': SUPABASE_ANON_KEY,
-                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                            'Content-Type': 'application/json'
                         }
                     }
                 );
                 
                 if (response.ok) {
-                    return await response.json();
+                    contentData = await response.json();
+                    console.log(`✅ Loaded ${contentData.length} content items`);
+                } else {
+                    console.warn('Using fallback content');
+                    contentData = getFallbackContent();
                 }
                 
-                // If fails, return sample data
-                return getSampleContent();
+                // Render content
+                renderContent();
                 
             } catch (error) {
-                console.log('Using sample content:', error);
-                return getSampleContent();
+                console.error('Error loading content:', error);
+                contentData = getFallbackContent();
+                renderContent();
+                showToast('Using sample content. Check your connection.', 'warning');
+            } finally {
+                showLoadingState(false);
             }
         }
-        
-        // Sample content for fallback
-        function getSampleContent() {
+
+        // Fallback content
+        function getFallbackContent() {
             return [
                 {
                     id: 1,
@@ -297,7 +304,9 @@
                     description: 'Highlights from the biggest African music festival',
                     thumbnail_url: 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop',
                     media_type: 'video',
-                    creator: 'Music Africa'
+                    creator: 'Music Africa',
+                    views: 12500,
+                    likes: 890
                 },
                 {
                     id: 2,
@@ -305,7 +314,9 @@
                     description: 'How technology is transforming African economies',
                     thumbnail_url: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=400&h=225&fit=crop',
                     media_type: 'video',
-                    creator: 'Tech Africa'
+                    creator: 'Tech Africa',
+                    views: 8900,
+                    likes: 650
                 },
                 {
                     id: 3,
@@ -313,16 +324,38 @@
                     description: 'Beautiful traditional dance from West Africa',
                     thumbnail_url: 'https://images.unsplash.com/photo-1547153760-18fc86324498?w=400&h=225&fit=crop',
                     media_type: 'video',
-                    creator: 'Cultural Hub'
+                    creator: 'Cultural Hub',
+                    views: 15600,
+                    likes: 1200
+                },
+                {
+                    id: 4,
+                    title: 'African Cuisine Cooking Show',
+                    description: 'Learn to make traditional African dishes',
+                    thumbnail_url: 'https://images.unsplash.com/photo-1565958011703-44f9829ba187?w=400&h=225&fit=crop',
+                    media_type: 'video',
+                    creator: 'Chef Amina',
+                    views: 7800,
+                    likes: 540
+                },
+                {
+                    id: 5,
+                    title: 'Startup Success Stories',
+                    description: 'African entrepreneurs building successful businesses',
+                    thumbnail_url: 'https://images.unsplash.com/photo-1556761175-b413da4baf72?w=400&h=225&fit=crop',
+                    media_type: 'video',
+                    creator: 'Startup Africa',
+                    views: 11200,
+                    likes: 890
                 }
             ];
         }
-        
+
         // Render content
-        function renderContent(contentItems) {
+        function renderContent() {
             const contentSections = document.getElementById('content-sections');
             
-            if (!contentItems || contentItems.length === 0) {
+            if (!contentData || contentData.length === 0) {
                 contentSections.innerHTML = `
                     <div class="empty-state">
                         <h3>No Content Available</h3>
@@ -332,79 +365,184 @@
                 return;
             }
             
+            // Get most viewed and most liked
+            const mostViewed = [...contentData].sort((a, b) => (b.views || 0) - (a.views || 0)).slice(0, 5);
+            const mostLiked = [...contentData].sort((a, b) => (b.likes || 0) - (a.likes || 0)).slice(0, 5);
+            
             contentSections.innerHTML = `
+                <!-- Latest Uploads -->
                 <section class="section">
                     <div class="section-header">
                         <h2 class="section-title">Latest Uploads</h2>
                         <button class="see-all-btn" onclick="window.location.href='content-library.html'">See All</button>
                     </div>
                     <div class="content-grid">
-                        ${contentItems.map(item => `
-                            <div class="content-card" onclick="window.location.href='content-detail.html?id=${item.id}'">
-                                <div class="card-thumbnail">
-                                    <img src="${item.thumbnail_url || 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop'}" 
-                                         alt="${item.title}"
-                                         loading="lazy">
-                                    <div class="thumbnail-overlay"></div>
-                                </div>
-                                <div class="card-content">
-                                    <h3 class="card-title">${item.title}</h3>
-                                    <button class="creator-btn">
-                                        ${item.creator || 'Content Creator'}
-                                    </button>
-                                </div>
-                            </div>
-                        `).join('')}
+                        ${contentData.slice(0, 5).map(item => renderContentCard(item)).join('')}
+                    </div>
+                </section>
+                
+                <!-- Most Viewed -->
+                <section class="section">
+                    <div class="section-header">
+                        <h2 class="section-title">Most Viewed</h2>
+                        <button class="see-all-btn" onclick="window.location.href='content-library.html'">See All</button>
+                    </div>
+                    <div class="content-grid">
+                        ${mostViewed.map(item => renderContentCard(item)).join('')}
+                    </div>
+                </section>
+                
+                <!-- Most Liked -->
+                <section class="section">
+                    <div class="section-header">
+                        <h2 class="section-title">Most Liked</h2>
+                        <button class="see-all-btn" onclick="window.location.href='content-library.html'">See All</button>
+                    </div>
+                    <div class="content-grid">
+                        ${mostLiked.map(item => renderContentCard(item)).join('')}
                     </div>
                 </section>
             `;
+            
+            // Add event listeners to cards
+            setTimeout(() => {
+                document.querySelectorAll('.content-card').forEach(card => {
+                    const contentId = card.dataset.contentId;
+                    card.addEventListener('click', () => {
+                        window.location.href = `content-detail.html?id=${contentId}`;
+                    });
+                });
+            }, 100);
         }
-        
-        // Setup buttons
-        function setupButtons() {
+
+        // Render single content card
+        function renderContentCard(item) {
+            return `
+                <div class="content-card" data-content-id="${item.id}">
+                    <div class="card-thumbnail">
+                        <img src="${item.thumbnail_url || 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop'}" 
+                             alt="${item.title}"
+                             loading="lazy">
+                        <div class="thumbnail-overlay"></div>
+                        <button class="share-btn" aria-label="Share" onclick="shareContent(${item.id}, event)">
+                            <i class="fas fa-share-alt"></i>
+                        </button>
+                    </div>
+                    <div class="card-content">
+                        <h3 class="card-title" title="${item.title}">
+                            ${item.title.length > 50 ? item.title.substring(0, 50) + '...' : item.title}
+                        </h3>
+                        <button class="creator-btn" onclick="viewCreator(${item.id}, '${item.creator}', event)">
+                            <i class="fas fa-user"></i>
+                            ${item.creator ? (item.creator.length > 15 ? item.creator.substring(0, 15) + '...' : item.creator) : 'Creator'}
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Setup event listeners
+        function setupEventListeners() {
             // Search button
-            const searchBtn = document.getElementById('search-btn');
-            if (searchBtn) {
-                searchBtn.onclick = () => {
-                    window.location.href = 'content-library.html';
-                };
-            }
+            document.getElementById('search-btn').addEventListener('click', () => {
+                window.location.href = 'content-library.html';
+            });
             
             // Browse all buttons
-            const browseAllBtn = document.getElementById('browse-all-btn');
-            const browseAllCta = document.getElementById('browse-all-cta');
+            document.getElementById('browse-all-btn').addEventListener('click', () => {
+                window.location.href = 'explore-screen.html';
+            });
             
-            if (browseAllBtn) {
-                browseAllBtn.onclick = () => {
-                    window.location.href = 'explore-screen.html';
-                };
-            }
+            document.getElementById('browse-all-cta').addEventListener('click', () => {
+                window.location.href = 'content-library.html';
+            });
+        }
+
+        // Share content
+        function shareContent(contentId, event) {
+            if (event) event.stopPropagation();
             
-            if (browseAllCta) {
-                browseAllCta.onclick = () => {
-                    window.location.href = 'content-library.html';
-                };
+            const content = contentData.find(c => c.id === contentId);
+            if (!content) return;
+            
+            const shareData = {
+                title: content.title,
+                text: `Check out "${content.title}" on Bantu Stream Connect`,
+                url: window.location.origin + `/content-detail.html?id=${contentId}`
+            };
+            
+            if (navigator.share) {
+                navigator.share(shareData).catch(console.error);
+            } else {
+                // Copy to clipboard as fallback
+                navigator.clipboard.writeText(shareData.url)
+                    .then(() => showToast('Link copied to clipboard!', 'success'))
+                    .catch(() => showToast('Failed to copy link', 'error'));
             }
         }
-        
-        // Simple toast function
+
+        // View creator
+        function viewCreator(contentId, creatorName, event) {
+            if (event) event.stopPropagation();
+            
+            // For now, just show a toast. You can implement creator pages later
+            showToast(`Viewing ${creatorName}'s content`, 'info');
+            
+            // Optional: Redirect to creator page if you have one
+            // window.location.href = `creator-channel.html?name=${encodeURIComponent(creatorName)}`;
+        }
+
+        // Show loading state
+        function showLoadingState(loading) {
+            const loadingText = document.getElementById('loading-text');
+            if (loading) {
+                loadingText.textContent = 'Loading content...';
+            }
+        }
+
+        // Show toast
         function showToast(message, type = 'info') {
             const toast = document.createElement('div');
             toast.className = `toast ${type}`;
             toast.textContent = message;
             
             const container = document.getElementById('toast-container');
-            if (!container) {
-                const newContainer = document.createElement('div');
-                newContainer.id = 'toast-container';
-                document.body.appendChild(newContainer);
-                newContainer.appendChild(toast);
-            } else {
-                container.appendChild(toast);
-            }
+            container.appendChild(toast);
             
-            setTimeout(() => toast.remove(), 3000);
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
         }
+
+        // Show error
+        function showError(message) {
+            document.getElementById('loading-text').textContent = message;
+            document.getElementById('loading').innerHTML += `
+                <button onclick="window.location.reload()" style="margin-top: 20px; padding: 10px 20px; background: #1D4ED8; color: white; border: none; border-radius: 8px; cursor: pointer;">
+                    Refresh Page
+                </button>
+            `;
+        }
+
+        // Listen for auth changes
+        supabase.auth.onAuthStateChange((event, session) => {
+            if (event === 'SIGNED_IN') {
+                currentUser = session.user;
+                updateProfileButton(session.user);
+                showToast(`Welcome back, ${session.user.email}!`, 'success');
+            } else if (event === 'SIGNED_OUT') {
+                currentUser = null;
+                document.getElementById('profile-btn').innerHTML = `
+                    <div class="profile-placeholder">
+                        <i class="fas fa-user"></i>
+                    </div>
+                `;
+                document.getElementById('profile-btn').onclick = () => {
+                    window.location.href = 'login.html?redirect=index.html';
+                };
+            }
+        });
     </script>
 </body>
 </html>
