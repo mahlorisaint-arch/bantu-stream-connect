@@ -1,6 +1,6 @@
 /* ==========================================================================
-   BANTU STREAM CONNECT - MAIN STYLESHEET
-   Version: 2.0 (Phase 1 - Security & Performance Update)
+   BANTU STREAM CONNECT - ENHANCED STYLESHEET
+   Version: 3.0 (Phase 1 - Infinite Scroll, Search, Recommendations)
    ========================================================================== */
 
 /* ==========================================================================
@@ -161,6 +161,16 @@ body {
     to { transform: rotate(360deg); }
 }
 
+/* Small spinner for search loading */
+.spinner-small {
+    width: 20px;
+    height: 20px;
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    border-radius: 50%;
+    border-top-color: var(--warm-gold);
+    animation: spin 1s linear infinite;
+}
+
 /* ==========================================================================
    4. ANIMATED BACKGROUND
    ========================================================================== */
@@ -241,7 +251,7 @@ body {
 }
 
 /* ==========================================================================
-   6. HEADER & NAVIGATION
+   6. ENHANCED HEADER WITH SEARCH
    ========================================================================== */
 .header {
     background: rgba(10, 14, 18, 0.9);
@@ -256,6 +266,7 @@ body {
     justify-content: space-between;
     align-items: center;
     min-height: var(--header-height);
+    gap: 20px;
 }
 
 .logo {
@@ -264,6 +275,7 @@ body {
     gap: 12px;
     cursor: pointer;
     text-decoration: none;
+    flex-shrink: 0;
 }
 
 .logo-icon {
@@ -289,43 +301,349 @@ body {
     letter-spacing: 0.5px;
 }
 
-.header-actions {
-    display: flex;
-    gap: 10px;
-    align-items: center;
+/* Enhanced Search Container */
+.search-container {
+    flex: 1;
+    max-width: 600px;
+    position: relative;
 }
 
-.icon-btn {
-    width: 44px;
-    height: 44px;
-    border-radius: 50%;
+.search-bar {
+    display: flex;
+    align-items: center;
     background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    border: 1px solid var(--card-border);
+    border-radius: 50px;
+    padding: 10px 16px;
+    transition: all var(--transition-base);
+    position: relative;
+}
+
+.search-bar:focus-within {
+    border-color: var(--warm-gold);
+    box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.2);
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.search-icon {
+    color: var(--slate-grey);
+    margin-right: 10px;
+    font-size: 16px;
+}
+
+#global-search {
+    flex: 1;
+    background: transparent;
+    border: none;
     color: var(--soft-white);
+    font-size: 14px;
+    outline: none;
+    width: 100%;
+}
+
+#global-search::placeholder {
+    color: var(--slate-grey);
+}
+
+.search-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.search-filter-btn,
+.search-clear-btn {
+    background: transparent;
+    border: none;
+    color: var(--slate-grey);
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
     transition: all var(--transition-base);
-    font-size: 0; /* Hide text for screen readers */
+    font-size: 0;
 }
 
-.icon-btn::before {
-    content: attr(aria-label);
+.search-filter-btn:hover,
+.search-clear-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--soft-white);
+}
+
+.search-filter-btn::before {
+    content: 'Filters';
     position: absolute;
     width: 1px;
     height: 1px;
     overflow: hidden;
 }
 
-.icon-btn:hover,
-.icon-btn:focus {
-    background: rgba(255, 255, 255, 0.2);
+.search-clear-btn::before {
+    content: 'Clear search';
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+}
+
+/* Search Filters Dropdown */
+.search-filters-dropdown {
+    position: absolute;
+    top: calc(100% + 10px);
+    left: 0;
+    right: 0;
+    background: var(--deep-navy);
+    border: 1px solid var(--card-border);
+    border-radius: var(--border-radius-lg);
+    padding: 20px;
+    z-index: 1000;
+    display: none;
+    backdrop-filter: blur(10px);
+    box-shadow: var(--shadow-xl);
+    animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.filter-section {
+    margin-bottom: 15px;
+}
+
+.filter-section label {
+    display: block;
+    color: var(--slate-grey);
+    font-size: 12px;
+    font-weight: 600;
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.filter-section select {
+    width: 100%;
+    padding: 10px 12px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid var(--card-border);
+    border-radius: var(--border-radius-sm);
+    color: var(--soft-white);
+    font-size: 14px;
+    outline: none;
+    transition: all var(--transition-base);
+}
+
+.filter-section select:focus {
+    border-color: var(--warm-gold);
+    box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.2);
+}
+
+.filter-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+    padding-top: 15px;
+    border-top: 1px solid var(--card-border);
+}
+
+.filter-btn {
+    flex: 1;
+    padding: 10px;
+    border-radius: var(--border-radius-sm);
+    border: none;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all var(--transition-base);
+}
+
+.filter-btn.apply {
+    background: var(--bantu-blue);
+    color: white;
+}
+
+.filter-btn.apply:hover {
+    background: #1E40AF;
     transform: translateY(-2px);
 }
 
-.search-btn {
-    color: var(--warm-gold);
+.filter-btn.reset {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--soft-white);
+    border: 1px solid var(--card-border);
+}
+
+.filter-btn.reset:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+/* Search Results Dropdown */
+.search-results-dropdown {
+    position: absolute;
+    top: calc(100% + 10px);
+    left: 0;
+    right: 0;
+    background: var(--deep-navy);
+    border: 1px solid var(--card-border);
+    border-radius: var(--border-radius-lg);
+    z-index: 1000;
+    display: none;
+    backdrop-filter: blur(10px);
+    box-shadow: var(--shadow-xl);
+    max-height: 500px;
+    overflow-y: auto;
+}
+
+.search-results-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 20px;
+    border-bottom: 1px solid var(--card-border);
+}
+
+.search-results-header h4 {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--soft-white);
+}
+
+.close-btn {
+    background: transparent;
+    border: none;
+    color: var(--slate-grey);
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all var(--transition-base);
+}
+
+.close-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--soft-white);
+}
+
+.search-results-content {
+    padding: 10px;
+}
+
+.search-result-item {
+    display: flex;
+    align-items: center;
+    padding: 10px;
+    border-radius: var(--border-radius-md);
+    cursor: pointer;
+    transition: all var(--transition-base);
+    margin-bottom: 5px;
+}
+
+.search-result-item:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.search-result-thumbnail {
+    width: 60px;
+    height: 40px;
+    border-radius: var(--border-radius-sm);
+    overflow: hidden;
+    flex-shrink: 0;
+    margin-right: 15px;
+}
+
+.search-result-thumbnail img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.search-result-details {
+    flex: 1;
+    min-width: 0;
+}
+
+.search-result-details h5 {
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 4px;
+    color: var(--soft-white);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.search-result-creator {
+    font-size: 12px;
+    color: var(--slate-grey);
+    margin-bottom: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.search-result-meta {
+    display: flex;
+    gap: 10px;
+    font-size: 11px;
+    color: var(--slate-grey);
+}
+
+.search-result-meta span {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.search-loading,
+.search-error,
+.no-results {
+    padding: 30px 20px;
+    text-align: center;
+    color: var(--slate-grey);
+}
+
+.search-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+}
+
+.search-loading .spinner-small {
+    margin-bottom: 10px;
+}
+
+.search-error i,
+.no-results i {
+    font-size: 24px;
+    margin-bottom: 10px;
+    color: var(--error-color);
+}
+
+.search-tip {
+    font-size: 12px;
+    margin-top: 5px;
+    opacity: 0.8;
+}
+
+/* Header Actions */
+.header-actions {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-shrink: 0;
 }
 
 .profile-btn {
@@ -349,12 +667,6 @@ body {
 .profile-btn:focus {
     transform: translateY(-2px);
     box-shadow: var(--shadow-blue);
-}
-
-.profile-img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
 }
 
 .profile-placeholder {
@@ -632,6 +944,68 @@ body {
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.trending-title {
+    position: relative;
+}
+
+.trending-badge {
+    background: linear-gradient(135deg, #EF4444, #F59E0B);
+    color: white;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 4px 8px;
+    border-radius: 20px;
+    margin-left: 8px;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.7;
+    }
+}
+
+.trending-controls {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.time-filter {
+    display: flex;
+    gap: 5px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 50px;
+    padding: 4px;
+}
+
+.time-btn {
+    padding: 6px 12px;
+    border-radius: 50px;
+    background: transparent;
+    border: none;
+    color: var(--slate-grey);
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--transition-base);
+}
+
+.time-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.time-btn.active {
+    background: var(--bantu-blue);
+    color: white;
 }
 
 .see-all-btn {
@@ -654,12 +1028,13 @@ body {
 }
 
 /* ==========================================================================
-   10. CONTENT CARDS & GRID
+   10. ENHANCED CONTENT CARDS & GRID
    ========================================================================== */
 .content-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
     gap: 20px;
+    transition: all var(--transition-base);
 }
 
 .content-card {
@@ -673,6 +1048,18 @@ body {
     -webkit-backdrop-filter: blur(10px);
     position: relative;
     contain: layout style paint; /* Performance optimization */
+    animation: fadeIn 0.5s ease;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .content-card:hover,
@@ -686,7 +1073,7 @@ body {
     position: relative;
     height: 140px;
     overflow: hidden;
-    background: var(--deep-navy); /* Fallback color */
+    background: var(--deep-navy);
 }
 
 .card-thumbnail img {
@@ -712,6 +1099,19 @@ body {
     pointer-events: none;
 }
 
+.trending-badge-small {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    background: linear-gradient(135deg, #EF4444, #F59E0B);
+    color: white;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 4px 8px;
+    border-radius: 4px;
+    z-index: 2;
+}
+
 .share-btn {
     position: absolute;
     top: 10px;
@@ -728,7 +1128,7 @@ body {
     cursor: pointer;
     z-index: 2;
     transition: all var(--transition-base);
-    font-size: 0; /* Hide text for screen readers */
+    font-size: 0;
 }
 
 .share-btn::before {
@@ -777,6 +1177,7 @@ body {
     transition: all var(--transition-base);
     border: 1px solid rgba(255, 255, 255, 0.1);
     min-height: 32px;
+    margin-bottom: 8px;
 }
 
 .creator-btn:hover,
@@ -785,8 +1186,81 @@ body {
     box-shadow: var(--shadow-blue);
 }
 
+.card-stats {
+    display: flex;
+    gap: 10px;
+    font-size: 12px;
+    color: var(--slate-grey);
+}
+
+.card-stats span {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+/* Fallback states */
+.trending-fallback,
+.recommended-fallback,
+.empty-state {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--slate-grey);
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: var(--border-radius-md);
+    border: 1px dashed var(--card-border);
+}
+
+.trending-fallback i,
+.recommended-fallback i,
+.empty-state i {
+    font-size: 32px;
+    margin-bottom: 15px;
+    color: var(--slate-grey);
+    opacity: 0.5;
+}
+
 /* ==========================================================================
-   11. BROWSE ALL CTA
+   11. INFINITE SCROLL SENTINEL
+   ========================================================================== */
+.scroll-sentinel {
+    height: 100px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity var(--transition-base);
+    margin: 20px 0;
+}
+
+.scroll-sentinel.visible {
+    opacity: 1;
+}
+
+.sentinel-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+}
+
+.sentinel-spinner {
+    width: 30px;
+    height: 30px;
+    border: 3px solid rgba(255, 255, 255, 0.1);
+    border-radius: 50%;
+    border-top-color: var(--bantu-blue);
+    animation: spin 1s linear infinite;
+}
+
+.scroll-sentinel p {
+    color: var(--slate-grey);
+    font-size: 14px;
+}
+
+/* ==========================================================================
+   12. BROWSE ALL CTA
    ========================================================================== */
 .browse-all-cta {
     text-align: center;
@@ -820,7 +1294,7 @@ body {
 }
 
 /* ==========================================================================
-   12. FOOTER
+   13. FOOTER
    ========================================================================== */
 .footer {
     border-top: 1px solid var(--card-border);
@@ -874,20 +1348,6 @@ body {
 }
 
 /* ==========================================================================
-   13. EMPTY STATES
-   ========================================================================== */
-.empty-state {
-    text-align: center;
-    padding: 50px 20px;
-    color: var(--slate-grey);
-    background: var(--card-bg);
-    border: 1px solid var(--card-border);
-    border-radius: 16px;
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-}
-
-/* ==========================================================================
    14. TOAST NOTIFICATIONS
    ========================================================================== */
 .toast {
@@ -904,6 +1364,7 @@ body {
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
     border: 1px solid var(--card-border);
+    transition: all 0.3s ease;
 }
 
 .toast.error {
@@ -984,12 +1445,21 @@ body {
         border: 2px solid var(--card-border);
     }
     
+    .search-bar,
+    .search-filters-dropdown,
+    .search-results-dropdown {
+        border: 2px solid var(--card-border);
+    }
+    
+    button,
     .icon-btn,
     .profile-btn,
     .hero-btn,
     .see-all-btn,
     .creator-btn,
-    .cta-button {
+    .cta-button,
+    .filter-btn,
+    .time-btn {
         border: 2px solid currentColor;
     }
 }
@@ -1009,104 +1479,23 @@ body {
     .pulse-ripple,
     .pulse-path,
     .pulse-node,
-    .cta-hint svg {
+    .cta-hint svg,
+    .trending-badge,
+    .content-card {
         animation: none !important;
     }
     
     .content-card:hover,
     .content-card:focus-within,
-    .icon-btn:hover,
-    .icon-btn:focus,
-    .profile-btn:hover,
-    .profile-btn:focus,
-    .hero-btn:hover,
-    .hero-btn:focus,
-    .see-all-btn:hover,
-    .see-all-btn:focus,
-    .creator-btn:hover,
-    .creator-btn:focus,
-    .cta-button:hover,
-    .cta-button:focus {
-        transform: none;
+    .search-bar:focus-within,
+    button:hover,
+    button:focus {
+        transform: none !important;
     }
     
     .content-card:hover .card-thumbnail img,
     .content-card:focus-within .card-thumbnail img {
-        transform: none;
-    }
-}
-
-/* Dark Mode (already dark, but ensure consistency) */
-@media (prefers-color-scheme: dark) {
-    /* Already dark theme, just ensure no conflicts */
-}
-
-/* Print Styles */
-@media print {
-    .animated-bg,
-    .glow-cycle,
-    .header-actions,
-    .development-card,
-    .hero-btn,
-    .see-all-btn,
-    .cta-button,
-    .footer-links,
-    .toast {
-        display: none !important;
-    }
-    
-    body {
-        background: white !important;
-        color: black !important;
-        font-size: 12pt !important;
-        line-height: 1.5 !important;
-    }
-    
-    .container {
-        max-width: 100% !important;
-        padding: 0 !important;
-        margin: 0 !important;
-    }
-    
-    .content-card {
-        break-inside: avoid;
-        border: 1px solid #ccc !important;
-        box-shadow: none !important;
-        margin-bottom: 20pt !important;
-    }
-    
-    .card-thumbnail {
-        display: none !important;
-    }
-    
-    .card-title {
-        color: black !important;
-        font-size: 14pt !important;
-    }
-    
-    a {
-        color: black !important;
-        text-decoration: underline !important;
-    }
-    
-    .footer {
-        border-top: 1px solid #ccc !important;
-        color: #666 !important;
-        margin-top: 50pt !important;
-    }
-    
-    /* Don't print URLs after links */
-    a[href]::after {
-        content: " (" attr(href) ")";
-        font-size: 10pt;
-        color: #666;
-    }
-    
-    /* Except for internal links */
-    a[href^="#"]::after,
-    a[href^="/"]::after,
-    a[href^="mailto:"]::after {
-        content: "";
+        transform: none !important;
     }
 }
 
@@ -1119,6 +1508,40 @@ body {
     .container {
         padding: 16px;
         max-width: 100%;
+    }
+    
+    .header {
+        flex-wrap: wrap;
+        gap: 15px;
+        padding: 12px 16px;
+    }
+    
+    .search-container {
+        order: 3;
+        flex: 0 0 100%;
+        max-width: 100%;
+        margin-top: 10px;
+    }
+    
+    .search-filters-dropdown {
+        position: fixed;
+        top: auto;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        border-radius: var(--border-radius-lg) var(--border-radius-lg) 0 0;
+        max-height: 80vh;
+        overflow-y: auto;
+    }
+    
+    .search-results-dropdown {
+        position: fixed;
+        top: auto;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        max-height: 70vh;
+        border-radius: var(--border-radius-lg) var(--border-radius-lg) 0 0;
     }
     
     .development-card {
@@ -1166,6 +1589,25 @@ body {
         height: 120px;
     }
     
+    .section-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 15px;
+    }
+    
+    .trending-controls {
+        width: 100%;
+        justify-content: space-between;
+    }
+    
+    .time-filter {
+        order: 2;
+    }
+    
+    .see-all-btn {
+        order: 1;
+    }
+    
     .footer-links {
         gap: 10px;
     }
@@ -1179,7 +1621,8 @@ body {
     [role="button"],
     .icon-btn,
     .profile-btn,
-    .creator-btn {
+    .creator-btn,
+    .search-result-item {
         min-height: 44px;
         min-width: 44px;
     }
@@ -1188,13 +1631,15 @@ body {
     .cta-button {
         min-height: 48px;
         min-width: 120px;
+        width: 100%;
+        justify-content: center;
     }
     
     /* Adjust toast position for mobile */
     .toast {
         left: 20px;
         right: 20px;
-        bottom: 80px; /* Above mobile navigation if added */
+        bottom: 80px;
         max-width: none;
     }
 }
@@ -1206,38 +1651,36 @@ body {
         gap: 12px;
     }
     
-    .hero-btn,
-    .cta-button {
-        padding: 12px 24px;
-        font-size: 16px;
-        width: 100%;
-        justify-content: center;
+    .card-thumbnail {
+        height: 100px;
     }
     
-    .footer-links {
-        flex-direction: column;
-        gap: 8px;
+    .card-title {
+        font-size: 14px;
+        min-height: 36px;
     }
     
-    .header {
-        padding: 12px 16px;
+    .creator-btn {
+        padding: 6px 10px;
+        font-size: 11px;
+    }
+    
+    .card-stats {
+        font-size: 11px;
     }
     
     .logo-text {
         font-size: 16px;
     }
     
-    .section-header {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 10px;
+    .development-content h2 {
+        font-size: 18px;
     }
     
-    .see-all-btn {
-        align-self: flex-start;
+    .development-message {
+        font-size: 14px;
     }
     
-    /* Adjust font sizes for mobile */
     .hero h1 {
         font-size: 20px;
     }
@@ -1250,17 +1693,14 @@ body {
         font-size: 20px;
     }
     
-    .card-title {
-        font-size: 14px;
+    .footer-links {
+        flex-direction: column;
+        gap: 8px;
     }
     
-    /* Stack development card content */
-    .development-content h2 {
-        font-size: 18px;
-    }
-    
-    .development-message {
-        font-size: 14px;
+    .time-btn {
+        padding: 4px 8px;
+        font-size: 11px;
     }
 }
 
@@ -1277,7 +1717,86 @@ body {
 }
 
 /* ==========================================================================
-   18. UTILITY CLASSES
+   18. PERFORMANCE OPTIMIZATIONS
+   ========================================================================== */
+
+/* Image loading states */
+.lazy-image {
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.lazy-image.loaded {
+    opacity: 1;
+}
+
+/* Containment for performance */
+.content-section {
+    contain: layout style paint;
+}
+
+/* Optimize image rendering */
+img {
+    content-visibility: auto;
+    will-change: transform;
+}
+
+/* Reduce repaints on scroll */
+.header {
+    will-change: transform;
+}
+
+/* Optimize animations */
+@media (prefers-reduced-motion: no-preference) {
+    .glow-cycle,
+    .pulse-path,
+    .pulse-node,
+    .trending-badge {
+        will-change: transform, opacity;
+    }
+}
+
+/* ==========================================================================
+   19. BROWSER-SPECIFIC FIXES
+   ========================================================================== */
+
+/* Safari specific fixes */
+@supports (-webkit-touch-callout: none) {
+    .header {
+        -webkit-backdrop-filter: blur(20px);
+    }
+    
+    .content-card,
+    .search-filters-dropdown,
+    .search-results-dropdown {
+        -webkit-backdrop-filter: blur(10px);
+    }
+    
+    /* Fix for Safari backdrop-filter with border-radius */
+    .development-card,
+    .hero,
+    .content-card,
+    .search-filters-dropdown,
+    .search-results-dropdown {
+        -webkit-mask-image: -webkit-radial-gradient(white, black);
+    }
+}
+
+/* Firefox specific fixes */
+@-moz-document url-prefix() {
+    .header {
+        background: rgba(10, 14, 18, 0.95);
+    }
+    
+    /* Firefox scrollbar fix */
+    * {
+        scrollbar-width: thin;
+        scrollbar-color: var(--bantu-blue) var(--deep-navy);
+    }
+}
+
+/* ==========================================================================
+   20. UTILITY CLASSES
    ========================================================================== */
 
 /* Text Utilities */
@@ -1319,246 +1838,6 @@ body {
 .bg-card { background: var(--card-bg); }
 .bg-dark { background: var(--deep-black); }
 .bg-navy { background: var(--deep-navy); }
-
-/* ==========================================================================
-   19. ERROR & LOADING STATES
-   ========================================================================== */
-.error-screen {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    min-height: 60vh;
-    text-align: center;
-    padding: 40px 20px;
-}
-
-.error-screen h2 {
-    color: var(--error-color);
-    margin-bottom: 16px;
-}
-
-.error-screen p {
-    color: var(--slate-grey);
-    margin-bottom: 24px;
-    max-width: 400px;
-}
-
-.retry-button {
-    background: var(--bantu-blue);
-    color: white;
-    border: none;
-    padding: 12px 24px;
-    border-radius: var(--border-radius-md);
-    font-weight: 600;
-    cursor: pointer;
-    transition: all var(--transition-base);
-    min-height: 44px;
-}
-
-.retry-button:hover,
-.retry-button:focus {
-    background: var(--warm-gold);
-    transform: translateY(-2px);
-}
-
-/* Skeleton Loading */
-.skeleton {
-    background: linear-gradient(90deg, 
-        rgba(255, 255, 255, 0.05) 25%, 
-        rgba(255, 255, 255, 0.1) 50%, 
-        rgba(255, 255, 255, 0.05) 75%);
-    background-size: 200% 100%;
-    animation: loading 1.5s infinite;
-    border-radius: var(--border-radius-md);
-}
-
-@keyframes loading {
-    0% { background-position: 200% 0; }
-    100% { background-position: -200% 0; }
-}
-
-.skeleton-card {
-    height: 250px;
-    border-radius: var(--border-radius-lg);
-}
-
-.skeleton-text {
-    height: 20px;
-    margin-bottom: 8px;
-}
-
-.skeleton-text.short {
-    width: 60%;
-}
-
-/* ==========================================================================
-   20. PERFORMANCE OPTIMIZATIONS
-   ========================================================================== */
-
-/* Containment for performance */
-.content-section {
-    contain: layout style paint;
-}
-
-/* Optimize image rendering */
-img {
-    content-visibility: auto;
-    will-change: transform;
-}
-
-/* Reduce repaints on scroll */
-.header {
-    will-change: transform;
-}
-
-/* Optimize animations */
-@media (prefers-reduced-motion: no-preference) {
-    .glow-cycle,
-    .pulse-path,
-    .pulse-node {
-        will-change: transform, opacity;
-    }
-}
-
-/* ==========================================================================
-   21. BROWSER-SPECIFIC FIXES
-   ========================================================================== */
-
-/* Safari specific fixes */
-@supports (-webkit-touch-callout: none) {
-    .header {
-        -webkit-backdrop-filter: blur(20px);
-    }
-    
-    .content-card {
-        -webkit-backdrop-filter: blur(10px);
-    }
-    
-    /* Fix for Safari backdrop-filter with border-radius */
-    .development-card,
-    .hero,
-    .content-card {
-        -webkit-mask-image: -webkit-radial-gradient(white, black);
-    }
-}
-
-/* Firefox specific fixes */
-@-moz-document url-prefix() {
-    .header {
-        background: rgba(10, 14, 18, 0.95);
-    }
-    
-    /* Firefox scrollbar fix */
-    * {
-        scrollbar-width: thin;
-        scrollbar-color: var(--bantu-blue) var(--deep-navy);
-    }
-}
-
-/* Edge specific fixes */
-@supports (-ms-ime-align: auto) {
-    .container {
-        display: block;
-    }
-    
-    /* Edge doesn't support backdrop-filter well */
-    .header,
-    .development-card,
-    .hero,
-    .content-card {
-        backdrop-filter: none;
-        background: var(--deep-navy);
-    }
-}
-
-/* ==========================================================================
-   22. LEGACY BROWSER SUPPORT
-   ========================================================================== */
-
-/* Fallbacks for older browsers */
-.no-backdropfilter .header {
-    background: var(--deep-navy);
-}
-
-.no-backdropfilter .development-card,
-.no-backdropfilter .hero,
-.no-backdropfilter .content-card {
-    background: rgba(15, 23, 42, 0.95);
-}
-
-/* CSS Grid fallback for very old browsers */
-@supports not (display: grid) {
-    .content-grid {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 20px;
-    }
-    
-    .content-card {
-        width: calc(25% - 15px);
-        margin-bottom: 20px;
-    }
-    
-    @media (max-width: 768px) {
-        .content-card {
-            width: calc(50% - 10px);
-        }
-    }
-    
-    @media (max-width: 480px) {
-        .content-card {
-            width: 100%;
-        }
-    }
-}
-
-/* ==========================================================================
-   23. DARK/LIGHT THEME SUPPORT (Future)
-   ========================================================================== */
-
-@media (prefers-color-scheme: light) {
-    :root {
-        --deep-black: #F8FAFC;
-        --soft-white: #0A0E12;
-        --deep-navy: #E2E8F0;
-        --slate-grey: #64748B;
-        --card-bg: rgba(226, 232, 240, 0.6);
-        --card-border: rgba(100, 116, 139, 0.2);
-    }
-    
-    body {
-        color: var(--soft-white);
-        background: var(--deep-black);
-    }
-    
-    .header {
-        background: rgba(248, 250, 252, 0.9);
-        border-bottom-color: var(--card-border);
-    }
-    
-    .icon-btn {
-        background: rgba(100, 116, 139, 0.1);
-        border-color: rgba(100, 116, 139, 0.2);
-        color: var(--soft-white);
-    }
-    
-    .empty-state {
-        background: var(--card-bg);
-        color: var(--slate-grey);
-    }
-    
-    /* Adjust gradients for light mode */
-    .logo-text,
-    .development-content h2,
-    .hero h1,
-    .section-title {
-        background: linear-gradient(135deg, var(--soft-white), var(--bantu-blue));
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-    }
-}
 
 /* ==========================================================================
    END OF STYLESHEET
