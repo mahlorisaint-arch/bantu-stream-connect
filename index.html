@@ -168,7 +168,7 @@
     <!-- Toast Container -->
     <div id="toast-container"></div>
 
-                   <!-- Main JavaScript - FIXED: Views counts and creator joins -->
+                       <!-- Main JavaScript - FIXED: Creator names & View counts -->
     <script>
         // Supabase Configuration
         const SUPABASE_URL = 'https://ydnxqnbjoshvxteevemc.supabase.co';
@@ -182,6 +182,7 @@
         // Global state
         let currentUser = null;
         let contentData = [];
+        let creatorProfiles = {}; // Cache for creator profiles
 
         // DOM Content Loaded
         document.addEventListener('DOMContentLoaded', async () => {
@@ -261,53 +262,55 @@
             return parts.substring(0, 2).toUpperCase();
         }
 
-        // Load content with accurate counts
+        // Load content with creator profiles and accurate view counts
         async function loadContent() {
             try {
                 showLoadingState(true);
                 
-                console.log('🔄 Loading content with accurate counts...');
+                console.log('🔄 Loading content with creator details...');
                 
-                // Method 1: Try to get content with creator info using REST API
+                // Try using Supabase JS client with joins
                 try {
-                    // First, get content with basic info
-                    const contentResponse = await fetch(
-                        `${SUPABASE_URL}/rest/v1/%22Content%22?select=id,title,description,thumbnail_url,media_type,genre,created_at,creator,creator_id,user_id,status,likes_count,views_count,comments_count&status=eq.published&order=created_at.desc&limit=20`,
-                        {
-                            headers: {
-                                'apikey': SUPABASE_ANON_KEY,
-                                'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-                                'Content-Type': 'application/json',
-                                'Prefer': 'count=exact'
-                            }
-                        }
-                    );
+                    const { data: content, error } = await supabaseClient
+                        .from('Content')
+                        .select(`
+                            *,
+                            user_profiles!user_id (
+                                username,
+                                full_name,
+                                avatar_url
+                            ),
+                            creators!creator_id (
+                                username,
+                                display_name,
+                                profile_picture
+                            )
+                        `)
+                        .eq('status', 'published')
+                        .order('created_at', { ascending: false })
+                        .limit(20);
                     
-                    if (!contentResponse.ok) {
-                        throw new Error(`Content fetch failed: ${contentResponse.status}`);
+                    if (error) {
+                        console.error('Supabase query error:', error);
+                        throw error;
                     }
                     
-                    let content = await contentResponse.json();
-                    
                     if (content && content.length > 0) {
-                        // Enrich with accurate counts from separate tables
-                        content = await enrichContentWithAccurateCounts(content);
-                        
-                        // Get creator profiles
-                        content = await enrichContentWithCreatorProfiles(content);
+                        // Also get view counts from content_views table
+                        await enrichContentWithViews(content);
                         
                         contentData = content;
-                        console.log(`✅ Loaded ${contentData.length} items with accurate counts`);
+                        console.log(`✅ Loaded ${contentData.length} items with creator details`);
                         showToast(`Loaded ${contentData.length} content items`, 'success');
                         renderContent();
                         showLoadingState(false);
                         return;
                     }
-                } catch (error) {
-                    console.log('Method 1 failed, trying fallback...', error);
+                } catch (clientError) {
+                    console.log('Supabase client with joins failed, trying alternative...', clientError);
                 }
                 
-                // Fallback: Use simpler approach
+                // Fallback: Load content and creator profiles separately
                 await loadContentFallback();
                 
                 renderContent();
@@ -322,200 +325,141 @@
             }
         }
 
-        // Enrich content with accurate counts from content_views and content_likes
-        async function enrichContentWithAccurateCounts(contentItems) {
-            if (!contentItems || contentItems.length === 0) return contentItems;
+        // Enrich content with accurate view counts from content_views table
+        async function enrichContentWithViews(contentItems) {
+            if (!contentItems || contentItems.length === 0) return;
             
             try {
+                // Get all content IDs
                 const contentIds = contentItems.map(item => item.id);
                 
-                // Get view counts from content_views table using COUNT in SQL
-                const viewsPromise = fetch(
-                    `${SUPABASE_URL}/rest/v1/content_views?content_id=in.(${contentIds.join(',')})&select=content_id`,
-                    {
-                        headers: {
-                            'apikey': SUPABASE_ANON_KEY,
-                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-                            'Content-Type': 'application/json'
-                        }
-                    }
-                ).then(res => res.json()).then(views => {
-                    // Count views per content_id
-                    const viewCounts = {};
-                    views.forEach(view => {
-                        viewCounts[view.content_id] = (viewCounts[view.content_id] || 0) + 1;
+                // Query content_views table for each content item
+                const { data: viewCounts, error } = await supabaseClient
+                    .from('content_views')
+                    .select('content_id, count')
+                    .in('content_id', contentIds)
+                    .group('content_id');
+                
+                if (error) {
+                    console.error('Error fetching view counts:', error);
+                    return;
+                }
+                
+                // Create a map of content_id -> view count
+                const viewsMap = {};
+                if (viewCounts) {
+                    viewCounts.forEach(item => {
+                        viewsMap[item.content_id] = item.count;
                     });
-                    return viewCounts;
-                }).catch(() => ({}));
+                }
                 
-                // Get like counts from content_likes table
-                const likesPromise = fetch(
-                    `${SUPABASE_URL}/rest/v1/content_likes?content_id=in.(${contentIds.join(',')})&select=content_id`,
-                    {
-                        headers: {
-                            'apikey': SUPABASE_ANON_KEY,
-                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-                            'Content-Type': 'application/json'
-                        }
-                    }
-                ).then(res => res.json()).then(likes => {
-                    // Count likes per content_id
-                    const likeCounts = {};
-                    likes.forEach(like => {
-                        likeCounts[like.content_id] = (likeCounts[like.content_id] || 0) + 1;
-                    });
-                    return likeCounts;
-                }).catch(() => ({}));
-                
-                // Wait for both promises
-                const [viewCounts, likeCounts] = await Promise.all([viewsPromise, likesPromise]);
-                
-                // Update content items with accurate counts
-                return contentItems.map(item => {
-                    const accurateViews = viewCounts[item.id] || item.views_count || 0;
-                    const accurateLikes = likeCounts[item.id] || item.likes_count || 0;
+                // Update content items with accurate view counts
+                contentItems.forEach(item => {
+                    // Use content_views count if available, otherwise use Content.views_count
+                    const accurateViews = viewsMap[item.id] || item.views_count || 0;
+                    item.views_count = accurateViews;
                     
-                    return {
-                        ...item,
-                        // Use accurate counts from separate tables
-                        accurate_views: accurateViews,
-                        accurate_likes: accurateLikes,
-                        // Keep original for fallback
-                        views_count: accurateViews,
-                        likes_count: accurateLikes
-                    };
+                    // Also store in a separate property if needed
+                    item.actual_views = accurateViews;
                 });
                 
+                console.log(`📊 Updated view counts for ${contentItems.length} items`);
+                
             } catch (error) {
-                console.error('Error enriching with accurate counts:', error);
-                return contentItems; // Return original items if enrichment fails
+                console.error('Error enriching content with views:', error);
             }
         }
 
-        // Enrich content with creator profiles
-        async function enrichContentWithCreatorProfiles(contentItems) {
-            if (!contentItems || contentItems.length === 0) return contentItems;
-            
-            try {
-                // Collect unique user IDs and creator IDs
-                const userIds = [...new Set(contentItems
-                    .map(item => item.user_id)
-                    .filter(Boolean))];
-                
-                const creatorIds = [...new Set(contentItems
-                    .map(item => item.creator_id)
-                    .filter(Boolean))];
-                
-                // Fetch user profiles
-                let userProfiles = {};
-                if (userIds.length > 0) {
-                    try {
-                        const response = await fetch(
-                            `${SUPABASE_URL}/rest/v1/user_profiles?id=in.(${userIds.join(',')})&select=id,username,full_name`,
-                            {
-                                headers: {
-                                    'apikey': SUPABASE_ANON_KEY,
-                                    'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
-                                }
-                            }
-                        );
-                        if (response.ok) {
-                            const profiles = await response.json();
-                            profiles.forEach(profile => {
-                                userProfiles[profile.id] = profile;
-                            });
-                        }
-                    } catch (error) {
-                        console.log('Failed to fetch user profiles:', error);
-                    }
-                }
-                
-                // Fetch creator profiles
-                let creatorProfiles = {};
-                if (creatorIds.length > 0) {
-                    try {
-                        const response = await fetch(
-                            `${SUPABASE_URL}/rest/v1/creators?id=in.(${creatorIds.join(',')})&select=id,username`,
-                            {
-                                headers: {
-                                    'apikey': SUPABASE_ANON_KEY,
-                                    'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
-                                }
-                            }
-                        );
-                        if (response.ok) {
-                            const creators = await response.json();
-                            creators.forEach(creator => {
-                                creatorProfiles[creator.id] = creator;
-                            });
-                        }
-                    } catch (error) {
-                        console.log('Failed to fetch creator profiles:', error);
-                    }
-                }
-                
-                // Update content items with creator info
-                return contentItems.map(item => {
-                    let creatorName = item.creator || 'Creator';
-                    let creatorUsername = null;
-                    
-                    // First try creator_id -> creators table
-                    if (item.creator_id && creatorProfiles[item.creator_id]) {
-                        creatorName = creatorProfiles[item.creator_id].username;
-                        creatorUsername = creatorProfiles[item.creator_id].username;
-                    }
-                    // Then try user_id -> user_profiles table
-                    else if (item.user_id && userProfiles[item.user_id]) {
-                        const profile = userProfiles[item.user_id];
-                        creatorName = profile.full_name || profile.username;
-                        creatorUsername = profile.username;
-                    }
-                    
-                    return {
-                        ...item,
-                        creator: creatorName,
-                        creator_username: creatorUsername,
-                        display_creator: creatorUsername ? `@${creatorUsername}` : creatorName
-                    };
-                });
-                
-            } catch (error) {
-                console.error('Error enriching with creator profiles:', error);
-                return contentItems;
-            }
-        }
-
-        // Fallback content loading
+        // Fallback method to load content and creator profiles separately
         async function loadContentFallback() {
             try {
-                // Simple fetch without joins
-                const response = await fetch(
-                    `${SUPABASE_URL}/rest/v1/%22Content%22?select=id,title,description,thumbnail_url,creator,creator_id,user_id,views_count,likes_count,comments_count,status&status=eq.published&order=created_at.desc&limit=20`,
-                    {
-                        headers: {
-                            'apikey': SUPABASE_ANON_KEY,
-                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-                            'Content-Type': 'application/json'
-                        }
-                    }
-                );
+                // First, load content
+                const { data: content, error: contentError } = await supabaseClient
+                    .from('Content')
+                    .select('*')
+                    .eq('status', 'published')
+                    .order('created_at', { ascending: false })
+                    .limit(20);
                 
-                if (response.ok) {
-                    const data = await response.json();
-                    contentData = data.map(item => ({
-                        ...item,
-                        creator: item.creator || 'Creator',
-                        creator_username: null,
-                        display_creator: item.creator || 'Creator',
-                        views: item.views_count || 0,
-                        likes: item.likes_count || 0,
-                        comments: item.comments_count || 0
-                    }));
-                    
-                    console.log(`✅ Loaded ${contentData.length} items via fallback`);
-                } else {
-                    throw new Error('Fallback fetch failed');
+                if (contentError) throw contentError;
+                
+                if (!content || content.length === 0) {
+                    contentData = getFallbackContent();
+                    return;
                 }
+                
+                // Get unique creator IDs and user IDs
+                const creatorIds = [...new Set(content.map(item => item.creator_id).filter(Boolean))];
+                const userIds = [...new Set(content.map(item => item.user_id).filter(Boolean))];
+                
+                // Load creator profiles
+                const creatorProfilesMap = {};
+                
+                // Load from creators table
+                if (creatorIds.length > 0) {
+                    const { data: creators, error: creatorsError } = await supabaseClient
+                        .from('creators')
+                        .select('id, username, display_name, profile_picture')
+                        .in('id', creatorIds);
+                    
+                    if (!creatorsError && creators) {
+                        creators.forEach(creator => {
+                            creatorProfilesMap[creator.id] = {
+                                name: creator.display_name || creator.username,
+                                username: creator.username,
+                                avatar: creator.profile_picture
+                            };
+                        });
+                    }
+                }
+                
+                // Load from user_profiles table
+                if (userIds.length > 0) {
+                    const { data: userProfiles, error: userProfilesError } = await supabaseClient
+                        .from('user_profiles')
+                        .select('id, username, full_name, avatar_url')
+                        .in('id', userIds);
+                    
+                    if (!userProfilesError && userProfiles) {
+                        userProfiles.forEach(profile => {
+                            creatorProfilesMap[profile.id] = {
+                                name: profile.full_name || profile.username,
+                                username: profile.username,
+                                avatar: profile.avatar_url
+                            };
+                        });
+                    }
+                }
+                
+                // Enrich content with creator info and view counts
+                await enrichContentWithViews(content);
+                
+                // Process content with creator profiles
+                contentData = content.map(item => {
+                    let creatorInfo = {
+                        name: item.creator || 'Unknown Creator',
+                        username: null,
+                        avatar: null
+                    };
+                    
+                    // Try to get from creatorProfilesMap
+                    if (item.creator_id && creatorProfilesMap[item.creator_id]) {
+                        creatorInfo = creatorProfilesMap[item.creator_id];
+                    } else if (item.user_id && creatorProfilesMap[item.user_id]) {
+                        creatorInfo = creatorProfilesMap[item.user_id];
+                    }
+                    
+                    return {
+                        ...item,
+                        creator: creatorInfo.name,
+                        creator_username: creatorInfo.username,
+                        creator_avatar: creatorInfo.avatar,
+                        // Use the most accurate view count
+                        views: item.actual_views || item.views_count || 0
+                    };
+                });
+                
+                console.log(`✅ Loaded ${contentData.length} items via fallback method`);
                 
             } catch (error) {
                 console.error('Fallback method failed:', error);
@@ -523,29 +467,53 @@
             }
         }
 
-        // Process content data
+        // Process content data (legacy function, keeping for compatibility)
         function processContentData(rawData) {
             if (!rawData || !Array.isArray(rawData)) return [];
             
             return rawData.map(item => {
+                // Determine creator name
+                let creatorName = 'Unknown Creator';
+                let creatorUsername = null;
+                
+                // Check joined user_profiles data
+                if (item.user_profiles) {
+                    creatorName = item.user_profiles.full_name || item.user_profiles.username || creatorName;
+                    creatorUsername = item.user_profiles.username;
+                }
+                
+                // Check joined creators data (takes precedence)
+                if (item.creators) {
+                    creatorName = item.creators.display_name || item.creators.username || creatorName;
+                    creatorUsername = item.creators.username;
+                }
+                
+                // Fallback to creator text field
+                if (!creatorName || creatorName === 'Unknown Creator') {
+                    creatorName = item.creator || creatorName;
+                }
+                
                 return {
                     id: item.id,
                     title: item.title || 'Untitled',
                     description: item.description || '',
                     thumbnail_url: item.thumbnail_url,
+                    file_url: item.file_url,
                     media_type: item.media_type || 'video',
                     genre: item.genre,
                     created_at: item.created_at,
-                    creator: item.creator || 'Creator',
-                    creator_username: item.creator_username,
-                    display_creator: item.display_creator || item.creator || 'Creator',
+                    creator: creatorName,
+                    creator_username: creatorUsername,
                     creator_id: item.creator_id,
                     user_id: item.user_id,
-                    // Use accurate counts if available, otherwise fallback
-                    views: item.accurate_views || item.views_count || 0,
-                    likes: item.accurate_likes || item.likes_count || 0,
+                    // Use accurate view count (from enrichment)
+                    views: item.actual_views || item.views_count || 0,
+                    likes: item.likes_count || 0,
                     comments: item.comments_count || 0,
-                    status: item.status || 'draft'
+                    status: item.status || 'draft',
+                    // Store joined data for later use
+                    user_profiles: item.user_profiles,
+                    creators: item.creators
                 };
             });
         }
@@ -561,10 +529,8 @@
                     media_type: 'video',
                     creator: 'Music Africa',
                     creator_username: 'musicafrica',
-                    display_creator: '@musicafrica',
                     views: 12500,
-                    likes: 890,
-                    comments: 45
+                    likes: 890
                 },
                 {
                     id: 2,
@@ -574,10 +540,8 @@
                     media_type: 'video',
                     creator: 'Tech Africa',
                     creator_username: 'techafrica',
-                    display_creator: '@techafrica',
                     views: 8900,
-                    likes: 650,
-                    comments: 32
+                    likes: 650
                 },
                 {
                     id: 3,
@@ -587,10 +551,8 @@
                     media_type: 'video',
                     creator: 'Cultural Hub',
                     creator_username: 'culturalhub',
-                    display_creator: '@culturalhub',
                     views: 15600,
-                    likes: 1200,
-                    comments: 78
+                    likes: 1200
                 }
             ];
         }
@@ -628,7 +590,7 @@
                 return;
             }
             
-            // Get most viewed and most liked using ACCURATE counts
+            // Get most viewed and most liked
             const mostViewed = [...displayData].sort((a, b) => (b.views || 0) - (a.views || 0)).slice(0, 5);
             const mostLiked = [...displayData].sort((a, b) => (b.likes || 0) - (a.likes || 0)).slice(0, 5);
             
@@ -690,13 +652,20 @@
             const displayTitle = item.title.length > 50 ? 
                 item.title.substring(0, 50) + '...' : item.title;
             
-            // Display creator with @username if available
-            const displayCreator = item.display_creator || item.creator || 'Creator';
+            // Display creator name with @username if available
+            let displayCreator = item.creator || 'Creator';
+            if (item.creator_username) {
+                displayCreator = `@${item.creator_username}`;
+            }
             
-            // Use ACCURATE counts (from content_views and content_likes tables)
-            const viewCount = item.views || 0;
-            const likeCount = item.likes || 0;
-            const commentCount = item.comments || 0;
+            // Truncate creator name if too long
+            if (displayCreator.length > 20) {
+                displayCreator = displayCreator.substring(0, 20) + '...';
+            }
+            
+            // Get view count (use accurate views from content_views table)
+            const viewCount = item.views || item.views_count || 0;
+            const likeCount = item.likes || item.likes_count || 0;
             
             return `
                 <div class="content-card" data-content-id="${item.id}">
@@ -714,14 +683,14 @@
                         <h3 class="card-title" title="${item.title}">
                             ${displayTitle}
                         </h3>
-                        <button class="creator-btn" onclick="viewCreator(event, ${item.id}, '${item.creator_id || item.user_id}', '${(displayCreator).replace(/'/g, "\\'")}')">
+                        <button class="creator-btn" onclick="viewCreator(event, ${item.id}, '${item.creator_id || item.user_id}', '${(item.creator || '').replace(/'/g, "\\'")}')">
                             <i class="fas fa-user"></i>
-                            ${displayCreator.length > 20 ? displayCreator.substring(0, 20) + '...' : displayCreator}
+                            ${displayCreator}
                         </button>
                         <div style="display: flex; gap: 10px; margin-top: 8px; font-size: 12px; color: var(--slate-grey);">
-                            <span title="Views from tracking table"><i class="fas fa-eye"></i> ${formatNumber(viewCount)}</span>
-                            <span title="Likes from likes table"><i class="fas fa-heart"></i> ${formatNumber(likeCount)}</span>
-                            ${commentCount > 0 ? `<span><i class="fas fa-comment"></i> ${formatNumber(commentCount)}</span>` : ''}
+                            <span><i class="fas fa-eye"></i> ${formatNumber(viewCount)}</span>
+                            <span><i class="fas fa-heart"></i> ${formatNumber(likeCount)}</span>
+                            ${item.comments ? `<span><i class="fas fa-comment"></i> ${formatNumber(item.comments)}</span>` : ''}
                         </div>
                     </div>
                 </div>
@@ -762,7 +731,7 @@
             
             const shareData = {
                 title: content.title,
-                text: `Check out "${content.title}" by ${content.display_creator || content.creator} on Bantu Stream Connect`,
+                text: `Check out "${content.title}" by ${content.creator} on Bantu Stream Connect`,
                 url: window.location.origin + `/content-detail.html?id=${contentId}`
             };
             
@@ -781,7 +750,7 @@
             if (event) event.stopPropagation();
             
             // If we have creatorId, redirect to creator page
-            if (creatorId && creatorId !== 'null' && creatorId !== 'undefined') {
+            if (creatorId) {
                 window.location.href = `creator-channel.html?id=${creatorId}&name=${encodeURIComponent(creatorName)}`;
             } else {
                 // Show toast as fallback
@@ -793,7 +762,7 @@
         function showLoadingState(loading) {
             const loadingText = document.getElementById('loading-text');
             if (loading) {
-                loadingText.textContent = 'Loading content with accurate counts...';
+                loadingText.textContent = 'Loading content from database...';
             } else {
                 loadingText.textContent = 'Ready!';
             }
@@ -859,6 +828,7 @@
     </script>
 </body>
 </html>
+
 
 
 
