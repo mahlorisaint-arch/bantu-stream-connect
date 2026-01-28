@@ -168,7 +168,7 @@
     <!-- Toast Container -->
     <div id="toast-container"></div>
 
-            <!-- Main JavaScript - FIXED for "Content" table -->
+               <!-- Main JavaScript - FIXED: Creator names & View counts -->
     <script>
         // Supabase Configuration
         const SUPABASE_URL = 'https://ydnxqnbjoshvxteevemc.supabase.co';
@@ -182,6 +182,7 @@
         // Global state
         let currentUser = null;
         let contentData = [];
+        let creatorProfiles = {}; // Cache for creator profiles
 
         // DOM Content Loaded
         document.addEventListener('DOMContentLoaded', async () => {
@@ -261,96 +262,56 @@
             return parts.substring(0, 2).toUpperCase();
         }
 
-        // Load content - FIXED FOR "Content" TABLE
+        // Load content with creator profiles and accurate view counts
         async function loadContent() {
             try {
                 showLoadingState(true);
                 
-                console.log('🔄 Loading content from "Content" table...');
+                console.log('🔄 Loading content with creator details...');
                 
-                // Method 1: Try using Supabase JS client (better for complex queries)
+                // Try using Supabase JS client with joins
                 try {
-                    const { data, error } = await supabaseClient
-                        .from('Content')  // Use correct table name
-                        .select('*')
+                    const { data: content, error } = await supabaseClient
+                        .from('Content')
+                        .select(`
+                            *,
+                            user_profiles!user_id (
+                                username,
+                                full_name,
+                                avatar_url
+                            ),
+                            creators!creator_id (
+                                username,
+                                display_name,
+                                profile_picture
+                            )
+                        `)
+                        .eq('status', 'published')
                         .order('created_at', { ascending: false })
                         .limit(20);
                     
                     if (error) {
-                        console.error('Supabase client error:', error);
+                        console.error('Supabase query error:', error);
                         throw error;
                     }
                     
-                    if (data && data.length > 0) {
-                        contentData = processContentData(data);
-                        console.log(`✅ Loaded ${contentData.length} items via Supabase client`);
+                    if (content && content.length > 0) {
+                        // Also get view counts from content_views table
+                        await enrichContentWithViews(content);
+                        
+                        contentData = content;
+                        console.log(`✅ Loaded ${contentData.length} items with creator details`);
                         showToast(`Loaded ${contentData.length} content items`, 'success');
                         renderContent();
                         showLoadingState(false);
                         return;
                     }
                 } catch (clientError) {
-                    console.log('Supabase client failed, trying REST API...', clientError);
+                    console.log('Supabase client with joins failed, trying alternative...', clientError);
                 }
                 
-                // Method 2: Try REST API directly
-                try {
-                    // IMPORTANT: Table name must be exactly "Content" with capital C and quotes in URL
-                    // We need to encode the quotes as %22
-                    const response = await fetch(
-                        `${SUPABASE_URL}/rest/v1/%22Content%22?select=*&order=created_at.desc&limit=20`,
-                        {
-                            headers: {
-                                'apikey': SUPABASE_ANON_KEY,
-                                'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-                                'Content-Type': 'application/json'
-                            },
-                            // Shorter timeout
-                            signal: AbortSignal.timeout(8000)
-                        }
-                    );
-                    
-                    if (response.ok) {
-                        const data = await response.json();
-                        contentData = processContentData(data);
-                        console.log(`✅ Loaded ${contentData.length} items via REST API`);
-                        showToast(`Loaded ${contentData.length} content items`, 'success');
-                    } else {
-                        console.warn('REST API failed, status:', response.status);
-                        throw new Error('REST API failed');
-                    }
-                    
-                } catch (restError) {
-                    console.error('REST API error:', restError);
-                    
-                    // Method 3: Try without quotes (some setups might work)
-                    try {
-                        const response = await fetch(
-                            `${SUPABASE_URL}/rest/v1/Content?select=*&order=created_at.desc&limit=20`,
-                            {
-                                headers: {
-                                    'apikey': SUPABASE_ANON_KEY,
-                                    'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-                                    'Content-Type': 'application/json'
-                                }
-                            }
-                        );
-                        
-                        if (response.ok) {
-                            const data = await response.json();
-                            contentData = processContentData(data);
-                            console.log(`✅ Loaded ${contentData.length} items via unquoted REST`);
-                        } else {
-                            console.warn('Unquoted REST also failed');
-                            throw new Error('All methods failed');
-                        }
-                        
-                    } catch (finalError) {
-                        console.error('All methods failed, using fallback');
-                        contentData = getFallbackContent();
-                        showToast('Connected to Supabase but no content found. Using demo data.', 'info');
-                    }
-                }
+                // Fallback: Load content and creator profiles separately
+                await loadContentFallback();
                 
                 renderContent();
                 
@@ -364,28 +325,172 @@
             }
         }
 
-        // Process content data from Supabase
-        function processContentData(rawData) {
-            if (!rawData || !Array.isArray(rawData)) {
-                console.log('No data to process');
-                return [];
-            }
+        // Enrich content with accurate view counts from content_views table
+        async function enrichContentWithViews(contentItems) {
+            if (!contentItems || contentItems.length === 0) return;
             
-            console.log('Processing', rawData.length, 'items from Supabase');
+            try {
+                // Get all content IDs
+                const contentIds = contentItems.map(item => item.id);
+                
+                // Query content_views table for each content item
+                const { data: viewCounts, error } = await supabaseClient
+                    .from('content_views')
+                    .select('content_id, count')
+                    .in('content_id', contentIds)
+                    .group('content_id');
+                
+                if (error) {
+                    console.error('Error fetching view counts:', error);
+                    return;
+                }
+                
+                // Create a map of content_id -> view count
+                const viewsMap = {};
+                if (viewCounts) {
+                    viewCounts.forEach(item => {
+                        viewsMap[item.content_id] = item.count;
+                    });
+                }
+                
+                // Update content items with accurate view counts
+                contentItems.forEach(item => {
+                    // Use content_views count if available, otherwise use Content.views_count
+                    const accurateViews = viewsMap[item.id] || item.views_count || 0;
+                    item.views_count = accurateViews;
+                    
+                    // Also store in a separate property if needed
+                    item.actual_views = accurateViews;
+                });
+                
+                console.log(`📊 Updated view counts for ${contentItems.length} items`);
+                
+            } catch (error) {
+                console.error('Error enriching content with views:', error);
+            }
+        }
+
+        // Fallback method to load content and creator profiles separately
+        async function loadContentFallback() {
+            try {
+                // First, load content
+                const { data: content, error: contentError } = await supabaseClient
+                    .from('Content')
+                    .select('*')
+                    .eq('status', 'published')
+                    .order('created_at', { ascending: false })
+                    .limit(20);
+                
+                if (contentError) throw contentError;
+                
+                if (!content || content.length === 0) {
+                    contentData = getFallbackContent();
+                    return;
+                }
+                
+                // Get unique creator IDs and user IDs
+                const creatorIds = [...new Set(content.map(item => item.creator_id).filter(Boolean))];
+                const userIds = [...new Set(content.map(item => item.user_id).filter(Boolean))];
+                
+                // Load creator profiles
+                const creatorProfilesMap = {};
+                
+                // Load from creators table
+                if (creatorIds.length > 0) {
+                    const { data: creators, error: creatorsError } = await supabaseClient
+                        .from('creators')
+                        .select('id, username, display_name, profile_picture')
+                        .in('id', creatorIds);
+                    
+                    if (!creatorsError && creators) {
+                        creators.forEach(creator => {
+                            creatorProfilesMap[creator.id] = {
+                                name: creator.display_name || creator.username,
+                                username: creator.username,
+                                avatar: creator.profile_picture
+                            };
+                        });
+                    }
+                }
+                
+                // Load from user_profiles table
+                if (userIds.length > 0) {
+                    const { data: userProfiles, error: userProfilesError } = await supabaseClient
+                        .from('user_profiles')
+                        .select('id, username, full_name, avatar_url')
+                        .in('id', userIds);
+                    
+                    if (!userProfilesError && userProfiles) {
+                        userProfiles.forEach(profile => {
+                            creatorProfilesMap[profile.id] = {
+                                name: profile.full_name || profile.username,
+                                username: profile.username,
+                                avatar: profile.avatar_url
+                            };
+                        });
+                    }
+                }
+                
+                // Enrich content with creator info and view counts
+                await enrichContentWithViews(content);
+                
+                // Process content with creator profiles
+                contentData = content.map(item => {
+                    let creatorInfo = {
+                        name: item.creator || 'Unknown Creator',
+                        username: null,
+                        avatar: null
+                    };
+                    
+                    // Try to get from creatorProfilesMap
+                    if (item.creator_id && creatorProfilesMap[item.creator_id]) {
+                        creatorInfo = creatorProfilesMap[item.creator_id];
+                    } else if (item.user_id && creatorProfilesMap[item.user_id]) {
+                        creatorInfo = creatorProfilesMap[item.user_id];
+                    }
+                    
+                    return {
+                        ...item,
+                        creator: creatorInfo.name,
+                        creator_username: creatorInfo.username,
+                        creator_avatar: creatorInfo.avatar,
+                        // Use the most accurate view count
+                        views: item.actual_views || item.views_count || 0
+                    };
+                });
+                
+                console.log(`✅ Loaded ${contentData.length} items via fallback method`);
+                
+            } catch (error) {
+                console.error('Fallback method failed:', error);
+                contentData = getFallbackContent();
+            }
+        }
+
+        // Process content data (legacy function, keeping for compatibility)
+        function processContentData(rawData) {
+            if (!rawData || !Array.isArray(rawData)) return [];
             
             return rawData.map(item => {
-                // Log each item to see structure
-                console.log('Content item:', item);
-                
-                // Get creator name - check multiple possible fields
+                // Determine creator name
                 let creatorName = 'Unknown Creator';
-                if (item.creator) {
-                    creatorName = item.creator;
-                } else if (item.creator_name) {
-                    creatorName = item.creator_name;
-                } else if (item.user_id) {
-                    // Could fetch user profile here if needed
-                    creatorName = `User ${item.user_id.substring(0, 8)}`;
+                let creatorUsername = null;
+                
+                // Check joined user_profiles data
+                if (item.user_profiles) {
+                    creatorName = item.user_profiles.full_name || item.user_profiles.username || creatorName;
+                    creatorUsername = item.user_profiles.username;
+                }
+                
+                // Check joined creators data (takes precedence)
+                if (item.creators) {
+                    creatorName = item.creators.display_name || item.creators.username || creatorName;
+                    creatorUsername = item.creators.username;
+                }
+                
+                // Fallback to creator text field
+                if (!creatorName || creatorName === 'Unknown Creator') {
+                    creatorName = item.creator || creatorName;
                 }
                 
                 return {
@@ -398,12 +503,17 @@
                     genre: item.genre,
                     created_at: item.created_at,
                     creator: creatorName,
+                    creator_username: creatorUsername,
                     creator_id: item.creator_id,
                     user_id: item.user_id,
-                    views: item.views_count || 0,
+                    // Use accurate view count (from enrichment)
+                    views: item.actual_views || item.views_count || 0,
                     likes: item.likes_count || 0,
                     comments: item.comments_count || 0,
-                    status: item.status || 'draft'
+                    status: item.status || 'draft',
+                    // Store joined data for later use
+                    user_profiles: item.user_profiles,
+                    creators: item.creators
                 };
             });
         }
@@ -418,6 +528,7 @@
                     thumbnail_url: 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop',
                     media_type: 'video',
                     creator: 'Music Africa',
+                    creator_username: 'musicafrica',
                     views: 12500,
                     likes: 890
                 },
@@ -428,6 +539,7 @@
                     thumbnail_url: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=400&h=225&fit=crop',
                     media_type: 'video',
                     creator: 'Tech Africa',
+                    creator_username: 'techafrica',
                     views: 8900,
                     likes: 650
                 },
@@ -438,6 +550,7 @@
                     thumbnail_url: 'https://images.unsplash.com/photo-1547153760-18fc86324498?w=400&h=225&fit=crop',
                     media_type: 'video',
                     creator: 'Cultural Hub',
+                    creator_username: 'culturalhub',
                     views: 15600,
                     likes: 1200
                 }
@@ -456,20 +569,13 @@
                     <div class="empty-state">
                         <h3>No Content Available</h3>
                         <p>Check back later for new content!</p>
-                        <p style="margin-top: 10px; font-size: 14px; color: var(--slate-grey);">
-                            <small>Your Content table exists but has no data yet.</small>
-                        </p>
                     </div>
                 `;
                 return;
             }
             
-            // Filter only published content if status field exists
-            let displayData = contentData;
-            if (contentData[0].status) {
-                displayData = contentData.filter(item => item.status === 'published');
-                console.log(`Filtered: ${displayData.length} published items out of ${contentData.length} total`);
-            }
+            // Filter only published content
+            let displayData = contentData.filter(item => item.status === 'published');
             
             if (displayData.length === 0) {
                 contentSections.innerHTML = `
@@ -546,9 +652,20 @@
             const displayTitle = item.title.length > 50 ? 
                 item.title.substring(0, 50) + '...' : item.title;
             
+            // Display creator name with @username if available
+            let displayCreator = item.creator || 'Creator';
+            if (item.creator_username) {
+                displayCreator = `@${item.creator_username}`;
+            }
+            
             // Truncate creator name if too long
-            const displayCreator = item.creator.length > 15 ? 
-                item.creator.substring(0, 15) + '...' : item.creator;
+            if (displayCreator.length > 20) {
+                displayCreator = displayCreator.substring(0, 20) + '...';
+            }
+            
+            // Get view count (use accurate views from content_views table)
+            const viewCount = item.views || item.views_count || 0;
+            const likeCount = item.likes || item.likes_count || 0;
             
             return `
                 <div class="content-card" data-content-id="${item.id}">
@@ -566,17 +683,26 @@
                         <h3 class="card-title" title="${item.title}">
                             ${displayTitle}
                         </h3>
-                        <button class="creator-btn" onclick="viewCreator(event, ${item.id}, '${item.creator.replace(/'/g, "\\'")}')">
+                        <button class="creator-btn" onclick="viewCreator(event, ${item.id}, '${item.creator_id || item.user_id}', '${(item.creator || '').replace(/'/g, "\\'")}')">
                             <i class="fas fa-user"></i>
                             ${displayCreator}
                         </button>
                         <div style="display: flex; gap: 10px; margin-top: 8px; font-size: 12px; color: var(--slate-grey);">
-                            <span><i class="fas fa-eye"></i> ${item.views || 0}</span>
-                            <span><i class="fas fa-heart"></i> ${item.likes || 0}</span>
+                            <span><i class="fas fa-eye"></i> ${formatNumber(viewCount)}</span>
+                            <span><i class="fas fa-heart"></i> ${formatNumber(likeCount)}</span>
+                            ${item.comments ? `<span><i class="fas fa-comment"></i> ${formatNumber(item.comments)}</span>` : ''}
                         </div>
                     </div>
                 </div>
             `;
+        }
+
+        // Format numbers (1,234 instead of 1234)
+        function formatNumber(num) {
+            if (!num && num !== 0) return '0';
+            if (num < 1000) return num.toString();
+            if (num < 1000000) return (num / 1000).toFixed(1).replace(/\.0$/, '') + 'K';
+            return (num / 1000000).toFixed(1).replace(/\.0$/, '') + 'M';
         }
 
         // Setup event listeners
@@ -620,14 +746,16 @@
         }
 
         // View creator
-        function viewCreator(event, contentId, creatorName) {
+        function viewCreator(event, contentId, creatorId, creatorName) {
             if (event) event.stopPropagation();
             
-            // For now, just show a toast. You can implement creator pages later
-            showToast(`Viewing ${creatorName}'s content`, 'info');
-            
-            // Optional: Redirect to creator page if you have one
-            // window.location.href = `creator-channel.html?name=${encodeURIComponent(creatorName)}`;
+            // If we have creatorId, redirect to creator page
+            if (creatorId) {
+                window.location.href = `creator-channel.html?id=${creatorId}&name=${encodeURIComponent(creatorName)}`;
+            } else {
+                // Show toast as fallback
+                showToast(`Viewing ${creatorName}'s content`, 'info');
+            }
         }
 
         // Show loading state
@@ -635,6 +763,8 @@
             const loadingText = document.getElementById('loading-text');
             if (loading) {
                 loadingText.textContent = 'Loading content from database...';
+            } else {
+                loadingText.textContent = 'Ready!';
             }
         }
 
@@ -698,5 +828,6 @@
     </script>
 </body>
 </html>
+
 
 
