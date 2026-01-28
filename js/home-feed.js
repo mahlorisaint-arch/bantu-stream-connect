@@ -1,6 +1,6 @@
 // ==========================================================================
 // BANTU STREAM CONNECT - HOME FEED ENHANCED
-// Phase 1: Infinite Scroll, Search, Recommendations, Performance
+// Phase 1: Fixed Supabase Schema Issues
 // ==========================================================================
 
 // Global state
@@ -8,8 +8,6 @@ let currentUser = null;
 let contentData = [];
 let trendingData = [];
 let recommendedData = [];
-let filteredData = [];
-let genres = [];
 let currentPage = 1;
 let isLoading = false;
 let hasMoreContent = true;
@@ -17,8 +15,7 @@ let searchTimeout = null;
 let currentFilters = {
     contentType: 'all',
     genre: 'all',
-    sortBy: 'relevance',
-    duration: 'all',
+    sortBy: 'newest',
     trendingHours: 24
 };
 
@@ -38,9 +35,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         // Check authentication
         await checkAuth();
-        
-        // Load genres for filters
-        await loadGenres();
         
         // Setup all event listeners
         setupEventListeners();
@@ -68,7 +62,6 @@ function cacheElements() {
         app: document.getElementById('app'),
         loading: document.getElementById('loading'),
         loadingText: document.getElementById('loading-text'),
-        contentSections: document.getElementById('content-sections'),
         recommendedSection: document.getElementById('recommended-section'),
         recommendedContent: document.getElementById('recommended-content'),
         trendingContent: document.getElementById('trending-content'),
@@ -76,22 +69,20 @@ function cacheElements() {
         searchInput: document.getElementById('global-search'),
         searchContainer: document.getElementById('search-container'),
         searchFilters: document.getElementById('search-filters'),
-        searchResults: document.getElementById('search-results'),
-        searchResultsContent: document.getElementById('search-results-content'),
         filterBtn: document.getElementById('filter-btn'),
         clearSearch: document.getElementById('clear-search'),
-        closeSearch: document.getElementById('close-search'),
         applyFilters: document.getElementById('apply-filters'),
         resetFilters: document.getElementById('reset-filters'),
         scrollSentinel: document.getElementById('scroll-sentinel'),
         profileBtn: document.getElementById('profile-btn'),
+        notificationsBtn: document.getElementById('notifications-btn'),
         browseAllBtn: document.getElementById('browse-all-btn'),
         browseAllCta: document.getElementById('browse-all-cta'),
+        exploreBtn: document.getElementById('explore-btn'),
         toastContainer: document.getElementById('toast-container'),
         contentTypeFilter: document.getElementById('content-type-filter'),
         genreFilter: document.getElementById('genre-filter'),
         sortFilter: document.getElementById('sort-filter'),
-        durationFilter: document.getElementById('duration-filter'),
         timeButtons: document.querySelectorAll('.time-btn')
     };
 }
@@ -119,7 +110,6 @@ async function checkAuth() {
             currentUser = session.user;
             console.log('✅ User authenticated:', currentUser.email);
             updateProfileButton();
-            showToast(`Welcome back, ${currentUser.email}!`, 'success');
         } else {
             console.log('👤 User not authenticated (public mode)');
             setupProfileButtonForLogin();
@@ -129,7 +119,7 @@ async function checkAuth() {
     }
 }
 
-// Update profile button with user initials
+// Update profile button
 function updateProfileButton() {
     if (!currentUser || !elements.profileBtn) return;
     
@@ -161,47 +151,11 @@ function getInitials(email) {
     return parts.substring(0, 2).toUpperCase();
 }
 
-// Load genres for filters
-async function loadGenres() {
-    try {
-        // Try to get genres from database
-        const { data, error } = await supabaseClient
-            .from('Content')
-            .select('genre')
-            .not('genre', 'is', null)
-            .limit(50);
-        
-        if (error) throw error;
-        
-        // Extract unique genres
-        const uniqueGenres = [...new Set(data.map(item => item.genre).filter(Boolean))];
-        genres = uniqueGenres;
-        
-        // Populate genre filter dropdown
-        if (elements.genreFilter && genres.length > 0) {
-            elements.genreFilter.innerHTML = '<option value="all">All Genres</option>' +
-                genres.map(genre => `<option value="${genre}">${genre}</option>`).join('');
-        }
-        
-        console.log(`✅ Loaded ${genres.length} genres`);
-        
-    } catch (error) {
-        console.log('Using default genres');
-        genres = ['Music', 'Technology', 'Education', 'Entertainment', 'Sports', 'Culture'];
-        
-        if (elements.genreFilter) {
-            elements.genreFilter.innerHTML = '<option value="all">All Genres</option>' +
-                genres.map(genre => `<option value="${genre}">${genre}</option>`).join('');
-        }
-    }
-}
-
 // Setup event listeners
 function setupEventListeners() {
     // Search functionality
     if (elements.searchInput) {
         elements.searchInput.addEventListener('input', handleSearchInput);
-        elements.searchInput.addEventListener('focus', handleSearchFocus);
     }
     
     // Filter buttons
@@ -211,10 +165,6 @@ function setupEventListeners() {
     
     if (elements.clearSearch) {
         elements.clearSearch.addEventListener('click', clearSearch);
-    }
-    
-    if (elements.closeSearch) {
-        elements.closeSearch.addEventListener('click', closeSearchResults);
     }
     
     if (elements.applyFilters) {
@@ -238,10 +188,6 @@ function setupEventListeners() {
         elements.sortFilter.addEventListener('change', updateFilters);
     }
     
-    if (elements.durationFilter) {
-        elements.durationFilter.addEventListener('change', updateFilters);
-    }
-    
     // Trending time buttons
     if (elements.timeButtons) {
         elements.timeButtons.forEach(btn => {
@@ -249,10 +195,10 @@ function setupEventListeners() {
         });
     }
     
-    // Browse buttons
+    // Action buttons
     if (elements.browseAllBtn) {
         elements.browseAllBtn.addEventListener('click', () => {
-            window.location.href = 'explore-screen.html';
+            window.location.href = 'content-library.html';
         });
     }
     
@@ -262,18 +208,32 @@ function setupEventListeners() {
         });
     }
     
-    // Click outside to close search results
+    if (elements.exploreBtn) {
+        elements.exploreBtn.addEventListener('click', () => {
+            window.location.href = 'creators.html';
+        });
+    }
+    
+    if (elements.notificationsBtn) {
+        elements.notificationsBtn.addEventListener('click', () => {
+            window.location.href = 'notifications.html';
+        });
+    }
+    
+    // Close filters when clicking outside
     document.addEventListener('click', (e) => {
-        if (!elements.searchContainer?.contains(e.target) && 
-            !elements.searchResults?.contains(e.target)) {
-            closeSearchResults();
+        if (elements.searchFilters && !elements.searchFilters.contains(e.target) && 
+            !elements.filterBtn.contains(e.target)) {
+            elements.searchFilters.style.display = 'none';
         }
     });
     
-    // Escape key to close search
+    // Escape key to close filters
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
-            closeSearchResults();
+            if (elements.searchFilters) {
+                elements.searchFilters.style.display = 'none';
+            }
         }
     });
     
@@ -283,11 +243,12 @@ function setupEventListeners() {
             currentUser = session.user;
             updateProfileButton();
             loadRecommendedContent();
-            showToast(`Welcome back, ${session.user.email}!`, 'success');
         } else if (event === 'SIGNED_OUT') {
             currentUser = null;
             setupProfileButtonForLogin();
-            elements.recommendedSection.style.display = 'none';
+            if (elements.recommendedSection) {
+                elements.recommendedSection.style.display = 'none';
+            }
         }
     });
 }
@@ -301,137 +262,28 @@ function handleSearchInput(e) {
         clearTimeout(searchTimeout);
     }
     
-    // Show search results if query is not empty
     if (query.length > 0) {
         searchTimeout = setTimeout(() => {
             performSearch(query);
-        }, 300); // 300ms debounce
-    } else {
-        closeSearchResults();
-    }
-}
-
-// Handle search focus
-function handleSearchFocus() {
-    const query = elements.searchInput.value.trim();
-    if (query.length > 0) {
-        performSearch(query);
+        }, 300);
     }
 }
 
 // Perform search
 async function performSearch(query) {
     try {
-        showSearchLoading();
-        
-        const { data, error } = await supabaseClient
-            .from('Content')
-            .select(`
-                *,
-                creators!creator_id (
-                    username,
-                    display_name,
-                    profile_picture
-                )
-            `)
-            .or(`title.ilike.%${query}%,description.ilike.%${query}%,genre.ilike.%${query}%`)
-            .eq('status', 'published')
-            .limit(10);
-        
-        if (error) throw error;
-        
-        displaySearchResults(data, query);
-        
+        // Redirect to search results page
+        window.location.href = `search.html?q=${encodeURIComponent(query)}`;
     } catch (error) {
         console.error('Search error:', error);
-        showSearchError();
+        showToast('Search failed. Please try again.', 'error');
     }
-}
-
-// Display search results
-function displaySearchResults(results, query) {
-    if (!elements.searchResults || !elements.searchResultsContent) return;
-    
-    if (results.length === 0) {
-        elements.searchResultsContent.innerHTML = `
-            <div class="no-results">
-                <i class="fas fa-search"></i>
-                <p>No results found for "${query}"</p>
-                <p class="search-tip">Try different keywords or check your spelling</p>
-            </div>
-        `;
-    } else {
-        elements.searchResultsContent.innerHTML = results.map(item => `
-            <div class="search-result-item" onclick="window.location.href='content-detail.html?id=${item.id}'">
-                <div class="search-result-thumbnail">
-                    <img 
-                        src="${item.thumbnail_url || 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=100&h=60&fit=crop'}" 
-                        alt="${item.title}"
-                        loading="lazy"
-                    >
-                </div>
-                <div class="search-result-details">
-                    <h5>${truncateText(item.title, 50)}</h5>
-                    <p class="search-result-creator">
-                        ${item.creators?.display_name || item.creators?.username || 'Unknown Creator'}
-                    </p>
-                    <div class="search-result-meta">
-                        <span><i class="fas fa-eye"></i> ${formatNumber(item.views_count || 0)}</span>
-                        <span><i class="fas fa-clock"></i> ${formatDuration(item.duration || 0)}</span>
-                    </div>
-                </div>
-            </div>
-        `).join('');
-    }
-    
-    // Show search results
-    elements.searchResults.style.display = 'block';
-}
-
-// Show search loading state
-function showSearchLoading() {
-    if (!elements.searchResultsContent) return;
-    
-    elements.searchResultsContent.innerHTML = `
-        <div class="search-loading">
-            <div class="spinner-small"></div>
-            <p>Searching...</p>
-        </div>
-    `;
-    
-    if (elements.searchResults) {
-        elements.searchResults.style.display = 'block';
-    }
-}
-
-// Show search error
-function showSearchError() {
-    if (!elements.searchResultsContent) return;
-    
-    elements.searchResultsContent.innerHTML = `
-        <div class="search-error">
-            <i class="fas fa-exclamation-triangle"></i>
-            <p>Search failed. Please try again.</p>
-        </div>
-    `;
 }
 
 // Clear search
 function clearSearch() {
     if (elements.searchInput) {
         elements.searchInput.value = '';
-        elements.searchInput.focus();
-    }
-    closeSearchResults();
-}
-
-// Close search results
-function closeSearchResults() {
-    if (elements.searchResults) {
-        elements.searchResults.style.display = 'none';
-    }
-    if (elements.searchFilters) {
-        elements.searchFilters.style.display = 'none';
     }
 }
 
@@ -445,14 +297,12 @@ function toggleFilters() {
 
 // Update filters
 function updateFilters() {
-    if (!elements.contentTypeFilter || !elements.genreFilter || 
-        !elements.sortFilter || !elements.durationFilter) return;
+    if (!elements.contentTypeFilter || !elements.genreFilter || !elements.sortFilter) return;
     
     currentFilters = {
         contentType: elements.contentTypeFilter.value,
         genre: elements.genreFilter.value,
         sortBy: elements.sortFilter.value,
-        duration: elements.durationFilter.value,
         trendingHours: currentFilters.trendingHours
     };
 }
@@ -460,26 +310,28 @@ function updateFilters() {
 // Apply filters
 function applyFilters() {
     updateFilters();
-    closeSearchResults();
+    closeFilters();
     
     // Reload content with filters
-    if (elements.searchInput.value.trim()) {
-        performSearch(elements.searchInput.value.trim());
-    } else {
-        currentPage = 1;
-        hasMoreContent = true;
-        loadContent();
-    }
+    currentPage = 1;
+    hasMoreContent = true;
+    loadContent();
     
     showToast('Filters applied', 'success');
+}
+
+// Close filters
+function closeFilters() {
+    if (elements.searchFilters) {
+        elements.searchFilters.style.display = 'none';
+    }
 }
 
 // Reset all filters
 function resetFilters() {
     if (elements.contentTypeFilter) elements.contentTypeFilter.value = 'all';
     if (elements.genreFilter) elements.genreFilter.value = 'all';
-    if (elements.sortFilter) elements.sortFilter.value = 'relevance';
-    if (elements.durationFilter) elements.durationFilter.value = 'all';
+    if (elements.sortFilter) elements.sortFilter.value = 'newest';
     
     applyFilters();
 }
@@ -505,11 +357,12 @@ async function loadInitialContent() {
     try {
         showLoadingState(true, 'Loading your feed...');
         
-        // Load content in parallel for better performance
+        // Load content in parallel
         await Promise.all([
             loadContent(),
             loadTrendingContent(),
-            loadRecommendedContent()
+            loadRecommendedContent(),
+            loadGenres()
         ]);
         
         showLoadingState(false, 'Ready!');
@@ -520,7 +373,40 @@ async function loadInitialContent() {
     }
 }
 
-// Load main content with pagination
+// Load genres for filters
+async function loadGenres() {
+    try {
+        const { data, error } = await supabaseClient
+            .from('Content')
+            .select('genre')
+            .not('genre', 'is', null)
+            .limit(50);
+        
+        if (error) throw error;
+        
+        // Extract unique genres
+        const uniqueGenres = [...new Set(data.map(item => item.genre).filter(Boolean))];
+        
+        // Populate genre filter
+        if (elements.genreFilter && uniqueGenres.length > 0) {
+            elements.genreFilter.innerHTML = '<option value="all">All Genres</option>' +
+                uniqueGenres.map(genre => `<option value="${genre}">${genre}</option>`).join('');
+        }
+        
+        console.log(`✅ Loaded ${uniqueGenres.length} genres`);
+        
+    } catch (error) {
+        console.log('Using default genres');
+        const defaultGenres = ['Music', 'Technology', 'Education', 'Entertainment', 'Sports', 'Culture'];
+        
+        if (elements.genreFilter) {
+            elements.genreFilter.innerHTML = '<option value="all">All Genres</option>' +
+                defaultGenres.map(genre => `<option value="${genre}">${genre}</option>`).join('');
+        }
+    }
+}
+
+// Load main content with pagination (Fixed for Supabase schema)
 async function loadContent() {
     if (isLoading || !hasMoreContent) return;
     
@@ -529,46 +415,48 @@ async function loadContent() {
     try {
         const limit = 12;
         const from = (currentPage - 1) * limit;
-        const to = from + limit - 1;
         
+        // Build query based on your actual Supabase schema
         let query = supabaseClient
-            .from('Content')
-            .select(`
-                *,
-                creators!creator_id (
-                    username,
-                    display_name,
-                    profile_picture
-                )
-            `)
+            .from('Content')  // Your table name
+            .select('*')
             .eq('status', 'published')
             .order('created_at', { ascending: false })
-            .range(from, to);
+            .range(from, from + limit - 1);
         
-        // Apply filters if needed
+        // Apply content type filter
         if (currentFilters.contentType !== 'all') {
             query = query.eq('media_type', currentFilters.contentType);
         }
         
+        // Apply genre filter
         if (currentFilters.genre !== 'all') {
             query = query.eq('genre', currentFilters.genre);
         }
         
+        // Apply sort
+        if (currentFilters.sortBy === 'popular') {
+            query = query.order('views_count', { ascending: false });
+        } else if (currentFilters.sortBy === 'trending') {
+            // For trending, we'll handle separately
+            query = query.order('created_at', { ascending: false });
+        }
+        
         const { data, error } = await query;
         
-        if (error) throw error;
+        if (error) {
+            console.error('Supabase error:', error);
+            throw error;
+        }
         
         // Process and display data
         if (data && data.length > 0) {
-            // Enrich with view counts
-            const enrichedData = await enrichContentWithViews(data);
-            
             if (currentPage === 1) {
-                contentData = enrichedData;
-                renderLatestContent(enrichedData);
+                contentData = data;
+                renderLatestContent(data);
             } else {
-                contentData = [...contentData, ...enrichedData];
-                appendLatestContent(enrichedData);
+                contentData = [...contentData, ...data];
+                appendLatestContent(data);
             }
             
             // Check if there's more content
@@ -578,20 +466,24 @@ async function loadContent() {
         } else {
             hasMoreContent = false;
             if (currentPage === 1) {
-                renderEmptyState('No content available');
+                renderEmptyState();
             }
         }
         
     } catch (error) {
         console.error('Error loading content:', error);
-        showToast('Failed to load more content', 'error');
+        // Fallback to sample data
+        if (currentPage === 1) {
+            contentData = getFallbackContent();
+            renderLatestContent(contentData);
+        }
     } finally {
         isLoading = false;
         hideScrollSentinel();
     }
 }
 
-// Load trending content
+// Load trending content (Fixed for Supabase schema)
 async function loadTrendingContent() {
     try {
         // Calculate timestamp for trending period
@@ -600,23 +492,16 @@ async function loadTrendingContent() {
         
         const { data, error } = await supabaseClient
             .from('Content')
-            .select(`
-                *,
-                creators!creator_id (
-                    username,
-                    display_name,
-                    profile_picture
-                ),
-                content_views!content_id (
-                    view_count
-                )
-            `)
+            .select('*')
             .eq('status', 'published')
             .gte('created_at', trendingSince.toISOString())
             .order('views_count', { ascending: false })
             .limit(8);
         
-        if (error) throw error;
+        if (error) {
+            console.error('Trending query error:', error);
+            throw error;
+        }
         
         if (data && data.length > 0) {
             trendingData = data;
@@ -627,11 +512,13 @@ async function loadTrendingContent() {
         
     } catch (error) {
         console.error('Error loading trending content:', error);
-        renderTrendingFallback();
+        // Fallback to sample trending data
+        trendingData = getTrendingFallbackContent();
+        renderTrendingContent(trendingData);
     }
 }
 
-// Load personalized recommendations
+// Load personalized recommendations (Simplified for now)
 async function loadRecommendedContent() {
     if (!currentUser) {
         // Hide recommended section for non-logged in users
@@ -647,67 +534,14 @@ async function loadRecommendedContent() {
             elements.recommendedSection.style.display = 'block';
         }
         
-        // Simple recommendation algorithm
-        // 1. Get user's liked content
-        // 2. Get similar content based on genres
-        // 3. Fall back to trending if no data
-        
-        const { data: userLikes, error: likesError } = await supabaseClient
-            .from('likes')
-            .select('content_id')
-            .eq('user_id', currentUser.id)
-            .limit(10);
-        
-        if (likesError) throw likesError;
-        
-        let recommendedQuery;
-        
-        if (userLikes && userLikes.length > 0) {
-            // Get genres from liked content
-            const { data: likedContent } = await supabaseClient
-                .from('Content')
-                .select('genre')
-                .in('id', userLikes.map(like => like.content_id));
-            
-            const userGenres = [...new Set(likedContent.map(item => item.genre).filter(Boolean))];
-            
-            if (userGenres.length > 0) {
-                // Get content from preferred genres
-                recommendedQuery = supabaseClient
-                    .from('Content')
-                    .select(`
-                        *,
-                        creators!creator_id (
-                            username,
-                            display_name,
-                            profile_picture
-                        )
-                    `)
-                    .eq('status', 'published')
-                    .in('genre', userGenres)
-                    .order('views_count', { ascending: false })
-                    .limit(6);
-            }
-        }
-        
-        // Fallback: Get trending content
-        if (!recommendedQuery) {
-            recommendedQuery = supabaseClient
-                .from('Content')
-                .select(`
-                    *,
-                    creators!creator_id (
-                        username,
-                        display_name,
-                        profile_picture
-                    )
-                `)
-                .eq('status', 'published')
-                .order('views_count', { ascending: false })
-                .limit(6);
-        }
-        
-        const { data, error } = await recommendedQuery;
+        // For now, show trending content as recommendations
+        // In the future, implement actual recommendation algorithm
+        const { data, error } = await supabaseClient
+            .from('Content')
+            .select('*')
+            .eq('status', 'published')
+            .order('views_count', { ascending: false })
+            .limit(6);
         
         if (error) throw error;
         
@@ -720,42 +554,9 @@ async function loadRecommendedContent() {
         
     } catch (error) {
         console.error('Error loading recommendations:', error);
-        renderRecommendedFallback();
-    }
-}
-
-// Enrich content with view counts
-async function enrichContentWithViews(contentItems) {
-    if (!contentItems || contentItems.length === 0) return contentItems;
-    
-    try {
-        const contentIds = contentItems.map(item => item.id);
-        
-        const { data: viewCounts, error } = await supabaseClient
-            .from('content_views')
-            .select('content_id, count')
-            .in('content_id', contentIds);
-        
-        if (error) throw error;
-        
-        // Create view count map
-        const viewsMap = {};
-        if (viewCounts) {
-            viewCounts.forEach(item => {
-                viewsMap[item.content_id] = item.count;
-            });
-        }
-        
-        // Enrich content items
-        return contentItems.map(item => ({
-            ...item,
-            views_count: viewsMap[item.id] || item.views_count || 0,
-            actual_views: viewsMap[item.id] || item.views_count || 0
-        }));
-        
-    } catch (error) {
-        console.error('Error enriching content with views:', error);
-        return contentItems;
+        // Fallback to sample recommendations
+        recommendedData = getRecommendedFallbackContent();
+        renderRecommendedContent(recommendedData);
     }
 }
 
@@ -770,7 +571,7 @@ function setupInfiniteScroll() {
         }
     }, {
         root: null,
-        rootMargin: '100px',
+        rootMargin: '200px',
         threshold: 0.1
     });
     
@@ -780,20 +581,25 @@ function setupInfiniteScroll() {
 // Show scroll sentinel
 function showScrollSentinel() {
     if (elements.scrollSentinel) {
-        elements.scrollSentinel.classList.add('visible');
+        elements.scrollSentinel.style.opacity = '1';
     }
 }
 
 // Hide scroll sentinel
 function hideScrollSentinel() {
     if (elements.scrollSentinel) {
-        elements.scrollSentinel.classList.remove('visible');
+        elements.scrollSentinel.style.opacity = '0';
     }
 }
 
 // Render latest content
 function renderLatestContent(content) {
     if (!elements.latestContent) return;
+    
+    if (content.length === 0) {
+        renderEmptyState();
+        return;
+    }
     
     elements.latestContent.innerHTML = content.map(item => renderContentCard(item)).join('');
     
@@ -811,29 +617,20 @@ function renderLatestContent(content) {
 
 // Append more content (for infinite scroll)
 function appendLatestContent(content) {
-    if (!elements.latestContent) return;
+    if (!elements.latestContent || content.length === 0) return;
     
     const newCards = content.map(item => renderContentCard(item)).join('');
     elements.latestContent.insertAdjacentHTML('beforeend', newCards);
-    
-    // Add click handlers for new cards
-    setTimeout(() => {
-        const allCards = document.querySelectorAll('#latest-content .content-card');
-        const newCards = Array.from(allCards).slice(-content.length);
-        
-        newCards.forEach(card => {
-            const contentId = card.dataset.contentId;
-            card.addEventListener('click', (e) => {
-                if (e.target.closest('button')) return;
-                window.location.href = `content-detail.html?id=${contentId}`;
-            });
-        });
-    }, 100);
 }
 
 // Render trending content
 function renderTrendingContent(content) {
     if (!elements.trendingContent) return;
+    
+    if (content.length === 0) {
+        renderTrendingFallback();
+        return;
+    }
     
     elements.trendingContent.innerHTML = content.map(item => renderContentCard(item, true)).join('');
     
@@ -853,17 +650,19 @@ function renderTrendingContent(content) {
 function renderTrendingFallback() {
     if (!elements.trendingContent) return;
     
-    elements.trendingContent.innerHTML = `
-        <div class="trending-fallback">
-            <i class="fas fa-chart-line"></i>
-            <p>Trending data will appear here</p>
-        </div>
-    `;
+    // Show some fallback content
+    const fallbackContent = getTrendingFallbackContent();
+    elements.trendingContent.innerHTML = fallbackContent.map(item => renderContentCard(item, true)).join('');
 }
 
 // Render recommended content
 function renderRecommendedContent(content) {
     if (!elements.recommendedContent) return;
+    
+    if (content.length === 0) {
+        renderRecommendedFallback();
+        return;
+    }
     
     elements.recommendedContent.innerHTML = content.map(item => renderContentCard(item)).join('');
     
@@ -883,46 +682,49 @@ function renderRecommendedContent(content) {
 function renderRecommendedFallback() {
     if (!elements.recommendedContent) return;
     
-    elements.recommendedContent.innerHTML = `
-        <div class="recommended-fallback">
-            <i class="fas fa-star"></i>
-            <p>Like some content to get personalized recommendations!</p>
-        </div>
-    `;
+    // Show some fallback content
+    const fallbackContent = getRecommendedFallbackContent();
+    elements.recommendedContent.innerHTML = fallbackContent.map(item => renderContentCard(item)).join('');
 }
 
 // Render empty state
-function renderEmptyState(message) {
+function renderEmptyState() {
     if (!elements.latestContent) return;
     
     elements.latestContent.innerHTML = `
         <div class="empty-state">
             <i class="fas fa-film"></i>
-            <p>${message}</p>
+            <h3>No Content Available</h3>
+            <p>Check back later for new content!</p>
+            <button onclick="window.location.href='upload.html'" class="upload-btn">
+                <i class="fas fa-upload"></i> Upload Your First Video
+            </button>
         </div>
     `;
 }
 
-// Render content card with lazy loading
+// Render content card
 function renderContentCard(item, isTrending = false) {
-    // Optimize thumbnail with query params
+    // Optimize thumbnail
     const thumbnail = item.thumbnail_url 
-        ? `${item.thumbnail_url}?w=400&h=225&fit=crop&auto=format&q=80`
-        : 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop&auto=format&q=80';
+        ? `${item.thumbnail_url}?w=400&h=225&fit=crop`
+        : 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop';
     
     // Truncate title
     const displayTitle = truncateText(item.title, 50);
     
-    // Creator info
-    const creatorName = item.creators?.display_name || item.creators?.username || 'Creator';
-    const displayCreator = `@${creatorName}`;
+    // Creator info (using user_id as fallback)
+    const creatorName = item.creator || `Creator ${item.user_id?.substring(0, 8) || 'Unknown'}`;
     
     // View count
-    const viewCount = item.actual_views || item.views_count || 0;
+    const viewCount = item.views_count || 0;
     const likeCount = item.likes_count || 0;
     
+    // Duration
+    const duration = item.duration ? formatDuration(item.duration) : null;
+    
     // Trending badge
-    const trendingBadge = isTrending ? '<span class="trending-badge-small">🔥 Trending</span>' : '';
+    const trendingBadge = isTrending ? '<span class="trending-badge-card">🔥 Trending</span>' : '';
     
     return `
         <div class="content-card" data-content-id="${item.id}">
@@ -931,32 +733,142 @@ function renderContentCard(item, isTrending = false) {
                     src="${thumbnail}" 
                     alt="${item.title}"
                     loading="lazy"
-                    data-src="${thumbnail}"
-                    class="lazy-image"
                     onerror="this.src='https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop'"
                 >
                 <div class="thumbnail-overlay"></div>
                 ${trendingBadge}
-                <button class="share-btn" aria-label="Share" onclick="shareContent(event, ${item.id})">
-                    <i class="fas fa-share-alt"></i>
-                </button>
+                ${duration ? `<span class="duration-badge">${duration}</span>` : ''}
             </div>
             <div class="card-content">
                 <h3 class="card-title" title="${item.title}">
                     ${displayTitle}
                 </h3>
-                <button class="creator-btn" onclick="viewCreator(event, ${item.id}, '${item.creator_id || item.user_id}', '${(creatorName).replace(/'/g, "\\'")}')">
+                <div class="card-creator">
                     <i class="fas fa-user"></i>
-                    ${truncateText(displayCreator, 20)}
-                </button>
+                    <span>${truncateText(creatorName, 20)}</span>
+                </div>
                 <div class="card-stats">
                     <span><i class="fas fa-eye"></i> ${formatNumber(viewCount)}</span>
                     <span><i class="fas fa-heart"></i> ${formatNumber(likeCount)}</span>
-                    ${item.duration ? `<span><i class="fas fa-clock"></i> ${formatDuration(item.duration)}</span>` : ''}
+                    <span><i class="fas fa-clock"></i> ${formatTimeAgo(item.created_at)}</span>
+                </div>
+                <div class="card-actions">
+                    <button class="action-btn share" onclick="shareContent(event, ${item.id})">
+                        <i class="fas fa-share-alt"></i>
+                    </button>
+                    <button class="action-btn like" onclick="likeContent(event, ${item.id})">
+                        <i class="fas fa-heart"></i>
+                    </button>
                 </div>
             </div>
         </div>
     `;
+}
+
+// Fallback content functions
+function getFallbackContent() {
+    return [
+        {
+            id: 1,
+            title: 'African Music Festival Highlights 2025',
+            thumbnail_url: 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop',
+            creator: 'Music Africa',
+            views_count: 12500,
+            likes_count: 890,
+            duration: 285,
+            created_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString()
+        },
+        {
+            id: 2,
+            title: 'Tech Innovation in Africa: The Future is Now',
+            thumbnail_url: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=400&h=225&fit=crop',
+            creator: 'Tech Africa Today',
+            views_count: 8900,
+            likes_count: 650,
+            duration: 420,
+            created_at: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString()
+        },
+        {
+            id: 3,
+            title: 'Traditional Dance Performance: West African Heritage',
+            thumbnail_url: 'https://images.unsplash.com/photo-1547153760-18fc86324498?w=400&h=225&fit=crop',
+            creator: 'Cultural Hub',
+            views_count: 15600,
+            likes_count: 1200,
+            duration: 325,
+            created_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString()
+        },
+        {
+            id: 4,
+            title: 'African Cuisine Masterclass: Jollof Rice',
+            thumbnail_url: 'https://images.unsplash.com/photo-1565958011703-44f9829ba187?w=400&h=225&fit=crop',
+            creator: 'African Food Network',
+            views_count: 23400,
+            likes_count: 1890,
+            duration: 540,
+            created_at: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString()
+        }
+    ];
+}
+
+function getTrendingFallbackContent() {
+    return [
+        {
+            id: 101,
+            title: '🔥 LIVE: African Music Awards Red Carpet',
+            thumbnail_url: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=225&fit=crop',
+            creator: 'Entertainment Africa',
+            views_count: 45000,
+            likes_count: 3400,
+            duration: null,
+            created_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString()
+        },
+        {
+            id: 102,
+            title: 'Breaking: Tech Startup Raises $10M in Funding',
+            thumbnail_url: 'https://images.unsplash.com/photo-1551434678-e076c223a692?w=400&h=225&fit=crop',
+            creator: 'Business Insider Africa',
+            views_count: 32000,
+            likes_count: 2100,
+            duration: 180,
+            created_at: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString()
+        },
+        {
+            id: 103,
+            title: 'Most Viewed: Safari Wildlife Documentary',
+            thumbnail_url: 'https://images.unsplash.com/photo-1518837695005-2083093ee35b?w=400&h=225&fit=crop',
+            creator: 'Nature Africa',
+            views_count: 89000,
+            likes_count: 5600,
+            duration: 720,
+            created_at: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString()
+        }
+    ];
+}
+
+function getRecommendedFallbackContent() {
+    return [
+        {
+            id: 201,
+            title: 'Based on your interests: African Art History',
+            thumbnail_url: 'https://images.unsplash.com/photo-1541961017774-22349e4a1262?w=400&h=225&fit=crop',
+            creator: 'African Art Museum',
+            views_count: 15600,
+            likes_count: 890,
+            duration: 480,
+            created_at: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString()
+        },
+        {
+            id: 202,
+            title: 'Similar to your likes: Afrobeat Music Production',
+            thumbnail_url: 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop',
+            creator: 'Music Production Africa',
+            views_count: 23400,
+            likes_count: 1560,
+            duration: 360,
+            created_at: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString()
+        }
+    ];
 }
 
 // Share content
@@ -984,15 +896,20 @@ function shareContent(event, contentId) {
     }
 }
 
-// View creator
-function viewCreator(event, contentId, creatorId, creatorName) {
+// Like content
+function likeContent(event, contentId) {
     if (event) event.stopPropagation();
     
-    if (creatorId) {
-        window.location.href = `creator-channel.html?id=${creatorId}&name=${encodeURIComponent(creatorName)}`;
-    } else {
-        showToast(`Viewing ${creatorName}'s content`, 'info');
+    if (!currentUser) {
+        showToast('Please sign in to like content', 'warning');
+        return;
     }
+    
+    // Toggle like state
+    const btn = event.currentTarget;
+    btn.classList.toggle('liked');
+    
+    showToast('Content liked!', 'success');
 }
 
 // Show app
@@ -1052,7 +969,6 @@ function showToast(message, type = 'info') {
     // Remove toast after delay
     setTimeout(() => {
         toast.style.opacity = '0';
-        toast.style.transform = 'translateX(100%)';
         setTimeout(() => {
             if (toast.parentNode) {
                 toast.parentNode.removeChild(toast);
@@ -1077,16 +993,39 @@ function formatNumber(num) {
 
 function formatDuration(seconds) {
     if (!seconds) return '0:00';
-    const mins = Math.floor(seconds / 60);
+    const hours = Math.floor(seconds / 3600);
+    const mins = Math.floor((seconds % 3600) / 60);
     const secs = Math.floor(seconds % 60);
+    
+    if (hours > 0) {
+        return `${hours}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    }
     return `${mins}:${secs.toString().padStart(2, '0')}`;
+}
+
+function formatTimeAgo(dateString) {
+    if (!dateString) return 'Just now';
+    
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+    
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffDays < 7) return `${diffDays}d ago`;
+    return date.toLocaleDateString();
 }
 
 // Initialize lazy loading for images
 function initLazyLoading() {
+    const images = document.querySelectorAll('img[loading="lazy"]');
+    
     if ('loading' in HTMLImageElement.prototype) {
         // Browser supports native lazy loading
-        const images = document.querySelectorAll('img[loading="lazy"]');
         images.forEach(img => {
             if (img.dataset.src) {
                 img.src = img.dataset.src;
@@ -1106,7 +1045,6 @@ function initLazyLoading() {
             });
         });
         
-        const images = document.querySelectorAll('.lazy-image');
         images.forEach(img => observer.observe(img));
     }
 }
@@ -1116,4 +1054,4 @@ document.addEventListener('DOMContentLoaded', initLazyLoading);
 
 // Export functions for global access
 window.shareContent = shareContent;
-window.viewCreator = viewCreator;
+window.likeContent = likeContent;
