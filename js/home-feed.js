@@ -1,6 +1,6 @@
 // ==========================================================================
-// BANTU STREAM CONNECT - MOBILE-FIRST HOME FEED
-// Fixed Supabase Schema Issues & Mobile Responsiveness
+// BANTU STREAM CONNECT - HOME FEED ENHANCED
+// Phase 1: Infinite Scroll, Search, Recommendations, Performance
 // ==========================================================================
 
 // Global state
@@ -8,22 +8,26 @@ let currentUser = null;
 let contentData = [];
 let trendingData = [];
 let recommendedData = [];
-let categoriesData = [];
+let filteredData = [];
+let genres = [];
 let currentPage = 1;
 let isLoading = false;
 let hasMoreContent = true;
 let searchTimeout = null;
+let currentFilters = {
+    contentType: 'all',
+    genre: 'all',
+    sortBy: 'relevance',
+    duration: 'all',
+    trendingHours: 24
+};
 
 // DOM Elements
 let elements = {};
 
-// Mobile state
-let isMobileMenuOpen = false;
-let isMobileSearchOpen = false;
-
 // Initialize app when DOM is loaded
 document.addEventListener('DOMContentLoaded', async () => {
-    console.log('📱 Bantu Stream Connect Mobile Home Feed Initializing...');
+    console.log('🚀 Bantu Stream Connect Home Feed Initializing...');
     
     try {
         // Cache DOM elements
@@ -35,11 +39,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Check authentication
         await checkAuth();
         
+        // Load genres for filters
+        await loadGenres();
+        
         // Setup all event listeners
         setupEventListeners();
         
         // Load initial content
         await loadInitialContent();
+        
+        // Setup infinite scroll
+        setupInfiniteScroll();
         
         // Show the app
         showApp();
@@ -52,46 +62,37 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 });
 
-// Cache DOM elements
+// Cache frequently used DOM elements
 function cacheElements() {
     elements = {
-        // App containers
         app: document.getElementById('app'),
         loading: document.getElementById('loading'),
         loadingText: document.getElementById('loading-text'),
-        mainContent: document.getElementById('main-content'),
-        
-        // Header elements
-        mobileMenuBtn: document.getElementById('mobile-menu-btn'),
-        mobileNav: document.getElementById('mobile-nav'),
-        closeMobileNav: document.getElementById('close-mobile-nav'),
-        mobileSearchBtn: document.getElementById('mobile-search-btn'),
-        mobileSearchContainer: document.getElementById('mobile-search-container'),
-        closeMobileSearch: document.getElementById('close-mobile-search'),
-        
-        // Search elements
-        globalSearch: document.getElementById('global-search'),
-        mobileSearch: document.getElementById('mobile-search'),
-        
-        // Profile elements
-        profileBtn: document.getElementById('profile-btn'),
-        notificationsBtn: document.getElementById('notifications-btn'),
-        
-        // Content sections
-        trendingContent: document.getElementById('trending-content'),
-        latestContent: document.getElementById('latest-content'),
+        contentSections: document.getElementById('content-sections'),
         recommendedSection: document.getElementById('recommended-section'),
         recommendedContent: document.getElementById('recommended-content'),
-        categoriesGrid: document.getElementById('categories-grid'),
-        
-        // Load more
-        loadMoreBtn: document.getElementById('load-more-btn'),
-        
-        // Toast container
+        trendingContent: document.getElementById('trending-content'),
+        latestContent: document.getElementById('latest-content'),
+        searchInput: document.getElementById('global-search'),
+        searchContainer: document.getElementById('search-container'),
+        searchFilters: document.getElementById('search-filters'),
+        searchResults: document.getElementById('search-results'),
+        searchResultsContent: document.getElementById('search-results-content'),
+        filterBtn: document.getElementById('filter-btn'),
+        clearSearch: document.getElementById('clear-search'),
+        closeSearch: document.getElementById('close-search'),
+        applyFilters: document.getElementById('apply-filters'),
+        resetFilters: document.getElementById('reset-filters'),
+        scrollSentinel: document.getElementById('scroll-sentinel'),
+        profileBtn: document.getElementById('profile-btn'),
+        browseAllBtn: document.getElementById('browse-all-btn'),
+        browseAllCta: document.getElementById('browse-all-cta'),
         toastContainer: document.getElementById('toast-container'),
-        
-        // Time filter buttons
-        timeFilterBtns: document.querySelectorAll('.time-filter-btn')
+        contentTypeFilter: document.getElementById('content-type-filter'),
+        genreFilter: document.getElementById('genre-filter'),
+        sortFilter: document.getElementById('sort-filter'),
+        durationFilter: document.getElementById('duration-filter'),
+        timeButtons: document.querySelectorAll('.time-btn')
     };
 }
 
@@ -103,14 +104,7 @@ async function initializeSupabase() {
     
     window.supabaseClient = supabase.createClient(
         window.SUPABASE_URL, 
-        window.SUPABASE_ANON_KEY,
-        {
-            auth: {
-                autoRefreshToken: true,
-                persistSession: true,
-                detectSessionInUrl: true
-            }
-        }
+        window.SUPABASE_ANON_KEY
     );
     
     console.log('✅ Supabase client initialized');
@@ -125,11 +119,7 @@ async function checkAuth() {
             currentUser = session.user;
             console.log('✅ User authenticated:', currentUser.email);
             updateProfileButton();
-            
-            // Show recommended section for logged in users
-            if (elements.recommendedSection) {
-                elements.recommendedSection.style.display = 'block';
-            }
+            showToast(`Welcome back, ${currentUser.email}!`, 'success');
         } else {
             console.log('👤 User not authenticated (public mode)');
             setupProfileButtonForLogin();
@@ -171,86 +161,119 @@ function getInitials(email) {
     return parts.substring(0, 2).toUpperCase();
 }
 
+// Load genres for filters
+async function loadGenres() {
+    try {
+        // Try to get genres from database
+        const { data, error } = await supabaseClient
+            .from('Content')
+            .select('genre')
+            .not('genre', 'is', null)
+            .limit(50);
+        
+        if (error) throw error;
+        
+        // Extract unique genres
+        const uniqueGenres = [...new Set(data.map(item => item.genre).filter(Boolean))];
+        genres = uniqueGenres;
+        
+        // Populate genre filter dropdown
+        if (elements.genreFilter && genres.length > 0) {
+            elements.genreFilter.innerHTML = '<option value="all">All Genres</option>' +
+                genres.map(genre => `<option value="${genre}">${genre}</option>`).join('');
+        }
+        
+        console.log(`✅ Loaded ${genres.length} genres`);
+        
+    } catch (error) {
+        console.log('Using default genres');
+        genres = ['Music', 'Technology', 'Education', 'Entertainment', 'Sports', 'Culture'];
+        
+        if (elements.genreFilter) {
+            elements.genreFilter.innerHTML = '<option value="all">All Genres</option>' +
+                genres.map(genre => `<option value="${genre}">${genre}</option>`).join('');
+        }
+    }
+}
+
 // Setup event listeners
 function setupEventListeners() {
-    // Mobile menu
-    if (elements.mobileMenuBtn) {
-        elements.mobileMenuBtn.addEventListener('click', toggleMobileMenu);
-    }
-    
-    if (elements.closeMobileNav) {
-        elements.closeMobileNav.addEventListener('click', closeMobileMenu);
-    }
-    
-    // Mobile search
-    if (elements.mobileSearchBtn) {
-        elements.mobileSearchBtn.addEventListener('click', toggleMobileSearch);
-    }
-    
-    if (elements.closeMobileSearch) {
-        elements.closeMobileSearch.addEventListener('click', closeMobileSearch);
-    }
-    
     // Search functionality
-    if (elements.globalSearch) {
-        elements.globalSearch.addEventListener('input', handleSearchInput);
-        elements.globalSearch.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                performSearch(elements.globalSearch.value);
-            }
-        });
+    if (elements.searchInput) {
+        elements.searchInput.addEventListener('input', handleSearchInput);
+        elements.searchInput.addEventListener('focus', handleSearchFocus);
     }
     
-    if (elements.mobileSearch) {
-        elements.mobileSearch.addEventListener('input', handleSearchInput);
-        elements.mobileSearch.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                performSearch(elements.mobileSearch.value);
-            }
-        });
+    // Filter buttons
+    if (elements.filterBtn) {
+        elements.filterBtn.addEventListener('click', toggleFilters);
     }
     
-    // Time filter buttons
-    if (elements.timeFilterBtns) {
-        elements.timeFilterBtns.forEach(btn => {
+    if (elements.clearSearch) {
+        elements.clearSearch.addEventListener('click', clearSearch);
+    }
+    
+    if (elements.closeSearch) {
+        elements.closeSearch.addEventListener('click', closeSearchResults);
+    }
+    
+    if (elements.applyFilters) {
+        elements.applyFilters.addEventListener('click', applyFilters);
+    }
+    
+    if (elements.resetFilters) {
+        elements.resetFilters.addEventListener('click', resetFilters);
+    }
+    
+    // Filter dropdowns
+    if (elements.contentTypeFilter) {
+        elements.contentTypeFilter.addEventListener('change', updateFilters);
+    }
+    
+    if (elements.genreFilter) {
+        elements.genreFilter.addEventListener('change', updateFilters);
+    }
+    
+    if (elements.sortFilter) {
+        elements.sortFilter.addEventListener('change', updateFilters);
+    }
+    
+    if (elements.durationFilter) {
+        elements.durationFilter.addEventListener('change', updateFilters);
+    }
+    
+    // Trending time buttons
+    if (elements.timeButtons) {
+        elements.timeButtons.forEach(btn => {
             btn.addEventListener('click', handleTimeFilterClick);
         });
     }
     
-    // Load more button
-    if (elements.loadMoreBtn) {
-        elements.loadMoreBtn.addEventListener('click', loadMoreContent);
-    }
-    
-    // Notifications button
-    if (elements.notificationsBtn) {
-        elements.notificationsBtn.addEventListener('click', () => {
-            window.location.href = 'notifications.html';
+    // Browse buttons
+    if (elements.browseAllBtn) {
+        elements.browseAllBtn.addEventListener('click', () => {
+            window.location.href = 'explore-screen.html';
         });
     }
     
-    // Click outside to close mobile menu/search
+    if (elements.browseAllCta) {
+        elements.browseAllCta.addEventListener('click', () => {
+            window.location.href = 'content-library.html';
+        });
+    }
+    
+    // Click outside to close search results
     document.addEventListener('click', (e) => {
-        // Close mobile menu if clicking outside
-        if (isMobileMenuOpen && 
-            !elements.mobileNav.contains(e.target) && 
-            !elements.mobileMenuBtn.contains(e.target)) {
-            closeMobileMenu();
-        }
-        
-        // Close mobile search if clicking outside
-        if (isMobileSearchOpen && 
-            !elements.mobileSearchContainer.contains(e.target) && 
-            !elements.mobileSearchBtn.contains(e.target)) {
-            closeMobileSearch();
+        if (!elements.searchContainer?.contains(e.target) && 
+            !elements.searchResults?.contains(e.target)) {
+            closeSearchResults();
         }
     });
     
-    // Escape key to close mobile menu/search
+    // Escape key to close search
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
-            if (isMobileMenuOpen) closeMobileMenu();
-            if (isMobileSearchOpen) closeMobileSearch();
+            closeSearchResults();
         }
     });
     
@@ -259,69 +282,14 @@ function setupEventListeners() {
         if (event === 'SIGNED_IN') {
             currentUser = session.user;
             updateProfileButton();
-            if (elements.recommendedSection) {
-                elements.recommendedSection.style.display = 'block';
-            }
+            loadRecommendedContent();
             showToast(`Welcome back, ${session.user.email}!`, 'success');
         } else if (event === 'SIGNED_OUT') {
             currentUser = null;
             setupProfileButtonForLogin();
-            if (elements.recommendedSection) {
-                elements.recommendedSection.style.display = 'none';
-            }
+            elements.recommendedSection.style.display = 'none';
         }
     });
-}
-
-// Mobile menu functions
-function toggleMobileMenu() {
-    if (isMobileMenuOpen) {
-        closeMobileMenu();
-    } else {
-        openMobileMenu();
-    }
-}
-
-function openMobileMenu() {
-    if (elements.mobileNav) {
-        elements.mobileNav.classList.add('active');
-        document.body.style.overflow = 'hidden';
-        isMobileMenuOpen = true;
-    }
-}
-
-function closeMobileMenu() {
-    if (elements.mobileNav) {
-        elements.mobileNav.classList.remove('active');
-        document.body.style.overflow = '';
-        isMobileMenuOpen = false;
-    }
-}
-
-// Mobile search functions
-function toggleMobileSearch() {
-    if (isMobileSearchOpen) {
-        closeMobileSearch();
-    } else {
-        openMobileSearch();
-    }
-}
-
-function openMobileSearch() {
-    if (elements.mobileSearchContainer) {
-        elements.mobileSearchContainer.classList.add('active');
-        elements.mobileSearch.focus();
-        document.body.style.overflow = 'hidden';
-        isMobileSearchOpen = true;
-    }
-}
-
-function closeMobileSearch() {
-    if (elements.mobileSearchContainer) {
-        elements.mobileSearchContainer.classList.remove('active');
-        document.body.style.overflow = '';
-        isMobileSearchOpen = false;
-    }
 }
 
 // Handle search input with debouncing
@@ -333,37 +301,203 @@ function handleSearchInput(e) {
         clearTimeout(searchTimeout);
     }
     
+    // Show search results if query is not empty
     if (query.length > 0) {
         searchTimeout = setTimeout(() => {
             performSearch(query);
-        }, 500);
+        }, 300); // 300ms debounce
+    } else {
+        closeSearchResults();
+    }
+}
+
+// Handle search focus
+function handleSearchFocus() {
+    const query = elements.searchInput.value.trim();
+    if (query.length > 0) {
+        performSearch(query);
     }
 }
 
 // Perform search
-function performSearch(query) {
-    if (!query.trim()) return;
-    
-    // Close mobile search if open
-    closeMobileSearch();
-    
-    // Redirect to search results page
-    window.location.href = `search.html?q=${encodeURIComponent(query)}`;
+async function performSearch(query) {
+    try {
+        showSearchLoading();
+        
+        const { data, error } = await supabaseClient
+            .from('Content')
+            .select(`
+                *,
+                creators!creator_id (
+                    username,
+                    display_name,
+                    profile_picture
+                )
+            `)
+            .or(`title.ilike.%${query}%,description.ilike.%${query}%,genre.ilike.%${query}%`)
+            .eq('status', 'published')
+            .limit(10);
+        
+        if (error) throw error;
+        
+        displaySearchResults(data, query);
+        
+    } catch (error) {
+        console.error('Search error:', error);
+        showSearchError();
+    }
 }
 
-// Handle time filter click
+// Display search results
+function displaySearchResults(results, query) {
+    if (!elements.searchResults || !elements.searchResultsContent) return;
+    
+    if (results.length === 0) {
+        elements.searchResultsContent.innerHTML = `
+            <div class="no-results">
+                <i class="fas fa-search"></i>
+                <p>No results found for "${query}"</p>
+                <p class="search-tip">Try different keywords or check your spelling</p>
+            </div>
+        `;
+    } else {
+        elements.searchResultsContent.innerHTML = results.map(item => `
+            <div class="search-result-item" onclick="window.location.href='content-detail.html?id=${item.id}'">
+                <div class="search-result-thumbnail">
+                    <img 
+                        src="${item.thumbnail_url || 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=100&h=60&fit=crop'}" 
+                        alt="${item.title}"
+                        loading="lazy"
+                    >
+                </div>
+                <div class="search-result-details">
+                    <h5>${truncateText(item.title, 50)}</h5>
+                    <p class="search-result-creator">
+                        ${item.creators?.display_name || item.creators?.username || 'Unknown Creator'}
+                    </p>
+                    <div class="search-result-meta">
+                        <span><i class="fas fa-eye"></i> ${formatNumber(item.views_count || 0)}</span>
+                        <span><i class="fas fa-clock"></i> ${formatDuration(item.duration || 0)}</span>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+    }
+    
+    // Show search results
+    elements.searchResults.style.display = 'block';
+}
+
+// Show search loading state
+function showSearchLoading() {
+    if (!elements.searchResultsContent) return;
+    
+    elements.searchResultsContent.innerHTML = `
+        <div class="search-loading">
+            <div class="spinner-small"></div>
+            <p>Searching...</p>
+        </div>
+    `;
+    
+    if (elements.searchResults) {
+        elements.searchResults.style.display = 'block';
+    }
+}
+
+// Show search error
+function showSearchError() {
+    if (!elements.searchResultsContent) return;
+    
+    elements.searchResultsContent.innerHTML = `
+        <div class="search-error">
+            <i class="fas fa-exclamation-triangle"></i>
+            <p>Search failed. Please try again.</p>
+        </div>
+    `;
+}
+
+// Clear search
+function clearSearch() {
+    if (elements.searchInput) {
+        elements.searchInput.value = '';
+        elements.searchInput.focus();
+    }
+    closeSearchResults();
+}
+
+// Close search results
+function closeSearchResults() {
+    if (elements.searchResults) {
+        elements.searchResults.style.display = 'none';
+    }
+    if (elements.searchFilters) {
+        elements.searchFilters.style.display = 'none';
+    }
+}
+
+// Toggle filters dropdown
+function toggleFilters() {
+    if (!elements.searchFilters) return;
+    
+    const isVisible = elements.searchFilters.style.display === 'block';
+    elements.searchFilters.style.display = isVisible ? 'none' : 'block';
+}
+
+// Update filters
+function updateFilters() {
+    if (!elements.contentTypeFilter || !elements.genreFilter || 
+        !elements.sortFilter || !elements.durationFilter) return;
+    
+    currentFilters = {
+        contentType: elements.contentTypeFilter.value,
+        genre: elements.genreFilter.value,
+        sortBy: elements.sortFilter.value,
+        duration: elements.durationFilter.value,
+        trendingHours: currentFilters.trendingHours
+    };
+}
+
+// Apply filters
+function applyFilters() {
+    updateFilters();
+    closeSearchResults();
+    
+    // Reload content with filters
+    if (elements.searchInput.value.trim()) {
+        performSearch(elements.searchInput.value.trim());
+    } else {
+        currentPage = 1;
+        hasMoreContent = true;
+        loadContent();
+    }
+    
+    showToast('Filters applied', 'success');
+}
+
+// Reset all filters
+function resetFilters() {
+    if (elements.contentTypeFilter) elements.contentTypeFilter.value = 'all';
+    if (elements.genreFilter) elements.genreFilter.value = 'all';
+    if (elements.sortFilter) elements.sortFilter.value = 'relevance';
+    if (elements.durationFilter) elements.durationFilter.value = 'all';
+    
+    applyFilters();
+}
+
+// Handle trending time filter click
 function handleTimeFilterClick(e) {
     const button = e.currentTarget;
     const hours = parseInt(button.dataset.hours);
     
     // Update active state
-    document.querySelectorAll('.time-filter-btn').forEach(btn => {
+    document.querySelectorAll('.time-btn').forEach(btn => {
         btn.classList.remove('active');
     });
     button.classList.add('active');
     
-    // Load trending content with new time filter
-    loadTrendingContent(hours);
+    // Update filter and reload trending content
+    currentFilters.trendingHours = hours;
+    loadTrendingContent();
 }
 
 // Load initial content
@@ -371,11 +505,10 @@ async function loadInitialContent() {
     try {
         showLoadingState(true, 'Loading your feed...');
         
-        // Load content in parallel
+        // Load content in parallel for better performance
         await Promise.all([
-            loadTrendingContent(24),
-            loadLatestContent(),
-            loadCategories(),
+            loadContent(),
+            loadTrendingContent(),
             loadRecommendedContent()
         ]);
         
@@ -383,33 +516,107 @@ async function loadInitialContent() {
         
     } catch (error) {
         console.error('Error loading initial content:', error);
-        showToast('Failed to load content. Please check your connection.', 'error');
-        
-        // Show fallback content
-        showFallbackContent();
+        showError('Failed to load content. Please refresh.');
     }
 }
 
-// Load trending content (FIXED: Removed invalid joins)
-async function loadTrendingContent(hours = 24) {
+// Load main content with pagination
+async function loadContent() {
+    if (isLoading || !hasMoreContent) return;
+    
+    isLoading = true;
+    
+    try {
+        const limit = 12;
+        const from = (currentPage - 1) * limit;
+        const to = from + limit - 1;
+        
+        let query = supabaseClient
+            .from('Content')
+            .select(`
+                *,
+                creators!creator_id (
+                    username,
+                    display_name,
+                    profile_picture
+                )
+            `)
+            .eq('status', 'published')
+            .order('created_at', { ascending: false })
+            .range(from, to);
+        
+        // Apply filters if needed
+        if (currentFilters.contentType !== 'all') {
+            query = query.eq('media_type', currentFilters.contentType);
+        }
+        
+        if (currentFilters.genre !== 'all') {
+            query = query.eq('genre', currentFilters.genre);
+        }
+        
+        const { data, error } = await query;
+        
+        if (error) throw error;
+        
+        // Process and display data
+        if (data && data.length > 0) {
+            // Enrich with view counts
+            const enrichedData = await enrichContentWithViews(data);
+            
+            if (currentPage === 1) {
+                contentData = enrichedData;
+                renderLatestContent(enrichedData);
+            } else {
+                contentData = [...contentData, ...enrichedData];
+                appendLatestContent(enrichedData);
+            }
+            
+            // Check if there's more content
+            hasMoreContent = data.length === limit;
+            currentPage++;
+            
+        } else {
+            hasMoreContent = false;
+            if (currentPage === 1) {
+                renderEmptyState('No content available');
+            }
+        }
+        
+    } catch (error) {
+        console.error('Error loading content:', error);
+        showToast('Failed to load more content', 'error');
+    } finally {
+        isLoading = false;
+        hideScrollSentinel();
+    }
+}
+
+// Load trending content
+async function loadTrendingContent() {
     try {
         // Calculate timestamp for trending period
         const trendingSince = new Date();
-        trendingSince.setHours(trendingSince.getHours() - hours);
+        trendingSince.setHours(trendingSince.getHours() - currentFilters.trendingHours);
         
-        // Simple query without joins that cause errors
         const { data, error } = await supabaseClient
             .from('Content')
-            .select('*')
+            .select(`
+                *,
+                creators!creator_id (
+                    username,
+                    display_name,
+                    profile_picture
+                ),
+                content_views!content_id (
+                    view_count
+                )
+            `)
             .eq('status', 'published')
             .gte('created_at', trendingSince.toISOString())
             .order('views_count', { ascending: false })
-            .limit(10);
+            .limit(8);
         
-        if (error) {
-            console.error('Trending query error:', error);
-            throw error;
-        }
+        if (error) throw error;
         
         if (data && data.length > 0) {
             trendingData = data;
@@ -424,206 +631,222 @@ async function loadTrendingContent(hours = 24) {
     }
 }
 
-// Load latest content (FIXED: Removed invalid joins)
-async function loadLatestContent() {
-    try {
-        // Simple query without joins that cause errors
-        const { data, error } = await supabaseClient
-            .from('Content')
-            .select('*')
-            .eq('status', 'published')
-            .order('created_at', { ascending: false })
-            .limit(12);
-        
-        if (error) {
-            console.error('Latest content query error:', error);
-            throw error;
-        }
-        
-        if (data && data.length > 0) {
-            contentData = data;
-            renderLatestContent(data);
-        } else {
-            renderLatestFallback();
-        }
-        
-    } catch (error) {
-        console.error('Error loading latest content:', error);
-        renderLatestFallback();
-    }
-}
-
-// Load recommended content (Simplified for now)
+// Load personalized recommendations
 async function loadRecommendedContent() {
-    if (!currentUser) return;
+    if (!currentUser) {
+        // Hide recommended section for non-logged in users
+        if (elements.recommendedSection) {
+            elements.recommendedSection.style.display = 'none';
+        }
+        return;
+    }
     
     try {
-        // For now, just show trending content as recommendations
-        // In the future, implement proper recommendation algorithm
-        const { data, error } = await supabaseClient
-            .from('Content')
-            .select('*')
-            .eq('status', 'published')
-            .order('views_count', { ascending: false })
-            .limit(6);
+        // Show recommended section
+        if (elements.recommendedSection) {
+            elements.recommendedSection.style.display = 'block';
+        }
+        
+        // Simple recommendation algorithm
+        // 1. Get user's liked content
+        // 2. Get similar content based on genres
+        // 3. Fall back to trending if no data
+        
+        const { data: userLikes, error: likesError } = await supabaseClient
+            .from('likes')
+            .select('content_id')
+            .eq('user_id', currentUser.id)
+            .limit(10);
+        
+        if (likesError) throw likesError;
+        
+        let recommendedQuery;
+        
+        if (userLikes && userLikes.length > 0) {
+            // Get genres from liked content
+            const { data: likedContent } = await supabaseClient
+                .from('Content')
+                .select('genre')
+                .in('id', userLikes.map(like => like.content_id));
+            
+            const userGenres = [...new Set(likedContent.map(item => item.genre).filter(Boolean))];
+            
+            if (userGenres.length > 0) {
+                // Get content from preferred genres
+                recommendedQuery = supabaseClient
+                    .from('Content')
+                    .select(`
+                        *,
+                        creators!creator_id (
+                            username,
+                            display_name,
+                            profile_picture
+                        )
+                    `)
+                    .eq('status', 'published')
+                    .in('genre', userGenres)
+                    .order('views_count', { ascending: false })
+                    .limit(6);
+            }
+        }
+        
+        // Fallback: Get trending content
+        if (!recommendedQuery) {
+            recommendedQuery = supabaseClient
+                .from('Content')
+                .select(`
+                    *,
+                    creators!creator_id (
+                        username,
+                        display_name,
+                        profile_picture
+                    )
+                `)
+                .eq('status', 'published')
+                .order('views_count', { ascending: false })
+                .limit(6);
+        }
+        
+        const { data, error } = await recommendedQuery;
         
         if (error) throw error;
         
         if (data && data.length > 0) {
             recommendedData = data;
             renderRecommendedContent(data);
+        } else {
+            renderRecommendedFallback();
         }
         
     } catch (error) {
         console.error('Error loading recommendations:', error);
-        // Silently fail - recommendations are optional
+        renderRecommendedFallback();
     }
 }
 
-// Load categories
-async function loadCategories() {
+// Enrich content with view counts
+async function enrichContentWithViews(contentItems) {
+    if (!contentItems || contentItems.length === 0) return contentItems;
+    
     try {
-        // Get unique genres from content
-        const { data, error } = await supabaseClient
-            .from('Content')
-            .select('genre')
-            .not('genre', 'is', null)
-            .limit(20);
+        const contentIds = contentItems.map(item => item.id);
+        
+        const { data: viewCounts, error } = await supabaseClient
+            .from('content_views')
+            .select('content_id, count')
+            .in('content_id', contentIds);
         
         if (error) throw error;
         
-        if (data) {
-            // Get unique genres
-            const uniqueGenres = [...new Set(data.map(item => item.genre).filter(Boolean))];
-            categoriesData = uniqueGenres.slice(0, 8); // Show max 8 categories
-            
-            renderCategories(categoriesData);
+        // Create view count map
+        const viewsMap = {};
+        if (viewCounts) {
+            viewCounts.forEach(item => {
+                viewsMap[item.content_id] = item.count;
+            });
         }
         
-    } catch (error) {
-        console.error('Error loading categories:', error);
+        // Enrich content items
+        return contentItems.map(item => ({
+            ...item,
+            views_count: viewsMap[item.id] || item.views_count || 0,
+            actual_views: viewsMap[item.id] || item.views_count || 0
+        }));
         
-        // Show default categories
-        const defaultCategories = ['Music', 'Technology', 'Education', 'Entertainment', 'Sports', 'Culture', 'Food', 'Fashion'];
-        renderCategories(defaultCategories);
+    } catch (error) {
+        console.error('Error enriching content with views:', error);
+        return contentItems;
     }
 }
 
-// Load more content
-async function loadMoreContent() {
-    if (isLoading) return;
+// Setup infinite scroll
+function setupInfiniteScroll() {
+    if (!elements.scrollSentinel) return;
     
-    isLoading = true;
-    
-    try {
-        // Update button state
-        elements.loadMoreBtn.classList.add('loading');
-        elements.loadMoreBtn.disabled = true;
-        
-        // Calculate offset
-        const offset = contentData.length;
-        
-        // Load more content
-        const { data, error } = await supabaseClient
-            .from('Content')
-            .select('*')
-            .eq('status', 'published')
-            .order('created_at', { ascending: false })
-            .range(offset, offset + 5);
-        
-        if (error) throw error;
-        
-        if (data && data.length > 0) {
-            // Add to existing data
-            contentData = [...contentData, ...data];
-            
-            // Append to latest content
-            appendLatestContent(data);
-            
-            // Check if there's more content
-            if (data.length < 6) {
-                elements.loadMoreBtn.style.display = 'none';
-            }
-        } else {
-            // No more content
-            elements.loadMoreBtn.style.display = 'none';
-            showToast('No more content to load', 'info');
+    const observer = new IntersectionObserver((entries) => {
+        if (entries[0].isIntersecting && !isLoading && hasMoreContent) {
+            showScrollSentinel();
+            loadContent();
         }
-        
-    } catch (error) {
-        console.error('Error loading more content:', error);
-        showToast('Failed to load more content', 'error');
-    } finally {
-        isLoading = false;
-        elements.loadMoreBtn.classList.remove('loading');
-        elements.loadMoreBtn.disabled = false;
+    }, {
+        root: null,
+        rootMargin: '100px',
+        threshold: 0.1
+    });
+    
+    observer.observe(elements.scrollSentinel);
+}
+
+// Show scroll sentinel
+function showScrollSentinel() {
+    if (elements.scrollSentinel) {
+        elements.scrollSentinel.classList.add('visible');
     }
 }
 
-// Show fallback content when API fails
-function showFallbackContent() {
-    // Fallback trending data
-    const fallbackTrending = [
-        {
-            id: 1,
-            title: 'African Music Festival 2025',
-            thumbnail_url: 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop',
-            creator: 'Music Africa',
-            views_count: 12500,
-            likes_count: 890,
-            duration: 285,
-            created_at: new Date().toISOString()
-        },
-        {
-            id: 2,
-            title: 'Tech Innovation in Africa',
-            thumbnail_url: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=400&h=225&fit=crop',
-            creator: 'Tech Hub',
-            views_count: 8900,
-            likes_count: 650,
-            duration: 420,
-            created_at: new Date().toISOString()
-        }
-    ];
+// Hide scroll sentinel
+function hideScrollSentinel() {
+    if (elements.scrollSentinel) {
+        elements.scrollSentinel.classList.remove('visible');
+    }
+}
+
+// Render latest content
+function renderLatestContent(content) {
+    if (!elements.latestContent) return;
     
-    // Fallback latest data
-    const fallbackLatest = [
-        {
-            id: 3,
-            title: 'Traditional Dance Performance',
-            thumbnail_url: 'https://images.unsplash.com/photo-1547153760-18fc86324498?w=400&h=225&fit=crop',
-            creator: 'Cultural Hub',
-            views_count: 15600,
-            likes_count: 1200,
-            duration: 325,
-            created_at: new Date().toISOString()
-        },
-        {
-            id: 4,
-            title: 'African Cuisine Masterclass',
-            thumbnail_url: 'https://images.unsplash.com/photo-1565958011703-44f9829ba187?w=400&h=225&fit=crop',
-            creator: 'Food Network',
-            views_count: 23400,
-            likes_count: 1890,
-            duration: 540,
-            created_at: new Date().toISOString()
-        }
-    ];
+    elements.latestContent.innerHTML = content.map(item => renderContentCard(item)).join('');
     
-    renderTrendingContent(fallbackTrending);
-    renderLatestContent(fallbackLatest);
+    // Add click handlers
+    setTimeout(() => {
+        document.querySelectorAll('#latest-content .content-card').forEach(card => {
+            const contentId = card.dataset.contentId;
+            card.addEventListener('click', (e) => {
+                if (e.target.closest('button')) return;
+                window.location.href = `content-detail.html?id=${contentId}`;
+            });
+        });
+    }, 100);
+}
+
+// Append more content (for infinite scroll)
+function appendLatestContent(content) {
+    if (!elements.latestContent) return;
+    
+    const newCards = content.map(item => renderContentCard(item)).join('');
+    elements.latestContent.insertAdjacentHTML('beforeend', newCards);
+    
+    // Add click handlers for new cards
+    setTimeout(() => {
+        const allCards = document.querySelectorAll('#latest-content .content-card');
+        const newCards = Array.from(allCards).slice(-content.length);
+        
+        newCards.forEach(card => {
+            const contentId = card.dataset.contentId;
+            card.addEventListener('click', (e) => {
+                if (e.target.closest('button')) return;
+                window.location.href = `content-detail.html?id=${contentId}`;
+            });
+        });
+    }, 100);
 }
 
 // Render trending content
 function renderTrendingContent(content) {
     if (!elements.trendingContent) return;
     
-    if (content.length === 0) {
-        renderTrendingFallback();
-        return;
-    }
+    elements.trendingContent.innerHTML = content.map(item => renderContentCard(item, true)).join('');
     
-    elements.trendingContent.innerHTML = content.map(item => renderTrendingCard(item)).join('');
+    // Add click handlers
+    setTimeout(() => {
+        document.querySelectorAll('#trending-content .content-card').forEach(card => {
+            const contentId = card.dataset.contentId;
+            card.addEventListener('click', (e) => {
+                if (e.target.closest('button')) return;
+                window.location.href = `content-detail.html?id=${contentId}`;
+            });
+        });
+    }, 100);
 }
 
 // Render trending fallback
@@ -632,165 +855,144 @@ function renderTrendingFallback() {
     
     elements.trendingContent.innerHTML = `
         <div class="trending-fallback">
-            <div class="fallback-card">
-                <div class="fallback-thumbnail"></div>
-                <div class="fallback-content">
-                    <div class="fallback-title"></div>
-                    <div class="fallback-creator"></div>
-                </div>
-            </div>
-            <div class="trending-empty">
-                <i class="fas fa-fire"></i>
-                <p>Trending content will appear here</p>
-            </div>
-        </div>
-    `;
-}
-
-// Render latest content
-function renderLatestContent(content) {
-    if (!elements.latestContent) return;
-    
-    if (content.length === 0) {
-        renderLatestFallback();
-        return;
-    }
-    
-    elements.latestContent.innerHTML = content.map(item => renderContentCard(item)).join('');
-}
-
-// Append more content
-function appendLatestContent(content) {
-    if (!elements.latestContent || content.length === 0) return;
-    
-    const newCards = content.map(item => renderContentCard(item)).join('');
-    elements.latestContent.insertAdjacentHTML('beforeend', newCards);
-}
-
-// Render latest fallback
-function renderLatestFallback() {
-    if (!elements.latestContent) return;
-    
-    elements.latestContent.innerHTML = `
-        <div class="content-empty">
-            <i class="fas fa-film"></i>
-            <h3>No Content Available</h3>
-            <p>Be the first to upload content!</p>
-            <button class="upload-cta" onclick="window.location.href='upload.html'">
-                Upload Your First Video
-            </button>
+            <i class="fas fa-chart-line"></i>
+            <p>Trending data will appear here</p>
         </div>
     `;
 }
 
 // Render recommended content
 function renderRecommendedContent(content) {
-    if (!elements.recommendedContent || !content || content.length === 0) return;
+    if (!elements.recommendedContent) return;
     
     elements.recommendedContent.innerHTML = content.map(item => renderContentCard(item)).join('');
+    
+    // Add click handlers
+    setTimeout(() => {
+        document.querySelectorAll('#recommended-content .content-card').forEach(card => {
+            const contentId = card.dataset.contentId;
+            card.addEventListener('click', (e) => {
+                if (e.target.closest('button')) return;
+                window.location.href = `content-detail.html?id=${contentId}`;
+            });
+        });
+    }, 100);
 }
 
-// Render categories
-function renderCategories(categories) {
-    if (!elements.categoriesGrid) return;
+// Render recommended fallback
+function renderRecommendedFallback() {
+    if (!elements.recommendedContent) return;
     
-    const categoriesHtml = categories.map(category => `
-        <a href="library.html?genre=${encodeURIComponent(category)}" class="category-card">
-            <div class="category-icon">
-                <i class="fas fa-${getCategoryIcon(category)}"></i>
-            </div>
-            <div class="category-name">${category}</div>
-        </a>
-    `).join('');
-    
-    elements.categoriesGrid.innerHTML = categoriesHtml;
-}
-
-// Get category icon
-function getCategoryIcon(category) {
-    const icons = {
-        'Music': 'music',
-        'Technology': 'microchip',
-        'Education': 'graduation-cap',
-        'Entertainment': 'tv',
-        'Sports': 'futbol',
-        'Culture': 'globe-africa',
-        'Food': 'utensils',
-        'Fashion': 'tshirt',
-        'Business': 'briefcase',
-        'Health': 'heartbeat',
-        'Travel': 'plane',
-        'Art': 'palette'
-    };
-    
-    return icons[category] || 'folder';
-}
-
-// Render trending card (horizontal scroll)
-function renderTrendingCard(item) {
-    const thumbnail = item.thumbnail_url || 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop';
-    const displayTitle = truncateText(item.title, 30);
-    const viewCount = formatNumber(item.views_count || 0);
-    
-    return `
-        <div class="trending-card" onclick="openContentDetail(${item.id})">
-            <div class="trending-thumbnail">
-                <img src="${thumbnail}" alt="${item.title}" loading="lazy">
-                <div class="trending-badge">🔥 Trending</div>
-                <div class="trending-overlay"></div>
-            </div>
-            <div class="trending-info">
-                <h3 class="trending-title">${displayTitle}</h3>
-                <div class="trending-meta">
-                    <span class="trending-creator">${item.creator || 'Creator'}</span>
-                    <span class="trending-views">${viewCount} views</span>
-                </div>
-            </div>
+    elements.recommendedContent.innerHTML = `
+        <div class="recommended-fallback">
+            <i class="fas fa-star"></i>
+            <p>Like some content to get personalized recommendations!</p>
         </div>
     `;
 }
 
-// Render content card (grid layout)
-function renderContentCard(item) {
-    const thumbnail = item.thumbnail_url || 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop';
+// Render empty state
+function renderEmptyState(message) {
+    if (!elements.latestContent) return;
+    
+    elements.latestContent.innerHTML = `
+        <div class="empty-state">
+            <i class="fas fa-film"></i>
+            <p>${message}</p>
+        </div>
+    `;
+}
+
+// Render content card with lazy loading
+function renderContentCard(item, isTrending = false) {
+    // Optimize thumbnail with query params
+    const thumbnail = item.thumbnail_url 
+        ? `${item.thumbnail_url}?w=400&h=225&fit=crop&auto=format&q=80`
+        : 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop&auto=format&q=80';
+    
+    // Truncate title
     const displayTitle = truncateText(item.title, 50);
-    const viewCount = formatNumber(item.views_count || 0);
-    const likeCount = formatNumber(item.likes_count || 0);
-    const duration = item.duration ? formatDuration(item.duration) : null;
-    const timeAgo = formatTimeAgo(item.created_at);
+    
+    // Creator info
+    const creatorName = item.creators?.display_name || item.creators?.username || 'Creator';
+    const displayCreator = `@${creatorName}`;
+    
+    // View count
+    const viewCount = item.actual_views || item.views_count || 0;
+    const likeCount = item.likes_count || 0;
+    
+    // Trending badge
+    const trendingBadge = isTrending ? '<span class="trending-badge-small">🔥 Trending</span>' : '';
     
     return `
-        <div class="content-card" onclick="openContentDetail(${item.id})">
+        <div class="content-card" data-content-id="${item.id}">
             <div class="card-thumbnail">
-                <img src="${thumbnail}" alt="${item.title}" loading="lazy">
-                ${duration ? `<span class="duration-badge">${duration}</span>` : ''}
+                <img 
+                    src="${thumbnail}" 
+                    alt="${item.title}"
+                    loading="lazy"
+                    data-src="${thumbnail}"
+                    class="lazy-image"
+                    onerror="this.src='https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop'"
+                >
                 <div class="thumbnail-overlay"></div>
+                ${trendingBadge}
+                <button class="share-btn" aria-label="Share" onclick="shareContent(event, ${item.id})">
+                    <i class="fas fa-share-alt"></i>
+                </button>
             </div>
             <div class="card-content">
-                <h3 class="card-title">${displayTitle}</h3>
-                <div class="card-creator">${item.creator || 'Creator'}</div>
+                <h3 class="card-title" title="${item.title}">
+                    ${displayTitle}
+                </h3>
+                <button class="creator-btn" onclick="viewCreator(event, ${item.id}, '${item.creator_id || item.user_id}', '${(creatorName).replace(/'/g, "\\'")}')">
+                    <i class="fas fa-user"></i>
+                    ${truncateText(displayCreator, 20)}
+                </button>
                 <div class="card-stats">
-                    <span class="card-stat">
-                        <i class="fas fa-eye"></i>
-                        ${viewCount}
-                    </span>
-                    <span class="card-stat">
-                        <i class="fas fa-heart"></i>
-                        ${likeCount}
-                    </span>
-                    <span class="card-stat">
-                        <i class="fas fa-clock"></i>
-                        ${timeAgo}
-                    </span>
+                    <span><i class="fas fa-eye"></i> ${formatNumber(viewCount)}</span>
+                    <span><i class="fas fa-heart"></i> ${formatNumber(likeCount)}</span>
+                    ${item.duration ? `<span><i class="fas fa-clock"></i> ${formatDuration(item.duration)}</span>` : ''}
                 </div>
             </div>
         </div>
     `;
 }
 
-// Open content detail
-function openContentDetail(contentId) {
-    window.location.href = `content-detail.html?id=${contentId}`;
+// Share content
+function shareContent(event, contentId) {
+    if (event) event.stopPropagation();
+    
+    const content = contentData.find(c => c.id === contentId) || 
+                    trendingData.find(c => c.id === contentId) || 
+                    recommendedData.find(c => c.id === contentId);
+    
+    if (!content) return;
+    
+    const shareData = {
+        title: content.title,
+        text: `Check out "${content.title}" on Bantu Stream Connect`,
+        url: window.location.origin + `/content-detail.html?id=${contentId}`
+    };
+    
+    if (navigator.share) {
+        navigator.share(shareData).catch(console.error);
+    } else {
+        navigator.clipboard.writeText(shareData.url)
+            .then(() => showToast('Link copied to clipboard!', 'success'))
+            .catch(() => showToast('Failed to copy link', 'error'));
+    }
+}
+
+// View creator
+function viewCreator(event, contentId, creatorId, creatorName) {
+    if (event) event.stopPropagation();
+    
+    if (creatorId) {
+        window.location.href = `creator-channel.html?id=${creatorId}&name=${encodeURIComponent(creatorName)}`;
+    } else {
+        showToast(`Viewing ${creatorName}'s content`, 'info');
+    }
 }
 
 // Show app
@@ -828,7 +1030,7 @@ function showError(message) {
     
     if (elements.loading) {
         elements.loading.innerHTML += `
-            <button onclick="window.location.reload()" class="retry-btn">
+            <button onclick="window.location.reload()" class="retry-button" style="margin-top: 20px;">
                 Refresh Page
             </button>
         `;
@@ -850,7 +1052,7 @@ function showToast(message, type = 'info') {
     // Remove toast after delay
     setTimeout(() => {
         toast.style.opacity = '0';
-        toast.style.transform = 'translateY(20px)';
+        toast.style.transform = 'translateX(100%)';
         setTimeout(() => {
             if (toast.parentNode) {
                 toast.parentNode.removeChild(toast);
@@ -875,39 +1077,16 @@ function formatNumber(num) {
 
 function formatDuration(seconds) {
     if (!seconds) return '0:00';
-    const hours = Math.floor(seconds / 3600);
-    const mins = Math.floor((seconds % 3600) / 60);
+    const mins = Math.floor(seconds / 60);
     const secs = Math.floor(seconds % 60);
-    
-    if (hours > 0) {
-        return `${hours}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-    }
     return `${mins}:${secs.toString().padStart(2, '0')}`;
-}
-
-function formatTimeAgo(dateString) {
-    if (!dateString) return 'Just now';
-    
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffMs = now - date;
-    const diffMins = Math.floor(diffMs / 60000);
-    const diffHours = Math.floor(diffMs / 3600000);
-    const diffDays = Math.floor(diffMs / 86400000);
-    
-    if (diffMins < 1) return 'Just now';
-    if (diffMins < 60) return `${diffMins}m ago`;
-    if (diffHours < 24) return `${diffHours}h ago`;
-    if (diffDays < 7) return `${diffDays}d ago`;
-    return date.toLocaleDateString();
 }
 
 // Initialize lazy loading for images
 function initLazyLoading() {
-    const images = document.querySelectorAll('img[loading="lazy"]');
-    
     if ('loading' in HTMLImageElement.prototype) {
         // Browser supports native lazy loading
+        const images = document.querySelectorAll('img[loading="lazy"]');
         images.forEach(img => {
             if (img.dataset.src) {
                 img.src = img.dataset.src;
@@ -927,6 +1106,7 @@ function initLazyLoading() {
             });
         });
         
+        const images = document.querySelectorAll('.lazy-image');
         images.forEach(img => observer.observe(img));
     }
 }
@@ -934,44 +1114,6 @@ function initLazyLoading() {
 // Initialize lazy loading when DOM is ready
 document.addEventListener('DOMContentLoaded', initLazyLoading);
 
-// Add touch support for mobile
-function setupTouchSupport() {
-    // Prevent zoom on double tap
-    let lastTouchEnd = 0;
-    document.addEventListener('touchend', function(event) {
-        const now = (new Date()).getTime();
-        if (now - lastTouchEnd <= 300) {
-            event.preventDefault();
-        }
-        lastTouchEnd = now;
-    }, false);
-    
-    // Add touch feedback for buttons
-    document.querySelectorAll('button, .clickable').forEach(el => {
-        el.addEventListener('touchstart', function() {
-            this.classList.add('touch-active');
-        });
-        
-        el.addEventListener('touchend', function() {
-            this.classList.remove('touch-active');
-        });
-    });
-}
-
-// Initialize touch support
-setupTouchSupport();
-
-// Handle back button on Android
-window.addEventListener('popstate', function(event) {
-    if (isMobileMenuOpen) {
-        closeMobileMenu();
-        event.preventDefault();
-    }
-    if (isMobileSearchOpen) {
-        closeMobileSearch();
-        event.preventDefault();
-    }
-});
-
 // Export functions for global access
-window.openContentDetail = openContentDetail;
+window.shareContent = shareContent;
+window.viewCreator = viewCreator;
