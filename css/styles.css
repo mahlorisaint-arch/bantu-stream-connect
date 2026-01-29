@@ -1,6 +1,6 @@
 /* ==========================================================================
    BANTU STREAM CONNECT - ENHANCED STYLESHEET
-   Version: 3.3 (Simple Working Fix)
+   Version: 3.1 (Responsive Desktop + Mobile Fixes)
    ========================================================================== */
 
 /* ==========================================================================
@@ -43,8 +43,8 @@
     --focus-outline-width: 3px;
     
     /* Layout */
-    --header-height: 70px;
-    --container-max-width: 1200px;
+    --header-height: 72px;
+    --container-max-width: 1400px;
     --border-radius-sm: 8px;
     --border-radius-md: 16px;
     --border-radius-lg: 24px;
@@ -130,236 +130,7 @@ body {
 }
 
 /* ==========================================================================
-   3. SIMPLE HEADER - FIXED FOR BOTH MOBILE AND DESKTOP
-   ========================================================================== */
-.header {
-    background: rgba(10, 14, 18, 0.95);
-    backdrop-filter: blur(20px);
-    padding: 15px 20px;
-    position: sticky;
-    top: 0;
-    z-index: 100;
-    border-bottom: 1px solid var(--card-border);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    height: var(--header-height);
-    flex-wrap: nowrap;
-}
-
-/* Logo Section */
-.logo-section {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    min-width: 80px;
-    flex-shrink: 0;
-}
-
-.logo {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    cursor: pointer;
-    text-decoration: none;
-}
-
-.logo-icon {
-    width: 40px;
-    height: 40px;
-    border-radius: 8px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: transparent;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.logo-text {
-    font-family: 'Orbitron', sans-serif;
-    font-weight: 700;
-    font-size: 18px;
-    background: linear-gradient(to right, var(--soft-white), var(--bantu-blue));
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-}
-
-/* Search Section - Centered */
-.search-section {
-    flex: 1;
-    max-width: 600px;
-    margin: 0 20px;
-    position: relative;
-}
-
-.search-bar {
-    display: flex;
-    align-items: center;
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid var(--card-border);
-    border-radius: 50px;
-    padding: 10px 16px;
-    transition: all 0.3s ease;
-    width: 100%;
-}
-
-.search-bar:focus-within {
-    border-color: var(--warm-gold);
-    box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.2);
-}
-
-.search-icon {
-    color: var(--slate-grey);
-    margin-right: 10px;
-    font-size: 14px;
-}
-
-#global-search {
-    flex: 1;
-    background: transparent;
-    border: none;
-    color: var(--soft-white);
-    font-size: 14px;
-    outline: none;
-    width: 100%;
-}
-
-#global-search::placeholder {
-    color: var(--slate-grey);
-}
-
-.search-actions {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-left: 8px;
-}
-
-.search-filter-btn,
-.search-clear-btn {
-    background: transparent;
-    border: none;
-    color: var(--slate-grey);
-    width: 30px;
-    height: 30px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: all 0.3s ease;
-}
-
-.search-filter-btn:hover,
-.search-clear-btn:hover {
-    background: rgba(255, 255, 255, 0.1);
-    color: var(--soft-white);
-}
-
-/* Profile Section */
-.profile-section {
-    display: flex;
-    align-items: center;
-    min-width: 50px;
-    flex-shrink: 0;
-}
-
-.profile-btn {
-    width: 42px;
-    height: 42px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
-    border: 2px solid rgba(255, 255, 255, 0.2);
-    cursor: pointer;
-    overflow: hidden;
-    transition: all 0.3s ease;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    font-weight: 600;
-    font-size: 14px;
-}
-
-.profile-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 20px rgba(29, 78, 216, 0.3);
-}
-
-.profile-placeholder {
-    width: 100%;
-    height: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    font-size: 16px;
-}
-
-/* ==========================================================================
-   4. RESPONSIVE DESIGN - SIMPLE AND EFFECTIVE
-   ========================================================================== */
-
-/* Tablet (768px and below) */
-@media (max-width: 768px) {
-    .header {
-        flex-wrap: wrap;
-        height: auto;
-        min-height: var(--header-height);
-        padding: 12px 15px;
-        gap: 10px;
-    }
-    
-    .logo-section {
-        order: 1;
-        flex: 0 0 auto;
-    }
-    
-    .search-section {
-        order: 3;
-        flex: 0 0 100%;
-        margin: 10px 0 0 0;
-        max-width: 100%;
-    }
-    
-    .profile-section {
-        order: 2;
-        flex: 0 0 auto;
-    }
-    
-    .logo-text {
-        font-size: 16px;
-    }
-}
-
-/* Mobile (480px and below) */
-@media (max-width: 480px) {
-    .header {
-        padding: 10px 12px;
-    }
-    
-    .logo-icon {
-        width: 36px;
-        height: 36px;
-    }
-    
-    .logo-text {
-        font-size: 15px;
-    }
-    
-    .search-bar {
-        padding: 8px 14px;
-    }
-    
-    .profile-btn {
-        width: 38px;
-        height: 38px;
-    }
-}
-
-/* ==========================================================================
-   5. LOADING SCREEN
+   3. LOADING SCREEN
    ========================================================================== */
 .loading-screen {
     position: fixed;
@@ -401,7 +172,7 @@ body {
 }
 
 /* ==========================================================================
-   6. ANIMATED BACKGROUND
+   4. ANIMATED BACKGROUND
    ========================================================================== */
 .animated-bg {
     position: fixed;
@@ -468,7 +239,7 @@ body {
 }
 
 /* ==========================================================================
-   7. MAIN LAYOUT & CONTAINER
+   5. MAIN LAYOUT & CONTAINER
    ========================================================================== */
 .container {
     max-width: var(--container-max-width);
@@ -477,6 +248,153 @@ body {
     position: relative;
     z-index: 2;
     padding-bottom: 100px; /* Space for content */
+}
+
+/* Desktop container adjustments */
+@media (min-width: 1200px) {
+    .container {
+        padding: 32px 48px;
+    }
+}
+
+/* ==========================================================================
+   6. ENHANCED HEADER WITH SEARCH - UPDATED FOR RESPONSIVENESS
+   ========================================================================== */
+.header {
+    background: rgba(10, 14, 18, 0.95);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    padding: 12px 20px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    border-bottom: 1px solid var(--card-border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    min-height: var(--header-height);
+    gap: 16px;
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+    text-decoration: none;
+    flex-shrink: 0;
+    min-width: fit-content;
+}
+
+.logo-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: var(--shadow-blue);
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.logo-text {
+    font-family: 'Orbitron', sans-serif;
+    font-weight: 700;
+    background: linear-gradient(to right, var(--soft-white), var(--bantu-blue));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    letter-spacing: 0.5px;
+    display: flex;
+    align-items: center;
+}
+
+.logo-full {
+    font-size: 18px;
+    display: inline;
+}
+
+.logo-short {
+    font-size: 18px;
+    display: none;
+}
+
+/* Enhanced Search Container */
+.search-container {
+    flex: 1;
+    max-width: 600px;
+    position: relative;
+    min-width: 0; /* Allow shrinking */
+}
+
+.search-bar {
+    display: flex;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid var(--card-border);
+    border-radius: 50px;
+    padding: 8px 16px;
+    transition: all var(--transition-base);
+    position: relative;
+}
+
+.search-bar:focus-within {
+    border-color: var(--warm-gold);
+    box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.2);
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.search-icon {
+    color: var(--slate-grey);
+    margin-right: 8px;
+    font-size: 16px;
+    flex-shrink: 0;
+}
+
+#global-search {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: var(--soft-white);
+    font-size: 14px;
+    outline: none;
+    width: 100%;
+    min-width: 0;
+}
+
+#global-search::placeholder {
+    color: var(--slate-grey);
+}
+
+.search-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
+.search-filter-btn,
+.search-clear-btn {
+    background: transparent;
+    border: none;
+    color: var(--slate-grey);
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all var(--transition-base);
+    font-size: 0;
+    flex-shrink: 0;
+}
+
+.search-filter-btn:hover,
+.search-clear-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--soft-white);
 }
 
 /* Search Filters Dropdown */
@@ -728,8 +646,51 @@ body {
     opacity: 0.8;
 }
 
+/* Header Actions */
+.header-actions {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.profile-btn {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    cursor: pointer;
+    overflow: hidden;
+    transition: all var(--transition-base);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 600;
+    font-size: 14px;
+    flex-shrink: 0;
+}
+
+.profile-btn:hover,
+.profile-btn:focus {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-blue);
+}
+
+.profile-placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+    color: white;
+    font-size: 16px;
+}
+
 /* ==========================================================================
-   8. DEVELOPMENT CARD
+   7. DEVELOPMENT CARD
    ========================================================================== */
 .development-card {
     background: var(--card-bg);
@@ -906,7 +867,7 @@ body {
 }
 
 /* ==========================================================================
-   9. HERO SECTION
+   8. HERO SECTION
    ========================================================================== */
 .hero {
     background: var(--card-bg);
@@ -919,6 +880,7 @@ body {
     box-shadow: var(--shadow-xl);
     position: relative;
     overflow: hidden;
+    text-align: center;
 }
 
 .hero::before {
@@ -948,6 +910,9 @@ body {
     color: rgba(248, 250, 252, 0.8);
     margin-bottom: 25px;
     font-size: 18px;
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
 }
 
 .hero-btn {
@@ -972,7 +937,7 @@ body {
 }
 
 /* ==========================================================================
-   10. CONTENT SECTIONS
+   9. CONTENT SECTIONS
    ========================================================================== */
 .section {
     margin-bottom: 40px;
@@ -983,6 +948,8 @@ body {
     justify-content: space-between;
     align-items: center;
     margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 16px;
 }
 
 .section-title {
@@ -1025,6 +992,7 @@ body {
     display: flex;
     align-items: center;
     gap: 15px;
+    flex-wrap: wrap;
 }
 
 .time-filter {
@@ -1067,6 +1035,7 @@ body {
     cursor: pointer;
     transition: all var(--transition-base);
     min-height: 40px;
+    white-space: nowrap;
 }
 
 .see-all-btn:hover,
@@ -1076,11 +1045,11 @@ body {
 }
 
 /* ==========================================================================
-   11. ENHANCED CONTENT CARDS & GRID - IMPROVED FOR DESKTOP
+   10. ENHANCED CONTENT CARDS & GRID - UPDATED FOR RESPONSIVE DESIGN
    ========================================================================== */
 .content-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
     gap: 24px;
     transition: all var(--transition-base);
 }
@@ -1095,8 +1064,11 @@ body {
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
     position: relative;
-    contain: layout style paint; /* Performance optimization */
+    contain: layout style paint;
     animation: fadeIn 0.5s ease;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
 }
 
 @keyframes fadeIn {
@@ -1119,9 +1091,10 @@ body {
 
 .card-thumbnail {
     position: relative;
-    height: 160px; /* Increased for desktop */
+    height: 160px;
     overflow: hidden;
     background: var(--deep-navy);
+    flex-shrink: 0;
 }
 
 .card-thumbnail img {
@@ -1195,6 +1168,9 @@ body {
 
 .card-content {
     padding: 20px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
 }
 
 .card-title {
@@ -1208,6 +1184,7 @@ body {
     min-height: 40px;
     color: var(--soft-white);
     line-height: 1.4;
+    flex: 1;
 }
 
 .creator-btn {
@@ -1225,7 +1202,12 @@ body {
     transition: all var(--transition-base);
     border: 1px solid rgba(255, 255, 255, 0.1);
     min-height: 32px;
-    margin-bottom: 10px;
+    margin-bottom: 12px;
+    align-self: flex-start;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .creator-btn:hover,
@@ -1236,15 +1218,17 @@ body {
 
 .card-stats {
     display: flex;
-    gap: 12px;
+    gap: 16px;
     font-size: 12px;
     color: var(--slate-grey);
+    margin-top: auto;
 }
 
 .card-stats span {
     display: flex;
     align-items: center;
     gap: 4px;
+    white-space: nowrap;
 }
 
 /* Fallback states */
@@ -1270,7 +1254,7 @@ body {
 }
 
 /* ==========================================================================
-   12. INFINITE SCROLL SENTINEL
+   11. INFINITE SCROLL SENTINEL
    ========================================================================== */
 .scroll-sentinel {
     height: 100px;
@@ -1308,7 +1292,7 @@ body {
 }
 
 /* ==========================================================================
-   13. BROWSE ALL CTA
+   12. BROWSE ALL CTA
    ========================================================================== */
 .browse-all-cta {
     text-align: center;
@@ -1342,7 +1326,7 @@ body {
 }
 
 /* ==========================================================================
-   14. FOOTER
+   13. FOOTER
    ========================================================================== */
 .footer {
     border-top: 1px solid var(--card-border);
@@ -1396,7 +1380,7 @@ body {
 }
 
 /* ==========================================================================
-   15. TOAST NOTIFICATIONS
+   14. TOAST NOTIFICATIONS
    ========================================================================== */
 .toast {
     position: fixed;
@@ -1444,7 +1428,7 @@ body {
 }
 
 /* ==========================================================================
-   16. CUSTOM SCROLLBAR
+   15. CUSTOM SCROLLBAR
    ========================================================================== */
 ::-webkit-scrollbar {
     width: 8px;
@@ -1476,7 +1460,7 @@ body {
 }
 
 /* ==========================================================================
-   17. ACCESSIBILITY IMPROVEMENTS
+   16. ACCESSIBILITY IMPROVEMENTS
    ========================================================================== */
 
 /* High Contrast Mode */
@@ -1548,18 +1532,21 @@ body {
 }
 
 /* ==========================================================================
-   18. RESPONSIVE DESIGN - IMPROVED FOR LAPTOP
+   17. RESPONSIVE DESIGN - IMPROVED FOR DESKTOP
    ========================================================================== */
 
-/* Large Desktop (1400px and above) */
-@media (min-width: 1400px) {
+/* Large Desktop (1200px and above) */
+@media (min-width: 1200px) {
     .container {
-        max-width: 1400px;
-        padding: 32px;
+        padding: 32px 48px;
+    }
+    
+    .header {
+        padding: 12px 32px;
     }
     
     .content-grid {
-        grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
         gap: 28px;
     }
     
@@ -1572,55 +1559,55 @@ body {
     }
     
     .hero {
-        padding: 50px;
+        padding: 60px 40px;
     }
     
     .hero h1 {
-        font-size: 36px;
+        font-size: 40px;
     }
     
     .hero p {
         font-size: 20px;
     }
+    
+    .section-title {
+        font-size: 28px;
+    }
 }
 
-/* Desktop (1024px to 1399px) */
-@media (min-width: 1024px) and (max-width: 1399px) {
-    .container {
-        padding: 28px;
-    }
-    
+/* Desktop (992px to 1199px) */
+@media (min-width: 992px) and (max-width: 1199px) {
     .content-grid {
-        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+        grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
         gap: 24px;
     }
     
     .card-thumbnail {
-        height: 160px;
+        height: 170px;
+    }
+}
+
+/* Tablet (768px to 991px) */
+@media (min-width: 768px) and (max-width: 991px) {
+    .container {
+        padding: 20px;
     }
     
     .header {
         padding: 12px 20px;
-        gap: 20px;
+        flex-wrap: nowrap;
     }
     
-    .search-section {
-        max-width: 500px;
+    .logo-full {
+        display: none;
     }
     
-    .logo-text {
-        font-size: 16px;
-    }
-}
-
-/* Laptop (900px to 1023px) */
-@media (min-width: 900px) and (max-width: 1023px) {
-    .container {
-        padding: 24px;
+    .logo-short {
+        display: inline;
     }
     
     .content-grid {
-        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
         gap: 20px;
     }
     
@@ -1628,60 +1615,69 @@ body {
         height: 150px;
     }
     
-    .header {
-        padding: 12px 16px;
-        gap: 16px;
-    }
-    
-    .search-section {
-        max-width: 400px;
-    }
-    
-    .logo-text {
-        font-size: 15px;
-    }
-    
     .development-header {
-        flex-direction: column;
-        text-align: center;
         gap: 20px;
     }
     
-    .development-content h2 {
-        font-size: 24px;
+    .hero {
+        padding: 40px 30px;
+    }
+    
+    .hero h1 {
+        font-size: 28px;
+    }
+    
+    .hero p {
+        font-size: 18px;
     }
 }
 
-/* Tablet (768px to 899px) */
-@media (max-width: 899px) {
+/* Mobile (481px to 767px) */
+@media (max-width: 767px) {
     .container {
-        padding: 20px;
+        padding: 16px;
         max-width: 100%;
     }
     
     .header {
         flex-wrap: wrap;
-        height: auto;
-        min-height: var(--header-height);
-        padding: 12px 16px;
         gap: 12px;
+        padding: 10px 16px;
+        min-height: 64px;
     }
     
-    .logo-section {
+    .logo {
         order: 1;
-        flex: 0 0 auto;
     }
     
-    .search-section {
+    .logo-full {
+        display: none;
+    }
+    
+    .logo-short {
+        display: inline;
+        font-size: 16px;
+    }
+    
+    .logo-icon {
+        width: 36px;
+        height: 36px;
+    }
+    
+    .search-container {
         order: 3;
         flex: 0 0 100%;
         max-width: 100%;
-        margin: 12px 0 0 0;
+        margin-top: 0;
     }
     
-    .profile-section {
+    .header-actions {
         order: 2;
-        flex: 0 0 auto;
+    }
+    
+    .profile-btn {
+        width: 40px;
+        height: 40px;
     }
     
     .search-filters-dropdown {
@@ -1743,22 +1739,42 @@ body {
     
     .content-grid {
         grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-        gap: 15px;
+        gap: 16px;
     }
     
     .card-thumbnail {
-        height: 120px;
+        height: 130px;
+    }
+    
+    .card-content {
+        padding: 16px;
+    }
+    
+    .card-title {
+        font-size: 14px;
+        min-height: 36px;
+    }
+    
+    .creator-btn {
+        padding: 6px 12px;
+        font-size: 11px;
+    }
+    
+    .card-stats {
+        font-size: 11px;
+        gap: 12px;
     }
     
     .section-header {
         flex-direction: column;
         align-items: flex-start;
-        gap: 15px;
+        gap: 12px;
     }
     
     .trending-controls {
         width: 100%;
         justify-content: space-between;
+        gap: 12px;
     }
     
     .time-filter {
@@ -1767,6 +1783,12 @@ body {
     
     .see-all-btn {
         order: 1;
+        padding: 8px 16px;
+        font-size: 13px;
+    }
+    
+    .section-title {
+        font-size: 20px;
     }
     
     .footer-links {
@@ -1798,49 +1820,48 @@ body {
     
     /* Adjust toast position for mobile */
     .toast {
-        left: 20px;
-        right: 20px;
+        left: 16px;
+        right: 16px;
         bottom: 80px;
         max-width: none;
+        text-align: center;
     }
 }
 
-/* Mobile (480px to 767px) */
-@media (max-width: 767px) {
+/* Small Mobile (480px and below) */
+@media (max-width: 480px) {
     .content-grid {
         grid-template-columns: repeat(2, 1fr);
         gap: 12px;
     }
     
     .card-thumbnail {
-        height: 100px;
+        height: 110px;
+    }
+    
+    .card-content {
+        padding: 12px;
     }
     
     .card-title {
-        font-size: 14px;
-        min-height: 36px;
+        font-size: 13px;
+        min-height: 32px;
     }
     
     .creator-btn {
-        padding: 6px 10px;
-        font-size: 11px;
+        padding: 5px 10px;
+        font-size: 10px;
+        margin-bottom: 8px;
     }
     
     .card-stats {
-        font-size: 11px;
-    }
-    
-    .logo-text {
-        font-size: 14px;
-    }
-    
-    .logo-icon {
-        width: 36px;
-        height: 36px;
+        font-size: 10px;
+        gap: 8px;
+        flex-wrap: wrap;
     }
     
     .development-content h2 {
-        font-size: 18px;
+        font-size: 20px;
     }
     
     .development-message {
@@ -1848,15 +1869,15 @@ body {
     }
     
     .hero h1 {
-        font-size: 20px;
+        font-size: 22px;
     }
     
     .hero p {
-        font-size: 14px;
+        font-size: 15px;
     }
     
     .section-title {
-        font-size: 20px;
+        font-size: 18px;
     }
     
     .footer-links {
@@ -1870,57 +1891,8 @@ body {
     }
 }
 
-/* Small Mobile (480px and below) */
-@media (max-width: 480px) {
-    .content-grid {
-        grid-template-columns: repeat(2, 1fr);
-        gap: 10px;
-    }
-    
-    .card-thumbnail {
-        height: 90px;
-    }
-    
-    .card-content {
-        padding: 12px;
-    }
-    
-    .card-title {
-        font-size: 13px;
-        min-height: 32px;
-        margin-bottom: 8px;
-    }
-    
-    .creator-btn {
-        padding: 5px 8px;
-        font-size: 10px;
-    }
-    
-    .card-stats {
-        font-size: 10px;
-        gap: 8px;
-    }
-    
-    .logo {
-        gap: 8px;
-    }
-    
-    .logo-icon {
-        width: 32px;
-        height: 32px;
-    }
-    
-    .logo-text {
-        font-size: 13px;
-    }
-    
-    .header {
-        padding: 10px 12px;
-    }
-}
-
 /* ==========================================================================
-   19. PERFORMANCE OPTIMIZATIONS
+   18. PERFORMANCE OPTIMIZATIONS
    ========================================================================== */
 
 /* Image loading states */
@@ -1960,7 +1932,7 @@ img {
 }
 
 /* ==========================================================================
-   20. BROWSER-SPECIFIC FIXES
+   19. BROWSER-SPECIFIC FIXES
    ========================================================================== */
 
 /* Safari specific fixes */
@@ -1999,7 +1971,7 @@ img {
 }
 
 /* ==========================================================================
-   21. UTILITY CLASSES
+   20. UTILITY CLASSES
    ========================================================================== */
 
 /* Text Utilities */
