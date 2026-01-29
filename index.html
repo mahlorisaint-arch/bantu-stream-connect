@@ -19,19 +19,11 @@
     <!-- Supabase JS SDK -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
-    <!-- Meta tags for better performance -->
+    <!-- Meta tags -->
     <meta name="description" content="Bantu Stream Connect - Discover amazing content from creators across Africa">
     <meta name="theme-color" content="#0A0E12">
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎬</text></svg>">
-    
-    <!-- Preload critical resources -->
-    <link rel="preload" href="css/styles.css" as="style">
-    <link rel="preload" href="js/home-feed.js" as="script">
 </head>
 <body>
-    <!-- Skip to content for accessibility -->
-    <a href="#main-content" class="skip-to-content sr-only">Skip to main content</a>
-
     <!-- Loading Screen -->
     <div id="loading" class="loading-screen">
         <div class="spinner"></div>
@@ -48,18 +40,18 @@
 
     <!-- Main Content -->
     <div id="app" style="display: none;">
-        <!-- Header with Enhanced Search - COMPLETELY REWRITTEN -->
+        <!-- Simple Header -->
         <header class="header">
             <!-- Logo Section -->
             <div class="logo-section">
                 <div class="logo" onclick="window.location.href='index.html'">
                     <div class="logo-icon">
-                        <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
                             <rect width="40" height="40" rx="8" fill="#0F172A"/>
-                            <path d="M8 20 L12 16 L16 22 L20 18 L24 24 L28 20 L32 26" stroke="url(#pulse-gradient)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M8 20 L12 16 L16 22 L20 18 L24 24 L28 20 L32 26" stroke="url(#pulse-gradient)" stroke-width="3"/>
                             <circle cx="32" cy="26" r="3" fill="#F59E0B"/>
                             <defs>
-                                <linearGradient id="pulse-gradient" x1="8" y1="20" x2="32" y2="26" gradientUnits="userSpaceOnUse">
+                                <linearGradient id="pulse-gradient" x1="8" y1="20" x2="32" y2="26">
                                     <stop stop-color="#1D4ED8"/>
                                     <stop offset="1" stop-color="#F59E0B"/>
                                 </linearGradient>
@@ -71,88 +63,29 @@
             </div>
             
             <!-- Search Section -->
-            <div class="search-section" id="search-container">
+            <div class="search-section">
                 <div class="search-bar">
                     <i class="fas fa-search search-icon"></i>
                     <input 
                         type="text" 
                         id="global-search" 
-                        placeholder="Search content, creators, categories..." 
+                        placeholder="Search content..." 
                         aria-label="Search"
                     >
                     <div class="search-actions">
-                        <button class="search-filter-btn" id="filter-btn" aria-label="Search filters">
+                        <button class="search-filter-btn" id="filter-btn">
                             <i class="fas fa-sliders-h"></i>
                         </button>
-                        <button class="search-clear-btn" id="clear-search" aria-label="Clear search">
+                        <button class="search-clear-btn" id="clear-search">
                             <i class="fas fa-times"></i>
                         </button>
-                    </div>
-                </div>
-                
-                <!-- Search Filters Dropdown -->
-                <div class="search-filters-dropdown" id="search-filters">
-                    <div class="filter-section">
-                        <label for="content-type-filter">Content Type</label>
-                        <select id="content-type-filter">
-                            <option value="all">All Content</option>
-                            <option value="video">Videos</option>
-                            <option value="audio">Audio</option>
-                            <option value="live">Live Streams</option>
-                        </select>
-                    </div>
-                    
-                    <div class="filter-section">
-                        <label for="genre-filter">Genre</label>
-                        <select id="genre-filter">
-                            <option value="all">All Genres</option>
-                            <!-- Will be populated dynamically -->
-                        </select>
-                    </div>
-                    
-                    <div class="filter-section">
-                        <label for="sort-filter">Sort By</label>
-                        <select id="sort-filter">
-                            <option value="relevance">Relevance</option>
-                            <option value="newest">Newest</option>
-                            <option value="popular">Most Popular</option>
-                            <option value="trending">Trending</option>
-                        </select>
-                    </div>
-                    
-                    <div class="filter-section">
-                        <label for="duration-filter">Duration</label>
-                        <select id="duration-filter">
-                            <option value="all">Any Duration</option>
-                            <option value="short">Short (&lt; 5 min)</option>
-                            <option value="medium">Medium (5-20 min)</option>
-                            <option value="long">Long (&gt; 20 min)</option>
-                        </select>
-                    </div>
-                    
-                    <div class="filter-actions">
-                        <button id="apply-filters" class="filter-btn apply">Apply Filters</button>
-                        <button id="reset-filters" class="filter-btn reset">Reset All</button>
-                    </div>
-                </div>
-                
-                <!-- Search Results Dropdown -->
-                <div class="search-results-dropdown" id="search-results">
-                    <div class="search-results-header">
-                        <h4>Search Results</h4>
-                        <button id="close-search" class="close-btn" aria-label="Close search">
-                            <i class="fas fa-times"></i>
-                        </button>
-                    </div>
-                    <div class="search-results-content" id="search-results-content">
-                        <!-- Results will be loaded here -->
                     </div>
                 </div>
             </div>
             
             <!-- Profile Section -->
             <div class="profile-section">
-                <button id="profile-btn" class="profile-btn" aria-label="Profile">
+                <button id="profile-btn" class="profile-btn">
                     <div class="profile-placeholder">
                         <i class="fas fa-user"></i>
                     </div>
@@ -161,8 +94,8 @@
         </header>
 
         <!-- Main Content -->
-        <main id="main-content" class="container">
-            <!-- Home-Feed Development Window -->
+        <main class="container">
+            <!-- Development Card -->
             <div class="development-card">
                 <div class="development-header">
                     <div class="pulse-icon-container" onclick="window.location.href='pulse-feed.html'">
@@ -185,7 +118,6 @@
                         <h2>We're Building Something Powerful</h2>
                         <div class="development-message">
                             Bantu Stream Connect is currently in active development.<br><br>
-                            Our web experience is taking shape, and our mobile app is in its final stages — preparing for public launch following our closed testing period on Google Play.<br><br>
                             While we build, you can explore what's already live:<br>
                             <strong>Bantu Connect Pulse</strong> — a new space to share moments, ideas, and creativity.
                         </div>
@@ -204,36 +136,26 @@
                 <button id="browse-all-btn" class="hero-btn">Browse All Content</button>
             </section>
 
-            <!-- Content Sections Container -->
+            <!-- Content Sections -->
             <div id="content-sections">
-                <!-- Recommended For You (Conditional) -->
-                <section id="recommended-section" class="section" style="display: none;">
+                <!-- Recommended For You -->
+                <section id="recommended-section" class="section">
                     <div class="section-header">
                         <h2 class="section-title">
                             <i class="fas fa-star"></i> Recommended For You
                         </h2>
-                        <button class="see-all-btn" onclick="window.location.href='recommended.html'">See All</button>
                     </div>
                     <div class="content-grid" id="recommended-content">
                         <!-- Recommended content will be loaded here -->
                     </div>
                 </section>
 
-                <!-- Trending Now (Real-time) -->
+                <!-- Trending Now -->
                 <section class="section trending-section">
                     <div class="section-header">
                         <h2 class="section-title trending-title">
                             <i class="fas fa-fire"></i> Trending Now
-                            <span class="trending-badge">Live</span>
                         </h2>
-                        <div class="trending-controls">
-                            <div class="time-filter">
-                                <button class="time-btn active" data-hours="24">Today</button>
-                                <button class="time-btn" data-hours="168">This Week</button>
-                                <button class="time-btn" data-hours="720">This Month</button>
-                            </div>
-                            <button class="see-all-btn" onclick="window.location.href='trending.html'">See All</button>
-                        </div>
                     </div>
                     <div class="content-grid" id="trending-content">
                         <!-- Trending content will be loaded here -->
@@ -250,19 +172,11 @@
                         <!-- Latest content will be loaded here -->
                     </div>
                 </section>
-
-                <!-- Infinite Scroll Sentinel -->
-                <div id="scroll-sentinel" class="scroll-sentinel">
-                    <div class="sentinel-content">
-                        <div class="sentinel-spinner"></div>
-                        <p>Loading more content...</p>
-                    </div>
-                </div>
             </div>
 
             <!-- Browse All CTA -->
             <div class="browse-all-cta">
-                <button id="browse-all-cta" class="cta-button">
+                <button onclick="window.location.href='content-library.html'" class="cta-button">
                     <i class="fas fa-compass"></i>
                     Explore More Content
                     <i class="fas fa-arrow-right"></i>
@@ -274,21 +188,11 @@
         <footer class="footer">
             <p>Bantu Stream Connect © 2025 • Built in South Africa</p>
             <div class="footer-links">
-                <a href="data-deletion-request.html">Data Deletion Request</a>
-                <a href="delete-account.html">Delete Account</a>
-                <a href="empowerment.html">Empowerment</a>
-                <a href="blog.html">Blog</a>
                 <a href="privacy-policy.html">Privacy Policy</a>
-                <a href="thank-you.html">Thank You</a>
-            </div>
-            <div class="footer-contact">
-                Need help? Contact us at <a href="mailto:support@bantustreamconnect.com">support@bantustreamconnect.com</a>
+                <a href="mailto:support@bantustreamconnect.com">Contact Support</a>
             </div>
         </footer>
     </div>
-
-    <!-- Toast Container -->
-    <div id="toast-container"></div>
 
     <!-- Supabase Configuration -->
     <script>
@@ -297,6 +201,6 @@
     </script>
     
     <!-- Main JavaScript -->
-    <script src="js/home-feed.js" defer></script>
+    <script src="js/home-feed.js"></script>
 </body>
 </html>
