@@ -1,6 +1,6 @@
 // ==========================================================================
 // BANTU STREAM CONNECT - HOME FEED ENHANCED
-// Version: 3.1 (Fixed Database Queries + Responsive)
+// Version: 3.2 (Fixed Recommendations, Thumbnails, and Authentication)
 // ==========================================================================
 
 // Global state
@@ -33,10 +33,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Cache DOM elements
         cacheElements();
         
-        // Initialize Supabase
+        // Initialize Supabase with proper auth persistence
         await initializeSupabase();
         
-        // Check authentication
+        // Check authentication FIRST (before any content loading)
         await checkAuth();
         
         // Load genres for filters
@@ -96,36 +96,128 @@ function cacheElements() {
     };
 }
 
-// Initialize Supabase client
+// Initialize Supabase client with proper auth persistence
 async function initializeSupabase() {
     if (!window.supabase || !window.SUPABASE_URL || !window.SUPABASE_ANON_KEY) {
         throw new Error('Supabase configuration is missing');
     }
     
+    // Initialize with auth persistence for better cross-device auth
     window.supabaseClient = supabase.createClient(
         window.SUPABASE_URL, 
-        window.SUPABASE_ANON_KEY
+        window.SUPABASE_ANON_KEY,
+        {
+            auth: {
+                persistSession: true,
+                autoRefreshToken: true,
+                detectSessionInUrl: true,
+                storage: localStorage,
+                storageKey: 'sb-auth-token'
+            }
+        }
     );
     
-    console.log('✅ Supabase client initialized');
+    console.log('✅ Supabase client initialized with auth persistence');
 }
 
-// Check authentication
+// Check authentication with improved cross-device support
 async function checkAuth() {
     try {
-        const { data: { session } } = await supabaseClient.auth.getSession();
+        // First check if we have a stored session
+        const storedSession = localStorage.getItem('sb-auth-token');
+        console.log('📱 Auth check - Stored session exists:', !!storedSession);
+        
+        // Get current session
+        const { data: { session }, error } = await supabaseClient.auth.getSession();
+        
+        if (error) {
+            console.error('Auth session error:', error);
+            // Clear invalid session
+            localStorage.removeItem('sb-auth-token');
+            setupProfileButtonForLogin();
+            return;
+        }
         
         if (session) {
             currentUser = session.user;
-            console.log('✅ User authenticated:', currentUser.email);
+            console.log('✅ User authenticated via session:', currentUser.email);
+            
+            // Verify the user exists in our database
+            const { data: userProfile, error: profileError } = await supabaseClient
+                .from('user_profiles')
+                .select('*')
+                .eq('id', currentUser.id)
+                .maybeSingle();
+            
+            if (profileError || !userProfile) {
+                console.log('⚠️ User profile not found, creating...');
+                // Create user profile if it doesn't exist
+                await createUserProfile(currentUser);
+            }
+            
             updateProfileButton();
             showToast(`Welcome back, ${currentUser.email}!`, 'success');
+            
         } else {
             console.log('👤 User not authenticated (public mode)');
             setupProfileButtonForLogin();
+            
+            // Check if there's a session in the URL (for OAuth redirects)
+            const urlParams = new URLSearchParams(window.location.search);
+            const accessToken = urlParams.get('access_token');
+            const refreshToken = urlParams.get('refresh_token');
+            
+            if (accessToken && refreshToken) {
+                console.log('🔄 OAuth redirect detected, attempting to restore session...');
+                try {
+                    const { data: { session: oauthSession }, error: oauthError } = 
+                        await supabaseClient.auth.setSession({
+                            access_token: accessToken,
+                            refresh_token: refreshToken
+                        });
+                    
+                    if (!oauthError && oauthSession) {
+                        currentUser = oauthSession.user;
+                        console.log('✅ OAuth session restored:', currentUser.email);
+                        updateProfileButton();
+                        showToast(`Welcome, ${currentUser.email}!`, 'success');
+                        
+                        // Clean URL
+                        window.history.replaceState({}, document.title, window.location.pathname);
+                    }
+                } catch (oauthError) {
+                    console.error('OAuth session restore failed:', oauthError);
+                }
+            }
         }
+        
     } catch (error) {
         console.error('Auth check error:', error);
+        setupProfileButtonForLogin();
+    }
+}
+
+// Create user profile if it doesn't exist
+async function createUserProfile(user) {
+    try {
+        const { error } = await supabaseClient
+            .from('user_profiles')
+            .upsert({
+                id: user.id,
+                email: user.email,
+                full_name: user.user_metadata?.full_name || user.email.split('@')[0],
+                username: user.user_metadata?.user_name || user.email.split('@')[0],
+                role: 'creator',
+                created_at: new Date().toISOString()
+            });
+        
+        if (error) {
+            console.error('Error creating user profile:', error);
+        } else {
+            console.log('✅ User profile created');
+        }
+    } catch (error) {
+        console.error('Failed to create user profile:', error);
     }
 }
 
@@ -150,7 +242,7 @@ function setupProfileButtonForLogin() {
     if (!elements.profileBtn) return;
     
     elements.profileBtn.onclick = () => {
-        window.location.href = 'login.html?redirect=index.html';
+        window.location.href = 'login.html?redirect=' + encodeURIComponent(window.location.href);
     };
 }
 
@@ -164,7 +256,7 @@ function getInitials(email) {
 // Load genres for filters
 async function loadGenres() {
     try {
-        // Try to get genres from database - FIXED: Use correct table name
+        // Try to get genres from database
         const { data, error } = await supabaseClient
             .from('Content')
             .select('genre')
@@ -277,18 +369,44 @@ function setupEventListeners() {
         }
     });
     
-    // Listen for auth changes
-    supabaseClient.auth.onAuthStateChange((event, session) => {
-        if (event === 'SIGNED_IN') {
+    // Listen for auth changes with better error handling
+    supabaseClient.auth.onAuthStateChange(async (event, session) => {
+        console.log('Auth state changed:', event);
+        
+        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
             currentUser = session.user;
+            console.log('✅ User authenticated via state change:', currentUser.email);
+            
+            // Update UI
             updateProfileButton();
-            loadRecommendedContent();
-            showToast(`Welcome back, ${session.user.email}!`, 'success');
+            
+            // Load recommendations for logged-in user
+            await loadRecommendedContent();
+            
+            // Show welcome message (but not on initial page load)
+            if (event === 'SIGNED_IN') {
+                showToast(`Welcome back, ${session.user.email}!`, 'success');
+            }
+            
         } else if (event === 'SIGNED_OUT') {
             currentUser = null;
+            console.log('User signed out');
             setupProfileButtonForLogin();
+            
+            // Hide recommendations section
             if (elements.recommendedSection) {
                 elements.recommendedSection.style.display = 'none';
+            }
+            
+            // Clear any user-specific data
+            recommendedData = [];
+            if (elements.recommendedContent) {
+                elements.recommendedContent.innerHTML = `
+                    <div class="recommended-fallback">
+                        <i class="fas fa-sign-in-alt"></i>
+                        <p>Sign in to get personalized recommendations!</p>
+                    </div>
+                `;
             }
         }
     });
@@ -321,12 +439,11 @@ function handleSearchFocus() {
     }
 }
 
-// Perform search - FIXED: Use correct table relationships
+// Perform search
 async function performSearch(query) {
     try {
         showSearchLoading();
         
-        // FIXED: Use correct join with user_profiles instead of creators
         const { data, error } = await supabaseClient
             .from('Content')
             .select(`
@@ -341,20 +458,7 @@ async function performSearch(query) {
             .eq('status', 'published')
             .limit(10);
         
-        if (error) {
-            console.error('Search query error:', error);
-            // Try alternative query without join
-            const { data: simpleData, error: simpleError } = await supabaseClient
-                .from('Content')
-                .select('*')
-                .or(`title.ilike.%${query}%,description.ilike.%${query}%,genre.ilike.%${query}%`)
-                .eq('status', 'published')
-                .limit(10);
-            
-            if (simpleError) throw simpleError;
-            displaySearchResults(simpleData, query);
-            return;
-        }
+        if (error) throw error;
         
         displaySearchResults(data, query);
         
@@ -378,19 +482,15 @@ function displaySearchResults(results, query) {
         `;
     } else {
         elements.searchResultsContent.innerHTML = results.map(item => {
-            // Get creator name from user_profiles or fallback
-            let creatorName = 'Unknown Creator';
-            if (item.user_profiles) {
-                creatorName = item.user_profiles.full_name || item.user_profiles.username || creatorName;
-            } else if (item.creator) {
-                creatorName = item.creator;
-            }
+            // Get creator info
+            const creatorInfo = getCreatorInfo(item);
+            const creatorName = creatorInfo.name;
             
             return `
             <div class="search-result-item" onclick="window.location.href='content-detail.html?id=${item.id}'">
                 <div class="search-result-thumbnail">
                     <img 
-                        src="${item.thumbnail_url || 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=100&h=60&fit=crop'}" 
+                        src="${fixThumbnailUrl(item.thumbnail_url)}" 
                         alt="${item.title}"
                         loading="lazy"
                     >
@@ -545,7 +645,7 @@ async function loadInitialContent() {
     }
 }
 
-// Load main content with pagination - FIXED: Use correct table relationships
+// Load main content with pagination
 async function loadContent() {
     if (isLoading || !hasMoreContent) return;
     
@@ -556,7 +656,6 @@ async function loadContent() {
         const from = (currentPage - 1) * limit;
         const to = from + limit - 1;
         
-        // FIXED: Use user_profiles instead of creators
         let query = supabaseClient
             .from('Content')
             .select(`
@@ -645,17 +744,23 @@ async function loadContent() {
     }
 }
 
-// Load trending content - FIXED: Use correct table relationships
+// Load trending content
 async function loadTrendingContent() {
     try {
         // Calculate timestamp for trending period
         const trendingSince = new Date();
         trendingSince.setHours(trendingSince.getHours() - currentFilters.trendingHours);
         
-        // FIXED: Use simpler query without complex joins
         const { data, error } = await supabaseClient
             .from('Content')
-            .select('*')
+            .select(`
+                *,
+                user_profiles!user_id (
+                    full_name,
+                    username,
+                    avatar_url
+                )
+            `)
             .eq('status', 'published')
             .gte('created_at', trendingSince.toISOString())
             .order('views_count', { ascending: false })
@@ -663,7 +768,19 @@ async function loadTrendingContent() {
         
         if (error) {
             console.error('Trending content error:', error);
-            renderTrendingFallback();
+            // Try simple query
+            const { data: simpleData, error: simpleError } = await supabaseClient
+                .from('Content')
+                .select('*')
+                .eq('status', 'published')
+                .gte('created_at', trendingSince.toISOString())
+                .order('views_count', { ascending: false })
+                .limit(8);
+            
+            if (simpleError) throw simpleError;
+            
+            trendingData = simpleData;
+            renderTrendingContent(simpleData);
             return;
         }
         
@@ -680,10 +797,10 @@ async function loadTrendingContent() {
     }
 }
 
-// Load personalized recommendations - FIXED: Use pulse_likes table
+// Load personalized recommendations - FIXED: Show correct username
 async function loadRecommendedContent() {
+    // Show recommended section only for logged-in users
     if (!currentUser) {
-        // Hide recommended section for non-logged in users
         if (elements.recommendedSection) {
             elements.recommendedSection.style.display = 'none';
         }
@@ -696,60 +813,62 @@ async function loadRecommendedContent() {
             elements.recommendedSection.style.display = 'block';
         }
         
-        // FIXED: Use pulse_likes table instead of likes
+        console.log('🎯 Loading recommendations for user:', currentUser.id);
+        
+        // Try to get user's liked content from pulse_likes
         const { data: userLikes, error: likesError } = await supabaseClient
             .from('pulse_likes')
             .select('content_id')
             .eq('user_id', currentUser.id)
             .limit(10);
         
-        if (likesError) {
-            console.log('pulse_likes query error:', likesError);
-            // Fallback to trending content
-            const { data: trendingData } = await supabaseClient
-                .from('Content')
-                .select('*')
-                .eq('status', 'published')
-                .order('views_count', { ascending: false })
-                .limit(6);
-            
-            if (trendingData && trendingData.length > 0) {
-                recommendedData = trendingData;
-                renderRecommendedContent(trendingData);
-            } else {
-                renderRecommendedFallback();
-            }
-            return;
-        }
-        
         let recommendedQuery;
         
-        if (userLikes && userLikes.length > 0) {
+        if (!likesError && userLikes && userLikes.length > 0) {
             // Get genres from liked content
-            const { data: likedContent } = await supabaseClient
+            const likedContentIds = userLikes.map(like => like.content_id);
+            const { data: likedContent, error: likedError } = await supabaseClient
                 .from('Content')
                 .select('genre')
-                .in('id', userLikes.map(like => like.content_id));
+                .in('id', likedContentIds);
             
-            const userGenres = [...new Set(likedContent.map(item => item.genre).filter(Boolean))];
-            
-            if (userGenres.length > 0) {
-                // Get content from preferred genres
-                recommendedQuery = supabaseClient
-                    .from('Content')
-                    .select('*')
-                    .eq('status', 'published')
-                    .in('genre', userGenres)
-                    .order('views_count', { ascending: false })
-                    .limit(6);
+            if (!likedError && likedContent && likedContent.length > 0) {
+                const userGenres = [...new Set(likedContent.map(item => item.genre).filter(Boolean))];
+                
+                if (userGenres.length > 0) {
+                    // Get content from preferred genres (excluding already liked content)
+                    recommendedQuery = supabaseClient
+                        .from('Content')
+                        .select(`
+                            *,
+                            user_profiles!user_id (
+                                full_name,
+                                username,
+                                avatar_url
+                            )
+                        `)
+                        .eq('status', 'published')
+                        .in('genre', userGenres)
+                        .not('id', 'in', `(${likedContentIds.join(',')})`)
+                        .order('views_count', { ascending: false })
+                        .limit(6);
+                }
             }
         }
         
-        // Fallback: Get trending content
+        // Fallback: Get trending content if no recommendations based on likes
         if (!recommendedQuery) {
+            console.log('Using trending content as fallback recommendations');
             recommendedQuery = supabaseClient
                 .from('Content')
-                .select('*')
+                .select(`
+                    *,
+                    user_profiles!user_id (
+                        full_name,
+                        username,
+                        avatar_url
+                    )
+                `)
                 .eq('status', 'published')
                 .order('views_count', { ascending: false })
                 .limit(6);
@@ -757,7 +876,11 @@ async function loadRecommendedContent() {
         
         const { data, error } = await recommendedQuery;
         
-        if (error) throw error;
+        if (error) {
+            console.error('Recommendations query error:', error);
+            renderRecommendedFallback();
+            return;
+        }
         
         if (data && data.length > 0) {
             recommendedData = data;
@@ -846,7 +969,7 @@ function hideScrollSentinel() {
 function renderLatestContent(content) {
     if (!elements.latestContent) return;
     
-    elements.latestContent.innerHTML = content.map(item => renderContentCard(item)).join('');
+    elements.latestContent.innerHTML = content.map(item => renderContentCard(item, 'latest')).join('');
     
     // Add click handlers
     setTimeout(() => {
@@ -864,7 +987,7 @@ function renderLatestContent(content) {
 function appendLatestContent(content) {
     if (!elements.latestContent) return;
     
-    const newCards = content.map(item => renderContentCard(item)).join('');
+    const newCards = content.map(item => renderContentCard(item, 'latest')).join('');
     elements.latestContent.insertAdjacentHTML('beforeend', newCards);
     
     // Add click handlers for new cards
@@ -886,7 +1009,7 @@ function appendLatestContent(content) {
 function renderTrendingContent(content) {
     if (!elements.trendingContent) return;
     
-    elements.trendingContent.innerHTML = content.map(item => renderContentCard(item, true)).join('');
+    elements.trendingContent.innerHTML = content.map(item => renderContentCard(item, 'trending')).join('');
     
     // Add click handlers
     setTimeout(() => {
@@ -907,7 +1030,7 @@ function renderTrendingFallback() {
     elements.trendingContent.innerHTML = `
         <div class="trending-fallback">
             <i class="fas fa-chart-line"></i>
-            <p>Trending data will appear here</p>
+            <p>No trending content yet</p>
             <p style="font-size: 12px; margin-top: 10px; opacity: 0.7;">Check back later for trending content</p>
         </div>
     `;
@@ -917,7 +1040,7 @@ function renderTrendingFallback() {
 function renderRecommendedContent(content) {
     if (!elements.recommendedContent) return;
     
-    elements.recommendedContent.innerHTML = content.map(item => renderContentCard(item)).join('');
+    elements.recommendedContent.innerHTML = content.map(item => renderContentCard(item, 'recommended')).join('');
     
     // Add click handlers
     setTimeout(() => {
@@ -939,7 +1062,7 @@ function renderRecommendedFallback() {
         <div class="recommended-fallback">
             <i class="fas fa-star"></i>
             <p>Like some content to get personalized recommendations!</p>
-            <p style="font-size: 12px; margin-top: 10px; opacity: 0.7;">Sign in and engage with content to see recommendations</p>
+            <p style="font-size: 12px; margin-top: 10px; opacity: 0.7;">Engage with content to see recommendations</p>
         </div>
     `;
 }
@@ -957,38 +1080,77 @@ function renderEmptyState(message) {
     `;
 }
 
-// Render content card with lazy loading - FIXED: Use correct data structure
-function renderContentCard(item, isTrending = false) {
-    // Optimize thumbnail with query params
-    const thumbnail = item.thumbnail_url 
-        ? `${item.thumbnail_url}?w=400&h=225&fit=crop&auto=format&q=80`
-        : 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop&auto=format&q=80';
+// Get creator info from content item
+function getCreatorInfo(item) {
+    let creatorName = 'Creator';
+    let creatorUsername = 'creator';
+    let creatorId = item.user_id;
+    
+    // Check user_profiles first
+    if (item.user_profiles) {
+        creatorName = item.user_profiles.full_name || item.user_profiles.username || creatorName;
+        creatorUsername = item.user_profiles.username || 'creator';
+    }
+    
+    // Fallback to creator field
+    if (item.creator && creatorName === 'Creator') {
+        creatorName = item.creator;
+        creatorUsername = item.creator.toLowerCase().replace(/\s+/g, '_');
+    }
+    
+    return {
+        name: creatorName,
+        username: creatorUsername,
+        id: creatorId
+    };
+}
+
+// Fix thumbnail URL
+function fixThumbnailUrl(url) {
+    if (!url) {
+        return 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop&auto=format&q=80';
+    }
+    
+    // If it's already a full URL, return it
+    if (url.startsWith('http')) {
+        return url;
+    }
+    
+    // If it's a Supabase storage path, construct the full URL
+    if (url.startsWith('storage/')) {
+        return `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/${url}`;
+    }
+    
+    // Add query parameters for optimization
+    const baseUrl = url.split('?')[0];
+    return `${baseUrl}?w=400&h=225&fit=crop&auto=format&q=80`;
+}
+
+// Render content card with proper creator info and thumbnails
+function renderContentCard(item, section = 'latest') {
+    // Get creator info
+    const creatorInfo = getCreatorInfo(item);
+    
+    // Fix thumbnail URL
+    const thumbnail = fixThumbnailUrl(item.thumbnail_url);
     
     // Truncate title
     const displayTitle = truncateText(item.title, 50);
     
-    // Creator info - FIXED: Use correct property names
-    let creatorName = 'Creator';
-    let creatorId = item.user_id;
-    
-    if (item.user_profiles) {
-        creatorName = item.user_profiles.full_name || item.user_profiles.username || creatorName;
-    } else if (item.creator) {
-        creatorName = item.creator;
-    }
-    
-    if (item.creator_id) {
-        creatorId = item.creator_id;
-    }
-    
-    const displayCreator = `@${creatorName}`;
+    // Creator display text
+    const displayCreator = `@${creatorInfo.username}`;
     
     // View count
     const viewCount = item.actual_views || item.views_count || 0;
     const likeCount = item.likes_count || 0;
     
-    // Trending badge
-    const trendingBadge = isTrending ? '<span class="trending-badge-small">🔥 Trending</span>' : '';
+    // Section-specific badges
+    let badge = '';
+    if (section === 'trending') {
+        badge = '<span class="trending-badge-small">🔥 Trending</span>';
+    } else if (section === 'recommended') {
+        badge = '<span class="trending-badge-small" style="background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));">⭐ For You</span>';
+    }
     
     return `
         <div class="content-card" data-content-id="${item.id}">
@@ -1002,7 +1164,7 @@ function renderContentCard(item, isTrending = false) {
                     onerror="this.src='https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop'"
                 >
                 <div class="thumbnail-overlay"></div>
-                ${trendingBadge}
+                ${badge}
                 <button class="share-btn" aria-label="Share" onclick="shareContent(event, ${item.id})">
                     <i class="fas fa-share-alt"></i>
                 </button>
@@ -1011,7 +1173,7 @@ function renderContentCard(item, isTrending = false) {
                 <h3 class="card-title" title="${item.title}">
                     ${displayTitle}
                 </h3>
-                <button class="creator-btn" onclick="viewCreator(event, ${item.id}, '${creatorId}', '${(creatorName).replace(/'/g, "\\'")}')">
+                <button class="creator-btn" onclick="viewCreator(event, ${item.id}, '${creatorInfo.id}', '${(creatorInfo.name).replace(/'/g, "\\'")}')">
                     <i class="fas fa-user"></i>
                     ${truncateText(displayCreator, 20)}
                 </button>
@@ -1065,7 +1227,9 @@ function viewCreator(event, contentId, creatorId, creatorName) {
 function showApp() {
     if (elements.app && elements.loading) {
         elements.app.style.display = 'block';
-        elements.loading.style.display = 'none';
+        setTimeout(() => {
+            elements.loading.style.display = 'none';
+        }, 500);
     }
 }
 
@@ -1150,35 +1314,43 @@ function formatDuration(seconds) {
 
 // Initialize lazy loading for images
 function initLazyLoading() {
-    if ('loading' in HTMLImageElement.prototype) {
-        // Browser supports native lazy loading
-        const images = document.querySelectorAll('img[loading="lazy"]');
-        images.forEach(img => {
-            if (img.dataset.src) {
-                img.src = img.dataset.src;
-            }
-        });
-    } else {
-        // Fallback to IntersectionObserver
-        const observer = new IntersectionObserver((entries) => {
+    const images = document.querySelectorAll('.lazy-image');
+    
+    if ('IntersectionObserver' in window) {
+        const imageObserver = new IntersectionObserver((entries) => {
             entries.forEach(entry => {
                 if (entry.isIntersecting) {
                     const img = entry.target;
-                    if (img.dataset.src) {
-                        img.src = img.dataset.src;
-                    }
-                    observer.unobserve(img);
+                    img.src = img.dataset.src;
+                    img.classList.add('loaded');
+                    imageObserver.unobserve(img);
                 }
             });
         });
         
-        const images = document.querySelectorAll('.lazy-image');
-        images.forEach(img => observer.observe(img));
+        images.forEach(img => imageObserver.observe(img));
+    } else {
+        // Fallback for older browsers
+        images.forEach(img => {
+            img.src = img.dataset.src;
+            img.classList.add('loaded');
+        });
     }
 }
 
 // Initialize lazy loading when DOM is ready
-document.addEventListener('DOMContentLoaded', initLazyLoading);
+document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(initLazyLoading, 1000); // Delay slightly to ensure content is loaded
+});
+
+// Force refresh auth state (can be called from console if needed)
+window.refreshAuth = async function() {
+    console.log('🔄 Manually refreshing auth...');
+    await checkAuth();
+    if (currentUser) {
+        await loadRecommendedContent();
+    }
+};
 
 // Export functions for global access
 window.shareContent = shareContent;
