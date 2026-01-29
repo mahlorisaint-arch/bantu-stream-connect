@@ -1,6 +1,6 @@
 // ==========================================================================
 // BANTU STREAM CONNECT - HOME FEED ENHANCED
-// Version: 3.1 (Fixed Database Queries & Enhanced Responsive Design)
+// Version: 3.2 (Fixed Database Queries & Header Layout)
 // ==========================================================================
 
 // Global state
@@ -321,27 +321,14 @@ function handleSearchFocus() {
     }
 }
 
-// Perform search
+// Perform search - FIXED: Simplified query without problematic joins
 async function performSearch(query) {
     try {
         showSearchLoading();
         
-        // FIXED: Correct column name - use username instead of display_name
         const { data, error } = await supabaseClient
             .from('Content')
-            .select(`
-                *,
-                creators:creator_id (
-                    username,
-                    email,
-                    profile_picture
-                ),
-                user_profiles:user_id (
-                    username,
-                    full_name,
-                    avatar_url
-                )
-            `)
+            .select('*')
             .or(`title.ilike.%${query}%,description.ilike.%${query}%,genre.ilike.%${query}%`)
             .eq('status', 'published')
             .limit(10);
@@ -370,12 +357,10 @@ function displaySearchResults(results, query) {
         `;
     } else {
         elements.searchResultsContent.innerHTML = results.map(item => {
-            // Get creator name from either creators or user_profiles
+            // Get creator name
             let creatorName = 'Unknown Creator';
-            if (item.creators && item.creators.username) {
-                creatorName = item.creators.username;
-            } else if (item.user_profiles && (item.user_profiles.full_name || item.user_profiles.username)) {
-                creatorName = item.user_profiles.full_name || item.user_profiles.username;
+            if (item.creator) {
+                creatorName = item.creator;
             }
             
             return `
@@ -539,7 +524,7 @@ async function loadInitialContent() {
     }
 }
 
-// Load main content with pagination
+// Load main content with pagination - FIXED: Simplified query
 async function loadContent() {
     if (isLoading || !hasMoreContent) return;
     
@@ -550,22 +535,10 @@ async function loadContent() {
         const from = (currentPage - 1) * limit;
         const to = from + limit - 1;
         
-        // FIXED: Use correct table name 'Content' with quotes and correct column names
+        // FIXED: Simplified query without problematic joins
         let query = supabaseClient
             .from('Content')
-            .select(`
-                *,
-                creators:creator_id (
-                    username,
-                    email,
-                    profile_picture
-                ),
-                user_profiles:user_id (
-                    username,
-                    full_name,
-                    avatar_url
-                )
-            `)
+            .select('*')
             .eq('status', 'published')
             .order('created_at', { ascending: false })
             .range(from, to);
@@ -585,15 +558,12 @@ async function loadContent() {
         
         // Process and display data
         if (data && data.length > 0) {
-            // Enrich with view counts
-            const enrichedData = await enrichContentWithViews(data);
-            
             if (currentPage === 1) {
-                contentData = enrichedData;
-                renderLatestContent(enrichedData);
+                contentData = data;
+                renderLatestContent(data);
             } else {
-                contentData = [...contentData, ...enrichedData];
-                appendLatestContent(enrichedData);
+                contentData = [...contentData, ...data];
+                appendLatestContent(data);
             }
             
             // Check if there's more content
@@ -627,14 +597,13 @@ function showFallbackContent() {
     const fallbackContent = [
         {
             id: 1,
-            title: 'Bantu Stream Connect Launch Event',
-            description: 'Highlights from our official launch',
+            title: 'Welcome to Bantu Stream Connect',
+            description: 'Your premier platform for African content',
             thumbnail_url: 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop',
             media_type: 'video',
             genre: 'Entertainment',
             created_at: new Date().toISOString(),
-            creators: { username: 'Admin' },
-            user_profiles: { full_name: 'Admin User' },
+            creator: 'Bantu Stream Connect',
             views_count: 12500,
             likes_count: 890
         },
@@ -646,8 +615,7 @@ function showFallbackContent() {
             media_type: 'video',
             genre: 'Music',
             created_at: new Date().toISOString(),
-            creators: { username: 'MusicAfrica' },
-            user_profiles: { full_name: 'Music Africa' },
+            creator: 'MusicAfrica',
             views_count: 8900,
             likes_count: 650
         },
@@ -659,20 +627,55 @@ function showFallbackContent() {
             media_type: 'video',
             genre: 'Technology',
             created_at: new Date().toISOString(),
-            creators: { username: 'TechAfrica' },
-            user_profiles: { full_name: 'Tech Africa' },
+            creator: 'TechAfrica',
             views_count: 11200,
             likes_count: 890
+        },
+        {
+            id: 4,
+            title: 'Cultural Heritage Showcase',
+            description: 'Exploring rich African traditions',
+            thumbnail_url: 'https://images.unsplash.com/photo-1547153760-18fc86324498?w=400&h=225&fit=crop',
+            media_type: 'video',
+            genre: 'Culture',
+            created_at: new Date().toISOString(),
+            creator: 'CultureHub',
+            views_count: 15600,
+            likes_count: 1200
+        },
+        {
+            id: 5,
+            title: 'Startup Success Stories',
+            description: 'African entrepreneurs making waves',
+            thumbnail_url: 'https://images.unsplash.com/photo-1556761175-b413da4baf72?w=400&h=225&fit=crop',
+            media_type: 'video',
+            genre: 'Business',
+            created_at: new Date().toISOString(),
+            creator: 'StartupAfrica',
+            views_count: 7800,
+            likes_count: 540
+        },
+        {
+            id: 6,
+            title: 'Sports Highlights',
+            description: 'Best moments from African sports',
+            thumbnail_url: 'https://images.unsplash.com/photo-1461896836934-ffe607ba8211?w=400&h=225&fit=crop',
+            media_type: 'video',
+            genre: 'Sports',
+            created_at: new Date().toISOString(),
+            creator: 'SportsNetwork',
+            views_count: 21500,
+            likes_count: 1800
         }
     ];
     
     contentData = fallbackContent;
     renderLatestContent(fallbackContent);
-    renderTrendingContent(fallbackContent);
+    renderTrendingContent(fallbackContent.slice(0, 4));
     renderRecommendedContent(fallbackContent.slice(0, 3));
 }
 
-// Load trending content
+// Load trending content - FIXED: Simplified query
 async function loadTrendingContent() {
     try {
         // Calculate timestamp for trending period
@@ -703,7 +706,7 @@ async function loadTrendingContent() {
     }
 }
 
-// Load personalized recommendations
+// Load personalized recommendations - FIXED: Simplified query
 async function loadRecommendedContent() {
     if (!currentUser) {
         // Hide recommended section for non-logged in users
@@ -719,32 +722,13 @@ async function loadRecommendedContent() {
             elements.recommendedSection.style.display = 'block';
         }
         
-        // Simple recommendation algorithm based on genres
-        let recommendedQuery;
-        
-        // First try to get content from popular genres
-        if (genres.length > 0) {
-            // Get random genres for diversity
-            const randomGenres = [...genres].sort(() => 0.5 - Math.random()).slice(0, 3);
-            
-            recommendedQuery = supabaseClient
-                .from('Content')
-                .select('*')
-                .eq('status', 'published')
-                .in('genre', randomGenres)
-                .order('views_count', { ascending: false })
-                .limit(6);
-        } else {
-            // Fallback: Get recently popular content
-            recommendedQuery = supabaseClient
-                .from('Content')
-                .select('*')
-                .eq('status', 'published')
-                .order('views_count', { ascending: false })
-                .limit(6);
-        }
-        
-        const { data, error } = await recommendedQuery;
+        // Get content with highest engagement
+        const { data, error } = await supabaseClient
+            .from('Content')
+            .select('*')
+            .eq('status', 'published')
+            .order('views_count', { ascending: false })
+            .limit(6);
         
         if (error) throw error;
         
@@ -759,17 +743,6 @@ async function loadRecommendedContent() {
         console.error('Error loading recommendations:', error);
         renderRecommendedFallback();
     }
-}
-
-// Enrich content with view counts
-async function enrichContentWithViews(contentItems) {
-    if (!contentItems || contentItems.length === 0) return contentItems;
-    
-    // Return items with existing views_count (already in the data)
-    return contentItems.map(item => ({
-        ...item,
-        actual_views: item.views_count || 0
-    }));
 }
 
 // Setup infinite scroll
@@ -930,17 +903,11 @@ function renderContentCard(item, isTrending = false) {
     const displayTitle = truncateText(item.title || 'Untitled Content', 50);
     
     // Get creator info
-    let creatorName = 'Creator';
-    if (item.creators && item.creators.username) {
-        creatorName = item.creators.username;
-    } else if (item.user_profiles && (item.user_profiles.full_name || item.user_profiles.username)) {
-        creatorName = item.user_profiles.full_name || item.user_profiles.username;
-    }
-    
+    const creatorName = item.creator || 'Creator';
     const displayCreator = `@${creatorName}`;
     
     // View count
-    const viewCount = item.actual_views || item.views_count || 0;
+    const viewCount = item.views_count || 0;
     const likeCount = item.likes_count || 0;
     
     // Trending badge
@@ -967,7 +934,7 @@ function renderContentCard(item, isTrending = false) {
                 <h3 class="card-title" title="${item.title || 'Content'}">
                     ${displayTitle}
                 </h3>
-                <button class="creator-btn" onclick="viewCreator(event, ${item.id}, '${item.creator_id || item.user_id}', '${(creatorName).replace(/'/g, "\\'")}')">
+                <button class="creator-btn" onclick="viewCreator(event, ${item.id}, '${item.creator_id || item.user_id || ''}', '${(creatorName).replace(/'/g, "\\'")}')">
                     <i class="fas fa-user"></i>
                     ${truncateText(displayCreator, 20)}
                 </button>
@@ -1009,7 +976,7 @@ function shareContent(event, contentId) {
 function viewCreator(event, contentId, creatorId, creatorName) {
     if (event) event.stopPropagation();
     
-    if (creatorId) {
+    if (creatorId && creatorId !== 'undefined') {
         window.location.href = `creator-channel.html?id=${creatorId}&name=${encodeURIComponent(creatorName)}`;
     } else {
         showToast(`Viewing ${creatorName}'s content`, 'info');
@@ -1094,13 +1061,6 @@ function formatNumber(num) {
     if (num < 1000) return num.toString();
     if (num < 1000000) return (num / 1000).toFixed(1).replace(/\.0$/, '') + 'K';
     return (num / 1000000).toFixed(1).replace(/\.0$/, '') + 'M';
-}
-
-function formatDuration(seconds) {
-    if (!seconds) return '0:00';
-    const mins = Math.floor(seconds / 60);
-    const secs = Math.floor(seconds % 60);
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
 }
 
 // Initialize lazy loading for images
