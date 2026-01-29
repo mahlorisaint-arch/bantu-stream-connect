@@ -48,27 +48,30 @@
 
     <!-- Main Content -->
     <div id="app" style="display: none;">
-        <!-- Header with Enhanced Search -->
+        <!-- Header with Enhanced Search - COMPLETELY REWRITTEN -->
         <header class="header">
-            <div class="logo" onclick="window.location.href='index.html'">
-                <div class="logo-icon">
-                    <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <rect width="40" height="40" rx="8" fill="#0F172A"/>
-                        <path d="M8 20 L12 16 L16 22 L20 18 L24 24 L28 20 L32 26" stroke="url(#pulse-gradient)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-                        <circle cx="32" cy="26" r="3" fill="#F59E0B"/>
-                        <defs>
-                            <linearGradient id="pulse-gradient" x1="8" y1="20" x2="32" y2="26" gradientUnits="userSpaceOnUse">
-                                <stop stop-color="#1D4ED8"/>
-                                <stop offset="1" stop-color="#F59E0B"/>
-                            </linearGradient>
-                        </defs>
-                    </svg>
+            <!-- Logo Section -->
+            <div class="logo-section">
+                <div class="logo" onclick="window.location.href='index.html'">
+                    <div class="logo-icon">
+                        <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <rect width="40" height="40" rx="8" fill="#0F172A"/>
+                            <path d="M8 20 L12 16 L16 22 L20 18 L24 24 L28 20 L32 26" stroke="url(#pulse-gradient)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                            <circle cx="32" cy="26" r="3" fill="#F59E0B"/>
+                            <defs>
+                                <linearGradient id="pulse-gradient" x1="8" y1="20" x2="32" y2="26" gradientUnits="userSpaceOnUse">
+                                    <stop stop-color="#1D4ED8"/>
+                                    <stop offset="1" stop-color="#F59E0B"/>
+                                </linearGradient>
+                            </defs>
+                        </svg>
+                    </div>
+                    <div class="logo-text">BSC</div>
                 </div>
-                <div class="logo-text">BSC</div> <!-- CHANGED FROM "BANTU STREAM CONNECT" TO "BSC" -->
             </div>
             
-            <!-- Enhanced Search Container -->
-            <div class="search-container" id="search-container">
+            <!-- Search Section -->
+            <div class="search-section" id="search-container">
                 <div class="search-bar">
                     <i class="fas fa-search search-icon"></i>
                     <input 
@@ -147,7 +150,8 @@
                 </div>
             </div>
             
-            <div class="header-actions">
+            <!-- Profile Section -->
+            <div class="profile-section">
                 <button id="profile-btn" class="profile-btn" aria-label="Profile">
                     <div class="profile-placeholder">
                         <i class="fas fa-user"></i>
