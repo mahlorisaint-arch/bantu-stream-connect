@@ -16,6 +16,9 @@
     <!-- Your CSS -->
     <link rel="stylesheet" href="css/styles.css">
     
+    <!-- Thumbnail Fix CSS -->
+    <link rel="stylesheet" href="css/thumbnail-fix.css">
+    
     <!-- Supabase JS SDK -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
@@ -295,11 +298,18 @@
         window.SUPABASE_URL = 'https://ydnxqnbjoshvxteevemc.supabase.co';
         window.SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U';
     </script>
-    
+
+    <!-- Auth Fix (MUST be loaded first) -->
+    <script src="js/auth-fix.js"></script>
+
     <!-- Main JavaScript -->
     <script src="js/home-feed.js" defer></script>
-    
-    <!-- Thumbnail Fix Helper -->
-    <script src="js/thumbnail-fix.js"></script>
+
+    <!-- Manual Refresh Button for Testing (remove in production) -->
+    <div style="position: fixed; bottom: 20px; left: 20px; z-index: 1000;">
+        <button onclick="window.refreshAuth()" style="background: #F59E0B; color: white; border: none; padding: 10px 15px; border-radius: 8px; cursor: pointer; font-size: 12px;">
+            🔄 Refresh Auth
+        </button>
+    </div>
 </body>
 </html>
