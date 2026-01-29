@@ -1,6 +1,6 @@
 /* ==========================================================================
    BANTU STREAM CONNECT - ENHANCED STYLESHEET
-   Version: 3.2 (Fixed Header Layout & Database Queries)
+   Version: 3.3 (Simple Working Fix)
    ========================================================================== */
 
 /* ==========================================================================
@@ -43,7 +43,7 @@
     --focus-outline-width: 3px;
     
     /* Layout */
-    --header-height: 64px;
+    --header-height: 70px;
     --container-max-width: 1200px;
     --border-radius-sm: 8px;
     --border-radius-md: 16px;
@@ -130,7 +130,236 @@ body {
 }
 
 /* ==========================================================================
-   3. LOADING SCREEN
+   3. SIMPLE HEADER - FIXED FOR BOTH MOBILE AND DESKTOP
+   ========================================================================== */
+.header {
+    background: rgba(10, 14, 18, 0.95);
+    backdrop-filter: blur(20px);
+    padding: 15px 20px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    border-bottom: 1px solid var(--card-border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: var(--header-height);
+    flex-wrap: nowrap;
+}
+
+/* Logo Section */
+.logo-section {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 80px;
+    flex-shrink: 0;
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    text-decoration: none;
+}
+
+.logo-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.logo-text {
+    font-family: 'Orbitron', sans-serif;
+    font-weight: 700;
+    font-size: 18px;
+    background: linear-gradient(to right, var(--soft-white), var(--bantu-blue));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+}
+
+/* Search Section - Centered */
+.search-section {
+    flex: 1;
+    max-width: 600px;
+    margin: 0 20px;
+    position: relative;
+}
+
+.search-bar {
+    display: flex;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid var(--card-border);
+    border-radius: 50px;
+    padding: 10px 16px;
+    transition: all 0.3s ease;
+    width: 100%;
+}
+
+.search-bar:focus-within {
+    border-color: var(--warm-gold);
+    box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.2);
+}
+
+.search-icon {
+    color: var(--slate-grey);
+    margin-right: 10px;
+    font-size: 14px;
+}
+
+#global-search {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: var(--soft-white);
+    font-size: 14px;
+    outline: none;
+    width: 100%;
+}
+
+#global-search::placeholder {
+    color: var(--slate-grey);
+}
+
+.search-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: 8px;
+}
+
+.search-filter-btn,
+.search-clear-btn {
+    background: transparent;
+    border: none;
+    color: var(--slate-grey);
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.search-filter-btn:hover,
+.search-clear-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--soft-white);
+}
+
+/* Profile Section */
+.profile-section {
+    display: flex;
+    align-items: center;
+    min-width: 50px;
+    flex-shrink: 0;
+}
+
+.profile-btn {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    cursor: pointer;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 600;
+    font-size: 14px;
+}
+
+.profile-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(29, 78, 216, 0.3);
+}
+
+.profile-placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 16px;
+}
+
+/* ==========================================================================
+   4. RESPONSIVE DESIGN - SIMPLE AND EFFECTIVE
+   ========================================================================== */
+
+/* Tablet (768px and below) */
+@media (max-width: 768px) {
+    .header {
+        flex-wrap: wrap;
+        height: auto;
+        min-height: var(--header-height);
+        padding: 12px 15px;
+        gap: 10px;
+    }
+    
+    .logo-section {
+        order: 1;
+        flex: 0 0 auto;
+    }
+    
+    .search-section {
+        order: 3;
+        flex: 0 0 100%;
+        margin: 10px 0 0 0;
+        max-width: 100%;
+    }
+    
+    .profile-section {
+        order: 2;
+        flex: 0 0 auto;
+    }
+    
+    .logo-text {
+        font-size: 16px;
+    }
+}
+
+/* Mobile (480px and below) */
+@media (max-width: 480px) {
+    .header {
+        padding: 10px 12px;
+    }
+    
+    .logo-icon {
+        width: 36px;
+        height: 36px;
+    }
+    
+    .logo-text {
+        font-size: 15px;
+    }
+    
+    .search-bar {
+        padding: 8px 14px;
+    }
+    
+    .profile-btn {
+        width: 38px;
+        height: 38px;
+    }
+}
+
+/* ==========================================================================
+   5. LOADING SCREEN
    ========================================================================== */
 .loading-screen {
     position: fixed;
@@ -172,7 +401,7 @@ body {
 }
 
 /* ==========================================================================
-   4. ANIMATED BACKGROUND
+   6. ANIMATED BACKGROUND
    ========================================================================== */
 .animated-bg {
     position: fixed;
@@ -239,7 +468,7 @@ body {
 }
 
 /* ==========================================================================
-   5. MAIN LAYOUT & CONTAINER
+   7. MAIN LAYOUT & CONTAINER
    ========================================================================== */
 .container {
     max-width: var(--container-max-width);
@@ -248,199 +477,6 @@ body {
     position: relative;
     z-index: 2;
     padding-bottom: 100px; /* Space for content */
-}
-
-/* ==========================================================================
-   6. ENHANCED HEADER WITH SEARCH - COMPLETELY REWRITTEN
-   ========================================================================== */
-.header {
-    background: rgba(10, 14, 18, 0.95);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    padding: 12px 24px;
-    position: sticky;
-    top: 0;
-    z-index: 100;
-    border-bottom: 1px solid var(--card-border);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    height: var(--header-height);
-    gap: 24px;
-    flex-wrap: nowrap;
-}
-
-/* Logo Section */
-.logo-section {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    flex-shrink: 0;
-    min-width: 100px;
-}
-
-.logo {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    cursor: pointer;
-    text-decoration: none;
-    transition: transform var(--transition-base);
-}
-
-.logo:hover {
-    transform: scale(1.05);
-}
-
-.logo-icon {
-    width: 40px;
-    height: 40px;
-    border-radius: 10px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: var(--shadow-blue);
-    background: transparent;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    flex-shrink: 0;
-}
-
-.logo-text {
-    font-family: 'Orbitron', sans-serif;
-    font-weight: 700;
-    font-size: 18px;
-    background: linear-gradient(to right, var(--soft-white), var(--bantu-blue));
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-    letter-spacing: 0.5px;
-    white-space: nowrap;
-}
-
-/* Search Section - Center aligned */
-.search-section {
-    flex: 1;
-    max-width: 600px;
-    min-width: 200px;
-    position: relative;
-    margin: 0 auto;
-}
-
-.search-bar {
-    display: flex;
-    align-items: center;
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid var(--card-border);
-    border-radius: 50px;
-    padding: 10px 16px;
-    transition: all var(--transition-base);
-    position: relative;
-    width: 100%;
-}
-
-.search-bar:focus-within {
-    border-color: var(--warm-gold);
-    box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.2);
-    background: rgba(255, 255, 255, 0.15);
-}
-
-.search-icon {
-    color: var(--slate-grey);
-    margin-right: 10px;
-    font-size: 14px;
-    flex-shrink: 0;
-}
-
-#global-search {
-    flex: 1;
-    background: transparent;
-    border: none;
-    color: var(--soft-white);
-    font-size: 14px;
-    outline: none;
-    min-width: 0;
-    width: 100%;
-}
-
-#global-search::placeholder {
-    color: var(--slate-grey);
-    font-size: 13px;
-}
-
-.search-actions {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    flex-shrink: 0;
-    margin-left: 8px;
-}
-
-.search-filter-btn,
-.search-clear-btn {
-    background: transparent;
-    border: none;
-    color: var(--slate-grey);
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: all var(--transition-base);
-    font-size: 14px;
-    flex-shrink: 0;
-}
-
-.search-filter-btn:hover,
-.search-clear-btn:hover {
-    background: rgba(255, 255, 255, 0.1);
-    color: var(--soft-white);
-}
-
-/* Profile Section */
-.profile-section {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    flex-shrink: 0;
-    min-width: 60px;
-    justify-content: flex-end;
-}
-
-.profile-btn {
-    width: 42px;
-    height: 42px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
-    border: 2px solid rgba(255, 255, 255, 0.2);
-    cursor: pointer;
-    overflow: hidden;
-    transition: all var(--transition-base);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    font-weight: 600;
-    font-size: 14px;
-    flex-shrink: 0;
-}
-
-.profile-btn:hover,
-.profile-btn:focus {
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-blue);
-}
-
-.profile-placeholder {
-    width: 100%;
-    height: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
-    color: white;
-    font-size: 16px;
 }
 
 /* Search Filters Dropdown */
@@ -693,7 +729,7 @@ body {
 }
 
 /* ==========================================================================
-   7. DEVELOPMENT CARD
+   8. DEVELOPMENT CARD
    ========================================================================== */
 .development-card {
     background: var(--card-bg);
@@ -870,7 +906,7 @@ body {
 }
 
 /* ==========================================================================
-   8. HERO SECTION
+   9. HERO SECTION
    ========================================================================== */
 .hero {
     background: var(--card-bg);
@@ -936,7 +972,7 @@ body {
 }
 
 /* ==========================================================================
-   9. CONTENT SECTIONS
+   10. CONTENT SECTIONS
    ========================================================================== */
 .section {
     margin-bottom: 40px;
@@ -1040,7 +1076,7 @@ body {
 }
 
 /* ==========================================================================
-   10. ENHANCED CONTENT CARDS & GRID - IMPROVED FOR DESKTOP
+   11. ENHANCED CONTENT CARDS & GRID - IMPROVED FOR DESKTOP
    ========================================================================== */
 .content-grid {
     display: grid;
@@ -1234,7 +1270,7 @@ body {
 }
 
 /* ==========================================================================
-   11. INFINITE SCROLL SENTINEL
+   12. INFINITE SCROLL SENTINEL
    ========================================================================== */
 .scroll-sentinel {
     height: 100px;
@@ -1272,7 +1308,7 @@ body {
 }
 
 /* ==========================================================================
-   12. BROWSE ALL CTA
+   13. BROWSE ALL CTA
    ========================================================================== */
 .browse-all-cta {
     text-align: center;
@@ -1306,7 +1342,7 @@ body {
 }
 
 /* ==========================================================================
-   13. FOOTER
+   14. FOOTER
    ========================================================================== */
 .footer {
     border-top: 1px solid var(--card-border);
@@ -1360,7 +1396,7 @@ body {
 }
 
 /* ==========================================================================
-   14. TOAST NOTIFICATIONS
+   15. TOAST NOTIFICATIONS
    ========================================================================== */
 .toast {
     position: fixed;
@@ -1408,7 +1444,7 @@ body {
 }
 
 /* ==========================================================================
-   15. CUSTOM SCROLLBAR
+   16. CUSTOM SCROLLBAR
    ========================================================================== */
 ::-webkit-scrollbar {
     width: 8px;
@@ -1440,7 +1476,7 @@ body {
 }
 
 /* ==========================================================================
-   16. ACCESSIBILITY IMPROVEMENTS
+   17. ACCESSIBILITY IMPROVEMENTS
    ========================================================================== */
 
 /* High Contrast Mode */
@@ -1512,7 +1548,7 @@ body {
 }
 
 /* ==========================================================================
-   17. RESPONSIVE DESIGN - IMPROVED FOR LAPTOP
+   18. RESPONSIVE DESIGN - IMPROVED FOR LAPTOP
    ========================================================================== */
 
 /* Large Desktop (1400px and above) */
@@ -1884,7 +1920,7 @@ body {
 }
 
 /* ==========================================================================
-   18. PERFORMANCE OPTIMIZATIONS
+   19. PERFORMANCE OPTIMIZATIONS
    ========================================================================== */
 
 /* Image loading states */
@@ -1924,7 +1960,7 @@ img {
 }
 
 /* ==========================================================================
-   19. BROWSER-SPECIFIC FIXES
+   20. BROWSER-SPECIFIC FIXES
    ========================================================================== */
 
 /* Safari specific fixes */
@@ -1963,7 +1999,7 @@ img {
 }
 
 /* ==========================================================================
-   20. UTILITY CLASSES
+   21. UTILITY CLASSES
    ========================================================================== */
 
 /* Text Utilities */
