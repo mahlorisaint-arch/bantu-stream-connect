@@ -58,6 +58,8 @@ body {
     min-height: 100vh;
     overflow-x: hidden;
     transition: background-color 0.3s ease, color 0.3s ease;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
 }
 
 /* Reduced Motion Support */
@@ -170,7 +172,7 @@ body {
     padding-bottom: 100px; /* Space for content */
 }
 
-/* Header - Updated to match Pulse style */
+/* Header - Updated with new logo */
 .header {
     background: rgba(10, 14, 18, 0.9);
     backdrop-filter: blur(20px);
@@ -188,6 +190,8 @@ body {
     display: flex;
     align-items: center;
     gap: 12px;
+    cursor: pointer;
+    text-decoration: none;
 }
 
 .logo-icon {
@@ -200,6 +204,14 @@ body {
     box-shadow: 0 0 32px rgba(29, 78, 216, 0.3);
     background: transparent;
     border: 1px solid rgba(255, 255, 255, 0.1);
+    overflow: hidden;
+}
+
+.logo-icon img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    border-radius: 10px;
 }
 
 .logo-text {
@@ -232,6 +244,7 @@ body {
     cursor: pointer;
     transition: all 0.3s ease;
     position: relative;
+    touch-action: manipulation;
 }
 
 .icon-btn:hover {
@@ -276,6 +289,7 @@ body {
     color: white;
     font-weight: 600;
     font-size: 14px;
+    touch-action: manipulation;
 }
 
 .profile-btn:hover {
@@ -523,6 +537,7 @@ body {
     cursor: pointer;
     transition: all 0.3s ease;
     border: 1px solid rgba(255, 255, 255, 0.1);
+    touch-action: manipulation;
 }
 
 .hero-btn:hover {
@@ -540,6 +555,8 @@ body {
     justify-content: space-between;
     align-items: center;
     margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 15px;
 }
 
 .section-title {
@@ -560,11 +577,65 @@ body {
     font-weight: 500;
     cursor: pointer;
     transition: all 0.3s ease;
+    touch-action: manipulation;
 }
 
 .see-all-btn:hover {
     background: rgba(255, 255, 255, 0.2);
     border-color: var(--warm-gold);
+}
+
+/* Personalized Recommendations Section */
+.personalized-recommendations-section .section-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 15px;
+}
+
+.personalized-filter-buttons {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.personalized-filter-btn {
+    padding: 8px 16px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid var(--card-border);
+    border-radius: 20px;
+    color: var(--slate-grey);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    touch-action: manipulation;
+}
+
+.personalized-filter-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+    color: var(--soft-white);
+}
+
+.personalized-filter-btn.active {
+    background: var(--warm-gold);
+    color: var(--deep-black);
+    border-color: var(--warm-gold);
+}
+
+.personalized-badge {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+    color: white;
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    z-index: 6;
+    display: flex;
+    align-items: center;
+    gap: 4px;
 }
 
 /* Content Cards - Updated to match Pulse style */
@@ -583,6 +654,8 @@ body {
     cursor: pointer;
     backdrop-filter: blur(10px);
     position: relative;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
 }
 
 .content-card:hover {
@@ -595,6 +668,7 @@ body {
     position: relative;
     height: 140px;
     overflow: hidden;
+    background: var(--deep-navy);
 }
 
 .card-thumbnail img {
@@ -615,9 +689,10 @@ body {
     right: 0;
     bottom: 0;
     background: linear-gradient(to bottom, transparent 50%, rgba(0, 0, 0, 0.5) 100%);
+    pointer-events: none;
 }
 
-/* Video Preview Overlay */
+/* Video Preview Overlay - Improved for mobile */
 .video-preview-container {
     position: absolute;
     top: 0;
@@ -627,20 +702,28 @@ body {
     background: var(--deep-black);
     display: none;
     z-index: 5;
+    pointer-events: none;
 }
 
 .video-preview {
     width: 100%;
     height: 100%;
     object-fit: cover;
+    pointer-events: none;
 }
 
 .content-card.video-hover .video-preview-container {
     display: block;
+    animation: fadeIn 0.3s ease;
 }
 
 .content-card.video-hover .card-thumbnail img {
     display: none;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
 }
 
 /* Continue Watching Progress Bar */
@@ -652,12 +735,14 @@ body {
     height: 4px;
     background: rgba(255, 255, 255, 0.2);
     z-index: 6;
+    pointer-events: none;
 }
 
 .continue-watching-progress-fill {
     height: 100%;
     background: linear-gradient(90deg, var(--bantu-blue), var(--warm-gold));
     transition: width 0.3s ease;
+    pointer-events: none;
 }
 
 .continue-watching-badge {
@@ -674,6 +759,7 @@ body {
     display: flex;
     align-items: center;
     gap: 4px;
+    pointer-events: none;
 }
 
 .share-btn {
@@ -690,8 +776,9 @@ body {
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    z-index: 2;
+    z-index: 7;
     transition: all 0.3s ease;
+    touch-action: manipulation;
 }
 
 .share-btn:hover {
@@ -713,6 +800,7 @@ body {
     overflow: hidden;
     min-height: 40px;
     color: var(--soft-white);
+    line-height: 1.4;
 }
 
 .creator-btn {
@@ -729,6 +817,7 @@ body {
     gap: 5px;
     transition: all 0.3s ease;
     border: 1px solid rgba(255, 255, 255, 0.1);
+    touch-action: manipulation;
 }
 
 .creator-btn:hover {
@@ -775,6 +864,7 @@ body {
     gap: 12px;
     transition: all 0.3s ease;
     backdrop-filter: blur(10px);
+    touch-action: manipulation;
 }
 
 .cta-button:hover {
@@ -823,11 +913,6 @@ body {
     animation: fadeIn 0.3s ease;
 }
 
-@keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
-}
-
 .search-modal-header {
     padding: 20px;
     border-bottom: 1px solid var(--card-border);
@@ -850,6 +935,8 @@ body {
     color: var(--soft-white);
     font-size: 16px;
     transition: all 0.3s ease;
+    -webkit-appearance: none;
+    appearance: none;
 }
 
 .search-input:focus {
@@ -878,6 +965,7 @@ body {
     justify-content: center;
     cursor: pointer;
     transition: all 0.3s ease;
+    touch-action: manipulation;
 }
 
 .close-search-btn:hover {
@@ -914,6 +1002,8 @@ body {
     font-size: 14px;
     min-width: 150px;
     cursor: pointer;
+    -webkit-appearance: none;
+    appearance: none;
 }
 
 .filter-select:focus {
@@ -938,23 +1028,6 @@ body {
     padding: 40px;
     color: var(--slate-grey);
     font-size: 16px;
-}
-
-/* Personalized Recommendations Section */
-.recommendations-header {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 10px;
-}
-
-.personalized-badge {
-    background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
-    color: white;
-    padding: 4px 10px;
-    border-radius: 12px;
-    font-size: 12px;
-    font-weight: 600;
 }
 
 /* Footer - Updated to match Pulse style */
@@ -1028,6 +1101,7 @@ body {
     max-width: 300px;
     backdrop-filter: blur(10px);
     border: 1px solid var(--card-border);
+    pointer-events: none;
 }
 
 .toast.error {
@@ -1163,6 +1237,7 @@ body {
     display: flex;
     gap: 12px;
     position: relative;
+    touch-action: manipulation;
 }
 
 .notification-item:hover {
@@ -1239,6 +1314,7 @@ body {
     cursor: pointer;
     font-size: 14px;
     transition: all 0.3s ease;
+    touch-action: manipulation;
 }
 
 .text-btn:hover {
@@ -1365,6 +1441,7 @@ body {
     gap: 10px;
     transition: all 0.3s ease;
     font-size: 14px;
+    touch-action: manipulation;
 }
 
 .theme-option:hover {
@@ -1448,6 +1525,7 @@ body {
     font-weight: 600;
     cursor: pointer;
     transition: all 0.3s ease;
+    touch-action: manipulation;
 }
 
 .btn-primary:hover {
@@ -1464,6 +1542,7 @@ body {
     font-size: 16px;
     cursor: pointer;
     transition: all 0.3s ease;
+    touch-action: manipulation;
 }
 
 .btn-secondary:hover {
@@ -1523,6 +1602,7 @@ body {
     display: flex;
     align-items: center;
     gap: 4px;
+    pointer-events: none;
 }
 
 .trending-card {
@@ -1634,6 +1714,18 @@ body {
         font-size: 12px;
     }
     
+    /* Personalized Recommendations Mobile */
+    .personalized-filter-buttons {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .personalized-filter-btn {
+        flex: 1;
+        text-align: center;
+        min-width: 80px;
+    }
+    
     /* New Features Responsive */
     .notifications-panel {
         width: 100%;
@@ -1648,6 +1740,25 @@ body {
         top: 70px;
         right: 10px;
     }
+    
+    /* Mobile touch optimizations */
+    .content-card {
+        touch-action: pan-y;
+    }
+    
+    .icon-btn, .profile-btn, .share-btn, .creator-btn, .see-all-btn, .hero-btn, .cta-button {
+        min-height: 44px; /* Minimum touch target size */
+        min-width: 44px;
+    }
+    
+    .card-title {
+        font-size: 14px;
+        min-height: 36px;
+    }
+    
+    .card-stats {
+        font-size: 11px;
+    }
 }
 
 @media (max-width: 480px) {
@@ -1658,6 +1769,7 @@ body {
     .hero-btn, .cta-button {
         padding: 12px 24px;
         font-size: 16px;
+        width: 100%;
     }
     
     .footer-links {
@@ -1668,5 +1780,44 @@ body {
     .card-stats {
         flex-direction: column;
         gap: 5px;
+    }
+    
+    .section-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .see-all-btn {
+        align-self: stretch;
+        text-align: center;
+    }
+    
+    .personalized-filter-buttons {
+        flex-direction: column;
+    }
+    
+    .personalized-filter-btn {
+        width: 100%;
+    }
+}
+
+/* Mobile specific optimizations */
+@media (hover: none) and (pointer: coarse) {
+    .content-card:hover {
+        transform: none;
+    }
+    
+    .icon-btn:hover, .profile-btn:hover, .share-btn:hover, .creator-btn:hover, .see-all-btn:hover, .hero-btn:hover, .cta-button:hover {
+        transform: none;
+    }
+    
+    .content-card:active {
+        background: rgba(255, 255, 255, 0.05);
+    }
+    
+    /* Improve touch feedback */
+    .icon-btn:active, .profile-btn:active, .share-btn:active, .creator-btn:active, .see-all-btn:active, .hero-btn:active, .cta-button:active {
+        opacity: 0.7;
+        transform: scale(0.98);
     }
 }
