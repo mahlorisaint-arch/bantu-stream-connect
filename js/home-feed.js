@@ -1472,46 +1472,107 @@ const TrendingSystem = {
     }
 };
 
-// 10. VIDEO PREVIEW ON HOVER
+// 10. VIDEO PREVIEW ON HOVER - IMPROVED FOR MOBILE
 const VideoPreviewSystem = {
     hoverTimeout: null,
     currentPreview: null,
+    touchStartTime: 0,
+    touchStartX: 0,
+    touchStartY: 0,
+    touchMoved: false,
+    isMobile: /iPhone|iPad|iPod|Android/i.test(navigator.userAgent),
     
     init() {
         this.setupEventDelegation();
     },
     
     setupEventDelegation() {
-        // Mouse events
-        document.addEventListener('mouseover', (e) => {
-            const card = e.target.closest('.content-card');
-            if (card && !card.classList.contains('video-hover')) {
-                this.handleCardHover(card);
-            }
-        });
+        // Mouse events for desktop
+        if (!this.isMobile) {
+            document.addEventListener('mouseover', (e) => {
+                const card = e.target.closest('.content-card');
+                if (card && !card.classList.contains('video-hover')) {
+                    this.handleCardHover(card);
+                }
+            });
+            
+            document.addEventListener('mouseout', (e) => {
+                const card = e.target.closest('.content-card');
+                if (card && card.classList.contains('video-hover')) {
+                    this.handleCardLeave(card);
+                }
+            });
+        }
         
-        document.addEventListener('mouseout', (e) => {
-            const card = e.target.closest('.content-card');
-            if (card && card.classList.contains('video-hover')) {
-                this.handleCardLeave(card);
-            }
-        });
-        
-        // Touch events for mobile
+        // Touch events for mobile - improved
         document.addEventListener('touchstart', (e) => {
+            this.touchStartTime = Date.now();
+            this.touchStartX = e.touches[0].clientX;
+            this.touchStartY = e.touches[0].clientY;
+            this.touchMoved = false;
+            
             const card = e.target.closest('.content-card');
             if (card) {
-                e.preventDefault();
-                this.handleCardHover(card);
+                // Don't prevent default on search results or other interactive elements
+                if (!e.target.closest('.share-btn') && 
+                    !e.target.closest('.creator-btn') &&
+                    !e.target.closest('input') &&
+                    !e.target.closest('button') &&
+                    !e.target.closest('a')) {
+                    
+                    e.preventDefault();
+                    this.handleCardHover(card);
+                }
             }
         }, { passive: false });
         
-        document.addEventListener('touchend', (e) => {
-            const card = e.target.closest('.content-card');
-            if (card && card.classList.contains('video-hover')) {
-                this.handleCardLeave(card);
+        document.addEventListener('touchmove', (e) => {
+            if (e.touches.length > 0) {
+                const touchX = e.touches[0].clientX;
+                const touchY = e.touches[0].clientY;
+                const deltaX = Math.abs(touchX - this.touchStartX);
+                const deltaY = Math.abs(touchY - this.touchStartY);
+                
+                // If user moved significantly, cancel the hover
+                if (deltaX > 10 || deltaY > 10) {
+                    this.touchMoved = true;
+                    this.handleCardLeaveAll();
+                }
             }
         }, { passive: true });
+        
+        document.addEventListener('touchend', (e) => {
+            const touchDuration = Date.now() - this.touchStartTime;
+            
+            // If touch was short and didn't move, treat as click
+            if (touchDuration < 300 && !this.touchMoved) {
+                const card = e.target.closest('.content-card');
+                if (card && card.classList.contains('video-hover')) {
+                    this.handleCardLeave(card);
+                    
+                    // Allow click to proceed naturally
+                    setTimeout(() => {
+                        const contentId = card.dataset.contentId;
+                        if (contentId) {
+                            window.location.href = `content-detail.html?id=${contentId}`;
+                        }
+                    }, 50);
+                }
+            } else {
+                this.handleCardLeaveAll();
+            }
+            
+            this.touchMoved = false;
+        }, { passive: true });
+        
+        // Prevent video preview on scroll
+        let isScrolling;
+        window.addEventListener('scroll', () => {
+            clearTimeout(isScrolling);
+            isScrolling = setTimeout(() => {
+                this.handleCardLeaveAll();
+            }, 100);
+        }, false);
     },
     
     handleCardHover(card) {
@@ -1525,10 +1586,14 @@ const VideoPreviewSystem = {
                 
                 // Play video preview
                 videoElement.currentTime = 0;
-                videoElement.play().catch(e => {
-                    console.log('Video autoplay prevented:', e);
-                    card.classList.remove('video-hover');
-                });
+                const playPromise = videoElement.play();
+                
+                if (playPromise !== undefined) {
+                    playPromise.catch(e => {
+                        console.log('Video autoplay prevented:', e);
+                        card.classList.remove('video-hover');
+                    });
+                }
                 
                 // Track preview view
                 const contentId = card.dataset.contentId;
@@ -1536,7 +1601,7 @@ const VideoPreviewSystem = {
                     AnalyticsSystem.trackContentInteraction(contentId, 'video_preview');
                 }
             }
-        }, 500);
+        }, this.isMobile ? 100 : 500); // Faster on mobile
     },
     
     handleCardLeave(card) {
@@ -1549,6 +1614,21 @@ const VideoPreviewSystem = {
         }
         
         card.classList.remove('video-hover');
+        this.currentPreview = null;
+    },
+    
+    handleCardLeaveAll() {
+        clearTimeout(this.hoverTimeout);
+        
+        document.querySelectorAll('.content-card.video-hover').forEach(card => {
+            const videoElement = card.querySelector('.video-preview');
+            if (videoElement) {
+                videoElement.pause();
+                videoElement.currentTime = 0;
+            }
+            card.classList.remove('video-hover');
+        });
+        
         this.currentPreview = null;
     }
 };
@@ -1766,7 +1846,7 @@ const ContentStatsSystem = {
         const observer = new MutationObserver((mutations) => {
             mutations.forEach((mutation) => {
                 mutation.addedNodes.forEach(node => {
-                    if (node.nodeType === 1 && node.classList?.contains('content-card')) {
+                    if (node.nodeType === 1 && node.classList?.contains('.content-card')) {
                         this.addStatsToCard(node);
                     }
                 });
@@ -1992,7 +2072,11 @@ const SearchSystem = {
             return;
         }
         
-        this.resultsGrid.innerHTML = results.map(item => `
+        this.resultsGrid.innerHTML = results.map(item => {
+            // Get the correct creator name from the data
+            const creatorName = item.creator || item.creator_display_name || item.user_profiles?.username || item.user_profiles?.full_name || 'Creator';
+            
+            return `
             <div class="content-card" data-content-id="${item.id}" data-views="${item.views || 0}" data-likes="${item.likes || 0}">
                 <div class="card-thumbnail">
                     <img src="${item.thumbnail_url || 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop'}" 
@@ -2015,13 +2099,14 @@ const SearchSystem = {
                     </div>
                     <button class="creator-btn" 
                             data-creator-id="${item.creator_id || item.user_id}"
-                            data-creator-name="${item.creator || 'Creator'}">
+                            data-creator-name="${creatorName}">
                         <i class="fas fa-user"></i>
-                        ${(item.creator || 'Creator').length > 15 ? (item.creator || 'Creator').substring(0, 15) + '...' : (item.creator || 'Creator')}
+                        ${creatorName.length > 15 ? creatorName.substring(0, 15) + '...' : creatorName}
                     </button>
                 </div>
             </div>
-        `).join('');
+            `;
+        }).join('');
         
         // Add click listeners
         this.setupSearchResultListeners();
@@ -2030,8 +2115,11 @@ const SearchSystem = {
     setupSearchResultListeners() {
         this.resultsGrid.querySelectorAll('.content-card').forEach(card => {
             card.addEventListener('click', (e) => {
-                if (e.target.closest('.creator-btn')) {
-                    e.stopPropagation();
+                // Check if clicking on interactive elements
+                if (e.target.closest('.creator-btn') || 
+                    e.target.closest('.share-btn') ||
+                    e.target.tagName === 'BUTTON' ||
+                    e.target.tagName === 'A') {
                     return;
                 }
                 
@@ -2285,6 +2373,145 @@ const RecommendationSystem = {
         return scoredContent
             .sort((a, b) => b.recommendationScore - a.recommendationScore)
             .slice(0, 10);
+    }
+};
+
+// NEW: Personalized Recommendations (Basic) System
+const PersonalizedRecommendationsSystem = {
+    currentFilter: 'today',
+    
+    init() {
+        this.setupEventListeners();
+    },
+    
+    setupEventListeners() {
+        document.addEventListener('click', (e) => {
+            const filterBtn = e.target.closest('.personalized-filter-btn');
+            if (filterBtn) {
+                const filter = filterBtn.dataset.filter;
+                if (filter) {
+                    this.setFilter(filter);
+                }
+            }
+        });
+    },
+    
+    setFilter(filter) {
+        this.currentFilter = filter;
+        
+        // Update active button
+        document.querySelectorAll('.personalized-filter-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.filter === filter);
+        });
+        
+        // Update the recommendations display
+        this.updateRecommendations();
+    },
+    
+    updateRecommendations() {
+        const recommendationsSection = document.querySelector('.personalized-recommendations-section');
+        if (!recommendationsSection) return;
+        
+        const grid = recommendationsSection.querySelector('.content-grid');
+        if (!grid) return;
+        
+        // Filter content based on selected timeframe
+        const filteredContent = this.filterContentByTimeframe(allContentData);
+        
+        // Take top 5 items
+        const recommendations = filteredContent.slice(0, 5);
+        
+        grid.innerHTML = recommendations.map(item => this.createRecommendationCard(item)).join('');
+        
+        // Setup event listeners for new cards
+        this.setupRecommendationCardListeners(grid);
+    },
+    
+    filterContentByTimeframe(content) {
+        const now = new Date();
+        let startDate;
+        
+        switch(this.currentFilter) {
+            case 'today':
+                startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                break;
+            case 'week':
+                startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 7);
+                break;
+            case 'month':
+                startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 30);
+                break;
+            default:
+                startDate = new Date(0); // All time
+        }
+        
+        return content.filter(item => {
+            try {
+                const itemDate = new Date(item.created_at);
+                return itemDate >= startDate;
+            } catch {
+                return false;
+            }
+        });
+    },
+    
+    createRecommendationCard(item) {
+        return `
+            <div class="content-card" data-content-id="${item.id}" data-views="${item.views || 0}" data-likes="${item.likes || 0}">
+                <div class="card-thumbnail">
+                    <img src="${item.thumbnail_url || 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop'}" 
+                         alt="${item.title}"
+                         loading="lazy"
+                         onerror="this.src='https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop'">
+                    <div class="thumbnail-overlay"></div>
+                    <div class="video-preview-container">
+                        <video class="video-preview" muted preload="metadata">
+                            <source src="${item.file_url || ''}" type="video/mp4">
+                        </video>
+                    </div>
+                    <div class="personalized-badge">
+                        <i class="fas fa-star"></i> For You
+                    </div>
+                    <button class="share-btn" title="Share" data-content-id="${item.id}">
+                        <i class="fas fa-share"></i>
+                    </button>
+                </div>
+                <div class="card-content">
+                    <h3 class="card-title" title="${item.title}">
+                        ${item.title.length > 50 ? item.title.substring(0, 50) + '...' : item.title}
+                    </h3>
+                    <div class="card-stats">
+                        <span class="stat">
+                            <i class="fas fa-eye"></i> ${item.views || 0}
+                        </span>
+                        <span class="stat">
+                            <i class="fas fa-heart"></i> ${item.likes || 0}
+                        </span>
+                    </div>
+                    <button class="creator-btn" 
+                            data-creator-id="${item.creator_id}"
+                            data-creator-name="${item.creator}">
+                        <i class="fas fa-user"></i>
+                        ${item.creator.length > 15 ? item.creator.substring(0, 15) + '...' : item.creator}
+                    </button>
+                </div>
+            </div>
+        `;
+    },
+    
+    setupRecommendationCardListeners(grid) {
+        grid.querySelectorAll('.content-card').forEach(card => {
+            card.addEventListener('click', (e) => {
+                if (e.target.closest('.share-btn') || e.target.closest('.creator-btn')) {
+                    return;
+                }
+                
+                const contentId = card.dataset.contentId;
+                if (contentId) {
+                    window.location.href = `content-detail.html?id=${contentId}`;
+                }
+            });
+        });
     }
 };
 
@@ -2561,7 +2788,7 @@ function getTestContent() {
             media_type: 'video',
             genre: 'Music',
             created_at: new Date().toISOString(),
-            creator: 'Music Africa',
+            creator: '@music_africa',
             creator_display_name: 'Music Africa',
             creator_id: '1',
             user_id: '1',
@@ -2577,7 +2804,7 @@ function getTestContent() {
             media_type: 'video',
             genre: 'STEM',
             created_at: new Date().toISOString(),
-            creator: 'Tech Africa',
+            creator: '@tech_africa',
             creator_display_name: 'Tech Africa',
             creator_id: '2',
             user_id: '2',
@@ -2593,7 +2820,7 @@ function getTestContent() {
             media_type: 'video',
             genre: 'Culture',
             created_at: new Date().toISOString(),
-            creator: 'Cultural Hub',
+            creator: '@cultural_hub',
             creator_display_name: 'Cultural Hub',
             creator_id: '3',
             user_id: '3',
@@ -2609,7 +2836,7 @@ function getTestContent() {
             media_type: 'video',
             genre: 'Food',
             created_at: new Date().toISOString(),
-            creator: 'Chef Amina',
+            creator: '@chef_amina',
             creator_display_name: 'Chef Amina',
             creator_id: '4',
             user_id: '4',
@@ -2625,7 +2852,7 @@ function getTestContent() {
             media_type: 'video',
             genre: 'Business',
             created_at: new Date().toISOString(),
-            creator: 'Startup Africa',
+            creator: '@startup_africa',
             creator_display_name: 'Startup Africa',
             creator_id: '5',
             user_id: '5',
@@ -2736,14 +2963,18 @@ function renderContentSections() {
         <!-- Continue Watching (if any) -->
         <!-- Will be added by ContinueWatchingSystem -->
         
-        <!-- Trending Now Section -->
-        <section class="section" data-type="trending">
+        <!-- Personalized Recommendations Section -->
+        <section class="section personalized-recommendations-section" data-type="personalized-recommendations">
             <div class="section-header">
-                <h2 class="section-title">Trending Now</h2>
-                <button class="see-all-btn" data-action="see-all" data-target="trending">See All</button>
+                <h2 class="section-title">Personalized recommendations (basic)</h2>
+                <div class="personalized-filter-buttons">
+                    <button class="personalized-filter-btn active" data-filter="today">Today</button>
+                    <button class="personalized-filter-btn" data-filter="week">This week</button>
+                    <button class="personalized-filter-btn" data-filter="month">Last month</button>
+                </div>
             </div>
             <div class="content-grid">
-                ${renderContentCards(getTrendingContent(filteredContentData))}
+                ${renderContentCards(PersonalizedRecommendationsSystem.filterContentByTimeframe(filteredContentData).slice(0, 5))}
             </div>
         </section>
         
@@ -2755,6 +2986,17 @@ function renderContentSections() {
             </div>
             <div class="content-grid">
                 ${renderContentCards(filteredContentData.slice(0, 10))}
+            </div>
+        </section>
+        
+        <!-- Trending Now Section -->
+        <section class="section" data-type="trending">
+            <div class="section-header">
+                <h2 class="section-title">Trending Now</h2>
+                <button class="see-all-btn" data-action="see-all" data-target="trending">See All</button>
+            </div>
+            <div class="content-grid">
+                ${renderContentCards(getTrendingContent(filteredContentData))}
             </div>
         </section>
         
@@ -2786,6 +3028,9 @@ function renderContentSections() {
     
     // Setup content card listeners
     setupContentCardListeners();
+    
+    // Initialize personalized recommendations system
+    PersonalizedRecommendationsSystem.init();
 }
 
 // ✅ SETUP EVENT LISTENERS
@@ -2832,14 +3077,25 @@ function setupEventListeners() {
     });
 }
 
-// ✅ SETUP CONTENT CARD LISTENERS
+// ✅ SETUP CONTENT CARD LISTENERS - FIXED FOR MOBILE
 function setupContentCardListeners() {
     // Content card clicks
     document.querySelectorAll('.content-card:not(.initialized)').forEach(card => {
         card.classList.add('initialized');
         
-        card.addEventListener('click', (e) => {
-            if (e.target.closest('.share-btn') || e.target.closest('.creator-btn')) {
+        // Use both click and touch events for better mobile support
+        const handleCardClick = (e) => {
+            // Prevent default on touch to avoid double firing
+            if (e.type === 'touchstart') {
+                e.preventDefault();
+            }
+            
+            // Check if clicking on interactive elements
+            if (e.target.closest('.share-btn') || 
+                e.target.closest('.creator-btn') ||
+                e.target.tagName === 'BUTTON' ||
+                e.target.tagName === 'A' ||
+                e.target.tagName === 'INPUT') {
                 return;
             }
             
@@ -2851,9 +3107,16 @@ function setupContentCardListeners() {
                     RecommendationSystem.trackContentInteraction(content);
                 }
                 
-                window.location.href = `content-detail.html?id=${contentId}`;
+                // Use a small timeout to allow any preview to be handled
+                setTimeout(() => {
+                    window.location.href = `content-detail.html?id=${contentId}`;
+                }, 50);
             }
-        });
+        };
+        
+        // Add both click and touch events
+        card.addEventListener('click', handleCardClick);
+        card.addEventListener('touchstart', handleCardClick, { passive: false });
     });
     
     // Share buttons
@@ -2861,6 +3124,7 @@ function setupContentCardListeners() {
         btn.classList.add('initialized');
         btn.addEventListener('click', (e) => {
             e.stopPropagation();
+            e.preventDefault();
             const contentId = btn.dataset.contentId;
             const content = allContentData.find(c => c.id == contentId);
             if (content) {
@@ -2874,6 +3138,7 @@ function setupContentCardListeners() {
         btn.classList.add('initialized');
         btn.addEventListener('click', (e) => {
             e.stopPropagation();
+            e.preventDefault();
             const creatorId = btn.dataset.creatorId;
             const creatorName = btn.dataset.creatorName;
             if (creatorId) {
