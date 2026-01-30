@@ -546,6 +546,7 @@
             transition: all 0.3s ease;
             cursor: pointer;
             backdrop-filter: blur(10px);
+            position: relative;
         }
         
         .content-card:hover {
@@ -578,6 +579,65 @@
             right: 0;
             bottom: 0;
             background: linear-gradient(to bottom, transparent 50%, rgba(0, 0, 0, 0.5) 100%);
+        }
+        
+        /* Video Preview Overlay */
+        .video-preview-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--deep-black);
+            display: none;
+            z-index: 5;
+        }
+        
+        .video-preview {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .content-card.video-hover .video-preview-container {
+            display: block;
+        }
+        
+        .content-card.video-hover .card-thumbnail img {
+            display: none;
+        }
+        
+        /* Continue Watching Progress Bar */
+        .continue-watching-progress {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.2);
+            z-index: 6;
+        }
+        
+        .continue-watching-progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--bantu-blue), var(--warm-gold));
+            transition: width 0.3s ease;
+        }
+        
+        .continue-watching-badge {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(29, 78, 216, 0.9);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 600;
+            z-index: 6;
+            display: flex;
+            align-items: center;
+            gap: 4px;
         }
         
         .share-btn {
@@ -667,6 +727,179 @@
             border-color: var(--warm-gold);
             transform: translateY(-3px);
             box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+        }
+        
+        /* Infinite Scroll Loading Indicator */
+        .infinite-scroll-loading {
+            text-align: center;
+            padding: 30px;
+            color: var(--slate-grey);
+            font-style: italic;
+        }
+        
+        .infinite-scroll-spinner {
+            width: 30px;
+            height: 30px;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            border-top-color: var(--warm-gold);
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+        
+        /* Search Modal */
+        .search-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(10, 14, 18, 0.95);
+            backdrop-filter: blur(20px);
+            z-index: 1000;
+            display: none;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        .search-modal.active {
+            display: block;
+            opacity: 1;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        .search-modal-header {
+            padding: 20px;
+            border-bottom: 1px solid var(--card-border);
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .search-input-container {
+            flex: 1;
+            position: relative;
+        }
+        
+        .search-input {
+            width: 100%;
+            padding: 15px 20px 15px 50px;
+            background: var(--deep-navy);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            color: var(--soft-white);
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+        
+        .search-input:focus {
+            outline: none;
+            border-color: var(--warm-gold);
+            box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.1);
+        }
+        
+        .search-icon {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--slate-grey);
+        }
+        
+        .close-search-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid var(--card-border);
+            color: var(--soft-white);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .close-search-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: rotate(90deg);
+        }
+        
+        .search-filters {
+            padding: 20px;
+            border-bottom: 1px solid var(--card-border);
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .filter-label {
+            font-size: 14px;
+            color: var(--slate-grey);
+            font-weight: 500;
+        }
+        
+        .filter-select {
+            padding: 10px 15px;
+            background: var(--deep-navy);
+            border: 1px solid var(--card-border);
+            border-radius: 8px;
+            color: var(--soft-white);
+            font-size: 14px;
+            min-width: 150px;
+            cursor: pointer;
+        }
+        
+        .filter-select:focus {
+            outline: none;
+            border-color: var(--warm-gold);
+        }
+        
+        .search-results {
+            padding: 20px;
+            max-height: calc(100vh - 200px);
+            overflow-y: auto;
+        }
+        
+        .search-results-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 15px;
+        }
+        
+        .no-results {
+            text-align: center;
+            padding: 40px;
+            color: var(--slate-grey);
+            font-size: 16px;
+        }
+        
+        /* Personalized Recommendations Section */
+        .recommendations-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        
+        .personalized-badge {
+            background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+            color: white;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
         }
         
         /* Footer - Updated to match Pulse style */
@@ -766,6 +999,68 @@
             }
         }
         
+        /* Keyboard Shortcuts Help */
+        .keyboard-shortcuts-help {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 20px;
+            padding: 30px;
+            z-index: 2000;
+            display: none;
+            backdrop-filter: blur(20px);
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+        }
+        
+        .keyboard-shortcuts-help.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        .shortcuts-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+        
+        .shortcuts-title {
+            font-size: 22px;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--soft-white), var(--warm-gold));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .shortcuts-list {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .shortcut-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+        }
+        
+        .shortcut-key {
+            background: var(--deep-navy);
+            border: 1px solid var(--card-border);
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-family: 'Orbitron', monospace;
+            font-size: 13px;
+            color: var(--warm-gold);
+        }
+        
         /* Custom Scrollbar */
         ::-webkit-scrollbar {
             width: 8px;
@@ -836,6 +1131,18 @@
                 height: 120px;
             }
             
+            .search-filters {
+                flex-direction: column;
+            }
+            
+            .filter-select {
+                min-width: 100%;
+            }
+            
+            .search-results-grid {
+                grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            }
+            
             .footer-links {
                 gap: 10px;
             }
@@ -877,6 +1184,98 @@
         <div class="glow-cycle glow-4"></div>
     </div>
 
+    <!-- Search Modal -->
+    <div id="search-modal" class="search-modal">
+        <div class="search-modal-header">
+            <div class="search-input-container">
+                <i class="search-icon fas fa-search"></i>
+                <input type="text" id="search-input" class="search-input" placeholder="Search for content, creators, or categories..." autocomplete="off">
+            </div>
+            <button id="close-search-btn" class="close-search-btn">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="search-filters">
+            <div class="filter-group">
+                <label class="filter-label">Category</label>
+                <select id="category-filter" class="filter-select">
+                    <option value="">All Categories</option>
+                    <option value="Movies">Movies</option>
+                    <option value="TV Shows">TV Shows</option>
+                    <option value="Documentaries">Documentaries</option>
+                    <option value="Music">Music</option>
+                    <option value="Sports">Sports</option>
+                    <option value="News">News</option>
+                    <option value="STEM">STEM</option>
+                    <option value="Podcasts">Podcasts</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label class="filter-label">Media Type</label>
+                <select id="media-type-filter" class="filter-select">
+                    <option value="">All Types</option>
+                    <option value="video">Video</option>
+                    <option value="audio">Audio</option>
+                    <option value="image">Image</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label class="filter-label">Sort By</label>
+                <select id="sort-filter" class="filter-select">
+                    <option value="newest">Newest First</option>
+                    <option value="oldest">Oldest First</option>
+                    <option value="popular">Most Popular</option>
+                    <option value="trending">Trending</option>
+                </select>
+            </div>
+        </div>
+        <div id="search-results" class="search-results">
+            <div id="search-results-grid" class="search-results-grid">
+                <!-- Search results will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Keyboard Shortcuts Help Modal -->
+    <div id="keyboard-shortcuts-help" class="keyboard-shortcuts-help">
+        <div class="shortcuts-header">
+            <h2 class="shortcuts-title">Keyboard Shortcuts</h2>
+            <button id="close-shortcuts-btn" class="close-search-btn">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="shortcuts-list">
+            <div class="shortcut-item">
+                <span>Search</span>
+                <kbd class="shortcut-key">Ctrl + K</kbd>
+            </div>
+            <div class="shortcut-item">
+                <span>Close Search/Modal</span>
+                <kbd class="shortcut-key">Esc</kbd>
+            </div>
+            <div class="shortcut-item">
+                <span>Play/Pause Video Preview</span>
+                <kbd class="shortcut-key">Space</kbd>
+            </div>
+            <div class="shortcut-item">
+                <span>Show Keyboard Shortcuts</span>
+                <kbd class="shortcut-key">?</kbd>
+            </div>
+            <div class="shortcut-item">
+                <span>Navigate to Home</span>
+                <kbd class="shortcut-key">Alt + H</kbd>
+            </div>
+            <div class="shortcut-item">
+                <span>Navigate to Profile</span>
+                <kbd class="shortcut-key">Alt + P</kbd>
+            </div>
+            <div class="shortcut-item">
+                <span>Refresh Content</span>
+                <kbd class="shortcut-key">Ctrl + R</kbd>
+            </div>
+        </div>
+    </div>
+
     <!-- Main Content (hidden until loaded) -->
     <div id="app" style="display: none;">
         <!-- Header -->
@@ -898,12 +1297,12 @@
                 <div class="logo-text">BANTU STREAM CONNECT</div>
             </div>
             <div class="header-actions">
-                <button id="search-btn" class="icon-btn search-btn" title="Search">
+                <button id="search-btn" class="icon-btn search-btn" title="Search (Ctrl+K)">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
                     </svg>
                 </button>
-                <button id="profile-btn" class="profile-btn" title="Profile">
+                <button id="profile-btn" class="profile-btn" title="Profile (Alt+P)">
                     <!-- Profile picture will be loaded here -->
                     <div class="profile-placeholder">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -963,6 +1362,12 @@
             <!-- Content Sections -->
             <div id="content-sections">
                 <!-- Content will be loaded here -->
+            </div>
+
+            <!-- Infinite Scroll Loading Indicator -->
+            <div id="infinite-scroll-loading" class="infinite-scroll-loading" style="display: none;">
+                <div class="infinite-scroll-spinner"></div>
+                <div>Loading more content...</div>
             </div>
 
             <!-- Browse All CTA -->
@@ -1113,6 +1518,957 @@
             }
         };
         
+        // NEW FEATURES IMPLEMENTATION
+        
+        // Search System
+        const SearchSystem = {
+            modal: null,
+            searchInput: null,
+            resultsGrid: null,
+            currentResults: [],
+            searchTimeout: null,
+            
+            init() {
+                this.modal = document.getElementById('search-modal');
+                this.searchInput = document.getElementById('search-input');
+                this.resultsGrid = document.getElementById('search-results-grid');
+                
+                this.setupEventListeners();
+            },
+            
+            setupEventListeners() {
+                // Search input event
+                this.searchInput?.addEventListener('input', (e) => {
+                    this.handleSearch(e.target.value);
+                });
+                
+                // Filter changes
+                document.getElementById('category-filter')?.addEventListener('change', () => {
+                    this.handleSearch(this.searchInput.value);
+                });
+                
+                document.getElementById('media-type-filter')?.addEventListener('change', () => {
+                    this.handleSearch(this.searchInput.value);
+                });
+                
+                document.getElementById('sort-filter')?.addEventListener('change', () => {
+                    this.handleSearch(this.searchInput.value);
+                });
+                
+                // Close search modal
+                document.getElementById('close-search-btn')?.addEventListener('click', () => {
+                    this.closeSearch();
+                });
+            },
+            
+            openSearch() {
+                this.modal?.classList.add('active');
+                this.searchInput?.focus();
+            },
+            
+            closeSearch() {
+                this.modal?.classList.remove('active');
+                this.searchInput.value = '';
+                this.resultsGrid.innerHTML = '';
+            },
+            
+            handleSearch(query) {
+                clearTimeout(this.searchTimeout);
+                
+                this.searchTimeout = setTimeout(async () => {
+                    if (!query.trim()) {
+                        this.resultsGrid.innerHTML = '<div class="no-results">Start typing to search...</div>';
+                        return;
+                    }
+                    
+                    // Show loading
+                    this.resultsGrid.innerHTML = '<div class="infinite-scroll-loading"><div class="infinite-scroll-spinner"></div><div>Searching...</div></div>';
+                    
+                    try {
+                        // Get filters
+                        const category = document.getElementById('category-filter')?.value;
+                        const mediaType = document.getElementById('media-type-filter')?.value;
+                        const sortBy = document.getElementById('sort-filter')?.value;
+                        
+                        // Build query
+                        let whereClause = {};
+                        
+                        if (category) {
+                            whereClause.genre = category;
+                        }
+                        
+                        if (mediaType) {
+                            whereClause.media_type = mediaType;
+                        }
+                        
+                        // Get order by
+                        let orderBy = 'created_at';
+                        let order = 'desc';
+                        
+                        if (sortBy === 'oldest') {
+                            order = 'asc';
+                        } else if (sortBy === 'popular') {
+                            orderBy = 'views';
+                            order = 'desc';
+                        }
+                        
+                        // Search in database (this is a simplified search)
+                        const results = await contentSupabase.query('Content', {
+                            select: '*',
+                            where: whereClause,
+                            orderBy: orderBy,
+                            order: order,
+                            limit: 50
+                        });
+                        
+                        // Filter by search query
+                        const filteredResults = results.filter(item => {
+                            const searchText = query.toLowerCase();
+                            return (
+                                (item.title && item.title.toLowerCase().includes(searchText)) ||
+                                (item.description && item.description.toLowerCase().includes(searchText)) ||
+                                (item.genre && item.genre.toLowerCase().includes(searchText)) ||
+                                (item.creator && item.creator.toLowerCase().includes(searchText))
+                            );
+                        });
+                        
+                        this.currentResults = filteredResults;
+                        this.renderSearchResults(filteredResults);
+                        
+                    } catch (error) {
+                        console.error('Search error:', error);
+                        this.resultsGrid.innerHTML = '<div class="no-results">Error searching. Please try again.</div>';
+                    }
+                }, 500); // Debounce search
+            },
+            
+            renderSearchResults(results) {
+                if (results.length === 0) {
+                    this.resultsGrid.innerHTML = '<div class="no-results">No results found. Try different keywords.</div>';
+                    return;
+                }
+                
+                this.resultsGrid.innerHTML = results.map(item => `
+                    <div class="content-card" data-content-id="${item.id}">
+                        <div class="card-thumbnail">
+                            <img src="${item.thumbnail_url || 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop'}" 
+                                 alt="${item.title}"
+                                 loading="lazy"
+                                 onerror="this.src='https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop'">
+                            <div class="thumbnail-overlay"></div>
+                        </div>
+                        <div class="card-content">
+                            <h3 class="card-title" title="${item.title}">
+                                ${item.title.length > 50 ? item.title.substring(0, 50) + '...' : item.title}
+                            </h3>
+                            <button class="creator-btn" 
+                                    data-creator-id="${item.creator_id || item.user_id}"
+                                    data-creator-name="${item.creator || 'Creator'}">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
+                                    <circle cx="12" cy="7" r="4"/>
+                                </svg>
+                                ${(item.creator || 'Creator').length > 15 ? (item.creator || 'Creator').substring(0, 15) + '...' : (item.creator || 'Creator')}
+                            </button>
+                        </div>
+                    </div>
+                `).join('');
+                
+                // Add click listeners to search results
+                this.setupSearchResultListeners();
+            },
+            
+            setupSearchResultListeners() {
+                this.resultsGrid.querySelectorAll('.content-card').forEach(card => {
+                    card.addEventListener('click', (e) => {
+                        if (e.target.closest('.creator-btn')) {
+                            e.stopPropagation();
+                            return;
+                        }
+                        
+                        const contentId = card.dataset.contentId;
+                        if (contentId) {
+                            window.location.href = `content-detail.html?id=${contentId}`;
+                        }
+                    });
+                });
+                
+                this.resultsGrid.querySelectorAll('.creator-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        const creatorId = btn.dataset.creatorId;
+                        const creatorName = btn.dataset.creatorName;
+                        if (creatorId) {
+                            window.location.href = `creator-channel.html?id=${creatorId}&name=${encodeURIComponent(creatorName)}`;
+                        }
+                    });
+                });
+            }
+        };
+        
+        // Infinite Scroll System
+        const InfiniteScrollSystem = {
+            isLoading: false,
+            currentPage: 0,
+            itemsPerPage: 10,
+            allItems: [],
+            renderedItems: new Set(),
+            
+            init() {
+                this.observer = new IntersectionObserver(
+                    (entries) => {
+                        entries.forEach(entry => {
+                            if (entry.isIntersecting && !this.isLoading) {
+                                this.loadMoreContent();
+                            }
+                        });
+                    },
+                    { threshold: 0.5 }
+                );
+                
+                // Start observing the loading indicator
+                const loadingIndicator = document.getElementById('infinite-scroll-loading');
+                if (loadingIndicator) {
+                    this.observer.observe(loadingIndicator);
+                }
+                
+                // Listen for content updates
+                document.addEventListener('contentLoaded', (e) => {
+                    this.allItems = e.detail.content;
+                    this.currentPage = 0;
+                    this.renderedItems.clear();
+                });
+            },
+            
+            async loadMoreContent() {
+                if (this.isLoading || this.allItems.length === 0) return;
+                
+                this.isLoading = true;
+                const loadingIndicator = document.getElementById('infinite-scroll-loading');
+                if (loadingIndicator) {
+                    loadingIndicator.style.display = 'block';
+                }
+                
+                try {
+                    // Calculate start and end indices
+                    const start = this.currentPage * this.itemsPerPage;
+                    const end = start + this.itemsPerPage;
+                    
+                    // Get items for this page
+                    const itemsToLoad = this.allItems.slice(start, end);
+                    
+                    // Filter out already rendered items
+                    const newItems = itemsToLoad.filter(item => !this.renderedItems.has(item.id));
+                    
+                    if (newItems.length > 0) {
+                        // Add to main content grid
+                        this.appendContentToGrid(newItems);
+                        
+                        // Mark as rendered
+                        newItems.forEach(item => this.renderedItems.add(item.id));
+                        
+                        // Increment page
+                        this.currentPage++;
+                    }
+                    
+                    // Hide loading indicator if no more items
+                    if (end >= this.allItems.length && loadingIndicator) {
+                        loadingIndicator.innerHTML = '<div>No more content to load</div>';
+                        this.observer.unobserve(loadingIndicator);
+                    }
+                    
+                } catch (error) {
+                    console.error('Error loading more content:', error);
+                    showToast('Failed to load more content', 'error');
+                } finally {
+                    this.isLoading = false;
+                    if (loadingIndicator && this.currentPage * this.itemsPerPage < this.allItems.length) {
+                        loadingIndicator.style.display = 'none';
+                    }
+                }
+            },
+            
+            appendContentToGrid(items) {
+                const contentGrids = document.querySelectorAll('.content-grid:not(#search-results-grid)');
+                
+                contentGrids.forEach(grid => {
+                    // Find the last grid to append to (usually the latest uploads section)
+                    if (grid.closest('.section:first-of-type')) {
+                        const newCards = items.map(item => this.createContentCard(item)).join('');
+                        grid.innerHTML += newCards;
+                        this.setupNewCardListeners(grid);
+                    }
+                });
+            },
+            
+            createContentCard(item) {
+                return `
+                    <div class="content-card" data-content-id="${item.id}">
+                        <div class="card-thumbnail">
+                            <img src="${item.thumbnail_url || 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop'}" 
+                                 alt="${item.title}"
+                                 loading="lazy"
+                                 onerror="this.src='https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop'">
+                            <div class="thumbnail-overlay"></div>
+                            <div class="video-preview-container">
+                                <video class="video-preview" muted preload="metadata">
+                                    <source src="${item.file_url || ''}" type="video/mp4">
+                                </video>
+                            </div>
+                            ${this.getContinueWatchingBadge(item.id)}
+                            <button class="share-btn" title="Share" data-content-id="${item.id}">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8M16 6l-4-4-4 4M12 2v13"/>
+                                </svg>
+                            </button>
+                        </div>
+                        <div class="card-content">
+                            <h3 class="card-title" title="${item.title}">
+                                ${item.title.length > 50 ? item.title.substring(0, 50) + '...' : item.title}
+                            </h3>
+                            <button class="creator-btn" 
+                                    data-creator-id="${item.creator_id}"
+                                    data-creator-name="${item.creator}">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
+                                    <circle cx="12" cy="7" r="4"/>
+                                </svg>
+                                ${item.creator.length > 15 ? item.creator.substring(0, 15) + '...' : item.creator}
+                            </button>
+                        </div>
+                    </div>
+                `;
+            },
+            
+            getContinueWatchingBadge(contentId) {
+                const progress = this.getWatchProgress(contentId);
+                if (progress > 0 && progress < 90) {
+                    return `
+                        <div class="continue-watching-badge">
+                            <i class="fas fa-play-circle"></i>
+                            Continue
+                        </div>
+                        <div class="continue-watching-progress">
+                            <div class="continue-watching-progress-fill" style="width: ${progress}%"></div>
+                        </div>
+                    `;
+                }
+                return '';
+            },
+            
+            getWatchProgress(contentId) {
+                const progress = localStorage.getItem(`watch_progress_${contentId}`);
+                return progress ? parseInt(progress) : 0;
+            },
+            
+            setupNewCardListeners(grid) {
+                const newCards = grid.querySelectorAll('.content-card:not(.initialized)');
+                newCards.forEach(card => {
+                    card.classList.add('initialized');
+                    setupCardHoverListeners(card);
+                });
+            }
+        };
+        
+        // Video Preview System
+        const VideoPreviewSystem = {
+            hoverTimeout: null,
+            currentPreview: null,
+            
+            init() {
+                // Event delegation for card hover
+                document.addEventListener('mouseover', (e) => {
+                    const card = e.target.closest('.content-card');
+                    if (card && !card.classList.contains('video-hover')) {
+                        this.handleCardHover(card);
+                    }
+                });
+                
+                document.addEventListener('mouseout', (e) => {
+                    const card = e.target.closest('.content-card');
+                    if (card && card.classList.contains('video-hover')) {
+                        this.handleCardLeave(card);
+                    }
+                });
+            },
+            
+            handleCardHover(card) {
+                clearTimeout(this.hoverTimeout);
+                
+                this.hoverTimeout = setTimeout(() => {
+                    const videoElement = card.querySelector('.video-preview');
+                    if (videoElement && videoElement.src) {
+                        card.classList.add('video-hover');
+                        this.currentPreview = videoElement;
+                        
+                        // Play video preview
+                        videoElement.currentTime = 0;
+                        videoElement.play().catch(e => {
+                            console.log('Video autoplay prevented:', e);
+                            card.classList.remove('video-hover');
+                        });
+                    }
+                }, 500); // Delay before showing preview
+            },
+            
+            handleCardLeave(card) {
+                clearTimeout(this.hoverTimeout);
+                
+                const videoElement = card.querySelector('.video-preview');
+                if (videoElement) {
+                    videoElement.pause();
+                    videoElement.currentTime = 0;
+                }
+                
+                card.classList.remove('video-hover');
+                this.currentPreview = null;
+            },
+            
+            pauseCurrentPreview() {
+                if (this.currentPreview) {
+                    this.currentPreview.pause();
+                    this.currentPreview.currentTime = 0;
+                    this.currentPreview.closest('.content-card')?.classList.remove('video-hover');
+                    this.currentPreview = null;
+                }
+            }
+        };
+        
+        // Personalized Recommendations System
+        const RecommendationSystem = {
+            userPreferences: {},
+            
+            init() {
+                this.loadUserPreferences();
+            },
+            
+            loadUserPreferences() {
+                try {
+                    const preferences = localStorage.getItem('user_preferences');
+                    if (preferences) {
+                        this.userPreferences = JSON.parse(preferences);
+                    } else {
+                        // Default preferences
+                        this.userPreferences = {
+                            likedCategories: [],
+                            watchedGenres: [],
+                            favoriteCreators: []
+                        };
+                    }
+                } catch (error) {
+                    console.error('Error loading user preferences:', error);
+                }
+            },
+            
+            saveUserPreferences() {
+                try {
+                    localStorage.setItem('user_preferences', JSON.stringify(this.userPreferences));
+                } catch (error) {
+                    console.error('Error saving user preferences:', error);
+                }
+            },
+            
+            trackContentInteraction(content) {
+                // Track category/genre
+                if (content.genre && !this.userPreferences.likedCategories.includes(content.genre)) {
+                    this.userPreferences.likedCategories.push(content.genre);
+                }
+                
+                // Track creator
+                if (content.creator_id && !this.userPreferences.favoriteCreators.includes(content.creator_id)) {
+                    this.userPreferences.favoriteCreators.push(content.creator_id);
+                }
+                
+                this.saveUserPreferences();
+            },
+            
+            getPersonalizedRecommendations(allContent) {
+                if (!allContent || allContent.length === 0) return [];
+                
+                // Score content based on user preferences
+                const scoredContent = allContent.map(content => {
+                    let score = 0;
+                    
+                    // Score based on genre match
+                    if (content.genre && this.userPreferences.likedCategories.includes(content.genre)) {
+                        score += 3;
+                    }
+                    
+                    // Score based on creator match
+                    if (content.creator_id && this.userPreferences.favoriteCreators.includes(content.creator_id)) {
+                        score += 5;
+                    }
+                    
+                    // Score based on recency (newer content gets higher score)
+                    if (content.created_at) {
+                        const daysOld = (Date.now() - new Date(content.created_at).getTime()) / (1000 * 60 * 60 * 24);
+                        if (daysOld < 7) score += 2; // Content less than 1 week old
+                        if (daysOld < 1) score += 3; // Content less than 1 day old
+                    }
+                    
+                    // Score based on popularity
+                    if (content.views) {
+                        score += Math.min(Math.floor(content.views / 1000), 5); // 1 point per 1000 views, max 5
+                    }
+                    
+                    return { ...content, recommendationScore: score };
+                });
+                
+                // Sort by score and return top recommendations
+                return scoredContent
+                    .sort((a, b) => b.recommendationScore - a.recommendationScore)
+                    .slice(0, 10); // Return top 10 recommendations
+            },
+            
+            updateRecommendationsSection(content) {
+                const recommendations = this.getPersonalizedRecommendations(content);
+                
+                // Find or create recommendations section
+                let recommendationsSection = document.querySelector('.section[data-type="recommendations"]');
+                
+                if (recommendations.length > 0) {
+                    if (!recommendationsSection) {
+                        recommendationsSection = this.createRecommendationsSection();
+                    }
+                    
+                    // Update recommendations grid
+                    const grid = recommendationsSection.querySelector('.content-grid');
+                    if (grid) {
+                        grid.innerHTML = renderContentCards(recommendations.slice(0, 5));
+                        setupContentCardListeners();
+                    }
+                } else if (recommendationsSection) {
+                    recommendationsSection.remove();
+                }
+            },
+            
+            createRecommendationsSection() {
+                const sectionHTML = `
+                    <section class="section" data-type="recommendations">
+                        <div class="section-header">
+                            <div class="recommendations-header">
+                                <h2 class="section-title">Recommended For You</h2>
+                                <span class="personalized-badge">Personalized</span>
+                            </div>
+                            <button class="see-all-btn" data-action="see-all" data-target="recommendations">See All</button>
+                        </div>
+                        <div class="content-grid">
+                            <!-- Recommendations will be loaded here -->
+                        </div>
+                    </section>
+                `;
+                
+                const contentSections = document.getElementById('content-sections');
+                if (contentSections) {
+                    // Insert after hero section
+                    const hero = document.querySelector('.hero');
+                    if (hero) {
+                        hero.insertAdjacentHTML('afterend', sectionHTML);
+                    } else {
+                        contentSections.insertAdjacentHTML('afterbegin', sectionHTML);
+                    }
+                }
+                
+                return document.querySelector('.section[data-type="recommendations"]');
+            }
+        };
+        
+        // Continue Watching System
+        const ContinueWatchingSystem = {
+            watchHistory: {},
+            
+            init() {
+                this.loadWatchHistory();
+            },
+            
+            loadWatchHistory() {
+                try {
+                    const history = localStorage.getItem('watch_history');
+                    if (history) {
+                        this.watchHistory = JSON.parse(history);
+                    }
+                } catch (error) {
+                    console.error('Error loading watch history:', error);
+                }
+            },
+            
+            saveWatchHistory() {
+                try {
+                    localStorage.setItem('watch_history', JSON.stringify(this.watchHistory));
+                } catch (error) {
+                    console.error('Error saving watch history:', error);
+                }
+            },
+            
+            updateWatchProgress(contentId, progress) {
+                this.watchHistory[contentId] = {
+                    progress: progress,
+                    lastWatched: Date.now()
+                };
+                this.saveWatchHistory();
+                
+                // Also save progress for progress bars
+                localStorage.setItem(`watch_progress_${contentId}`, progress.toString());
+            },
+            
+            getContinueWatchingContent(allContent) {
+                const continueWatching = [];
+                
+                for (const [contentId, data] of Object.entries(this.watchHistory)) {
+                    if (data.progress > 0 && data.progress < 90) { // Only show if not completed
+                        const content = allContent.find(c => c.id == contentId);
+                        if (content) {
+                            continueWatching.push({
+                                ...content,
+                                watchProgress: data.progress,
+                                lastWatched: data.lastWatched
+                            });
+                        }
+                    }
+                }
+                
+                // Sort by most recently watched
+                return continueWatching.sort((a, b) => b.lastWatched - a.lastWatched);
+            },
+            
+            updateContinueWatchingSection(content) {
+                const continueWatching = this.getContinueWatchingContent(content);
+                
+                // Find or create continue watching section
+                let continueWatchingSection = document.querySelector('.section[data-type="continue-watching"]');
+                
+                if (continueWatching.length > 0) {
+                    if (!continueWatchingSection) {
+                        continueWatchingSection = this.createContinueWatchingSection();
+                    }
+                    
+                    // Update continue watching grid
+                    const grid = continueWatchingSection.querySelector('.content-grid');
+                    if (grid) {
+                        grid.innerHTML = continueWatching.slice(0, 5).map(item => this.createContinueWatchingCard(item)).join('');
+                        this.setupContinueWatchingCardListeners(grid);
+                    }
+                } else if (continueWatchingSection) {
+                    continueWatchingSection.remove();
+                }
+            },
+            
+            createContinueWatchingSection() {
+                const sectionHTML = `
+                    <section class="section" data-type="continue-watching">
+                        <div class="section-header">
+                            <h2 class="section-title">Continue Watching</h2>
+                            <button class="see-all-btn" data-action="see-all" data-target="continue-watching">See All</button>
+                        </div>
+                        <div class="content-grid">
+                            <!-- Continue watching will be loaded here -->
+                        </div>
+                    </section>
+                `;
+                
+                const contentSections = document.getElementById('content-sections');
+                if (contentSections) {
+                    // Insert at the beginning of content sections
+                    contentSections.insertAdjacentHTML('afterbegin', sectionHTML);
+                }
+                
+                return document.querySelector('.section[data-type="continue-watching"]');
+            },
+            
+            createContinueWatchingCard(item) {
+                return `
+                    <div class="content-card" data-content-id="${item.id}">
+                        <div class="card-thumbnail">
+                            <img src="${item.thumbnail_url || 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop'}" 
+                                 alt="${item.title}"
+                                 loading="lazy"
+                                 onerror="this.src='https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop'">
+                            <div class="thumbnail-overlay"></div>
+                            <div class="video-preview-container">
+                                <video class="video-preview" muted preload="metadata">
+                                    <source src="${item.file_url || ''}" type="video/mp4">
+                                </video>
+                            </div>
+                            <div class="continue-watching-badge">
+                                <i class="fas fa-play-circle"></i>
+                                Continue
+                            </div>
+                            <div class="continue-watching-progress">
+                                <div class="continue-watching-progress-fill" style="width: ${item.watchProgress}%"></div>
+                            </div>
+                            <button class="share-btn" title="Share" data-content-id="${item.id}">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8M16 6l-4-4-4 4M12 2v13"/>
+                                </svg>
+                            </button>
+                        </div>
+                        <div class="card-content">
+                            <h3 class="card-title" title="${item.title}">
+                                ${item.title.length > 50 ? item.title.substring(0, 50) + '...' : item.title}
+                            </h3>
+                            <button class="creator-btn" 
+                                    data-creator-id="${item.creator_id}"
+                                    data-creator-name="${item.creator}">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
+                                    <circle cx="12" cy="7" r="4"/>
+                                </svg>
+                                ${item.creator.length > 15 ? item.creator.substring(0, 15) + '...' : item.creator}
+                            </button>
+                        </div>
+                    </div>
+                `;
+            },
+            
+            setupContinueWatchingCardListeners(grid) {
+                grid.querySelectorAll('.content-card').forEach(card => {
+                    card.addEventListener('click', (e) => {
+                        if (e.target.closest('.share-btn') || e.target.closest('.creator-btn')) {
+                            return;
+                        }
+                        
+                        const contentId = card.dataset.contentId;
+                        if (contentId) {
+                            // Store that we're continuing watching
+                            localStorage.setItem('continue_watching_id', contentId);
+                            window.location.href = `content-detail.html?id=${contentId}`;
+                        }
+                    });
+                });
+                
+                grid.querySelectorAll('.share-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        const contentId = btn.dataset.contentId;
+                        const content = allContentData.find(c => c.id == contentId);
+                        if (content) {
+                            shareContent(content);
+                        }
+                    });
+                });
+                
+                grid.querySelectorAll('.creator-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        const creatorId = btn.dataset.creatorId;
+                        const creatorName = btn.dataset.creatorName;
+                        if (creatorId) {
+                            window.location.href = `creator-channel.html?id=${creatorId}&name=${encodeURIComponent(creatorName)}`;
+                        }
+                    });
+                });
+            }
+        };
+        
+        // Keyboard Shortcuts System
+        const KeyboardShortcutsSystem = {
+            init() {
+                document.addEventListener('keydown', this.handleKeydown.bind(this));
+                
+                // Setup shortcuts help modal
+                document.getElementById('close-shortcuts-btn')?.addEventListener('click', () => {
+                    this.closeShortcutsHelp();
+                });
+            },
+            
+            handleKeydown(e) {
+                // Don't trigger shortcuts if user is typing in an input
+                if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+                    return;
+                }
+                
+                // Ctrl+K or Cmd+K for search
+                if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+                    e.preventDefault();
+                    SearchSystem.openSearch();
+                }
+                
+                // Escape to close modals
+                if (e.key === 'Escape') {
+                    this.handleEscape();
+                }
+                
+                // Space to play/pause video preview
+                if (e.key === ' ' && !e.target.tagName === 'BUTTON') {
+                    e.preventDefault();
+                    this.handleSpaceKey();
+                }
+                
+                // Question mark for shortcuts help
+                if (e.key === '?') {
+                    e.preventDefault();
+                    this.toggleShortcutsHelp();
+                }
+                
+                // Alt+H for home
+                if (e.altKey && e.key === 'h') {
+                    e.preventDefault();
+                    window.location.href = 'index.html';
+                }
+                
+                // Alt+P for profile
+                if (e.altKey && e.key === 'p') {
+                    e.preventDefault();
+                    const profileBtn = document.getElementById('profile-btn');
+                    if (profileBtn) profileBtn.click();
+                }
+                
+                // Ctrl+R to refresh content
+                if ((e.ctrlKey || e.metaKey) && e.key === 'r' && !e.shiftKey) {
+                    // Allow normal refresh for hard refresh (Ctrl+Shift+R)
+                }
+            },
+            
+            handleEscape() {
+                // Close search modal if open
+                if (document.getElementById('search-modal')?.classList.contains('active')) {
+                    SearchSystem.closeSearch();
+                }
+                
+                // Close shortcuts help if open
+                if (document.getElementById('keyboard-shortcuts-help')?.classList.contains('active')) {
+                    this.closeShortcutsHelp();
+                }
+            },
+            
+            handleSpaceKey() {
+                // Play/pause current video preview
+                const currentPreview = VideoPreviewSystem.currentPreview;
+                if (currentPreview) {
+                    if (currentPreview.paused) {
+                        currentPreview.play();
+                    } else {
+                        currentPreview.pause();
+                    }
+                }
+            },
+            
+            toggleShortcutsHelp() {
+                const helpModal = document.getElementById('keyboard-shortcuts-help');
+                if (helpModal) {
+                    if (helpModal.classList.contains('active')) {
+                        this.closeShortcutsHelp();
+                    } else {
+                        helpModal.classList.add('active');
+                    }
+                }
+            },
+            
+            closeShortcutsHelp() {
+                const helpModal = document.getElementById('keyboard-shortcuts-help');
+                if (helpModal) {
+                    helpModal.classList.remove('active');
+                }
+            }
+        };
+        
+        // Service Worker for Offline Support
+        const ServiceWorkerSystem = {
+            async init() {
+                if ('serviceWorker' in navigator) {
+                    try {
+                        const registration = await navigator.serviceWorker.register('/sw.js');
+                        console.log('Service Worker registered:', registration);
+                        
+                        // Check for updates
+                        registration.addEventListener('updatefound', () => {
+                            const newWorker = registration.installing;
+                            console.log('New service worker found:', newWorker);
+                        });
+                        
+                    } catch (error) {
+                        console.error('Service Worker registration failed:', error);
+                    }
+                }
+            },
+            
+            // Create a simple service worker
+            async createServiceWorker() {
+                if ('serviceWorker' in navigator) {
+                    const swCode = `
+                        // Service Worker for Bantu Stream Connect
+                        const CACHE_NAME = 'bantu-stream-connect-v1';
+                        const urlsToCache = [
+                            '/',
+                            '/index.html',
+                            '/styles/main.css',
+                            '/scripts/main.js',
+                            // Add other important assets
+                        ];
+                        
+                        self.addEventListener('install', event => {
+                            event.waitUntil(
+                                caches.open(CACHE_NAME)
+                                    .then(cache => cache.addAll(urlsToCache))
+                            );
+                        });
+                        
+                        self.addEventListener('fetch', event => {
+                            event.respondWith(
+                                caches.match(event.request)
+                                    .then(response => {
+                                        // Return cached response if found
+                                        if (response) {
+                                            return response;
+                                        }
+                                        
+                                        // Otherwise fetch from network
+                                        return fetch(event.request)
+                                            .then(response => {
+                                                // Check if valid response
+                                                if (!response || response.status !== 200 || response.type !== 'basic') {
+                                                    return response;
+                                                }
+                                                
+                                                // Clone the response
+                                                const responseToCache = response.clone();
+                                                
+                                                // Cache the new response
+                                                caches.open(CACHE_NAME)
+                                                    .then(cache => {
+                                                        cache.put(event.request, responseToCache);
+                                                    });
+                                                
+                                                return response;
+                                            })
+                                            .catch(() => {
+                                                // Return offline page or fallback
+                                                return caches.match('/offline.html');
+                                            });
+                                    })
+                            );
+                        });
+                        
+                        self.addEventListener('activate', event => {
+                            const cacheWhitelist = [CACHE_NAME];
+                            event.waitUntil(
+                                caches.keys().then(cacheNames => {
+                                    return Promise.all(
+                                        cacheNames.map(cacheName => {
+                                            if (cacheWhitelist.indexOf(cacheName) === -1) {
+                                                return caches.delete(cacheName);
+                                            }
+                                        })
+                                    );
+                                })
+                            );
+                        });
+                    `;
+                    
+                    // Create a Blob with the service worker code
+                    const blob = new Blob([swCode], { type: 'application/javascript' });
+                    const swURL = URL.createObjectURL(blob);
+                    
+                    try {
+                        const registration = await navigator.serviceWorker.register(swURL);
+                        console.log('Custom Service Worker registered:', registration);
+                    } catch (error) {
+                        console.error('Custom Service Worker registration failed:', error);
+                    }
+                }
+            }
+        };
+        
         // Wait for DOM to be ready
         document.addEventListener('DOMContentLoaded', async () => {
             console.log('🚀 Bantu Stream Connect Home Feed Initializing...');
@@ -1126,6 +2482,21 @@
             
             // Initialize Development Window (always visible)
             DevelopmentWindow.init();
+            
+            // Initialize new systems
+            SearchSystem.init();
+            InfiniteScrollSystem.init();
+            VideoPreviewSystem.init();
+            RecommendationSystem.init();
+            ContinueWatchingSystem.init();
+            KeyboardShortcutsSystem.init();
+            
+            // Initialize Service Worker for offline support
+            try {
+                await ServiceWorkerSystem.init();
+            } catch (error) {
+                console.log('Service Worker initialization skipped or failed:', error);
+            }
             
             // Initialize auth and check if user is logged in
             const { data: { session }, error } = await supabaseAuth.auth.getSession();
@@ -1539,6 +2910,34 @@
                 }).slice(0, 5);
             }
             
+            // ✅ SETUP CARD HOVER LISTENERS
+            function setupCardHoverListeners(card) {
+                const videoElement = card.querySelector('.video-preview');
+                if (!videoElement || !videoElement.src) return;
+                
+                // Clear any existing listeners
+                card._mouseEnterHandler = card._mouseEnterHandler || ((e) => {
+                    // Handled by VideoPreviewSystem
+                });
+                
+                card._mouseLeaveHandler = card._mouseLeaveHandler || ((e) => {
+                    // Handled by VideoPreviewSystem
+                });
+                
+                // Video preview click to play/pause
+                const previewContainer = card.querySelector('.video-preview-container');
+                if (previewContainer) {
+                    previewContainer.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        if (videoElement.paused) {
+                            videoElement.play();
+                        } else {
+                            videoElement.pause();
+                        }
+                    });
+                }
+            }
+            
             // ✅ INITIALIZE HOME FEED
             async function initializeHomeFeed() {
                 try {
@@ -1553,6 +2952,18 @@
                     filteredContentData = allContentData;
                     
                     console.log('✅ Loaded', allContentData.length, 'content items');
+                    
+                    // Update systems with new content
+                    const contentLoadedEvent = new CustomEvent('contentLoaded', {
+                        detail: { content: allContentData }
+                    });
+                    document.dispatchEvent(contentLoadedEvent);
+                    
+                    // Update personalized recommendations
+                    RecommendationSystem.updateRecommendationsSection(allContentData);
+                    
+                    // Update continue watching section
+                    ContinueWatchingSystem.updateContinueWatchingSection(allContentData);
                     
                     // Render UI
                     loadingText.textContent = 'Setting up interface...';
@@ -1584,6 +2995,12 @@
                 }
                 
                 contentSections.innerHTML = `
+                    <!-- Continue Watching (if any) -->
+                    <!-- Will be added by ContinueWatchingSystem -->
+                    
+                    <!-- Personalized Recommendations -->
+                    <!-- Will be added by RecommendationSystem -->
+                    
                     <!-- Latest Uploads -->
                     <section class="section">
                         <div class="section-header">
@@ -1591,7 +3008,7 @@
                             <button class="see-all-btn" data-action="see-all" data-target="content-library">See All</button>
                         </div>
                         <div class="content-grid">
-                            ${renderContentCards(filteredContentData.slice(0, 5))}
+                            ${renderContentCards(filteredContentData.slice(0, 10))}
                         </div>
                     </section>
                     
@@ -1647,6 +3064,10 @@
                 
                 // Setup content card listeners
                 setupContentCardListeners();
+                
+                // Update continue watching and recommendations sections
+                ContinueWatchingSystem.updateContinueWatchingSection(filteredContentData);
+                RecommendationSystem.updateRecommendationsSection(filteredContentData);
             }
             
             // ✅ RENDER CONTENT CARDS
@@ -1660,8 +3081,15 @@
                         <div class="card-thumbnail">
                             <img src="${content.thumbnail_url || 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop'}" 
                                  alt="${content.title}"
+                                 loading="lazy"
                                  onerror="this.src='https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop'">
                             <div class="thumbnail-overlay"></div>
+                            <div class="video-preview-container">
+                                <video class="video-preview" muted preload="metadata">
+                                    <source src="${content.file_url || ''}" type="video/mp4">
+                                </video>
+                            </div>
+                            ${InfiniteScrollSystem.getContinueWatchingBadge(content.id)}
                             <button class="share-btn" title="Share" data-content-id="${content.id}">
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8M16 6l-4-4-4 4M12 2v13"/>
@@ -1688,11 +3116,11 @@
             
             // ✅ SETUP EVENT LISTENERS
             function setupEventListeners() {
-                // Search button - redirect to content-library.html
+                // Search button - open search modal
                 const searchBtn = document.getElementById('search-btn');
                 if (searchBtn) {
                     searchBtn.addEventListener('click', () => {
-                        window.location.href = 'content-library.html';
+                        SearchSystem.openSearch();
                     });
                 }
                 
@@ -1734,6 +3162,10 @@
                         const target = seeAllBtn.dataset.target;
                         if (target === 'trending') {
                             window.location.href = 'trending_screen.html';
+                        } else if (target === 'recommendations') {
+                            window.location.href = 'recommendations.html';
+                        } else if (target === 'continue-watching') {
+                            window.location.href = 'continue-watching.html';
                         } else {
                             window.location.href = 'content-library.html';
                         }
@@ -1744,7 +3176,9 @@
             // ✅ SETUP CONTENT CARD LISTENERS
             function setupContentCardListeners() {
                 // Content card clicks - redirect to content-detail.html
-                document.querySelectorAll('.content-card').forEach(card => {
+                document.querySelectorAll('.content-card:not(.initialized)').forEach(card => {
+                    card.classList.add('initialized');
+                    
                     card.addEventListener('click', (e) => {
                         // Don't trigger if clicking on share or creator button
                         if (e.target.closest('.share-btn') || e.target.closest('.creator-btn')) {
@@ -1753,13 +3187,20 @@
                         
                         const contentId = card.dataset.contentId;
                         if (contentId) {
+                            // Track interaction for recommendations
+                            const content = allContentData.find(c => c.id == contentId);
+                            if (content) {
+                                RecommendationSystem.trackContentInteraction(content);
+                            }
+                            
                             window.location.href = `content-detail.html?id=${contentId}`;
                         }
                     });
                 });
                 
                 // Share buttons
-                document.querySelectorAll('.share-btn').forEach(btn => {
+                document.querySelectorAll('.share-btn:not(.initialized)').forEach(btn => {
+                    btn.classList.add('initialized');
                     btn.addEventListener('click', (e) => {
                         e.stopPropagation();
                         const contentId = btn.dataset.contentId;
@@ -1771,7 +3212,8 @@
                 });
                 
                 // Creator buttons - redirect to creator-channel.html
-                document.querySelectorAll('.creator-btn').forEach(btn => {
+                document.querySelectorAll('.creator-btn:not(.initialized)').forEach(btn => {
+                    btn.classList.add('initialized');
                     btn.addEventListener('click', (e) => {
                         e.stopPropagation();
                         const creatorId = btn.dataset.creatorId;
@@ -1783,6 +3225,12 @@
                         }
                     });
                 });
+                
+                // Setup hover listeners for video previews
+                document.querySelectorAll('.content-card:not(.hover-initialized)').forEach(card => {
+                    card.classList.add('hover-initialized');
+                    setupCardHoverListeners(card);
+                });
             }
             
             // ✅ SHARE CONTENT
@@ -1791,20 +3239,21 @@
                 const creatorName = content.creator || 'Bantu Creator';
                 
                 const shareText = `Check out "${title}" by ${creatorName} on Bantu Stream Connect!`;
+                const shareUrl = `${window.location.origin}/content-detail.html?id=${content.id}`;
                 
                 if (navigator.share) {
                     navigator.share({
                         title: 'Amazing content on Bantu Stream Connect',
                         text: shareText,
-                        url: window.location.href
+                        url: shareUrl
                     });
                 } else {
                     // Copy to clipboard
-                    navigator.clipboard.writeText(shareText).then(() => {
+                    navigator.clipboard.writeText(`${shareText} ${shareUrl}`).then(() => {
                         showToast('Link copied to clipboard!', 'success');
                     }).catch(() => {
                         // Fallback
-                        prompt('Copy this text to share:', shareText);
+                        prompt('Copy this text to share:', `${shareText} ${shareUrl}`);
                     });
                 }
             }
