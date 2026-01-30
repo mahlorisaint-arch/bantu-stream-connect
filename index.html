@@ -297,18 +297,63 @@
     <script>
         window.SUPABASE_URL = 'https://ydnxqnbjoshvxteevemc.supabase.co';
         window.SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U';
+        
+        // Initialize Supabase client ONCE with proper auth settings
+        window.supabaseClient = supabase.createClient(
+            window.SUPABASE_URL,
+            window.SUPABASE_ANON_KEY,
+            {
+                auth: {
+                    persistSession: true,
+                    autoRefreshToken: true,
+                    detectSessionInUrl: true,
+                    storage: localStorage,
+                    storageKey: 'sb-bantu-auth-token'
+                }
+            }
+        );
+        console.log('✅ Supabase client initialized');
     </script>
-
-    <!-- Auth Fix (MUST be loaded first) -->
-    <script src="js/auth-fix.js"></script>
 
     <!-- Main JavaScript -->
     <script src="js/home-feed.js" defer></script>
 
-    <!-- Manual Refresh Button for Testing (remove in production) -->
-    <div style="position: fixed; bottom: 20px; left: 20px; z-index: 1000;">
-        <button onclick="window.refreshAuth()" style="background: #F59E0B; color: white; border: none; padding: 10px 15px; border-radius: 8px; cursor: pointer; font-size: 12px;">
-            🔄 Refresh Auth
+    <!-- Auth Debug Helper (remove in production) -->
+    <script>
+        // Add this to debug auth issues
+        window.debugAuth = async function() {
+            console.log('🔍 Debugging authentication...');
+            
+            // Check localStorage
+            console.log('📦 localStorage auth key:', localStorage.getItem('sb-bantu-auth-token'));
+            
+            // Check session
+            const { data: { session }, error } = await window.supabaseClient.auth.getSession();
+            console.log('🔐 Session exists:', !!session);
+            console.log('👤 Current user:', session?.user?.email);
+            
+            // Check URL for OAuth tokens
+            const urlParams = new URLSearchParams(window.location.search);
+            console.log('🔗 URL tokens:', {
+                access_token: urlParams.get('access_token') ? 'Found' : 'Not found',
+                refresh_token: urlParams.get('refresh_token') ? 'Found' : 'Not found'
+            });
+            
+            return session;
+        };
+        
+        // Run debug on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            setTimeout(window.debugAuth, 1000);
+        });
+    </script>
+
+    <div style="position: fixed; bottom: 20px; left: 20px; z-index: 1000; display: flex; gap: 10px;">
+        <button onclick="window.debugAuth()" style="background: #F59E0B; color: white; border: none; padding: 10px 15px; border-radius: 8px; cursor: pointer; font-size: 12px;">
+            🔍 Debug Auth
+        </button>
+        <button onclick="window.location.href='login.html?redirect=index.html'" style="background: #1D4ED8; color: white; border: none; padding: 10px 15px; border-radius: 8px; cursor: pointer; font-size: 12px;">
+            🔐 Go to Login
         </button>
     </div>
 </body>
