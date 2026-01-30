@@ -1,6 +1,6 @@
 // ==========================================================================
-// BANTU STREAM CONNECT - HOME FEED ENHANCED
-// Version: 3.2 (Fixed Recommendations, Thumbnails, and Authentication)
+// BANTU STREAM CONNECT - HOME FEED
+// Version: 5.1 (Updated to work with HTML Supabase initialization)
 // ==========================================================================
 
 // Global state
@@ -8,19 +8,11 @@ let currentUser = null;
 let contentData = [];
 let trendingData = [];
 let recommendedData = [];
-let filteredData = [];
 let genres = [];
 let currentPage = 1;
 let isLoading = false;
 let hasMoreContent = true;
 let searchTimeout = null;
-let currentFilters = {
-    contentType: 'all',
-    genre: 'all',
-    sortBy: 'relevance',
-    duration: 'all',
-    trendingHours: 24
-};
 
 // DOM Elements
 let elements = {};
@@ -33,16 +25,20 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Cache DOM elements
         cacheElements();
         
-        // Initialize Supabase with proper auth persistence
-        await initializeSupabase();
+        // Verify Supabase client is initialized
+        if (!window.supabaseClient) {
+            console.error('❌ Supabase client not initialized. Check index.html configuration.');
+            showError('Configuration error. Please refresh the page.');
+            return;
+        }
         
-        // Check authentication FIRST (before any content loading)
-        await checkAuth();
+        // Check authentication FIRST
+        await checkAuthAndInitialize();
         
         // Load genres for filters
         await loadGenres();
         
-        // Setup all event listeners
+        // Setup event listeners
         setupEventListeners();
         
         // Load initial content
@@ -62,7 +58,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 });
 
-// Cache frequently used DOM elements
+// Cache DOM elements
 function cacheElements() {
     elements = {
         app: document.getElementById('app'),
@@ -96,99 +92,64 @@ function cacheElements() {
     };
 }
 
-// Initialize Supabase client with proper auth persistence
-async function initializeSupabase() {
-    if (!window.supabase || !window.SUPABASE_URL || !window.SUPABASE_ANON_KEY) {
-        throw new Error('Supabase configuration is missing');
-    }
+// Check authentication and initialize user
+async function checkAuthAndInitialize() {
+    console.log('🔐 Checking authentication...');
     
-    // Initialize with auth persistence for better cross-device auth
-    window.supabaseClient = supabase.createClient(
-        window.SUPABASE_URL, 
-        window.SUPABASE_ANON_KEY,
-        {
-            auth: {
-                persistSession: true,
-                autoRefreshToken: true,
-                detectSessionInUrl: true,
-                storage: localStorage,
-                storageKey: 'sb-auth-token'
+    try {
+        // First check for OAuth redirect tokens
+        const urlParams = new URLSearchParams(window.location.search);
+        const accessToken = urlParams.get('access_token');
+        const refreshToken = urlParams.get('refresh_token');
+        
+        if (accessToken && refreshToken) {
+            console.log('🔄 Processing OAuth redirect...');
+            try {
+                const { data: { session }, error } = await window.supabaseClient.auth.setSession({
+                    access_token: accessToken,
+                    refresh_token: refreshToken
+                });
+                
+                if (!error && session) {
+                    console.log('✅ OAuth session set for:', session.user.email);
+                    currentUser = session.user;
+                    updateProfileButton();
+                    
+                    // Clean URL
+                    window.history.replaceState({}, document.title, window.location.pathname);
+                    
+                    // Create user profile if needed
+                    await createUserProfile(session.user);
+                    
+                    showToast(`Welcome, ${session.user.email}!`, 'success');
+                    return;
+                }
+            } catch (oauthError) {
+                console.error('OAuth processing failed:', oauthError);
             }
         }
-    );
-    
-    console.log('✅ Supabase client initialized with auth persistence');
-}
-
-// Check authentication with improved cross-device support
-async function checkAuth() {
-    try {
-        // First check if we have a stored session
-        const storedSession = localStorage.getItem('sb-auth-token');
-        console.log('📱 Auth check - Stored session exists:', !!storedSession);
         
-        // Get current session
-        const { data: { session }, error } = await supabaseClient.auth.getSession();
+        // Check for existing session
+        const { data: { session }, error } = await window.supabaseClient.auth.getSession();
         
         if (error) {
-            console.error('Auth session error:', error);
-            // Clear invalid session
-            localStorage.removeItem('sb-auth-token');
+            console.error('Session error:', error);
             setupProfileButtonForLogin();
             return;
         }
         
         if (session) {
+            console.log('✅ User authenticated:', session.user.email);
             currentUser = session.user;
-            console.log('✅ User authenticated via session:', currentUser.email);
-            
-            // Verify the user exists in our database
-            const { data: userProfile, error: profileError } = await supabaseClient
-                .from('user_profiles')
-                .select('*')
-                .eq('id', currentUser.id)
-                .maybeSingle();
-            
-            if (profileError || !userProfile) {
-                console.log('⚠️ User profile not found, creating...');
-                // Create user profile if it doesn't exist
-                await createUserProfile(currentUser);
-            }
-            
             updateProfileButton();
-            showToast(`Welcome back, ${currentUser.email}!`, 'success');
             
+            // Create user profile if needed
+            await createUserProfile(session.user);
+            
+            showToast(`Welcome back, ${session.user.email}!`, 'success');
         } else {
-            console.log('👤 User not authenticated (public mode)');
+            console.log('👤 No user authenticated (public mode)');
             setupProfileButtonForLogin();
-            
-            // Check if there's a session in the URL (for OAuth redirects)
-            const urlParams = new URLSearchParams(window.location.search);
-            const accessToken = urlParams.get('access_token');
-            const refreshToken = urlParams.get('refresh_token');
-            
-            if (accessToken && refreshToken) {
-                console.log('🔄 OAuth redirect detected, attempting to restore session...');
-                try {
-                    const { data: { session: oauthSession }, error: oauthError } = 
-                        await supabaseClient.auth.setSession({
-                            access_token: accessToken,
-                            refresh_token: refreshToken
-                        });
-                    
-                    if (!oauthError && oauthSession) {
-                        currentUser = oauthSession.user;
-                        console.log('✅ OAuth session restored:', currentUser.email);
-                        updateProfileButton();
-                        showToast(`Welcome, ${currentUser.email}!`, 'success');
-                        
-                        // Clean URL
-                        window.history.replaceState({}, document.title, window.location.pathname);
-                    }
-                } catch (oauthError) {
-                    console.error('OAuth session restore failed:', oauthError);
-                }
-            }
         }
         
     } catch (error) {
@@ -200,21 +161,37 @@ async function checkAuth() {
 // Create user profile if it doesn't exist
 async function createUserProfile(user) {
     try {
-        const { error } = await supabaseClient
+        // Check if user profile already exists
+        const { data: existingProfile, error: checkError } = await window.supabaseClient
             .from('user_profiles')
-            .upsert({
-                id: user.id,
-                email: user.email,
-                full_name: user.user_metadata?.full_name || user.email.split('@')[0],
-                username: user.user_metadata?.user_name || user.email.split('@')[0],
-                role: 'creator',
-                created_at: new Date().toISOString()
-            });
+            .select('id')
+            .eq('id', user.id)
+            .maybeSingle();
         
-        if (error) {
-            console.error('Error creating user profile:', error);
-        } else {
-            console.log('✅ User profile created');
+        if (checkError) {
+            console.log('Profile check error:', checkError);
+            return;
+        }
+        
+        if (!existingProfile) {
+            // Create user profile
+            const { error: createError } = await window.supabaseClient
+                .from('user_profiles')
+                .upsert({
+                    id: user.id,
+                    email: user.email,
+                    full_name: user.user_metadata?.full_name || user.email.split('@')[0],
+                    username: user.user_metadata?.user_name || user.email.split('@')[0].toLowerCase(),
+                    role: 'creator',
+                    created_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString()
+                });
+            
+            if (!createError) {
+                console.log('✅ User profile created');
+            } else {
+                console.error('Error creating user profile:', createError);
+            }
         }
     } catch (error) {
         console.error('Failed to create user profile:', error);
@@ -241,6 +218,12 @@ function updateProfileButton() {
 function setupProfileButtonForLogin() {
     if (!elements.profileBtn) return;
     
+    elements.profileBtn.innerHTML = `
+        <div class="profile-placeholder">
+            <i class="fas fa-user"></i>
+        </div>
+    `;
+    
     elements.profileBtn.onclick = () => {
         window.location.href = 'login.html?redirect=' + encodeURIComponent(window.location.href);
     };
@@ -256,8 +239,7 @@ function getInitials(email) {
 // Load genres for filters
 async function loadGenres() {
     try {
-        // Try to get genres from database
-        const { data, error } = await supabaseClient
+        const { data, error } = await window.supabaseClient
             .from('Content')
             .select('genre')
             .not('genre', 'is', null)
@@ -293,7 +275,6 @@ function setupEventListeners() {
     // Search functionality
     if (elements.searchInput) {
         elements.searchInput.addEventListener('input', handleSearchInput);
-        elements.searchInput.addEventListener('focus', handleSearchFocus);
     }
     
     // Filter buttons
@@ -317,30 +298,6 @@ function setupEventListeners() {
         elements.resetFilters.addEventListener('click', resetFilters);
     }
     
-    // Filter dropdowns
-    if (elements.contentTypeFilter) {
-        elements.contentTypeFilter.addEventListener('change', updateFilters);
-    }
-    
-    if (elements.genreFilter) {
-        elements.genreFilter.addEventListener('change', updateFilters);
-    }
-    
-    if (elements.sortFilter) {
-        elements.sortFilter.addEventListener('change', updateFilters);
-    }
-    
-    if (elements.durationFilter) {
-        elements.durationFilter.addEventListener('change', updateFilters);
-    }
-    
-    // Trending time buttons
-    if (elements.timeButtons) {
-        elements.timeButtons.forEach(btn => {
-            btn.addEventListener('click', handleTimeFilterClick);
-        });
-    }
-    
     // Browse buttons
     if (elements.browseAllBtn) {
         elements.browseAllBtn.addEventListener('click', () => {
@@ -354,40 +311,23 @@ function setupEventListeners() {
         });
     }
     
-    // Click outside to close search results
-    document.addEventListener('click', (e) => {
-        if (!elements.searchContainer?.contains(e.target) && 
-            !elements.searchResults?.contains(e.target)) {
-            closeSearchResults();
-        }
-    });
-    
-    // Escape key to close search
-    document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') {
-            closeSearchResults();
-        }
-    });
-    
-    // Listen for auth changes with better error handling
-    supabaseClient.auth.onAuthStateChange(async (event, session) => {
+    // Setup auth state change listener
+    window.supabaseClient.auth.onAuthStateChange(async (event, session) => {
         console.log('Auth state changed:', event);
         
         if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-            currentUser = session.user;
-            console.log('✅ User authenticated via state change:', currentUser.email);
-            
-            // Update UI
-            updateProfileButton();
-            
-            // Load recommendations for logged-in user
-            await loadRecommendedContent();
-            
-            // Show welcome message (but not on initial page load)
-            if (event === 'SIGNED_IN') {
-                showToast(`Welcome back, ${session.user.email}!`, 'success');
+            if (session?.user) {
+                currentUser = session.user;
+                console.log('✅ User authenticated via state change:', currentUser.email);
+                updateProfileButton();
+                
+                // Load recommendations for logged-in user
+                await loadRecommendedContent();
+                
+                if (event === 'SIGNED_IN') {
+                    showToast(`Welcome, ${session.user.email}!`, 'success');
+                }
             }
-            
         } else if (event === 'SIGNED_OUT') {
             currentUser = null;
             console.log('User signed out');
@@ -397,45 +337,24 @@ function setupEventListeners() {
             if (elements.recommendedSection) {
                 elements.recommendedSection.style.display = 'none';
             }
-            
-            // Clear any user-specific data
-            recommendedData = [];
-            if (elements.recommendedContent) {
-                elements.recommendedContent.innerHTML = `
-                    <div class="recommended-fallback">
-                        <i class="fas fa-sign-in-alt"></i>
-                        <p>Sign in to get personalized recommendations!</p>
-                    </div>
-                `;
-            }
         }
     });
 }
 
-// Handle search input with debouncing
+// Handle search input
 function handleSearchInput(e) {
     const query = e.target.value.trim();
     
-    // Clear previous timeout
     if (searchTimeout) {
         clearTimeout(searchTimeout);
     }
     
-    // Show search results if query is not empty
     if (query.length > 0) {
         searchTimeout = setTimeout(() => {
             performSearch(query);
-        }, 300); // 300ms debounce
+        }, 300);
     } else {
         closeSearchResults();
-    }
-}
-
-// Handle search focus
-function handleSearchFocus() {
-    const query = elements.searchInput.value.trim();
-    if (query.length > 0) {
-        performSearch(query);
     }
 }
 
@@ -444,7 +363,7 @@ async function performSearch(query) {
     try {
         showSearchLoading();
         
-        const { data, error } = await supabaseClient
+        const { data, error } = await window.supabaseClient
             .from('Content')
             .select(`
                 *,
@@ -477,43 +396,33 @@ function displaySearchResults(results, query) {
             <div class="no-results">
                 <i class="fas fa-search"></i>
                 <p>No results found for "${query}"</p>
-                <p class="search-tip">Try different keywords or check your spelling</p>
             </div>
         `;
     } else {
         elements.searchResultsContent.innerHTML = results.map(item => {
-            // Get creator info
             const creatorInfo = getCreatorInfo(item);
-            const creatorName = creatorInfo.name;
-            
             return `
-            <div class="search-result-item" onclick="window.location.href='content-detail.html?id=${item.id}'">
-                <div class="search-result-thumbnail">
-                    <img 
-                        src="${fixThumbnailUrl(item.thumbnail_url)}" 
-                        alt="${item.title}"
-                        loading="lazy"
-                    >
-                </div>
-                <div class="search-result-details">
-                    <h5>${truncateText(item.title, 50)}</h5>
-                    <p class="search-result-creator">
-                        ${creatorName}
-                    </p>
-                    <div class="search-result-meta">
-                        <span><i class="fas fa-eye"></i> ${formatNumber(item.views_count || 0)}</span>
-                        <span><i class="fas fa-heart"></i> ${formatNumber(item.likes_count || 0)}</span>
+                <div class="search-result-item" onclick="window.location.href='content-detail.html?id=${item.id}'">
+                    <div class="search-result-thumbnail">
+                        <img src="${fixThumbnailUrl(item.thumbnail_url)}" alt="${item.title}">
+                    </div>
+                    <div class="search-result-details">
+                        <h5>${truncateText(item.title, 50)}</h5>
+                        <p class="search-result-creator">@${creatorInfo.username}</p>
+                        <div class="search-result-meta">
+                            <span><i class="fas fa-eye"></i> ${formatNumber(item.views_count || 0)}</span>
+                            <span><i class="fas fa-heart"></i> ${formatNumber(item.likes_count || 0)}</span>
+                        </div>
                     </div>
                 </div>
-            </div>
-        `}).join('');
+            `;
+        }).join('');
     }
     
-    // Show search results
     elements.searchResults.style.display = 'block';
 }
 
-// Show search loading state
+// Show search loading
 function showSearchLoading() {
     if (!elements.searchResultsContent) return;
     
@@ -560,7 +469,7 @@ function closeSearchResults() {
     }
 }
 
-// Toggle filters dropdown
+// Toggle filters
 function toggleFilters() {
     if (!elements.searchFilters) return;
     
@@ -568,38 +477,13 @@ function toggleFilters() {
     elements.searchFilters.style.display = isVisible ? 'none' : 'block';
 }
 
-// Update filters
-function updateFilters() {
-    if (!elements.contentTypeFilter || !elements.genreFilter || 
-        !elements.sortFilter || !elements.durationFilter) return;
-    
-    currentFilters = {
-        contentType: elements.contentTypeFilter.value,
-        genre: elements.genreFilter.value,
-        sortBy: elements.sortFilter.value,
-        duration: elements.durationFilter.value,
-        trendingHours: currentFilters.trendingHours
-    };
-}
-
 // Apply filters
 function applyFilters() {
-    updateFilters();
-    closeSearchResults();
-    
-    // Reload content with filters
-    if (elements.searchInput.value.trim()) {
-        performSearch(elements.searchInput.value.trim());
-    } else {
-        currentPage = 1;
-        hasMoreContent = true;
-        loadContent();
-    }
-    
     showToast('Filters applied', 'success');
+    closeSearchResults();
 }
 
-// Reset all filters
+// Reset filters
 function resetFilters() {
     if (elements.contentTypeFilter) elements.contentTypeFilter.value = 'all';
     if (elements.genreFilter) elements.genreFilter.value = 'all';
@@ -609,30 +493,13 @@ function resetFilters() {
     applyFilters();
 }
 
-// Handle trending time filter click
-function handleTimeFilterClick(e) {
-    const button = e.currentTarget;
-    const hours = parseInt(button.dataset.hours);
-    
-    // Update active state
-    document.querySelectorAll('.time-btn').forEach(btn => {
-        btn.classList.remove('active');
-    });
-    button.classList.add('active');
-    
-    // Update filter and reload trending content
-    currentFilters.trendingHours = hours;
-    loadTrendingContent();
-}
-
 // Load initial content
 async function loadInitialContent() {
     try {
         showLoadingState(true, 'Loading your feed...');
         
-        // Load content in parallel for better performance
         await Promise.all([
-            loadContent(),
+            loadLatestContent(),
             loadTrendingContent(),
             loadRecommendedContent()
         ]);
@@ -640,23 +507,15 @@ async function loadInitialContent() {
         showLoadingState(false, 'Ready!');
         
     } catch (error) {
-        console.error('Error loading initial content:', error);
-        showError('Failed to load content. Please refresh.');
+        console.error('Error loading content:', error);
+        showToast('Failed to load some content', 'error');
     }
 }
 
-// Load main content with pagination
-async function loadContent() {
-    if (isLoading || !hasMoreContent) return;
-    
-    isLoading = true;
-    
+// Load latest content
+async function loadLatestContent() {
     try {
-        const limit = 12;
-        const from = (currentPage - 1) * limit;
-        const to = from + limit - 1;
-        
-        let query = supabaseClient
+        const { data, error } = await window.supabaseClient
             .from('Content')
             .select(`
                 *,
@@ -668,90 +527,30 @@ async function loadContent() {
             `)
             .eq('status', 'published')
             .order('created_at', { ascending: false })
-            .range(from, to);
+            .limit(12);
         
-        // Apply filters if needed
-        if (currentFilters.contentType !== 'all') {
-            query = query.eq('media_type', currentFilters.contentType);
-        }
+        if (error) throw error;
         
-        if (currentFilters.genre !== 'all') {
-            query = query.eq('genre', currentFilters.genre);
-        }
-        
-        const { data, error } = await query;
-        
-        if (error) {
-            console.error('Content query error:', error);
-            // Try simple query without join
-            const { data: simpleData, error: simpleError } = await supabaseClient
-                .from('Content')
-                .select('*')
-                .eq('status', 'published')
-                .order('created_at', { ascending: false })
-                .range(from, to);
-            
-            if (simpleError) throw simpleError;
-            
-            // Process simple data
-            const enrichedData = await enrichContentWithViews(simpleData);
-            
-            if (currentPage === 1) {
-                contentData = enrichedData;
-                renderLatestContent(enrichedData);
-            } else {
-                contentData = [...contentData, ...enrichedData];
-                appendLatestContent(enrichedData);
-            }
-            
-            // Check if there's more content
-            hasMoreContent = simpleData.length === limit;
-            currentPage++;
-            
-            return;
-        }
-        
-        // Process and display data
         if (data && data.length > 0) {
-            // Enrich with view counts
-            const enrichedData = await enrichContentWithViews(data);
-            
-            if (currentPage === 1) {
-                contentData = enrichedData;
-                renderLatestContent(enrichedData);
-            } else {
-                contentData = [...contentData, ...enrichedData];
-                appendLatestContent(enrichedData);
-            }
-            
-            // Check if there's more content
-            hasMoreContent = data.length === limit;
-            currentPage++;
-            
+            contentData = data;
+            renderContent(data, 'latest');
         } else {
-            hasMoreContent = false;
-            if (currentPage === 1) {
-                renderEmptyState('No content available');
-            }
+            renderEmptyState('latest', 'No content available yet');
         }
         
     } catch (error) {
-        console.error('Error loading content:', error);
-        showToast('Failed to load more content', 'error');
-    } finally {
-        isLoading = false;
-        hideScrollSentinel();
+        console.error('Error loading latest content:', error);
+        renderEmptyState('latest', 'Failed to load content');
     }
 }
 
 // Load trending content
 async function loadTrendingContent() {
     try {
-        // Calculate timestamp for trending period
-        const trendingSince = new Date();
-        trendingSince.setHours(trendingSince.getHours() - currentFilters.trendingHours);
+        const weekAgo = new Date();
+        weekAgo.setDate(weekAgo.getDate() - 7);
         
-        const { data, error } = await supabaseClient
+        const { data, error } = await window.supabaseClient
             .from('Content')
             .select(`
                 *,
@@ -762,44 +561,33 @@ async function loadTrendingContent() {
                 )
             `)
             .eq('status', 'published')
-            .gte('created_at', trendingSince.toISOString())
+            .gte('created_at', weekAgo.toISOString())
             .order('views_count', { ascending: false })
             .limit(8);
         
-        if (error) {
-            console.error('Trending content error:', error);
-            // Try simple query
-            const { data: simpleData, error: simpleError } = await supabaseClient
-                .from('Content')
-                .select('*')
-                .eq('status', 'published')
-                .gte('created_at', trendingSince.toISOString())
-                .order('views_count', { ascending: false })
-                .limit(8);
-            
-            if (simpleError) throw simpleError;
-            
-            trendingData = simpleData;
-            renderTrendingContent(simpleData);
-            return;
-        }
+        if (error) throw error;
         
         if (data && data.length > 0) {
             trendingData = data;
-            renderTrendingContent(data);
+            renderContent(data, 'trending', true);
         } else {
-            renderTrendingFallback();
+            // Fallback to latest content
+            if (contentData.length > 0) {
+                renderContent(contentData.slice(0, 8), 'trending', true);
+            }
         }
         
     } catch (error) {
         console.error('Error loading trending content:', error);
-        renderTrendingFallback();
+        if (contentData.length > 0) {
+            renderContent(contentData.slice(0, 8), 'trending', true);
+        }
     }
 }
 
-// Load personalized recommendations - FIXED: Show correct username
+// Load recommended content
 async function loadRecommendedContent() {
-    // Show recommended section only for logged-in users
+    // Only show for authenticated users
     if (!currentUser) {
         if (elements.recommendedSection) {
             elements.recommendedSection.style.display = 'none';
@@ -813,10 +601,10 @@ async function loadRecommendedContent() {
             elements.recommendedSection.style.display = 'block';
         }
         
-        console.log('🎯 Loading recommendations for user:', currentUser.id);
+        console.log('Loading recommendations for user:', currentUser.id);
         
-        // Try to get user's liked content from pulse_likes
-        const { data: userLikes, error: likesError } = await supabaseClient
+        // Try to get user's liked content
+        const { data: userLikes, error: likesError } = await window.supabaseClient
             .from('pulse_likes')
             .select('content_id')
             .eq('user_id', currentUser.id)
@@ -825,19 +613,17 @@ async function loadRecommendedContent() {
         let recommendedQuery;
         
         if (!likesError && userLikes && userLikes.length > 0) {
-            // Get genres from liked content
-            const likedContentIds = userLikes.map(like => like.content_id);
-            const { data: likedContent, error: likedError } = await supabaseClient
+            const likedIds = userLikes.map(like => like.content_id);
+            const { data: likedContent } = await window.supabaseClient
                 .from('Content')
                 .select('genre')
-                .in('id', likedContentIds);
+                .in('id', likedIds);
             
-            if (!likedError && likedContent && likedContent.length > 0) {
+            if (likedContent && likedContent.length > 0) {
                 const userGenres = [...new Set(likedContent.map(item => item.genre).filter(Boolean))];
                 
                 if (userGenres.length > 0) {
-                    // Get content from preferred genres (excluding already liked content)
-                    recommendedQuery = supabaseClient
+                    recommendedQuery = window.supabaseClient
                         .from('Content')
                         .select(`
                             *,
@@ -849,17 +635,15 @@ async function loadRecommendedContent() {
                         `)
                         .eq('status', 'published')
                         .in('genre', userGenres)
-                        .not('id', 'in', `(${likedContentIds.join(',')})`)
                         .order('views_count', { ascending: false })
                         .limit(6);
                 }
             }
         }
         
-        // Fallback: Get trending content if no recommendations based on likes
+        // Fallback to trending content
         if (!recommendedQuery) {
-            console.log('Using trending content as fallback recommendations');
-            recommendedQuery = supabaseClient
+            recommendedQuery = window.supabaseClient
                 .from('Content')
                 .select(`
                     *,
@@ -876,15 +660,11 @@ async function loadRecommendedContent() {
         
         const { data, error } = await recommendedQuery;
         
-        if (error) {
-            console.error('Recommendations query error:', error);
-            renderRecommendedFallback();
-            return;
-        }
+        if (error) throw error;
         
         if (data && data.length > 0) {
             recommendedData = data;
-            renderRecommendedContent(data);
+            renderContent(data, 'recommended');
         } else {
             renderRecommendedFallback();
         }
@@ -895,85 +675,16 @@ async function loadRecommendedContent() {
     }
 }
 
-// Enrich content with view counts
-async function enrichContentWithViews(contentItems) {
-    if (!contentItems || contentItems.length === 0) return contentItems;
+// Render content
+function renderContent(items, section, isTrending = false) {
+    const container = document.getElementById(`${section}Content`);
+    if (!container) return;
     
-    try {
-        const contentIds = contentItems.map(item => item.id);
-        
-        const { data: viewCounts, error } = await supabaseClient
-            .from('content_views')
-            .select('content_id, count')
-            .in('content_id', contentIds);
-        
-        if (error) {
-            console.log('Error fetching view counts:', error);
-            return contentItems;
-        }
-        
-        // Create view count map
-        const viewsMap = {};
-        if (viewCounts) {
-            viewCounts.forEach(item => {
-                viewsMap[item.content_id] = item.count;
-            });
-        }
-        
-        // Enrich content items
-        return contentItems.map(item => ({
-            ...item,
-            views_count: viewsMap[item.id] || item.views_count || 0,
-            actual_views: viewsMap[item.id] || item.views_count || 0
-        }));
-        
-    } catch (error) {
-        console.error('Error enriching content with views:', error);
-        return contentItems;
-    }
-}
-
-// Setup infinite scroll
-function setupInfiniteScroll() {
-    if (!elements.scrollSentinel) return;
-    
-    const observer = new IntersectionObserver((entries) => {
-        if (entries[0].isIntersecting && !isLoading && hasMoreContent) {
-            showScrollSentinel();
-            loadContent();
-        }
-    }, {
-        root: null,
-        rootMargin: '100px',
-        threshold: 0.1
-    });
-    
-    observer.observe(elements.scrollSentinel);
-}
-
-// Show scroll sentinel
-function showScrollSentinel() {
-    if (elements.scrollSentinel) {
-        elements.scrollSentinel.classList.add('visible');
-    }
-}
-
-// Hide scroll sentinel
-function hideScrollSentinel() {
-    if (elements.scrollSentinel) {
-        elements.scrollSentinel.classList.remove('visible');
-    }
-}
-
-// Render latest content
-function renderLatestContent(content) {
-    if (!elements.latestContent) return;
-    
-    elements.latestContent.innerHTML = content.map(item => renderContentCard(item, 'latest')).join('');
+    container.innerHTML = items.map(item => createContentCard(item, section, isTrending)).join('');
     
     // Add click handlers
     setTimeout(() => {
-        document.querySelectorAll('#latest-content .content-card').forEach(card => {
+        container.querySelectorAll('.content-card').forEach(card => {
             const contentId = card.dataset.contentId;
             card.addEventListener('click', (e) => {
                 if (e.target.closest('button')) return;
@@ -983,99 +694,46 @@ function renderLatestContent(content) {
     }, 100);
 }
 
-// Append more content (for infinite scroll)
-function appendLatestContent(content) {
-    if (!elements.latestContent) return;
+// Create content card
+function createContentCard(item, section, isTrending = false) {
+    const creatorInfo = getCreatorInfo(item);
+    const thumbnail = fixThumbnailUrl(item.thumbnail_url);
     
-    const newCards = content.map(item => renderContentCard(item, 'latest')).join('');
-    elements.latestContent.insertAdjacentHTML('beforeend', newCards);
+    let badge = '';
+    if (isTrending) {
+        badge = '<span class="trending-badge-small">🔥 Trending</span>';
+    } else if (section === 'recommended') {
+        badge = '<span class="trending-badge-small" style="background: linear-gradient(135deg, #1D4ED8, #F59E0B);">⭐ For You</span>';
+    }
     
-    // Add click handlers for new cards
-    setTimeout(() => {
-        const allCards = document.querySelectorAll('#latest-content .content-card');
-        const newCards = Array.from(allCards).slice(-content.length);
-        
-        newCards.forEach(card => {
-            const contentId = card.dataset.contentId;
-            card.addEventListener('click', (e) => {
-                if (e.target.closest('button')) return;
-                window.location.href = `content-detail.html?id=${contentId}`;
-            });
-        });
-    }, 100);
-}
-
-// Render trending content
-function renderTrendingContent(content) {
-    if (!elements.trendingContent) return;
-    
-    elements.trendingContent.innerHTML = content.map(item => renderContentCard(item, 'trending')).join('');
-    
-    // Add click handlers
-    setTimeout(() => {
-        document.querySelectorAll('#trending-content .content-card').forEach(card => {
-            const contentId = card.dataset.contentId;
-            card.addEventListener('click', (e) => {
-                if (e.target.closest('button')) return;
-                window.location.href = `content-detail.html?id=${contentId}`;
-            });
-        });
-    }, 100);
-}
-
-// Render trending fallback
-function renderTrendingFallback() {
-    if (!elements.trendingContent) return;
-    
-    elements.trendingContent.innerHTML = `
-        <div class="trending-fallback">
-            <i class="fas fa-chart-line"></i>
-            <p>No trending content yet</p>
-            <p style="font-size: 12px; margin-top: 10px; opacity: 0.7;">Check back later for trending content</p>
-        </div>
-    `;
-}
-
-// Render recommended content
-function renderRecommendedContent(content) {
-    if (!elements.recommendedContent) return;
-    
-    elements.recommendedContent.innerHTML = content.map(item => renderContentCard(item, 'recommended')).join('');
-    
-    // Add click handlers
-    setTimeout(() => {
-        document.querySelectorAll('#recommended-content .content-card').forEach(card => {
-            const contentId = card.dataset.contentId;
-            card.addEventListener('click', (e) => {
-                if (e.target.closest('button')) return;
-                window.location.href = `content-detail.html?id=${contentId}`;
-            });
-        });
-    }, 100);
-}
-
-// Render recommended fallback
-function renderRecommendedFallback() {
-    if (!elements.recommendedContent) return;
-    
-    elements.recommendedContent.innerHTML = `
-        <div class="recommended-fallback">
-            <i class="fas fa-star"></i>
-            <p>Like some content to get personalized recommendations!</p>
-            <p style="font-size: 12px; margin-top: 10px; opacity: 0.7;">Engage with content to see recommendations</p>
-        </div>
-    `;
-}
-
-// Render empty state
-function renderEmptyState(message) {
-    if (!elements.latestContent) return;
-    
-    elements.latestContent.innerHTML = `
-        <div class="empty-state">
-            <i class="fas fa-film"></i>
-            <p>${message}</p>
-            <button class="hero-btn" style="margin-top: 20px;" onclick="window.location.reload()">Refresh Page</button>
+    return `
+        <div class="content-card" data-content-id="${item.id}">
+            <div class="card-thumbnail">
+                <img 
+                    src="${thumbnail}" 
+                    alt="${item.title || 'Content'}"
+                    loading="lazy"
+                    onerror="this.src='https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop'"
+                >
+                <div class="thumbnail-overlay"></div>
+                ${badge}
+                <button class="share-btn" aria-label="Share" onclick="shareContent(${item.id})">
+                    <i class="fas fa-share-alt"></i>
+                </button>
+            </div>
+            <div class="card-content">
+                <h3 class="card-title" title="${item.title || 'Untitled'}">
+                    ${truncateText(item.title || 'Untitled', 50)}
+                </h3>
+                <button class="creator-btn" onclick="viewCreator('${creatorInfo.id}', '${creatorInfo.name}')">
+                    <i class="fas fa-user"></i>
+                    @${truncateText(creatorInfo.username, 15)}
+                </button>
+                <div class="card-stats">
+                    <span><i class="fas fa-eye"></i> ${formatNumber(item.views_count || 0)}</span>
+                    <span><i class="fas fa-heart"></i> ${formatNumber(item.likes_count || 0)}</span>
+                </div>
+            </div>
         </div>
     `;
 }
@@ -1084,7 +742,7 @@ function renderEmptyState(message) {
 function getCreatorInfo(item) {
     let creatorName = 'Creator';
     let creatorUsername = 'creator';
-    let creatorId = item.user_id;
+    let creatorId = item.user_id || item.creator_id;
     
     // Check user_profiles first
     if (item.user_profiles) {
@@ -1095,7 +753,7 @@ function getCreatorInfo(item) {
     // Fallback to creator field
     if (item.creator && creatorName === 'Creator') {
         creatorName = item.creator;
-        creatorUsername = item.creator.toLowerCase().replace(/\s+/g, '_');
+        creatorUsername = item.creator.toLowerCase().replace(/\s+/g, '');
     }
     
     return {
@@ -1107,119 +765,126 @@ function getCreatorInfo(item) {
 
 // Fix thumbnail URL
 function fixThumbnailUrl(url) {
-    if (!url) {
-        return 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop&auto=format&q=80';
+    if (!url || url === 'null' || url === 'undefined') {
+        return 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop';
     }
     
-    // If it's already a full URL, return it
     if (url.startsWith('http')) {
+        if (!url.includes('?') && (url.includes('supabase.co') || url.includes('unsplash.com'))) {
+            return `${url}?w=400&h=225&fit=crop&auto=format&q=80`;
+        }
         return url;
     }
     
-    // If it's a Supabase storage path, construct the full URL
-    if (url.startsWith('storage/')) {
-        return `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/${url}`;
+    if (url.startsWith('storage/') || url.includes('supabase.co/storage')) {
+        if (!url.startsWith('http')) {
+            return `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/${url.replace('storage/', '')}?w=400&h=225&fit=crop`;
+        }
     }
     
-    // Add query parameters for optimization
-    const baseUrl = url.split('?')[0];
-    return `${baseUrl}?w=400&h=225&fit=crop&auto=format&q=80`;
+    return url;
 }
 
-// Render content card with proper creator info and thumbnails
-function renderContentCard(item, section = 'latest') {
-    // Get creator info
-    const creatorInfo = getCreatorInfo(item);
+// Render empty state
+function renderEmptyState(section, message) {
+    const container = document.getElementById(`${section}Content`);
+    if (!container) return;
     
-    // Fix thumbnail URL
-    const thumbnail = fixThumbnailUrl(item.thumbnail_url);
-    
-    // Truncate title
-    const displayTitle = truncateText(item.title, 50);
-    
-    // Creator display text
-    const displayCreator = `@${creatorInfo.username}`;
-    
-    // View count
-    const viewCount = item.actual_views || item.views_count || 0;
-    const likeCount = item.likes_count || 0;
-    
-    // Section-specific badges
-    let badge = '';
-    if (section === 'trending') {
-        badge = '<span class="trending-badge-small">🔥 Trending</span>';
-    } else if (section === 'recommended') {
-        badge = '<span class="trending-badge-small" style="background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));">⭐ For You</span>';
-    }
-    
-    return `
-        <div class="content-card" data-content-id="${item.id}">
-            <div class="card-thumbnail">
-                <img 
-                    src="${thumbnail}" 
-                    alt="${item.title}"
-                    loading="lazy"
-                    data-src="${thumbnail}"
-                    class="lazy-image"
-                    onerror="this.src='https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop'"
-                >
-                <div class="thumbnail-overlay"></div>
-                ${badge}
-                <button class="share-btn" aria-label="Share" onclick="shareContent(event, ${item.id})">
-                    <i class="fas fa-share-alt"></i>
-                </button>
-            </div>
-            <div class="card-content">
-                <h3 class="card-title" title="${item.title}">
-                    ${displayTitle}
-                </h3>
-                <button class="creator-btn" onclick="viewCreator(event, ${item.id}, '${creatorInfo.id}', '${(creatorInfo.name).replace(/'/g, "\\'")}')">
-                    <i class="fas fa-user"></i>
-                    ${truncateText(displayCreator, 20)}
-                </button>
-                <div class="card-stats">
-                    <span><i class="fas fa-eye"></i> ${formatNumber(viewCount)}</span>
-                    <span><i class="fas fa-heart"></i> ${formatNumber(likeCount)}</span>
-                    ${item.duration ? `<span><i class="fas fa-clock"></i> ${formatDuration(item.duration)}</span>` : ''}
-                </div>
-            </div>
+    container.innerHTML = `
+        <div class="empty-state">
+            <i class="fas fa-film"></i>
+            <p>${message}</p>
         </div>
     `;
 }
 
-// Share content
-function shareContent(event, contentId) {
-    if (event) event.stopPropagation();
+// Render recommended fallback
+function renderRecommendedFallback() {
+    if (!elements.recommendedContent) return;
     
-    const content = contentData.find(c => c.id === contentId) || 
-                    trendingData.find(c => c.id === contentId) || 
-                    recommendedData.find(c => c.id === contentId);
+    elements.recommendedContent.innerHTML = `
+        <div class="recommended-fallback">
+            <i class="fas fa-star"></i>
+            <p>Like some content to get personalized recommendations!</p>
+        </div>
+    `;
+}
+
+// Setup infinite scroll
+function setupInfiniteScroll() {
+    if (!elements.scrollSentinel) return;
     
-    if (!content) return;
+    const observer = new IntersectionObserver((entries) => {
+        if (entries[0].isIntersecting && !isLoading && hasMoreContent) {
+            loadMoreContent();
+        }
+    }, { threshold: 0.1 });
     
-    const shareData = {
-        title: content.title,
-        text: `Check out "${content.title}" on Bantu Stream Connect`,
-        url: window.location.origin + `/content-detail.html?id=${contentId}`
-    };
+    observer.observe(elements.scrollSentinel);
+}
+
+// Load more content
+async function loadMoreContent() {
+    if (isLoading || !hasMoreContent) return;
     
-    if (navigator.share) {
-        navigator.share(shareData).catch(console.error);
-    } else {
-        navigator.clipboard.writeText(shareData.url)
-            .then(() => showToast('Link copied to clipboard!', 'success'))
-            .catch(() => showToast('Failed to copy link', 'error'));
+    isLoading = true;
+    
+    try {
+        const limit = 12;
+        const from = currentPage * limit;
+        
+        const { data, error } = await window.supabaseClient
+            .from('Content')
+            .select(`
+                *,
+                user_profiles!user_id (
+                    full_name,
+                    username,
+                    avatar_url
+                )
+            `)
+            .eq('status', 'published')
+            .order('created_at', { ascending: false })
+            .range(from, from + limit - 1);
+        
+        if (error) throw error;
+        
+        if (data && data.length > 0) {
+            contentData = [...contentData, ...data];
+            appendContent(data);
+            currentPage++;
+            hasMoreContent = data.length === limit;
+        } else {
+            hasMoreContent = false;
+        }
+        
+    } catch (error) {
+        console.error('Error loading more content:', error);
+    } finally {
+        isLoading = false;
     }
 }
 
-// View creator
-function viewCreator(event, contentId, creatorId, creatorName) {
-    if (event) event.stopPropagation();
+// Append more content
+function appendContent(items) {
+    if (!elements.latestContent) return;
     
-    if (creatorId) {
-        window.location.href = `creator-channel.html?id=${creatorId}&name=${encodeURIComponent(creatorName)}`;
+    const newCards = items.map(item => createContentCard(item, 'latest')).join('');
+    elements.latestContent.insertAdjacentHTML('beforeend', newCards);
+}
+
+// Show/hide loading state
+function showLoadingState(loading, message) {
+    if (!elements.loadingText || !elements.loading) return;
+    
+    if (loading) {
+        elements.loadingText.textContent = message;
+        elements.loading.style.display = 'flex';
     } else {
-        showToast(`Viewing ${creatorName}'s content`, 'info');
+        elements.loadingText.textContent = message;
+        setTimeout(() => {
+            elements.loading.style.display = 'none';
+        }, 500);
     }
 }
 
@@ -1229,25 +894,6 @@ function showApp() {
         elements.app.style.display = 'block';
         setTimeout(() => {
             elements.loading.style.display = 'none';
-        }, 500);
-    }
-}
-
-// Show loading state
-function showLoadingState(loading, message) {
-    if (!elements.loadingText) return;
-    
-    if (loading) {
-        elements.loadingText.textContent = message || 'Loading...';
-        if (elements.loading) {
-            elements.loading.style.display = 'flex';
-        }
-    } else {
-        elements.loadingText.textContent = message || 'Ready!';
-        setTimeout(() => {
-            if (elements.loading) {
-                elements.loading.style.display = 'none';
-            }
         }, 500);
     }
 }
@@ -1275,27 +921,17 @@ function showToast(message, type = 'info') {
     toast.className = `toast ${type}`;
     toast.textContent = message;
     toast.setAttribute('role', 'alert');
-    toast.setAttribute('aria-live', 'assertive');
     
     elements.toastContainer.appendChild(toast);
     
-    // Remove toast after delay
     setTimeout(() => {
-        toast.style.opacity = '0';
-        toast.style.transform = 'translateX(100%)';
-        setTimeout(() => {
-            if (toast.parentNode) {
-                toast.parentNode.removeChild(toast);
-            }
-        }, 300);
+        toast.remove();
     }, 3000);
 }
 
 // Utility functions
-
 function truncateText(text, maxLength) {
-    if (!text) return '';
-    return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
+    return text?.length > maxLength ? text.substring(0, maxLength) + '...' : text || '';
 }
 
 function formatNumber(num) {
@@ -1305,53 +941,52 @@ function formatNumber(num) {
     return (num / 1000000).toFixed(1).replace(/\.0$/, '') + 'M';
 }
 
-function formatDuration(seconds) {
-    if (!seconds) return '0:00';
-    const mins = Math.floor(seconds / 60);
-    const secs = Math.floor(seconds % 60);
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-}
-
-// Initialize lazy loading for images
-function initLazyLoading() {
-    const images = document.querySelectorAll('.lazy-image');
+// Global functions
+window.shareContent = function(contentId) {
+    const url = `${window.location.origin}/content-detail.html?id=${contentId}`;
     
-    if ('IntersectionObserver' in window) {
-        const imageObserver = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    const img = entry.target;
-                    img.src = img.dataset.src;
-                    img.classList.add('loaded');
-                    imageObserver.unobserve(img);
-                }
-            });
+    if (navigator.share) {
+        navigator.share({
+            title: 'Check out this content on Bantu Stream Connect',
+            url: url
         });
-        
-        images.forEach(img => imageObserver.observe(img));
     } else {
-        // Fallback for older browsers
-        images.forEach(img => {
-            img.src = img.dataset.src;
-            img.classList.add('loaded');
-        });
-    }
-}
-
-// Initialize lazy loading when DOM is ready
-document.addEventListener('DOMContentLoaded', () => {
-    setTimeout(initLazyLoading, 1000); // Delay slightly to ensure content is loaded
-});
-
-// Force refresh auth state (can be called from console if needed)
-window.refreshAuth = async function() {
-    console.log('🔄 Manually refreshing auth...');
-    await checkAuth();
-    if (currentUser) {
-        await loadRecommendedContent();
+        navigator.clipboard.writeText(url)
+            .then(() => showToast('Link copied to clipboard!', 'success'))
+            .catch(() => showToast('Failed to copy link', 'error'));
     }
 };
 
-// Export functions for global access
-window.shareContent = shareContent;
-window.viewCreator = viewCreator;
+window.viewCreator = function(creatorId, creatorName) {
+    if (creatorId) {
+        window.location.href = `creator-channel.html?id=${creatorId}&name=${encodeURIComponent(creatorName)}`;
+    } else {
+        showToast(`Viewing ${creatorName}'s content`, 'info');
+    }
+};
+
+// Fix all thumbnails on page
+function fixAllThumbnails() {
+    document.querySelectorAll('img').forEach(img => {
+        if (img.src.includes('thumbnail') || img.closest('.card-thumbnail')) {
+            const currentSrc = img.src;
+            if (!currentSrc.includes('unsplash.com') && !currentSrc.includes('?w=')) {
+                img.src = fixThumbnailUrl(currentSrc);
+            }
+        }
+    });
+}
+
+// Run thumbnail fix after page loads
+setTimeout(fixAllThumbnails, 1000);
+setTimeout(fixAllThumbnails, 3000);
+
+// Export for debugging - match the debugAuth function in index.html
+window.refreshAuth = async function() {
+    console.log('🔄 Manually refreshing auth...');
+    await checkAuthAndInitialize();
+    if (currentUser) {
+        await loadRecommendedContent();
+    }
+    return currentUser;
+};
