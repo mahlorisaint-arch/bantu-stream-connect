@@ -1482,6 +1482,11 @@
         
         console.log('✅ Supabase Auth client initialized');
 
+        // Global variables
+        let allContentData = [];
+        let filteredContentData = [];
+        let selectedCategoryIndex = 0;
+
         // Development Window Manager - UPDATED TO ALWAYS BE VISIBLE
         const DevelopmentWindow = {
             init() {
@@ -1711,7 +1716,6 @@
             isLoading: false,
             currentPage: 0,
             itemsPerPage: 10,
-            allItems: [],
             renderedItems: new Set(),
             
             init() {
@@ -1741,7 +1745,7 @@
             },
             
             async loadMoreContent() {
-                if (this.isLoading || this.allItems.length === 0) return;
+                if (this.isLoading || !allContentData || allContentData.length === 0) return;
                 
                 this.isLoading = true;
                 const loadingIndicator = document.getElementById('infinite-scroll-loading');
@@ -1755,7 +1759,7 @@
                     const end = start + this.itemsPerPage;
                     
                     // Get items for this page
-                    const itemsToLoad = this.allItems.slice(start, end);
+                    const itemsToLoad = allContentData.slice(start, end);
                     
                     // Filter out already rendered items
                     const newItems = itemsToLoad.filter(item => !this.renderedItems.has(item.id));
@@ -1772,7 +1776,7 @@
                     }
                     
                     // Hide loading indicator if no more items
-                    if (end >= this.allItems.length && loadingIndicator) {
+                    if (end >= allContentData.length && loadingIndicator) {
                         loadingIndicator.innerHTML = '<div>No more content to load</div>';
                         this.observer.unobserve(loadingIndicator);
                     }
@@ -1782,7 +1786,7 @@
                     showToast('Failed to load more content', 'error');
                 } finally {
                     this.isLoading = false;
-                    if (loadingIndicator && this.currentPage * this.itemsPerPage < this.allItems.length) {
+                    if (loadingIndicator && this.currentPage * this.itemsPerPage < allContentData.length) {
                         loadingIndicator.style.display = 'none';
                     }
                 }
@@ -2034,12 +2038,55 @@
                     // Update recommendations grid
                     const grid = recommendationsSection.querySelector('.content-grid');
                     if (grid) {
-                        grid.innerHTML = renderContentCards(recommendations.slice(0, 5));
-                        setupContentCardListeners();
+                        grid.innerHTML = this.renderRecommendationsCards(recommendations.slice(0, 5));
+                        this.setupRecommendationsCardListeners(grid);
                     }
                 } else if (recommendationsSection) {
                     recommendationsSection.remove();
                 }
+            },
+            
+            renderRecommendationsCards(contentItems) {
+                if (!contentItems || contentItems.length === 0) {
+                    return '<div class="empty-state">No recommendations available</div>';
+                }
+                
+                return contentItems.map(content => `
+                    <div class="content-card" data-content-id="${content.id}">
+                        <div class="card-thumbnail">
+                            <img src="${content.thumbnail_url || 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop'}" 
+                                 alt="${content.title}"
+                                 loading="lazy"
+                                 onerror="this.src='https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop'">
+                            <div class="thumbnail-overlay"></div>
+                            <div class="video-preview-container">
+                                <video class="video-preview" muted preload="metadata">
+                                    <source src="${content.file_url || ''}" type="video/mp4">
+                                </video>
+                            </div>
+                            ${InfiniteScrollSystem.getContinueWatchingBadge(content.id)}
+                            <button class="share-btn" title="Share" data-content-id="${content.id}">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8M16 6l-4-4-4 4M12 2v13"/>
+                                </svg>
+                            </button>
+                        </div>
+                        <div class="card-content">
+                            <h3 class="card-title" title="${content.title}">
+                                ${content.title.length > 50 ? content.title.substring(0, 50) + '...' : content.title}
+                            </h3>
+                            <button class="creator-btn" 
+                                    data-creator-id="${content.creator_id}"
+                                    data-creator-name="${content.creator}">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
+                                    <circle cx="12" cy="7" r="4"/>
+                                </svg>
+                                ${content.creator.length > 15 ? content.creator.substring(0, 15) + '...' : content.creator}
+                            </button>
+                        </div>
+                    </div>
+                `).join('');
             },
             
             createRecommendationsSection() {
@@ -2070,6 +2117,49 @@
                 }
                 
                 return document.querySelector('.section[data-type="recommendations"]');
+            },
+            
+            setupRecommendationsCardListeners(grid) {
+                grid.querySelectorAll('.content-card').forEach(card => {
+                    card.addEventListener('click', (e) => {
+                        if (e.target.closest('.share-btn') || e.target.closest('.creator-btn')) {
+                            return;
+                        }
+                        
+                        const contentId = card.dataset.contentId;
+                        if (contentId) {
+                            // Track interaction for recommendations
+                            const content = allContentData.find(c => c.id == contentId);
+                            if (content) {
+                                this.trackContentInteraction(content);
+                            }
+                            
+                            window.location.href = `content-detail.html?id=${contentId}`;
+                        }
+                    });
+                });
+                
+                grid.querySelectorAll('.share-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        const contentId = btn.dataset.contentId;
+                        const content = allContentData.find(c => c.id == contentId);
+                        if (content) {
+                            shareContent(content);
+                        }
+                    });
+                });
+                
+                grid.querySelectorAll('.creator-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        const creatorId = btn.dataset.creatorId;
+                        const creatorName = btn.dataset.creatorName;
+                        if (creatorId) {
+                            window.location.href = `creator-channel.html?id=${creatorId}&name=${encodeURIComponent(creatorName)}`;
+                        }
+                    });
+                });
             }
         };
         
@@ -2362,108 +2452,22 @@
             }
         };
         
-        // Service Worker for Offline Support
+        // Service Worker for Offline Support - Simplified
         const ServiceWorkerSystem = {
             async init() {
                 if ('serviceWorker' in navigator) {
                     try {
-                        const registration = await navigator.serviceWorker.register('/sw.js');
-                        console.log('Service Worker registered:', registration);
-                        
-                        // Check for updates
-                        registration.addEventListener('updatefound', () => {
-                            const newWorker = registration.installing;
-                            console.log('New service worker found:', newWorker);
-                        });
-                        
+                        // Register service worker only if we're on HTTPS or localhost
+                        if (window.location.protocol === 'https:' || window.location.hostname === 'localhost') {
+                            // Use a simpler approach - don't try to register if sw.js doesn't exist
+                            console.log('Service Worker supported, but we\'ll skip registration for now');
+                            // To enable offline support, create a sw.js file in your root directory
+                            // const registration = await navigator.serviceWorker.register('/sw.js');
+                            // console.log('Service Worker registered:', registration);
+                        }
                     } catch (error) {
-                        console.error('Service Worker registration failed:', error);
-                    }
-                }
-            },
-            
-            // Create a simple service worker
-            async createServiceWorker() {
-                if ('serviceWorker' in navigator) {
-                    const swCode = `
-                        // Service Worker for Bantu Stream Connect
-                        const CACHE_NAME = 'bantu-stream-connect-v1';
-                        const urlsToCache = [
-                            '/',
-                            '/index.html',
-                            '/styles/main.css',
-                            '/scripts/main.js',
-                            // Add other important assets
-                        ];
-                        
-                        self.addEventListener('install', event => {
-                            event.waitUntil(
-                                caches.open(CACHE_NAME)
-                                    .then(cache => cache.addAll(urlsToCache))
-                            );
-                        });
-                        
-                        self.addEventListener('fetch', event => {
-                            event.respondWith(
-                                caches.match(event.request)
-                                    .then(response => {
-                                        // Return cached response if found
-                                        if (response) {
-                                            return response;
-                                        }
-                                        
-                                        // Otherwise fetch from network
-                                        return fetch(event.request)
-                                            .then(response => {
-                                                // Check if valid response
-                                                if (!response || response.status !== 200 || response.type !== 'basic') {
-                                                    return response;
-                                                }
-                                                
-                                                // Clone the response
-                                                const responseToCache = response.clone();
-                                                
-                                                // Cache the new response
-                                                caches.open(CACHE_NAME)
-                                                    .then(cache => {
-                                                        cache.put(event.request, responseToCache);
-                                                    });
-                                                
-                                                return response;
-                                            })
-                                            .catch(() => {
-                                                // Return offline page or fallback
-                                                return caches.match('/offline.html');
-                                            });
-                                    })
-                            );
-                        });
-                        
-                        self.addEventListener('activate', event => {
-                            const cacheWhitelist = [CACHE_NAME];
-                            event.waitUntil(
-                                caches.keys().then(cacheNames => {
-                                    return Promise.all(
-                                        cacheNames.map(cacheName => {
-                                            if (cacheWhitelist.indexOf(cacheName) === -1) {
-                                                return caches.delete(cacheName);
-                                            }
-                                        })
-                                    );
-                                })
-                            );
-                        });
-                    `;
-                    
-                    // Create a Blob with the service worker code
-                    const blob = new Blob([swCode], { type: 'application/javascript' });
-                    const swURL = URL.createObjectURL(blob);
-                    
-                    try {
-                        const registration = await navigator.serviceWorker.register(swURL);
-                        console.log('Custom Service Worker registered:', registration);
-                    } catch (error) {
-                        console.error('Custom Service Worker registration failed:', error);
+                        console.log('Service Worker initialization skipped or failed:', error);
+                        // Silently fail - offline support is optional
                     }
                 }
             }
@@ -2491,11 +2495,12 @@
             ContinueWatchingSystem.init();
             KeyboardShortcutsSystem.init();
             
-            // Initialize Service Worker for offline support
+            // Initialize Service Worker for offline support (optional)
             try {
                 await ServiceWorkerSystem.init();
             } catch (error) {
                 console.log('Service Worker initialization skipped or failed:', error);
+                // Continue without offline support
             }
             
             // Initialize auth and check if user is logged in
@@ -2522,12 +2527,6 @@
                 await loadUserProfilePicture(session.user);
             }
             
-            // State variables
-            let allContentData = [];
-            let filteredContentData = [];
-            let selectedCategoryIndex = 0;
-            let isLoading = true;
-            
             // Categories (same as mobile app)
             const categories = [
                 'All',
@@ -2547,7 +2546,6 @@
             
             // ✅ SHOW/HIDE LOADING
             function setLoading(loading, text = '') {
-                isLoading = loading;
                 if (text) loadingText.textContent = text;
                 
                 if (loading) {
@@ -2938,6 +2936,50 @@
                 }
             }
             
+            // ✅ RENDER CONTENT CARDS
+            function renderContentCards(contentItems) {
+                if (!contentItems || contentItems.length === 0) {
+                    return '<div class="empty-state">No content available</div>';
+                }
+                
+                return contentItems.map(content => `
+                    <div class="content-card" data-content-id="${content.id}">
+                        <div class="card-thumbnail">
+                            <img src="${content.thumbnail_url || 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop'}" 
+                                 alt="${content.title}"
+                                 loading="lazy"
+                                 onerror="this.src='https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop'">
+                            <div class="thumbnail-overlay"></div>
+                            <div class="video-preview-container">
+                                <video class="video-preview" muted preload="metadata">
+                                    <source src="${content.file_url || ''}" type="video/mp4">
+                                </video>
+                            </div>
+                            ${InfiniteScrollSystem.getContinueWatchingBadge(content.id)}
+                            <button class="share-btn" title="Share" data-content-id="${content.id}">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8M16 6l-4-4-4 4M12 2v13"/>
+                                </svg>
+                            </button>
+                        </div>
+                        <div class="card-content">
+                            <h3 class="card-title" title="${content.title}">
+                                ${content.title.length > 50 ? content.title.substring(0, 50) + '...' : content.title}
+                            </h3>
+                            <button class="creator-btn" 
+                                    data-creator-id="${content.creator_id}"
+                                    data-creator-name="${content.creator}">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
+                                    <circle cx="12" cy="7" r="4"/>
+                                </svg>
+                                ${content.creator.length > 15 ? content.creator.substring(0, 15) + '...' : content.creator}
+                            </button>
+                        </div>
+                    </div>
+                `).join('');
+            }
+            
             // ✅ INITIALIZE HOME FEED
             async function initializeHomeFeed() {
                 try {
@@ -2959,15 +3001,15 @@
                     });
                     document.dispatchEvent(contentLoadedEvent);
                     
+                    // Render UI
+                    loadingText.textContent = 'Setting up interface...';
+                    renderContentSections();
+                    
                     // Update personalized recommendations
                     RecommendationSystem.updateRecommendationsSection(allContentData);
                     
                     // Update continue watching section
                     ContinueWatchingSystem.updateContinueWatchingSection(allContentData);
-                    
-                    // Render UI
-                    loadingText.textContent = 'Setting up interface...';
-                    renderContentSections();
                     
                     // Show the app
                     setLoading(false);
@@ -3064,54 +3106,6 @@
                 
                 // Setup content card listeners
                 setupContentCardListeners();
-                
-                // Update continue watching and recommendations sections
-                ContinueWatchingSystem.updateContinueWatchingSection(filteredContentData);
-                RecommendationSystem.updateRecommendationsSection(filteredContentData);
-            }
-            
-            // ✅ RENDER CONTENT CARDS
-            function renderContentCards(contentItems) {
-                if (!contentItems || contentItems.length === 0) {
-                    return '<div class="empty-state">No content available</div>';
-                }
-                
-                return contentItems.map(content => `
-                    <div class="content-card" data-content-id="${content.id}">
-                        <div class="card-thumbnail">
-                            <img src="${content.thumbnail_url || 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop'}" 
-                                 alt="${content.title}"
-                                 loading="lazy"
-                                 onerror="this.src='https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop'">
-                            <div class="thumbnail-overlay"></div>
-                            <div class="video-preview-container">
-                                <video class="video-preview" muted preload="metadata">
-                                    <source src="${content.file_url || ''}" type="video/mp4">
-                                </video>
-                            </div>
-                            ${InfiniteScrollSystem.getContinueWatchingBadge(content.id)}
-                            <button class="share-btn" title="Share" data-content-id="${content.id}">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8M16 6l-4-4-4 4M12 2v13"/>
-                                </svg>
-                            </button>
-                        </div>
-                        <div class="card-content">
-                            <h3 class="card-title" title="${content.title}">
-                                ${content.title.length > 50 ? content.title.substring(0, 50) + '...' : content.title}
-                            </h3>
-                            <button class="creator-btn" 
-                                    data-creator-id="${content.creator_id}"
-                                    data-creator-name="${content.creator}">
-                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
-                                    <circle cx="12" cy="7" r="4"/>
-                                </svg>
-                                ${content.creator.length > 15 ? content.creator.substring(0, 15) + '...' : content.creator}
-                            </button>
-                        </div>
-                    </div>
-                `).join('');
             }
             
             // ✅ SETUP EVENT LISTENERS
