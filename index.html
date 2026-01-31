@@ -256,6 +256,28 @@
             </div>
         </header>
 
+        <!-- Navigation Button -->
+        <div class="navigation-button-container">
+            <div class="navigation-button">
+                <div class="nav-icon" onclick="window.location.href='https://bantustreamconnect.com/'" title="Home">
+                    <i class="fas fa-home"></i>
+                </div>
+                <div class="nav-icon" id="nav-theme-toggle" title="Change Theme">
+                    <i class="fas fa-palette"></i>
+                </div>
+                <div class="nav-icon" onclick="window.location.href='creator-upload.html'" title="Create Content">
+                    <i class="fas fa-plus-circle"></i>
+                </div>
+                <div class="nav-icon" onclick="window.location.href='creator-dashboard.html'" title="Creator Dashboard">
+                    <i class="fas fa-tachometer-alt"></i>
+                </div>
+                <div class="nav-icon" id="nav-notifications-btn" title="Notifications">
+                    <i class="fas fa-bell"></i>
+                    <span class="nav-notification-badge" id="nav-notification-count" style="display: none;">0</span>
+                </div>
+            </div>
+        </div>
+
         <!-- Main Content -->
         <main class="container" id="main-content">
             <!-- Home-Feed Development Window - ALWAYS VISIBLE -->
@@ -339,38 +361,11 @@
             </div>
         </main>
 
-        <!-- Navigation Button (NEW - ADDED AS REQUESTED) -->
-        <div class="navigation-button-container">
-            <div class="navigation-button">
-                <button class="nav-btn active" data-action="home" title="Home">
-                    <i class="fas fa-home"></i>
-                    <span class="nav-label">Home</span>
-                </button>
-                <button class="nav-btn" data-action="theme" title="Change Theme">
-                    <i class="fas fa-palette"></i>
-                    <span class="nav-label">Theme</span>
-                </button>
-                <button class="nav-btn create-btn" data-action="create" title="Create Content">
-                    <i class="fas fa-plus-circle"></i>
-                    <span class="nav-label">Create</span>
-                </button>
-                <button class="nav-btn" data-action="dashboard" title="Creator Dashboard">
-                    <i class="fas fa-tachometer-alt"></i>
-                    <span class="nav-label">Dashboard</span>
-                </button>
-                <button class="nav-btn" data-action="notifications" title="Notifications">
-                    <i class="fas fa-bell"></i>
-                    <span class="nav-label">Notifications</span>
-                    <span class="nav-badge" id="nav-notification-count" style="display: none;">0</span>
-                </button>
-            </div>
-        </div>
-
-        <!-- Footer - UPDATED with correct links as requested -->
+        <!-- Footer -->
         <footer class="footer">
             <p>Bantu Stream Connect © 2025 • Built in South Africa</p>
             <div class="footer-links">
-                <a href="data-deletion.html">Data Deletion</a>
+                <a href="data-deletion-request.html">Data Deletion Request</a>
                 <a href="delete-account.html">Delete Account</a>
                 <a href="empowerment.html">Empowerment</a>
                 <a href="blog.html">Blog</a>
