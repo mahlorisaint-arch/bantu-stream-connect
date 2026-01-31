@@ -169,7 +169,7 @@ body {
     padding: 24px;
     position: relative;
     z-index: 2;
-    padding-bottom: 100px; /* Space for content */
+    padding-bottom: 150px; /* Increased space for navigation button */
 }
 
 /* Header - Updated with new logo */
@@ -485,6 +485,98 @@ body {
     }
 }
 
+/* Navigation Button Container - NEW */
+.navigation-button-container {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background: rgba(10, 14, 18, 0.95);
+    backdrop-filter: blur(20px);
+    border-top: 1px solid var(--card-border);
+    z-index: 100;
+    padding: 10px 0;
+}
+
+.navigation-button {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+.nav-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: none;
+    border: none;
+    color: var(--slate-grey);
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    padding: 8px 12px;
+    border-radius: 10px;
+    min-width: 60px;
+    touch-action: manipulation;
+}
+
+.nav-btn:hover {
+    color: var(--soft-white);
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.nav-btn.active {
+    color: var(--warm-gold);
+}
+
+.nav-btn i {
+    font-size: 20px;
+    margin-bottom: 4px;
+}
+
+.nav-label {
+    font-size: 10px;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.create-btn {
+    position: relative;
+    margin-top: -20px;
+}
+
+.create-btn i {
+    font-size: 24px;
+    color: var(--warm-gold);
+    background: var(--deep-black);
+    border: 2px solid var(--warm-gold);
+    border-radius: 50%;
+    padding: 8px;
+    box-shadow: 0 0 15px rgba(245, 158, 11, 0.3);
+}
+
+.nav-badge {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    background: var(--notification-dot);
+    color: white;
+    font-size: 9px;
+    font-weight: bold;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid rgba(10, 14, 18, 0.95);
+}
+
 /* Hero Section - Updated to match Pulse style */
 .hero {
     background: var(--card-bg);
@@ -567,6 +659,27 @@ body {
     -webkit-text-fill-color: transparent;
 }
 
+.section-description {
+    flex: 1;
+    min-width: 100%;
+}
+
+.recommendation-info {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    color: var(--slate-grey);
+    background: rgba(255, 255, 255, 0.05);
+    padding: 6px 12px;
+    border-radius: 8px;
+    border: 1px solid var(--card-border);
+}
+
+.recommendation-info i {
+    color: var(--warm-gold);
+}
+
 .see-all-btn {
     padding: 10px 20px;
     background: rgba(255, 255, 255, 0.1);
@@ -585,41 +698,15 @@ body {
     border-color: var(--warm-gold);
 }
 
-/* Personalized Recommendations Section */
+/* Personalized Recommendations Section - UPDATED */
+.personalized-recommendations-section {
+    display: block; /* Will be hidden by JS if user not logged in */
+}
+
 .personalized-recommendations-section .section-header {
     flex-direction: column;
     align-items: flex-start;
-    gap: 15px;
-}
-
-.personalized-filter-buttons {
-    display: flex;
     gap: 10px;
-    flex-wrap: wrap;
-}
-
-.personalized-filter-btn {
-    padding: 8px 16px;
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid var(--card-border);
-    border-radius: 20px;
-    color: var(--slate-grey);
-    font-size: 14px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    touch-action: manipulation;
-}
-
-.personalized-filter-btn:hover {
-    background: rgba(255, 255, 255, 0.2);
-    color: var(--soft-white);
-}
-
-.personalized-filter-btn.active {
-    background: var(--warm-gold);
-    color: var(--deep-black);
-    border-color: var(--warm-gold);
 }
 
 .personalized-badge {
@@ -1030,7 +1117,7 @@ body {
     font-size: 16px;
 }
 
-/* Footer - Updated to match Pulse style */
+/* Footer - UPDATED with correct links */
 .footer {
     border-top: 1px solid var(--card-border);
     padding: 30px 20px;
@@ -1039,6 +1126,7 @@ body {
     background: rgba(10, 14, 18, 0.9);
     backdrop-filter: blur(10px);
     margin-top: 50px;
+    margin-bottom: 80px; /* Space for navigation button */
 }
 
 .footer-links {
@@ -1552,7 +1640,7 @@ body {
 /* Performance Metrics */
 .performance-metrics {
     position: fixed;
-    bottom: 20px;
+    bottom: 80px; /* Adjusted for navigation button */
     left: 20px;
     background: var(--card-bg);
     border: 1px solid var(--card-border);
@@ -1612,7 +1700,7 @@ body {
 /* Cache Status */
 .cache-status {
     position: fixed;
-    bottom: 20px;
+    bottom: 80px; /* Adjusted for navigation button */
     right: 20px;
     background: var(--card-bg);
     border: 1px solid var(--card-border);
@@ -1714,31 +1802,42 @@ body {
         font-size: 12px;
     }
     
+    /* Navigation Button Responsive */
+    .navigation-button {
+        padding: 0 10px;
+    }
+    
+    .nav-btn {
+        min-width: 50px;
+        padding: 6px 8px;
+    }
+    
+    .nav-btn i {
+        font-size: 18px;
+    }
+    
+    .nav-label {
+        font-size: 9px;
+    }
+    
+    .create-btn i {
+        font-size: 22px;
+        padding: 6px;
+    }
+    
     /* Personalized Recommendations Mobile */
-    .personalized-filter-buttons {
-        width: 100%;
-        justify-content: center;
+    .section-header {
+        flex-direction: column;
+        align-items: flex-start;
     }
     
-    .personalized-filter-btn {
-        flex: 1;
-        text-align: center;
-        min-width: 80px;
+    .section-description {
+        margin-top: 10px;
     }
     
-    /* New Features Responsive */
-    .notifications-panel {
-        width: 100%;
-        right: -100%;
-    }
-    
-    .analytics-grid {
-        grid-template-columns: 1fr;
-    }
-    
-    .theme-selector {
-        top: 70px;
-        right: 10px;
+    .recommendation-info {
+        font-size: 12px;
+        padding: 4px 8px;
     }
     
     /* Mobile touch optimizations */
@@ -1782,22 +1881,32 @@ body {
         gap: 5px;
     }
     
-    .section-header {
-        flex-direction: column;
-        align-items: flex-start;
-    }
-    
     .see-all-btn {
         align-self: stretch;
         text-align: center;
     }
     
-    .personalized-filter-buttons {
-        flex-direction: column;
+    /* Navigation Button Small Screens */
+    .nav-btn {
+        min-width: 45px;
+        padding: 4px 6px;
     }
     
-    .personalized-filter-btn {
-        width: 100%;
+    .nav-btn i {
+        font-size: 16px;
+    }
+    
+    .nav-label {
+        font-size: 8px;
+    }
+    
+    .create-btn {
+        margin-top: -15px;
+    }
+    
+    .create-btn i {
+        font-size: 20px;
+        padding: 5px;
     }
 }
 
@@ -1813,6 +1922,14 @@ body {
     
     .content-card:active {
         background: rgba(255, 255, 255, 0.05);
+    }
+    
+    .nav-btn:hover {
+        background: none;
+    }
+    
+    .nav-btn:active {
+        background: rgba(255, 255, 255, 0.1);
     }
     
     /* Improve touch feedback */
