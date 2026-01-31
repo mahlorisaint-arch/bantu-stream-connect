@@ -182,90 +182,144 @@ const DevelopmentWindow = {
     }
 };
 
-// NEW: Navigation Button System
+// Add this new system for navigation button functionality
 const NavigationButtonSystem = {
     init() {
-        this.createNavigationButton();
-        this.setupEventListeners();
+        this.setupNavigationButton();
+        this.updateNavigationBadge();
     },
     
-    createNavigationButton() {
-        const navHTML = `
-            <div class="navigation-button-container">
-                <div class="navigation-button">
-                    <button class="nav-btn active" data-action="home" title="Home">
-                        <i class="fas fa-home"></i>
-                        <span class="nav-label">Home</span>
-                    </button>
-                    <button class="nav-btn" data-action="theme" title="Change Theme">
-                        <i class="fas fa-palette"></i>
-                        <span class="nav-label">Theme</span>
-                    </button>
-                    <button class="nav-btn create-btn" data-action="create" title="Create Content">
-                        <i class="fas fa-plus-circle"></i>
-                        <span class="nav-label">Create</span>
-                    </button>
-                    <button class="nav-btn" data-action="dashboard" title="Creator Dashboard">
-                        <i class="fas fa-tachometer-alt"></i>
-                        <span class="nav-label">Dashboard</span>
-                    </button>
-                    <button class="nav-btn" data-action="notifications" title="Notifications">
-                        <i class="fas fa-bell"></i>
-                        <span class="nav-label">Notifications</span>
-                        <span class="nav-badge" id="nav-notification-count" style="display: none;">0</span>
-                    </button>
-                </div>
-            </div>
-        `;
+    setupNavigationButton() {
+        // Theme toggle from navigation button
+        const navThemeToggle = document.getElementById('nav-theme-toggle');
+        const themeSelector = document.getElementById('theme-selector');
         
-        // Insert navigation button before footer
-        const footer = document.querySelector('.footer');
-        if (footer) {
-            footer.insertAdjacentHTML('beforebegin', navHTML);
+        if (navThemeToggle) {
+            navThemeToggle.addEventListener('click', (e) => {
+                e.stopPropagation();
+                themeSelector.classList.toggle('active');
+            });
+        }
+        
+        // Notifications from navigation button
+        const navNotificationsBtn = document.getElementById('nav-notifications-btn');
+        const notificationsPanel = document.getElementById('notifications-panel');
+        
+        if (navNotificationsBtn) {
+            navNotificationsBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                notificationsPanel.classList.toggle('active');
+                if (notificationsPanel.classList.contains('active')) {
+                    NotificationSystem.markAllAsRead();
+                }
+            });
         }
     },
     
-    setupEventListeners() {
-        document.addEventListener('click', (e) => {
-            const navBtn = e.target.closest('.nav-btn');
-            if (navBtn) {
-                const action = navBtn.dataset.action;
-                this.handleNavigation(action, navBtn);
-            }
-        });
-    },
-    
-    handleNavigation(action, button) {
-        switch(action) {
-            case 'home':
-                window.location.href = 'https://bantustreamconnect.com/';
-                break;
-            case 'theme':
-                // Open theme selector
-                document.getElementById('theme-toggle')?.click();
-                break;
-            case 'create':
-                window.location.href = 'creator-upload.html';
-                break;
-            case 'dashboard':
-                window.location.href = 'creator-dashboard.html';
-                break;
-            case 'notifications':
-                document.getElementById('notifications-btn')?.click();
-                break;
-        }
-    },
-    
-    updateNotificationBadge(count) {
+    updateNavigationBadge() {
         const badge = document.getElementById('nav-notification-count');
+        const unreadCount = NotificationSystem.unreadCount;
+        
         if (badge) {
-            badge.textContent = count > 99 ? '99+' : count;
-            badge.style.display = count > 0 ? 'flex' : 'none';
+            badge.textContent = unreadCount > 99 ? '99+' : unreadCount;
+            badge.style.display = unreadCount > 0 ? 'flex' : 'none';
         }
     }
 };
 
-// 1. REAL-TIME NOTIFICATIONS SYSTEM (Updated to work with navigation button)
+// Updated ThemeSystem to work with navigation button
+const ThemeSystem = {
+    currentTheme: 'dark',
+    
+    init() {
+        this.loadTheme();
+        this.applyTheme();
+        this.setupEventListeners();
+    },
+    
+    loadTheme() {
+        const saved = localStorage.getItem('theme');
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        this.currentTheme = saved || (prefersDark ? 'dark' : 'light');
+    },
+    
+    saveTheme() {
+        localStorage.setItem('theme', this.currentTheme);
+    },
+    
+    applyTheme() {
+        document.body.className = `theme-${this.currentTheme}`;
+        
+        // Update theme selector
+        this.updateThemeSelector();
+        
+        // Track theme change
+        AnalyticsSystem.trackEvent('theme_changed', { theme: this.currentTheme });
+    },
+    
+    setTheme(theme) {
+        this.currentTheme = theme;
+        this.saveTheme();
+        this.applyTheme();
+    },
+    
+    setupEventListeners() {
+        // Theme toggle from navigation button
+        const navThemeToggle = document.getElementById('nav-theme-toggle');
+        const themeSelector = document.getElementById('theme-selector');
+        
+        if (navThemeToggle) {
+            navThemeToggle.addEventListener('click', (e) => {
+                e.stopPropagation();
+                themeSelector.classList.toggle('active');
+            });
+        }
+        
+        // Theme options
+        document.querySelectorAll('.theme-option').forEach(option => {
+            option.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const theme = option.dataset.theme;
+                this.setTheme(theme);
+                themeSelector.classList.remove('active');
+            });
+        });
+        
+        // Close theme selector when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!navThemeToggle?.contains(e.target) && !themeSelector?.contains(e.target)) {
+                themeSelector?.classList.remove('active');
+            }
+        });
+        
+        // Listen for system theme changes
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+            if (!localStorage.getItem('theme')) {
+                this.setTheme(e.matches ? 'dark' : 'light');
+            }
+        });
+        
+        // Keyboard shortcut: Alt+T
+        document.addEventListener('keydown', (e) => {
+            if (e.altKey && e.key === 't') {
+                e.preventDefault();
+                const themes = ['dark', 'light', 'high-contrast'];
+                const currentIndex = themes.indexOf(this.currentTheme);
+                const nextIndex = (currentIndex + 1) % themes.length;
+                this.setTheme(themes[nextIndex]);
+            }
+        });
+    },
+    
+    updateThemeSelector() {
+        document.querySelectorAll('.theme-option').forEach(option => {
+            const isActive = option.dataset.theme === this.currentTheme;
+            option.classList.toggle('active', isActive);
+        });
+    }
+};
+
+// 1. REAL-TIME NOTIFICATIONS SYSTEM - UPDATED to update navigation badge
 const NotificationSystem = {
     notifications: [],
     unreadCount: 0,
@@ -277,6 +331,7 @@ const NotificationSystem = {
         this.renderNotifications();
         this.setupEventListeners();
         this.updateBadge();
+        NavigationButtonSystem.updateNavigationBadge(); // Update navigation badge too
     },
     
     async loadNotifications() {
@@ -400,15 +455,18 @@ const NotificationSystem = {
     },
     
     updateBadge() {
-        // Update header badge
         const badge = document.getElementById('notification-count');
+        const navBadge = document.getElementById('nav-notification-count');
+        
         if (badge) {
             badge.textContent = this.unreadCount > 99 ? '99+' : this.unreadCount;
             badge.style.display = this.unreadCount > 0 ? 'flex' : 'none';
         }
         
-        // Update navigation button badge
-        NavigationButtonSystem.updateNotificationBadge(this.unreadCount);
+        if (navBadge) {
+            navBadge.textContent = this.unreadCount > 99 ? '99+' : this.unreadCount;
+            navBadge.style.display = this.unreadCount > 0 ? 'flex' : 'none';
+        }
     },
     
     saveNotifications() {
@@ -463,22 +521,11 @@ const NotificationSystem = {
     },
     
     setupEventListeners() {
-        // Notifications button in navigation
-        const navNotificationsBtn = document.querySelector('.nav-btn[data-action="notifications"]');
+        // Notifications button
         const notificationsBtn = document.getElementById('notifications-btn');
         const notificationsPanel = document.getElementById('notifications-panel');
         const closeNotifications = document.getElementById('close-notifications');
         const markAllRead = document.getElementById('mark-all-read');
-        
-        // Handle navigation button click
-        if (navNotificationsBtn) {
-            navNotificationsBtn.addEventListener('click', () => {
-                notificationsPanel.classList.toggle('active');
-                if (notificationsPanel.classList.contains('active')) {
-                    this.markAllAsRead();
-                }
-            });
-        }
         
         if (notificationsBtn && notificationsPanel) {
             notificationsBtn.addEventListener('click', () => {
@@ -505,12 +552,10 @@ const NotificationSystem = {
         document.addEventListener('click', (e) => {
             const notificationsPanel = document.getElementById('notifications-panel');
             const notificationsBtn = document.getElementById('notifications-btn');
-            const navNotificationsBtn = document.querySelector('.nav-btn[data-action="notifications"]');
             
-            if (notificationsPanel && 
+            if (notificationsPanel && notificationsBtn &&
                 !notificationsPanel.contains(e.target) && 
-                !notificationsBtn?.contains(e.target) &&
-                !navNotificationsBtn?.contains(e.target) &&
+                !notificationsBtn.contains(e.target) &&
                 notificationsPanel.classList.contains('active')) {
                 notificationsPanel.classList.remove('active');
             }
@@ -522,113 +567,6 @@ const NotificationSystem = {
                 Notification.requestPermission();
             }, 3000);
         }
-    }
-};
-
-// 3. THEME SYSTEM (Updated to work with navigation button)
-const ThemeSystem = {
-    currentTheme: 'dark',
-    
-    init() {
-        this.loadTheme();
-        this.applyTheme();
-        this.setupEventListeners();
-    },
-    
-    loadTheme() {
-        const saved = localStorage.getItem('theme');
-        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-        this.currentTheme = saved || (prefersDark ? 'dark' : 'light');
-    },
-    
-    saveTheme() {
-        localStorage.setItem('theme', this.currentTheme);
-    },
-    
-    applyTheme() {
-        document.body.className = `theme-${this.currentTheme}`;
-        
-        // Update theme selector
-        this.updateThemeSelector();
-        
-        // Track theme change
-        AnalyticsSystem.trackEvent('theme_changed', { theme: this.currentTheme });
-    },
-    
-    setTheme(theme) {
-        this.currentTheme = theme;
-        this.saveTheme();
-        this.applyTheme();
-    },
-    
-    setupEventListeners() {
-        // Theme toggle button in header
-        const themeToggle = document.getElementById('theme-toggle');
-        const themeSelector = document.getElementById('theme-selector');
-        
-        if (themeToggle) {
-            themeToggle.addEventListener('click', (e) => {
-                e.stopPropagation();
-                themeSelector.classList.toggle('active');
-            });
-        }
-        
-        // Theme button in navigation
-        const navThemeBtn = document.querySelector('.nav-btn[data-action="theme"]');
-        if (navThemeBtn) {
-            navThemeBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                themeSelector.classList.toggle('active');
-            });
-        }
-        
-        // Theme options
-        document.querySelectorAll('.theme-option').forEach(option => {
-            option.addEventListener('click', (e) => {
-                e.stopPropagation();
-                const theme = option.dataset.theme;
-                this.setTheme(theme);
-                themeSelector.classList.remove('active');
-            });
-        });
-        
-        // Close theme selector when clicking outside
-        document.addEventListener('click', (e) => {
-            const themeToggle = document.getElementById('theme-toggle');
-            const navThemeBtn = document.querySelector('.nav-btn[data-action="theme"]');
-            const themeSelector = document.getElementById('theme-selector');
-            
-            if (!themeToggle?.contains(e.target) && 
-                !navThemeBtn?.contains(e.target) && 
-                !themeSelector?.contains(e.target)) {
-                themeSelector?.classList.remove('active');
-            }
-        });
-        
-        // Listen for system theme changes
-        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
-            if (!localStorage.getItem('theme')) {
-                this.setTheme(e.matches ? 'dark' : 'light');
-            }
-        });
-        
-        // Keyboard shortcut: Alt+T
-        document.addEventListener('keydown', (e) => {
-            if (e.altKey && e.key === 't') {
-                e.preventDefault();
-                const themes = ['dark', 'light', 'high-contrast'];
-                const currentIndex = themes.indexOf(this.currentTheme);
-                const nextIndex = (currentIndex + 1) % themes.length;
-                this.setTheme(themes[nextIndex]);
-            }
-        });
-    },
-    
-    updateThemeSelector() {
-        document.querySelectorAll('.theme-option').forEach(option => {
-            const isActive = option.dataset.theme === this.currentTheme;
-            option.classList.toggle('active', isActive);
-        });
     }
 };
 
@@ -965,7 +903,7 @@ const AccessibilitySystem = {
             // Alt+N for notifications
             if (e.altKey && e.key === 'n') {
                 e.preventDefault();
-                document.querySelector('.nav-btn[data-action="notifications"]')?.click();
+                document.getElementById('notifications-btn')?.click();
             }
             
             // Alt+A for analytics
@@ -994,21 +932,6 @@ const AccessibilitySystem = {
             const text = element.textContent.trim();
             if (text && !element.getAttribute('aria-label')) {
                 element.setAttribute('aria-label', text);
-            }
-        });
-        
-        // Add aria labels to navigation buttons
-        document.querySelectorAll('.nav-btn').forEach(btn => {
-            const action = btn.dataset.action;
-            const labelMap = {
-                'home': 'Home',
-                'theme': 'Change theme',
-                'create': 'Create content',
-                'dashboard': 'Creator dashboard',
-                'notifications': 'Notifications'
-            };
-            if (labelMap[action] && !btn.getAttribute('aria-label')) {
-                btn.setAttribute('aria-label', labelMap[action]);
             }
         });
     },
@@ -2428,197 +2351,127 @@ const InfiniteScrollSystem = {
     }
 };
 
-// Personalized Recommendations System
-const RecommendationSystem = {
-    userPreferences: {},
+// UPDATED: Recommended For You System (replaces PersonalizedRecommendationsSystem)
+const RecommendedForYouSystem = {
+    isUserLoggedIn: false,
+    userLikedGenres: [],
+    fallbackToTrending: true,
     
     init() {
+        this.checkUserStatus();
         this.loadUserPreferences();
+    },
+    
+    async checkUserStatus() {
+        const { data: { session } } = await supabaseAuth.auth.getSession();
+        this.isUserLoggedIn = !!session;
     },
     
     loadUserPreferences() {
         try {
-            const preferences = localStorage.getItem('user_preferences');
-            if (preferences) {
-                this.userPreferences = JSON.parse(preferences);
-            } else {
-                this.userPreferences = {
-                    likedCategories: [],
-                    watchedGenres: [],
-                    favoriteCreators: []
-                };
-            }
+            // Load user's liked content genres from localStorage
+            const likedContent = JSON.parse(localStorage.getItem('user_liked_content') || '[]');
+            this.userLikedGenres = [];
+            
+            // Extract unique genres from liked content
+            likedContent.forEach(content => {
+                if (content.genre && !this.userLikedGenres.includes(content.genre)) {
+                    this.userLikedGenres.push(content.genre);
+                }
+            });
+            
+            // If no liked genres, fall back to trending
+            this.fallbackToTrending = this.userLikedGenres.length === 0;
+            
         } catch (error) {
             console.error('Error loading user preferences:', error);
+            this.fallbackToTrending = true;
         }
     },
     
-    saveUserPreferences() {
-        try {
-            localStorage.setItem('user_preferences', JSON.stringify(this.userPreferences));
-        } catch (error) {
-            console.error('Error saving user preferences:', error);
-        }
-    },
-    
-    trackContentInteraction(content) {
-        if (content.genre && !this.userPreferences.likedCategories.includes(content.genre)) {
-            this.userPreferences.likedCategories.push(content.genre);
-        }
-        
-        if (content.creator_id && !this.userPreferences.favoriteCreators.includes(content.creator_id)) {
-            this.userPreferences.favoriteCreators.push(content.creator_id);
-        }
-        
-        this.saveUserPreferences();
-    },
-    
-    getPersonalizedRecommendations(allContent) {
+    getRecommendedContent(allContent) {
         if (!allContent || allContent.length === 0) return [];
         
+        // For new users or users without liked content, show trending content
+        if (!this.isUserLoggedIn || this.fallbackToTrending) {
+            console.log('Showing trending content for new/user without preferences');
+            return this.getTrendingContent(allContent);
+        }
+        
+        // For logged-in users with liked genres
         const scoredContent = allContent.map(content => {
             let score = 0;
             
-            if (content.genre && this.userPreferences.likedCategories.includes(content.genre)) {
-                score += 3;
-            }
-            
-            if (content.creator_id && this.userPreferences.favoriteCreators.includes(content.creator_id)) {
+            // Score based on liked genres
+            if (content.genre && this.userLikedGenres.includes(content.genre)) {
                 score += 5;
             }
             
+            // Score based on recency (last 7 days gets bonus)
             if (content.created_at) {
                 const daysOld = (Date.now() - new Date(content.created_at).getTime()) / (1000 * 60 * 60 * 24);
                 if (daysOld < 7) score += 2;
                 if (daysOld < 1) score += 3;
             }
             
+            // Score based on popularity
             if (content.views) {
-                score += Math.min(Math.floor(content.views / 1000), 5);
+                score += Math.min(Math.floor(content.views / 1000), 3);
+            }
+            
+            if (content.likes) {
+                score += Math.min(Math.floor(content.likes / 100), 2);
             }
             
             return { ...content, recommendationScore: score };
         });
         
+        // Sort by score and take top 5
         return scoredContent
             .sort((a, b) => b.recommendationScore - a.recommendationScore)
-            .slice(0, 10);
-    }
-};
-
-// NEW: Personalized Recommendations (Basic) System - UPDATED
-const PersonalizedRecommendationsSystem = {
-    currentUser: null,
-    isLoggedIn: false,
-    
-    init() {
-        this.checkLoginStatus();
-        this.setupEventListeners();
+            .slice(0, 5);
     },
     
-    async checkLoginStatus() {
-        try {
-            const { data: { session } } = await supabaseAuth.auth.getSession();
-            this.isLoggedIn = !!session;
-            this.currentUser = session?.user || null;
-        } catch (error) {
-            console.error('Error checking login status:', error);
-            this.isLoggedIn = false;
-        }
-    },
-    
-    setupEventListeners() {
-        // Listen for auth state changes
-        supabaseAuth.auth.onAuthStateChange((event, session) => {
-            this.isLoggedIn = !!session;
-            this.currentUser = session?.user || null;
-            this.updateRecommendations();
-        });
-    },
-    
-    async updateRecommendations() {
-        const recommendationsSection = document.querySelector('.personalized-recommendations-section');
-        if (!recommendationsSection) return;
+    getTrendingContent(contentData) {
+        if (!contentData || contentData.length === 0) return [];
         
-        // Show/hide section based on login status
-        if (!this.isLoggedIn) {
-            recommendationsSection.style.display = 'none';
-            return;
-        }
+        const oneWeekAgo = new Date();
+        oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
         
-        recommendationsSection.style.display = 'block';
-        
-        const grid = recommendationsSection.querySelector('.content-grid');
-        if (!grid) return;
-        
-        // Get recommendations based on user's liked content genres
-        const recommendations = this.getRecommendedForYou(allContentData);
-        
-        if (recommendations.length === 0) {
-            // Fall back to trending content for new users
-            const trendingFallback = getTrendingContent(allContentData).slice(0, 5);
-            grid.innerHTML = trendingFallback.map(item => this.createRecommendationCard(item, true)).join('');
-        } else {
-            grid.innerHTML = recommendations.slice(0, 5).map(item => this.createRecommendationCard(item, false)).join('');
-        }
-        
-        // Setup event listeners for new cards
-        this.setupRecommendationCardListeners(grid);
-    },
-    
-    getRecommendedForYou(allContent) {
-        if (!allContent || allContent.length === 0) return [];
-        
-        // Get user's liked content genres from localStorage
-        const likedGenres = JSON.parse(localStorage.getItem('liked_genres') || '[]');
-        const watchedContent = JSON.parse(localStorage.getItem('watched_content') || '[]');
-        
-        // If no liked genres yet, return empty array (will fall back to trending)
-        if (likedGenres.length === 0 && watchedContent.length === 0) {
-            return [];
-        }
-        
-        // Score content based on user preferences
-        const scoredContent = allContent.map(item => {
-            let score = 0;
-            
-            // Score based on liked genres
-            if (item.genre && likedGenres.includes(item.genre)) {
-                score += 5;
+        const recentContent = contentData.filter(item => {
+            try {
+                const createdAt = new Date(item.created_at);
+                return createdAt >= oneWeekAgo;
+            } catch {
+                return false;
             }
-            
-            // Score based on watched content from same creator
-            const watchedCreatorIds = watchedContent.map(w => w.creator_id).filter(id => id);
-            if (item.creator_id && watchedCreatorIds.includes(item.creator_id)) {
-                score += 3;
-            }
-            
-            // Recency bonus
-            if (item.created_at) {
-                const daysOld = (Date.now() - new Date(item.created_at).getTime()) / (1000 * 60 * 60 * 24);
-                if (daysOld < 7) score += 2;
-                if (daysOld < 1) score += 3;
-            }
-            
-            // Popularity bonus
-            if (item.views) {
-                score += Math.min(Math.floor(item.views / 1000), 3);
-            }
-            
-            return { ...item, recommendationScore: score };
         });
         
-        // Filter out already watched content
-        const watchedContentIds = watchedContent.map(w => w.content_id);
-        const filteredContent = scoredContent.filter(item => !watchedContentIds.includes(item.id.toString()));
-        
-        // Sort by score and return
-        return filteredContent
-            .sort((a, b) => b.recommendationScore - a.recommendationScore)
-            .slice(0, 10);
+        return recentContent.sort((a, b) => {
+            const aScore = (a.views || 0) + ((a.likes || 0) * 2);
+            const bScore = (b.views || 0) + ((b.likes || 0) * 2);
+            return bScore - aScore;
+        }).slice(0, 5);
     },
     
-    createRecommendationCard(item, isFallback = false) {
+    shouldDisplaySection() {
+        // Only display if user is logged in OR we have trending content to show
+        return this.isUserLoggedIn || this.fallbackToTrending;
+    },
+    
+    getSectionDescription() {
+        if (!this.isUserLoggedIn) {
+            return 'Trending content for new users. <span class="highlight">Sign in for personalized recommendations!</span>';
+        }
+        
+        if (this.fallbackToTrending) {
+            return 'Based on trending content. <span class="highlight">Like some content to get personalized recommendations!</span>';
+        }
+        
+        return `Based on your liked ${this.userLikedGenres.join(', ')} content`;
+    },
+    
+    createRecommendedCard(item) {
         return `
             <div class="content-card" data-content-id="${item.id}" data-views="${item.views || 0}" data-likes="${item.likes || 0}">
                 <div class="card-thumbnail">
@@ -2632,9 +2485,8 @@ const PersonalizedRecommendationsSystem = {
                             <source src="${item.file_url || ''}" type="video/mp4">
                         </video>
                     </div>
-                    <div class="personalized-badge">
-                        <i class="fas fa-${isFallback ? 'fire' : 'star'}"></i>
-                        ${isFallback ? 'Trending' : 'For You'}
+                    <div class="recommended-badge">
+                        <i class="fas fa-star"></i> Recommended
                     </div>
                     <button class="share-btn" title="Share" data-content-id="${item.id}">
                         <i class="fas fa-share"></i>
@@ -2661,21 +2513,6 @@ const PersonalizedRecommendationsSystem = {
                 </div>
             </div>
         `;
-    },
-    
-    setupRecommendationCardListeners(grid) {
-        grid.querySelectorAll('.content-card').forEach(card => {
-            card.addEventListener('click', (e) => {
-                if (e.target.closest('.share-btn') || e.target.closest('.creator-btn')) {
-                    return;
-                }
-                
-                const contentId = card.dataset.contentId;
-                if (contentId) {
-                    window.location.href = `content-detail.html?id=${contentId}`;
-                }
-            });
-        });
     }
 };
 
@@ -3108,7 +2945,7 @@ function renderContentCards(contentItems) {
     `).join('');
 }
 
-// ✅ RENDER CONTENT SECTIONS
+// UPDATED: RENDER CONTENT SECTIONS with new Recommended For You section
 function renderContentSections() {
     const contentSections = document.getElementById('content-sections');
     if (!contentSections) return;
@@ -3123,27 +2960,46 @@ function renderContentSections() {
         return;
     }
     
-    contentSections.innerHTML = `
-        <!-- Continue Watching (if any) -->
-        <!-- Will be added by ContinueWatchingSystem -->
-        
-        <!-- Personalized Recommendations Section - UPDATED -->
-        <section class="section personalized-recommendations-section" data-type="personalized-recommendations">
-            <div class="section-header">
-                <h2 class="section-title">Recommended For You</h2>
-                <div class="section-description">
-                    <span class="recommendation-info" id="recommendation-info">
-                        <i class="fas fa-info-circle"></i>
-                        Based on your liked content genres
-                    </span>
+    // Get recommended content
+    const recommendedContent = RecommendedForYouSystem.getRecommendedContent(filteredContentData);
+    
+    let sectionsHTML = '';
+    
+    // Continue Watching (if any)
+    const continueWatching = ContinueWatchingSystem.getContinueWatchingContent(filteredContentData);
+    if (continueWatching.length > 0) {
+        sectionsHTML += `
+            <section class="section" data-type="continue-watching">
+                <div class="section-header">
+                    <h2 class="section-title">Continue Watching</h2>
+                    <button class="see-all-btn" data-action="see-all" data-target="continue-watching">See All</button>
                 </div>
-            </div>
-            <div class="content-grid">
-                <!-- Recommendations will be loaded by PersonalizedRecommendationsSystem -->
-            </div>
-        </section>
-        
-        <!-- Latest Uploads -->
+                <div class="content-grid">
+                    ${renderContentCards(continueWatching.slice(0, 5))}
+                </div>
+            </section>
+        `;
+    }
+    
+    // Recommended For You Section (Conditionally displayed)
+    if (RecommendedForYouSystem.shouldDisplaySection() && recommendedContent.length > 0) {
+        sectionsHTML += `
+            <section class="section recommended-for-you-section" data-type="recommended-for-you">
+                <div class="section-header">
+                    <h2 class="section-title">Recommended For You</h2>
+                    <div class="recommended-description">
+                        ${RecommendedForYouSystem.getSectionDescription()}
+                    </div>
+                </div>
+                <div class="content-grid">
+                    ${recommendedContent.map(item => RecommendedForYouSystem.createRecommendedCard(item)).join('')}
+                </div>
+            </section>
+        `;
+    }
+    
+    // Latest Uploads
+    sectionsHTML += `
         <section class="section">
             <div class="section-header">
                 <h2 class="section-title">Latest Uploads</h2>
@@ -3188,14 +3044,13 @@ function renderContentSections() {
         </section>
     `;
     
-    // Update continue watching section
-    ContinueWatchingSystem.updateContinueWatchingSection();
-    
-    // Update personalized recommendations
-    PersonalizedRecommendationsSystem.updateRecommendations();
+    contentSections.innerHTML = sectionsHTML;
     
     // Setup content card listeners
     setupContentCardListeners();
+    
+    // Initialize recommended system
+    RecommendedForYouSystem.init();
 }
 
 // ✅ SETUP EVENT LISTENERS
@@ -3267,30 +3122,11 @@ function setupContentCardListeners() {
             const contentId = card.dataset.contentId;
             if (contentId) {
                 // Track interaction for recommendations
-                const content = allContentData.find(c => c.id == contentId);
-                if (content) {
-                    RecommendationSystem.trackContentInteraction(content);
-                    
-                    // Track genre for recommendations
-                    if (content.genre) {
-                        const likedGenres = JSON.parse(localStorage.getItem('liked_genres') || '[]');
-                        if (!likedGenres.includes(content.genre)) {
-                            likedGenres.push(content.genre);
-                            localStorage.setItem('liked_genres', JSON.stringify(likedGenres));
-                        }
-                    }
-                    
-                    // Track watched content
-                    const watchedContent = JSON.parse(localStorage.getItem('watched_content') || '[]');
-                    const watchedItem = {
-                        content_id: contentId,
-                        creator_id: content.creator_id,
-                        genre: content.genre,
-                        timestamp: Date.now()
-                    };
-                    watchedContent.push(watchedItem);
-                    localStorage.setItem('watched_content', JSON.stringify(watchedContent.slice(-50))); // Keep last 50
-                }
+                // Note: We've removed RecommendationSystem, so we can keep this commented for now
+                // const content = allContentData.find(c => c.id == contentId);
+                // if (content) {
+                //     RecommendationSystem.trackContentInteraction(content);
+                // }
                 
                 // Use a small timeout to allow any preview to be handled
                 setTimeout(() => {
@@ -3444,14 +3280,14 @@ async function initializeHomeFeed() {
     }
 }
 
-// Initialize the app when DOM is loaded
+// UPDATED: Initialize the app when DOM is loaded
 document.addEventListener('DOMContentLoaded', async () => {
     console.log('🚀 Bantu Stream Connect Home Feed Initializing...');
     
     // Initialize Development Window (always visible)
     DevelopmentWindow.init();
     
-    // Initialize Navigation Button System
+    // Initialize Navigation Button System FIRST
     NavigationButtonSystem.init();
     
     // Initialize all new systems
@@ -3468,9 +3304,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     ContentStatsSystem.init();
     SearchSystem.init();
     InfiniteScrollSystem.init();
-    RecommendationSystem.init();
-    PersonalizedRecommendationsSystem.init();
     KeyboardShortcutsSystem.init();
+    
+    // Initialize Recommended For You System
+    RecommendedForYouSystem.init();
     
     // Initialize auth and check if user is logged in
     const { data: { session }, error } = await supabaseAuth.auth.getSession();
@@ -3500,6 +3337,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
     
+    // Update RecommendedForYouSystem with auth status
+    RecommendedForYouSystem.isUserLoggedIn = isAuthenticated;
+    
     // Initialize the home feed
     await initializeHomeFeed();
     
@@ -3509,12 +3349,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         if (event === 'SIGNED_IN') {
             console.log('User signed in');
+            RecommendedForYouSystem.isUserLoggedIn = true;
             if (session?.user) {
                 loadUserProfilePicture(session.user);
-                PersonalizedRecommendationsSystem.updateRecommendations();
             }
         } else if (event === 'SIGNED_OUT') {
             console.log('User signed out');
+            RecommendedForYouSystem.isUserLoggedIn = false;
             if (profileBtn) {
                 profileBtn.innerHTML = `
                     <div class="profile-placeholder">
@@ -3522,7 +3363,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                     </div>
                 `;
             }
-            PersonalizedRecommendationsSystem.updateRecommendations();
         }
+        
+        // Re-render sections to update Recommended For You
+        renderContentSections();
     });
 });
