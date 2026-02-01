@@ -1,0 +1,133 @@
+/* Color Theme Variables */
+:root {
+    --deep-black: #0A0E12;
+    --deep-navy: #0F172A;
+    --soft-white: #F8FAFC;
+    --slate-grey: #94A3B8;
+    --bantu-blue: #1D4ED8;
+    --warm-gold: #F59E0B;
+    --error-color: #EF4444;
+    --success-color: #10B981;
+    --glow-cycle-1: #00A3FF;
+    --glow-cycle-2: #0066FF;
+    --glow-cycle-3: #8B5CF6;
+    --glow-cycle-4: #EC4899;
+    --card-bg: rgba(15, 23, 42, 0.6);
+    --card-border: rgba(148, 163, 184, 0.2);
+    --hover-overlay: rgba(255, 255, 255, 0.05);
+    --active-overlay: rgba(245, 158, 11, 0.1);
+    --indigo: #4F46E5;
+    --gold-glow: rgba(245, 158, 11, 0.3);
+    --blue-glow: rgba(29, 78, 216, 0.3);
+    --notification-dot: #EF4444;
+}
+
+/* Light Theme */
+.theme-light {
+    --deep-black: #F8FAFC;
+    --deep-navy: #FFFFFF;
+    --soft-white: #0F172A;
+    --slate-grey: #64748B;
+    --card-bg: rgba(255, 255, 255, 0.9);
+    --card-border: rgba(100, 116, 139, 0.2);
+    --hover-overlay: rgba(15, 23, 42, 0.05);
+    --bantu-blue: #2563EB;
+    --warm-gold: #D97706;
+    --glow-cycle-1: #3B82F6;
+    --glow-cycle-2: #60A5FA;
+    --glow-cycle-3: #8B5CF6;
+    --glow-cycle-4: #EC4899;
+}
+
+/* High Contrast Theme */
+.theme-high-contrast {
+    --deep-black: #000000;
+    --deep-navy: #111827;
+    --soft-white: #FFFFFF;
+    --slate-grey: #E5E7EB;
+    --bantu-blue: #2563EB;
+    --warm-gold: #D97706;
+    --card-bg: rgba(17, 24, 39, 0.95);
+    --card-border: #FFFFFF;
+    --glow-cycle-1: #3B82F6;
+    --glow-cycle-2: #60A5FA;
+    --glow-cycle-3: #8B5CF6;
+    --glow-cycle-4: #EC4899;
+    --error-color: #DC2626;
+    --success-color: #059669;
+}
+
+/* Dark Theme (Default) */
+.theme-dark {
+    --deep-black: #0A0E12;
+    --deep-navy: #0F172A;
+    --soft-white: #F8FAFC;
+    --slate-grey: #94A3B8;
+    --bantu-blue: #1D4ED8;
+    --warm-gold: #F59E0B;
+    --card-bg: rgba(15, 23, 42, 0.6);
+    --card-border: rgba(148, 163, 184, 0.2);
+    --hover-overlay: rgba(255, 255, 255, 0.05);
+    --active-overlay: rgba(245, 158, 11, 0.1);
+}
+
+/* System Theme Detection */
+@media (prefers-color-scheme: light) {
+    body:not(.theme-dark):not(.theme-high-contrast) {
+        --deep-black: #F8FAFC;
+        --deep-navy: #FFFFFF;
+        --soft-white: #0F172A;
+        --slate-grey: #64748B;
+        --card-bg: rgba(255, 255, 255, 0.9);
+        --card-border: rgba(100, 116, 139, 0.2);
+        --hover-overlay: rgba(15, 23, 42, 0.05);
+    }
+}
+
+/* Theme Transition */
+body {
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Theme-specific overrides */
+.theme-light .animated-bg {
+    opacity: 0.05;
+}
+
+.theme-high-contrast .content-card {
+    border-width: 2px;
+}
+
+.theme-high-contrast .icon-btn,
+.theme-high-contrast .nav-icon {
+    border-width: 2px;
+}
+
+.theme-high-contrast button:focus,
+.theme-high-contrast a:focus {
+    outline: 3px solid var(--bantu-blue);
+    outline-offset: 2px;
+}
+
+/* Print styles */
+@media print {
+    .theme-light,
+    .theme-dark,
+    .theme-high-contrast {
+        --deep-black: #FFFFFF;
+        --deep-navy: #FFFFFF;
+        --soft-white: #000000;
+        --slate-grey: #666666;
+        --card-bg: #FFFFFF;
+        --card-border: #CCCCCC;
+    }
+    
+    .animated-bg,
+    .glow-cycle,
+    .navigation-button-container,
+    .notifications-panel,
+    .search-modal,
+    .analytics-modal {
+        display: none !important;
+    }
+}
