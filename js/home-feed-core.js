@@ -33,9 +33,17 @@ class ContentSupabaseClient {
         // Build query URL
         let queryUrl = `${this.url}/rest/v1/${table}?select=${select}`;
         
-        // Add filters
-        Object.keys(where).forEach(key => {
-            queryUrl += `&${key}=eq.${encodeURIComponent(where[key])}`;
+        // Add filters - simplified to prevent very long URLs
+        Object.keys(where).forEach((key, index) => {
+            if (index < 5) { // Limit number of filters to prevent long URLs
+                const value = where[key];
+                if (typeof value === 'string' && value.includes('in.')) {
+                    // Handle IN queries specially
+                    queryUrl += `&${key}=${encodeURIComponent(value)}`;
+                } else {
+                    queryUrl += `&${key}=eq.${encodeURIComponent(value)}`;
+                }
+            }
         });
         
         // Add ordering
@@ -44,16 +52,23 @@ class ContentSupabaseClient {
         }
         
         // Add limit and offset
-        queryUrl += `&limit=${limit}&offset=${offset}`;
+        queryUrl += `&limit=${Math.min(limit, 100)}&offset=${offset}`;
         
         try {
+            // Use AbortController for timeout
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+            
             const response = await fetch(queryUrl, {
                 headers: {
                     'apikey': this.key,
                     'Authorization': `Bearer ${this.key}`,
                     'Content-Type': 'application/json'
-                }
+                },
+                signal: controller.signal
             });
+            
+            clearTimeout(timeoutId);
             
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
@@ -93,6 +108,12 @@ class ContentSupabaseClient {
                 }
             } catch (e) {
                 console.log('Could not read from localStorage cache:', e);
+            }
+            
+            // Return empty array instead of throwing for better UX
+            if (error.name === 'AbortError') {
+                console.log('Query timeout, returning empty results');
+                return [];
             }
             
             throw error;
