@@ -726,7 +726,7 @@ class AnalyticsSystem {
     }
 }
 
-// Search System
+// Search System - FIXED VERSION
 class SearchSystem {
     constructor() {
         this.modal = null;
@@ -735,6 +735,7 @@ class SearchSystem {
         this.currentResults = [];
         this.searchTimeout = null;
         this.searchIndex = [];
+        this.lastSearchId = 0;
     }
     
     init() {
@@ -749,9 +750,9 @@ class SearchSystem {
     async buildSearchIndex() {
         try {
             const content = await contentSupabase.query('Content', {
-                select: 'id,title,description,genre,creator',
+                select: 'id,title,description,genre,creator,media_type',
                 where: { status: 'published' },
-                limit: 1000
+                limit: 500 // Reduced from 1000
             });
             
             this.searchIndex = content.map(item => ({
@@ -760,12 +761,15 @@ class SearchSystem {
                 description: item.description || '',
                 genre: item.genre || '',
                 creator: item.creator || '',
+                media_type: item.media_type || 'video',
                 searchText: `${item.title} ${item.description} ${item.genre} ${item.creator}`.toLowerCase()
             }));
             
             console.log('✅ Search index built:', this.searchIndex.length, 'items');
         } catch (error) {
             console.error('Failed to build search index:', error);
+            // Use empty index if fetch fails
+            this.searchIndex = [];
         }
     }
     
@@ -793,7 +797,6 @@ class SearchSystem {
     
     openSearch() {
         this.modal?.classList.add('active');
-        // Delay focus for mobile to ensure keyboard appears
         setTimeout(() => this.searchInput?.focus(), 350);
     }
     
@@ -801,56 +804,74 @@ class SearchSystem {
         this.modal?.classList.remove('active');
         this.searchInput.value = '';
         this.resultsGrid.innerHTML = '';
+        this.currentSearchId++;
     }
     
     handleSearch(query) {
         clearTimeout(this.searchTimeout);
         
         this.searchTimeout = setTimeout(async () => {
+            const currentSearchId = ++this.lastSearchId;
+            
             if (!query.trim()) {
                 this.resultsGrid.innerHTML = '<div class="no-results">Start typing to search...</div>';
                 return;
             }
             
-            this.resultsGrid.innerHTML = '<div class="infinite-scroll-loading"><div class="infinite-scroll-spinner"></div><div>Searching...</div></div>';
+            this.resultsGrid.innerHTML = '<div class="search-loading"><div class="loading-spinner"></div><div>Searching...</div></div>';
             
             try {
                 const results = await this.searchContent(query);
-                this.currentResults = results;
-                this.renderSearchResults(results);
+                
+                // Only update if this is still the latest search
+                if (currentSearchId === this.lastSearchId) {
+                    this.currentResults = results;
+                    this.renderSearchResults(results);
+                }
             } catch (error) {
                 console.error('Search error:', error);
-                this.resultsGrid.innerHTML = '<div class="no-results">Error searching. Please try again.</div>';
+                // Only show error if this is still the latest search
+                if (currentSearchId === this.lastSearchId) {
+                    if (error.message.includes('timeout') || error.message.includes('408')) {
+                        // Fall back to client-side search
+                        const clientResults = this.searchLocally(query);
+                        this.renderSearchResults(clientResults);
+                        this.showToast('Using offline search results', 'info');
+                    } else {
+                        this.resultsGrid.innerHTML = '<div class="no-results">Search failed. Please check your connection.</div>';
+                    }
+                }
             }
-        }, 300); // Debounce search
+        }, 350); // Increased debounce time
     }
     
     async searchContent(query) {
-        const searchTerms = query.toLowerCase().split(' ');
+        const searchTerms = query.toLowerCase().split(' ').filter(term => term.length > 0);
         
-        // First, search in the local index
-        const localResults = this.searchIndex.filter(item => {
-            return searchTerms.some(term => item.searchText.includes(term));
-        }).map(item => item.id);
+        if (searchTerms.length === 0) return [];
         
         // Get filters
         const category = document.getElementById('category-filter')?.value;
         const mediaType = document.getElementById('media-type-filter')?.value;
         const sortBy = document.getElementById('sort-filter')?.value;
         
-        // Build query
-        let whereClause = {};
+        // Build where clause
+        let whereConditions = ['status.eq.published'];
+        
+        // Add text search conditions using OR for multiple terms
+        if (searchTerms.length > 0) {
+            const textConditions = searchTerms.map(term => 
+                `or(title.ilike.%${term}%,description.ilike.%${term}%,genre.ilike.%${term}%,creator.ilike.%${term}%)`
+            ).join(',');
+            whereConditions.push(textConditions);
+        }
         
         if (category) {
-            whereClause.genre = category;
+            whereConditions.push(`genre.eq.${encodeURIComponent(category)}`);
         }
         
         if (mediaType) {
-            whereClause.media_type = mediaType;
-        }
-        
-        if (localResults.length > 0) {
-            whereClause.id = `in.(${localResults.join(',')})`;
+            whereConditions.push(`media_type.eq.${mediaType}`);
         }
         
         // Get order by
@@ -867,31 +888,65 @@ class SearchSystem {
             order = 'desc';
         }
         
-        // Fetch from Supabase
-        const results = await contentSupabase.query('Content', {
-            select: '*',
-            where: whereClause,
-            orderBy: orderBy,
-            order: order,
-            limit: 50
-        });
+        // Use a simpler query approach with timeout protection
+        try {
+            const response = await this.safeSupabaseQuery(whereConditions, orderBy, order);
+            return response;
+        } catch (error) {
+            // Fall back to local search
+            console.log('Supabase search failed, falling back to local:', error);
+            return this.searchLocally(query);
+        }
+    }
+    
+    async safeSupabaseQuery(whereConditions, orderBy, order, limit = 50) {
+        const queryUrl = `https://ydnxqnbjoshvxteevemc.supabase.co/rest/v1/Content?select=*&${whereConditions.join('&')}&order=${orderBy}.${order}&limit=${limit}`;
         
-        // If no local results or we want to search more broadly
-        if (localResults.length === 0) {
-            // Perform broader search
-            const broaderResults = await contentSupabase.query('Content', {
-                select: '*',
-                where: { status: 'published' },
-                limit: 100
+        // Use AbortController for timeout
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 8000); // 8 second timeout
+        
+        try {
+            const response = await fetch(queryUrl, {
+                signal: controller.signal,
+                headers: {
+                    'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U',
+                    'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U',
+                    'Content-Type': 'application/json'
+                }
             });
             
-            return broaderResults.filter(item => {
-                const itemText = `${item.title || ''} ${item.description || ''} ${item.genre || ''} ${item.creator || ''}`.toLowerCase();
-                return searchTerms.some(term => itemText.includes(term));
-            });
+            clearTimeout(timeoutId);
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            return await response.json();
+        } catch (error) {
+            clearTimeout(timeoutId);
+            if (error.name === 'AbortError') {
+                throw new Error('Request timeout');
+            }
+            throw error;
         }
+    }
+    
+    searchLocally(query) {
+        const searchTerms = query.toLowerCase().split(' ').filter(term => term.length > 0);
+        const category = document.getElementById('category-filter')?.value;
+        const mediaType = document.getElementById('media-type-filter')?.value;
         
-        return results;
+        return this.searchIndex.filter(item => {
+            // Category filter
+            if (category && item.genre !== category) return false;
+            
+            // Media type filter
+            if (mediaType && item.media_type !== mediaType) return false;
+            
+            // Text search
+            return searchTerms.some(term => item.searchText.includes(term));
+        }).slice(0, 30); // Limit results
     }
     
     renderSearchResults(results) {
@@ -902,20 +957,27 @@ class SearchSystem {
         
         this.resultsGrid.innerHTML = results.map(item => {
             const creatorName = item.creator || item.creator_display_name || 'Creator';
+            const thumbnailUrl = item.thumbnail_url || 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop';
+            
+            // Use a safe thumbnail URL
+            const safeThumbnail = thumbnailUrl.startsWith('http') ? thumbnailUrl : 
+                'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop';
             
             return `
-            <div class="content-card" data-content-id="${item.id}" data-views="${item.views || 0}" data-likes="${item.likes || 0}">
+            <div class="content-card search-result-card" data-content-id="${item.id}" data-views="${item.views || 0}" data-likes="${item.likes || 0}">
                 <div class="card-thumbnail">
-                    <img src="${item.thumbnail_url || 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop'}" 
+                    <img src="${safeThumbnail}" 
                          alt="${item.title}"
                          loading="lazy"
                          onerror="this.src='https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop'">
                     <div class="thumbnail-overlay"></div>
+                    ${item.media_type === 'video' ? '<div class="video-icon-overlay"><i class="fas fa-play"></i></div>' : ''}
                 </div>
                 <div class="card-content">
                     <h3 class="card-title" title="${item.title}">
-                        ${item.title.length > 50 ? item.title.substring(0, 50) + '...' : item.title}
+                        ${item.title && item.title.length > 50 ? item.title.substring(0, 50) + '...' : (item.title || 'Untitled')}
                     </h3>
+                    ${item.description ? `<p class="card-description">${item.description.length > 80 ? item.description.substring(0, 80) + '...' : item.description}</p>` : ''}
                     <div class="card-stats">
                         <span class="stat">
                             <i class="fas fa-eye"></i> ${item.views || 0}
@@ -923,9 +985,12 @@ class SearchSystem {
                         <span class="stat">
                             <i class="fas fa-heart"></i> ${item.likes || 0}
                         </span>
+                        <span class="stat">
+                            <i class="fas ${this.getMediaTypeIcon(item.media_type)}"></i> ${item.media_type || 'video'}
+                        </span>
                     </div>
                     <button class="creator-btn" 
-                            data-creator-id="${item.creator_id || item.user_id}"
+                            data-creator-id="${item.creator_id || item.user_id || ''}"
                             data-creator-name="${creatorName}">
                         <i class="fas fa-user"></i>
                         ${creatorName.length > 15 ? creatorName.substring(0, 15) + '...' : creatorName}
@@ -936,6 +1001,15 @@ class SearchSystem {
         }).join('');
         
         this.setupSearchResultListeners();
+    }
+    
+    getMediaTypeIcon(mediaType) {
+        switch(mediaType) {
+            case 'video': return 'fa-video';
+            case 'audio': return 'fa-music';
+            case 'image': return 'fa-image';
+            default: return 'fa-file';
+        }
     }
     
     setupSearchResultListeners() {
@@ -954,6 +1028,41 @@ class SearchSystem {
                 }
             });
         });
+        
+        // Add click listeners for creator buttons
+        this.resultsGrid.querySelectorAll('.creator-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const creatorId = btn.dataset.creatorId;
+                const creatorName = btn.dataset.creatorName;
+                if (creatorId) {
+                    window.location.href = `creator-channel.html?id=${creatorId}&name=${encodeURIComponent(creatorName)}`;
+                } else {
+                    this.showToast(`Cannot view ${creatorName}'s channel - missing creator information`, 'error');
+                }
+            });
+        });
+    }
+    
+    showToast(message, type) {
+        // Simple toast implementation
+        const toast = document.createElement('div');
+        toast.className = `toast ${type}`;
+        toast.textContent = message;
+        toast.style.position = 'fixed';
+        toast.style.bottom = '20px';
+        toast.style.right = '20px';
+        toast.style.padding = '15px 20px';
+        toast.style.borderRadius = '8px';
+        toast.style.backgroundColor = type === 'error' ? '#EF4444' : '#10B981';
+        toast.style.color = 'white';
+        toast.style.zIndex = '9999';
+        
+        document.body.appendChild(toast);
+        
+        setTimeout(() => {
+            toast.remove();
+        }, 3000);
     }
 }
 
