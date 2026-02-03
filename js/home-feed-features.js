@@ -728,316 +728,344 @@ class AnalyticsSystem {
 
 // Search System - FIXED VERSION
 class SearchSystem {
-constructor() {
-this.modal = null;
-this.searchInput = null;
-this.resultsGrid = null;
-this.currentResults = [];
-this.searchTimeout = null;
-this.searchIndex = [];
-this.maxIdsForInQuery = 50; // Prevent overly complex queries
-this.lastSearchQuery = '';
-}
-init() {
-this.modal = document.getElementById('search-modal');
-this.searchInput = document.getElementById('search-input');
-this.resultsGrid = document.getElementById('search-results-grid');
-this.buildSearchIndex();
-this.setupEventListeners();
-}
-async buildSearchIndex() {
-try {
-// Build lightweight index without heavy fields
-const content = await contentSupabase.query('Content', {
-select: 'id,title,description,genre,creator',
-where: { status: 'published' },
-limit: 500, // Reasonable limit for index
-timeout: 6000
-});
-this.searchIndex = content.map(item => ({
-id: item.id,
-title: (item.title || '').toLowerCase(),
-description: (item.description || '').toLowerCase(),
-genre: (item.genre || '').toLowerCase(),
-creator: (item.creator || '').toLowerCase(),
-searchText: `${item.title || ''} ${item.description || ''} ${item.genre || ''} ${item.creator || ''}`.toLowerCase()
-}));
-console.log('✅ Search index built:', this.searchIndex.length, 'items');
-} catch (error) {
-console.error('Failed to build search index:', error);
-toast.warning('Search suggestions limited. Content will still be searchable.');
-}
-}
-setupEventListeners() {
-this.searchInput?.addEventListener('input', (e) => {
-this.handleSearch(e.target.value);
-});
-document.getElementById('category-filter')?.addEventListener('change', () => {
-if (this.lastSearchQuery.trim()) {
-this.handleSearch(this.lastSearchQuery);
-}
-});
-document.getElementById('media-type-filter')?.addEventListener('change', () => {
-if (this.lastSearchQuery.trim()) {
-this.handleSearch(this.lastSearchQuery);
-}
-});
-document.getElementById('sort-filter')?.addEventListener('change', () => {
-if (this.lastSearchQuery.trim()) {
-this.handleSearch(this.lastSearchQuery);
-}
-});
-document.getElementById('close-search-btn')?.addEventListener('click', () => {
-this.closeSearch();
-});
-// Keyboard navigation in search modal
-this.searchInput?.addEventListener('keydown', (e) => {
-if (e.key === 'Escape') {
-this.closeSearch();
-} else if (e.key === 'Enter' && this.lastSearchQuery.trim()) {
-e.preventDefault();
-this.executeSearch(this.lastSearchQuery);
-}
-});
-}
-openSearch() {
-this.modal?.classList.add('active');
-// Delay focus for mobile to ensure keyboard appears
-setTimeout(() => {
-this.searchInput?.focus();
-// Select existing text for easy replacement
-this.searchInput?.select();
-}, 350);
-}
-closeSearch() {
-this.modal?.classList.remove('active');
-this.searchInput.value = '';
-this.resultsGrid.innerHTML = '<div class="no-results">Start typing to search...</div>';
-this.lastSearchQuery = '';
-}
-handleSearch(query) {
-clearTimeout(this.searchTimeout);
-this.lastSearchQuery = query;
-if (!query.trim()) {
-this.resultsGrid.innerHTML = '<div class="no-results">Start typing to search...</div>';
-return;
-}
-// Show loading state immediately
-this.resultsGrid.innerHTML = `
-<div class="search-loading">
-<div class="infinite-scroll-spinner"></div>
-<div class="loading-text">Searching for "${this.truncateQuery(query)}"...</div>
-</div>`;
-// Debounce search input
-this.searchTimeout = setTimeout(() => {
-this.executeSearch(query);
-}, 350);
-}
-truncateQuery(query) {
-return query.length > 30 ? query.substring(0, 30) + '...' : query;
-}
-async executeSearch(query) {
-try {
-const results = await this.searchContent(query.trim().toLowerCase());
-this.currentResults = results;
-this.renderSearchResults(results, query);
-} catch (error) {
-console.error('Search error:', error);
-this.resultsGrid.innerHTML = `
-<div class="search-error">
-<i class="fas fa-exclamation-triangle"></i>
-<div class="error-message">
-<p>Search failed: ${error.message.includes('timeout') ? 'Server is busy' : 'Try different keywords'}</p>
-<button class="retry-btn" data-query="${query}">Retry Search</button>
-</div>
-</div>`;
-// Setup retry button
-const retryBtn = this.resultsGrid.querySelector('.retry-btn');
-retryBtn?.addEventListener('click', (e) => {
-const q = e.target.dataset.query;
-this.resultsGrid.innerHTML = '<div class="infinite-scroll-loading"><div class="infinite-scroll-spinner"></div><div>Retrying search...</div></div>';
-this.executeSearch(q);
-});
-}
-}
-async searchContent(query) {
-// Step 1: Get filters
-const category = document.getElementById('category-filter')?.value || '';
-const mediaType = document.getElementById('media-type-filter')?.value || '';
-const sortBy = document.getElementById('sort-filter')?.value || 'newest';
+    constructor() {
+        this.modal = null;
+        this.searchInput = null;
+        this.resultsGrid = null;
+        this.currentResults = [];
+        this.searchTimeout = null;
+        this.searchIndex = [];
+        this.maxIdsForInQuery = 50; // Prevent overly complex queries
+        this.lastSearchQuery = '';
+    }
+    
+    init() {
+        this.modal = document.getElementById('search-modal');
+        this.searchInput = document.getElementById('search-input');
+        this.resultsGrid = document.getElementById('search-results-grid');
+        this.buildSearchIndex();
+        this.setupEventListeners();
+    }
+    
+    async buildSearchIndex() {
+        try {
+            // Build lightweight index without heavy fields
+            const content = await contentSupabase.query('Content', {
+                select: 'id,title,description,genre,creator',
+                where: { status: 'published' },
+                limit: 500, // Reasonable limit for index
+                timeout: 6000
+            });
+            
+            this.searchIndex = content.map(item => ({
+                id: item.id,
+                title: (item.title || '').toLowerCase(),
+                description: (item.description || '').toLowerCase(),
+                genre: (item.genre || '').toLowerCase(),
+                creator: (item.creator || '').toLowerCase(),
+                searchText: `${item.title || ''} ${item.description || ''} ${item.genre || ''} ${item.creator || ''}`.toLowerCase()
+            }));
+            console.log('✅ Search index built:', this.searchIndex.length, 'items');
+        } catch (error) {
+            console.error('Failed to build search index:', error);
+            toast.warning('Search suggestions limited. Content will still be searchable.');
+        }
+    }
+    
+    setupEventListeners() {
+        this.searchInput?.addEventListener('input', (e) => {
+            this.handleSearch(e.target.value);
+        });
+        
+        document.getElementById('category-filter')?.addEventListener('change', () => {
+            if (this.lastSearchQuery.trim()) {
+                this.handleSearch(this.lastSearchQuery);
+            }
+        });
+        
+        document.getElementById('media-type-filter')?.addEventListener('change', () => {
+            if (this.lastSearchQuery.trim()) {
+                this.handleSearch(this.lastSearchQuery);
+            }
+        });
+        
+        document.getElementById('sort-filter')?.addEventListener('change', () => {
+            if (this.lastSearchQuery.trim()) {
+                this.handleSearch(this.lastSearchQuery);
+            }
+        });
+        
+        document.getElementById('close-search-btn')?.addEventListener('click', () => {
+            this.closeSearch();
+        });
+        
+        // Keyboard navigation in search modal
+        this.searchInput?.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                this.closeSearch();
+            } else if (e.key === 'Enter' && this.lastSearchQuery.trim()) {
+                e.preventDefault();
+                this.executeSearch(this.lastSearchQuery);
+            }
+        });
+    }
+    
+    openSearch() {
+        this.modal?.classList.add('active');
+        // Delay focus for mobile to ensure keyboard appears
+        setTimeout(() => {
+            this.searchInput?.focus();
+            // Select existing text for easy replacement
+            this.searchInput?.select();
+        }, 350);
+    }
+    
+    closeSearch() {
+        this.modal?.classList.remove('active');
+        this.searchInput.value = '';
+        this.resultsGrid.innerHTML = '<div class="no-results">Start typing to search...</div>';
+        this.lastSearchQuery = '';
+    }
+    
+    handleSearch(query) {
+        clearTimeout(this.searchTimeout);
+        this.lastSearchQuery = query;
+        
+        if (!query.trim()) {
+            this.resultsGrid.innerHTML = '<div class="no-results">Start typing to search...</div>';
+            return;
+        }
+        
+        // Show loading state immediately
+        this.resultsGrid.innerHTML = `
+            <div class="search-loading">
+                <div class="loading-spinner"></div>
+                <div class="loading-text">Searching for "${this.truncateQuery(query)}"...</div>
+            </div>`;
+        
+        // Debounce search input
+        this.searchTimeout = setTimeout(() => {
+            this.executeSearch(query);
+        }, 350);
+    }
+    
+    truncateQuery(query) {
+        return query.length > 30 ? query.substring(0, 30) + '...' : query;
+    }
+    
+    async executeSearch(query) {
+        try {
+            const results = await this.searchContent(query.trim().toLowerCase());
+            this.currentResults = results;
+            this.renderSearchResults(results, query);
+        } catch (error) {
+            console.error('Search error:', error);
+            this.resultsGrid.innerHTML = `
+                <div class="search-error">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <div class="error-message">
+                        <p>Search failed: ${error.message.includes('timeout') ? 'Server is busy' : 'Try different keywords'}</p>
+                        <button class="retry-btn" data-query="${query}">Retry Search</button>
+                    </div>
+                </div>`;
+            
+            // Setup retry button
+            const retryBtn = this.resultsGrid.querySelector('.retry-btn');
+            retryBtn?.addEventListener('click', (e) => {
+                const q = e.target.dataset.query;
+                this.resultsGrid.innerHTML = '<div class="search-loading"><div class="loading-spinner"></div><div>Retrying search...</div></div>';
+                this.executeSearch(q);
+            });
+        }
+    }
+    
+    // REPLACE THE EXISTING searchContent METHOD WITH THIS:
+    async searchContent(query) {
+        // Sanitize and split query
+        const cleanQuery = query.trim().toLowerCase();
+        if (!cleanQuery) return [];
+        
+        const searchTerms = cleanQuery.split(/\s+/).filter(term => term.length >= 2);
+        if (searchTerms.length === 0) return [];
 
-// Step 2: Build where clause with CORRECT operators
-const whereClause = { status: 'published' };
-if (category) whereClause.genre = category;
-if (mediaType) whereClause.media_type = mediaType;
+        // 🔑 CRITICAL FIX: Limit local index results to prevent URL explosion
+        const MAX_RESULTS = 30; // Prevents URL length issues
+        const localResults = this.searchIndex
+            .filter(item => 
+                searchTerms.some(term => 
+                    item.searchText.includes(term)
+                )
+            )
+            .slice(0, MAX_RESULTS) // 🔑 TRUNCATE EARLY
+            .map(item => item.id);
 
-// Step 3: Smart search strategy
-// For short queries (<3 chars), skip local index to avoid false positives
-if (query.length >= 3) {
-// Search in local index first for ID matching
-const matchingIds = this.searchIndex
-.filter(item => 
-item.title.includes(query) || 
-item.description.includes(query) || 
-item.genre.includes(query) || 
-item.creator.includes(query)
-)
-.map(item => item.id)
-.slice(0, this.maxIdsForInQuery); // Limit to prevent complex queries
+        // Handle no results case immediately
+        if (localResults.length === 0) {
+            console.log('🔍 No matches found for:', cleanQuery);
+            return [];
+        }
 
-// Only use IN clause if we have reasonable number of matches
-if (matchingIds.length > 0 && matchingIds.length <= this.maxIdsForInQuery) {
-whereClause.id = matchingIds; // Will be converted to proper IN query by ContentSupabaseClient
-console.log(`🔍 Found ${matchingIds.length} local matches for "${query}"`);
-}
-}
+        // Build safe query parameters
+        const category = document.getElementById('category-filter')?.value || '';
+        const mediaType = document.getElementById('media-type-filter')?.value || '';
+        const sortBy = document.getElementById('sort-filter')?.value || 'newest';
 
-// Step 4: Determine sort parameters
-let orderBy = 'created_at';
-let order = 'desc';
-if (sortBy === 'oldest') {
-order = 'asc';
-} else if (sortBy === 'popular') {
-orderBy = 'views';
-order = 'desc';
-} else if (sortBy === 'trending') {
-orderBy = 'likes';
-order = 'desc';
-}
+        // Construct WHERE clause SAFELY
+        const whereClause = {
+            status: 'published',
+            ...(category && { genre: category }),
+            ...(mediaType && { media_type: mediaType }),
+            id: `in.(${localResults.join(',')})` // Now guaranteed short
+        };
 
-// Step 5: Execute query with timeout protection
-const results = await contentSupabase.query('Content', {
-select: '*',
-where: whereClause,
-orderBy: orderBy,
-order: order,
-limit: 24, // Reasonable page size
-timeout: 7000 // Aggressive timeout to prevent 408s
-});
+        // Determine sort parameters
+        let orderBy = 'created_at';
+        let order = 'desc';
+        
+        if (sortBy === 'oldest') order = 'asc';
+        else if (sortBy === 'popular' || sortBy === 'trending') {
+            orderBy = 'views';
+            order = 'desc';
+        }
 
-// Step 6: Fallback search if no results but we have a query term
-if (results.length === 0 && query.length >= 3 && !whereClause.id) {
-console.log('⚠️ No results, trying broader search with ILIKE');
-// Use ILIKE for broader text search as fallback
-const fallbackWhere = { 
-status: 'published',
-title: `ilike.*${query}*`
-};
-if (category) fallbackWhere.genre = category;
-if (mediaType) fallbackWhere.media_type = mediaType;
+        try {
+            // 🔑 ADD TIMEOUT PROTECTION
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 8000); // 8s timeout
 
-return await contentSupabase.query('Content', {
-select: '*',
-where: fallbackWhere,
-orderBy: orderBy,
-order: order,
-limit: 24,
-timeout: 7000
-});
-}
+            const results = await contentSupabase.query(
+                'Content', 
+                {
+                    select: '*',
+                    where: whereClause,
+                    orderBy,
+                    order,
+                    limit: MAX_RESULTS
+                },
+                { signal: controller.signal } // Pass abort signal
+            );
 
-return results;
-}
-renderSearchResults(results, query) {
-if (results.length === 0) {
-this.resultsGrid.innerHTML = `
-<div class="no-results">
-<i class="fas fa-search"></i>
-<p>No results for "${this.truncateQuery(query)}"</p>
-<p class="suggestion">Try different keywords or filters</p>
-</div>`;
-return;
-}
+            clearTimeout(timeoutId);
+            console.log(`✅ Search returned ${results.length} results for "${cleanQuery}"`);
+            return results;
+            
+        } catch (error) {
+            if (error.name === 'AbortError') {
+                console.warn('⚠️ Search timed out after 8 seconds');
+                throw new Error('Search timed out. Please try simpler keywords.');
+            }
+            console.error('❌ Search failed:', error.message);
+            throw error;
+        }
+    }
+    
+    renderSearchResults(results, query) {
+        if (results.length === 0) {
+            this.resultsGrid.innerHTML = `
+                <div class="no-results">
+                    <i class="fas fa-search"></i>
+                    <p>No results for "${this.truncateQuery(query)}"</p>
+                    <p class="suggestion">Try different keywords or filters</p>
+                </div>`;
+            return;
+        }
 
-this.resultsGrid.innerHTML = `
-<div class="search-header">
-<span class="result-count">Found ${results.length} ${results.length === 1 ? 'result' : 'results'}</span>
-<span class="search-query">for "${this.truncateQuery(query)}"</span>
-</div>
-<div class="search-results-grid">
-${results.map(item => this.createSearchResultCard(item, query)).join('')}
-</div>`;
-this.setupSearchResultListeners();
-}
-createSearchResultCard(item, query) {
-const creatorName = item.creator || item.creator_display_name || 'Creator';
-const title = item.title || 'Untitled Content';
-// Highlight search terms in title for better UX
-const highlightedTitle = this.highlightText(title, query);
-return `
-<div class="content-card search-result" data-content-id="${item.id}" data-views="${item.views || 0}" data-likes="${item.likes || 0}">
-<div class="card-thumbnail">
-<img src="${item.thumbnail_url || 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop'}"
-alt="${title}"
-loading="lazy"
-onerror="this.src='https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop'">
-<div class="thumbnail-overlay"></div>
-</div>
-<div class="card-content">
-<h3 class="card-title" title="${title}">${highlightedTitle}</h3>
-<div class="card-stats">
-<span class="stat"><i class="fas fa-eye"></i> ${this.formatNumber(item.views || 0)}</span>
-<span class="stat"><i class="fas fa-heart"></i> ${this.formatNumber(item.likes || 0)}</span>
-${item.genre ? `<span class="stat genre-tag">${item.genre}</span>` : ''}
-</div>
-<button class="creator-btn" data-creator-id="${item.creator_id || item.user_id}" data-creator-name="${creatorName}">
-<i class="fas fa-user"></i> ${this.truncateText(creatorName, 18)}
-</button>
-</div>
-</div>
-`;
-}
-highlightText(text, query) {
-if (!query || query.length < 2) return this.truncateText(text, 60);
-const regex = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
-const highlighted = text.replace(regex, '<mark>$1</mark>');
-return this.truncateText(highlighted, 60);
-}
-truncateText(text, maxLength) {
-if (!text) return '';
-const truncated = text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
-// Sanitize HTML to prevent XSS while preserving <mark> tags
-return truncated.replace(/<([^>]+)>/g, (match, tag) => 
-tag.startsWith('mark') ? match : ''
-);
-}
-formatNumber(num) {
-const n = parseInt(num);
-if (isNaN(n)) return '0';
-if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
-if (n >= 1000) return (n / 1000).toFixed(1) + 'K';
-return n.toString();
-}
-setupSearchResultListeners() {
-this.resultsGrid.querySelectorAll('.content-card').forEach(card => {
-card.addEventListener('click', (e) => {
-if (e.target.closest('.creator-btn') ||
-e.target.closest('.share-btn') ||
-e.target.tagName === 'BUTTON' ||
-e.target.tagName === 'A' ||
-e.target.tagName === 'MARK') {
-return;
-}
-const contentId = card.dataset.contentId;
-if (contentId) {
-// Track search interaction
-analyticsSystem.trackEvent('search_result_click', {
-query: this.lastSearchQuery,
-content_id: contentId
-});
-window.location.href = `content-detail.html?id=${contentId}`;
-}
-});
-});
-// Handle retry buttons if present
-this.resultsGrid.querySelectorAll('.retry-btn').forEach(btn => {
-btn.addEventListener('click', (e) => {
-const q = e.target.dataset.query;
-this.executeSearch(q);
-});
-});
-}
-}
+        this.resultsGrid.innerHTML = `
+            <div class="search-header">
+                <span class="result-count">Found ${results.length} ${results.length === 1 ? 'result' : 'results'}</span>
+                <span class="search-query">for "${this.truncateQuery(query)}"</span>
+            </div>
+            <div class="search-results-grid">
+                ${results.map(item => this.createSearchResultCard(item, query)).join('')}
+            </div>`;
+        this.setupSearchResultListeners();
+    }
+    
+    createSearchResultCard(item, query) {
+        const creatorName = item.creator || item.creator_display_name || 'Creator';
+        const title = item.title || 'Untitled Content';
+        
+        // Highlight search terms in title for better UX
+        const highlightedTitle = this.highlightText(title, query);
+        
+        return `
+            <div class="content-card search-result-card" data-content-id="${item.id}" data-views="${item.views || 0}" data-likes="${item.likes || 0}">
+                <div class="card-thumbnail">
+                    <img src="${item.thumbnail_url || 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop'}"
+                        alt="${title}"
+                        loading="lazy"
+                        onerror="this.src='https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop'">
+                    <div class="thumbnail-overlay"></div>
+                </div>
+                <div class="card-content">
+                    <h3 class="card-title" title="${title}">${highlightedTitle}</h3>
+                    <div class="card-stats">
+                        <span class="stat"><i class="fas fa-eye"></i> ${this.formatNumber(item.views || 0)}</span>
+                        <span class="stat"><i class="fas fa-heart"></i> ${this.formatNumber(item.likes || 0)}</span>
+                        ${item.genre ? `<span class="stat genre-tag">${item.genre}</span>` : ''}
+                    </div>
+                    <button class="creator-btn" data-creator-id="${item.creator_id || item.user_id}" data-creator-name="${creatorName}">
+                        <i class="fas fa-user"></i> ${this.truncateText(creatorName, 18)}
+                    </button>
+                </div>
+            </div>
+        `;
+    }
+    
+    highlightText(text, query) {
+        if (!query || query.length < 2) return this.truncateText(text, 60);
+        const regex = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+        const highlighted = text.replace(regex, '<mark>$1</mark>');
+        return this.truncateText(highlighted, 60);
+    }
+    
+    truncateText(text, maxLength) {
+        if (!text) return '';
+        const truncated = text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
+        // Sanitize HTML to prevent XSS while preserving <mark> tags
+        return truncated.replace(/<([^>]+)>/g, (match, tag) => 
+            tag.startsWith('mark') ? match : ''
+        );
+    }
+    
+    formatNumber(num) {
+        const n = parseInt(num);
+        if (isNaN(n)) return '0';
+        if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
+        if (n >= 1000) return (n / 1000).toFixed(1) + 'K';
+        return n.toString();
+    }
+    
+    setupSearchResultListeners() {
+        this.resultsGrid.querySelectorAll('.content-card').forEach(card => {
+            card.addEventListener('click', (e) => {
+                if (e.target.closest('.creator-btn') ||
+                    e.target.closest('.share-btn') ||
+                    e.target.tagName === 'BUTTON' ||
+                    e.target.tagName === 'A' ||
+                    e.target.tagName === 'MARK') {
+                    return;
+                }
+                const contentId = card.dataset.contentId;
+                if (contentId) {
+                    // Track search interaction
+                    analyticsSystem.trackEvent('search_result_click', {
+                        query: this.lastSearchQuery,
+                        content_id: contentId
+                    });
+                    window.location.href = `content-detail.html?id=${contentId}`;
+                }
+            });
+        });
+        
+        // Handle retry buttons if present
+        this.resultsGrid.querySelectorAll('.retry-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const q = e.target.dataset.query;
+                this.executeSearch(q);
+            });
+        });
+    }
     
     showToast(message, type) {
         // Simple toast implementation
