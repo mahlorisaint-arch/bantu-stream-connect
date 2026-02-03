@@ -666,9 +666,61 @@
 /* Search Loading Styles */
 .search-loading {
     text-align: center;
-    padding: 40px;
+    padding: 40px 20px;
     color: var(--slate-grey);
+}
+.loading-text {
+    margin-top: 15px;
     font-size: 16px;
+    color: var(--soft-white);
+}
+.search-error {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--error-color);
+}
+.search-error i {
+    font-size: 48px;
+    margin-bottom: 20px;
+    opacity: 0.8;
+}
+.retry-btn {
+    background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+    color: white;
+    border: none;
+    padding: 10px 25px;
+    border-radius: 12px;
+    font-weight: 600;
+    margin-top: 15px;
+    cursor: pointer;
+}
+.search-header {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 15px 0;
+    border-bottom: 1px solid var(--card-border);
+    margin-bottom: 20px;
+}
+.result-count {
+    font-weight: 600;
+    color: var(--warm-gold);
+}
+.search-query {
+    color: var(--slate-grey);
+    font-style: italic;
+}
+mark {
+    background-color: rgba(245, 158, 11, 0.3);
+    color: var(--soft-white);
+    border-radius: 3px;
+    padding: 0 2px;
+}
+.genre-tag {
+    background: rgba(29, 78, 216, 0.2);
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 11px;
 }
 
 .loading-spinner {
