@@ -497,11 +497,25 @@ body {
     gap: 15px;
 }
 
+/* No Results State */
 .no-results {
     text-align: center;
-    padding: 40px;
+    padding: 40px 20px;
     color: var(--slate-grey);
     font-size: 16px;
+}
+
+.no-results i {
+    font-size: 48px;
+    margin-bottom: 15px;
+    opacity: 0.3;
+}
+
+.suggestion {
+    font-size: 14px;
+    margin-top: 10px;
+    color: var(--slate-grey);
+    opacity: 0.8;
 }
 
 /* Footer */
