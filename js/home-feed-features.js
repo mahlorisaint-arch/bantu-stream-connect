@@ -726,7 +726,7 @@ class AnalyticsSystem {
     }
 }
 
-// Search System - FIXED VERSION
+// Search System
 class SearchSystem {
     constructor() {
         this.modal = null;
@@ -734,329 +734,185 @@ class SearchSystem {
         this.resultsGrid = null;
         this.currentResults = [];
         this.searchTimeout = null;
-        this.searchIndex = [];
-        this.maxIdsForInQuery = 50; // Prevent overly complex queries
-        this.lastSearchQuery = '';
     }
     
     init() {
         this.modal = document.getElementById('search-modal');
         this.searchInput = document.getElementById('search-input');
         this.resultsGrid = document.getElementById('search-results-grid');
-        this.buildSearchIndex();
         this.setupEventListeners();
     }
     
-    async buildSearchIndex() {
-        try {
-            // Build lightweight index without heavy fields
-            const content = await contentSupabase.query('Content', {
-                select: 'id,title,description,genre,creator',
-                where: { status: 'published' },
-                limit: 500, // Reasonable limit for index
-                timeout: 6000
-            });
-            
-            this.searchIndex = content.map(item => ({
-                id: item.id,
-                title: (item.title || '').toLowerCase(),
-                description: (item.description || '').toLowerCase(),
-                genre: (item.genre || '').toLowerCase(),
-                creator: (item.creator || '').toLowerCase(),
-                searchText: `${item.title || ''} ${item.description || ''} ${item.genre || ''} ${item.creator || ''}`.toLowerCase()
-            }));
-            console.log('✅ Search index built:', this.searchIndex.length, 'items');
-        } catch (error) {
-            console.error('Failed to build search index:', error);
-            toast.warning('Search suggestions limited. Content will still be searchable.');
-        }
-    }
-    
     setupEventListeners() {
+        // Search input event
         this.searchInput?.addEventListener('input', (e) => {
             this.handleSearch(e.target.value);
         });
         
+        // Filter changes
         document.getElementById('category-filter')?.addEventListener('change', () => {
-            if (this.lastSearchQuery.trim()) {
-                this.handleSearch(this.lastSearchQuery);
-            }
+            this.handleSearch(this.searchInput.value);
         });
         
         document.getElementById('media-type-filter')?.addEventListener('change', () => {
-            if (this.lastSearchQuery.trim()) {
-                this.handleSearch(this.lastSearchQuery);
-            }
+            this.handleSearch(this.searchInput.value);
         });
         
         document.getElementById('sort-filter')?.addEventListener('change', () => {
-            if (this.lastSearchQuery.trim()) {
-                this.handleSearch(this.lastSearchQuery);
-            }
+            this.handleSearch(this.searchInput.value);
         });
         
+        // Close search modal
         document.getElementById('close-search-btn')?.addEventListener('click', () => {
             this.closeSearch();
-        });
-        
-        // Keyboard navigation in search modal
-        this.searchInput?.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') {
-                this.closeSearch();
-            } else if (e.key === 'Enter' && this.lastSearchQuery.trim()) {
-                e.preventDefault();
-                this.executeSearch(this.lastSearchQuery);
-            }
         });
     }
     
     openSearch() {
         this.modal?.classList.add('active');
-        // Delay focus for mobile to ensure keyboard appears
-        setTimeout(() => {
-            this.searchInput?.focus();
-            // Select existing text for easy replacement
-            this.searchInput?.select();
-        }, 350);
+        // Delay focus for mobile compatibility
+        setTimeout(() => this.searchInput?.focus(), 350);
     }
     
     closeSearch() {
         this.modal?.classList.remove('active');
         this.searchInput.value = '';
-        this.resultsGrid.innerHTML = '<div class="no-results">Start typing to search...</div>';
-        this.lastSearchQuery = '';
+        this.resultsGrid.innerHTML = '';
     }
     
     handleSearch(query) {
         clearTimeout(this.searchTimeout);
-        this.lastSearchQuery = query;
-        
-        if (!query.trim()) {
-            this.resultsGrid.innerHTML = '<div class="no-results">Start typing to search...</div>';
-            return;
-        }
-        
-        // Show loading state immediately
-        this.resultsGrid.innerHTML = `
-            <div class="search-loading">
-                <div class="loading-spinner"></div>
-                <div class="loading-text">Searching for "${this.truncateQuery(query)}"...</div>
-            </div>`;
-        
-        // Debounce search input
-        this.searchTimeout = setTimeout(() => {
-            this.executeSearch(query);
-        }, 350);
-    }
-    
-    truncateQuery(query) {
-        return query.length > 30 ? query.substring(0, 30) + '...' : query;
-    }
-    
-    async executeSearch(query) {
-        try {
-            const results = await this.searchContent(query.trim().toLowerCase());
-            this.currentResults = results;
-            this.renderSearchResults(results, query);
-        } catch (error) {
-            console.error('Search error:', error);
-            this.resultsGrid.innerHTML = `
-                <div class="search-error">
-                    <i class="fas fa-exclamation-triangle"></i>
-                    <div class="error-message">
-                        <p>Search failed: ${error.message.includes('timeout') ? 'Server is busy' : 'Try different keywords'}</p>
-                        <button class="retry-btn" data-query="${query}">Retry Search</button>
-                    </div>
-                </div>`;
+        this.searchTimeout = setTimeout(async () => {
+            if (!query.trim()) {
+                this.resultsGrid.innerHTML = '<div class="no-results">Start typing to search...</div>';
+                return;
+            }
             
-            // Setup retry button
-            const retryBtn = this.resultsGrid.querySelector('.retry-btn');
-            retryBtn?.addEventListener('click', (e) => {
-                const q = e.target.dataset.query;
-                this.resultsGrid.innerHTML = '<div class="search-loading"><div class="loading-spinner"></div><div>Retrying search...</div></div>';
-                this.executeSearch(q);
-            });
-        }
-    }
-    
-    // REPLACE THE EXISTING searchContent METHOD WITH THIS:
-    async searchContent(query) {
-        // Sanitize and split query
-        const cleanQuery = query.trim().toLowerCase();
-        if (!cleanQuery) return [];
-        
-        const searchTerms = cleanQuery.split(/\s+/).filter(term => term.length >= 2);
-        if (searchTerms.length === 0) return [];
-
-        // 🔑 CRITICAL FIX: Limit local index results to prevent URL explosion
-        const MAX_RESULTS = 30; // Prevents URL length issues
-        const localResults = this.searchIndex
-            .filter(item => 
-                searchTerms.some(term => 
-                    item.searchText.includes(term)
-                )
-            )
-            .slice(0, MAX_RESULTS) // 🔑 TRUNCATE EARLY
-            .map(item => item.id);
-
-        // Handle no results case immediately
-        if (localResults.length === 0) {
-            console.log('🔍 No matches found for:', cleanQuery);
-            return [];
-        }
-
-        // Build safe query parameters
-        const category = document.getElementById('category-filter')?.value || '';
-        const mediaType = document.getElementById('media-type-filter')?.value || '';
-        const sortBy = document.getElementById('sort-filter')?.value || 'newest';
-
-        // Construct WHERE clause SAFELY
-        const whereClause = {
-            status: 'published',
-            ...(category && { genre: category }),
-            ...(mediaType && { media_type: mediaType }),
-            id: `in.(${localResults.join(',')})` // Now guaranteed short
-        };
-
-        // Determine sort parameters
-        let orderBy = 'created_at';
-        let order = 'desc';
-        
-        if (sortBy === 'oldest') order = 'asc';
-        else if (sortBy === 'popular' || sortBy === 'trending') {
-            orderBy = 'views';
-            order = 'desc';
-        }
-
-        try {
-            // 🔑 ADD TIMEOUT PROTECTION
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 8000); // 8s timeout
-
-            const results = await contentSupabase.query(
-                'Content', 
-                {
+            // Show loading
+            this.resultsGrid.innerHTML = '<div class="infinite-scroll-loading"><div class="infinite-scroll-spinner"></div><div>Searching...</div></div>';
+            
+            try {
+                // Get filters
+                const category = document.getElementById('category-filter')?.value;
+                const mediaType = document.getElementById('media-type-filter')?.value;
+                const sortBy = document.getElementById('sort-filter')?.value;
+                
+                // Build query
+                let whereClause = { status: 'published' };
+                if (category) {
+                    whereClause.genre = category;
+                }
+                if (mediaType) {
+                    whereClause.media_type = mediaType;
+                }
+                
+                // Get order by
+                let orderBy = 'created_at';
+                let order = 'desc';
+                if (sortBy === 'oldest') {
+                    order = 'asc';
+                } else if (sortBy === 'popular' || sortBy === 'trending') {
+                    orderBy = 'views';
+                    order = 'desc';
+                }
+                
+                // Search in database
+                const results = await contentSupabase.query('Content', {
                     select: '*',
                     where: whereClause,
-                    orderBy,
-                    order,
-                    limit: MAX_RESULTS
-                },
-                { signal: controller.signal } // Pass abort signal
-            );
-
-            clearTimeout(timeoutId);
-            console.log(`✅ Search returned ${results.length} results for "${cleanQuery}"`);
-            return results;
-            
-        } catch (error) {
-            if (error.name === 'AbortError') {
-                console.warn('⚠️ Search timed out after 8 seconds');
-                throw new Error('Search timed out. Please try simpler keywords.');
+                    orderBy: orderBy,
+                    order: order,
+                    limit: 50
+                });
+                
+                // Filter by search query (client-side filtering)
+                const filteredResults = results.filter(item => {
+                    const searchText = query.toLowerCase();
+                    return (
+                        (item.title && item.title.toLowerCase().includes(searchText)) ||
+                        (item.description && item.description.toLowerCase().includes(searchText)) ||
+                        (item.genre && item.genre.toLowerCase().includes(searchText)) ||
+                        (item.creator && item.creator.toLowerCase().includes(searchText))
+                    );
+                });
+                
+                this.currentResults = filteredResults;
+                this.renderSearchResults(filteredResults);
+            } catch (error) {
+                console.error('Search error:', error);
+                this.resultsGrid.innerHTML = '<div class="no-results">Error searching. Please try again.</div>';
             }
-            console.error('❌ Search failed:', error.message);
-            throw error;
-        }
+        }, 500); // Debounce search
     }
     
-    renderSearchResults(results, query) {
+    renderSearchResults(results) {
         if (results.length === 0) {
-            this.resultsGrid.innerHTML = `
-                <div class="no-results">
-                    <i class="fas fa-search"></i>
-                    <p>No results for "${this.truncateQuery(query)}"</p>
-                    <p class="suggestion">Try different keywords or filters</p>
-                </div>`;
+            this.resultsGrid.innerHTML = '<div class="no-results">No results found. Try different keywords.</div>';
             return;
         }
-
-        this.resultsGrid.innerHTML = `
-            <div class="search-header">
-                <span class="result-count">Found ${results.length} ${results.length === 1 ? 'result' : 'results'}</span>
-                <span class="search-query">for "${this.truncateQuery(query)}"</span>
-            </div>
-            <div class="search-results-grid">
-                ${results.map(item => this.createSearchResultCard(item, query)).join('')}
-            </div>`;
-        this.setupSearchResultListeners();
-    }
-    
-    createSearchResultCard(item, query) {
-        const creatorName = item.creator || item.creator_display_name || 'Creator';
-        const title = item.title || 'Untitled Content';
         
-        // Highlight search terms in title for better UX
-        const highlightedTitle = this.highlightText(title, query);
-        
-        return `
-            <div class="content-card search-result-card" data-content-id="${item.id}" data-views="${item.views || 0}" data-likes="${item.likes || 0}">
-                <div class="card-thumbnail">
-                    <img src="${item.thumbnail_url || 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop'}"
-                        alt="${title}"
-                        loading="lazy"
-                        onerror="this.src='https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop'">
-                    <div class="thumbnail-overlay"></div>
-                </div>
-                <div class="card-content">
-                    <h3 class="card-title" title="${title}">${highlightedTitle}</h3>
-                    <div class="card-stats">
-                        <span class="stat"><i class="fas fa-eye"></i> ${this.formatNumber(item.views || 0)}</span>
-                        <span class="stat"><i class="fas fa-heart"></i> ${this.formatNumber(item.likes || 0)}</span>
-                        ${item.genre ? `<span class="stat genre-tag">${item.genre}</span>` : ''}
+        this.resultsGrid.innerHTML = results.map(item => {
+            // Get the correct creator name from the data
+            const creatorName = item.creator || 
+                              item.creator_display_name || 
+                              item.user_profiles?.username || 
+                              item.user_profiles?.full_name || 
+                              'Creator';
+            
+            return `
+                <div class="content-card" data-content-id="${item.id}" data-views="${item.views || 0}" data-likes="${item.likes || 0}">
+                    <div class="card-thumbnail">
+                        <img src="${item.thumbnail_url || 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop'}"
+                             alt="${item.title}"
+                             loading="lazy"
+                             onerror="this.src='https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop'">
+                        <div class="thumbnail-overlay"></div>
                     </div>
-                    <button class="creator-btn" data-creator-id="${item.creator_id || item.user_id}" data-creator-name="${creatorName}">
-                        <i class="fas fa-user"></i> ${this.truncateText(creatorName, 18)}
-                    </button>
+                    <div class="card-content">
+                        <h3 class="card-title" title="${item.title}">
+                            ${item.title.length > 50 ? item.title.substring(0, 50) + '...' : item.title}
+                        </h3>
+                        <div class="card-stats">
+                            <span class="stat">
+                                <i class="fas fa-eye"></i> ${item.views || 0}
+                            </span>
+                            <span class="stat">
+                                <i class="fas fa-heart"></i> ${item.likes || 0}
+                            </span>
+                        </div>
+                        <button class="creator-btn"
+                                data-creator-id="${item.creator_id || item.user_id}"
+                                data-creator-name="${creatorName}">
+                            <i class="fas fa-user"></i>
+                            ${creatorName.length > 15 ? creatorName.substring(0, 15) + '...' : creatorName}
+                        </button>
+                    </div>
                 </div>
-            </div>
-        `;
-    }
-    
-    highlightText(text, query) {
-        if (!query || query.length < 2) return this.truncateText(text, 60);
-        const regex = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
-        const highlighted = text.replace(regex, '<mark>$1</mark>');
-        return this.truncateText(highlighted, 60);
-    }
-    
-    truncateText(text, maxLength) {
-        if (!text) return '';
-        const truncated = text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
-        // Sanitize HTML to prevent XSS while preserving <mark> tags
-        return truncated.replace(/<([^>]+)>/g, (match, tag) => 
-            tag.startsWith('mark') ? match : ''
-        );
-    }
-    
-    formatNumber(num) {
-        const n = parseInt(num);
-        if (isNaN(n)) return '0';
-        if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
-        if (n >= 1000) return (n / 1000).toFixed(1) + 'K';
-        return n.toString();
+            `;
+        }).join('');
+        
+        // Add click listeners
+        this.setupSearchResultListeners();
     }
     
     setupSearchResultListeners() {
         this.resultsGrid.querySelectorAll('.content-card').forEach(card => {
             card.addEventListener('click', (e) => {
+                // Check if clicking on interactive elements
                 if (e.target.closest('.creator-btn') ||
                     e.target.closest('.share-btn') ||
                     e.target.tagName === 'BUTTON' ||
-                    e.target.tagName === 'A' ||
-                    e.target.tagName === 'MARK') {
+                    e.target.tagName === 'A') {
                     return;
                 }
                 const contentId = card.dataset.contentId;
                 if (contentId) {
-                    // Track search interaction
-                    analyticsSystem.trackEvent('search_result_click', {
-                        query: this.lastSearchQuery,
-                        content_id: contentId
-                    });
                     window.location.href = `content-detail.html?id=${contentId}`;
                 }
             });
         });
+    }
+}
         
         // Handle retry buttons if present
         this.resultsGrid.querySelectorAll('.retry-btn').forEach(btn => {
