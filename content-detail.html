@@ -1,551 +1,312 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Content Details - Bantu Stream Connect</title>
-    
-    <!-- Week 2: PWA Manifest -->
-    <link rel="manifest" href="/manifest.json">
-    
-    <!-- Preload critical resources -->
-    <link rel="preload" href="css/base.css" as="style">
-    <link rel="preload" href="css/components.css" as="style">
-    
-    <!-- Google Fonts (preconnect) -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    
-    <!-- CSS Files -->
-    <link rel="stylesheet" href="css/base.css">
-    <link rel="stylesheet" href="css/components.css">
-    <link rel="stylesheet" href="css/content-detail.css">
-    
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    <!-- Non-blocking Google Fonts -->
-    <style>
-        /* Critical font declarations */
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Orbitron:wght@400;500;600;700&display=swap');
-    </style>
-    
-    <!-- Preload key scripts -->
-    <link rel="preload" href="js/security.js" as="script">
-    <link rel="preload" href="js/error-handler.js" as="script">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+  <title>Bantu Stream Connect - Content Detail</title>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Orbitron:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Supabase JS SDK -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- Base Styles -->
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/content-detail-styles.css">
 </head>
 <body>
-    <!-- Week 2: Skip to Content Link (Accessibility) -->
-    <a href="#contentHero" class="skip-to-content">Skip to Content</a>
-    
-    <!-- Loading Screen -->
-    <div id="loading" class="loading-screen">
-        <div class="spinner"></div>
-        <div id="loading-text">Loading Content Details...</div>
-    </div>
+  <!-- Loading Screen -->
+  <div id="loading" class="loading-screen">
+    <div class="spinner"></div>
+    <div id="loading-text">Loading content details...</div>
+  </div>
+  
+  <!-- Animated Background (from home-feed) -->
+  <div class="animated-bg">
+    <div class="glow-cycle glow-1"></div>
+    <div class="glow-cycle glow-2"></div>
+    <div class="glow-cycle glow-3"></div>
+    <div class="glow-cycle glow-4"></div>
+  </div>
 
-    <!-- Animated Background -->
-    <div class="animated-bg">
-        <div class="glow-cycle glow-1"></div>
-        <div class="glow-cycle glow-2"></div>
-        <div class="glow-cycle glow-3"></div>
-        <div class="glow-cycle glow-4"></div>
-    </div>
+  <!-- Main App (hidden until loaded) -->
+  <div id="app" style="display: none;">
+    <!-- Header (copied from home-feed with auth integration) -->
+    <header class="header">
+      <div class="logo" onclick="window.location.href='https://bantustreamconnect.com/'">
+        <div class="logo-icon">
+          <img src="assets/icon/bantu_stream_connect_icon.png" alt="Bantu Stream Connect Logo">
+        </div>
+        <div class="logo-text">BANTU STREAM CONNECT</div>
+      </div>
+      <div class="header-actions">
+        <!-- Analytics Button -->
+        <button id="analytics-btn" class="icon-btn" title="Analytics">
+          <i class="fas fa-chart-line"></i>
+        </button>
+        <!-- Search Button -->
+        <button id="search-btn" class="icon-btn search-btn" title="Search">
+          <i class="fas fa-search"></i>
+        </button>
+        <!-- Notifications Button -->
+        <button id="notifications-btn" class="icon-btn" title="Notifications">
+          <i class="fas fa-bell"></i>
+          <span class="notification-badge" id="notification-count" style="display: none;">0</span>
+        </button>
+        <!-- Profile Button (with auth integration) -->
+        <button id="profile-btn" class="profile-btn" title="Profile">
+          <div class="profile-placeholder" id="userProfilePlaceholder">
+            <i class="fas fa-user"></i>
+          </div>
+        </button>
+      </div>
+    </header>
 
-    <!-- Main Content (hidden until loaded) -->
-    <div id="app" style="display: none;">
-        <!-- Header -->
-        <header class="header">
-            <div class="logo" onclick="window.location.href='index.html'">
-                <div class="logo-icon">
-                    <!-- Updated Logo: Using provided image instead of SVG -->
-                    <img src="assets/icon/bantu_stream_connect_icon.png" 
-                         alt="Bantu Stream Connect Logo"
-                         style="width: 40px; height: 40px; border-radius: 8px; object-fit: contain;">
-                </div>
-                <div class="logo-text">BANTU STREAM CONNECT</div>
+    <!-- Main Content -->
+    <main class="container">
+      <!-- Hero Section -->
+      <section class="content-hero">
+        <div class="hero-poster" id="heroPoster">
+          <div class="poster-placeholder" id="posterPlaceholder">
+            <i class="fas fa-film"></i>
+          </div>
+        </div>
+        <div class="hero-info">
+          <h1 id="contentTitle">Loading Content...</h1>
+          <div class="hero-meta">
+            <div class="meta-item">
+              <i class="fas fa-user"></i>
+              <span id="creatorName">Creator</span>
             </div>
-            <div class="header-actions">
-                <button id="search-btn" class="icon-btn search-btn" title="Search">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-                    </svg>
-                </button>
-                <button id="profile-btn" class="profile-btn" title="Profile">
-                    <!-- This will be dynamically updated with user's profile picture -->
-                    <div class="profile-placeholder" id="userProfilePlaceholder">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
-                        </svg>
-                    </div>
-                </button>
+            <div class="meta-item">
+              <i class="fas fa-eye"></i>
+              <span id="viewsCount">0 views</span>
             </div>
-        </header>
-
-        <!-- Main Content -->
-        <main class="container">
-            <!-- Content Hero Section -->
-            <section class="content-hero" id="contentHero">
-                <div class="hero-poster" id="heroPoster">
-                    <div class="poster-placeholder" id="posterPlaceholder">
-                        <i class="fas fa-play-circle"></i>
-                    </div>
-                    <div class="play-overlay">
-                        <div class="play-icon-large">
-                            <i class="fas fa-play"></i>
-                        </div>
-                    </div>
-                </div>
-                <div class="hero-info">
-                    <h1 id="contentTitle">Loading...</h1>
-                    <div class="hero-meta">
-                        <span class="meta-item" id="contentCreator">
-                            <i class="fas fa-user"></i>
-                            <span id="creatorName">Loading...</span>
-                        </span>
-                        <span class="meta-item" id="contentViews">
-                            <i class="fas fa-eye"></i>
-                            <span id="viewsCount">0 views</span>
-                        </span>
-                        <span class="meta-item" id="contentLikes">
-                            <i class="fas fa-heart"></i>
-                            <span id="likesCount">0 likes</span>
-                        </span>
-                        <span class="meta-item" id="contentDuration">
-                            <i class="fas fa-clock"></i>
-                            <span id="durationText">-</span>
-                        </span>
-                    </div>
-                    <div class="hero-description">
-                        <p id="contentDescriptionShort">Loading description...</p>
-                    </div>
-                    <div class="hero-actions">
-                        <!-- Week 2: Resume button will be added dynamically here -->
-                        <button class="btn btn-primary" id="playBtn">
-                            <i class="fas fa-play"></i>
-                            <span>Play Now</span>
-                        </button>
-                        <button class="btn btn-secondary" id="favoriteBtn">
-                            <i class="far fa-heart"></i>
-                            <span>Favorite</span>
-                        </button>
-                        <button class="btn btn-secondary" id="shareBtn">
-                            <i class="fas fa-share"></i>
-                            <span>Share</span>
-                        </button>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Inline Video Player -->
-            <div class="inline-player" id="inlinePlayer">
-                <div class="player-header">
-                    <h3 id="playerTitle">Now Playing</h3>
-                    <button class="icon-btn close-player" id="closePlayerBtn" title="Close Player">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </div>
-                <div class="video-container">
-                    <!-- Week 2: Enhanced Video Player Elements -->
-                    <video id="inlineVideoPlayer" controls playsinline>
-                        Your browser does not support the video tag.
-                    </video>
-                    
-                    <!-- Buffering Indicator (Week 2) -->
-                    <div class="buffering-indicator">
-                        <div class="spinner"></div>
-                        <p>Buffering...</p>
-                    </div>
-                    
-                    <!-- Video Error Overlay (Week 2) -->
-                    <div class="video-error-overlay">
-                        <div class="error-content">
-                            <i class="fas fa-exclamation-triangle"></i>
-                            <h3>Video Error</h3>
-                            <p class="error-message" id="videoErrorMsg">Unable to play video. Please check your connection.</p>
-                            <div>
-                                <button class="retry-btn" id="retryVideoBtn">Retry</button>
-                                <button class="cancel-btn" id="cancelVideoBtn">Cancel</button>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Custom Video Controls (Week 2) -->
-                    <div class="video-controls">
-                        <div class="controls-bar">
-                            <button class="video-control-btn" id="playPauseBtn" title="Play/Pause">
-                                <i class="fas fa-play"></i>
-                            </button>
-                            <div class="time-display">
-                                <span id="currentTime">0:00</span> / <span id="duration">0:00</span>
-                            </div>
-                            <input type="range" class="progress-bar" id="progressBar" min="0" max="100" value="0">
-                            <button class="video-control-btn" id="volumeBtn" title="Volume">
-                                <i class="fas fa-volume-up"></i>
-                            </button>
-                            <input type="range" class="volume-bar" id="volumeBar" min="0" max="100" value="100">
-                            <button class="video-control-btn" id="settingsBtn" title="Settings">
-                                <i class="fas fa-cog"></i>
-                            </button>
-                            <button class="video-control-btn" id="fullscreenBtn" title="Fullscreen">
-                                <i class="fas fa-expand"></i>
-                            </button>
-                        </div>
-                    </div>
-                    
-                    <!-- Settings Menu (Week 2) -->
-                    <div class="settings-menu" id="settingsMenu">
-                        <div class="playback-speed">
-                            <h4>Playback Speed</h4>
-                            <div class="speed-options">
-                                <span class="speed-option" data-speed="0.5">0.5x</span>
-                                <span class="speed-option" data-speed="0.75">0.75x</span>
-                                <span class="speed-option active" data-speed="1">1x</span>
-                                <span class="speed-option" data-speed="1.25">1.25x</span>
-                                <span class="speed-option" data-speed="1.5">1.5x</span>
-                                <span class="speed-option" data-speed="2">2x</span>
-                            </div>
-                        </div>
-                        <div class="quality-selector">
-                            <h4>Quality</h4>
-                            <div class="quality-options">
-                                <span class="quality-option" data-quality="auto">Auto</span>
-                                <span class="quality-option active" data-quality="720">720p</span>
-                                <span class="quality-option" data-quality="480">480p</span>
-                                <span class="quality-option" data-quality="360">360p</span>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Quality Suggestion (Week 2) -->
-                    <div class="quality-suggestion" id="qualitySuggestion">
-                        <p>Poor connection detected. Switch to lower quality?</p>
-                        <button class="accept-btn" id="acceptQualityBtn">Switch to 360p</button>
-                        <button class="dismiss-btn" id="dismissQualityBtn">Keep current</button>
-                    </div>
-                </div>
-                <div class="player-actions">
-                    <div class="player-controls">
-                        <button class="control-btn" id="pictureInPictureBtn" title="Picture-in-Picture">
-                            <i class="fas fa-clone"></i>
-                        </button>
-                        <button class="control-btn" id="playbackSpeedBtn" title="Playback Speed">
-                            <i class="fas fa-tachometer-alt"></i>
-                        </button>
-                    </div>
-                    <button class="btn btn-primary fullscreen-btn" id="fullPlayerBtn">
-                        <i class="fas fa-expand"></i>
-                        <span>Open Full Player</span>
-                    </button>
-                </div>
+            <div class="meta-item">
+              <i class="fas fa-clock"></i>
+              <span id="durationText">--</span>
             </div>
-
-            <!-- Creator Info Section -->
-            <section class="creator-section" id="creatorSection">
-                <div class="creator-info">
-                    <div class="creator-avatar" id="creatorAvatar">
-                        <i class="fas fa-user-circle"></i>
-                    </div>
-                    <div class="creator-details">
-                        <h3 id="creatorDisplayName">Creator Name</h3>
-                        <p id="creatorConnectors">0 connectors</p>
-                    </div>
-                    <button class="btn btn-primary connect-btn" id="connectBtn">
-                        <i class="fas fa-user-plus"></i>
-                        <span>Connect</span>
-                    </button>
-                </div>
-            </section>
-
-            <!-- Stats Grid -->
-            <div class="stats-grid" id="statsGrid">
-                <div class="card stat-card">
-                    <div class="stat-icon">
-                        <i class="fas fa-calendar-alt"></i>
-                    </div>
-                    <div class="stat-content">
-                        <h4>Uploaded</h4>
-                        <p id="uploadDate">-</p>
-                    </div>
-                </div>
-                <div class="card stat-card">
-                    <div class="stat-icon">
-                        <i class="fas fa-film"></i>
-                    </div>
-                    <div class="stat-content">
-                        <h4>Duration</h4>
-                        <p id="contentDurationFull">-</p>
-                    </div>
-                </div>
-                <div class="card stat-card">
-                    <div class="stat-icon">
-                        <i class="fas fa-tag"></i>
-                    </div>
-                    <div class="stat-content">
-                        <h4>Genre</h4>
-                        <p id="contentGenre">-</p>
-                    </div>
-                </div>
-                <div class="card stat-card">
-                    <div class="stat-icon">
-                        <i class="fas fa-flag"></i>
-                    </div>
-                    <div class="stat-content">
-                        <h4>Language</h4>
-                        <p id="contentLanguage">-</p>
-                    </div>
-                </div>
+            <div class="meta-item">
+              <i class="fas fa-calendar"></i>
+              <span id="uploadDate">--</span>
             </div>
+          </div>
+          <div class="hero-description" id="contentDescriptionShort">
+            Loading description...
+          </div>
+          <div class="hero-actions">
+            <button id="playBtn" class="btn btn-primary">
+              <i class="fas fa-play"></i>
+              <span>Play Now</span>
+            </button>
+            <button id="favoriteBtn" class="btn btn-secondary">
+              <i class="far fa-heart"></i>
+              <span>Favorite</span>
+            </button>
+            <button id="shareBtn" class="btn btn-secondary">
+              <i class="fas fa-share"></i>
+              <span>Share</span>
+            </button>
+          </div>
+        </div>
+      </section>
 
-            <!-- Description Section -->
-            <section class="description-section card">
-                <div class="section-header">
-                    <h2 class="section-title">Description</h2>
-                </div>
-                <div class="description-content">
-                    <p id="contentDescriptionFull">Loading full description...</p>
-                    <button class="btn btn-secondary show-more-btn" id="showMoreBtn" style="display: none;">Show more</button>
-                </div>
-            </section>
+      <!-- Inline Video Player (hidden by default) -->
+      <div class="inline-player" id="inlinePlayer" style="display: none;">
+        <div class="player-header">
+          <h3 id="playerTitle">Now Playing: ...</h3>
+          <button id="closePlayerBtn" class="control-btn close-player">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        <div class="video-container">
+          <video id="inlineVideoPlayer" controls playsinline>
+            Your browser does not support the video tag.
+          </video>
+        </div>
+        <div class="player-actions">
+          <div class="player-controls">
+            <button class="control-btn" id="pipBtn" title="Picture-in-Picture">
+              <i class="fas fa-images"></i>
+            </button>
+            <button class="control-btn" id="fullscreenBtn" title="Fullscreen">
+              <i class="fas fa-expand"></i>
+            </button>
+          </div>
+          <button id="connectBtn" class="btn connect-btn">
+            <i class="fas fa-user-plus"></i>
+            <span>Connect</span>
+          </button>
+        </div>
+      </div>
 
-            <!-- Comments Section -->
-            <section class="comments-section card">
-                <div class="section-header">
-                    <h2 class="section-title">
-                        Comments
-                        <span id="commentsCount" style="font-size: 1rem; color: rgba(255, 255, 255, 0.6); margin-left: 0.5rem;">(0)</span>
-                    </h2>
-                    <button class="btn btn-secondary refresh-btn" id="refreshCommentsBtn">
-                        <i class="fas fa-sync-alt"></i>
-                        <span>Refresh</span>
-                    </button>
-                </div>
-                
-                <!-- Add Comment Form - UPDATED FOR AUTHENTICATION -->
-                <div class="add-comment">
-                    <div class="comment-avatar" id="userCommentAvatar">
-                        <!-- This will be dynamically updated with user's profile picture -->
-                        <i class="fas fa-user-circle" id="commentAvatarIcon" style="font-size: 40px; color: #1D4ED8;"></i>
-                    </div>
-                    <div class="comment-input-container">
-                        <textarea 
-                            id="commentInput" 
-                            placeholder="Add a comment..." 
-                            rows="3"
-                        ></textarea>
-                        <button class="btn btn-primary send-comment-btn" id="sendCommentBtn">
-                            <i class="fas fa-paper-plane"></i>
-                        </button>
-                    </div>
-                </div>
+      <!-- Creator Section -->
+      <section class="creator-section">
+        <div class="creator-info">
+          <div class="creator-avatar" id="creatorAvatar">
+            <i class="fas fa-user"></i>
+          </div>
+          <div class="creator-details">
+            <h3 id="creatorDisplayName">Creator Name</h3>
+            <p>Verified Creator • Joined 2024</p>
+          </div>
+          <button id="connectCreatorBtn" class="connect-btn">
+            <i class="fas fa-user-plus"></i>
+            <span>Connect</span>
+          </button>
+        </div>
+      </section>
 
-                <!-- Comments List -->
-                <div class="comments-list" id="commentsList">
-                    <div class="no-comments" id="noComments">
-                        <i class="far fa-comment-alt"></i>
-                        <p>No comments yet. Be the first to comment!</p>
-                    </div>
-                </div>
-            </section>
+      <!-- Stats Grid -->
+      <section class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-icon">
+            <i class="fas fa-eye"></i>
+          </div>
+          <div class="stat-content">
+            <h4>Total Views</h4>
+            <p id="viewsCountFull">0</p>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">
+            <i class="fas fa-heart"></i>
+          </div>
+          <div class="stat-content">
+            <h4>Likes</h4>
+            <p id="likesCount">0</p>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">
+            <i class="fas fa-clock"></i>
+          </div>
+          <div class="stat-content">
+            <h4>Duration</h4>
+            <p id="contentDurationFull">--</p>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">
+            <i class="fas fa-tag"></i>
+          </div>
+          <div class="stat-content">
+            <h4>Genre</h4>
+            <p id="contentGenre">--</p>
+          </div>
+        </div>
+      </section>
 
-            <!-- Related Content Section -->
-            <section class="related-section">
-                <div class="section-header">
-                    <h2 class="section-title">More Like This</h2>
-                </div>
-                <div class="content-grid" id="relatedGrid">
-                    <div class="related-placeholder card">
-                        <i class="fas fa-video"></i>
-                        <p>Loading related content...</p>
-                    </div>
-                </div>
-            </section>
-        </main>
+      <!-- Description Section -->
+      <section class="description-section">
+        <h2>Description</h2>
+        <div class="description-content" id="contentDescriptionFull">
+          Loading full description...
+        </div>
+      </section>
 
-        <!-- Footer -->
-        <footer class="footer">
-            <p>Bantu Stream Connect © 2025 • Built in South Africa</p>
-        </footer>
+      <!-- Comments Section -->
+      <section class="comments-section">
+        <div class="section-header">
+          <h2 class="section-title">Comments <span id="commentsCount">(0)</span></h2>
+          <button id="refreshCommentsBtn" class="refresh-btn">
+            <i class="fas fa-redo"></i> Refresh
+          </button>
+        </div>
+        <div class="add-comment">
+          <div class="comment-avatar" id="userCommentAvatar">
+            <i class="fas fa-user"></i>
+          </div>
+          <div class="comment-input-container">
+            <textarea id="commentInput" placeholder="Sign in to add a comment..." disabled></textarea>
+            <button id="sendCommentBtn" class="send-comment-btn">
+              <i class="fas fa-paper-plane"></i>
+            </button>
+          </div>
+        </div>
+        <div class="comments-list" id="commentsList">
+          <div class="no-comments" id="noComments">
+            <i class="fas fa-comment-slash"></i>
+            <p>No comments yet. Be the first to comment!</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Related Content -->
+      <section class="related-section">
+        <div class="section-header">
+          <h2 class="section-title">Related Content</h2>
+        </div>
+        <div class="content-grid" id="relatedGrid">
+          <!-- Related content will be loaded here -->
+        </div>
+      </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <p>Bantu Stream Connect © 2025 • Built in South Africa</p>
+      <div class="footer-links">
+        <a href="privacy-policy.html">Privacy Policy</a>
+        <a href="terms-of-service.html">Terms of Service</a>
+        <a href="support.html">Support</a>
+      </div>
+    </footer>
+
+    <!-- Global Navigation Button (copied from home-feed) -->
+    <div class="navigation-button-container">
+      <div class="navigation-button">
+        <div class="nav-icon" onclick="window.location.href='https://bantustreamconnect.com/'" title="Home">
+          <i class="fas fa-home"></i>
+        </div>
+        <div class="nav-icon" id="nav-theme-toggle" title="Change Theme">
+          <i class="fas fa-palette"></i>
+        </div>
+        <div class="nav-icon" onclick="window.location.href='creator-upload.html'" title="Create Content">
+          <i class="fas fa-plus-circle"></i>
+        </div>
+        <div class="nav-icon" onclick="window.location.href='creator-dashboard.html'" title="Creator Dashboard">
+          <i class="fas fa-tachometer-alt"></i>
+        </div>
+        <div class="nav-icon" id="nav-notifications-btn" title="Notifications">
+          <i class="fas fa-bell"></i>
+          <span class="nav-notification-badge" id="nav-notification-count" style="display: none;">0</span>
+        </div>
+      </div>
     </div>
 
     <!-- Toast Container -->
     <div id="toast-container"></div>
     
-    <!-- Week 2: Offline/Online Toast Containers -->
-    <div id="offline-toast" class="offline-toast" style="display: none;"></div>
-    <div id="online-toast" class="online-toast" style="display: none;"></div>
-    <div id="update-toast" class="update-toast" style="display: none;"></div>
-    <div id="update-ready-toast" class="update-ready-toast" style="display: none;"></div>
-    
-    <!-- Week 2: Keyboard Shortcut Feedback -->
-    <div id="shortcut-feedback" class="shortcut-feedback" style="display: none;"></div>
-    
-    <!-- Week 2: Keyboard Help Dialog -->
-    <div id="keyboard-help-dialog" class="keyboard-help-dialog" style="display: none;">
-        <button class="close-help-btn" id="closeHelpBtn">
-            <i class="fas fa-times"></i>
-        </button>
-        <h2>Keyboard Shortcuts</h2>
-        <div class="shortcuts-grid" id="shortcutsList">
-            <!-- Shortcuts will be populated by JavaScript -->
-        </div>
-        <div class="help-footer">
-            <p><i class="fas fa-info-circle"></i> Press '?' to show/hide this help</p>
-            <p class="online-only"><i class="fas fa-wifi"></i> Online features available</p>
-        </div>
-    </div>
-
     <!-- Back to Top Button -->
-    <button class="back-to-top" id="backToTopBtn" title="Back to top">
-        <i class="fas fa-arrow-up"></i>
+    <button id="backToTopBtn" class="back-to-top">
+      <i class="fas fa-arrow-up"></i>
     </button>
+  </div>
 
-    <!-- Week 2: Enhanced Script Loading Order -->
-    <!-- Fix script loading order -->
-    <!-- Load Supabase from CDN -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
-    
-    <!-- Load scripts in correct order -->
-    <script src="js/security.js"></script>
-    <script>
-        // Initialize Supabase immediately
-        if (typeof supabase !== 'undefined') {
-            console.log('Supabase loaded globally');
-            
-            // Initialize Supabase client
-            const SUPABASE_URL = 'https://ydnxqnbjoshvxteevemc.supabase.co';
-            const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U';
-            
-            // Create Supabase client
-            window.supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-            console.log('Supabase client created successfully');
-            
-            // Load scripts in correct order
-            var errorScript = document.createElement('script');
-            errorScript.src = 'js/error-handler.js';
-            errorScript.onload = function() {
-                console.log('Error handler loaded');
-                
-                // Load state manager
-                var stateScript = document.createElement('script');
-                stateScript.src = 'js/state-manager.js';
-                stateScript.onload = function() {
-                    console.log('State manager loaded');
-                    
-                    // Load video player
-                    var videoScript = document.createElement('script');
-                    videoScript.src = 'js/video-player.js';
-                    videoScript.onload = function() {
-                        console.log('Video player loaded');
-                        
-                        // Load keyboard navigation
-                        var keyboardScript = document.createElement('script');
-                        keyboardScript.src = 'js/keyboard-navigation.js';
-                        keyboardScript.onload = function() {
-                            console.log('Keyboard navigation loaded');
-                            
-                            // Load supabase-helper
-                            var helperScript = document.createElement('script');
-                            helperScript.src = 'js/supabase-helper.js';
-                            helperScript.onload = function() {
-                                console.log('Supabase helper loaded');
-                                
-                                // Load auth-helper
-                                var authScript = document.createElement('script');
-                                authScript.src = 'js/auth-helper.js';
-                                authScript.onload = function() {
-                                    console.log('Auth helper loaded');
-                                    
-                                    // Load service worker register
-                                    var swScript = document.createElement('script');
-                                    swScript.src = 'js/sw-register.js';
-                                    swScript.onload = function() {
-                                        console.log('Service worker registered');
-                                        
-                                        // Finally load the main content-detail script
-                                        var mainScript = document.createElement('script');
-                                        mainScript.src = 'js/content-detail.js';
-                                        document.head.appendChild(mainScript);
-                                    };
-                                    document.head.appendChild(swScript);
-                                };
-                                document.head.appendChild(authScript);
-                            };
-                            document.head.appendChild(helperScript);
-                        };
-                        document.head.appendChild(keyboardScript);
-                    };
-                    document.head.appendChild(videoScript);
-                };
-                document.head.appendChild(stateScript);
-            };
-            document.head.appendChild(errorScript);
-        } else {
-            console.error('Supabase failed to load');
-            
-            // Load scripts in order anyway
-            var scripts = [
-                'js/error-handler.js',
-                'js/state-manager.js',
-                'js/video-player.js',
-                'js/keyboard-navigation.js',
-                'js/supabase-helper.js',
-                'js/auth-helper.js',
-                'js/sw-register.js',
-                'js/content-detail.js'
-            ];
-            
-            function loadScripts(index) {
-                if (index >= scripts.length) {
-                    console.log('All scripts loaded');
-                    return;
-                }
-                var script = document.createElement('script');
-                script.src = scripts[index];
-                script.onload = function() {
-                    console.log(scripts[index] + ' loaded');
-                    loadScripts(index + 1);
-                };
-                script.onerror = function() {
-                    console.error('Failed to load: ' + scripts[index]);
-                    loadScripts(index + 1);
-                };
-                document.head.appendChild(script);
-            }
-            loadScripts(0);
-        }
-    </script>
-
-    <!-- After all scripts -->
-    <script>
-        // Fallback timeout to show app
-        setTimeout(function() {
-            var loadingScreen = document.getElementById('loading');
-            var app = document.getElementById('app');
-            
-            if (loadingScreen && loadingScreen.style.display !== 'none') {
-                console.log('Fallback timeout - showing app anyway');
-                loadingScreen.style.display = 'none';
-                if (app) {
-                    app.style.display = 'block';
-                }
-            }
-        }, 10000);
-        
-        // Week 2: Global error handler for PWA offline support
-        window.addEventListener('offline', function() {
-            console.log('Network offline');
-            if (window.showOfflineToast) {
-                window.showOfflineToast();
-            }
-        });
-        
-        window.addEventListener('online', function() {
-            console.log('Network online');
-            if (window.showOnlineToast) {
-                window.showOnlineToast();
-            }
-        });
-    </script>
+  <!-- Core Dependencies -->
+  <script>
+    // Initialize Supabase client globally (required by helpers)
+    const SUPABASE_URL = 'https://ydnxqnbjoshvxteevemc.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U';
+    window.supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  </script>
+  
+  <!-- Utility Scripts (load first) -->
+  <script src="js/state-manager.js"></script>
+  <script src="js/supabase-helper.js"></script>
+  <script src="js/auth-helper.js"></script>
+  <script src="js/security.js"></script>
+  <script src="js/analytics.js"></script>
+  
+  <!-- Feature Scripts -->
+  <script src="js/video-player.js"></script>
+  <script src="js/virtual-scroll.js"></script>
+  
+  <!-- Main Content Detail Script -->
+  <script src="js/content-detail-main.js"></script>
 </body>
 </html>
