@@ -1,3 +1,5 @@
+/* content-detail-styles.css - COMPLETE STYLES FOR CONTENT DETAIL */
+
 .content-hero {
     background: var(--card-bg);
     border: 1px solid var(--card-border);
@@ -731,188 +733,65 @@
     color: rgba(255, 255, 255, 0.3);
 }
 
-/* Mobile Responsiveness for Inline Player */
-@media (max-width: 768px) {
-    .content-grid {
-        grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-        gap: 15px;
-    }
-    
-    .creator-info {
-        flex-direction: column;
-        text-align: center;
-    }
-    
-    .creator-avatar {
-        width: 70px;
-        height: 70px;
-    }
-    
-    .connect-btn {
-        width: 100%;
-        justify-content: center;
-    }
-    
-    .stats-grid {
-        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-        gap: 15px;
-    }
-    
-    .add-comment {
-        flex-direction: column;
-    }
-    
-    .comment-input-container {
-        width: 100%;
-    }
-    
-    /* Inline Player Mobile */
-    .video-container {
-        aspect-ratio: 16/9;
-    }
-    
-    .player-actions {
-        flex-direction: column;
-    }
-    
-    .player-controls {
-        width: 100%;
-        justify-content: center;
-    }
-    
-    .fullscreen-btn {
-        width: 100%;
-    }
+/* Navigation button container (copied from home-feed) */
+.navigation-button-container {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 999;
+    width: auto;
+    padding-bottom: env(safe-area-inset-bottom);
 }
 
-@media (max-width: 480px) {
-    .content-grid {
-        grid-template-columns: repeat(2, 1fr);
-    }
-    
-    .card-thumbnail {
-        height: 120px;
-    }
-    
-    .stats-grid {
-        grid-template-columns: 1fr;
-    }
-}
-
-/* ============================================================================== */
-/* AUTHENTICATION UI STYLES - ADDED FOR USER PROFILE AND LOGIN INTEGRATION */
-/* ============================================================================== */
-
-/* Profile picture styles */
-.profile-placeholder {
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    overflow: hidden;
+.navigation-button {
     display: flex;
-    align-items: center;
-    justify-content: center;
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 50px;
+    padding: 12px 20px;
+    backdrop-filter: blur(20px);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    gap: 15px;
+}
+
+.nav-icon {
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
     background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: var(--soft-white);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
     transition: all 0.3s ease;
-}
-
-.profile-placeholder:hover {
-    background: rgba(255, 255, 255, 0.2);
-    transform: scale(1.05);
-}
-
-.profile-placeholder img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
-
-.profile-placeholder div {
-    width: 100%;
-    height: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: bold;
-    font-size: 14px;
-    color: white;
-}
-
-/* Comment avatar styles */
-.comment-avatar {
-    width: 48px;
-    height: 48px;
-    border-radius: 50%;
-    overflow: hidden;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: rgba(255, 255, 255, 0.05);
-    border: 2px solid rgba(29, 78, 216, 0.3);
-}
-
-.comment-avatar i {
-    font-size: 40px;
-    color: #1D4ED8;
-}
-
-.comment-avatar img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
-
-.comment-avatar div {
-    width: 100%;
-    height: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: bold;
     font-size: 18px;
+}
+
+.nav-icon:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: translateY(-3px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+}
+
+/* Notification badges */
+.notification-badge, .nav-notification-badge {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    background: var(--error-color);
     color: white;
-}
-
-/* Comment small avatar styles */
-.comment-avatar-sm {
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    overflow: hidden;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: rgba(255, 255, 255, 0.05);
-    border: 2px solid rgba(29, 78, 216, 0.2);
-}
-
-.comment-avatar-sm img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
-
-.comment-avatar-sm div {
-    width: 100%;
-    height: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    font-size: 10px;
     font-weight: bold;
-    font-size: 14px;
-    color: white;
-}
-
-/* Logo styles */
-.logo-icon img {
-    border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-    transition: all 0.3s ease;
-}
-
-.logo-icon img:hover {
-    transform: scale(1.05);
-    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid var(--deep-black);
 }
 
 /* Authentication states for form inputs */
@@ -943,73 +822,6 @@ textarea:not(:disabled)::placeholder {
     color: rgba(255, 255, 255, 0.6) !important;
 }
 
-/* Authentication prompt styling */
-.auth-prompt {
-    background: rgba(29, 78, 216, 0.1);
-    border: 1px solid rgba(29, 78, 216, 0.3);
-    border-radius: 12px;
-    padding: 16px;
-    margin: 16px 0;
-    text-align: center;
-    color: rgba(255, 255, 255, 0.8);
-}
-
-.auth-prompt h3 {
-    font-size: 16px;
-    margin-bottom: 8px;
-    color: var(--soft-white);
-}
-
-.auth-prompt p {
-    font-size: 14px;
-    margin-bottom: 12px;
-    color: rgba(255, 255, 255, 0.7);
-}
-
-.auth-prompt button {
-    margin-top: 12px;
-    padding: 10px 20px;
-    background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
-    color: var(--soft-white);
-    border: none;
-    border-radius: 8px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s ease;
-}
-
-.auth-prompt button:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(29, 78, 216, 0.3);
-}
-
-/* User profile status indicators */
-.user-status {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 12px;
-    padding: 4px 8px;
-    border-radius: 12px;
-    margin-left: 8px;
-    font-weight: 500;
-}
-
-.user-status.online {
-    background: rgba(16, 185, 129, 0.2);
-    color: var(--success-color);
-}
-
-.user-status.offline {
-    background: rgba(255, 255, 255, 0.1);
-    color: rgba(255, 255, 255, 0.5);
-}
-
-.user-status.creator {
-    background: rgba(245, 158, 11, 0.2);
-    color: var(--warm-gold);
-}
-
 /* Gradient backgrounds for user avatars */
 .gradient-blue-gold {
     background: linear-gradient(135deg, #1D4ED8, #F59E0B) !important;
@@ -1025,43 +837,6 @@ textarea:not(:disabled)::placeholder {
 
 .gradient-red-orange {
     background: linear-gradient(135deg, #EF4444, #F59E0B) !important;
-}
-
-/* Loading state for authentication */
-.auth-loading {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-    color: rgba(255, 255, 255, 0.7);
-    font-size: 14px;
-}
-
-.auth-loading .spinner {
-    width: 16px;
-    height: 16px;
-    border: 2px solid rgba(255, 255, 255, 0.3);
-    border-top-color: var(--bantu-blue);
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-    to { transform: rotate(360deg); }
-}
-
-/* Profile button hover effects */
-.profile-btn {
-    transition: all 0.3s ease;
-}
-
-.profile-btn:hover {
-    transform: scale(1.05);
-}
-
-.profile-btn:hover .profile-placeholder {
-    border-color: var(--warm-gold);
-    box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.2);
 }
 
 /* Enhanced comment section for authenticated users */
@@ -1160,25 +935,38 @@ textarea:not(:disabled)::placeholder {
         font-size: 12px;
     }
     
-    .auth-prompt {
-        padding: 12px;
+    /* Inline Player Mobile */
+    .video-container {
+        aspect-ratio: 16/9;
     }
     
-    .auth-prompt h3 {
-        font-size: 14px;
+    .player-actions {
+        flex-direction: column;
     }
     
-    .auth-prompt p {
-        font-size: 12px;
+    .player-controls {
+        width: 100%;
+        justify-content: center;
     }
     
-    .auth-prompt button {
-        padding: 8px 16px;
-        font-size: 14px;
+    .fullscreen-btn {
+        width: 100%;
     }
 }
 
 @media (max-width: 480px) {
+    .content-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .card-thumbnail {
+        height: 120px;
+    }
+    
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+    
     .user-status {
         font-size: 10px;
         padding: 3px 6px;
@@ -1192,60 +980,4 @@ textarea:not(:disabled)::placeholder {
         width: 14px;
         height: 14px;
     }
-}
-
-/* Animation for user login/logout transitions */
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
-.user-profile-update {
-    animation: fadeIn 0.3s ease;
-}
-
-/* Special styling for creator avatars */
-.creator-avatar.authenticated {
-    border: 3px solid var(--warm-gold);
-    box-shadow: 0 0 20px rgba(245, 158, 11, 0.3);
-}
-
-/* Connection status indicator */
-.connection-status {
-    display: inline-block;
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    margin-left: 5px;
-}
-
-.connection-status.connected {
-    background-color: var(--success-color);
-    box-shadow: 0 0 8px rgba(16, 185, 129, 0.6);
-}
-
-.connection-status.disconnected {
-    background-color: rgba(255, 255, 255, 0.3);
-}
-
-/* Enhanced header for authenticated users */
-.authenticated-header .header-actions {
-    position: relative;
-}
-
-.authenticated-header .profile-btn::after {
-    content: '';
-    position: absolute;
-    top: -2px;
-    right: -2px;
-    width: 10px;
-    height: 10px;
-    background: var(--success-color);
-    border-radius: 50%;
-    border: 2px solid var(--deep-navy);
-    display: none;
-}
-
-.authenticated-header.online .profile-btn::after {
-    display: block;
 }
