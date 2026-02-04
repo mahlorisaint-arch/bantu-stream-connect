@@ -87,7 +87,8 @@ const SupabaseHelper = {
                 media_type: data.media_type || 'video',
                 genre: data.genre || data.category || 'General',
                 created_at: data.created_at || data.upload_date,
-                duration: data.duration || 0,
+                // FIXED: Convert to number with proper fallback
+                duration: Number(data.duration) || Number(data.duration_seconds) || 3600,
                 language: data.language || 'English',
                 views_count: data.views_count || data.views || 0,
                 likes_count: data.likes_count || data.likes || 0,
@@ -137,7 +138,7 @@ const SupabaseHelper = {
         return { name: 'Content Creator' };
     },
     
-    // Sample content fallback
+    // Sample content fallback - UPDATED WITH PROPER DURATION
     getSampleContent: function(contentId) {
         console.log('📋 Using sample content for ID:', contentId);
         
@@ -152,7 +153,7 @@ const SupabaseHelper = {
             created_at: '2025-01-15T10:30:00Z',
             creator: 'Music Africa',
             creator_display_name: 'Music Africa',
-            duration: 3600,
+            duration: 3600, // 1 hour in seconds
             language: 'English',
             views_count: 12500,
             likes_count: 890,
