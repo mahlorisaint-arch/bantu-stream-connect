@@ -787,15 +787,14 @@ class SearchSystem {
             this.resultsGrid.innerHTML = '<div class="infinite-scroll-loading"><div class="infinite-scroll-spinner"></div><div>Searching...</div></div>';
             
             try {
-                // Get filters (only use eq.-compatible filters)
                 const category = document.getElementById('category-filter')?.value;
                 const mediaType = document.getElementById('media-type-filter')?.value;
                 const sortBy = document.getElementById('sort-filter')?.value;
                 
-                // Build SAFE where clause (only eq. operators)
-                let whereClause = { status: 'published' }; // ✅ Critical: only published content
-                if (category) whereClause.genre = category; // ✅ eq. compatible
-                if (mediaType) whereClause.media_type = mediaType; // ✅ eq. compatible
+                // Build SAFE where clause (only eq. compatible filters)
+                let whereClause = { status: 'published' };
+                if (category) whereClause.genre = category;
+                if (mediaType) whereClause.media_type = mediaType;
                 
                 // Get order by
                 let orderBy = 'created_at';
@@ -807,25 +806,23 @@ class SearchSystem {
                     order = 'desc';
                 }
                 
-                // Fetch filtered content (SAFE query using only eq. operators)
+                // Fetch ALL published content with filters
                 const results = await contentSupabase.query('Content', {
                     select: '*',
-                    where: whereClause, // ✅ Only uses eq.-compatible filters
+                    where: whereClause,
                     orderBy: orderBy,
                     order: order,
-                    limit: 50
+                    limit: 100
                 });
                 
-                // CLIENT-SIDE TEXT SEARCH (avoids broken in. operator)
+                // CLIENT-SIDE SEARCH (no broken in. operator)
                 const filteredResults = results.filter(item => {
                     const searchText = query.toLowerCase();
                     return (
                         (item.title && item.title.toLowerCase().includes(searchText)) ||
                         (item.description && item.description.toLowerCase().includes(searchText)) ||
                         (item.genre && item.genre.toLowerCase().includes(searchText)) ||
-                        (item.creator && item.creator.toLowerCase().includes(searchText)) ||
-                        (item.user_profiles?.full_name && item.user_profiles.full_name.toLowerCase().includes(searchText)) ||
-                        (item.user_profiles?.username && item.user_profiles.username.toLowerCase().includes(searchText))
+                        (item.creator && item.creator.toLowerCase().includes(searchText))
                     );
                 });
                 
@@ -835,7 +832,7 @@ class SearchSystem {
                 console.error('Search error:', error);
                 this.resultsGrid.innerHTML = '<div class="no-results">Error searching. Please try again.</div>';
             }
-        }, 300); // Debounce search
+        }, 300);
     }
     
     renderSearchResults(results) {
@@ -845,7 +842,6 @@ class SearchSystem {
         }
         
         this.resultsGrid.innerHTML = results.map(item => {
-            // Get creator name safely from multiple sources
             const creatorName = item.creator || 
                               item.creator_display_name || 
                               item.user_profiles?.username || 
@@ -902,37 +898,6 @@ class SearchSystem {
                 }
             });
         });
-    }
-}
-        
-        // Handle retry buttons if present
-        this.resultsGrid.querySelectorAll('.retry-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                const q = e.target.dataset.query;
-                this.executeSearch(q);
-            });
-        });
-    }
-    
-    showToast(message, type) {
-        // Simple toast implementation
-        const toast = document.createElement('div');
-        toast.className = `toast ${type}`;
-        toast.textContent = message;
-        toast.style.position = 'fixed';
-        toast.style.bottom = '20px';
-        toast.style.right = '20px';
-        toast.style.padding = '15px 20px';
-        toast.style.borderRadius = '8px';
-        toast.style.backgroundColor = type === 'error' ? '#EF4444' : '#10B981';
-        toast.style.color = 'white';
-        toast.style.zIndex = '9999';
-        
-        document.body.appendChild(toast);
-        
-        setTimeout(() => {
-            toast.remove();
-        }, 3000);
     }
 }
 
