@@ -30,6 +30,16 @@ const AuthHelper = {
             }
             
             this.isInitialized = true;
+            
+            // Dispatch custom event when auth is ready
+            const event = new CustomEvent('authReady', { 
+                detail: { 
+                    isAuthenticated: this.isAuthenticated(),
+                    userProfile: this.userProfile 
+                } 
+            });
+            document.dispatchEvent(event);
+            
             return true;
         } catch (error) {
             console.error('❌ Auth Helper Initialization error:', error);
@@ -168,9 +178,6 @@ document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM loaded - initializing auth helper');
     AuthHelper.initialize().then(() => {
         console.log('Auth helper initialized');
-        // Dispatch custom event when auth is ready
-        const event = new CustomEvent('authReady', { detail: { isAuthenticated: AuthHelper.isAuthenticated() } });
-        document.dispatchEvent(event);
     });
 });
 
