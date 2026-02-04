@@ -1,166 +1,175 @@
 // Enhanced Supabase client with caching and timeout handling
 class ContentSupabaseClient {
-constructor(url, key) {
-this.url = url;
-this.key = key;
-this.cache = new Map();
-this.cacheTTL = 5 * 60 * 1000; // 5 minutes cache TTL
-this.requestTimeout = 8000; // 8 second timeout (under Supabase's 10s limit)
-}
-async query(table, options = {}) {
-const {
-select = '*',
-where = {},
-orderBy = 'created_at',
-order = 'desc',
-limit = 100,
-offset = 0,
-timeout = this.requestTimeout
-} = options;
+    constructor(url, key) {
+        this.url = url;
+        this.key = key;
+        this.cache = new Map();
+        this.cacheTTL = 5 * 60 * 1000; // 5 minutes cache TTL
+        this.requestTimeout = 8000; // 8 second timeout (under Supabase's 10s limit)
+    }
+    
+    async query(table, options = {}) {
+        const {
+            select = '*',
+            where = {},
+            orderBy = 'created_at',
+            order = 'desc',
+            limit = 100,
+            offset = 0,
+            timeout = this.requestTimeout
+        } = options;
 
-// Generate cache key (excluding volatile params)
-const cacheKey = this.generateCacheKey(table, { select, where, orderBy, order, limit, offset });
-// Check cache first
-if (this.cache.has(cacheKey)) {
-const cached = this.cache.get(cacheKey);
-if (Date.now() - cached.timestamp < this.cacheTTL) {
-console.log('✅ Serving from cache:', cacheKey);
-return cached.data;
-}
-this.cache.delete(cacheKey);
-}
+        // Generate cache key (excluding volatile params)
+        const cacheKey = this.generateCacheKey(table, { select, where, orderBy, order, limit, offset });
+        
+        // Check cache first
+        if (this.cache.has(cacheKey)) {
+            const cached = this.cache.get(cacheKey);
+            if (Date.now() - cached.timestamp < this.cacheTTL) {
+                console.log('✅ Serving from cache:', cacheKey);
+                return cached.data;
+            }
+            this.cache.delete(cacheKey);
+        }
 
-// Build query URL with CORRECT Supabase syntax
-let queryUrl = `${this.url}/rest/v1/${table}?select=${encodeURIComponent(select)}`;
+        // Build query URL with CORRECT Supabase syntax
+        let queryUrl = `${this.url}/rest/v1/${table}?select=${encodeURIComponent(select)}`;
 
-// Add filters with proper Supabase operators
-Object.keys(where).forEach(key => {
-const value = where[key];
-if (Array.isArray(value)) {
-// Handle IN queries correctly: id=in.(1,2,3)
-queryUrl += `&${key}=in.(${value.join(',')})`;
-} else if (typeof value === 'string' && value.startsWith('ilike.')) {
-// Handle ILIKE queries for text search
-queryUrl += `&${key}=${encodeURIComponent(value)}`;
-} else {
-// Standard equality
-queryUrl += `&${key}=eq.${encodeURIComponent(value)}`;
-}
-});
+        // Add filters - FIXED: Properly handles different operators
+        Object.keys(where).forEach(key => {
+            const value = where[key];
+            
+            // Check if value already has an operator prefix (like "in.")
+            if (typeof value === 'string' && (value.startsWith('in.') || value.startsWith('gte.') || value.startsWith('lte.'))) {
+                // Use the operator as-is
+                queryUrl += `&${key}=${encodeURIComponent(value)}`;
+            } else {
+                // Default to eq. operator
+                queryUrl += `&${key}=eq.${encodeURIComponent(value)}`;
+            }
+        });
 
-// Add ordering
-if (orderBy) {
-queryUrl += `&order=${encodeURIComponent(orderBy)}.${order}`;
-}
-// Add limit and offset
-queryUrl += `&limit=${limit}&offset=${offset}`;
+        // Add ordering
+        if (orderBy) {
+            queryUrl += `&order=${encodeURIComponent(orderBy)}.${order}`;
+        }
+        
+        // Add limit and offset
+        queryUrl += `&limit=${limit}&offset=${offset}`;
 
-try {
-// Set up abort controller for timeout handling
-const controller = new AbortController();
-const timeoutId = setTimeout(() => controller.abort(), timeout);
+        try {
+            // Set up abort controller for timeout handling
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), timeout);
 
-const response = await fetch(queryUrl, {
-headers: {
-'apikey': this.key,
-'Authorization': `Bearer ${this.key}`,
-'Content-Type': 'application/json'
-},
-signal: controller.signal
-});
+            const response = await fetch(queryUrl, {
+                headers: {
+                    'apikey': this.key,
+                    'Authorization': `Bearer ${this.key}`,
+                    'Content-Type': 'application/json'
+                },
+                signal: controller.signal
+            });
 
-clearTimeout(timeoutId);
+            clearTimeout(timeoutId);
 
-if (!response.ok) {
-// Handle specific error cases
-if (response.status === 408) {
-throw new Error(`Request timeout after ${timeout}ms. Server is overloaded.`);
-}
-throw new Error(`HTTP error! status: ${response.status}`);
-}
-const data = await response.json();
+            if (!response.ok) {
+                // Handle specific error cases
+                if (response.status === 408) {
+                    throw new Error(`Request timeout after ${timeout}ms. Server is overloaded.`);
+                }
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            const data = await response.json();
 
-// Store in cache
-this.cache.set(cacheKey, {
-data: data,
-timestamp: Date.now()
-});
+            // Store in cache
+            this.cache.set(cacheKey, {
+                data: data,
+                timestamp: Date.now()
+            });
 
-// Also store in localStorage for offline use
-try {
-localStorage.setItem(`cache_${cacheKey}`, JSON.stringify({
-data: data,
-timestamp: Date.now()
-}));
-} catch (e) {
-console.log('Could not cache in localStorage:', e);
-}
-return data;
-} catch (error) {
-console.error('Supabase query error:', error);
+            // Also store in localStorage for offline use
+            try {
+                localStorage.setItem(`cache_${cacheKey}`, JSON.stringify({
+                    data: data,
+                    timestamp: Date.now()
+                }));
+            } catch (e) {
+                console.log('Could not cache in localStorage:', e);
+            }
+            
+            return data;
+        } catch (error) {
+            console.error('Supabase query error:', error);
 
-// Retry once on timeout errors with exponential backoff
-if (error.name === 'AbortError' || error.message.includes('timeout')) {
-console.log('⚠️ Retrying query with simplified parameters...');
-// Simplify query on retry (remove complex filters)
-const simplifiedWhere = {};
-Object.keys(where).forEach(key => {
-if (!Array.isArray(where[key]) && key !== 'id') {
-simplifiedWhere[key] = where[key];
-}
-});
-if (Object.keys(simplifiedWhere).length > 0) {
-return this.query(table, {
-...options,
-where: simplifiedWhere,
-timeout: timeout * 1.5 // Increase timeout for retry
-});
-}
-}
+            // Retry once on timeout errors with exponential backoff
+            if (error.name === 'AbortError' || error.message.includes('timeout')) {
+                console.log('⚠️ Retrying query with simplified parameters...');
+                // Simplify query on retry (remove complex filters)
+                const simplifiedWhere = {};
+                Object.keys(where).forEach(key => {
+                    if (!where[key].toString().startsWith('in.') && key !== 'id') {
+                        simplifiedWhere[key] = where[key];
+                    }
+                });
+                
+                if (Object.keys(simplifiedWhere).length > 0) {
+                    return this.query(table, {
+                        ...options,
+                        where: simplifiedWhere,
+                        timeout: timeout * 1.5 // Increase timeout for retry
+                    });
+                }
+            }
 
-// Try to get from localStorage cache as fallback
-try {
-const offlineCache = localStorage.getItem(`cache_${cacheKey}`);
-if (offlineCache) {
-const parsed = JSON.parse(offlineCache);
-if (Date.now() - parsed.timestamp < this.cacheTTL * 2) {
-console.log('⚠️ Using offline cache:', cacheKey);
-return parsed.data;
-}
-}
-} catch (e) {
-console.log('Could not read from localStorage cache:', e);
-}
-throw error;
-}
-}
-generateCacheKey(table, options) {
-// Create stable cache key by sorting object keys
-const whereStr = JSON.stringify(Object.keys(options.where || {}).sort().reduce((obj, key) => {
-obj[key] = options.where[key];
-return obj;
-}, {}));
-return `${table}_${options.select || '*'}_${whereStr}_${options.orderBy || ''}_${options.order || ''}_${options.limit || ''}_${options.offset || ''}`;
-}
-clearCache() {
-this.cache.clear();
-}
-async preloadContent() {
-// Preload trending content with timeout safety
-try {
-await this.query('Content', {
-select: '*',
-where: { status: 'published' },
-orderBy: 'views',
-order: 'desc',
-limit: 10,
-timeout: 5000 // Shorter timeout for preloading
-});
-console.log('✅ Preloaded trending content');
-} catch (error) {
-console.log('⚠️ Preloading failed, will load on demand:', error.message);
-}
-}
+            // Try to get from localStorage cache as fallback
+            try {
+                const offlineCache = localStorage.getItem(`cache_${cacheKey}`);
+                if (offlineCache) {
+                    const parsed = JSON.parse(offlineCache);
+                    if (Date.now() - parsed.timestamp < this.cacheTTL * 2) {
+                        console.log('⚠️ Using offline cache:', cacheKey);
+                        return parsed.data;
+                    }
+                }
+            } catch (e) {
+                console.log('Could not read from localStorage cache:', e);
+            }
+            
+            throw error;
+        }
+    }
+    
+    generateCacheKey(table, options) {
+        // Create stable cache key by sorting object keys
+        const whereStr = JSON.stringify(Object.keys(options.where || {}).sort().reduce((obj, key) => {
+            obj[key] = options.where[key];
+            return obj;
+        }, {}));
+        return `${table}_${options.select || '*'}_${whereStr}_${options.orderBy || ''}_${options.order || ''}_${options.limit || ''}_${options.offset || ''}`;
+    }
+    
+    clearCache() {
+        this.cache.clear();
+    }
+    
+    async preloadContent() {
+        // Preload trending content with timeout safety
+        try {
+            await this.query('Content', {
+                select: '*',
+                where: { status: 'published' },
+                orderBy: 'views',
+                order: 'desc',
+                limit: 10,
+                timeout: 5000 // Shorter timeout for preloading
+            });
+            console.log('✅ Preloaded trending content');
+        } catch (error) {
+            console.log('⚠️ Preloading failed, will load on demand:', error.message);
+        }
+    }
 }
 
 // Cache Manager
