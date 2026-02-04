@@ -1,6 +1,6 @@
-// content-detail.js - UPDATED WITH AUTHENTICATION FIXES
+// content-detail-main.js - COMPLETE AUTHENTICATION & VIDEO PLAYER FIXES
 
-console.log('🎬 Content Detail Screen Initializing with Authentication Fixes...');
+console.log('🎬 Content Detail Main Screen Initializing...');
 
 // Global variables
 let currentContent = null;
@@ -50,6 +50,7 @@ async function updateAuthUI() {
             updateCommentHandler(userProfile);
         } else {
             // User is not authenticated
+            updateCommentInput(null);
             setupGuestUI();
         }
         
@@ -64,64 +65,55 @@ function updateProfileButton(userProfile) {
     const profileBtn = document.getElementById('profile-btn');
     const profilePlaceholder = document.getElementById('userProfilePlaceholder');
     
-    if (!profileBtn || !profilePlaceholder) {
-        // Create the placeholder if it doesn't exist
-        const profileBtn = document.getElementById('profile-btn');
-        if (profileBtn) {
-            const existingPlaceholder = profileBtn.querySelector('.profile-placeholder');
-            if (!existingPlaceholder) {
-                const placeholder = document.createElement('div');
-                placeholder.className = 'profile-placeholder';
-                placeholder.id = 'userProfilePlaceholder';
-                profileBtn.appendChild(placeholder);
-            }
-        }
-        return;
-    }
+    if (!profileBtn) return;
     
-    const avatarUrl = window.AuthHelper.getAvatarUrl();
-    const displayName = window.AuthHelper.getDisplayName();
-    const initial = displayName.charAt(0).toUpperCase();
-    
-    if (avatarUrl) {
-        // Show user's profile picture
-        profilePlaceholder.innerHTML = `
-            <img src="${avatarUrl}" 
-                 alt="${userProfile.full_name || 'User'}"
-                 style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover; border: 2px solid rgba(255, 255, 255, 0.3);">
-        `;
+    if (!profilePlaceholder) {
+        // Create placeholder if it doesn't exist
+        const placeholder = document.createElement('div');
+        placeholder.className = 'profile-placeholder';
+        placeholder.id = 'userProfilePlaceholder';
+        profileBtn.appendChild(placeholder);
     } else {
-        // Show user initial or icon
-        profilePlaceholder.innerHTML = `
-            <div style="
-                width: 32px; 
-                height: 32px; 
-                border-radius: 50%; 
-                background: linear-gradient(135deg, #1D4ED8, #F59E0B);
-                color: white;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                font-weight: bold;
-                font-size: 14px;
-            ">
-                ${initial}
-            </div>
-        `;
+        const avatarUrl = window.AuthHelper.getAvatarUrl();
+        const displayName = window.AuthHelper.getDisplayName();
+        const initial = displayName.charAt(0).toUpperCase();
+        
+        if (avatarUrl) {
+            profilePlaceholder.innerHTML = `
+                <img src="${avatarUrl}" 
+                     alt="${userProfile.full_name || 'User'}"
+                     style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover; border: 2px solid rgba(255, 255, 255, 0.3);">
+            `;
+        } else {
+            profilePlaceholder.innerHTML = `
+                <div style="
+                    width: 32px; 
+                    height: 32px; 
+                    border-radius: 50%; 
+                    background: linear-gradient(135deg, #1D4ED8, #F59E0B);
+                    color: white;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-weight: bold;
+                    font-size: 14px;
+                ">
+                    ${initial}
+                </div>
+            `;
+        }
+        
+        // Update profile button click handler
+        profileBtn.onclick = function() {
+            window.location.href = 'profile.html';
+        };
     }
-    
-    // Update profile button click handler
-    profileBtn.onclick = function() {
-        window.location.href = 'profile.html';
-    };
 }
 
 // Update comment avatar
 function updateCommentAvatar(userProfile) {
     const commentAvatar = document.getElementById('userCommentAvatar');
-    const avatarIcon = document.getElementById('commentAvatarIcon');
     
-    // Create elements if they don't exist
     if (!commentAvatar) return;
     
     const avatarUrl = window.AuthHelper.getAvatarUrl();
@@ -159,9 +151,14 @@ function updateCommentAvatar(userProfile) {
 function updateCommentInput(userProfile) {
     const commentInput = document.getElementById('commentInput');
     if (commentInput) {
-        const displayName = window.AuthHelper.getDisplayName();
-        commentInput.placeholder = `Add a comment as ${displayName}...`;
-        commentInput.disabled = false;
+        if (userProfile) {
+            const displayName = window.AuthHelper.getDisplayName();
+            commentInput.placeholder = `Add a comment as ${displayName}...`;
+            commentInput.disabled = false;
+        } else {
+            commentInput.placeholder = 'Sign in to add a comment...';
+            commentInput.disabled = true;
+        }
     }
 }
 
@@ -469,7 +466,7 @@ async function fetchContentDetails(contentId) {
     }
 }
 
-// Initialize comments with virtual scroll - WEEK 2 ADDITION
+// Initialize comments with virtual scroll
 async function initializeCommentsWithVirtualScroll(contentId) {
     try {
         // Initialize virtual scroll for comments
@@ -706,8 +703,15 @@ function setupUIWithState(contentId) {
     }
 }
 
-// Initialize enhanced video player
+// Initialize enhanced video player - FIXED VERSION
 function initializeEnhancedVideoPlayer() {
+    // Wait for DOM elements to be available
+    if (!document.getElementById('inlineVideoPlayer')) {
+        console.warn('Video elements not ready yet, retrying...');
+        setTimeout(initializeEnhancedVideoPlayer, 300);
+        return;
+    }
+    
     const videoElement = document.getElementById('inlineVideoPlayer');
     const videoContainer = document.querySelector('.video-container');
     
@@ -774,10 +778,44 @@ function initializeEnhancedVideoPlayer() {
             showToast('Video playback error: ' + error.message, 'error');
         });
         
+        // Add play button handler AFTER player is attached
+        const playBtn = document.getElementById('playBtn');
+        const heroPoster = document.getElementById('heroPoster');
+        
+        if (playBtn) {
+            playBtn.addEventListener('click', handlePlay);
+        }
+        
+        if (heroPoster) {
+            heroPoster.addEventListener('click', handlePlay);
+        }
+        
         console.log('✅ Enhanced video player initialized');
         
     } catch (error) {
         console.error('❌ Failed to initialize enhanced video player:', error);
+        // Fallback to basic video player
+        setupBasicVideoPlayer();
+    }
+}
+
+// Setup basic video player fallback
+function setupBasicVideoPlayer() {
+    const videoElement = document.getElementById('inlineVideoPlayer');
+    if (!videoElement) return;
+    
+    console.log('⚠️ Using basic video player fallback');
+    
+    // Add play button handler
+    const playBtn = document.getElementById('playBtn');
+    const heroPoster = document.getElementById('heroPoster');
+    
+    if (playBtn) {
+        playBtn.addEventListener('click', handlePlay);
+    }
+    
+    if (heroPoster) {
+        heroPoster.addEventListener('click', handlePlay);
     }
 }
 
@@ -918,8 +956,12 @@ function updateContentUI(content) {
     safeSetText('creatorDisplayName', content.creator);
     safeSetText('viewsCount', formatNumber(content.views_count) + ' views');
     safeSetText('likesCount', formatNumber(content.likes_count) + ' likes');
-    safeSetText('durationText', formatDuration(content.duration));
-    safeSetText('contentDurationFull', formatDuration(content.duration));
+    
+    // FIXED: Use proper duration handling
+    const duration = content.duration || content.duration_seconds || 3600;
+    safeSetText('durationText', formatDuration(duration));
+    safeSetText('contentDurationFull', formatDuration(duration));
+    
     safeSetText('uploadDate', formatDate(content.created_at));
     safeSetText('contentGenre', content.genre || 'Not specified');
     safeSetText('contentLanguage', content.language || 'English');
@@ -1122,8 +1164,17 @@ function formatDate(dateString) {
     }
 }
 
+// FIXED: Proper duration formatting function
 function formatDuration(seconds) {
-    if (!seconds) return '-';
+    // Handle null/undefined/invalid values
+    if (!seconds || seconds <= 0) {
+        console.warn('Invalid duration value:', seconds);
+        return '0m 0s'; // Default fallback instead of dash
+    }
+    
+    // Convert to integer seconds if it's a float
+    seconds = Math.floor(seconds);
+    
     const hours = Math.floor(seconds / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
     const secs = seconds % 60;
@@ -1316,16 +1367,35 @@ function formatCommentTime(timestamp) {
 function setupEventListeners() {
     console.log('🔧 Setting up event listeners...');
     
-    // Play button
-    const playBtn = document.getElementById('playBtn');
-    if (playBtn) {
-        playBtn.onclick = handlePlay;
+    // Search button
+    const searchBtn = document.getElementById('search-btn');
+    if (searchBtn) {
+        searchBtn.addEventListener('click', () => {
+            window.location.href = 'search.html?q=' + (currentContent?.title || '');
+        });
     }
     
-    // Poster click
-    const poster = document.getElementById('heroPoster');
-    if (poster) {
-        poster.onclick = handlePlay;
+    // Analytics button
+    const analyticsBtn = document.getElementById('analytics-btn');
+    if (analyticsBtn) {
+        analyticsBtn.addEventListener('click', () => {
+            if (window.track) {
+                window.track.buttonClick('analytics_btn', 'content_detail');
+            }
+            window.location.href = 'analytics.html?content=' + (currentContent?.id || '');
+        });
+    }
+    
+    // Notifications button
+    const notificationsBtn = document.getElementById('notifications-btn');
+    if (notificationsBtn) {
+        notificationsBtn.addEventListener('click', () => {
+            if (window.NotificationSystem) {
+                window.NotificationSystem.togglePanel();
+            } else {
+                showToast('Notifications coming soon!', 'info');
+            }
+        });
     }
     
     // Note: Comment event listeners are now set up in initializeCommentsWithVirtualScroll
@@ -1350,7 +1420,7 @@ function setupEventListeners() {
     // Share button
     const shareBtn = document.getElementById('shareBtn');
     if (shareBtn) {
-        shareBtn.onclick = function() {
+        shareBtn.addEventListener('click', function() {
             const url = window.location.href;
             if (navigator.share) {
                 navigator.share({
@@ -1363,17 +1433,27 @@ function setupEventListeners() {
                     .then(() => showToast('Link copied to clipboard!', 'success'))
                     .catch(() => showToast('Failed to copy link', 'error'));
             }
-        };
+        });
     }
     
     // Note: Refresh comments button is now set up in initializeCommentsWithVirtualScroll
     
+    // Theme toggle in navigation
+    const navThemeToggle = document.getElementById('nav-theme-toggle');
+    if (navThemeToggle) {
+        navThemeToggle.addEventListener('click', () => {
+            const current = document.body.className.includes('theme-dark') ? 'light' : 'dark';
+            document.body.className = `theme-${current}`;
+            localStorage.setItem('theme', current);
+        });
+    }
+    
     // Back to top button
     const backToTopBtn = document.getElementById('backToTopBtn');
     if (backToTopBtn) {
-        backToTopBtn.onclick = function() {
+        backToTopBtn.addEventListener('click', function() {
             window.scrollTo({ top: 0, behavior: 'smooth' });
-        };
+        });
         
         window.addEventListener('scroll', function() {
             if (window.pageYOffset > 300) {
