@@ -34,7 +34,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   setupEventListeners();
   
   // Initialize video player
-  initializeVideoPlayer();
+  initializeEnhancedVideoPlayer();
   
   // Initialize all modals/panels
   initAnalyticsModal();
@@ -432,33 +432,311 @@ function renderRelatedContent(items) {
   });
 }
 
-// Initialize video player
-function initializeVideoPlayer() {
+// Initialize ENHANCED BANTU BRANDED VIDEO PLAYER (NO DEFAULT CONTROLS!)
+function initializeEnhancedVideoPlayer() {
   const videoElement = document.getElementById('inlineVideoPlayer');
-  const videoContainer = document.querySelector('.video-container');
+  const videoContainer = document.getElementById('bantuVideoContainer');
   
   if (!videoElement || !videoContainer) {
-    console.warn('⚠️ Video elements not found');
+    console.warn('⚠️ Bantu Video Player elements not found - creating fallback');
+    // Create video element if missing
+    if (!videoElement) {
+      const newVideo = document.createElement('video');
+      newVideo.id = 'inlineVideoPlayer';
+      newVideo.playsInline = true;
+      newVideo.setAttribute('playsinline', '');
+      newVideo.setAttribute('webkit-playsinline', '');
+      newVideo.setAttribute('preload', 'metadata');
+      // CRITICAL: DO NOT ADD CONTROLS ATTRIBUTE!
+      videoContainer.appendChild(newVideo);
+    }
     return;
   }
   
   try {
-    // Create enhanced video player if available
-    if (typeof EnhancedVideoPlayer !== 'undefined') {
-      enhancedVideoPlayer = new EnhancedVideoPlayer({
-        autoplay: false,
-        muted: false,
-        controls: true
-      });
-      
-      enhancedVideoPlayer.attach(videoElement, videoContainer);
-      console.log('✅ Enhanced video player initialized');
+    // CRITICAL: Remove any existing controls attribute
+    videoElement.removeAttribute('controls');
+    videoElement.controls = false;
+    videoElement.playsInline = true;
+    videoElement.setAttribute('playsinline', '');
+    videoElement.setAttribute('webkit-playsinline', '');
+    videoElement.setAttribute('preload', 'metadata');
+    
+    // Hide placeholder
+    const placeholder = videoContainer.querySelector('.bantu-player-placeholder');
+    if (placeholder) placeholder.style.display = 'none';
+    
+    // Create wrapper for branded player
+    const wrapper = document.createElement('div');
+    wrapper.className = 'bantu-video-wrapper';
+    wrapper.style.position = 'relative';
+    wrapper.style.width = '100%';
+    wrapper.style.height = '100%';
+    wrapper.style.overflow = 'hidden';
+    wrapper.style.borderRadius = '12px';
+    wrapper.style.background = '#000';
+    
+    // Move video into wrapper
+    videoContainer.innerHTML = '';
+    wrapper.appendChild(videoElement);
+    videoContainer.appendChild(wrapper);
+    
+    // Get preferences from state
+    const preferences = window.state ? window.state.getPreferences() : {
+      autoplay: false, // Default to false for mobile
+      playbackSpeed: 1.0,
+      quality: 'auto'
+    };
+    
+    // Check if BantuVideoPlayer class exists
+    if (typeof BantuVideoPlayer === 'undefined') {
+      console.warn('⚠️ BantuVideoPlayer class not found, using basic player');
+      // Create basic branded player
+      createBasicBrandedPlayer(videoElement, wrapper);
+      return;
     }
     
-    console.log('✅ Video player ready');
+    // Initialize Bantu Video Player
+    enhancedVideoPlayer = new BantuVideoPlayer({
+      contentId: currentContent?.id || null,
+      supabaseClient: window.supabaseClient,
+      userId: window.AuthHelper?.getUserProfile()?.id || null,
+      autoplay: preferences.autoplay,
+      defaultSpeed: preferences.playbackSpeed,
+      defaultQuality: preferences.quality,
+      defaultVolume: window.stateManager ? window.stateManager.getState('session.volume') : 1.0,
+      muted: window.stateManager ? window.stateManager.getState('session.muted') : false,
+      likeCount: currentContent?.likes_count || 0,
+      viewCount: currentContent?.views_count || 0,
+      favoriteCount: 0,
+      shareCount: 0,
+      isLiked: false,
+      isFavorited: false
+    });
+    
+    // Attach to video element
+    enhancedVideoPlayer.attach(videoElement, wrapper);
+    
+    // Set up event listeners
+    enhancedVideoPlayer.on('timeupdate', (time) => {
+      if (window.stateManager) {
+        window.stateManager.setState('session.currentTime', time);
+      }
+      if (Math.floor(time) % 30 === 0 && currentContent) {
+        const duration = enhancedVideoPlayer.getStats()?.duration || currentContent.duration || 3600;
+        if (window.state && window.state.updateWatchHistory) {
+          window.state.updateWatchHistory(currentContent.id, time, duration);
+        }
+      }
+    });
+    
+    enhancedVideoPlayer.on('play', () => {
+      if (window.stateManager) {
+        window.stateManager.setState('session.playing', true);
+      }
+      // Track play event
+      if (window.track && currentContent) {
+        window.track.contentPlay(currentContent.id, currentContent.duration);
+      }
+    });
+    
+    enhancedVideoPlayer.on('pause', () => {
+      if (window.stateManager) {
+        window.stateManager.setState('session.playing', false);
+      }
+    });
+    
+    enhancedVideoPlayer.on('volumechange', (volume) => {
+      if (window.stateManager) {
+        window.stateManager.setState('session.volume', volume);
+      }
+    });
+    
+    enhancedVideoPlayer.on('error', (error) => {
+      console.error('Bantu Video Player error:', error);
+      showToast('Video playback error: ' + error.message, 'error');
+    });
+    
+    // Add Bantu branding watermark
+    const watermark = document.createElement('div');
+    watermark.className = 'player-watermark';
+    watermark.innerHTML = `
+      <i class="fas fa-crown"></i>
+      <span>BANTU STREAM CONNECT</span>
+    `;
+    wrapper.appendChild(watermark);
+    
+    // Add social controls panel
+    createSocialControlsPanel(wrapper);
+    
+    console.log('✅ BANTU STREAM CONNECT BRANDED VIDEO PLAYER INITIALIZED');
   } catch (error) {
-    console.error('❌ Video player init failed:', error);
+    console.error('❌ Failed to initialize BANTU BRANDED video player:', error);
+    // Fallback: show error in placeholder
+    const placeholder = videoContainer.querySelector('.bantu-player-placeholder');
+    if (placeholder) {
+      placeholder.style.display = 'flex';
+      placeholder.innerHTML = `
+        <div style="color: var(--error-color); font-size: 24px; margin-bottom: 15px;">
+          <i class="fas fa-exclamation-triangle"></i>
+        </div>
+        <p style="color: var(--soft-white); font-size: 16px; text-align: center;">Player failed to load<br><small style="color: var(--slate-grey);">Using basic video player</small></p>
+        <button class="btn btn-primary" style="margin-top: 15px;" onclick="location.reload()">
+          <i class="fas fa-redo"></i> Retry
+        </button>
+      `;
+    }
+    // Fallback to basic video with custom controls
+    createBasicBrandedPlayer(videoElement, videoContainer);
   }
+}
+
+function createBasicBrandedPlayer(videoElement, container) {
+  console.log('🔄 Creating basic branded player fallback');
+  
+  // Ensure video element has proper attributes
+  videoElement.removeAttribute('controls');
+  videoElement.controls = false;
+  videoElement.style.width = '100%';
+  videoElement.style.height = '100%';
+  videoElement.style.objectFit = 'contain';
+  
+  // Add watermark
+  const watermark = document.createElement('div');
+  watermark.className = 'player-watermark';
+  watermark.innerHTML = `
+    <i class="fas fa-play-circle"></i>
+    <span>BANTU STREAM CONNECT</span>
+  `;
+  container.appendChild(watermark);
+  
+  // Add simple custom controls
+  const controls = document.createElement('div');
+  controls.className = 'basic-player-controls';
+  controls.style.position = 'absolute';
+  controls.style.bottom = '20px';
+  controls.style.left = '0';
+  controls.style.right = '0';
+  controls.style.display = 'flex';
+  controls.style.justifyContent = 'center';
+  controls.style.gap = '15px';
+  controls.style.zIndex = '10';
+  controls.style.padding = '0 20px';
+  
+  controls.innerHTML = `
+    <button class="control-btn play-pause-btn" style="background: rgba(29, 78, 216, 0.8);">
+      <i class="fas fa-play"></i>
+    </button>
+    <button class="control-btn mute-btn" style="background: rgba(245, 158, 11, 0.8);">
+      <i class="fas fa-volume-up"></i>
+    </button>
+    <button class="control-btn fullscreen-btn" style="background: rgba(37, 99, 235, 0.8);">
+      <i class="fas fa-expand"></i>
+    </button>
+  `;
+  
+  container.appendChild(controls);
+  
+  // Add control handlers
+  const playPauseBtn = controls.querySelector('.play-pause-btn');
+  const muteBtn = controls.querySelector('.mute-btn');
+  const fullscreenBtn = controls.querySelector('.fullscreen-btn');
+  
+  playPauseBtn.addEventListener('click', () => {
+    if (videoElement.paused) {
+      videoElement.play();
+      playPauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
+    } else {
+      videoElement.pause();
+      playPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
+    }
+  });
+  
+  muteBtn.addEventListener('click', () => {
+    videoElement.muted = !videoElement.muted;
+    muteBtn.innerHTML = videoElement.muted ? 
+      '<i class="fas fa-volume-mute"></i>' : 
+      '<i class="fas fa-volume-up"></i>';
+  });
+  
+  fullscreenBtn.addEventListener('click', () => {
+    if (videoElement.requestFullscreen) {
+      videoElement.requestFullscreen();
+    } else if (videoElement.webkitRequestFullscreen) {
+      videoElement.webkitRequestFullscreen();
+    }
+  });
+  
+  videoElement.addEventListener('play', () => {
+    playPauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
+  });
+  
+  videoElement.addEventListener('pause', () => {
+    playPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
+  });
+  
+  console.log('✅ Basic branded player created');
+}
+
+function createSocialControlsPanel(container) {
+  const socialPanel = document.createElement('div');
+  socialPanel.className = 'bantu-social-panel';
+  
+  socialPanel.innerHTML = `
+    <button class="bantu-social-btn view-counter">
+      <i class="fas fa-eye"></i>
+      <span class="count">${formatNumber(currentContent?.views_count || 0)}</span>
+    </button>
+    <button class="bantu-social-btn like-btn">
+      <i class="far fa-heart"></i>
+      <span class="count">${formatNumber(currentContent?.likes_count || 0)}</span>
+    </button>
+    <button class="bantu-social-btn share-btn">
+      <i class="fas fa-share"></i>
+      <span class="count">Share</span>
+    </button>
+    <button class="bantu-social-btn clip-btn">
+      <i class="fas fa-scissors"></i>
+      <span class="count">Clip</span>
+    </button>
+  `;
+  
+  container.appendChild(socialPanel);
+  
+  // Add social button handlers
+  socialPanel.querySelector('.like-btn').addEventListener('click', function() {
+    const isLiked = this.classList.contains('active');
+    if (isLiked) {
+      this.classList.remove('active');
+      this.innerHTML = '<i class="far fa-heart"></i><span class="count">' + formatNumber((currentContent?.likes_count || 1) - 1) + '</span>';
+    } else {
+      this.classList.add('active');
+      this.innerHTML = '<i class="fas fa-heart"></i><span class="count">' + formatNumber((currentContent?.likes_count || 0) + 1) + '</span>';
+    }
+  });
+  
+  socialPanel.querySelector('.share-btn').addEventListener('click', function() {
+    const url = window.location.href;
+    if (navigator.share) {
+      navigator.share({
+        title: currentContent?.title || 'Check this out',
+        text: `Watch "${currentContent?.title}" on Bantu Stream Connect`,
+        url: url
+      });
+    } else {
+      navigator.clipboard.writeText(url)
+        .then(() => showToast('Link copied to clipboard!', 'success'))
+        .catch(() => showToast('Failed to copy link', 'error'));
+    }
+  });
+  
+  socialPanel.querySelector('.clip-btn').addEventListener('click', function() {
+    if (enhancedVideoPlayer && enhancedVideoPlayer.createClip) {
+      enhancedVideoPlayer.createClip();
+    } else {
+      showToast('Clip feature coming soon!', 'info');
+    }
+  });
 }
 
 // Handle play button
@@ -487,8 +765,16 @@ function handlePlay() {
   // Set video source
   videoElement.src = videoUrl;
   
+  // Load metadata before playing
+  videoElement.load();
+  
   // Show player
   player.style.display = 'block';
+  
+  // Initialize player if not already done
+  if (!enhancedVideoPlayer) {
+    initializeEnhancedVideoPlayer();
+  }
   
   // Try to play
   const playPromise = videoElement.play();
@@ -712,6 +998,31 @@ function setupEventListeners() {
         backToTopBtn.style.display = 'flex';
       } else {
         backToTopBtn.style.display = 'none';
+      }
+    });
+  }
+  
+  // PIP and Fullscreen buttons
+  const pipBtn = document.getElementById('pipBtn');
+  if (pipBtn) {
+    pipBtn.addEventListener('click', function() {
+      const video = document.getElementById('inlineVideoPlayer');
+      if (video.requestPictureInPicture && document.pictureInPictureElement !== video) {
+        video.requestPictureInPicture();
+      }
+    });
+  }
+  
+  const fullscreenBtn = document.getElementById('fullscreenBtn');
+  if (fullscreenBtn) {
+    fullscreenBtn.addEventListener('click', function() {
+      const video = document.getElementById('inlineVideoPlayer');
+      if (video.requestFullscreen) {
+        video.requestFullscreen();
+      } else if (video.webkitRequestFullscreen) {
+        video.webkitRequestFullscreen();
+      } else if (video.mozRequestFullScreen) {
+        video.mozRequestFullScreen();
       }
     });
   }
