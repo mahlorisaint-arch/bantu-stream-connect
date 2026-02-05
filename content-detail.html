@@ -116,7 +116,7 @@
         </div>
       </section>
 
-      <!-- Inline Video Player -->
+      <!-- BANTU STREAM CONNECT BRANDED VIDEO PLAYER -->
       <div class="inline-player" id="inlinePlayer" style="display: none;">
         <div class="player-header">
           <h3 id="playerTitle">Now Playing</h3>
@@ -124,8 +124,19 @@
             <i class="fas fa-times"></i>
           </button>
         </div>
-        <div class="video-container">
-          <video id="inlineVideoPlayer" controls playsinline>
+        <div class="video-container" id="bantuVideoContainer">
+          <!-- Bantu Stream Connect Player will inject here -->
+          <div class="bantu-player-placeholder">
+            <div class="bantu-logo-spinner">
+              <div class="bantu-logo">
+                <i class="fas fa-film"></i>
+              </div>
+              <div class="bantu-brand-text">BANTU STREAM CONNECT</div>
+            </div>
+            <p class="loading-text">Initializing branded player...</p>
+          </div>
+          <!-- Video element WITHOUT controls attribute -->
+          <video id="inlineVideoPlayer" playsinline>
             Your browser does not support the video tag.
           </video>
         </div>
