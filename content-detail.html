@@ -10,6 +10,8 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Orbitron:wght@400;500;600;700&display=swap" rel="stylesheet">
   <!-- Font Awesome -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Chart.js for Analytics -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <!-- Supabase JS SDK -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <!-- Base Styles -->
@@ -285,7 +287,120 @@
     <button id="backToTopBtn" class="back-to-top">
       <i class="fas fa-arrow-up"></i>
     </button>
-  </div>
+
+    <!-- =================================================================== -->
+    <!-- NEW MODALS & PANELS (Added as per updates)                         -->
+    <!-- =================================================================== -->
+
+    <!-- Analytics Modal -->
+    <div id="analytics-modal" class="analytics-modal">
+      <div class="analytics-content">
+        <div class="analytics-header">
+          <h2>Content Analytics</h2>
+          <button id="close-analytics" class="close-search-btn">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        <div class="analytics-body">
+          <div class="analytics-grid">
+            <div class="analytics-card">
+              <h3>Total Views</h3>
+              <div class="analytics-value" id="content-total-views">0</div>
+              <div class="analytics-trend" id="views-trend">+0%</div>
+            </div>
+            <div class="analytics-card">
+              <h3>Avg. Watch Time</h3>
+              <div class="analytics-value" id="avg-watch-time">0m</div>
+              <div class="analytics-trend" id="watch-time-trend">+0%</div>
+            </div>
+            <div class="analytics-card">
+              <h3>Engagement Rate</h3>
+              <div class="analytics-value" id="engagement-rate">0%</div>
+              <div class="analytics-trend" id="engagement-trend">+0%</div>
+            </div>
+            <div class="analytics-card">
+              <h3>Comments</h3>
+              <div class="analytics-value" id="total-comments">0</div>
+              <div class="analytics-trend" id="comments-trend">+0%</div>
+            </div>
+          </div>
+          <div class="charts-container">
+            <canvas id="content-engagement-chart"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Search Modal -->
+    <div id="search-modal" class="search-modal">
+      <div class="search-modal-header">
+        <div class="search-input-container">
+          <i class="search-icon fas fa-search"></i>
+          <input type="text" id="search-input" class="search-input" placeholder="Search content, creators, or categories..." autocomplete="off">
+        </div>
+        <button id="close-search-btn" class="close-search-btn">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="search-filters">
+        <div class="filter-group">
+          <label class="filter-label">Category</label>
+          <select id="category-filter" class="filter-select">
+            <option value="">All Categories</option>
+            <option value="Music">Music</option>
+            <option value="STEM">STEM</option>
+            <option value="Culture">Culture</option>
+            <option value="News">News</option>
+            <option value="Sports">Sports</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label class="filter-label">Sort By</label>
+          <select id="sort-filter" class="filter-select">
+            <option value="newest">Newest First</option>
+            <option value="popular">Most Popular</option>
+            <option value="trending">Trending</option>
+          </select>
+        </div>
+      </div>
+      <div id="search-results" class="search-results">
+        <div id="search-results-grid" class="search-results-grid">
+          <!-- Results loaded here -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Notifications Panel -->
+    <div id="notifications-panel" class="notifications-panel">
+      <div class="notifications-header">
+        <h2>Notifications</h2>
+        <button id="close-notifications" class="icon-btn">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="notifications-list" id="notifications-list">
+        <!-- Notifications loaded here -->
+      </div>
+      <div class="notifications-footer">
+        <button id="mark-all-read" class="text-btn">Mark all as read</button>
+        <button id="notification-settings" class="text-btn">Settings</button>
+      </div>
+    </div>
+
+    <!-- Theme Selector -->
+    <div id="theme-selector" class="theme-selector">
+      <button class="theme-option" data-theme="dark">
+        <i class="fas fa-moon"></i> Dark
+      </button>
+      <button class="theme-option" data-theme="light">
+        <i class="fas fa-sun"></i> Light
+      </button>
+      <button class="theme-option" data-theme="high-contrast">
+        <i class="fas fa-eye"></i> High Contrast
+      </button>
+    </div>
+
+  </div> <!-- Closing div for #app -->
 
   <!-- Initialize Supabase Client -->
   <script>
