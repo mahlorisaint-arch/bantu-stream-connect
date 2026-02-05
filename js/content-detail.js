@@ -68,7 +68,7 @@ function setupAuthListeners() {
   });
   
   // Initial update
-  if (window.AuthHelper.isAuthenticated()) {
+  if (window.AuthHelper?.isAuthenticated?.()) {
     updateProfileUI();
   } else {
     resetProfileUI();
@@ -77,49 +77,62 @@ function setupAuthListeners() {
 
 function updateProfileUI() {
   const profileBtn = document.getElementById('profile-btn');
-  if (!profileBtn || !window.AuthHelper.isAuthenticated()) return;
+  const userProfilePlaceholder = document.getElementById('userProfilePlaceholder');
   
-  const userProfile = window.AuthHelper.getUserProfile();
-  const displayName = window.AuthHelper.getDisplayName();
-  const avatarUrl = window.AuthHelper.getAvatarUrl();
-  const initial = displayName.charAt(0).toUpperCase();
+  if (!profileBtn || !userProfilePlaceholder) return;
   
-  if (avatarUrl) {
-    profileBtn.innerHTML = `
-      <img src="${avatarUrl}" alt="${displayName}" 
-           class="profile-img" 
-           style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover;">
-    `;
-  } else {
-    profileBtn.innerHTML = `
-      <div class="profile-placeholder" style="
-        width: 32px; 
-        height: 32px; 
-        border-radius: 50%; 
-        background: linear-gradient(135deg, #1D4ED8, #F59E0B); 
-        display: flex; 
-        align-items: center; 
-        justify-content: center; 
-        color: white; 
-        font-weight: bold;
-      ">${initial}</div>
-    `;
-  }
-  
-  profileBtn.onclick = () => {
-    if (window.AuthHelper.isAuthenticated()) {
-      window.location.href = 'profile.html';
+  // Check if user is authenticated
+  if (window.AuthHelper?.isAuthenticated?.()) {
+    const userProfile = window.AuthHelper.getUserProfile();
+    const displayName = window.AuthHelper.getDisplayName();
+    const avatarUrl = window.AuthHelper.getAvatarUrl();
+    const initial = displayName.charAt(0).toUpperCase();
+    
+    if (avatarUrl) {
+      userProfilePlaceholder.innerHTML = `
+        <img src="${avatarUrl}" alt="${displayName}" 
+             class="profile-img" 
+             style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover;">
+      `;
     } else {
-      window.location.href = `login.html?redirect=${encodeURIComponent(window.location.href)}`;
+      userProfilePlaceholder.innerHTML = `
+        <div class="profile-placeholder" style="
+          width: 32px; 
+          height: 32px; 
+          border-radius: 50%; 
+          background: linear-gradient(135deg, #1D4ED8, #F59E0B); 
+          display: flex; 
+          align-items: center; 
+          justify-content: center; 
+          color: white; 
+          font-weight: bold;
+        ">${initial}</div>
+      `;
     }
-  };
+    
+    profileBtn.onclick = () => {
+      window.location.href = 'profile.html';
+    };
+  } else {
+    // Guest user
+    userProfilePlaceholder.innerHTML = `
+      <div class="profile-placeholder">
+        <i class="fas fa-user"></i>
+      </div>
+    `;
+    profileBtn.onclick = () => {
+      window.location.href = `login.html?redirect=${encodeURIComponent(window.location.href)}`;
+    };
+  }
 }
 
 function resetProfileUI() {
   const profileBtn = document.getElementById('profile-btn');
-  if (!profileBtn) return;
+  const userProfilePlaceholder = document.getElementById('userProfilePlaceholder');
   
-  profileBtn.innerHTML = `
+  if (!profileBtn || !userProfilePlaceholder) return;
+  
+  userProfilePlaceholder.innerHTML = `
     <div class="profile-placeholder">
       <i class="fas fa-user"></i>
     </div>
@@ -155,7 +168,7 @@ async function loadContentFromURL() {
       media_type: data.media_type || 'video',
       genre: data.genre || 'General',
       created_at: data.created_at,
-      duration: data.duration || 3600,
+      duration: data.duration || data.duration_seconds || 3600,
       language: data.language || 'English',
       views_count: data.views_count || 0,
       likes_count: data.likes_count || 0,
@@ -171,7 +184,9 @@ async function loadContentFromURL() {
     updateContentUI(currentContent);
     
     // Record view
-    await window.SupabaseHelper.recordView(contentId, null);
+    if (window.SupabaseHelper?.recordView) {
+      await window.SupabaseHelper.recordView(contentId, null);
+    }
     
     // Load comments
     await loadComments(contentId);
@@ -210,7 +225,6 @@ function updateContentUI(content) {
   
   // Update genre and language
   safeSetText('contentGenre', content.genre || 'General');
-  safeSetText('contentLanguage', content.language || 'English');
   
   // Update descriptions
   safeSetText('contentDescriptionShort', truncateText(content.description, 150));
@@ -244,7 +258,7 @@ async function loadComments(contentId) {
   try {
     const { data, error } = await window.supabaseClient
       .from('comments')
-      .select('*')
+      .select('*, user_profiles!user_id(*)')
       .eq('content_id', contentId)
       .order('created_at', { ascending: false });
     
@@ -470,10 +484,13 @@ function handlePlay() {
   player.style.display = 'block';
   
   // Try to play
-  videoElement.play().catch(err => {
-    console.log('Autoplay prevented:', err);
-    showToast('Click play button in video player', 'info');
-  });
+  const playPromise = videoElement.play();
+  if (playPromise !== undefined) {
+    playPromise.catch(err => {
+      console.log('Autoplay prevented:', err);
+      showToast('Click play button in video player', 'info');
+    });
+  }
   
   // Scroll to player
   setTimeout(() => {
@@ -626,7 +643,7 @@ function setupEventListeners() {
     });
   }
   
-  // Connect button
+  // Connect button in player
   const connectBtn = document.getElementById('connectBtn');
   if (connectBtn) {
     connectBtn.addEventListener('click', async function() {
@@ -646,6 +663,31 @@ function setupEventListeners() {
       } else {
         connectBtn.classList.add('connected');
         connectBtn.innerHTML = '<i class="fas fa-user-check"></i><span>Connected</span>';
+        showToast('Connected successfully!', 'success');
+      }
+    });
+  }
+  
+  // Connect button in creator section
+  const connectCreatorBtn = document.getElementById('connectCreatorBtn');
+  if (connectCreatorBtn) {
+    connectCreatorBtn.addEventListener('click', async function() {
+      if (!window.AuthHelper || !window.AuthHelper.isAuthenticated()) {
+        const shouldLogin = confirm('You need to sign in to connect. Would you like to sign in now?');
+        if (shouldLogin) {
+          window.location.href = 'login.html?redirect=' + encodeURIComponent(window.location.href);
+        }
+        return;
+      }
+      
+      const isConnected = connectCreatorBtn.classList.contains('connected');
+      if (isConnected) {
+        connectCreatorBtn.classList.remove('connected');
+        connectCreatorBtn.innerHTML = '<i class="fas fa-user-plus"></i><span>Connect</span>';
+        showToast('Disconnected', 'info');
+      } else {
+        connectCreatorBtn.classList.add('connected');
+        connectCreatorBtn.innerHTML = '<i class="fas fa-user-check"></i><span>Connected</span>';
         showToast('Connected successfully!', 'success');
       }
     });
