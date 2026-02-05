@@ -36,6 +36,13 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Initialize video player
   initializeVideoPlayer();
   
+  // Initialize all modals/panels
+  initAnalyticsModal();
+  initSearchModal();
+  initNotificationsPanel();
+  initThemeSelector();
+  initGlobalNavigation();
+  
   // Show app
   document.getElementById('loading').style.display = 'none';
   document.getElementById('app').style.display = 'block';
@@ -693,47 +700,6 @@ function setupEventListeners() {
     });
   }
   
-  // Analytics button
-  const analyticsBtn = document.getElementById('analytics-btn');
-  if (analyticsBtn) {
-    analyticsBtn.addEventListener('click', function() {
-      if (window.track) {
-        window.track.buttonClick('analytics_btn', 'content_detail');
-      }
-      window.location.href = 'analytics.html?content=' + (currentContent?.id || '');
-    });
-  }
-  
-  // Search button
-  const searchBtn = document.getElementById('search-btn');
-  if (searchBtn) {
-    searchBtn.addEventListener('click', function() {
-      window.location.href = 'search.html?q=' + (currentContent?.title || '');
-    });
-  }
-  
-  // Notifications button
-  const notificationsBtn = document.getElementById('notifications-btn');
-  if (notificationsBtn) {
-    notificationsBtn.addEventListener('click', function() {
-      if (window.NotificationSystem) {
-        window.NotificationSystem.togglePanel();
-      } else {
-        showToast('Notifications coming soon!', 'info');
-      }
-    });
-  }
-  
-  // Navigation theme toggle
-  const navThemeToggle = document.getElementById('nav-theme-toggle');
-  if (navThemeToggle) {
-    navThemeToggle.addEventListener('click', function() {
-      const current = document.body.className.includes('theme-dark') ? 'light' : 'dark';
-      document.body.className = `theme-${current}`;
-      localStorage.setItem('theme', current);
-    });
-  }
-  
   // Back to top
   const backToTopBtn = document.getElementById('backToTopBtn');
   if (backToTopBtn) {
@@ -751,6 +717,666 @@ function setupEventListeners() {
   }
   
   console.log('✅ Event listeners setup complete');
+}
+
+// ===================================================================
+// MODAL & PANEL SYSTEMS (Analytics, Search, Notifications, Theme)
+// ===================================================================
+
+// ======================
+// ANALYTICS MODAL
+// ======================
+function initAnalyticsModal() {
+  const analyticsBtn = document.getElementById('analytics-btn');
+  const analyticsModal = document.getElementById('analytics-modal');
+  const closeAnalytics = document.getElementById('close-analytics');
+  
+  if (!analyticsBtn || !analyticsModal) return;
+  
+  analyticsBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    analyticsModal.classList.add('active');
+    loadContentAnalytics();
+  });
+  
+  if (closeAnalytics) {
+    closeAnalytics.addEventListener('click', () => {
+      analyticsModal.classList.remove('active');
+    });
+  }
+  
+  analyticsModal.addEventListener('click', (e) => {
+    if (e.target === analyticsModal) {
+      analyticsModal.classList.remove('active');
+    }
+  });
+}
+
+async function loadContentAnalytics() {
+  if (!currentContent) return;
+  
+  try {
+    // Get view stats
+    const { data: viewsData } = await window.supabaseClient
+      .from('content_views')
+      .select('id, viewed_at')
+      .eq('content_id', currentContent.id)
+      .order('viewed_at', { ascending: false })
+      .limit(100);
+    
+    // Get comment stats
+    const { data: commentsData } = await window.supabaseClient
+      .from('comments')
+      .select('id, created_at')
+      .eq('content_id', currentContent.id);
+    
+    // Calculate metrics
+    const totalViews = viewsData?.length || 0;
+    const totalComments = commentsData?.length || 0;
+    
+    // Update UI
+    document.getElementById('content-total-views').textContent = formatNumber(totalViews);
+    document.getElementById('total-comments').textContent = formatNumber(totalComments);
+    
+    // Simulate engagement metrics (would come from analytics system)
+    document.getElementById('avg-watch-time').textContent = '4m 23s';
+    document.getElementById('engagement-rate').textContent = '68%';
+    
+    // Set trends (simulated)
+    document.getElementById('views-trend').textContent = '+12%';
+    document.getElementById('comments-trend').textContent = '+8%';
+    document.getElementById('watch-time-trend').textContent = '+5%';
+    document.getElementById('engagement-trend').textContent = '+3%';
+    
+    // Initialize chart if Chart.js is available
+    if (typeof Chart !== 'undefined') {
+      initEngagementChart();
+    }
+  } catch (error) {
+    console.error('Error loading analytics:', error);
+  }
+}
+
+function initEngagementChart() {
+  const ctx = document.getElementById('content-engagement-chart');
+  if (!ctx) return;
+  
+  // Destroy existing chart if exists
+  if (window.contentEngagementChart) {
+    window.contentEngagementChart.destroy();
+  }
+  
+  window.contentEngagementChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+      datasets: [{
+        label: 'Views',
+        data: [65, 59, 80, 81, 56, 55, 40],
+        borderColor: '#F59E0B',
+        backgroundColor: 'rgba(245, 158, 11, 0.1)',
+        tension: 0.4,
+        fill: true
+      }, {
+        label: 'Comments',
+        data: [28, 48, 40, 19, 86, 27, 90],
+        borderColor: '#1D4ED8',
+        backgroundColor: 'rgba(29, 78, 216, 0.1)',
+        tension: 0.4,
+        fill: true
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          labels: {
+            color: 'var(--soft-white)'
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid: { color: 'rgba(255, 255, 255, 0.1)' },
+          ticks: { color: 'var(--slate-grey)' }
+        },
+        y: {
+          grid: { color: 'rgba(255, 255, 255, 0.1)' },
+          ticks: { color: 'var(--slate-grey)' }
+        }
+      }
+    }
+  });
+}
+
+// ======================
+// SEARCH MODAL
+// ======================
+function initSearchModal() {
+  const searchBtn = document.getElementById('search-btn');
+  const searchModal = document.getElementById('search-modal');
+  const closeSearchBtn = document.getElementById('close-search-btn');
+  const searchInput = document.getElementById('search-input');
+  
+  if (!searchBtn || !searchModal) return;
+  
+  searchBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    searchModal.classList.add('active');
+    setTimeout(() => {
+      if (searchInput) searchInput.focus();
+    }, 300);
+  });
+  
+  if (closeSearchBtn) {
+    closeSearchBtn.addEventListener('click', () => {
+      searchModal.classList.remove('active');
+      if (searchInput) searchInput.value = '';
+      document.getElementById('search-results-grid').innerHTML = '';
+    });
+  }
+  
+  searchModal.addEventListener('click', (e) => {
+    if (e.target === searchModal) {
+      searchModal.classList.remove('active');
+      if (searchInput) searchInput.value = '';
+      document.getElementById('search-results-grid').innerHTML = '';
+    }
+  });
+  
+  // Search functionality
+  if (searchInput) {
+    searchInput.addEventListener('input', debounce(async (e) => {
+      const query = e.target.value.trim();
+      const category = document.getElementById('category-filter')?.value;
+      const sortBy = document.getElementById('sort-filter')?.value;
+      
+      if (query.length < 2) {
+        document.getElementById('search-results-grid').innerHTML = 
+          '<div class="no-results">Start typing to search...</div>';
+        return;
+      }
+      
+      document.getElementById('search-results-grid').innerHTML = 
+        '<div class="infinite-scroll-loading"><div class="infinite-scroll-spinner"></div><div>Searching...</div></div>';
+      
+      try {
+        const results = await searchContent(query, category, sortBy);
+        renderSearchResults(results);
+      } catch (error) {
+        console.error('Search error:', error);
+        document.getElementById('search-results-grid').innerHTML = 
+          '<div class="no-results">Error searching. Please try again.</div>';
+      }
+    }, 300));
+  }
+  
+  // Filter change handlers
+  document.getElementById('category-filter')?.addEventListener('change', triggerSearch);
+  document.getElementById('sort-filter')?.addEventListener('change', triggerSearch);
+}
+
+function debounce(func, wait) {
+  let timeout;
+  return function executedFunction(...args) {
+    const later = () => {
+      clearTimeout(timeout);
+      func(...args);
+    };
+    clearTimeout(timeout);
+    timeout = setTimeout(later, wait);
+  };
+}
+
+function triggerSearch() {
+  const searchInput = document.getElementById('search-input');
+  if (searchInput) {
+    const event = new Event('input');
+    searchInput.dispatchEvent(event);
+  }
+}
+
+async function searchContent(query, category = '', sortBy = 'newest') {
+  try {
+    let orderBy = 'created_at';
+    let order = 'desc';
+    
+    if (sortBy === 'popular') {
+      orderBy = 'views_count';
+    } else if (sortBy === 'trending') {
+      orderBy = 'likes_count';
+    }
+    
+    let queryBuilder = window.supabaseClient
+      .from('Content')
+      .select('*, user_profiles!user_id(*)')
+      .ilike('title', `%${query}%`)
+      .eq('status', 'published')
+      .order(orderBy, { ascending: order === 'asc' })
+      .limit(20);
+    
+    if (category) {
+      queryBuilder = queryBuilder.eq('genre', category);
+    }
+    
+    const { data, error } = await queryBuilder;
+    
+    if (error) throw error;
+    return data || [];
+  } catch (error) {
+    console.error('Search error:', error);
+    return [];
+  }
+}
+
+function renderSearchResults(results) {
+  const grid = document.getElementById('search-results-grid');
+  if (!grid) return;
+  
+  if (!results || results.length === 0) {
+    grid.innerHTML = '<div class="no-results">No results found. Try different keywords.</div>';
+    return;
+  }
+  
+  grid.innerHTML = results.map(item => {
+    const creator = item.user_profiles?.full_name || item.user_profiles?.username || item.creator || 'Creator';
+    return `
+      <div class="content-card" data-content-id="${item.id}">
+        <div class="card-thumbnail">
+          <img src="${item.thumbnail_url || 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop'}" 
+               alt="${item.title}" 
+               onerror="this.src='https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop'">
+          <div class="thumbnail-overlay"></div>
+        </div>
+        <div class="card-content">
+          <h3 class="card-title">${truncateText(item.title, 45)}</h3>
+          <div class="related-meta">
+            <i class="fas fa-eye"></i>
+            <span>${formatNumber(item.views_count || 0)} views</span>
+          </div>
+          <button class="creator-btn" data-creator-id="${item.user_id}" data-creator-name="${creator}">
+            <i class="fas fa-user"></i>
+            ${truncateText(creator, 15)}
+          </button>
+        </div>
+      </div>
+    `;
+  }).join('');
+  
+  // Add click handlers
+  grid.querySelectorAll('.content-card').forEach(card => {
+    card.addEventListener('click', (e) => {
+      if (e.target.closest('.creator-btn')) return;
+      const id = card.dataset.contentId;
+      if (id) window.location.href = `content-detail.html?id=${id}`;
+    });
+  });
+  
+  grid.querySelectorAll('.creator-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const id = btn.dataset.creatorId;
+      const name = btn.dataset.creatorName;
+      if (id) window.location.href = `creator-channel.html?id=${id}&name=${encodeURIComponent(name)}`;
+    });
+  });
+}
+
+// ======================
+// NOTIFICATIONS PANEL
+// ======================
+function initNotificationsPanel() {
+  const notificationsBtn = document.getElementById('notifications-btn');
+  const navNotificationsBtn = document.getElementById('nav-notifications-btn');
+  const notificationsPanel = document.getElementById('notifications-panel');
+  const closeNotifications = document.getElementById('close-notifications');
+  const markAllReadBtn = document.getElementById('mark-all-read');
+  
+  if (!notificationsBtn || !notificationsPanel) return;
+  
+  // Both notification buttons should open the panel
+  [notificationsBtn, navNotificationsBtn].forEach(btn => {
+    if (btn) {
+      btn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        notificationsPanel.classList.add('active');
+        await loadUserNotifications();
+        await markAllNotificationsAsRead();
+      });
+    }
+  });
+  
+  if (closeNotifications) {
+    closeNotifications.addEventListener('click', () => {
+      notificationsPanel.classList.remove('active');
+    });
+  }
+  
+  // Close when clicking outside
+  document.addEventListener('click', (e) => {
+    if (notificationsPanel.classList.contains('active') && 
+        !notificationsPanel.contains(e.target) && 
+        !notificationsBtn.contains(e.target) && 
+        (!navNotificationsBtn || !navNotificationsBtn.contains(e.target))) {
+      notificationsPanel.classList.remove('active');
+    }
+  });
+  
+  if (markAllReadBtn) {
+    markAllReadBtn.addEventListener('click', async () => {
+      await markAllNotificationsAsRead();
+      await loadUserNotifications();
+    });
+  }
+  
+  // Load notifications on page load if user is authenticated
+  if (window.AuthHelper?.isAuthenticated()) {
+    loadUserNotifications();
+    updateNotificationBadge();
+  }
+  
+  // Listen for auth changes
+  document.addEventListener('authReady', loadUserNotifications);
+}
+
+async function loadUserNotifications() {
+  const notificationsList = document.getElementById('notifications-list');
+  if (!notificationsList) return;
+  
+  try {
+    // Check authentication
+    if (!window.AuthHelper || !window.AuthHelper.isAuthenticated()) {
+      notificationsList.innerHTML = `
+        <div class="empty-notifications">
+          <i class="fas fa-bell-slash"></i>
+          <p>Sign in to see notifications</p>
+        </div>
+      `;
+      updateNotificationBadge(0);
+      return;
+    }
+    
+    const userProfile = window.AuthHelper.getUserProfile();
+    if (!userProfile?.id) {
+      notificationsList.innerHTML = `
+        <div class="empty-notifications">
+          <i class="fas fa-exclamation-triangle"></i>
+          <p>User profile not found</p>
+        </div>
+      `;
+      return;
+    }
+    
+    // Fetch notifications from Supabase
+    const { data, error } = await window.supabaseClient
+      .from('notifications')
+      .select('*')
+      .eq('user_id', userProfile.id)
+      .order('created_at', { ascending: false })
+      .limit(20);
+    
+    if (error) throw error;
+    
+    if (!data || data.length === 0) {
+      notificationsList.innerHTML = `
+        <div class="empty-notifications">
+          <i class="fas fa-bell-slash"></i>
+          <p>No notifications yet</p>
+        </div>
+      `;
+      updateNotificationBadge(0);
+      return;
+    }
+    
+    // Render notifications
+    notificationsList.innerHTML = data.map(notification => `
+      <div class="notification-item ${notification.is_read ? 'read' : 'unread'}" data-id="${notification.id}">
+        <div class="notification-icon">
+          <i class="${getNotificationIcon(notification.type)}"></i>
+        </div>
+        <div class="notification-content">
+          <h4>${escapeHtml(notification.title)}</h4>
+          <p>${escapeHtml(notification.message)}</p>
+          <span class="notification-time">${formatNotificationTime(notification.created_at)}</span>
+        </div>
+        ${!notification.is_read ? '<div class="notification-dot"></div>' : ''}
+      </div>
+    `).join('');
+    
+    // Add click handlers
+    notificationsList.querySelectorAll('.notification-item').forEach(item => {
+      item.addEventListener('click', async () => {
+        const id = item.dataset.id;
+        await markNotificationAsRead(id);
+        
+        // Handle navigation based on notification type
+        const notification = data.find(n => n.id === id);
+        if (notification?.content_id) {
+          window.location.href = `content-detail.html?id=${notification.content_id}`;
+        }
+        notificationsPanel.classList.remove('active');
+      });
+    });
+    
+    // Update badge count
+    const unreadCount = data.filter(n => !n.is_read).length;
+    updateNotificationBadge(unreadCount);
+  } catch (error) {
+    console.error('Error loading notifications:', error);
+    notificationsList.innerHTML = `
+      <div class="empty-notifications">
+        <i class="fas fa-exclamation-triangle"></i>
+        <p>Error loading notifications</p>
+      </div>
+    `;
+  }
+}
+
+function getNotificationIcon(type) {
+  switch(type) {
+    case 'like': return 'fas fa-heart';
+    case 'comment': return 'fas fa-comment';
+    case 'follow': return 'fas fa-user-plus';
+    case 'view_milestone': return 'fas fa-trophy';
+    case 'system': return 'fas fa-bell';
+    default: return 'fas fa-bell';
+  }
+}
+
+async function markNotificationAsRead(notificationId) {
+  try {
+    const { error } = await window.supabaseClient
+      .from('notifications')
+      .update({ is_read: true })
+      .eq('id', notificationId);
+    
+    if (error) throw error;
+    
+    // Update UI immediately
+    const item = document.querySelector(`.notification-item[data-id="${notificationId}"]`);
+    if (item) {
+      item.classList.remove('unread');
+      item.classList.add('read');
+      const dot = item.querySelector('.notification-dot');
+      if (dot) dot.remove();
+    }
+    
+    // Update badge
+    await loadUserNotifications();
+  } catch (error) {
+    console.error('Error marking notification as read:', error);
+  }
+}
+
+async function markAllNotificationsAsRead() {
+  try {
+    if (!window.AuthHelper?.isAuthenticated()) return;
+    
+    const userProfile = window.AuthHelper.getUserProfile();
+    if (!userProfile?.id) return;
+    
+    const { error } = await window.supabaseClient
+      .from('notifications')
+      .update({ is_read: true })
+      .eq('user_id', userProfile.id)
+      .eq('is_read', false);
+    
+    if (error) throw error;
+    
+    // Update UI
+    document.querySelectorAll('.notification-item.unread').forEach(item => {
+      item.classList.remove('unread');
+      item.classList.add('read');
+      const dot = item.querySelector('.notification-dot');
+      if (dot) dot.remove();
+    });
+    
+    updateNotificationBadge(0);
+  } catch (error) {
+    console.error('Error marking all notifications as read:', error);
+  }
+}
+
+function updateNotificationBadge(count = null) {
+  // If count not provided, calculate from DOM
+  if (count === null) {
+    count = document.querySelectorAll('.notification-item.unread').length;
+  }
+  
+  const mainBadge = document.getElementById('notification-count');
+  const navBadge = document.getElementById('nav-notification-count');
+  
+  [mainBadge, navBadge].forEach(badge => {
+    if (badge) {
+      badge.textContent = count > 99 ? '99+' : count;
+      badge.style.display = count > 0 ? 'flex' : 'none';
+    }
+  });
+}
+
+function formatNotificationTime(timestamp) {
+  const now = new Date();
+  const diffMs = now - new Date(timestamp);
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+  
+  if (diffMins < 1) return 'Just now';
+  if (diffMins < 60) return `${diffMins}m ago`;
+  if (diffHours < 24) return `${diffHours}h ago`;
+  if (diffDays < 7) return `${diffDays}d ago`;
+  return new Date(timestamp).toLocaleDateString();
+}
+
+// ======================
+// THEME SELECTOR
+// ======================
+function initThemeSelector() {
+  const themeToggle = document.getElementById('nav-theme-toggle');
+  const themeSelector = document.getElementById('theme-selector');
+  const themeOptions = document.querySelectorAll('.theme-option');
+  
+  if (!themeToggle || !themeSelector) return;
+  
+  themeToggle.addEventListener('click', (e) => {
+    e.stopPropagation();
+    themeSelector.classList.toggle('active');
+  });
+  
+  // Close when clicking outside
+  document.addEventListener('click', (e) => {
+    if (themeSelector.classList.contains('active') && 
+        !themeSelector.contains(e.target) && 
+        !themeToggle.contains(e.target)) {
+      themeSelector.classList.remove('active');
+    }
+  });
+  
+  // Set up theme options
+  themeOptions.forEach(option => {
+    option.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const theme = option.dataset.theme;
+      applyTheme(theme);
+      themeSelector.classList.remove('active');
+    });
+  });
+  
+  // Initialize theme
+  initCurrentTheme();
+}
+
+function applyTheme(theme) {
+  document.body.className = `theme-${theme}`;
+  localStorage.setItem('theme', theme);
+  
+  // Update active state
+  document.querySelectorAll('.theme-option').forEach(option => {
+    option.classList.toggle('active', option.dataset.theme === theme);
+  });
+  
+  // Show confirmation
+  showToast(`Theme changed to ${theme}`, 'success');
+}
+
+function initCurrentTheme() {
+  // Load saved theme or use system preference
+  const savedTheme = localStorage.getItem('theme');
+  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const defaultTheme = savedTheme || (prefersDark ? 'dark' : 'light');
+  
+  // Set initial theme
+  applyTheme(defaultTheme);
+  
+  // Set active state on load
+  document.querySelector(`.theme-option[data-theme="${defaultTheme}"]`)?.classList.add('active');
+}
+
+// ======================
+// GLOBAL NAVIGATION
+// ======================
+function initGlobalNavigation() {
+  // Home button - redirect to home-feed
+  const homeBtn = document.querySelector('.nav-icon:nth-child(1)');
+  if (homeBtn) {
+    homeBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      window.location.href = 'https://bantustreamconnect.com/';
+    });
+  }
+  
+  // Theme toggle already handled in initThemeSelector
+  
+  // Create Content button
+  const createBtn = document.querySelector('.nav-icon:nth-child(3)');
+  if (createBtn) {
+    createBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (window.AuthHelper?.isAuthenticated()) {
+        window.location.href = 'creator-upload.html';
+      } else {
+        showToast('Please sign in to upload content', 'warning');
+        window.location.href = 'login.html?redirect=creator-upload.html';
+      }
+    });
+  }
+  
+  // Creator Dashboard button
+  const dashboardBtn = document.querySelector('.nav-icon:nth-child(4)');
+  if (dashboardBtn) {
+    dashboardBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (window.AuthHelper?.isAuthenticated()) {
+        window.location.href = 'creator-dashboard.html';
+      } else {
+        showToast('Please sign in to access dashboard', 'warning');
+        window.location.href = 'login.html?redirect=creator-dashboard.html';
+      }
+    });
+  }
+  
+  // Notifications button already handled in initNotificationsPanel
 }
 
 // Utility functions
