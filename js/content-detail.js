@@ -260,24 +260,54 @@ function updateContentUI(content) {
   }
 }
 
-// Load comments - UPDATED VERSION
+// Load comments (FIXED VERSION - handles missing relationship)
 async function loadComments(contentId) {
   try {
-    const { data, error } = await window.supabaseClient
-      .from('comments')
-      .select('*, user_profiles!user_id(*)')
-      .eq('content_id', contentId)
-      .order('created_at', { ascending: false });
+    console.log('💬 Loading comments for content:', contentId);
     
-    if (error) {
-      console.error('Supabase comments error:', error);
-      renderComments([]);
-      return;
+    // Try multiple approaches to load comments
+    let comments = [];
+    
+    // APPROACH 1: Try with user_profiles relationship
+    try {
+      const { data, error } = await window.supabaseClient
+        .from('comments')
+        .select('*, user_profiles!user_id(*)')
+        .eq('content_id', contentId)
+        .order('created_at', { ascending: false });
+      
+      if (!error && data) {
+        comments = data;
+        console.log(`✅ Loaded ${comments.length} comments with user profiles`);
+      } else {
+        console.warn('User profiles relationship failed, trying without...');
+        throw error;
+      }
+    } catch (relationshipError) {
+      // APPROACH 2: Try without user_profiles relationship
+      try {
+        const { data, error } = await window.supabaseClient
+          .from('comments')
+          .select('*')
+          .eq('content_id', contentId)
+          .order('created_at', { ascending: false });
+        
+        if (!error && data) {
+          comments = data;
+          console.log(`✅ Loaded ${comments.length} comments without user profiles`);
+        } else {
+          console.error('Comments load error:', error);
+        }
+      } catch (simpleError) {
+        console.error('Simple comments load also failed:', simpleError);
+      }
     }
     
-    renderComments(data || []);
+    // Render whatever comments we got
+    renderComments(comments || []);
+    
   } catch (error) {
-    console.error('Error loading comments:', error);
+    console.error('❌ Error loading comments:', error);
     renderComments([]);
   }
 }
@@ -441,7 +471,7 @@ function renderRelatedContent(items) {
 // CRITICAL FIX: Enhanced Video Player Initialization
 // ====================================================
 
-// Initialize enhanced video player - SIMPLIFIED WORKING VERSION
+// Initialize enhanced video player - CLEAN VERSION (NO DUPLICATE CONTROLS)
 function initializeEnhancedVideoPlayer() {
   const videoElement = document.getElementById('inlineVideoPlayer');
   const videoContainer = document.querySelector('.video-container');
@@ -452,13 +482,21 @@ function initializeEnhancedVideoPlayer() {
   }
   
   try {
-    // Hide placeholder and show video
-    const placeholder = document.querySelector('.bantu-player-placeholder');
+    // Hide the Bantu placeholder
+    const placeholder = document.getElementById('videoPlaceholder');
     if (placeholder) {
       placeholder.style.display = 'none';
     }
     
-    // Remove native controls
+    // IMPORTANT: Remove ALL existing custom controls
+    const existingControls = videoContainer.querySelectorAll('.enhanced-video-controls, .bantu-video-controls, .bantu-control-bar, .bantu-social-controls');
+    existingControls.forEach(control => {
+      if (control.parentNode) {
+        control.parentNode.removeChild(control);
+      }
+    });
+    
+    // Remove native controls completely
     videoElement.controls = false;
     videoElement.removeAttribute('controls');
     
@@ -468,6 +506,8 @@ function initializeEnhancedVideoPlayer() {
       playbackSpeed: 1.0,
       quality: 'auto'
     };
+    
+    console.log('🎬 Creating EnhancedVideoPlayer with content:', currentContent?.id);
     
     // Create enhanced video player
     enhancedVideoPlayer = new EnhancedVideoPlayer({
@@ -487,6 +527,8 @@ function initializeEnhancedVideoPlayer() {
     // CRITICAL: Setup view tracking on FIRST PLAY only
     let viewRecorded = false;
     enhancedVideoPlayer.on('play', () => {
+      console.log('▶️ Video playing, recording view...');
+      
       if (window.stateManager) {
         window.stateManager.setState('session.playing', true);
       }
@@ -494,27 +536,34 @@ function initializeEnhancedVideoPlayer() {
       // Record view ONLY ONCE per session when video actually plays
       if (currentContent && !viewRecorded) {
         viewRecorded = true;
-        recordContentView(currentContent.id);
         
         // Update UI immediately
         const currentViews = parseInt(document.getElementById('viewsCount')?.textContent.replace(/\D/g, '') || '0') || 0;
-        document.getElementById('viewsCount').textContent = formatNumber(currentViews + 1) + ' views';
-        document.getElementById('viewsCountFull').textContent = formatNumber(currentViews + 1);
+        const newViews = currentViews + 1;
+        
+        document.getElementById('viewsCount').textContent = formatNumber(newViews) + ' views';
+        document.getElementById('viewsCountFull').textContent = formatNumber(newViews);
         
         // Update database view count
         if (window.SupabaseHelper && window.SupabaseHelper.client) {
           window.SupabaseHelper.client
             .from('Content')
-            .update({ views_count: currentViews + 1 })
+            .update({ views_count: newViews })
             .eq('id', currentContent.id)
             .then(() => {
+              console.log('✅ View count updated in database');
               // Update local content
               if (currentContent) {
-                currentContent.views_count = currentViews + 1;
+                currentContent.views_count = newViews;
               }
             })
-            .catch(console.error);
+            .catch(error => {
+              console.error('❌ Error updating view count:', error);
+            });
         }
+        
+        // Record detailed view in content_views table (without user_id if not available)
+        recordContentView(currentContent.id).catch(console.error);
       }
     });
     
@@ -536,17 +585,21 @@ function initializeEnhancedVideoPlayer() {
       showToast('Video playback error', 'error');
     });
     
-    // Setup time update for watch history
+    // Setup time update for watch history (FIXED: removed track.watchProgress error)
     enhancedVideoPlayer.on('timeupdate', (time) => {
       if (window.stateManager) {
         window.stateManager.setState('session.currentTime', time);
       }
       
-      // Update watch history every 30 seconds
+      // Update watch history every 30 seconds (without analytics error)
       if (Math.floor(time) % 30 === 0 && currentContent) {
         const duration = enhancedVideoPlayer.getDuration() || currentContent.duration || 3600;
         if (window.state && window.state.updateWatchHistory) {
-          window.state.updateWatchHistory(currentContent.id, time, duration);
+          try {
+            window.state.updateWatchHistory(currentContent.id, time, duration);
+          } catch (error) {
+            console.warn('Watch history update failed:', error);
+          }
         }
       }
     });
@@ -561,34 +614,63 @@ function initializeEnhancedVideoPlayer() {
     videoElement.controls = true;
     
     // Show placeholder again
-    const placeholder = document.querySelector('.bantu-player-placeholder');
+    const placeholder = document.getElementById('videoPlaceholder');
     if (placeholder) {
       placeholder.style.display = 'flex';
     }
   }
 }
 
-// Helper function to record content view
+// Helper function to record content view (FIXED VERSION)
 async function recordContentView(contentId) {
   try {
-    if (!window.SupabaseHelper || !window.SupabaseHelper.client) return;
+    if (!window.SupabaseHelper || !window.SupabaseHelper.client) {
+      console.warn('Supabase helper not available');
+      return;
+    }
+    
+    // Prepare data for insert
+    const viewData = {
+      content_id: contentId,
+      viewed_at: new Date().toISOString(),
+      device_type: /Mobile|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ? 'mobile' : 'desktop'
+    };
+    
+    // Only add viewer_id if user is authenticated
+    if (currentUserId) {
+      viewData.viewer_id = currentUserId;
+    }
+    
+    console.log('📊 Recording view:', viewData);
     
     // Record view in content_views table
-    await window.SupabaseHelper.client
+    const { data, error } = await window.SupabaseHelper.client
       .from('content_views')
-      .insert({
-        content_id: contentId,
-        viewer_id: currentUserId || null,
-        device_type: /Mobile|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ? 'mobile' : 'desktop',
-        viewed_at: new Date().toISOString()
-      });
+      .insert(viewData);
     
-    // Track analytics
-    if (window.track) {
-      window.track.contentView(contentId, 'video');
+    if (error) {
+      console.error('❌ Error recording view:', error);
+      // Try alternative table name
+      try {
+        await window.SupabaseHelper.client
+          .from('content_views')
+          .insert(viewData);
+      } catch (retryError) {
+        console.error('❌ Retry also failed:', retryError);
+      }
+      return;
     }
     
     console.log(`✅ View recorded for content ${contentId}`);
+    
+    // Track analytics if available
+    if (window.track && window.track.contentView) {
+      try {
+        window.track.contentView(contentId, 'video');
+      } catch (analyticsError) {
+        console.warn('Analytics tracking failed:', analyticsError);
+      }
+    }
   } catch (error) {
     console.error('❌ Error recording view:', error);
   }
@@ -613,7 +695,7 @@ function copyToClipboard(text) {
   });
 }
 
-// Handle play button - UPDATED VERSION
+// Handle play button
 function handlePlay() {
   if (!currentContent) {
     showToast('No content to play', 'error');
@@ -646,29 +728,39 @@ function handlePlay() {
   player.style.display = 'block';
   
   // Hide placeholder
-  const placeholder = document.querySelector('.bantu-player-placeholder');
+  const placeholder = document.getElementById('videoPlaceholder');
   if (placeholder) {
     placeholder.style.display = 'none';
   }
   
-  // Initialize player if not already done
-  if (!enhancedVideoPlayer) {
-    initializeEnhancedVideoPlayer();
+  // IMPORTANT: Remove any existing player instance before creating new one
+  if (enhancedVideoPlayer) {
+    try {
+      enhancedVideoPlayer.destroy();
+    } catch (e) {
+      console.warn('Error destroying old player:', e);
+    }
+    enhancedVideoPlayer = null;
   }
   
-  // Try to play
-  if (enhancedVideoPlayer) {
-    enhancedVideoPlayer.play().catch(err => {
-      console.log('Play prevented:', err);
-      showToast('Click play button in video player', 'info');
-    });
-  } else {
-    // Fallback to native player
-    videoElement.play().catch(err => {
-      console.log('Autoplay prevented:', err);
-      showToast('Click play button in video player', 'info');
-    });
-  }
+  // Initialize player
+  initializeEnhancedVideoPlayer();
+  
+  // Try to play after a short delay
+  setTimeout(() => {
+    if (enhancedVideoPlayer) {
+      enhancedVideoPlayer.play().catch(err => {
+        console.log('Play prevented:', err);
+        showToast('Click play button in video player', 'info');
+      });
+    } else {
+      // Fallback to native player
+      videoElement.play().catch(err => {
+        console.log('Autoplay prevented:', err);
+        showToast('Click play button in video player', 'info');
+      });
+    }
+  }, 300);
   
   // Scroll to player
   setTimeout(() => {
@@ -727,6 +819,75 @@ function setupEventListeners() {
       e.stopPropagation();
       if (enhancedVideoPlayer) {
         enhancedVideoPlayer.toggleFullscreen();
+      }
+    });
+  }
+  
+  // Setup like button functionality
+  const likeBtn = document.getElementById('likeBtn');
+  if (likeBtn) {
+    likeBtn.addEventListener('click', async () => {
+      if (!currentContent) return;
+      
+      // Check authentication
+      if (!window.AuthHelper || !window.AuthHelper.isAuthenticated()) {
+        showToast('Sign in to like content', 'warning');
+        return;
+      }
+      
+      const isLiked = likeBtn.classList.contains('active');
+      const currentLikes = parseInt(document.getElementById('likesCount')?.textContent.replace(/\D/g, '') || '0') || 0;
+      
+      try {
+        // Optimistic UI update
+        if (isLiked) {
+          likeBtn.classList.remove('active');
+          likeBtn.innerHTML = '<i class="far fa-heart"></i><span>Like</span>';
+          document.getElementById('likesCount').textContent = formatNumber(currentLikes - 1) + ' likes';
+        } else {
+          likeBtn.classList.add('active');
+          likeBtn.innerHTML = '<i class="fas fa-heart"></i><span>Liked</span>';
+          document.getElementById('likesCount').textContent = formatNumber(currentLikes + 1) + ' likes';
+        }
+        
+        // Update database
+        if (window.SupabaseHelper && window.SupabaseHelper.client && currentUserId) {
+          const { error } = await window.SupabaseHelper.client
+            .from('content_interactions')
+            .upsert({
+              content_id: currentContent.id,
+              user_id: currentUserId,
+              interaction_type: 'like',
+              created_at: new Date().toISOString()
+            }, {
+              onConflict: 'content_id,user_id,interaction_type'
+            });
+          
+          if (error) throw error;
+          
+          // Update content likes count
+          await window.SupabaseHelper.client
+            .from('Content')
+            .update({ 
+              likes_count: isLiked ? currentLikes - 1 : currentLikes + 1 
+            })
+            .eq('id', currentContent.id);
+          
+          showToast(isLiked ? 'Removed like' : 'Liked!', isLiked ? 'info' : 'success');
+        }
+      } catch (error) {
+        console.error('Like error:', error);
+        // Revert UI on error
+        if (isLiked) {
+          likeBtn.classList.add('active');
+          likeBtn.innerHTML = '<i class="fas fa-heart"></i><span>Liked</span>';
+          document.getElementById('likesCount').textContent = formatNumber(currentLikes) + ' likes';
+        } else {
+          likeBtn.classList.remove('active');
+          likeBtn.innerHTML = '<i class="far fa-heart"></i><span>Like</span>';
+          document.getElementById('likesCount').textContent = formatNumber(currentLikes) + ' likes';
+        }
+        showToast('Failed to update like', 'error');
       }
     });
   }
