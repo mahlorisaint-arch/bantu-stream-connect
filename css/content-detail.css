@@ -2428,3 +2428,167 @@ video::-webkit-media-controls-current-time-display {
 .error-overlay .retry-btn:hover {
   background: #2563EB;
 }
+
+/* =================================================================== */
+/* SINGLE VIDEO PLAYER FIXES - NO DUPLICATE CONTROLS                  */
+/* =================================================================== */
+
+/* Hide ALL Bantu branded controls that conflict with EnhancedVideoPlayer */
+.bantu-video-controls,
+.bantu-control-bar,
+.bantu-social-controls,
+.bantu-settings-menu,
+.bantu-buffering-indicator,
+.bantu-error-overlay,
+.bantu-watermark {
+  display: none !important;
+}
+
+/* Ensure only EnhancedVideoPlayer controls are visible */
+.enhanced-video-controls {
+  display: block !important;
+  opacity: 1 !important;
+  pointer-events: all !important;
+}
+
+/* Style for our single player controls */
+.enhanced-video-controls .controls-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  background: rgba(7, 59, 76, 0.9);
+  backdrop-filter: blur(10px);
+  border-radius: 12px;
+  margin: 0 10px 10px;
+  border: 1px solid rgba(29, 78, 216, 0.3);
+}
+
+.enhanced-video-controls .control-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: var(--soft-white);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.enhanced-video-controls .control-btn:hover {
+  background: rgba(255, 107, 53, 0.25);
+  border-color: var(--bantu-blue);
+  transform: scale(1.1);
+}
+
+.enhanced-video-controls .time-display {
+  font-family: 'Orbitron', monospace;
+  font-size: 14px;
+  color: var(--soft-white);
+  min-width: 100px;
+  text-align: center;
+}
+
+.enhanced-video-controls .progress-container {
+  flex: 1;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+  position: relative;
+  cursor: pointer;
+}
+
+.enhanced-video-controls .progress-container::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  background: linear-gradient(90deg, var(--bantu-blue), var(--warm-gold));
+  border-radius: 3px;
+  width: var(--progress, 0%);
+}
+
+.enhanced-video-controls .volume-bar {
+  width: 80px;
+  height: 5px;
+  -webkit-appearance: none;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+}
+
+.enhanced-video-controls .volume-bar::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--warm-gold);
+  cursor: pointer;
+}
+
+.enhanced-video-controls .settings-menu {
+  position: absolute;
+  bottom: 60px;
+  right: 20px;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  padding: 15px;
+  min-width: 180px;
+  backdrop-filter: blur(20px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+  z-index: 1000;
+}
+
+.enhanced-video-controls .speed-options {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.enhanced-video-controls .speed-option {
+  padding: 6px 10px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--card-border);
+  border-radius: 8px;
+  color: var(--soft-white);
+  font-size: 12px;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.2s ease;
+}
+
+.enhanced-video-controls .speed-option:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.enhanced-video-controls .speed-option.active {
+  background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+  border-color: transparent;
+  color: white;
+  font-weight: 600;
+}
+
+/* Hide video controls when placeholder is visible */
+.bantu-player-placeholder.active ~ .enhanced-video-controls {
+  display: none !important;
+}
+
+/* Fullscreen styles */
+.video-container:fullscreen .enhanced-video-controls,
+.video-container:-webkit-full-screen .enhanced-video-controls,
+.video-container:-moz-full-screen .enhanced-video-controls {
+  bottom: 20px;
+  padding: 15px 20px;
+  background: linear-gradient(to top, rgba(7, 59, 76, 0.95), transparent);
+}
+
+.video-container:fullscreen .enhanced-video-controls .controls-bar,
+.video-container:-webkit-full-screen .enhanced-video-controls .controls-bar,
+.video-container:-moz-full-screen .enhanced-video-controls .controls-bar {
+  margin: 0 20px 20px;
+  padding: 12px 20px;
+}
