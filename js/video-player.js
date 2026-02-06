@@ -115,6 +115,49 @@ class BantuVideoPlayer {
   }
   
   // ======================
+  // CRITICAL FIX: FULLSCREEN METHOD
+  // ======================
+  
+  toggleFullscreen() {
+    // CRITICAL FIX: Use the CUSTOM CONTROLS CONTAINER, not video element
+    const playerContainer = document.querySelector('.inline-player');
+    if (!playerContainer) {
+      console.error('Player container not found for fullscreen');
+      return;
+    }
+    
+    if (!this.isFullscreen) {
+      if (playerContainer.requestFullscreen) {
+        playerContainer.requestFullscreen();
+      } else if (playerContainer.webkitRequestFullscreen) {
+        playerContainer.webkitRequestFullscreen();
+      } else if (playerContainer.mozRequestFullScreen) {
+        playerContainer.mozRequestFullScreen();
+      } else if (playerContainer.msRequestFullscreen) {
+        playerContainer.msRequestFullscreen();
+      }
+    } else {
+      if (document.exitFullscreen) {
+        document.exitFullscreen();
+      } else if (document.webkitExitFullscreen) {
+        document.webkitExitFullscreen();
+      } else if (document.mozCancelFullScreen) {
+        document.mozCancelFullScreen();
+      } else if (document.msExitFullscreen) {
+        document.msExitFullscreen();
+      }
+    }
+    
+    this.isFullscreen = !this.isFullscreen;
+    
+    // Force custom controls to show in fullscreen
+    setTimeout(() => {
+      const controls = document.querySelector('.video-controls');
+      if (controls) controls.style.opacity = '1';
+    }, 100);
+  }
+  
+  // ======================
   // SOCIAL FEATURES INTEGRATION
   // ======================
   
