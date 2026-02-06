@@ -122,71 +122,45 @@
       </section>
 
       <!-- BANTU STREAM CONNECT BRANDED VIDEO PLAYER -->
-      <div class="inline-player" id="inlinePlayer" style="display: none;">
-        <div class="player-header">
-          <h3 id="playerTitle">Now Playing</h3>
-          <button class="icon-btn close-player" id="closePlayerBtn" title="Close Player">
-            <i class="fas fa-times"></i>
-          </button>
+<div class="inline-player" id="inlinePlayer" style="display: none;">
+  <div class="player-header">
+    <h3 id="playerTitle">Now Playing</h3>
+    <button class="icon-btn close-player" id="closePlayerBtn" title="Close Player">
+      <i class="fas fa-times"></i>
+    </button>
+  </div>
+  <div class="video-container" id="bantuVideoContainer">
+    <!-- Video element WITHOUT any duplicate controls -->
+    <video id="inlineVideoPlayer" playsinline webkit-playsinline>
+      Your browser does not support the video tag.
+    </video>
+    
+    <!-- SIMPLE Loading Placeholder Only -->
+    <div class="bantu-player-placeholder" id="videoPlaceholder">
+      <div class="bantu-logo-spinner">
+        <div class="bantu-logo">
+          <i class="fas fa-film"></i>
         </div>
-        <div class="video-container" id="bantuVideoContainer">
-          <!-- Bantu Stream Connect Player will inject here -->
-          <div class="bantu-player-placeholder">
-            <div class="bantu-logo-spinner">
-              <div class="bantu-logo">
-                <i class="fas fa-film"></i>
-              </div>
-              <div class="bantu-brand-text">BANTU STREAM CONNECT</div>
-            </div>
-            <p class="loading-text">Initializing branded player...</p>
-          </div>
-          <!-- Video element WITHOUT controls attribute (CRITICAL FIX) -->
-          <video id="inlineVideoPlayer" playsinline webkit-playsinline>
-            Your browser does not support the video tag.
-          </video>
-          
-          <!-- BANTU BRANDED CONTROLS (Managed by BantuVideoPlayer) -->
-          <div class="bantu-video-controls">
-            <div class="bantu-control-bar">
-              <!-- Play/Pause -->
-              <button class="bantu-control-btn play-pause-btn" title="Play/Pause">
-                <i class="fas fa-play"></i>
-              </button>
-              
-              <!-- Time Display -->
-              <div class="bantu-time-display">
-                <span class="current-time">0:00</span> / 
-                <span class="duration">0:00</span>
-              </div>
-              
-              <!-- Progress Bar -->
-              <input type="range" class="bantu-progress-bar" min="0" max="100" value="0">
-              
-              <!-- Volume Controls -->
-              <button class="bantu-control-btn volume-btn" title="Volume">
-                <i class="fas fa-volume-up"></i>
-              </button>
-              <input type="range" class="bantu-volume-bar" min="0" max="100" value="100">
-              
-              <!-- Social Controls (ALWAYS VISIBLE) -->
-              <div class="bantu-social-controls">
-                <button class="bantu-social-btn like-btn" title="Like">
-                  <i class="far fa-heart"></i>
-                  <span class="like-count">0</span>
-                </button>
-                <button class="bantu-social-btn favorite-btn" title="Favorite">
-                  <i class="far fa-star"></i>
-                  <span class="favorite-count">0</span>
-                </button>
-                <button class="bantu-social-btn share-btn" title="Share">
-                  <i class="fas fa-share-alt"></i>
-                  <span class="share-count">0</span>
-                </button>
-                <button class="bantu-social-btn comment-btn" title="Comments">
-                  <i class="fas fa-comment"></i>
-                  <span class="comment-count" id="player-comment-count">0</span>
-                </button>
-              </div>
+        <div class="bantu-brand-text">BANTU STREAM CONNECT</div>
+      </div>
+      <p class="loading-text">Ready to play...</p>
+    </div>
+  </div>
+  <div class="player-actions">
+    <div class="player-controls">
+      <button class="control-btn" id="pipBtn" title="Picture-in-Picture">
+        <i class="fas fa-images"></i>
+      </button>
+      <button class="control-btn" id="fullscreenBtn" title="Fullscreen">
+        <i class="fas fa-expand"></i>
+      </button>
+    </div>
+    <button id="connectBtn" class="btn connect-btn">
+      <i class="fas fa-user-plus"></i>
+      <span>Connect</span>
+    </button>
+  </div>
+</div>
               
               <!-- Playback Speed -->
               <div class="bantu-playback-speed">
