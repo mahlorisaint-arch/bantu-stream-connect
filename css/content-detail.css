@@ -1591,3 +1591,590 @@ video::-webkit-media-controls-current-time-display {
     font-size: 14px;
   }
 }
+
+/* =================================================================== */
+/* BANTU BRANDED VIDEO CONTROLS - FULL FEATURE SET                    */
+/* =================================================================== */
+
+/* Main Controls Container */
+.bantu-video-controls {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(to top, rgba(7, 59, 76, 0.95), transparent);
+  padding: 15px;
+  z-index: 50;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  opacity: 1;
+  pointer-events: none;
+}
+
+.video-container:hover .bantu-video-controls,
+.bantu-video-controls:hover,
+.bantu-video-controls:active {
+  opacity: 1;
+  pointer-events: all;
+  transform: translateY(0);
+}
+
+/* Control Bar */
+.bantu-control-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: 100%;
+  overflow-x: auto;
+  padding: 0 5px;
+  scrollbar-width: none; /* Firefox */
+}
+
+.bantu-control-bar::-webkit-scrollbar {
+  display: none; /* Chrome/Safari */
+}
+
+/* Control Buttons */
+.bantu-control-btn {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: var(--soft-white);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  pointer-events: all;
+  flex-shrink: 0;
+}
+
+.bantu-control-btn:hover {
+  background: rgba(255, 107, 53, 0.25);
+  border-color: var(--bantu-blue);
+  transform: scale(1.1);
+  box-shadow: 0 0 15px rgba(29, 78, 216, 0.4);
+}
+
+.bantu-control-btn:active {
+  transform: scale(0.95);
+}
+
+.bantu-control-btn i {
+  font-size: 18px;
+}
+
+/* Time Display */
+.bantu-time-display {
+  color: var(--soft-white);
+  font-family: 'Orbitron', monospace;
+  font-size: 15px;
+  min-width: 110px;
+  text-align: center;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  pointer-events: none;
+}
+
+/* Progress Bar */
+.bantu-progress-bar {
+  flex: 1;
+  height: 6px;
+  -webkit-appearance: none;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+  outline: none;
+  cursor: pointer;
+  pointer-events: all;
+  max-width: 100%;
+}
+
+.bantu-progress-bar::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--warm-gold);
+  cursor: pointer;
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.7);
+}
+
+.bantu-progress-bar::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--warm-gold);
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.7);
+}
+
+/* Volume Bar */
+.bantu-volume-bar {
+  width: 80px;
+  height: 5px;
+  -webkit-appearance: none;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+  outline: none;
+  cursor: pointer;
+  pointer-events: all;
+}
+
+.bantu-volume-bar::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--warm-gold);
+  cursor: pointer;
+}
+
+/* Social Controls Container */
+.bantu-social-controls {
+  display: flex;
+  gap: 8px;
+  margin-left: auto;
+  padding-left: 15px;
+  border-left: 1px solid rgba(255, 255, 255, 0.15);
+  align-items: center;
+}
+
+/* Social Buttons */
+.bantu-social-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  color: var(--soft-white);
+  padding: 8px 12px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  min-width: 60px;
+  font-size: 13px;
+  pointer-events: all;
+}
+
+.bantu-social-btn:hover {
+  background: rgba(255, 107, 53, 0.2);
+  border-color: var(--warm-gold);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+}
+
+.bantu-social-btn i {
+  font-size: 16px;
+}
+
+.bantu-social-btn .like-count,
+.bantu-social-btn .favorite-count,
+.bantu-social-btn .share-count,
+.bantu-social-btn .comment-count {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--warm-gold);
+}
+
+.bantu-social-btn.liked i,
+.bantu-social-btn.favorited i {
+  color: var(--error-color);
+}
+
+/* Playback Speed & Quality */
+.bantu-playback-speed,
+.bantu-quality-selector {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.speed-label,
+.quality-label {
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 600;
+  color: var(--warm-gold);
+  font-size: 13px;
+}
+
+/* Settings Menu */
+.bantu-settings-menu {
+  position: absolute;
+  bottom: 75px;
+  right: 15px;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 16px;
+  padding: 20px;
+  min-width: 280px;
+  backdrop-filter: blur(20px);
+  z-index: 60;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+  display: none;
+  pointer-events: all;
+}
+
+.bantu-settings-menu.active {
+  display: block;
+  animation: slideInUp 0.3s ease;
+}
+
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.bantu-settings-section {
+  margin-bottom: 20px;
+}
+
+.bantu-settings-section:last-child {
+  margin-bottom: 0;
+}
+
+.bantu-settings-section h4 {
+  color: var(--soft-white);
+  margin-bottom: 12px;
+  font-size: 15px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.bantu-settings-section h4 i {
+  color: var(--bantu-blue);
+  font-size: 16px;
+}
+
+.bantu-speed-options,
+.bantu-quality-options {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.speed-option,
+.quality-option,
+.bantu-option-btn {
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--card-border);
+  border-radius: 10px;
+  color: var(--soft-white);
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: center;
+  display: block;
+  width: 100%;
+}
+
+.speed-option:hover,
+.quality-option:hover,
+.bantu-option-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: var(--bantu-blue);
+  transform: translateY(-1px);
+}
+
+.speed-option.active,
+.quality-option.active {
+  background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+  border-color: transparent;
+  color: white;
+  font-weight: 600;
+  box-shadow: 0 4px 12px rgba(29, 78, 216, 0.3);
+}
+
+.bantu-option-btn {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 10px;
+  border-radius: 12px;
+  padding: 10px 15px;
+  margin-top: 8px;
+}
+
+.bantu-option-btn i {
+  width: 20px;
+  text-align: center;
+  font-size: 16px;
+}
+
+/* Buffering Indicator */
+.bantu-buffering-indicator {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.7);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 40;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.bantu-buffering-indicator.active {
+  display: flex;
+  animation: fadeIn 0.3s ease;
+}
+
+.bantu-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(255, 255, 255, 0.2);
+  border-top-color: var(--warm-gold);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+/* Error Overlay */
+.bantu-error-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.85);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 45;
+  padding: 20px;
+}
+
+.bantu-error-overlay.active {
+  display: flex;
+  animation: fadeIn 0.3s ease;
+}
+
+.bantu-error-content {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 20px;
+  padding: 30px;
+  text-align: center;
+  max-width: 450px;
+  width: 100%;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+
+.bantu-error-content i {
+  font-size: 3.5rem;
+  color: var(--error-color);
+  margin-bottom: 15px;
+}
+
+.bantu-error-content h3 {
+  color: var(--soft-white);
+  font-size: 24px;
+  margin-bottom: 12px;
+  font-weight: 700;
+}
+
+.bantu-error-message {
+  color: rgba(255, 255, 255, 0.75);
+  margin-bottom: 25px;
+  line-height: 1.5;
+  font-size: 16px;
+}
+
+.bantu-retry-btn,
+.bantu-cancel-btn {
+  padding: 10px 25px;
+  border-radius: 12px;
+  border: none;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin: 0 8px;
+  font-size: 15px;
+}
+
+.bantu-retry-btn {
+  background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+  color: white;
+}
+
+.bantu-cancel-btn {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--soft-white);
+  border: 1px solid var(--card-border);
+}
+
+.bantu-retry-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(29, 78, 216, 0.4);
+}
+
+.bantu-cancel-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+/* Bantu Watermark */
+.bantu-watermark {
+  position: absolute;
+  bottom: 20px;
+  left: 20px;
+  background: rgba(15, 23, 42, 0.85);
+  border: 1px solid rgba(29, 78, 216, 0.5);
+  border-radius: 20px;
+  padding: 6px 15px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  z-index: 30;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--soft-white);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+  animation: slideIn 0.5s ease;
+}
+
+.bantu-watermark i {
+  color: var(--warm-gold);
+  font-size: 16px;
+}
+
+/* Fullscreen Mode Enhancements */
+.bantu-video-controls.fullscreen {
+  bottom: 30px;
+  padding: 20px;
+  background: linear-gradient(to top, rgba(7, 59, 76, 0.98), transparent);
+}
+
+.video-container:fullscreen .bantu-social-controls,
+.video-container:-webkit-full-screen .bantu-social-controls {
+  display: flex;
+  margin-left: 20px;
+  padding-left: 20px;
+  border-left: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.video-container:fullscreen .bantu-time-display,
+.video-container:-webkit-full-screen .bantu-time-display {
+  min-width: 130px;
+  font-size: 17px;
+}
+
+/* Mobile Optimizations */
+@media (max-width: 768px) {
+  .bantu-control-bar {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  
+  .bantu-time-display {
+    min-width: 90px;
+    font-size: 14px;
+  }
+  
+  .bantu-social-controls {
+    margin-left: 0;
+    padding-left: 0;
+    border-left: none;
+    width: 100%;
+    justify-content: space-around;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+  }
+  
+  .bantu-social-btn {
+    min-width: auto;
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+  
+  .bantu-social-btn i {
+    font-size: 14px;
+  }
+  
+  .bantu-social-btn .like-count,
+  .bantu-social-btn .favorite-count,
+  .bantu-social-btn .share-count,
+  .bantu-social-btn .comment-count {
+    font-size: 10px;
+  }
+  
+  .bantu-volume-bar {
+    width: 60px;
+  }
+  
+  .bantu-settings-menu {
+    min-width: 95%;
+    bottom: 85px;
+    right: 2.5%;
+    left: 2.5%;
+  }
+  
+  .bantu-watermark {
+    bottom: 15px;
+    left: 15px;
+    font-size: 12px;
+    padding: 5px 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .bantu-control-btn {
+    width: 38px;
+    height: 38px;
+  }
+  
+  .bantu-control-btn i {
+    font-size: 16px;
+  }
+  
+  .bantu-time-display {
+    min-width: 80px;
+    font-size: 13px;
+  }
+  
+  .bantu-progress-bar {
+    height: 5px;
+  }
+  
+  .bantu-social-btn {
+    padding: 5px 8px;
+    min-width: 50px;
+  }
+  
+  .bantu-social-btn span {
+    display: none;
+  }
+  
+  .bantu-watermark span {
+    display: none;
+  }
+  
+  .bantu-watermark i {
+    font-size: 14px;
+  }
+}
+
+/* Animations */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
