@@ -100,15 +100,20 @@
             Loading description...
           </div>
           <div class="hero-actions">
-            <button id="playBtn" class="btn btn-primary">
+            <!-- Resume button will be added dynamically here -->
+            <button class="btn btn-primary" id="playBtn">
               <i class="fas fa-play"></i>
               <span>Play Now</span>
             </button>
-            <button id="favoriteBtn" class="btn btn-secondary">
+            <button class="btn btn-secondary" id="likeBtn">
+              <i class="far fa-heart"></i>
+              <span>Like</span>
+            </button>
+            <button class="btn btn-secondary" id="favoriteBtn">
               <i class="far fa-heart"></i>
               <span>Favorite</span>
             </button>
-            <button id="shareBtn" class="btn btn-secondary">
+            <button class="btn btn-secondary" id="shareBtn">
               <i class="fas fa-share"></i>
               <span>Share</span>
             </button>
@@ -135,7 +140,7 @@
             </div>
             <p class="loading-text">Initializing branded player...</p>
           </div>
-          <!-- Video element WITHOUT controls attribute -->
+          <!-- Video element WITHOUT controls attribute (CRITICAL FIX) -->
           <video id="inlineVideoPlayer" playsinline webkit-playsinline>
             Your browser does not support the video tag.
           </video>
