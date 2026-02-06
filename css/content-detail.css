@@ -1323,6 +1323,59 @@
 }
 
 /* =================================================================== */
+/* CRITICAL FIX: NUCLEAR OPTION TO HIDE ALL BROWSER VIDEO CONTROLS    */
+/* =================================================================== */
+
+/* NUCLEAR OPTION: PERMANENTLY HIDE ALL BROWSER VIDEO CONTROLS */
+#inlineVideoPlayer,
+.video-container video {
+  /* Remove all default controls */
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  appearance: none !important;
+  outline: none !important;
+  border: none !important;
+}
+
+/* Hide all browser UI elements */
+#inlineVideoPlayer::-webkit-media-controls,
+#inlineVideoPlayer::-webkit-media-control-panel,
+#inlineVideoPlayer::-webkit-media-control-play-button,
+#inlineVideoPlayer::-webkit-media-control-current-time-display,
+#inlineVideoPlayer::-webkit-media-control-time-remaining-display,
+#inlineVideoPlayer::-webkit-media-control-timeline,
+#inlineVideoPlayer::-webkit-media-control-volume-slider,
+#inlineVideoPlayer::-webkit-media-control-mute-button,
+#inlineVideoPlayer::-webkit-media-control-fullscreen-button,
+#inlineVideoPlayer::-webkit-media-control-rewind-button,
+#inlineVideoPlayer::-webkit-media-control-return-to-realtime-button,
+#inlineVideoPlayer::-webkit-media-control-toggle-closed-captions-button,
+#inlineVideoPlayer::-moz-media-controls {
+  display: none !important;
+  opacity: 0 !important;
+  height: 0 !important;
+  width: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  pointer-events: none !important;
+}
+
+/* Prevent right-click menu on video */
+#inlineVideoPlayer {
+  user-select: none !important;
+  -webkit-user-select: none !important;
+  -moz-user-select: none !important;
+  -ms-user-select: none !important;
+}
+
+/* Force our custom controls to always show */
+.video-controls {
+  opacity: 1 !important;
+  pointer-events: all !important;
+  display: block !important;
+}
+
+/* =================================================================== */
 /* BANTU STREAM CONNECT BRANDED VIDEO PLAYER - NO DEFAULT CONTROLS!   */
 /* =================================================================== */
 
