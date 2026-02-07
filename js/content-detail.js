@@ -1,6 +1,6 @@
-// js/content-detail.js - UPDATED WITH PHASE 1 FIXES
+// js/content-detail.js - UPDATED WITH VIDEO URL FIXES
 
-console.log('🎬 Content Detail Initializing with Phase 1 fixes...');
+console.log('🎬 Content Detail Initializing with Video URL fixes...');
 
 // Global variables
 let currentContent = null;
@@ -8,6 +8,40 @@ let enhancedVideoPlayer = null;
 let isInitialized = false;
 let currentUserId = null;
 let viewRecorded = false; // Track if view has been recorded THIS SESSION
+
+// ============================================
+// VIDEO URL VALIDATION & DEBUGGING
+// ============================================
+async function validateVideoUrl(url) {
+    try {
+        console.log('🔍 Validating video URL:', url);
+        
+        // Check if URL is accessible
+        const response = await fetch(url, { 
+            method: 'HEAD', 
+            mode: 'cors',
+            cache: 'no-cache'
+        });
+        
+        if (response.ok) {
+            console.log('✅ Video URL is accessible');
+            console.log('📊 Content-Type:', response.headers.get('content-type'));
+            console.log('📊 Content-Length:', response.headers.get('content-length'));
+            return true;
+        } else {
+            console.error('❌ Video URL returned status:', response.status, response.statusText);
+            return false;
+        }
+    } catch (error) {
+        console.error('❌ Error validating video URL:', error);
+        return false;
+    }
+}
+
+// Helper to get file extension
+function getFileExtension(filename) {
+    return filename.slice((filename.lastIndexOf(".") - 1 >>> 0) + 2);
+}
 
 // Initialize when DOM is ready
 document.addEventListener('DOMContentLoaded', async () => {
@@ -51,7 +85,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('loading').style.display = 'none';
   document.getElementById('app').style.display = 'block';
   
-  console.log('✅ Content Detail fully initialized with Phase 1 fixes');
+  console.log('✅ Content Detail fully initialized with Video URL fixes');
 });
 
 async function waitForHelpers() {
@@ -157,7 +191,7 @@ function resetProfileUI() {
   };
 }
 
-// Load content from URL
+// Load content from URL - UPDATED WITH DEBUG LOGGING
 async function loadContentFromURL() {
   const urlParams = new URLSearchParams(window.location.search);
   const contentId = urlParams.get('id') || '68';
@@ -169,9 +203,9 @@ async function loadContentFromURL() {
       .select('*, user_profiles!user_id(*)')
       .eq('id', contentId)
       .single();
-    
+
     if (error) throw error;
-    
+
     // Process data
     currentContent = {
       id: data.id,
@@ -191,7 +225,24 @@ async function loadContentFromURL() {
       creator_id: data.user_profiles?.id || data.user_id,
       user_id: data.user_id
     };
+
+    // ============================================
+    // DEBUG: Log the file URLs
+    // ============================================
+    console.log('📥 Content loaded:', currentContent.title);
+    console.log('📁 Raw file_url from DB:', data.file_url);
+    console.log('📁 Raw thumbnail_url from DB:', data.thumbnail_url);
     
+    // Construct full URLs for debugging
+    if (data.file_url && !data.file_url.startsWith('http')) {
+      const cleanPath = data.file_url.startsWith('/') ? data.file_url.substring(1) : data.file_url;
+      const fullUrl = `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/content-media/${cleanPath}`;
+      console.log('🔗 Full video URL:', fullUrl);
+      
+      // Validate it
+      validateVideoUrl(fullUrl);
+    }
+
     console.log('✅ Real content loaded:', currentContent.title);
     
     // Update UI
@@ -202,7 +253,6 @@ async function loadContentFromURL() {
     
     // Load related content
     await loadRelatedContent(contentId);
-    
   } catch (error) {
     console.error('❌ Content load failed:', error);
     showToast('Content not available. Please try again.', 'error');
@@ -609,9 +659,72 @@ function initializeEnhancedVideoPlayer() {
       }
     });
     
+    // ============================================
+    // UPDATED ERROR HANDLER WITH DETAILED LOGGING
+    // ============================================
     enhancedVideoPlayer.on('error', (error) => {
-      console.error('Video player error:', error);
-      showToast('Video playback error', 'error');
+      console.error('🔴 Video player error:', error);
+      
+      // Detailed error logging
+      if (error?.target) {
+        const video = error.target;
+        console.error('Video element error details:');
+        console.error('  - Network state:', video.networkState);
+        console.error('  - Ready state:', video.readyState);
+        console.error('  - Error code:', video.error?.code);
+        console.error('  - Error message:', video.error?.message);
+        
+        // Map error codes to human-readable messages
+        const errorMessages = {
+          1: 'MEDIA_ERR_ABORTED: Video load was aborted',
+          2: 'MEDIA_ERR_NETWORK: Network error occurred',
+          3: 'MEDIA_ERR_DECODE: Video decoding failed (corrupted or unsupported format)',
+          4: 'MEDIA_ERR_SRC_NOT_SUPPORTED: Video format not supported or URL invalid'
+        };
+        
+        const errorMsg = errorMessages[video.error?.code] || 'Unknown playback error';
+        console.error('  - Detailed error:', errorMsg);
+        
+        showToast(`Playback failed: ${errorMsg}`, 'error');
+      } else {
+        showToast('Video playback error occurred', 'error');
+      }
+      
+      // Show retry option
+      const retryBtn = document.createElement('button');
+      retryBtn.textContent = 'Retry';
+      retryBtn.className = 'btn btn-secondary';
+      retryBtn.onclick = () => {
+        if (enhancedVideoPlayer) {
+          enhancedVideoPlayer.video.load();
+          enhancedVideoPlayer.play().catch(console.error);
+        }
+      };
+      
+      // Add to UI somewhere visible
+      const errorContainer = document.querySelector('.inline-player');
+      if (errorContainer) {
+        let existingRetry = errorContainer.querySelector('.retry-button');
+        if (existingRetry) existingRetry.remove();
+        
+        retryBtn.className += ' retry-button';
+        retryBtn.style.cssText = `
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 100;
+            padding: 12px 24px;
+            background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        `;
+        errorContainer.appendChild(retryBtn);
+      }
     });
     
     // Setup time update for watch history (FIXED: removed track.watchProgress error)
@@ -886,13 +999,15 @@ function copyToClipboard(text) {
   });
 }
 
-// Handle play button
+// ============================================
+// UPDATED: Handle play button - CRITICAL FIX
+// ============================================
 function handlePlay() {
   if (!currentContent) {
     showToast('No content to play', 'error');
     return;
   }
-  
+
   const player = document.getElementById('inlinePlayer');
   const videoElement = document.getElementById('inlineVideoPlayer');
   
@@ -900,66 +1015,122 @@ function handlePlay() {
     showToast('Video player not available', 'error');
     return;
   }
-  
-  // Get video URL
+
+  // ============================================
+  // CRITICAL FIX: Get CORRECT video URL
+  // ============================================
   let videoUrl = currentContent.file_url;
-  if (window.SupabaseHelper?.fixMediaUrl) {
-    videoUrl = window.SupabaseHelper.fixMediaUrl(videoUrl);
+  
+  console.log('📥 Raw file_url from database:', videoUrl);
+  
+  // If it's just a path (not full URL), construct proper Supabase URL
+  if (videoUrl && !videoUrl.startsWith('http')) {
+    // Remove leading slash if present
+    if (videoUrl.startsWith('/')) {
+      videoUrl = videoUrl.substring(1);
+    }
+    
+    // Construct full Supabase storage URL
+    videoUrl = `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/content-media/${videoUrl}`;
   }
   
-  console.log('🎥 Playing video:', videoUrl);
+  // Fallback: Try thumbnail_url if file_url is invalid
+  if (!videoUrl || videoUrl === 'null' || videoUrl === 'undefined' || videoUrl === '') {
+    if (currentContent.thumbnail_url && !currentContent.thumbnail_url.startsWith('http')) {
+      const cleanPath = currentContent.thumbnail_url.startsWith('/') 
+        ? currentContent.thumbnail_url.substring(1) 
+        : currentContent.thumbnail_url;
+      videoUrl = `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/content-media/${cleanPath}`;
+    }
+  }
+
+  console.log('🎥 Final video URL:', videoUrl);
+
+  // Validate URL before attempting to play
+  if (!videoUrl || (!videoUrl.includes('.mp4') && !videoUrl.includes('.webm') && !videoUrl.includes('.mov'))) {
+    console.error('❌ Invalid video URL or format:', videoUrl);
+    showToast('Invalid video format or URL. Please contact support.', 'error');
+    return;
+  }
+
+  // ============================================
+  // CRITICAL: Properly set video source with MIME type
+  // ============================================
   
-  // Set video source if not already set
-  if (!videoElement.src || videoElement.src !== videoUrl) {
-    videoElement.src = videoUrl;
-    videoElement.load();
+  // Clear existing sources
+  while (videoElement.firstChild) {
+    videoElement.removeChild(videoElement.firstChild);
   }
   
+  // Remove existing src attribute
+  videoElement.removeAttribute('src');
+  videoElement.src = '';
+  
+  // Create new source element
+  const source = document.createElement('source');
+  source.src = videoUrl;
+  
+  // Set correct MIME type based on file extension
+  if (videoUrl.endsWith('.mp4')) {
+    source.type = 'video/mp4';
+  } else if (videoUrl.endsWith('.webm')) {
+    source.type = 'video/webm';
+  } else if (videoUrl.endsWith('.mov')) {
+    source.type = 'video/quicktime';
+  } else {
+    source.type = 'video/mp4'; // Default fallback
+  }
+  
+  // Add source to video element
+  videoElement.appendChild(source);
+  
+  // Force reload
+  videoElement.load();
+
+  console.log('✅ Video source set successfully');
+
   // Show player
   player.style.display = 'block';
-  
+
   // Hide placeholder
   const placeholder = document.getElementById('videoPlaceholder');
   if (placeholder) {
     placeholder.style.display = 'none';
   }
-  
-  // PHASE 1 FIX: Proper cleanup before creating new player instance
+
+  // IMPORTANT: Remove any existing player instance before creating new one
   if (enhancedVideoPlayer) {
     try {
-      // Clear video source first
-      if (enhancedVideoPlayer.video) {
-        enhancedVideoPlayer.video.pause();
-        enhancedVideoPlayer.video.src = '';
-        enhancedVideoPlayer.video.load();
-      }
-      
       enhancedVideoPlayer.destroy();
     } catch (e) {
       console.warn('Error destroying old player:', e);
     }
     enhancedVideoPlayer = null;
   }
-  
+
   // Initialize player
   initializeEnhancedVideoPlayer();
-  
+
   // Try to play after a short delay
   setTimeout(() => {
     if (enhancedVideoPlayer) {
       enhancedVideoPlayer.play().catch(err => {
-        console.log('Play prevented:', err);
+        console.error('🔴 Play failed:', err);
+        console.error('  - Error name:', err.name);
+        console.error('  - Error message:', err.message);
         showToast('Click play button in video player', 'info');
       });
     } else {
       // Fallback to native player
       videoElement.play().catch(err => {
-        console.log('Autoplay prevented:', err);
+        console.error('🔴 Autoplay failed:', err);
+        console.error('  - Error name:', err.name);
+        console.error('  - Error message:', err.message);
         showToast('Click play button in video player', 'info');
       });
     }
-  }, 300);
-  
+  }, 500);
+
   // Scroll to player
   setTimeout(() => {
     player.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -2037,4 +2208,4 @@ window.hasViewedContentRecently = hasViewedContentRecently;
 window.markContentAsViewed = markContentAsViewed;
 window.recordContentView = recordContentView;
 
-console.log('✅ Content detail script loaded with Phase 1 fixes');
+console.log('✅ Content detail script loaded with Video URL fixes');
