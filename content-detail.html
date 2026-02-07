@@ -18,6 +18,8 @@
   <link rel="stylesheet" href="css/base.css">
   <link rel="stylesheet" href="css/components.css">
   <link rel="stylesheet" href="css/content-detail.css">
+  <!-- PHASE 1 FIX: New Video Player CSS -->
+  <link rel="stylesheet" href="css/video-player.css">
 </head>
 <body>
   <!-- Loading Screen -->
@@ -121,77 +123,68 @@
         </div>
       </section>
 
-      <!-- BANTU STREAM CONNECT BRANDED VIDEO PLAYER -->
-<div class="inline-player" id="inlinePlayer" style="display: none;">
-  <div class="player-header">
-    <h3 id="playerTitle">Now Playing</h3>
-    <button class="icon-btn close-player" id="closePlayerBtn" title="Close Player">
-      <i class="fas fa-times"></i>
-    </button>
-  </div>
-  <div class="video-container" id="bantuVideoContainer">
-    <!-- Video element WITHOUT any duplicate controls -->
-    <video id="inlineVideoPlayer" playsinline webkit-playsinline>
-      Your browser does not support the video tag.
-    </video>
-    
-    <!-- SIMPLE Loading Placeholder Only -->
-    <div class="bantu-player-placeholder" id="videoPlaceholder">
-      <div class="bantu-logo-spinner">
-        <div class="bantu-logo">
-          <i class="fas fa-film"></i>
+      <!-- BANTU STREAM CONNECT BRANDED VIDEO PLAYER - PHASE 1 FIXED -->
+      <div class="inline-player" id="inlinePlayer" style="display: none;">
+        <div class="player-header">
+          <h3 id="playerTitle">Now Playing</h3>
+          <button class="icon-btn close-player" id="closePlayerBtn" title="Close Player">
+            <i class="fas fa-times"></i>
+          </button>
         </div>
-        <div class="bantu-brand-text">BANTU STREAM CONNECT</div>
-      </div>
-      <p class="loading-text">Ready to play...</p>
-    </div>
-  </div>
-  <div class="player-actions">
-    <div class="player-controls">
-      <button class="control-btn" id="pipBtn" title="Picture-in-Picture">
-        <i class="fas fa-images"></i>
-      </button>
-      <button class="control-btn" id="fullscreenBtn" title="Fullscreen">
-        <i class="fas fa-expand"></i>
-      </button>
-    </div>
-    <button id="connectBtn" class="btn connect-btn">
-      <i class="fas fa-user-plus"></i>
-      <span>Connect</span>
-    </button>
-  </div>
-</div>
-              
-              <!-- Playback Speed -->
-              <div class="bantu-playback-speed">
-                <button class="bantu-control-btn speed-btn" title="Playback Speed">
-                  <span class="speed-label">1x</span>
-                </button>
+        <div class="video-container" id="bantuVideoContainer">
+          <!-- Video element WITHOUT any duplicate controls - Phase 1 Fix -->
+          <video id="inlineVideoPlayer" playsinline webkit-playsinline>
+            Your browser does not support the video tag.
+          </video>
+          
+          <!-- SIMPLE Loading Placeholder Only -->
+          <div class="bantu-player-placeholder" id="videoPlaceholder">
+            <div class="bantu-logo-spinner">
+              <div class="bantu-logo">
+                <i class="fas fa-film"></i>
               </div>
-              
-              <!-- Quality Selector -->
-              <div class="bantu-quality-selector">
-                <button class="bantu-control-btn quality-btn" title="Quality">
-                  <span class="quality-label">AUTO</span>
-                </button>
-              </div>
-              
-              <!-- Picture-in-Picture -->
-              <button class="bantu-control-btn pip-btn" title="Picture-in-Picture">
-                <i class="fas fa-clone"></i>
+              <div class="bantu-brand-text">BANTU STREAM CONNECT</div>
+            </div>
+            <p class="loading-text">Ready to play...</p>
+          </div>
+          
+          <!-- PHASE 1 FIX: Enhanced Video Player Controls (only these will show) -->
+          <div class="enhanced-video-controls">
+            <div class="controls-bar">
+              <button class="control-btn play-pause" title="Play/Pause">
+                <i class="fas fa-play"></i>
               </button>
               
-              <!-- Fullscreen -->
-              <button class="bantu-control-btn fullscreen-btn" title="Fullscreen">
+              <div class="time-display">
+                <span class="current-time">0:00</span>
+                <span> / </span>
+                <span class="duration">0:00</span>
+              </div>
+              
+              <div class="progress-container">
+                <input type="range" class="progress-bar" min="0" max="100" value="0">
+              </div>
+              
+              <div class="volume-controls">
+                <button class="control-btn volume-btn" title="Volume">
+                  <i class="fas fa-volume-up"></i>
+                </button>
+                <input type="range" class="volume-bar" min="0" max="100" value="100">
+              </div>
+              
+              <button class="control-btn settings-btn" title="Settings">
+                <i class="fas fa-cog"></i>
+              </button>
+              
+              <button class="control-btn fullscreen-btn" title="Fullscreen">
                 <i class="fas fa-expand"></i>
               </button>
             </div>
             
-            <!-- Settings Menu (Hidden by default) -->
-            <div class="bantu-settings-menu">
-              <div class="bantu-settings-section">
+            <div class="settings-menu">
+              <div class="settings-section">
                 <h4>Playback Speed</h4>
-                <div class="bantu-speed-options">
+                <div class="speed-options">
                   <button class="speed-option" data-speed="0.5">0.5x</button>
                   <button class="speed-option" data-speed="0.75">0.75x</button>
                   <button class="speed-option active" data-speed="1">1x</button>
@@ -200,56 +193,22 @@
                   <button class="speed-option" data-speed="2">2x</button>
                 </div>
               </div>
-              
-              <div class="bantu-settings-section">
-                <h4>Quality</h4>
-                <div class="bantu-quality-options">
-                  <button class="quality-option active" data-quality="auto">Auto</button>
-                  <button class="quality-option" data-quality="1080">1080p</button>
-                  <button class="quality-option" data-quality="720">720p</button>
-                  <button class="quality-option" data-quality="480">480p</button>
-                  <button class="quality-option" data-quality="360">360p</button>
-                </div>
-              </div>
-              
-              <div class="bantu-settings-section">
-                <h4>More Options</h4>
-                <button class="bantu-option-btn" id="bantu-sleep-timer">
-                  <i class="fas fa-moon"></i> Sleep Timer
-                </button>
-                <button class="bantu-option-btn" id="bantu-loop">
-                  <i class="fas fa-redo"></i> Loop Video
-                </button>
-                <button class="bantu-option-btn" id="bantu-boost-audio">
-                  <i class="fas fa-volume-up"></i> Audio Boost
-                </button>
-                <button class="bantu-option-btn" id="bantu-captions">
-                  <i class="fas fa-closed-captioning"></i> Captions
-                </button>
-              </div>
             </div>
-            
-            <!-- Buffering Indicator -->
-            <div class="bantu-buffering-indicator">
-              <div class="bantu-spinner"></div>
-              <p>Buffering...</p>
-            </div>
-            
-            <!-- Error Overlay -->
-            <div class="bantu-error-overlay">
-              <div class="bantu-error-content">
-                <i class="fas fa-exclamation-triangle"></i>
-                <h3>Playback Error</h3>
-                <p class="bantu-error-message">Unable to play video. Please check your connection.</p>
-                <button class="bantu-retry-btn">Retry</button>
-                <button class="bantu-cancel-btn">Cancel</button>
-              </div>
-            </div>
-            
-            <!-- Bantu Brand Watermark -->
-            <div class="bantu-watermark">
-              <i class="fas fa-crown"></i>
-              <span>BANTU STREAM CONNECT</span>
+          </div>
+          
+          <!-- Buffering Indicator -->
+          <div class="buffering-indicator">
+            <div class="spinner"></div>
+            <p>Buffering...</p>
+          </div>
+          
+          <!-- Error Overlay -->
+          <div class="error-overlay">
+            <div class="error-content">
+              <i class="fas fa-exclamation-triangle"></i>
+              <h3>Playback Error</h3>
+              <p class="error-message">Unable to play video. Please check your connection.</p>
+              <button class="retry-btn">Retry</button>
             </div>
           </div>
         </div>
@@ -413,7 +372,7 @@
     </button>
 
     <!-- =================================================================== -->
-    <!-- NEW MODALS & PANELS (Added as per updates)                         -->
+    <!-- MODALS & PANELS                                                     -->
     <!-- =================================================================== -->
 
     <!-- Analytics Modal -->
@@ -528,9 +487,16 @@
 
   <!-- Initialize Supabase Client -->
   <script>
+    // PHASE 1 FIX: Store in window for global access
     const SUPABASE_URL = 'https://ydnxqnbjoshvxteevemc.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U';
+    
+    // Initialize Supabase client
     window.supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    
+    // Make constants available globally for other scripts
+    window.SUPABASE_URL = SUPABASE_URL;
+    window.SUPABASE_ANON_KEY = SUPABASE_ANON_KEY;
   </script>
   
   <!-- Utility Scripts -->
@@ -542,7 +508,36 @@
   <script src="js/video-player.js"></script>
   <script src="js/virtual-scroll.js"></script>
   
+  <!-- PHASE 1 FIX: New Video Player Features -->
+  <script src="js/video-player-features.js"></script>
+  
   <!-- Main Content Detail Script -->
   <script src="js/content-detail.js"></script>
+  
+  <!-- PHASE 1 FIX: Initialize View Deduplication -->
+  <script>
+    // Initialize view deduplication when page loads
+    document.addEventListener('DOMContentLoaded', function() {
+      // Clean up any old view data (older than 30 days)
+      try {
+        const viewedContent = JSON.parse(localStorage.getItem('bantu_viewed_content') || '{}');
+        const thirtyDaysAgo = Date.now() - (30 * 24 * 60 * 60 * 1000);
+        let needsCleanup = false;
+        
+        Object.keys(viewedContent).forEach(id => {
+          if (viewedContent[id] < thirtyDaysAgo) {
+            delete viewedContent[id];
+            needsCleanup = true;
+          }
+        });
+        
+        if (needsCleanup) {
+          localStorage.setItem('bantu_viewed_content', JSON.stringify(viewedContent));
+        }
+      } catch (error) {
+        console.warn('Error cleaning up view data:', error);
+      }
+    });
+  </script>
 </body>
 </html>
