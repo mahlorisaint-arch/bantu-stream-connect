@@ -1,4 +1,4 @@
-console.log('📡 Supabase Helper Initializing...');
+console.log('📡 Supabase Helper Initializing with Video URL fixes...');
 
 // Simple Supabase helper object
 const SupabaseHelper = {
@@ -33,6 +33,42 @@ const SupabaseHelper = {
             console.error('❌ Supabase Helper Initialization error:', error);
             return false;
         }
+    },
+    
+    // ============================================
+    // CRITICAL FIX: Fix media URL function
+    // ============================================
+    fixMediaUrl: function(url) {
+        if (!url) return null;
+        
+        console.log('🔧 Fixing media URL:', url);
+        
+        // If already full URL, return as-is
+        if (url.startsWith('http')) {
+            console.log('✅ Already a full URL');
+            return url;
+        }
+        
+        // Remove leading slash if present
+        let cleanUrl = url;
+        if (cleanUrl.startsWith('/')) {
+            cleanUrl = cleanUrl.substring(1);
+        }
+        
+        // Determine bucket based on path
+        let bucket = 'content-media'; // default bucket
+        
+        if (cleanUrl.includes('thumbnails') || cleanUrl.includes('.jpg') || cleanUrl.includes('.jpeg') || cleanUrl.includes('.png') || cleanUrl.includes('.webp')) {
+            bucket = 'content-thumbnails';
+        } else if (cleanUrl.includes('profile-pictures') || cleanUrl.includes('avatar')) {
+            bucket = 'profile-pictures';
+        }
+        
+        // Construct full Supabase URL
+        const fullUrl = `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/${bucket}/${cleanUrl}`;
+        console.log('🔗 Constructed full URL:', fullUrl);
+        
+        return fullUrl;
     },
     
     // Get content by ID - FIXED QUERY
@@ -328,28 +364,6 @@ const SupabaseHelper = {
         } catch (error) {
             console.error('Exception in getCurrentUser:', error);
             return null;
-        }
-    },
-    
-    // Fix media URL
-    fixMediaUrl: function(url) {
-        if (!url) return 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=800&h=450&fit=crop';
-        
-        // If it's already a full URL, return it
-        if (url.startsWith('http')) {
-            return url;
-        }
-        
-        // Otherwise, construct the URL
-        const projectRef = 'ydnxqnbjoshvxteevemc';
-        
-        if (url.includes('thumbnails')) {
-            return `https://${projectRef}.supabase.co/storage/v1/object/public/content-thumbnails/${url}`;
-        } else if (url.includes('media')) {
-            return `https://${projectRef}.supabase.co/storage/v1/object/public/content-media/${url}`;
-        } else {
-            // Try to guess
-            return `https://${projectRef}.supabase.co/storage/v1/object/public/${url}`;
         }
     },
     
