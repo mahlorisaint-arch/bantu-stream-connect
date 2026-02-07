@@ -1,11 +1,13 @@
-console.log('🎬 Content Detail Initializing...');
+// js/content-detail.js - UPDATED WITH PHASE 1 FIXES
+
+console.log('🎬 Content Detail Initializing with Phase 1 fixes...');
 
 // Global variables
 let currentContent = null;
 let enhancedVideoPlayer = null;
 let isInitialized = false;
 let currentUserId = null;
-let viewRecorded = false; // Track if view has been recorded
+let viewRecorded = false; // Track if view has been recorded THIS SESSION
 
 // Initialize when DOM is ready
 document.addEventListener('DOMContentLoaded', async () => {
@@ -49,7 +51,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('loading').style.display = 'none';
   document.getElementById('app').style.display = 'block';
   
-  console.log('✅ Content Detail fully initialized');
+  console.log('✅ Content Detail fully initialized with Phase 1 fixes');
 });
 
 async function waitForHelpers() {
@@ -335,11 +337,13 @@ function renderComments(comments) {
   // Update count
   if (countEl) countEl.textContent = `(${comments.length})`;
   
-  // Add comments
+  // Add comments using DocumentFragment for performance
+  const fragment = document.createDocumentFragment();
   comments.forEach(comment => {
     const commentEl = createCommentElement(comment);
-    container.appendChild(commentEl);
+    fragment.appendChild(commentEl);
   });
+  container.appendChild(fragment);
 }
 
 function createCommentElement(comment) {
@@ -524,8 +528,12 @@ function initializeEnhancedVideoPlayer() {
     // Attach to video element
     enhancedVideoPlayer.attach(videoElement, videoContainer);
     
-    // CRITICAL: Setup view tracking on FIRST PLAY only
-    let viewRecorded = false;
+    // ====================================================
+    // PHASE 1 FIX: UPDATED VIEW TRACKING WITH DEDUPLICATION
+    // ====================================================
+    
+    // CRITICAL FIX: Setup view tracking with deduplication
+    let viewRecordedThisSession = false;
     enhancedVideoPlayer.on('play', () => {
       console.log('▶️ Video playing, recording view...');
       
@@ -534,36 +542,57 @@ function initializeEnhancedVideoPlayer() {
       }
       
       // Record view ONLY ONCE per session when video actually plays
-      if (currentContent && !viewRecorded) {
-        viewRecorded = true;
+      if (currentContent && !viewRecordedThisSession) {
+        viewRecordedThisSession = true;
         
-        // Update UI immediately
+        // PHASE 1 FIX: Check client-side deduplication first
+        if (hasViewedContentRecently(currentContent.id)) {
+          console.log('📊 View already recorded recently (client-side check)');
+          return;
+        }
+        
+        // PHASE 1 FIX: Optimistic UI update
         const currentViews = parseInt(document.getElementById('viewsCount')?.textContent.replace(/\D/g, '') || '0') || 0;
         const newViews = currentViews + 1;
         
         document.getElementById('viewsCount').textContent = formatNumber(newViews) + ' views';
         document.getElementById('viewsCountFull').textContent = formatNumber(newViews);
         
-        // Update database view count
-        if (window.SupabaseHelper && window.SupabaseHelper.client) {
-          window.SupabaseHelper.client
-            .from('Content')
-            .update({ views_count: newViews })
-            .eq('id', currentContent.id)
-            .then(() => {
-              console.log('✅ View count updated in database');
-              // Update local content
-              if (currentContent) {
-                currentContent.views_count = newViews;
-              }
-            })
-            .catch(error => {
-              console.error('❌ Error updating view count:', error);
-            });
-        }
-        
-        // Record detailed view in content_views table (without user_id if not available)
-        recordContentView(currentContent.id).catch(console.error);
+        // PHASE 1 FIX: Record view with server-side deduplication
+        recordContentView(currentContent.id).then(success => {
+          if (success) {
+            console.log('✅ View recorded successfully with deduplication');
+            
+            // Update database view count after successful deduplication
+            if (window.SupabaseHelper && window.SupabaseHelper.client) {
+              window.SupabaseHelper.client
+                .from('Content')
+                .update({ views_count: newViews })
+                .eq('id', currentContent.id)
+                .then(() => {
+                  console.log('✅ View count updated in database');
+                  // Update local content
+                  if (currentContent) {
+                    currentContent.views_count = newViews;
+                  }
+                })
+                .catch(error => {
+                  console.error('❌ Error updating view count:', error);
+                });
+            }
+            
+            // Mark as viewed in client-side storage
+            markContentAsViewed(currentContent.id);
+          } else {
+            console.log('📊 View deduplicated on server');
+            // Revert optimistic update if view was deduplicated
+            document.getElementById('viewsCount').textContent = formatNumber(currentViews) + ' views';
+            document.getElementById('viewsCountFull').textContent = formatNumber(currentViews);
+          }
+        }).catch(error => {
+          console.error('❌ Error recording view:', error);
+          // Keep optimistic update even if error
+        });
       }
     });
     
@@ -604,7 +633,7 @@ function initializeEnhancedVideoPlayer() {
       }
     });
     
-    console.log('✅ Enhanced video player initialized successfully');
+    console.log('✅ Enhanced video player initialized successfully with Phase 1 fixes');
     
   } catch (error) {
     console.error('❌ Failed to initialize enhanced video player:', error);
@@ -621,58 +650,220 @@ function initializeEnhancedVideoPlayer() {
   }
 }
 
-// Helper function to record content view (FIXED VERSION)
+// ====================================================
+// PHASE 1 FIXES: VIEW DEDUPLICATION FUNCTIONS
+// ====================================================
+
+/**
+ * Check if content was viewed in the last 24 hours (client-side)
+ */
+function hasViewedContentRecently(contentId) {
+  try {
+    const viewedContent = JSON.parse(localStorage.getItem('bantu_viewed_content') || '{}');
+    const viewTime = viewedContent[contentId];
+    
+    if (!viewTime) return false;
+    
+    const hoursSinceView = (Date.now() - viewTime) / (1000 * 60 * 60);
+    return hoursSinceView < 24;
+  } catch (error) {
+    console.error('Error checking view history:', error);
+    return false;
+  }
+}
+
+/**
+ * Mark content as viewed in client-side storage
+ */
+function markContentAsViewed(contentId) {
+  try {
+    const viewedContent = JSON.parse(localStorage.getItem('bantu_viewed_content') || '{}');
+    viewedContent[contentId] = Date.now();
+    
+    // Clean up old entries (older than 7 days)
+    const sevenDaysAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);
+    Object.keys(viewedContent).forEach(id => {
+      if (viewedContent[id] < sevenDaysAgo) {
+        delete viewedContent[id];
+      }
+    });
+    
+    localStorage.setItem('bantu_viewed_content', JSON.stringify(viewedContent));
+    return true;
+  } catch (error) {
+    console.error('Error marking content as viewed:', error);
+    return false;
+  }
+}
+
+/**
+ * PHASE 1 FIX: UPDATED - Record content view with server-side deduplication
+ */
 async function recordContentView(contentId) {
   try {
-    if (!window.SupabaseHelper || !window.SupabaseHelper.client) {
-      console.warn('Supabase helper not available');
-      return;
-    }
+    // Generate fingerprint for anonymous users
+    const fingerprint = await generateFingerprint();
     
-    // Prepare data for insert
-    const viewData = {
-      content_id: contentId,
-      viewed_at: new Date().toISOString(),
-      device_type: /Mobile|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ? 'mobile' : 'desktop'
+    // Prepare request data
+    const requestData = {
+      contentId: contentId,
+      fingerprint: fingerprint
     };
     
-    // Only add viewer_id if user is authenticated
+    // Add user ID if authenticated
     if (currentUserId) {
-      viewData.viewer_id = currentUserId;
+      requestData.userId = currentUserId;
     }
     
-    console.log('📊 Recording view:', viewData);
+    console.log('📊 Recording view with deduplication:', requestData);
     
-    // Record view in content_views table
-    const { data, error } = await window.SupabaseHelper.client
-      .from('content_views')
-      .insert(viewData);
-    
-    if (error) {
-      console.error('❌ Error recording view:', error);
-      // Try alternative table name
-      try {
-        await window.SupabaseHelper.client
-          .from('content_views')
-          .insert(viewData);
-      } catch (retryError) {
-        console.error('❌ Retry also failed:', retryError);
+    // PHASE 1 FIX: Try server-side Edge Function first
+    try {
+      const response = await fetch('https://ydnxqnbjoshvxteevemc.supabase.co/functions/v1/record-view', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+        },
+        body: JSON.stringify(requestData)
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        
+        if (!result.success) {
+          if (result.reason === 'already_viewed') {
+            console.log('📊 View already recorded in last 24 hours (server-side)');
+            return false; // View was deduplicated
+          }
+          throw new Error(result.error || 'Failed to record view');
+        }
+        
+        console.log(`✅ View recorded server-side for content ${contentId}`);
+        return true;
       }
-      return;
+    } catch (edgeFunctionError) {
+      console.warn('Edge function failed, falling back to direct Supabase:', edgeFunctionError);
     }
     
-    console.log(`✅ View recorded for content ${contentId}`);
-    
-    // Track analytics if available
-    if (window.track && window.track.contentView) {
-      try {
-        window.track.contentView(contentId, 'video');
-      } catch (analyticsError) {
-        console.warn('Analytics tracking failed:', analyticsError);
+    // FALLBACK: Direct Supabase insert with basic deduplication
+    if (window.SupabaseHelper && window.SupabaseHelper.client) {
+      // Check for existing view in last 24 hours (basic deduplication)
+      const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+      
+      let existingViewQuery = window.SupabaseHelper.client
+        .from('content_views')
+        .select('id')
+        .eq('content_id', contentId)
+        .gte('viewed_at', twentyFourHoursAgo)
+        .limit(1);
+      
+      if (currentUserId) {
+        existingViewQuery = existingViewQuery.eq('viewer_id', currentUserId);
       }
+      
+      const { data: existingViews } = await existingViewQuery;
+      
+      if (existingViews && existingViews.length > 0) {
+        console.log('📊 View already exists in last 24 hours (direct Supabase check)');
+        return false;
+      }
+      
+      // Prepare data for insert
+      const viewData = {
+        content_id: contentId,
+        viewed_at: new Date().toISOString(),
+        device_type: /Mobile|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ? 'mobile' : 'desktop'
+      };
+      
+      if (currentUserId) {
+        viewData.viewer_id = currentUserId;
+      }
+      
+      console.log('📊 Recording view in content_views table:', viewData);
+      
+      // Record view in content_views table
+      const { data, error } = await window.SupabaseHelper.client
+        .from('content_views')
+        .insert(viewData);
+      
+      if (error) {
+        console.error('❌ Error recording view:', error);
+        return false;
+      }
+      
+      console.log(`✅ View recorded for content ${contentId}`);
+      return true;
     }
+    
+    return false;
   } catch (error) {
-    console.error('❌ Error recording view:', error);
+    console.error('❌ Error in recordContentView:', error);
+    return false;
+  }
+}
+
+/**
+ * Generate fingerprint for anonymous users
+ */
+async function generateFingerprint() {
+  try {
+    // Combine multiple factors for a reliable fingerprint
+    const factors = [
+      navigator.userAgent,
+      navigator.language,
+      screen.width,
+      screen.height,
+      screen.colorDepth,
+      new Date().getTimezoneOffset(),
+      navigator.hardwareConcurrency || '',
+      navigator.platform,
+      // Add canvas fingerprint for better uniqueness
+      await getCanvasFingerprint()
+    ].join('|');
+    
+    // Hash the factors for privacy
+    const msgBuffer = new TextEncoder().encode(factors);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    
+    return hashHex;
+  } catch (error) {
+    console.error('Error generating fingerprint:', error);
+    // Fallback to simpler fingerprint
+    return `${navigator.userAgent}|${screen.width}x${screen.height}|${new Date().getTimezoneOffset()}`;
+  }
+}
+
+/**
+ * Generate canvas fingerprint (more reliable)
+ */
+async function getCanvasFingerprint() {
+  try {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    
+    canvas.width = 200;
+    canvas.height = 50;
+    
+    // Draw some text
+    ctx.textBaseline = 'top';
+    ctx.font = '14px Arial';
+    ctx.textBaseline = 'alphabetic';
+    ctx.fillStyle = '#f60';
+    ctx.fillRect(125, 1, 62, 20);
+    ctx.fillStyle = '#069';
+    ctx.fillText('Bantu Stream Connect', 2, 15);
+    ctx.fillStyle = 'rgba(102, 204, 0, 0.7)';
+    ctx.fillText('Bantu Stream Connect', 4, 17);
+    
+    // Get canvas data
+    const dataUrl = canvas.toDataURL();
+    return dataUrl.substring(dataUrl.indexOf(',') + 1);
+  } catch (error) {
+    console.error('Canvas fingerprint failed:', error);
+    return 'canvas_unsupported';
   }
 }
 
@@ -733,9 +924,16 @@ function handlePlay() {
     placeholder.style.display = 'none';
   }
   
-  // IMPORTANT: Remove any existing player instance before creating new one
+  // PHASE 1 FIX: Proper cleanup before creating new player instance
   if (enhancedVideoPlayer) {
     try {
+      // Clear video source first
+      if (enhancedVideoPlayer.video) {
+        enhancedVideoPlayer.video.pause();
+        enhancedVideoPlayer.video.src = '';
+        enhancedVideoPlayer.video.load();
+      }
+      
       enhancedVideoPlayer.destroy();
     } catch (e) {
       console.warn('Error destroying old player:', e);
@@ -796,12 +994,18 @@ function setupEventListeners() {
         video.currentTime = 0;
       }
       if (enhancedVideoPlayer) {
-        enhancedVideoPlayer.pause();
+        // PHASE 1 FIX: Proper cleanup
+        if (enhancedVideoPlayer.video) {
+          enhancedVideoPlayer.video.pause();
+          enhancedVideoPlayer.video.currentTime = 0;
+        }
+        enhancedVideoPlayer.destroy();
+        enhancedVideoPlayer = null;
       }
     });
   }
   
-  // Fullscreen button handlers (CRITICAL FIX)
+  // Fullscreen button handlers (PHASE 1 FIX: Proper fullscreen)
   const fullscreenBtn = document.getElementById('fullscreenBtn');
   const fullPlayerBtn = document.getElementById('fullPlayerBtn');
 
@@ -1828,4 +2032,9 @@ function showToast(message, type = 'info') {
   }, 3000);
 }
 
-console.log('✅ Content detail script loaded');
+// PHASE 1 FIX: Export key functions for VideoPlayerFeatures
+window.hasViewedContentRecently = hasViewedContentRecently;
+window.markContentAsViewed = markContentAsViewed;
+window.recordContentView = recordContentView;
+
+console.log('✅ Content detail script loaded with Phase 1 fixes');
