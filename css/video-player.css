@@ -1,0 +1,551 @@
+/* css/video-player.css - Enhanced Video Player Styles */
+
+/* =================================================================== */
+/* SINGLE PLAYER SYSTEM - NO DUPLICATE CONTROLS                        */
+/* =================================================================== */
+
+/* Hide ALL Bantu branded controls that conflict with EnhancedVideoPlayer */
+.bantu-video-controls,
+.bantu-control-bar,
+.bantu-social-controls,
+.bantu-settings-menu,
+.bantu-buffering-indicator,
+.bantu-error-overlay,
+.bantu-watermark {
+  display: none !important;
+}
+
+/* Enhanced Video Player Controls - THE ONLY CONTROLS SYSTEM */
+.enhanced-video-controls {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.85), transparent);
+  padding: 15px 20px;
+  z-index: 100;
+  transition: opacity 0.3s ease;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.video-container:hover .enhanced-video-controls,
+.enhanced-video-controls:hover,
+.video.paused + .enhanced-video-controls {
+  opacity: 1;
+  pointer-events: all;
+}
+
+.controls-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 15px;
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(10px);
+  border-radius: 12px;
+  border: 1px solid rgba(29, 78, 216, 0.3);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.control-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: var(--soft-white);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.control-btn:hover {
+  background: rgba(29, 78, 216, 0.4);
+  border-color: var(--bantu-blue);
+  transform: scale(1.1);
+  box-shadow: 0 0 15px rgba(29, 78, 216, 0.4);
+}
+
+.control-btn:active {
+  transform: scale(0.95);
+}
+
+.control-btn i {
+  font-size: 16px;
+}
+
+/* Time Display */
+.time-display {
+  font-family: 'Orbitron', monospace;
+  font-size: 14px;
+  color: var(--soft-white);
+  min-width: 110px;
+  text-align: center;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+}
+
+/* Progress Container */
+.progress-container {
+  flex: 1;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+  position: relative;
+  cursor: pointer;
+  margin: 0 10px;
+}
+
+.progress-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+  z-index: 2;
+}
+
+.progress-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  background: linear-gradient(90deg, var(--bantu-blue), var(--warm-gold));
+  border-radius: 3px;
+  width: var(--progress, 0%);
+  z-index: 1;
+}
+
+.progress-container::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: var(--progress, 0%);
+  width: 14px;
+  height: 14px;
+  background: var(--warm-gold);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  z-index: 1;
+}
+
+.progress-container:hover::after {
+  opacity: 1;
+}
+
+/* Volume Controls */
+.volume-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.volume-bar {
+  width: 80px;
+  height: 5px;
+  -webkit-appearance: none;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+  outline: none;
+  cursor: pointer;
+}
+
+.volume-bar::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--warm-gold);
+  cursor: pointer;
+  box-shadow: 0 0 8px rgba(245, 158, 11, 0.5);
+}
+
+.volume-bar::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--warm-gold);
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 0 8px rgba(245, 158, 11, 0.5);
+}
+
+/* Settings Menu */
+.settings-menu {
+  position: absolute;
+  bottom: 70px;
+  right: 25px;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  padding: 15px;
+  min-width: 200px;
+  backdrop-filter: blur(20px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+  z-index: 1000;
+  display: none;
+  animation: fadeInUp 0.2s ease;
+}
+
+.settings-menu.active {
+  display: block;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.settings-section {
+  margin-bottom: 15px;
+}
+
+.settings-section:last-child {
+  margin-bottom: 0;
+}
+
+.settings-section h4 {
+  color: var(--soft-white);
+  margin-bottom: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  opacity: 0.9;
+}
+
+.speed-options {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.speed-option {
+  padding: 6px 10px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--card-border);
+  border-radius: 8px;
+  color: var(--soft-white);
+  font-size: 13px;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.2s ease;
+}
+
+.speed-option:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: var(--bantu-blue);
+}
+
+.speed-option.active {
+  background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+  border-color: transparent;
+  color: white;
+  font-weight: 600;
+}
+
+/* Buffering Indicator */
+.buffering-indicator {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.7);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 90;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.buffering-indicator.active {
+  display: flex;
+  animation: fadeIn 0.3s ease;
+}
+
+.buffering-indicator .spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(255, 255, 255, 0.2);
+  border-top-color: var(--warm-gold);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.buffering-indicator p {
+  color: var(--soft-white);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+/* Error Overlay */
+.error-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.85);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 95;
+  padding: 20px;
+}
+
+.error-overlay.active {
+  display: flex;
+  animation: fadeIn 0.3s ease;
+}
+
+.error-content {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 20px;
+  padding: 30px;
+  text-align: center;
+  max-width: 450px;
+  width: 100%;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+
+.error-content i {
+  font-size: 3.5rem;
+  color: #EF4444;
+  margin-bottom: 15px;
+}
+
+.error-content h3 {
+  color: var(--soft-white);
+  font-size: 24px;
+  margin-bottom: 12px;
+  font-weight: 700;
+}
+
+.error-message {
+  color: rgba(255, 255, 255, 0.75);
+  margin-bottom: 25px;
+  line-height: 1.5;
+  font-size: 16px;
+}
+
+.retry-btn {
+  padding: 10px 25px;
+  background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 15px;
+}
+
+.retry-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(29, 78, 216, 0.4);
+}
+
+/* Fullscreen Mode Enhancements */
+.video-container:fullscreen .enhanced-video-controls,
+.video-container:-webkit-full-screen .enhanced-video-controls {
+  padding: 20px 30px;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.95), transparent);
+}
+
+.video-container:fullscreen .controls-bar,
+.video-container:-webkit-full-screen .controls-bar {
+  padding: 15px 20px;
+  border-radius: 16px;
+}
+
+.video-container:fullscreen .control-btn,
+.video-container:-webkit-full-screen .control-btn {
+  width: 42px;
+  height: 42px;
+}
+
+.video-container:fullscreen .control-btn i,
+.video-container:-webkit-full-screen .control-btn i {
+  font-size: 18px;
+}
+
+.video-container:fullscreen .time-display,
+.video-container:-webkit-full-screen .time-display {
+  font-size: 16px;
+  min-width: 130px;
+}
+
+.video-container:fullscreen .progress-container,
+.video-container:-webkit-full-screen .progress-container {
+  height: 8px;
+}
+
+/* Hide video placeholder when video is playing */
+#inlineVideoPlayer.playing ~ .bantu-player-placeholder {
+  display: none !important;
+}
+
+/* Animations */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Touch device optimizations */
+@media (hover: none) and (pointer: coarse) {
+  .enhanced-video-controls {
+    opacity: 1 !important;
+    padding-bottom: 25px;
+  }
+  
+  .control-btn {
+    min-width: 44px;
+    min-height: 44px;
+  }
+  
+  .progress-container {
+    height: 8px;
+  }
+  
+  .progress-container::after {
+    width: 18px;
+    height: 18px;
+  }
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+  .enhanced-video-controls {
+    padding: 12px 15px;
+  }
+  
+  .controls-bar {
+    padding: 8px 12px;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  
+  .time-display {
+    min-width: 90px;
+    font-size: 13px;
+    order: 1;
+    width: 100%;
+    text-align: left;
+    margin-top: 8px;
+  }
+  
+  .progress-container {
+    order: 0;
+    width: 100%;
+    margin: 5px 0;
+  }
+  
+  .control-btn {
+    width: 34px;
+    height: 34px;
+  }
+  
+  .control-btn i {
+    font-size: 14px;
+  }
+  
+  .volume-bar {
+    width: 60px;
+  }
+  
+  .settings-menu {
+    min-width: 90%;
+    bottom: 80px;
+    right: 5%;
+    left: 5%;
+  }
+}
+
+@media (max-width: 480px) {
+  .enhanced-video-controls {
+    padding: 10px 12px;
+  }
+  
+  .controls-bar {
+    padding: 6px 10px;
+    gap: 6px;
+  }
+  
+  .control-btn {
+    width: 32px;
+    height: 32px;
+  }
+  
+  .time-display {
+    font-size: 12px;
+    min-width: 80px;
+  }
+  
+  .volume-controls {
+    display: none;
+  }
+}
+
+/* =================================================================== */
+/* CRITICAL FIX: Remove ALL duplicate control systems                  */
+/* =================================================================== */
+
+/* Hide all legacy Bantu controls that were causing conflicts */
+.bantu-control-btn,
+.speed-btn,
+.quality-btn,
+.pip-btn,
+.bantu-fullscreen-btn,
+.bantu-settings-menu,
+.bantu-speed-options,
+.bantu-quality-options,
+.bantu-option-btn {
+  display: none !important;
+}
+
+/* Ensure video element has no native controls */
+#inlineVideoPlayer {
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  appearance: none !important;
+  outline: none !important;
+  border: none !important;
+}
+
+/* Remove any browser native controls */
+#inlineVideoPlayer::-webkit-media-controls,
+#inlineVideoPlayer::-webkit-media-control-panel,
+#inlineVideoPlayer::-webkit-media-control-play-button,
+#inlineVideoPlayer::-webkit-media-control-current-time-display,
+#inlineVideoPlayer::-webkit-media-control-time-remaining-display,
+#inlineVideoPlayer::-webkit-media-control-timeline,
+#inlineVideoPlayer::-webkit-media-control-volume-slider,
+#inlineVideoPlayer::-webkit-media-control-mute-button,
+#inlineVideoPlayer::-webkit-media-control-fullscreen-button,
+#inlineVideoPlayer::-moz-media-controls {
+  display: none !important;
+  opacity: 0 !important;
+  height: 0 !important;
+  width: 0 !important;
+  pointer-events: none !important;
+}
