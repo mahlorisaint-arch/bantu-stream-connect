@@ -66,26 +66,60 @@ class EnhancedVideoPlayer {
   }
   
   // ======================
-  // CORE METHODS
+  // CORE METHODS - UPDATED
   // ======================
   
-  attach(videoElement, containerElement) {
-    this.video = videoElement;
-    this.container = containerElement || videoElement.parentElement;
+  attach(videoElement, container) {
+    console.log('🔗 Attaching EnhancedVideoPlayer to video element');
     
-    if (!this.video || this.video.tagName !== 'VIDEO') {
-      throw new Error('Invalid video element');
+    if (!videoElement) {
+        throw new Error('Video element is required');
+    }
+
+    this.video = videoElement;
+    this.container = container || videoElement.parentElement;
+    
+    // ============================================
+    // CRITICAL FIX: Preserve existing video source
+    // ============================================
+    const existingSrc = this.video.src || this.video.getAttribute('src');
+    const existingSourceElements = Array.from(this.video.querySelectorAll('source'));
+    
+    console.log('📥 Existing video src:', existingSrc);
+    console.log('📥 Existing source elements:', existingSourceElements.length);
+    
+    // Store existing source info before we modify anything
+    let preservedSource = null;
+    let preservedType = null;
+    
+    if (existingSourceElements.length > 0) {
+        preservedSource = existingSourceElements[0].src;
+        preservedType = existingSourceElements[0].type;
+    } else if (existingSrc) {
+        preservedSource = existingSrc;
+        // Infer type from URL
+        if (preservedSource.endsWith('.mp4')) {
+            preservedType = 'video/mp4';
+        } else if (preservedSource.endsWith('.webm')) {
+            preservedType = 'video/webm';
+        } else if (preservedSource.endsWith('.mov')) {
+            preservedType = 'video/quicktime';
+        }
     }
     
+    console.log('💾 Preserved source:', preservedSource);
+    console.log('💾 Preserved type:', preservedType);
+
+    // Remove native controls
+    this.video.controls = false;
+    this.video.removeAttribute('controls');
+
     // Configure video element
     this.video.autoplay = this.config.autoplay;
     this.video.muted = this.config.muted;
     this.video.loop = this.config.loop;
     this.video.preload = this.config.preload;
-    
-    // Remove native controls
-    this.video.controls = false;
-    
+
     // Create and setup custom controls
     this.createCustomControls();
     this.setupVideoEventListeners();
@@ -94,7 +128,35 @@ class EnhancedVideoPlayer {
     if (this.contentId) {
       this.initializeSocialFeatures();
     }
-    
+
+    // ============================================
+    // CRITICAL: Restore video source AFTER setup
+    // ============================================
+    if (preservedSource) {
+        console.log('🔄 Restoring video source...');
+        
+        // Clear any existing sources
+        while (this.video.firstChild) {
+            this.video.removeChild(this.video.firstChild);
+        }
+        
+        // Remove existing src attribute
+        this.video.removeAttribute('src');
+        
+        // Create new source element
+        const source = document.createElement('source');
+        source.src = preservedSource;
+        source.type = preservedType || 'video/mp4';
+        
+        // Add source to video element
+        this.video.appendChild(source);
+        
+        // Force reload
+        this.video.load();
+        
+        console.log('✅ Video source restored successfully');
+    }
+
     console.log('✅ EnhancedVideoPlayer attached to video element');
     return this;
   }
@@ -675,22 +737,45 @@ class EnhancedVideoPlayer {
   }
   
   // ======================
-  // CLEANUP
+  // CRITICAL FIX: DESTROY METHOD
   // ======================
   
   destroy() {
+    console.log('🗑️ Destroying EnhancedVideoPlayer...');
+    
+    // ============================================
+    // CRITICAL FIX: Preserve video source on destroy
+    // ============================================
+    let preservedSource = null;
+    let preservedType = null;
+    
+    if (this.video) {
+        const existingSources = this.video.querySelectorAll('source');
+        if (existingSources.length > 0) {
+            preservedSource = existingSources[0].src;
+            preservedType = existingSources[0].type;
+        } else if (this.video.src) {
+            preservedSource = this.video.src;
+            if (preservedSource.endsWith('.mp4')) preservedType = 'video/mp4';
+            else if (preservedSource.endsWith('.webm')) preservedType = 'video/webm';
+            else if (preservedSource.endsWith('.mov')) preservedType = 'video/quicktime';
+        }
+    }
+    
+    console.log('💾 Preserving video source on destroy:', preservedSource);
+
     // Remove event listeners
     if (this.video) {
-      const events = [
-        'play', 'pause', 'ended', 'error', 'waiting', 'canplay',
-        'canplaythrough', 'loadeddata', 'loadedmetadata',
-        'timeupdate', 'progress', 'seeking', 'seeked',
-        'volumechange', 'ratechange'
-      ];
-      
-      events.forEach(event => {
-        this.video.removeEventListener(event, this.handleVideoEvent);
-      });
+        const events = [
+          'play', 'pause', 'ended', 'error', 'waiting', 'canplay',
+          'canplaythrough', 'loadeddata', 'loadedmetadata',
+          'timeupdate', 'progress', 'seeking', 'seeked',
+          'volumechange', 'ratechange'
+        ];
+        
+        events.forEach(event => {
+          this.video.removeEventListener(event, this.handleVideoEvent);
+        });
     }
     
     // Clear timeouts/intervals
@@ -702,13 +787,51 @@ class EnhancedVideoPlayer {
       this.controls.parentNode.removeChild(this.controls);
     }
     
-    // Clear social panel
+    // Remove social panel
     if (this.socialPanel && this.socialPanel.parentNode) {
       this.socialPanel.parentNode.removeChild(this.socialPanel);
     }
     
     // Clear event listeners
     this.eventListeners.clear();
+
+    // ============================================
+    // CRITICAL: Restore native controls and source
+    // ============================================
+    if (this.video) {
+        // Restore video source
+        if (preservedSource) {
+            console.log('🔄 Restoring video source after destroy...');
+            
+            // Clear existing sources
+            while (this.video.firstChild) {
+                this.video.removeChild(this.video.firstChild);
+            }
+            
+            // Remove src attribute
+            this.video.removeAttribute('src');
+            
+            // Create new source element
+            const source = document.createElement('source');
+            source.src = preservedSource;
+            source.type = preservedType || 'video/mp4';
+            
+            // Add source back
+            this.video.appendChild(source);
+            
+            // Reload video
+            this.video.load();
+        }
+        
+        // Restore native controls
+        this.video.controls = true;
+        
+        console.log('✅ Video source preserved after destroy');
+    }
+
+    // Clear references
+    this.video = null;
+    this.container = null;
     
     console.log('✅ EnhancedVideoPlayer destroyed');
   }
