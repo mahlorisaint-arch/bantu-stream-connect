@@ -534,36 +534,33 @@ function initializeEnhancedVideoPlayer() {
     console.warn('⚠️ Video elements not found');
     return;
   }
-  
+
   try {
-    // Hide the Bantu placeholder
-    const placeholder = document.getElementById('videoPlaceholder');
-    if (placeholder) {
-      placeholder.style.display = 'none';
+    // ============================================
+    // DEBUG: Check video source before creating player
+    // ============================================
+    const existingSrc = videoElement.src || videoElement.getAttribute('src');
+    const existingSources = videoElement.querySelectorAll('source');
+    
+    console.log('🔍 Before EnhancedVideoPlayer creation:');
+    console.log('  - video.src:', videoElement.src);
+    console.log('  - video.getAttribute("src"):', videoElement.getAttribute('src'));
+    console.log('  - source elements:', existingSources.length);
+    if (existingSources.length > 0) {
+        console.log('  - first source src:', existingSources[0].src);
+        console.log('  - first source type:', existingSources[0].type);
     }
-    
-    // IMPORTANT: Remove ALL existing custom controls
-    const existingControls = videoContainer.querySelectorAll('.enhanced-video-controls, .bantu-video-controls, .bantu-control-bar, .bantu-social-controls');
-    existingControls.forEach(control => {
-      if (control.parentNode) {
-        control.parentNode.removeChild(control);
-      }
-    });
-    
-    // Remove native controls completely
-    videoElement.controls = false;
-    videoElement.removeAttribute('controls');
-    
+
     // Get preferences
     const preferences = window.state ? window.state.getPreferences() : {
       autoplay: false,
       playbackSpeed: 1.0,
       quality: 'auto'
     };
-    
+
     console.log('🎬 Creating EnhancedVideoPlayer with content:', currentContent?.id);
-    
-    // Create enhanced video player
+
+    // Create player instance
     enhancedVideoPlayer = new EnhancedVideoPlayer({
       autoplay: preferences.autoplay,
       defaultSpeed: preferences.playbackSpeed,
@@ -574,76 +571,93 @@ function initializeEnhancedVideoPlayer() {
       supabaseClient: window.supabaseClient,
       userId: currentUserId
     });
-    
+
+    // ============================================
+    // DEBUG: Check video source before attach
+    // ============================================
+    console.log('🔍 Before attach:');
+    console.log('  - video.src:', videoElement.src);
+    console.log('  - source elements:', videoElement.querySelectorAll('source').length);
+
     // Attach to video element
     enhancedVideoPlayer.attach(videoElement, videoContainer);
-    
+
+    // ============================================
+    // DEBUG: Check video source after attach
+    // ============================================
+    console.log('🔍 After attach:');
+    console.log('  - video.src:', videoElement.src);
+    console.log('  - currentSrc:', videoElement.currentSrc);
+    console.log('  - source elements:', videoElement.querySelectorAll('source').length);
+    console.log('  - networkState:', videoElement.networkState);
+    console.log('  - readyState:', videoElement.readyState);
+
     // ====================================================
     // PHASE 1 FIX: UPDATED VIEW TRACKING WITH DEDUPLICATION
     // ====================================================
     
-    // CRITICAL FIX: Setup view tracking with deduplication
+    // Setup view tracking
     let viewRecordedThisSession = false;
     enhancedVideoPlayer.on('play', () => {
-      console.log('▶️ Video playing, recording view...');
-      
-      if (window.stateManager) {
-        window.stateManager.setState('session.playing', true);
-      }
-      
-      // Record view ONLY ONCE per session when video actually plays
-      if (currentContent && !viewRecordedThisSession) {
-        viewRecordedThisSession = true;
+        console.log('▶️ Video playing, recording view...');
         
-        // PHASE 1 FIX: Check client-side deduplication first
-        if (hasViewedContentRecently(currentContent.id)) {
-          console.log('📊 View already recorded recently (client-side check)');
-          return;
+        if (window.stateManager) {
+            window.stateManager.setState('session.playing', true);
         }
-        
-        // PHASE 1 FIX: Optimistic UI update
-        const currentViews = parseInt(document.getElementById('viewsCount')?.textContent.replace(/\D/g, '') || '0') || 0;
-        const newViews = currentViews + 1;
-        
-        document.getElementById('viewsCount').textContent = formatNumber(newViews) + ' views';
-        document.getElementById('viewsCountFull').textContent = formatNumber(newViews);
-        
-        // PHASE 1 FIX: Record view with server-side deduplication
-        recordContentView(currentContent.id).then(success => {
-          if (success) {
-            console.log('✅ View recorded successfully with deduplication');
+
+        // Record view ONLY ONCE per session when video actually plays
+        if (currentContent && !viewRecordedThisSession) {
+            viewRecordedThisSession = true;
             
-            // Update database view count after successful deduplication
-            if (window.SupabaseHelper && window.SupabaseHelper.client) {
-              window.SupabaseHelper.client
-                .from('Content')
-                .update({ views_count: newViews })
-                .eq('id', currentContent.id)
-                .then(() => {
-                  console.log('✅ View count updated in database');
-                  // Update local content
-                  if (currentContent) {
-                    currentContent.views_count = newViews;
-                  }
-                })
-                .catch(error => {
-                  console.error('❌ Error updating view count:', error);
-                });
+            // PHASE 1 FIX: Check client-side deduplication first
+            if (hasViewedContentRecently(currentContent.id)) {
+                console.log('📊 View already recorded recently (client-side check)');
+                return;
             }
             
-            // Mark as viewed in client-side storage
-            markContentAsViewed(currentContent.id);
-          } else {
-            console.log('📊 View deduplicated on server');
-            // Revert optimistic update if view was deduplicated
-            document.getElementById('viewsCount').textContent = formatNumber(currentViews) + ' views';
-            document.getElementById('viewsCountFull').textContent = formatNumber(currentViews);
-          }
-        }).catch(error => {
-          console.error('❌ Error recording view:', error);
-          // Keep optimistic update even if error
-        });
-      }
+            // PHASE 1 FIX: Optimistic UI update
+            const currentViews = parseInt(document.getElementById('viewsCount')?.textContent.replace(/\D/g, '') || '0') || 0;
+            const newViews = currentViews + 1;
+            
+            document.getElementById('viewsCount').textContent = formatNumber(newViews) + ' views';
+            document.getElementById('viewsCountFull').textContent = formatNumber(newViews);
+            
+            // PHASE 1 FIX: Record view with server-side deduplication
+            recordContentView(currentContent.id).then(success => {
+                if (success) {
+                    console.log('✅ View recorded successfully with deduplication');
+                    
+                    // Update database view count after successful deduplication
+                    if (window.SupabaseHelper && window.SupabaseHelper.client) {
+                        window.SupabaseHelper.client
+                            .from('Content')
+                            .update({ views_count: newViews })
+                            .eq('id', currentContent.id)
+                            .then(() => {
+                                console.log('✅ View count updated in database');
+                                // Update local content
+                                if (currentContent) {
+                                    currentContent.views_count = newViews;
+                                }
+                            })
+                            .catch(error => {
+                                console.error('❌ Error updating view count:', error);
+                            });
+                    }
+                    
+                    // Mark as viewed in client-side storage
+                    markContentAsViewed(currentContent.id);
+                } else {
+                    console.log('📊 View deduplicated on server');
+                    // Revert optimistic update if view was deduplicated
+                    document.getElementById('viewsCount').textContent = formatNumber(currentViews) + ' views';
+                    document.getElementById('viewsCountFull').textContent = formatNumber(currentViews);
+                }
+            }).catch(error => {
+                console.error('❌ Error recording view:', error);
+                // Keep optimistic update even if error
+            });
+        }
     });
     
     // Setup other event handlers
@@ -658,73 +672,71 @@ function initializeEnhancedVideoPlayer() {
         window.stateManager.setState('session.volume', volume);
       }
     });
-    
+
     // ============================================
     // UPDATED ERROR HANDLER WITH DETAILED LOGGING
     // ============================================
     enhancedVideoPlayer.on('error', (error) => {
-      console.error('🔴 Video player error:', error);
-      
-      // Detailed error logging
-      if (error?.target) {
-        const video = error.target;
-        console.error('Video element error details:');
-        console.error('  - Network state:', video.networkState);
-        console.error('  - Ready state:', video.readyState);
-        console.error('  - Error code:', video.error?.code);
-        console.error('  - Error message:', video.error?.message);
+        console.error('🔴 Video player error:', error);
         
-        // Map error codes to human-readable messages
-        const errorMessages = {
-          1: 'MEDIA_ERR_ABORTED: Video load was aborted',
-          2: 'MEDIA_ERR_NETWORK: Network error occurred',
-          3: 'MEDIA_ERR_DECODE: Video decoding failed (corrupted or unsupported format)',
-          4: 'MEDIA_ERR_SRC_NOT_SUPPORTED: Video format not supported or URL invalid'
+        if (error?.target) {
+            const video = error.target;
+            console.error('Video element error details:');
+            console.error('  - Network state:', video.networkState);
+            console.error('  - Ready state:', video.readyState);
+            console.error('  - Error code:', video.error?.code);
+            console.error('  - Error message:', video.error?.message);
+            
+            const errorMessages = {
+                1: 'MEDIA_ERR_ABORTED: Video load was aborted',
+                2: 'MEDIA_ERR_NETWORK: Network error occurred',
+                3: 'MEDIA_ERR_DECODE: Video decoding failed (corrupted or unsupported format)',
+                4: 'MEDIA_ERR_SRC_NOT_SUPPORTED: Video format not supported or URL invalid'
+            };
+            
+            const errorMsg = errorMessages[video.error?.code] || 'Unknown playback error';
+            console.error('  - Detailed error:', errorMsg);
+            
+            showToast(`Playback failed: ${errorMsg}`, 'error');
+        } else {
+            showToast('Video playback error occurred', 'error');
+        }
+        
+        // Show retry option
+        const retryBtn = document.createElement('button');
+        retryBtn.textContent = 'Retry';
+        retryBtn.className = 'btn btn-secondary';
+        retryBtn.onclick = () => {
+            if (enhancedVideoPlayer) {
+                enhancedVideoPlayer.video.load();
+                enhancedVideoPlayer.play().catch(console.error);
+            }
         };
         
-        const errorMsg = errorMessages[video.error?.code] || 'Unknown playback error';
-        console.error('  - Detailed error:', errorMsg);
-        
-        showToast(`Playback failed: ${errorMsg}`, 'error');
-      } else {
-        showToast('Video playback error occurred', 'error');
-      }
-      
-      // Show retry option
-      const retryBtn = document.createElement('button');
-      retryBtn.textContent = 'Retry';
-      retryBtn.className = 'btn btn-secondary';
-      retryBtn.onclick = () => {
-        if (enhancedVideoPlayer) {
-          enhancedVideoPlayer.video.load();
-          enhancedVideoPlayer.play().catch(console.error);
+        // Add to UI somewhere visible
+        const errorContainer = document.querySelector('.inline-player');
+        if (errorContainer) {
+            let existingRetry = errorContainer.querySelector('.retry-button');
+            if (existingRetry) existingRetry.remove();
+            
+            retryBtn.className += ' retry-button';
+            retryBtn.style.cssText = `
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                z-index: 100;
+                padding: 12px 24px;
+                background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+                color: white;
+                border: none;
+                border-radius: 12px;
+                font-weight: 600;
+                cursor: pointer;
+                box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            `;
+            errorContainer.appendChild(retryBtn);
         }
-      };
-      
-      // Add to UI somewhere visible
-      const errorContainer = document.querySelector('.inline-player');
-      if (errorContainer) {
-        let existingRetry = errorContainer.querySelector('.retry-button');
-        if (existingRetry) existingRetry.remove();
-        
-        retryBtn.className += ' retry-button';
-        retryBtn.style.cssText = `
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            z-index: 100;
-            padding: 12px 24px;
-            background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
-            color: white;
-            border: none;
-            border-radius: 12px;
-            font-weight: 600;
-            cursor: pointer;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
-        `;
-        errorContainer.appendChild(retryBtn);
-      }
     });
     
     // Setup time update for watch history (FIXED: removed track.watchProgress error)
@@ -754,12 +766,6 @@ function initializeEnhancedVideoPlayer() {
     
     // Fallback: Show basic controls
     videoElement.controls = true;
-    
-    // Show placeholder again
-    const placeholder = document.getElementById('videoPlaceholder');
-    if (placeholder) {
-      placeholder.style.display = 'flex';
-    }
   }
 }
 
@@ -832,6 +838,7 @@ async function recordContentView(contentId) {
     
     // PHASE 1 FIX: Try server-side Edge Function first
     try {
+      const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U';
       const response = await fetch('https://ydnxqnbjoshvxteevemc.supabase.co/functions/v1/record-view', {
         method: 'POST',
         headers: {
@@ -980,6 +987,154 @@ async function getCanvasFingerprint() {
   }
 }
 
+// ============================================
+// CRITICAL FIX: UPDATED handlePlay Function
+// ============================================
+function handlePlay() {
+    if (!currentContent) {
+        showToast('No content to play', 'error');
+        return;
+    }
+
+    const player = document.getElementById('inlinePlayer');
+    const videoElement = document.getElementById('inlineVideoPlayer');
+    
+    if (!player || !videoElement) {
+        showToast('Video player not available', 'error');
+        return;
+    }
+
+    // ============================================
+    // Get CORRECT video URL
+    // ============================================
+    let videoUrl = currentContent.file_url;
+    
+    console.log('📥 Raw file_url from database:', videoUrl);
+    
+    // If it's just a path (not full URL), construct proper Supabase URL
+    if (videoUrl && !videoUrl.startsWith('http')) {
+        if (videoUrl.startsWith('/')) {
+            videoUrl = videoUrl.substring(1);
+        }
+        videoUrl = `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/content-media/${videoUrl}`;
+    }
+    
+    // Fallback to thumbnail_url if needed
+    if (!videoUrl || videoUrl === 'null' || videoUrl === 'undefined' || videoUrl === '') {
+        if (currentContent.thumbnail_url && !currentContent.thumbnail_url.startsWith('http')) {
+            const cleanPath = currentContent.thumbnail_url.startsWith('/') 
+                ? currentContent.thumbnail_url.substring(1) 
+                : currentContent.thumbnail_url;
+            videoUrl = `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/content-media/${cleanPath}`;
+        }
+    }
+
+    console.log('🎥 Final video URL:', videoUrl);
+
+    // Validate URL
+    if (!videoUrl || (!videoUrl.includes('.mp4') && !videoUrl.includes('.webm') && !videoUrl.includes('.mov'))) {
+        console.error('❌ Invalid video URL or format:', videoUrl);
+        showToast('Invalid video format or URL', 'error');
+        return;
+    }
+
+    // Show player
+    player.style.display = 'block';
+
+    // Hide placeholder
+    const placeholder = document.getElementById('videoPlaceholder');
+    if (placeholder) {
+        placeholder.style.display = 'none';
+    }
+
+    // ============================================
+    // CRITICAL FIX: Destroy existing player FIRST
+    // ============================================
+    if (enhancedVideoPlayer) {
+        try {
+            console.log('🗑️ Destroying existing player...');
+            enhancedVideoPlayer.destroy();
+        } catch (e) {
+            console.warn('Error destroying old player:', e);
+        }
+        enhancedVideoPlayer = null;
+    }
+
+    // ============================================
+    // CRITICAL: Clear and set video source BEFORE initializing player
+    // ============================================
+    console.log('🔧 Setting video source...');
+    
+    // Clear existing sources
+    while (videoElement.firstChild) {
+        videoElement.removeChild(videoElement.firstChild);
+    }
+    
+    videoElement.removeAttribute('src');
+    videoElement.src = '';
+    
+    // Create source element
+    const source = document.createElement('source');
+    source.src = videoUrl;
+    
+    // Set MIME type
+    if (videoUrl.endsWith('.mp4')) {
+        source.type = 'video/mp4';
+    } else if (videoUrl.endsWith('.webm')) {
+        source.type = 'video/webm';
+    } else if (videoUrl.endsWith('.mov')) {
+        source.type = 'video/quicktime';
+    } else {
+        source.type = 'video/mp4';
+    }
+    
+    videoElement.appendChild(source);
+    
+    // Force load
+    videoElement.load();
+    
+    console.log('✅ Video source set successfully');
+
+    // ============================================
+    // Initialize player AFTER source is set
+    // ============================================
+    console.log('🎬 Initializing EnhancedVideoPlayer...');
+    initializeEnhancedVideoPlayer();
+
+    // Try to play after delay
+    setTimeout(() => {
+        if (enhancedVideoPlayer) {
+            console.log('▶️ Attempting to play...');
+            enhancedVideoPlayer.play().catch(err => {
+                console.error('🔴 Play failed:', err);
+                console.error('  - Error name:', err.name);
+                console.error('  - Error message:', err.message);
+                
+                // Check video element state
+                console.log('📊 Video element state:');
+                console.log('  - src:', videoElement.src);
+                console.log('  - currentSrc:', videoElement.currentSrc);
+                console.log('  - networkState:', videoElement.networkState);
+                console.log('  - readyState:', videoElement.readyState);
+                console.log('  - error:', videoElement.error);
+                
+                showToast('Click play button in video player', 'info');
+            });
+        } else {
+            console.log('▶️ Using native player...');
+            videoElement.play().catch(err => {
+                console.error('🔴 Autoplay failed:', err);
+                showToast('Click play button in video player', 'info');
+            });
+        }
+    }, 500);
+
+    // Scroll to player
+    setTimeout(() => {
+        player.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 100);
+}
+
 // Helper function to copy to clipboard
 function copyToClipboard(text) {
   navigator.clipboard.writeText(text).then(() => {
@@ -997,144 +1152,6 @@ function copyToClipboard(text) {
   }).catch(() => {
     showToast('Failed to copy link', 'error');
   });
-}
-
-// ============================================
-// UPDATED: Handle play button - CRITICAL FIX
-// ============================================
-function handlePlay() {
-  if (!currentContent) {
-    showToast('No content to play', 'error');
-    return;
-  }
-
-  const player = document.getElementById('inlinePlayer');
-  const videoElement = document.getElementById('inlineVideoPlayer');
-  
-  if (!player || !videoElement) {
-    showToast('Video player not available', 'error');
-    return;
-  }
-
-  // ============================================
-  // CRITICAL FIX: Get CORRECT video URL
-  // ============================================
-  let videoUrl = currentContent.file_url;
-  
-  console.log('📥 Raw file_url from database:', videoUrl);
-  
-  // If it's just a path (not full URL), construct proper Supabase URL
-  if (videoUrl && !videoUrl.startsWith('http')) {
-    // Remove leading slash if present
-    if (videoUrl.startsWith('/')) {
-      videoUrl = videoUrl.substring(1);
-    }
-    
-    // Construct full Supabase storage URL
-    videoUrl = `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/content-media/${videoUrl}`;
-  }
-  
-  // Fallback: Try thumbnail_url if file_url is invalid
-  if (!videoUrl || videoUrl === 'null' || videoUrl === 'undefined' || videoUrl === '') {
-    if (currentContent.thumbnail_url && !currentContent.thumbnail_url.startsWith('http')) {
-      const cleanPath = currentContent.thumbnail_url.startsWith('/') 
-        ? currentContent.thumbnail_url.substring(1) 
-        : currentContent.thumbnail_url;
-      videoUrl = `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/content-media/${cleanPath}`;
-    }
-  }
-
-  console.log('🎥 Final video URL:', videoUrl);
-
-  // Validate URL before attempting to play
-  if (!videoUrl || (!videoUrl.includes('.mp4') && !videoUrl.includes('.webm') && !videoUrl.includes('.mov'))) {
-    console.error('❌ Invalid video URL or format:', videoUrl);
-    showToast('Invalid video format or URL. Please contact support.', 'error');
-    return;
-  }
-
-  // ============================================
-  // CRITICAL: Properly set video source with MIME type
-  // ============================================
-  
-  // Clear existing sources
-  while (videoElement.firstChild) {
-    videoElement.removeChild(videoElement.firstChild);
-  }
-  
-  // Remove existing src attribute
-  videoElement.removeAttribute('src');
-  videoElement.src = '';
-  
-  // Create new source element
-  const source = document.createElement('source');
-  source.src = videoUrl;
-  
-  // Set correct MIME type based on file extension
-  if (videoUrl.endsWith('.mp4')) {
-    source.type = 'video/mp4';
-  } else if (videoUrl.endsWith('.webm')) {
-    source.type = 'video/webm';
-  } else if (videoUrl.endsWith('.mov')) {
-    source.type = 'video/quicktime';
-  } else {
-    source.type = 'video/mp4'; // Default fallback
-  }
-  
-  // Add source to video element
-  videoElement.appendChild(source);
-  
-  // Force reload
-  videoElement.load();
-
-  console.log('✅ Video source set successfully');
-
-  // Show player
-  player.style.display = 'block';
-
-  // Hide placeholder
-  const placeholder = document.getElementById('videoPlaceholder');
-  if (placeholder) {
-    placeholder.style.display = 'none';
-  }
-
-  // IMPORTANT: Remove any existing player instance before creating new one
-  if (enhancedVideoPlayer) {
-    try {
-      enhancedVideoPlayer.destroy();
-    } catch (e) {
-      console.warn('Error destroying old player:', e);
-    }
-    enhancedVideoPlayer = null;
-  }
-
-  // Initialize player
-  initializeEnhancedVideoPlayer();
-
-  // Try to play after a short delay
-  setTimeout(() => {
-    if (enhancedVideoPlayer) {
-      enhancedVideoPlayer.play().catch(err => {
-        console.error('🔴 Play failed:', err);
-        console.error('  - Error name:', err.name);
-        console.error('  - Error message:', err.message);
-        showToast('Click play button in video player', 'info');
-      });
-    } else {
-      // Fallback to native player
-      videoElement.play().catch(err => {
-        console.error('🔴 Autoplay failed:', err);
-        console.error('  - Error name:', err.name);
-        console.error('  - Error message:', err.message);
-        showToast('Click play button in video player', 'info');
-      });
-    }
-  }, 500);
-
-  // Scroll to player
-  setTimeout(() => {
-    player.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  }, 100);
 }
 
 // Setup event listeners
