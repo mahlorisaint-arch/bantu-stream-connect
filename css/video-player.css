@@ -258,45 +258,52 @@
   font-weight: 600;
 }
 
-/* Buffering Indicator - FIXED: Centered in Video Container */
+/* =================================================================== */
+/* BUFFERING INDICATOR - DIRECT LAYOUT FIX                            */
+/* =================================================================== */
 .buffering-indicator {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: auto;
-  height: auto;
-  background: rgba(0, 0, 0, 0.8);
-  display: none;
-  align-items: center;
-  justify-content: center;
-  z-index: 90;
-  flex-direction: column;
-  gap: 12px;
-  padding: 20px 30px;
-  border-radius: 12px;
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.5);
+  position: absolute !important;
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  width: auto !important;
+  height: auto !important;
+  background: transparent !important; /* REMOVED CONTAINER */
+  display: none !important;
+  align-items: center !important;
+  justify-content: center !important;
+  z-index: 90 !important;
+  flex-direction: column !important;
+  gap: 8px !important; /* TIGHTER GAP */
+  padding: 0 !important; /* NO PADDING */
+  margin: 0 !important; /* NO MARGIN */
+  border: none !important; /* NO BORDER */
+  box-shadow: none !important; /* NO SHADOW */
 }
 
 .buffering-indicator.active {
-  display: flex;
-  animation: fadeIn 0.3s ease;
+  display: flex !important;
+  animation: fadeIn 0.3s ease !important;
 }
 
 .buffering-indicator .spinner {
-  width: 32px;
-  height: 32px;
-  border: 3px solid rgba(255, 255, 255, 0.2);
-  border-top-color: var(--warm-gold);
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
+  width: 28px !important;
+  height: 28px !important;
+  border: 3px solid rgba(255, 255, 255, 0.2) !important;
+  border-top-color: var(--warm-gold) !important;
+  border-radius: 50% !important;
+  animation: spin 1s linear infinite !important;
+  margin: 0 !important; /* NO MARGIN */
 }
 
 .buffering-indicator p {
-  color: var(--soft-white);
-  font-size: 13px;
-  font-weight: 500;
-  white-space: nowrap;
+  color: var(--soft-white) !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  margin: 0 !important; /* DIRECTLY BELOW SPINNER */
+  padding: 0 !important;
+  white-space: nowrap !important;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5) !important;
 }
 
 /* Error Overlay - More Compact */
@@ -417,162 +424,140 @@
   to { opacity: 1; }
 }
 
-/* Touch device optimizations */
-@media (hover: none) and (pointer: coarse) {
+/* =================================================================== */
+/* MOBILE CONTROLS - SLIM & SLEEK (CRITICAL FIX)                       */
+/* =================================================================== */
+@media (max-width: 768px) {
   .enhanced-video-controls {
-    opacity: 1 !important;
-    padding-bottom: 15px;
+    padding: 6px 10px !important;
+    bottom: 0 !important;
+  }
+  
+  .controls-bar {
+    padding: 5px 8px !important;
+    gap: 5px !important;
+    flex-wrap: wrap !important;
+    border-radius: 6px !important;
+    background: rgba(15, 23, 42, 0.9) !important;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3) !important;
+    margin: 0 !important;
   }
   
   .control-btn {
-    min-width: 40px;
-    min-height: 40px;
+    width: 28px !important;
+    height: 28px !important;
+    min-width: 28px !important;
+    min-height: 28px !important;
+  }
+  
+  .control-btn i {
+    font-size: 12px !important;
+  }
+  
+  .time-display {
+    min-width: 65px !important;
+    font-size: 11px !important;
+    order: 1 !important;
+    width: 100% !important;
+    text-align: left !important;
+    margin-top: 4px !important;
+    padding-left: 5px !important;
   }
   
   .progress-container {
-    height: 5px;
+    order: 0 !important;
+    width: 100% !important;
+    margin: 3px 0 !important;
+    height: 3px !important; /* SUPER THIN */
+  }
+  
+  .progress-container::before {
+    height: 3px !important;
   }
   
   .progress-container::after {
-    width: 14px;
-    height: 14px;
-  }
-}
-
-/* Mobile Responsiveness - COMPACT CONTROLS */
-@media (max-width: 768px) {
-  .enhanced-video-controls {
-    padding: 8px 12px;
-  }
-  
-  .controls-bar {
-    padding: 6px 10px;
-    gap: 6px;
-    flex-wrap: wrap;
-    border-radius: 8px;
-  }
-  
-  .time-display {
-    min-width: 70px;
-    font-size: 12px;
-    order: 1;
-    width: 100%;
-    text-align: left;
-    margin-top: 6px;
-    font-size: 11px;
-  }
-  
-  .progress-container {
-    order: 0;
-    width: 100%;
-    margin: 4px 0;
-    height: 4px;
-  }
-  
-  .control-btn {
-    width: 30px;
-    height: 30px;
-  }
-  
-  .control-btn i {
-    font-size: 13px;
-  }
-  
-  .volume-bar {
-    width: 50px;
-    height: 3px;
-  }
-  
-  .volume-bar::-webkit-slider-thumb {
-    width: 10px;
-    height: 10px;
-  }
-  
-  .settings-menu {
-    min-width: 85%;
-    bottom: 70px;
-    right: 7.5%;
-    left: 7.5%;
-    padding: 10px;
-  }
-  
-  .speed-options {
-    gap: 5px;
-  }
-  
-  .speed-option {
-    padding: 4px 6px;
-    font-size: 11px;
-  }
-}
-
-@media (max-width: 480px) {
-  .enhanced-video-controls {
-    padding: 6px 10px;
-  }
-  
-  .controls-bar {
-    padding: 5px 8px;
-    gap: 5px;
-    border-radius: 6px;
-  }
-  
-  .control-btn {
-    width: 28px;
-    height: 28px;
-  }
-  
-  .control-btn i {
-    font-size: 12px;
-  }
-  
-  .time-display {
-    font-size: 10px;
-    min-width: 65px;
-    margin-top: 5px;
-  }
-  
-  .progress-container {
-    height: 3px;
+    width: 10px !important;
+    height: 10px !important;
   }
   
   .volume-controls {
-    display: none;
+    display: none !important; /* Hidden on mobile to save space */
   }
   
-  .buffering-indicator {
-    padding: 15px 25px;
+  .settings-menu {
+    min-width: 90% !important;
+    bottom: 60px !important;
+    right: 5% !important;
+    left: 5% !important;
+    padding: 10px !important;
+    border-radius: 8px !important;
+  }
+  
+  .speed-option {
+    padding: 4px 6px !important;
+    font-size: 11px !important;
+  }
+}
+
+/* Ultra-compact for very small screens */
+@media (max-width: 480px) {
+  .enhanced-video-controls {
+    padding: 4px 8px !important;
+  }
+  
+  .controls-bar {
+    padding: 4px 6px !important;
+    gap: 4px !important;
+  }
+  
+  .control-btn {
+    width: 26px !important;
+    height: 26px !important;
+  }
+  
+  .control-btn i {
+    font-size: 11px !important;
+  }
+  
+  .time-display {
+    font-size: 10px !important;
+    min-width: 60px !important;
+    margin-top: 3px !important;
+  }
+  
+  .progress-container {
+    height: 2.5px !important; /* EVEN THINNER */
   }
   
   .buffering-indicator .spinner {
-    width: 28px;
-    height: 28px;
+    width: 24px !important;
+    height: 24px !important;
   }
   
   .buffering-indicator p {
-    font-size: 12px;
+    font-size: 11px !important;
+  }
+}
+
+/* Touch device optimizations - COMPACT VERSION */
+@media (hover: none) and (pointer: coarse) {
+  .enhanced-video-controls {
+    opacity: 1 !important;
+    padding: 8px 10px !important;
   }
   
-  .error-content {
-    padding: 20px;
-    max-width: 350px;
+  .control-btn {
+    min-width: 36px !important;
+    min-height: 36px !important;
   }
   
-  .error-content i {
-    font-size: 2.5rem;
+  .progress-container {
+    height: 4px !important;
   }
   
-  .error-content h3 {
-    font-size: 18px;
-  }
-  
-  .error-message {
-    font-size: 13px;
-  }
-  
-  .retry-btn {
-    padding: 7px 18px;
-    font-size: 13px;
+  .progress-container::after {
+    width: 12px !important;
+    height: 12px !important;
   }
 }
 
