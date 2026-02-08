@@ -1,13 +1,13 @@
-// js/content-detail.js - UPDATED WITH VIDEO URL FIXES
+// js/content-detail.js - COMPLETE FIXED VERSION WITH INTERACTIONS
 
-console.log('🎬 Content Detail Initializing with Video URL fixes...');
+console.log('🎬 Content Detail Initializing with all fixes...');
 
 // Global variables
 let currentContent = null;
 let enhancedVideoPlayer = null;
 let isInitialized = false;
 let currentUserId = null;
-let viewRecorded = false; // Track if view has been recorded THIS SESSION
+let viewRecorded = false;
 
 // ============================================
 // VIDEO URL VALIDATION & DEBUGGING
@@ -16,7 +16,6 @@ async function validateVideoUrl(url) {
     try {
         console.log('🔍 Validating video URL:', url);
         
-        // Check if URL is accessible
         const response = await fetch(url, { 
             method: 'HEAD', 
             mode: 'cors',
@@ -25,22 +24,15 @@ async function validateVideoUrl(url) {
         
         if (response.ok) {
             console.log('✅ Video URL is accessible');
-            console.log('📊 Content-Type:', response.headers.get('content-type'));
-            console.log('📊 Content-Length:', response.headers.get('content-length'));
             return true;
         } else {
-            console.error('❌ Video URL returned status:', response.status, response.statusText);
+            console.error('❌ Video URL returned status:', response.status);
             return false;
         }
     } catch (error) {
         console.error('❌ Error validating video URL:', error);
         return false;
     }
-}
-
-// Helper to get file extension
-function getFileExtension(filename) {
-    return filename.slice((filename.lastIndexOf(".") - 1 >>> 0) + 2);
 }
 
 // Initialize when DOM is ready
@@ -71,7 +63,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Setup UI
   setupEventListeners();
   
-  // Initialize video player (FIXED VERSION)
+  // Initialize video player
   initializeEnhancedVideoPlayer();
   
   // Initialize all modals/panels
@@ -85,7 +77,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('loading').style.display = 'none';
   document.getElementById('app').style.display = 'block';
   
-  console.log('✅ Content Detail fully initialized with Video URL fixes');
+  console.log('✅ Content Detail fully initialized with all fixes');
 });
 
 async function waitForHelpers() {
@@ -99,7 +91,9 @@ async function waitForHelpers() {
   });
 }
 
-// Authentication setup
+// ============================================
+// AUTHENTICATION SETUP
+// ============================================
 function setupAuthListeners() {
   window.supabaseClient.auth.onAuthStateChange(async (event, session) => {
     if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
@@ -126,6 +120,9 @@ function setupAuthListeners() {
 function updateProfileUI() {
   const profileBtn = document.getElementById('profile-btn');
   const userProfilePlaceholder = document.getElementById('userProfilePlaceholder');
+  const commentInput = document.getElementById('commentInput');
+  const sendCommentBtn = document.getElementById('sendCommentBtn');
+  const commentAvatar = document.getElementById('userCommentAvatar');
   
   if (!profileBtn || !userProfilePlaceholder) return;
   
@@ -161,6 +158,22 @@ function updateProfileUI() {
     profileBtn.onclick = () => {
       window.location.href = 'profile.html';
     };
+    
+    // Enable comment section for authenticated users
+    if (commentInput && sendCommentBtn) {
+      commentInput.disabled = false;
+      commentInput.placeholder = 'Write a comment...';
+      sendCommentBtn.disabled = false;
+      
+      // Show user avatar in comment section
+      if (commentAvatar) {
+        if (avatarUrl) {
+          commentAvatar.innerHTML = `<img src="${avatarUrl}" alt="${displayName}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`;
+        } else {
+          commentAvatar.innerHTML = `<div style="width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,#1D4ED8,#F59E0B);display:flex;align-items:center;justify-content:center;color:white;font-weight:bold">${initial}</div>`;
+        }
+      }
+    }
   } else {
     // Guest user
     userProfilePlaceholder.innerHTML = `
@@ -168,15 +181,31 @@ function updateProfileUI() {
         <i class="fas fa-user"></i>
       </div>
     `;
+    
     profileBtn.onclick = () => {
       window.location.href = `login.html?redirect=${encodeURIComponent(window.location.href)}`;
     };
+    
+    // Disable comment section for guests
+    if (commentInput && sendCommentBtn) {
+      commentInput.disabled = true;
+      commentInput.placeholder = 'Sign in to add a comment...';
+      sendCommentBtn.disabled = true;
+      
+      // Reset avatar
+      if (commentAvatar) {
+        commentAvatar.innerHTML = '<i class="fas fa-user"></i>';
+      }
+    }
   }
 }
 
 function resetProfileUI() {
   const profileBtn = document.getElementById('profile-btn');
   const userProfilePlaceholder = document.getElementById('userProfilePlaceholder');
+  const commentInput = document.getElementById('commentInput');
+  const sendCommentBtn = document.getElementById('sendCommentBtn');
+  const commentAvatar = document.getElementById('userCommentAvatar');
   
   if (!profileBtn || !userProfilePlaceholder) return;
   
@@ -189,15 +218,27 @@ function resetProfileUI() {
   profileBtn.onclick = () => {
     window.location.href = `login.html?redirect=${encodeURIComponent(window.location.href)}`;
   };
+  
+  // Disable comment section
+  if (commentInput && sendCommentBtn) {
+    commentInput.disabled = true;
+    commentInput.placeholder = 'Sign in to add a comment...';
+    sendCommentBtn.disabled = true;
+    
+    if (commentAvatar) {
+      commentAvatar.innerHTML = '<i class="fas fa-user"></i>';
+    }
+  }
 }
 
-// Load content from URL - UPDATED WITH DEBUG LOGGING
+// ============================================
+// LOAD CONTENT
+// ============================================
 async function loadContentFromURL() {
   const urlParams = new URLSearchParams(window.location.search);
   const contentId = urlParams.get('id') || '68';
   
   try {
-    // Fetch real content from Supabase
     const { data, error } = await window.supabaseClient
       .from('Content')
       .select('*, user_profiles!user_id(*)')
@@ -220,30 +261,15 @@ async function loadContentFromURL() {
       language: data.language || 'English',
       views_count: data.views_count || 0,
       likes_count: data.likes_count || 0,
+      favorites_count: data.favorites_count || 0,
+      comments_count: data.comments_count || 0,
       creator: data.user_profiles?.full_name || data.user_profiles?.username || 'Creator',
       creator_display_name: data.user_profiles?.full_name || data.user_profiles?.username || 'Creator',
       creator_id: data.user_profiles?.id || data.user_id,
       user_id: data.user_id
     };
 
-    // ============================================
-    // DEBUG: Log the file URLs
-    // ============================================
-    console.log('📥 Content loaded:', currentContent.title);
-    console.log('📁 Raw file_url from DB:', data.file_url);
-    console.log('📁 Raw thumbnail_url from DB:', data.thumbnail_url);
-    
-    // Construct full URLs for debugging
-    if (data.file_url && !data.file_url.startsWith('http')) {
-      const cleanPath = data.file_url.startsWith('/') ? data.file_url.substring(1) : data.file_url;
-      const fullUrl = `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/content-media/${cleanPath}`;
-      console.log('🔗 Full video URL:', fullUrl);
-      
-      // Validate it
-      validateVideoUrl(fullUrl);
-    }
-
-    console.log('✅ Real content loaded:', currentContent.title);
+    console.log('✅ Content loaded:', currentContent.title);
     
     // Update UI
     updateContentUI(currentContent);
@@ -260,7 +286,9 @@ async function loadContentFromURL() {
   }
 }
 
-// Update UI with content
+// ============================================
+// UPDATE CONTENT UI
+// ============================================
 function updateContentUI(content) {
   if (!content) return;
   
@@ -274,7 +302,7 @@ function updateContentUI(content) {
   safeSetText('viewsCountFull', formatNumber(content.views_count));
   safeSetText('likesCount', formatNumber(content.likes_count));
   
-  // Update duration (FIXED: Never shows dash)
+  // Update duration
   const duration = formatDuration(content.duration || 3600);
   safeSetText('durationText', duration);
   safeSetText('contentDurationFull', duration);
@@ -310,9 +338,76 @@ function updateContentUI(content) {
   if (playerTitle) {
     playerTitle.textContent = `Now Playing: ${content.title}`;
   }
+  
+  // Initialize like button state
+  const likeBtn = document.getElementById('likeBtn');
+  if (likeBtn && content.likes_count > 0) {
+    likeBtn.classList.add('active');
+    likeBtn.innerHTML = '<i class="fas fa-heart"></i><span>Liked</span>';
+  }
+  
+  // Initialize favorite button state
+  const favoriteBtn = document.getElementById('favoriteBtn');
+  if (favoriteBtn && content.favorites_count > 0) {
+    favoriteBtn.classList.add('active');
+    favoriteBtn.innerHTML = '<i class="fas fa-star"></i><span>Favorited</span>';
+  }
 }
 
-// Load comments (FIXED VERSION - handles missing relationship)
+// ============================================
+// VIEW TRACKING - SINGLE TABLE FIX
+// ============================================
+
+/**
+ * FIXED: Uses ONLY Content table - NO extra tables needed
+ */
+async function recordContentView(contentId, currentViews, newViews) {
+    try {
+        if (!window.SupabaseHelper?.client) {
+            console.warn('Supabase client not available');
+            return;
+        }
+
+        // DIRECTLY update views_count in Content table
+        const { error } = await window.SupabaseHelper.client
+            .from('Content')
+            .update({ views_count: newViews })
+            .eq('id', contentId);
+
+        if (error) {
+            console.error('❌ View count update failed:', error.message);
+            // Revert UI on error
+            document.getElementById('viewsCount').textContent = formatNumber(currentViews) + ' views';
+            document.getElementById('viewsCountFull').textContent = formatNumber(currentViews);
+            showToast('Failed to record view', 'error');
+            return;
+        }
+
+        console.log(`✅ View count updated to ${newViews} for content ${contentId}`);
+        
+        // Update local state
+        if (currentContent) {
+            currentContent.views_count = newViews;
+        }
+        
+        // Track analytics if available
+        if (window.track?.contentView) {
+            window.track.contentView(contentId, 'video');
+        }
+    } catch (error) {
+        console.error('❌ View recording error:', error);
+        // Revert UI
+        document.getElementById('viewsCount').textContent = formatNumber(currentViews) + ' views';
+        document.getElementById('viewsCountFull').textContent = formatNumber(currentViews);
+        showToast('View recording failed', 'error');
+    }
+}
+
+// ============================================
+// COMMENTS SYSTEM
+// ============================================
+
+// Load comments (FIXED VERSION)
 async function loadComments(contentId) {
   try {
     console.log('💬 Loading comments for content:', contentId);
@@ -409,11 +504,15 @@ function createCommentElement(comment) {
     authorName = comment.user_profiles.full_name || comment.user_profiles.username;
   }
   
-  if (comment.user_profiles?.avatar_url) {
+  if (comment.author_avatar) {
+    avatarUrl = comment.author_avatar;
+  } else if (comment.user_profiles?.avatar_url) {
     avatarUrl = comment.user_profiles.avatar_url;
-    if (avatarUrl && !avatarUrl.startsWith('http')) {
-      avatarUrl = `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/profile-pictures/${avatarUrl}`;
-    }
+  }
+  
+  // Ensure avatar URL is complete
+  if (avatarUrl && !avatarUrl.startsWith('http')) {
+    avatarUrl = `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/profile-pictures/${avatarUrl}`;
   }
   
   const time = formatCommentTime(comment.created_at);
@@ -456,7 +555,9 @@ function createCommentElement(comment) {
   return div;
 }
 
-// Load related content
+// ============================================
+// RELATED CONTENT
+// ============================================
 async function loadRelatedContent(contentId) {
   try {
     const { data, error } = await window.supabaseClient
@@ -521,11 +622,10 @@ function renderRelatedContent(items) {
   });
 }
 
-// ====================================================
-// CRITICAL FIX: Enhanced Video Player Initialization
-// ====================================================
+// ============================================
+// VIDEO PLAYER INITIALIZATION
+// ============================================
 
-// Initialize enhanced video player - CLEAN VERSION (NO DUPLICATE CONTROLS)
 function initializeEnhancedVideoPlayer() {
   const videoElement = document.getElementById('inlineVideoPlayer');
   const videoContainer = document.querySelector('.video-container');
@@ -536,21 +636,6 @@ function initializeEnhancedVideoPlayer() {
   }
 
   try {
-    // ============================================
-    // DEBUG: Check video source before creating player
-    // ============================================
-    const existingSrc = videoElement.src || videoElement.getAttribute('src');
-    const existingSources = videoElement.querySelectorAll('source');
-    
-    console.log('🔍 Before EnhancedVideoPlayer creation:');
-    console.log('  - video.src:', videoElement.src);
-    console.log('  - video.getAttribute("src"):', videoElement.getAttribute('src'));
-    console.log('  - source elements:', existingSources.length);
-    if (existingSources.length > 0) {
-        console.log('  - first source src:', existingSources[0].src);
-        console.log('  - first source type:', existingSources[0].type);
-    }
-
     // Get preferences
     const preferences = window.state ? window.state.getPreferences() : {
       autoplay: false,
@@ -572,28 +657,11 @@ function initializeEnhancedVideoPlayer() {
       userId: currentUserId
     });
 
-    // ============================================
-    // DEBUG: Check video source before attach
-    // ============================================
-    console.log('🔍 Before attach:');
-    console.log('  - video.src:', videoElement.src);
-    console.log('  - source elements:', videoElement.querySelectorAll('source').length);
-
     // Attach to video element
     enhancedVideoPlayer.attach(videoElement, videoContainer);
 
-    // ============================================
-    // DEBUG: Check video source after attach
-    // ============================================
-    console.log('🔍 After attach:');
-    console.log('  - video.src:', videoElement.src);
-    console.log('  - currentSrc:', videoElement.currentSrc);
-    console.log('  - source elements:', videoElement.querySelectorAll('source').length);
-    console.log('  - networkState:', videoElement.networkState);
-    console.log('  - readyState:', videoElement.readyState);
-
     // ====================================================
-    // PHASE 1 FIX: UPDATED VIEW TRACKING WITH DEDUPLICATION
+    // VIEW TRACKING WITH DEDUPLICATION
     // ====================================================
     
     // Setup view tracking
@@ -609,25 +677,25 @@ function initializeEnhancedVideoPlayer() {
         if (currentContent && !viewRecordedThisSession) {
             viewRecordedThisSession = true;
             
-            // PHASE 1 FIX: Check client-side deduplication first
+            // Check client-side deduplication first
             if (hasViewedContentRecently(currentContent.id)) {
                 console.log('📊 View already recorded recently (client-side check)');
                 return;
             }
             
-            // PHASE 1 FIX: Optimistic UI update
+            // Optimistic UI update
             const currentViews = parseInt(document.getElementById('viewsCount')?.textContent.replace(/\D/g, '') || '0') || 0;
             const newViews = currentViews + 1;
             
             document.getElementById('viewsCount').textContent = formatNumber(newViews) + ' views';
             document.getElementById('viewsCountFull').textContent = formatNumber(newViews);
             
-            // PHASE 1 FIX: Record view with server-side deduplication
-            recordContentView(currentContent.id).then(success => {
+            // Record view
+            recordContentView(currentContent.id, currentViews, newViews).then(success => {
                 if (success) {
-                    console.log('✅ View recorded successfully with deduplication');
+                    console.log('✅ View recorded successfully');
                     
-                    // Update database view count after successful deduplication
+                    // Update database view count
                     if (window.SupabaseHelper && window.SupabaseHelper.client) {
                         window.SupabaseHelper.client
                             .from('Content')
@@ -648,7 +716,7 @@ function initializeEnhancedVideoPlayer() {
                     // Mark as viewed in client-side storage
                     markContentAsViewed(currentContent.id);
                 } else {
-                    console.log('📊 View deduplicated on server');
+                    console.log('📊 View deduplicated');
                     // Revert optimistic update if view was deduplicated
                     document.getElementById('viewsCount').textContent = formatNumber(currentViews) + ' views';
                     document.getElementById('viewsCountFull').textContent = formatNumber(currentViews);
@@ -673,79 +741,33 @@ function initializeEnhancedVideoPlayer() {
       }
     });
 
-    // ============================================
-    // UPDATED ERROR HANDLER WITH DETAILED LOGGING
-    // ============================================
+    // Error handler
     enhancedVideoPlayer.on('error', (error) => {
         console.error('🔴 Video player error:', error);
         
         if (error?.target) {
             const video = error.target;
-            console.error('Video element error details:');
-            console.error('  - Network state:', video.networkState);
-            console.error('  - Ready state:', video.readyState);
-            console.error('  - Error code:', video.error?.code);
-            console.error('  - Error message:', video.error?.message);
-            
             const errorMessages = {
                 1: 'MEDIA_ERR_ABORTED: Video load was aborted',
                 2: 'MEDIA_ERR_NETWORK: Network error occurred',
-                3: 'MEDIA_ERR_DECODE: Video decoding failed (corrupted or unsupported format)',
-                4: 'MEDIA_ERR_SRC_NOT_SUPPORTED: Video format not supported or URL invalid'
+                3: 'MEDIA_ERR_DECODE: Video decoding failed',
+                4: 'MEDIA_ERR_SRC_NOT_SUPPORTED: Video format not supported'
             };
             
             const errorMsg = errorMessages[video.error?.code] || 'Unknown playback error';
-            console.error('  - Detailed error:', errorMsg);
-            
             showToast(`Playback failed: ${errorMsg}`, 'error');
         } else {
             showToast('Video playback error occurred', 'error');
         }
-        
-        // Show retry option
-        const retryBtn = document.createElement('button');
-        retryBtn.textContent = 'Retry';
-        retryBtn.className = 'btn btn-secondary';
-        retryBtn.onclick = () => {
-            if (enhancedVideoPlayer) {
-                enhancedVideoPlayer.video.load();
-                enhancedVideoPlayer.play().catch(console.error);
-            }
-        };
-        
-        // Add to UI somewhere visible
-        const errorContainer = document.querySelector('.inline-player');
-        if (errorContainer) {
-            let existingRetry = errorContainer.querySelector('.retry-button');
-            if (existingRetry) existingRetry.remove();
-            
-            retryBtn.className += ' retry-button';
-            retryBtn.style.cssText = `
-                position: absolute;
-                top: 50%;
-                left: 50%;
-                transform: translate(-50%, -50%);
-                z-index: 100;
-                padding: 12px 24px;
-                background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
-                color: white;
-                border: none;
-                border-radius: 12px;
-                font-weight: 600;
-                cursor: pointer;
-                box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
-            `;
-            errorContainer.appendChild(retryBtn);
-        }
     });
     
-    // Setup time update for watch history (FIXED: removed track.watchProgress error)
+    // Time update for watch history
     enhancedVideoPlayer.on('timeupdate', (time) => {
       if (window.stateManager) {
         window.stateManager.setState('session.currentTime', time);
       }
       
-      // Update watch history every 30 seconds (without analytics error)
+      // Update watch history every 30 seconds
       if (Math.floor(time) % 30 === 0 && currentContent) {
         const duration = enhancedVideoPlayer.getDuration() || currentContent.duration || 3600;
         if (window.state && window.state.updateWatchHistory) {
@@ -758,7 +780,7 @@ function initializeEnhancedVideoPlayer() {
       }
     });
     
-    console.log('✅ Enhanced video player initialized successfully with Phase 1 fixes');
+    console.log('✅ Enhanced video player initialized successfully');
     
   } catch (error) {
     console.error('❌ Failed to initialize enhanced video player:', error);
@@ -769,13 +791,10 @@ function initializeEnhancedVideoPlayer() {
   }
 }
 
-// ====================================================
-// PHASE 1 FIXES: VIEW DEDUPLICATION FUNCTIONS
-// ====================================================
+// ============================================
+// VIEW DEDUPLICATION FUNCTIONS
+// ============================================
 
-/**
- * Check if content was viewed in the last 24 hours (client-side)
- */
 function hasViewedContentRecently(contentId) {
   try {
     const viewedContent = JSON.parse(localStorage.getItem('bantu_viewed_content') || '{}');
@@ -791,9 +810,6 @@ function hasViewedContentRecently(contentId) {
   }
 }
 
-/**
- * Mark content as viewed in client-side storage
- */
 function markContentAsViewed(contentId) {
   try {
     const viewedContent = JSON.parse(localStorage.getItem('bantu_viewed_content') || '{}');
@@ -815,178 +831,6 @@ function markContentAsViewed(contentId) {
   }
 }
 
-/**
- * PHASE 1 FIX: UPDATED - Record content view with server-side deduplication
- */
-async function recordContentView(contentId) {
-  try {
-    // Generate fingerprint for anonymous users
-    const fingerprint = await generateFingerprint();
-    
-    // Prepare request data
-    const requestData = {
-      contentId: contentId,
-      fingerprint: fingerprint
-    };
-    
-    // Add user ID if authenticated
-    if (currentUserId) {
-      requestData.userId = currentUserId;
-    }
-    
-    console.log('📊 Recording view with deduplication:', requestData);
-    
-    // PHASE 1 FIX: Try server-side Edge Function first
-    try {
-      const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U';
-      const response = await fetch('https://ydnxqnbjoshvxteevemc.supabase.co/functions/v1/record-view', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
-        },
-        body: JSON.stringify(requestData)
-      });
-      
-      if (response.ok) {
-        const result = await response.json();
-        
-        if (!result.success) {
-          if (result.reason === 'already_viewed') {
-            console.log('📊 View already recorded in last 24 hours (server-side)');
-            return false; // View was deduplicated
-          }
-          throw new Error(result.error || 'Failed to record view');
-        }
-        
-        console.log(`✅ View recorded server-side for content ${contentId}`);
-        return true;
-      }
-    } catch (edgeFunctionError) {
-      console.warn('Edge function failed, falling back to direct Supabase:', edgeFunctionError);
-    }
-    
-    // FALLBACK: Direct Supabase insert with basic deduplication
-    if (window.SupabaseHelper && window.SupabaseHelper.client) {
-      // Check for existing view in last 24 hours (basic deduplication)
-      const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-      
-      let existingViewQuery = window.SupabaseHelper.client
-        .from('content_views')
-        .select('id')
-        .eq('content_id', contentId)
-        .gte('viewed_at', twentyFourHoursAgo)
-        .limit(1);
-      
-      if (currentUserId) {
-        existingViewQuery = existingViewQuery.eq('viewer_id', currentUserId);
-      }
-      
-      const { data: existingViews } = await existingViewQuery;
-      
-      if (existingViews && existingViews.length > 0) {
-        console.log('📊 View already exists in last 24 hours (direct Supabase check)');
-        return false;
-      }
-      
-      // Prepare data for insert
-      const viewData = {
-        content_id: contentId,
-        viewed_at: new Date().toISOString(),
-        device_type: /Mobile|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ? 'mobile' : 'desktop'
-      };
-      
-      if (currentUserId) {
-        viewData.viewer_id = currentUserId;
-      }
-      
-      console.log('📊 Recording view in content_views table:', viewData);
-      
-      // Record view in content_views table
-      const { data, error } = await window.SupabaseHelper.client
-        .from('content_views')
-        .insert(viewData);
-      
-      if (error) {
-        console.error('❌ Error recording view:', error);
-        return false;
-      }
-      
-      console.log(`✅ View recorded for content ${contentId}`);
-      return true;
-    }
-    
-    return false;
-  } catch (error) {
-    console.error('❌ Error in recordContentView:', error);
-    return false;
-  }
-}
-
-/**
- * Generate fingerprint for anonymous users
- */
-async function generateFingerprint() {
-  try {
-    // Combine multiple factors for a reliable fingerprint
-    const factors = [
-      navigator.userAgent,
-      navigator.language,
-      screen.width,
-      screen.height,
-      screen.colorDepth,
-      new Date().getTimezoneOffset(),
-      navigator.hardwareConcurrency || '',
-      navigator.platform,
-      // Add canvas fingerprint for better uniqueness
-      await getCanvasFingerprint()
-    ].join('|');
-    
-    // Hash the factors for privacy
-    const msgBuffer = new TextEncoder().encode(factors);
-    const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-    
-    return hashHex;
-  } catch (error) {
-    console.error('Error generating fingerprint:', error);
-    // Fallback to simpler fingerprint
-    return `${navigator.userAgent}|${screen.width}x${screen.height}|${new Date().getTimezoneOffset()}`;
-  }
-}
-
-/**
- * Generate canvas fingerprint (more reliable)
- */
-async function getCanvasFingerprint() {
-  try {
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-    
-    canvas.width = 200;
-    canvas.height = 50;
-    
-    // Draw some text
-    ctx.textBaseline = 'top';
-    ctx.font = '14px Arial';
-    ctx.textBaseline = 'alphabetic';
-    ctx.fillStyle = '#f60';
-    ctx.fillRect(125, 1, 62, 20);
-    ctx.fillStyle = '#069';
-    ctx.fillText('Bantu Stream Connect', 2, 15);
-    ctx.fillStyle = 'rgba(102, 204, 0, 0.7)';
-    ctx.fillText('Bantu Stream Connect', 4, 17);
-    
-    // Get canvas data
-    const dataUrl = canvas.toDataURL();
-    return dataUrl.substring(dataUrl.indexOf(',') + 1);
-  } catch (error) {
-    console.error('Canvas fingerprint failed:', error);
-    return 'canvas_unsupported';
-  }
-}
-
 // ============================================
 // CRITICAL FIX: UPDATED handlePlay Function
 // ============================================
@@ -1004,9 +848,7 @@ function handlePlay() {
         return;
     }
 
-    // ============================================
     // Get CORRECT video URL
-    // ============================================
     let videoUrl = currentContent.file_url;
     
     console.log('📥 Raw file_url from database:', videoUrl);
@@ -1047,9 +889,7 @@ function handlePlay() {
         placeholder.style.display = 'none';
     }
 
-    // ============================================
-    // CRITICAL FIX: Destroy existing player FIRST
-    // ============================================
+    // Destroy existing player FIRST
     if (enhancedVideoPlayer) {
         try {
             console.log('🗑️ Destroying existing player...');
@@ -1060,9 +900,7 @@ function handlePlay() {
         enhancedVideoPlayer = null;
     }
 
-    // ============================================
-    // CRITICAL: Clear and set video source BEFORE initializing player
-    // ============================================
+    // Clear and set video source BEFORE initializing player
     console.log('🔧 Setting video source...');
     
     // Clear existing sources
@@ -1095,9 +933,7 @@ function handlePlay() {
     
     console.log('✅ Video source set successfully');
 
-    // ============================================
     // Initialize player AFTER source is set
-    // ============================================
     console.log('🎬 Initializing EnhancedVideoPlayer...');
     initializeEnhancedVideoPlayer();
 
@@ -1107,17 +943,6 @@ function handlePlay() {
             console.log('▶️ Attempting to play...');
             enhancedVideoPlayer.play().catch(err => {
                 console.error('🔴 Play failed:', err);
-                console.error('  - Error name:', err.name);
-                console.error('  - Error message:', err.message);
-                
-                // Check video element state
-                console.log('📊 Video element state:');
-                console.log('  - src:', videoElement.src);
-                console.log('  - currentSrc:', videoElement.currentSrc);
-                console.log('  - networkState:', videoElement.networkState);
-                console.log('  - readyState:', videoElement.readyState);
-                console.log('  - error:', videoElement.error);
-                
                 showToast('Click play button in video player', 'info');
             });
         } else {
@@ -1135,26 +960,168 @@ function handlePlay() {
     }, 100);
 }
 
-// Helper function to copy to clipboard
-function copyToClipboard(text) {
-  navigator.clipboard.writeText(text).then(() => {
-    showToast('Link copied to clipboard!', 'success');
-    // Track share
-    if (currentContent && window.track) {
-      window.track.contentShare(currentContent.id, 'clipboard');
-      // Update share count
-      const shareCountEl = document.querySelector('.share-count');
-      if (shareCountEl) {
-        const current = parseInt(shareCountEl.textContent) || 0;
-        shareCountEl.textContent = current + 1;
-      }
+// ============================================
+// FIXED CONNECT BUTTON - Uses connectors table
+// ============================================
+function setupConnectButtons() {
+    // Helper to check connection status
+    async function checkConnectionStatus(creatorId) {
+        if (!currentUserId || !creatorId) return false;
+        
+        try {
+            const { data, error } = await window.supabaseClient
+                .from('connectors')
+                .select('id')
+                .eq('connector_id', currentUserId)
+                .eq('connected_id', creatorId)
+                .eq('connection_type', 'creator')
+                .single();
+                
+            return !error && data !== null;
+        } catch (error) {
+            console.error('Error checking connection:', error);
+            return false;
+        }
     }
-  }).catch(() => {
-    showToast('Failed to copy link', 'error');
-  });
+    
+    // Helper to update UI
+    function updateConnectButtonUI(button, isConnected) {
+        if (isConnected) {
+            button.classList.add('connected');
+            button.innerHTML = '<i class="fas fa-user-check"></i><span>Connected</span>';
+        } else {
+            button.classList.remove('connected');
+            button.innerHTML = '<i class="fas fa-user-plus"></i><span>Connect</span>';
+        }
+    }
+    
+    // PLAYER CONNECT BUTTON
+    const connectBtn = document.getElementById('connectBtn');
+    if (connectBtn && currentContent?.creator_id) {
+        // Check initial connection status
+        checkConnectionStatus(currentContent.creator_id).then(isConnected => {
+            updateConnectButtonUI(connectBtn, isConnected);
+        });
+        
+        connectBtn.addEventListener('click', async function() {
+            if (!window.AuthHelper?.isAuthenticated?.()) {
+                const shouldLogin = confirm('You need to sign in to connect. Would you like to sign in now?');
+                if (shouldLogin) {
+                    window.location.href = `login.html?redirect=${encodeURIComponent(window.location.href)}`;
+                }
+                return;
+            }
+            
+            const isConnected = connectBtn.classList.contains('connected');
+            const creatorId = currentContent.creator_id;
+            
+            try {
+                if (isConnected) {
+                    // Disconnect - remove from connectors table
+                    const { error } = await window.supabaseClient
+                        .from('connectors')
+                        .delete()
+                        .eq('connector_id', currentUserId)
+                        .eq('connected_id', creatorId)
+                        .eq('connection_type', 'creator');
+                    
+                    if (error) throw error;
+                    
+                    updateConnectButtonUI(connectBtn, false);
+                    showToast('Disconnected', 'info');
+                } else {
+                    // Connect - add to connectors table
+                    const { error } = await window.supabaseClient
+                        .from('connectors')
+                        .insert({
+                            connector_id: currentUserId,
+                            connected_id: creatorId,
+                            connection_type: 'creator',
+                            created_at: new Date().toISOString()
+                        });
+                    
+                    if (error) throw error;
+                    
+                    updateConnectButtonUI(connectBtn, true);
+                    showToast('Connected successfully!', 'success');
+                    
+                    // Track analytics
+                    if (window.track?.userConnect) {
+                        window.track.userConnect(creatorId);
+                    }
+                }
+            } catch (error) {
+                console.error('Connection error:', error);
+                showToast('Failed to update connection', 'error');
+            }
+        });
+    }
+    
+    // CREATOR SECTION CONNECT BUTTON
+    const connectCreatorBtn = document.getElementById('connectCreatorBtn');
+    if (connectCreatorBtn && currentContent?.creator_id) {
+        // Check initial connection status
+        checkConnectionStatus(currentContent.creator_id).then(isConnected => {
+            updateConnectButtonUI(connectCreatorBtn, isConnected);
+        });
+        
+        connectCreatorBtn.addEventListener('click', async function() {
+            if (!window.AuthHelper?.isAuthenticated?.()) {
+                const shouldLogin = confirm('You need to sign in to connect. Would you like to sign in now?');
+                if (shouldLogin) {
+                    window.location.href = `login.html?redirect=${encodeURIComponent(window.location.href)}`;
+                }
+                return;
+            }
+            
+            const isConnected = connectCreatorBtn.classList.contains('connected');
+            const creatorId = currentContent.creator_id;
+            
+            try {
+                if (isConnected) {
+                    // Disconnect
+                    const { error } = await window.supabaseClient
+                        .from('connectors')
+                        .delete()
+                        .eq('connector_id', currentUserId)
+                        .eq('connected_id', creatorId)
+                        .eq('connection_type', 'creator');
+                    
+                    if (error) throw error;
+                    
+                    updateConnectButtonUI(connectCreatorBtn, false);
+                    showToast('Disconnected', 'info');
+                } else {
+                    // Connect
+                    const { error } = await window.supabaseClient
+                        .from('connectors')
+                        .insert({
+                            connector_id: currentUserId,
+                            connected_id: creatorId,
+                            connection_type: 'creator',
+                            created_at: new Date().toISOString()
+                        });
+                    
+                    if (error) throw error;
+                    
+                    updateConnectButtonUI(connectCreatorBtn, true);
+                    showToast('Connected successfully!', 'success');
+                    
+                    if (window.track?.userConnect) {
+                        window.track.userConnect(creatorId);
+                    }
+                }
+            } catch (error) {
+                console.error('Connection error:', error);
+                showToast('Failed to update connection', 'error');
+            }
+        });
+    }
 }
 
-// Setup event listeners
+// ============================================
+// SETUP EVENT LISTENERS
+// ============================================
 function setupEventListeners() {
   console.log('🔧 Setting up event listeners...');
   
@@ -1182,7 +1149,6 @@ function setupEventListeners() {
         video.currentTime = 0;
       }
       if (enhancedVideoPlayer) {
-        // PHASE 1 FIX: Proper cleanup
         if (enhancedVideoPlayer.video) {
           enhancedVideoPlayer.video.pause();
           enhancedVideoPlayer.video.currentTime = 0;
@@ -1193,7 +1159,7 @@ function setupEventListeners() {
     });
   }
   
-  // Fullscreen button handlers (PHASE 1 FIX: Proper fullscreen)
+  // Fullscreen button handlers
   const fullscreenBtn = document.getElementById('fullscreenBtn');
   const fullPlayerBtn = document.getElementById('fullPlayerBtn');
 
@@ -1215,72 +1181,208 @@ function setupEventListeners() {
     });
   }
   
-  // Setup like button functionality
+  // ============================================
+  // FIXED LIKE BUTTON - Uses ONLY Content table
+  // ============================================
   const likeBtn = document.getElementById('likeBtn');
   if (likeBtn) {
     likeBtn.addEventListener('click', async () => {
-      if (!currentContent) return;
-      
-      // Check authentication
-      if (!window.AuthHelper || !window.AuthHelper.isAuthenticated()) {
-        showToast('Sign in to like content', 'warning');
-        return;
-      }
-      
-      const isLiked = likeBtn.classList.contains('active');
-      const currentLikes = parseInt(document.getElementById('likesCount')?.textContent.replace(/\D/g, '') || '0') || 0;
-      
-      try {
-        // Optimistic UI update
-        if (isLiked) {
-          likeBtn.classList.remove('active');
-          likeBtn.innerHTML = '<i class="far fa-heart"></i><span>Like</span>';
-          document.getElementById('likesCount').textContent = formatNumber(currentLikes - 1) + ' likes';
-        } else {
-          likeBtn.classList.add('active');
-          likeBtn.innerHTML = '<i class="fas fa-heart"></i><span>Liked</span>';
-          document.getElementById('likesCount').textContent = formatNumber(currentLikes + 1) + ' likes';
+        if (!currentContent) return;
+        
+        // Check authentication FIRST
+        if (!window.AuthHelper?.isAuthenticated?.()) {
+            showToast('Sign in to like content', 'warning');
+            return;
+        }
+
+        const isLiked = likeBtn.classList.contains('active');
+        const currentLikes = parseInt(document.getElementById('likesCount')?.textContent.replace(/\D/g, '') || '0') || 0;
+        const newLikes = isLiked ? currentLikes - 1 : currentLikes + 1;
+
+        try {
+            // Optimistic UI update
+            likeBtn.classList.toggle('active', !isLiked);
+            likeBtn.innerHTML = !isLiked 
+                ? '<i class="fas fa-heart"></i><span>Liked</span>' 
+                : '<i class="far fa-heart"></i><span>Like</span>';
+            document.getElementById('likesCount').textContent = formatNumber(newLikes);
+
+            // DIRECT update to Content table
+            const { error } = await window.SupabaseHelper.client
+                .from('Content')
+                .update({ likes_count: newLikes })
+                .eq('id', currentContent.id);
+
+            if (error) throw error;
+            
+            // Update local state
+            currentContent.likes_count = newLikes;
+            showToast(!isLiked ? 'Liked!' : 'Like removed', !isLiked ? 'success' : 'info');
+            
+            // Track analytics
+            if (window.track?.contentLike) {
+                window.track.contentLike(currentContent.id, !isLiked);
+            }
+        } catch (error) {
+            console.error('Like update failed:', error);
+            // Revert UI on error
+            likeBtn.classList.toggle('active', isLiked);
+            likeBtn.innerHTML = isLiked 
+                ? '<i class="fas fa-heart"></i><span>Liked</span>' 
+                : '<i class="far fa-heart"></i><span>Like</span>';
+            document.getElementById('likesCount').textContent = formatNumber(currentLikes);
+            showToast('Failed to update like', 'error');
+        }
+    });
+  }
+  
+  // ============================================
+  // FIXED FAVORITES BUTTON - Uses ONLY Content table
+  // ============================================
+  const favoriteBtn = document.getElementById('favoriteBtn');
+  if (favoriteBtn) {
+    favoriteBtn.addEventListener('click', async () => {
+        if (!currentContent) return;
+        
+        if (!window.AuthHelper?.isAuthenticated?.()) {
+            showToast('Sign in to favorite content', 'warning');
+            return;
+        }
+
+        const isFavorited = favoriteBtn.classList.contains('active');
+        const currentFavorites = parseInt(document.getElementById('favoritesCount')?.textContent.replace(/\D/g, '') || '0') || 0;
+        const newFavorites = isFavorited ? currentFavorites - 1 : currentFavorites + 1;
+
+        try {
+            // Optimistic UI update
+            favoriteBtn.classList.toggle('active', !isFavorited);
+            favoriteBtn.innerHTML = !isFavorited 
+                ? '<i class="fas fa-star"></i><span>Favorited</span>' 
+                : '<i class="far fa-star"></i><span>Favorite</span>';
+            
+            // Update count display if element exists
+            const favCountEl = document.getElementById('favoritesCount');
+            if (favCountEl) favCountEl.textContent = formatNumber(newFavorites);
+
+            // DIRECT update to Content table
+            const { error } = await window.SupabaseHelper.client
+                .from('Content')
+                .update({ favorites_count: newFavorites })
+                .eq('id', currentContent.id);
+
+            if (error) throw error;
+            
+            currentContent.favorites_count = newFavorites;
+            showToast(!isFavorited ? 'Added to favorites!' : 'Removed from favorites', !isFavorited ? 'success' : 'info');
+            
+            // Track analytics
+            if (window.track?.contentFavorite) {
+                window.track.contentFavorite(currentContent.id, !isFavorited);
+            }
+        } catch (error) {
+            console.error('Favorite update failed:', error);
+            // Revert UI
+            favoriteBtn.classList.toggle('active', isFavorited);
+            favoriteBtn.innerHTML = isFavorited 
+                ? '<i class="fas fa-star"></i><span>Favorited</span>' 
+                : '<i class="far fa-star"></i><span>Favorite</span>';
+            const favCountEl = document.getElementById('favoritesCount');
+            if (favCountEl) favCountEl.textContent = formatNumber(currentFavorites);
+            showToast('Failed to update favorite', 'error');
+        }
+    });
+  }
+  
+  // ============================================
+  // FIXED COMMENT HANDLER
+  // ============================================
+  const sendBtn = document.getElementById('sendCommentBtn');
+  const commentInput = document.getElementById('commentInput');
+  if (sendBtn && commentInput) {
+    sendBtn.addEventListener('click', async function() {
+        const text = commentInput.value.trim();
+        if (!text) {
+            showToast('Please enter a comment', 'warning');
+            return;
         }
         
-        // Update database
-        if (window.SupabaseHelper && window.SupabaseHelper.client && currentUserId) {
-          const { error } = await window.SupabaseHelper.client
-            .from('content_interactions')
-            .upsert({
-              content_id: currentContent.id,
-              user_id: currentUserId,
-              interaction_type: 'like',
-              created_at: new Date().toISOString()
-            }, {
-              onConflict: 'content_id,user_id,interaction_type'
-            });
-          
-          if (error) throw error;
-          
-          // Update content likes count
-          await window.SupabaseHelper.client
-            .from('Content')
-            .update({ 
-              likes_count: isLiked ? currentLikes - 1 : currentLikes + 1 
-            })
-            .eq('id', currentContent.id);
-          
-          showToast(isLiked ? 'Removed like' : 'Liked!', isLiked ? 'info' : 'success');
+        if (!window.AuthHelper?.isAuthenticated?.()) {
+            showToast('You need to sign in to comment', 'warning');
+            return;
         }
-      } catch (error) {
-        console.error('Like error:', error);
-        // Revert UI on error
-        if (isLiked) {
-          likeBtn.classList.add('active');
-          likeBtn.innerHTML = '<i class="fas fa-heart"></i><span>Liked</span>';
-          document.getElementById('likesCount').textContent = formatNumber(currentLikes) + ' likes';
-        } else {
-          likeBtn.classList.remove('active');
-          likeBtn.innerHTML = '<i class="far fa-heart"></i><span>Like</span>';
-          document.getElementById('likesCount').textContent = formatNumber(currentLikes) + ' likes';
+        
+        if (!currentContent) return;
+        
+        // Show loading state
+        const originalHTML = sendBtn.innerHTML;
+        sendBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+        sendBtn.disabled = true;
+        
+        try {
+            // 1. Insert comment into comments table
+            const userProfile = window.AuthHelper.getUserProfile();
+            const displayName = window.AuthHelper.getDisplayName();
+            const avatarUrl = window.AuthHelper.getAvatarUrl();
+            
+            const { data: newComment, error: insertError } = await window.supabaseClient
+                .from('comments')
+                .insert({
+                    content_id: currentContent.id,
+                    user_id: userProfile.id,
+                    author_name: displayName,
+                    author_avatar: avatarUrl,
+                    comment_text: text,
+                    created_at: new Date().toISOString()
+                })
+                .select()
+                .single();
+            
+            if (insertError) throw insertError;
+            
+            // 2. Update comments_count in Content table
+            const currentComments = parseInt(document.getElementById('commentsCount')?.textContent.replace(/\D/g, '') || '0') || 0;
+            const newCommentCount = currentComments + 1;
+            
+            const { error: updateError } = await window.SupabaseHelper.client
+                .from('Content')
+                .update({ comments_count: newCommentCount })
+                .eq('id', currentContent.id);
+            
+            if (updateError) {
+                console.warn('Comment count update failed (but comment saved):', updateError);
+                // Don't fail the whole operation - comment was saved
+            }
+            
+            // 3. Update UI
+            commentInput.value = '';
+            await loadComments(currentContent.id); // Refresh comments list
+            currentContent.comments_count = newCommentCount;
+            
+            // Update comment count display
+            const countEl = document.getElementById('commentsCount');
+            if (countEl) countEl.textContent = `(${newCommentCount})`;
+            
+            showToast('Comment added!', 'success');
+            
+            // Track analytics
+            if (window.track?.contentComment) {
+                window.track.contentComment(currentContent.id);
+            }
+        } catch (error) {
+            console.error('Comment submission failed:', error);
+            showToast(error.message || 'Failed to add comment', 'error');
+        } finally {
+            sendBtn.innerHTML = originalHTML;
+            sendBtn.disabled = false;
         }
-        showToast('Failed to update like', 'error');
-      }
+    });
+    
+    // Enter key support
+    commentInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter' && !e.shiftKey && !commentInput.disabled) {
+            e.preventDefault();
+            sendBtn.click();
+        }
     });
   }
   
@@ -1296,119 +1398,8 @@ function setupEventListeners() {
     });
   }
   
-  // Send comment
-  const sendBtn = document.getElementById('sendCommentBtn');
-  const commentInput = document.getElementById('commentInput');
-  
-  if (sendBtn && commentInput) {
-    sendBtn.addEventListener('click', async function() {
-      const text = commentInput.value.trim();
-      if (!text) {
-        showToast('Please enter a comment', 'warning');
-        return;
-      }
-      
-      if (!window.AuthHelper || !window.AuthHelper.isAuthenticated()) {
-        const shouldLogin = confirm('You need to sign in to comment. Would you like to sign in now?');
-        if (shouldLogin) {
-          window.location.href = 'login.html?redirect=' + encodeURIComponent(window.location.href);
-        }
-        return;
-      }
-      
-      if (!currentContent) return;
-      
-      // Show loading
-      const originalHTML = sendBtn.innerHTML;
-      sendBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-      sendBtn.disabled = true;
-      
-      try {
-        const userProfile = window.AuthHelper.getUserProfile();
-        const displayName = window.AuthHelper.getDisplayName();
-        
-        const { data, error } = await window.supabaseClient
-          .from('comments')
-          .insert({
-            content_id: currentContent.id,
-            user_id: userProfile.id,
-            author_name: displayName,
-            comment_text: text
-          })
-          .select()
-          .single();
-        
-        if (error) throw error;
-        
-        commentInput.value = '';
-        showToast('Comment added!', 'success');
-        await loadComments(currentContent.id);
-      } catch (error) {
-        console.error('Error adding comment:', error);
-        showToast('Failed to add comment', 'error');
-      } finally {
-        sendBtn.innerHTML = originalHTML;
-        sendBtn.disabled = false;
-      }
-    });
-    
-    commentInput.addEventListener('keypress', function(e) {
-      if (e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault();
-        sendBtn.click();
-      }
-    });
-  }
-  
-  // Connect button in player
-  const connectBtn = document.getElementById('connectBtn');
-  if (connectBtn) {
-    connectBtn.addEventListener('click', async function() {
-      if (!window.AuthHelper || !window.AuthHelper.isAuthenticated()) {
-        const shouldLogin = confirm('You need to sign in to connect. Would you like to sign in now?');
-        if (shouldLogin) {
-          window.location.href = 'login.html?redirect=' + encodeURIComponent(window.location.href);
-        }
-        return;
-      }
-      
-      const isConnected = connectBtn.classList.contains('connected');
-      if (isConnected) {
-        connectBtn.classList.remove('connected');
-        connectBtn.innerHTML = '<i class="fas fa-user-plus"></i><span>Connect</span>';
-        showToast('Disconnected', 'info');
-      } else {
-        connectBtn.classList.add('connected');
-        connectBtn.innerHTML = '<i class="fas fa-user-check"></i><span>Connected</span>';
-        showToast('Connected successfully!', 'success');
-      }
-    });
-  }
-  
-  // Connect button in creator section
-  const connectCreatorBtn = document.getElementById('connectCreatorBtn');
-  if (connectCreatorBtn) {
-    connectCreatorBtn.addEventListener('click', async function() {
-      if (!window.AuthHelper || !window.AuthHelper.isAuthenticated()) {
-        const shouldLogin = confirm('You need to sign in to connect. Would you like to sign in now?');
-        if (shouldLogin) {
-          window.location.href = 'login.html?redirect=' + encodeURIComponent(window.location.href);
-        }
-        return;
-      }
-      
-      const isConnected = connectCreatorBtn.classList.contains('connected');
-      if (isConnected) {
-        connectCreatorBtn.classList.remove('connected');
-        connectCreatorBtn.innerHTML = '<i class="fas fa-user-plus"></i><span>Connect</span>';
-        showToast('Disconnected', 'info');
-      } else {
-        connectCreatorBtn.classList.add('connected');
-        connectCreatorBtn.innerHTML = '<i class="fas fa-user-check"></i><span>Connected</span>';
-        showToast('Connected successfully!', 'success');
-      }
-    });
-  }
+  // Setup connect buttons
+  setupConnectButtons();
   
   // Back to top
   const backToTopBtn = document.getElementById('backToTopBtn');
@@ -1440,9 +1431,9 @@ function setupEventListeners() {
   console.log('✅ Event listeners setup complete');
 }
 
-// ===================================================================
-// MODAL & PANEL SYSTEMS (Analytics, Search, Notifications, Theme)
-// ===================================================================
+// ============================================
+// MODAL & PANEL SYSTEMS
+// ============================================
 
 // ======================
 // ANALYTICS MODAL
@@ -1477,29 +1468,15 @@ async function loadContentAnalytics() {
   if (!currentContent) return;
   
   try {
-    // Get view stats
-    const { data: viewsData } = await window.supabaseClient
-      .from('content_views')
-      .select('id, viewed_at')
-      .eq('content_id', currentContent.id)
-      .order('viewed_at', { ascending: false })
-      .limit(100);
-    
-    // Get comment stats
-    const { data: commentsData } = await window.supabaseClient
-      .from('comments')
-      .select('id, created_at')
-      .eq('content_id', currentContent.id);
-    
-    // Calculate metrics
-    const totalViews = viewsData?.length || 0;
-    const totalComments = commentsData?.length || 0;
+    // Get view stats (from Content table directly)
+    const totalViews = currentContent.views_count || 0;
+    const totalComments = currentContent.comments_count || 0;
     
     // Update UI
     document.getElementById('content-total-views').textContent = formatNumber(totalViews);
     document.getElementById('total-comments').textContent = formatNumber(totalComments);
     
-    // Simulate engagement metrics (would come from analytics system)
+    // Simulate engagement metrics
     document.getElementById('avg-watch-time').textContent = '4m 23s';
     document.getElementById('engagement-rate').textContent = '68%';
     
@@ -2100,7 +2077,9 @@ function initGlobalNavigation() {
   // Notifications button already handled in initNotificationsPanel
 }
 
-// Utility functions
+// ============================================
+// UTILITY FUNCTIONS
+// ============================================
 function safeSetText(id, text) {
   const el = document.getElementById(id);
   if (el) {
@@ -2122,7 +2101,6 @@ function formatDate(dateString) {
   }
 }
 
-// FIXED: Duration never shows dash
 function formatDuration(seconds) {
   if (!seconds || seconds <= 0 || isNaN(seconds)) {
     return '0m 0s';
@@ -2220,9 +2198,9 @@ function showToast(message, type = 'info') {
   }, 3000);
 }
 
-// PHASE 1 FIX: Export key functions for VideoPlayerFeatures
+// Export key functions for VideoPlayerFeatures
 window.hasViewedContentRecently = hasViewedContentRecently;
 window.markContentAsViewed = markContentAsViewed;
 window.recordContentView = recordContentView;
 
-console.log('✅ Content detail script loaded with Video URL fixes');
+console.log('✅ Content detail script loaded with all fixes');
