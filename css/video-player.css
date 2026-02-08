@@ -1,7 +1,6 @@
 /* css/video-player.css - Enhanced Video Player Styles */
-
 /* =================================================================== */
-/* SINGLE PLAYER SYSTEM - NO DUPLICATE CONTROLS                        */
+/* COMPACT VIDEO PLAYER - YOUTUBE STYLE                                */
 /* =================================================================== */
 
 /* Hide ALL Bantu branded controls that conflict with EnhancedVideoPlayer */
@@ -15,14 +14,14 @@
   display: none !important;
 }
 
-/* Enhanced Video Player Controls - THE ONLY CONTROLS SYSTEM */
+/* Enhanced Video Player Controls - COMPACT & STREAMLINED */
 .enhanced-video-controls {
   position: absolute;
   bottom: 0;
   left: 0;
   right: 0;
   background: linear-gradient(to top, rgba(0, 0, 0, 0.85), transparent);
-  padding: 15px 20px;
+  padding: 10px 15px;
   z-index: 100;
   transition: opacity 0.3s ease;
   opacity: 0;
@@ -39,18 +38,20 @@
 .controls-bar {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 10px 15px;
+  gap: 10px;
+  padding: 8px 12px;
   background: rgba(15, 23, 42, 0.85);
   backdrop-filter: blur(10px);
-  border-radius: 12px;
+  border-radius: 10px;
   border: 1px solid rgba(29, 78, 216, 0.3);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
+  max-width: 100%;
+  overflow: hidden;
 }
 
 .control-btn {
-  width: 36px;
-  height: 36px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.15);
   border: 1px solid rgba(255, 255, 255, 0.25);
@@ -67,7 +68,7 @@
   background: rgba(29, 78, 216, 0.4);
   border-color: var(--bantu-blue);
   transform: scale(1.1);
-  box-shadow: 0 0 15px rgba(29, 78, 216, 0.4);
+  box-shadow: 0 0 10px rgba(29, 78, 216, 0.4);
 }
 
 .control-btn:active {
@@ -75,29 +76,29 @@
 }
 
 .control-btn i {
-  font-size: 16px;
+  font-size: 14px;
 }
 
-/* Time Display */
+/* Time Display - More Compact */
 .time-display {
   font-family: 'Orbitron', monospace;
-  font-size: 14px;
+  font-size: 13px;
   color: var(--soft-white);
-  min-width: 110px;
+  min-width: 90px;
   text-align: center;
   font-weight: 500;
   letter-spacing: 0.5px;
 }
 
-/* Progress Container */
+/* Progress Container - Thinner & Cleaner */
 .progress-container {
   flex: 1;
-  height: 6px;
+  height: 4px;
   background: rgba(255, 255, 255, 0.1);
-  border-radius: 3px;
+  border-radius: 2px;
   position: relative;
   cursor: pointer;
-  margin: 0 10px;
+  margin: 0 8px;
 }
 
 .progress-bar {
@@ -118,7 +119,7 @@
   left: 0;
   height: 100%;
   background: linear-gradient(90deg, var(--bantu-blue), var(--warm-gold));
-  border-radius: 3px;
+  border-radius: 2px;
   width: var(--progress, 0%);
   z-index: 1;
 }
@@ -128,8 +129,8 @@
   position: absolute;
   top: 50%;
   left: var(--progress, 0%);
-  width: 14px;
-  height: 14px;
+  width: 12px;
+  height: 12px;
   background: var(--warm-gold);
   border-radius: 50%;
   transform: translate(-50%, -50%);
@@ -142,55 +143,55 @@
   opacity: 1;
 }
 
-/* Volume Controls */
+/* Volume Controls - More Compact */
 .volume-controls {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
 }
 
 .volume-bar {
-  width: 80px;
-  height: 5px;
+  width: 60px;
+  height: 4px;
   -webkit-appearance: none;
   background: rgba(255, 255, 255, 0.1);
-  border-radius: 3px;
+  border-radius: 2px;
   outline: none;
   cursor: pointer;
 }
 
 .volume-bar::-webkit-slider-thumb {
   -webkit-appearance: none;
-  width: 14px;
-  height: 14px;
+  width: 12px;
+  height: 12px;
   border-radius: 50%;
   background: var(--warm-gold);
   cursor: pointer;
-  box-shadow: 0 0 8px rgba(245, 158, 11, 0.5);
+  box-shadow: 0 0 6px rgba(245, 158, 11, 0.5);
 }
 
 .volume-bar::-moz-range-thumb {
-  width: 14px;
-  height: 14px;
+  width: 12px;
+  height: 12px;
   border-radius: 50%;
   background: var(--warm-gold);
   cursor: pointer;
   border: none;
-  box-shadow: 0 0 8px rgba(245, 158, 11, 0.5);
+  box-shadow: 0 0 6px rgba(245, 158, 11, 0.5);
 }
 
-/* Settings Menu */
+/* Settings Menu - More Compact */
 .settings-menu {
   position: absolute;
-  bottom: 70px;
-  right: 25px;
+  bottom: 60px;
+  right: 20px;
   background: var(--card-bg);
   border: 1px solid var(--card-border);
-  border-radius: 12px;
-  padding: 15px;
-  min-width: 200px;
+  border-radius: 10px;
+  padding: 12px;
+  min-width: 180px;
   backdrop-filter: blur(20px);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
   z-index: 1000;
   display: none;
   animation: fadeInUp 0.2s ease;
@@ -212,7 +213,7 @@
 }
 
 .settings-section {
-  margin-bottom: 15px;
+  margin-bottom: 12px;
 }
 
 .settings-section:last-child {
@@ -221,8 +222,8 @@
 
 .settings-section h4 {
   color: var(--soft-white);
-  margin-bottom: 10px;
-  font-size: 14px;
+  margin-bottom: 8px;
+  font-size: 13px;
   font-weight: 600;
   opacity: 0.9;
 }
@@ -230,16 +231,16 @@
 .speed-options {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
+  gap: 6px;
 }
 
 .speed-option {
-  padding: 6px 10px;
+  padding: 5px 8px;
   background: rgba(255, 255, 255, 0.1);
   border: 1px solid var(--card-border);
-  border-radius: 8px;
+  border-radius: 6px;
   color: var(--soft-white);
-  font-size: 13px;
+  font-size: 12px;
   cursor: pointer;
   text-align: center;
   transition: all 0.2s ease;
@@ -257,20 +258,24 @@
   font-weight: 600;
 }
 
-/* Buffering Indicator */
+/* Buffering Indicator - FIXED: Centered in Video Container */
 .buffering-indicator {
   position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.7);
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: auto;
+  height: auto;
+  background: rgba(0, 0, 0, 0.8);
   display: none;
   align-items: center;
   justify-content: center;
   z-index: 90;
   flex-direction: column;
-  gap: 15px;
+  gap: 12px;
+  padding: 20px 30px;
+  border-radius: 12px;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.5);
 }
 
 .buffering-indicator.active {
@@ -279,8 +284,8 @@
 }
 
 .buffering-indicator .spinner {
-  width: 40px;
-  height: 40px;
+  width: 32px;
+  height: 32px;
   border: 3px solid rgba(255, 255, 255, 0.2);
   border-top-color: var(--warm-gold);
   border-radius: 50%;
@@ -289,11 +294,12 @@
 
 .buffering-indicator p {
   color: var(--soft-white);
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
+  white-space: nowrap;
 }
 
-/* Error Overlay */
+/* Error Overlay - More Compact */
 .error-overlay {
   position: absolute;
   top: 0;
@@ -316,84 +322,84 @@
 .error-content {
   background: var(--card-bg);
   border: 1px solid var(--card-border);
-  border-radius: 20px;
-  padding: 30px;
+  border-radius: 16px;
+  padding: 24px;
   text-align: center;
-  max-width: 450px;
+  max-width: 400px;
   width: 100%;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.5);
 }
 
 .error-content i {
-  font-size: 3.5rem;
+  font-size: 2.8rem;
   color: #EF4444;
-  margin-bottom: 15px;
+  margin-bottom: 12px;
 }
 
 .error-content h3 {
   color: var(--soft-white);
-  font-size: 24px;
-  margin-bottom: 12px;
+  font-size: 20px;
+  margin-bottom: 10px;
   font-weight: 700;
 }
 
 .error-message {
   color: rgba(255, 255, 255, 0.75);
-  margin-bottom: 25px;
+  margin-bottom: 20px;
   line-height: 1.5;
-  font-size: 16px;
+  font-size: 14px;
 }
 
 .retry-btn {
-  padding: 10px 25px;
+  padding: 8px 20px;
   background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
   color: white;
   border: none;
-  border-radius: 12px;
+  border-radius: 10px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
-  font-size: 15px;
+  font-size: 14px;
 }
 
 .retry-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(29, 78, 216, 0.4);
+  box-shadow: 0 4px 12px rgba(29, 78, 216, 0.4);
 }
 
-/* Fullscreen Mode Enhancements */
+/* Fullscreen Mode Enhancements - Compact */
 .video-container:fullscreen .enhanced-video-controls,
 .video-container:-webkit-full-screen .enhanced-video-controls {
-  padding: 20px 30px;
+  padding: 15px 20px;
   background: linear-gradient(to top, rgba(0, 0, 0, 0.95), transparent);
 }
 
 .video-container:fullscreen .controls-bar,
 .video-container:-webkit-full-screen .controls-bar {
-  padding: 15px 20px;
-  border-radius: 16px;
+  padding: 10px 15px;
+  border-radius: 12px;
 }
 
 .video-container:fullscreen .control-btn,
 .video-container:-webkit-full-screen .control-btn {
-  width: 42px;
-  height: 42px;
+  width: 36px;
+  height: 36px;
 }
 
 .video-container:fullscreen .control-btn i,
 .video-container:-webkit-full-screen .control-btn i {
-  font-size: 18px;
+  font-size: 16px;
 }
 
 .video-container:fullscreen .time-display,
 .video-container:-webkit-full-screen .time-display {
-  font-size: 16px;
-  min-width: 130px;
+  font-size: 14px;
+  min-width: 110px;
 }
 
 .video-container:fullscreen .progress-container,
 .video-container:-webkit-full-screen .progress-container {
-  height: 8px;
+  height: 5px;
 }
 
 /* Hide video placeholder when video is playing */
@@ -415,94 +421,158 @@
 @media (hover: none) and (pointer: coarse) {
   .enhanced-video-controls {
     opacity: 1 !important;
-    padding-bottom: 25px;
+    padding-bottom: 15px;
   }
   
   .control-btn {
-    min-width: 44px;
-    min-height: 44px;
+    min-width: 40px;
+    min-height: 40px;
   }
   
   .progress-container {
-    height: 8px;
+    height: 5px;
   }
   
   .progress-container::after {
-    width: 18px;
-    height: 18px;
+    width: 14px;
+    height: 14px;
   }
 }
 
-/* Mobile Responsiveness */
+/* Mobile Responsiveness - COMPACT CONTROLS */
 @media (max-width: 768px) {
   .enhanced-video-controls {
-    padding: 12px 15px;
-  }
-  
-  .controls-bar {
     padding: 8px 12px;
-    gap: 8px;
-    flex-wrap: wrap;
-  }
-  
-  .time-display {
-    min-width: 90px;
-    font-size: 13px;
-    order: 1;
-    width: 100%;
-    text-align: left;
-    margin-top: 8px;
-  }
-  
-  .progress-container {
-    order: 0;
-    width: 100%;
-    margin: 5px 0;
-  }
-  
-  .control-btn {
-    width: 34px;
-    height: 34px;
-  }
-  
-  .control-btn i {
-    font-size: 14px;
-  }
-  
-  .volume-bar {
-    width: 60px;
-  }
-  
-  .settings-menu {
-    min-width: 90%;
-    bottom: 80px;
-    right: 5%;
-    left: 5%;
-  }
-}
-
-@media (max-width: 480px) {
-  .enhanced-video-controls {
-    padding: 10px 12px;
   }
   
   .controls-bar {
     padding: 6px 10px;
     gap: 6px;
-  }
-  
-  .control-btn {
-    width: 32px;
-    height: 32px;
+    flex-wrap: wrap;
+    border-radius: 8px;
   }
   
   .time-display {
+    min-width: 70px;
     font-size: 12px;
-    min-width: 80px;
+    order: 1;
+    width: 100%;
+    text-align: left;
+    margin-top: 6px;
+    font-size: 11px;
+  }
+  
+  .progress-container {
+    order: 0;
+    width: 100%;
+    margin: 4px 0;
+    height: 4px;
+  }
+  
+  .control-btn {
+    width: 30px;
+    height: 30px;
+  }
+  
+  .control-btn i {
+    font-size: 13px;
+  }
+  
+  .volume-bar {
+    width: 50px;
+    height: 3px;
+  }
+  
+  .volume-bar::-webkit-slider-thumb {
+    width: 10px;
+    height: 10px;
+  }
+  
+  .settings-menu {
+    min-width: 85%;
+    bottom: 70px;
+    right: 7.5%;
+    left: 7.5%;
+    padding: 10px;
+  }
+  
+  .speed-options {
+    gap: 5px;
+  }
+  
+  .speed-option {
+    padding: 4px 6px;
+    font-size: 11px;
+  }
+}
+
+@media (max-width: 480px) {
+  .enhanced-video-controls {
+    padding: 6px 10px;
+  }
+  
+  .controls-bar {
+    padding: 5px 8px;
+    gap: 5px;
+    border-radius: 6px;
+  }
+  
+  .control-btn {
+    width: 28px;
+    height: 28px;
+  }
+  
+  .control-btn i {
+    font-size: 12px;
+  }
+  
+  .time-display {
+    font-size: 10px;
+    min-width: 65px;
+    margin-top: 5px;
+  }
+  
+  .progress-container {
+    height: 3px;
   }
   
   .volume-controls {
     display: none;
+  }
+  
+  .buffering-indicator {
+    padding: 15px 25px;
+  }
+  
+  .buffering-indicator .spinner {
+    width: 28px;
+    height: 28px;
+  }
+  
+  .buffering-indicator p {
+    font-size: 12px;
+  }
+  
+  .error-content {
+    padding: 20px;
+    max-width: 350px;
+  }
+  
+  .error-content i {
+    font-size: 2.5rem;
+  }
+  
+  .error-content h3 {
+    font-size: 18px;
+  }
+  
+  .error-message {
+    font-size: 13px;
+  }
+  
+  .retry-btn {
+    padding: 7px 18px;
+    font-size: 13px;
   }
 }
 
