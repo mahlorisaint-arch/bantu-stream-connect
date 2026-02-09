@@ -1,5 +1,5 @@
 // js/video-player.js - Bantu Stream Connect Enhanced Video Player
-// COMPLETE FIXED VERSION WITH ALL REQUIRED METHODS
+// COMPLETE VERSION WITH CUSTOM BRANDED PLAY/PAUSE/LOADING BUTTONS
 
 class EnhancedVideoPlayer {
   constructor(options = {}) {
@@ -23,6 +23,7 @@ class EnhancedVideoPlayer {
     this.container = null;
     this.controls = null;
     this.socialPanel = null;
+    this.playPauseToggle = null; // Custom play/pause/loading overlay
     
     // Player state
     this.isFullscreen = false;
@@ -36,6 +37,7 @@ class EnhancedVideoPlayer {
     this.networkCheckInterval = null;
     this.playbackStartTime = null;
     this.watchedSegments = [];
+    this.isPlaying = false; // Track play state
     
     // Event listeners
     this.eventListeners = new Map();
@@ -62,7 +64,7 @@ class EnhancedVideoPlayer {
     this.isLiked = options.isLiked || false;
     this.isFavorited = options.isFavorited || false;
     
-    console.log('✅ EnhancedVideoPlayer initialized');
+    console.log('✅ EnhancedVideoPlayer initialized with Bantu branded controls');
   }
   
   // ======================
@@ -120,7 +122,8 @@ class EnhancedVideoPlayer {
     this.video.loop = this.config.loop;
     this.video.preload = this.config.preload;
 
-    // Create and setup custom controls
+    // Create custom controls and play/pause overlay
+    this.createPlayPauseOverlay();
     this.createCustomControls();
     this.setupVideoEventListeners();
     
@@ -162,13 +165,397 @@ class EnhancedVideoPlayer {
   }
   
   // ======================
-  // EVENT HANDLERS (CRITICAL FIX)
+  // BANTU BRANDED PLAY/PAUSE/LOADING OVERLAY
   // ======================
   
-  setupEventHandlers() {
-    console.log('🔧 Setting up event handlers');
-    // This is called from init() but we'll handle events differently
+  createPlayPauseOverlay() {
+    if (!this.container) return;
+    
+    // Create overlay container
+    this.playPauseToggle = document.createElement('div');
+    this.playPauseToggle.className = 'play-pause-toggle';
+    this.playPauseToggle.style.cssText = `
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 80px;
+      height: 80px;
+      z-index: 50;
+      cursor: pointer;
+      opacity: 0;
+      transition: opacity 0.3s ease, transform 0.3s ease;
+      pointer-events: none;
+    `;
+    
+    // Add state containers
+    this.playPauseToggle.innerHTML = `
+      <!-- Play State -->
+      <div class="play-state bantu-play-button" style="display: block;">
+        ${this.getBantuPlaySVG(80)}
+      </div>
+      
+      <!-- Pause State -->
+      <div class="pause-state bantu-pause-button" style="display: none;">
+        ${this.getBantuPauseSVG(80)}
+      </div>
+      
+      <!-- Loading State -->
+      <div class="loading-state bantu-loading-button" style="display: none;">
+        ${this.getBantuLoadingSVG(80)}
+        <div class="loading-text" style="
+          color: var(--soft-white);
+          font-size: 12px;
+          font-weight: 500;
+          margin-top: 8px;
+          text-align: center;
+          text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+        ">Buffering...</div>
+      </div>
+    `;
+    
+    // Add to container
+    this.container.appendChild(this.playPauseToggle);
+    
+    // Show overlay on hover and when paused
+    this.container.addEventListener('mouseenter', () => {
+      if (this.video.paused || this.isBuffering) {
+        this.playPauseToggle.style.opacity = '1';
+        this.playPauseToggle.style.pointerEvents = 'auto';
+      }
+    });
+    
+    this.container.addEventListener('mouseleave', () => {
+      if (!this.video.paused && !this.isBuffering) {
+        this.playPauseToggle.style.opacity = '0';
+        this.playPauseToggle.style.pointerEvents = 'none';
+      }
+    });
+    
+    // Click to toggle play/pause
+    this.playPauseToggle.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.togglePlay();
+    });
+    
+    // Also click on video container to toggle
+    this.container.addEventListener('click', (e) => {
+      if (!e.target.closest('.enhanced-video-controls') && 
+          !e.target.closest('.bantu-social-panel')) {
+        this.togglePlay();
+      }
+    });
+    
+    console.log('✅ Bantu branded play/pause/loading overlay created');
   }
+  
+  // ======================
+  // BANTU SVG ICONS
+  // ======================
+  
+  getBantuPlaySVG(size = 80) {
+    const scale = size / 120;
+    return `
+      <svg width="${size}" height="${size}" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <filter id="africaGlowPlay" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur in="SourceAlpha" stdDeviation="3" result="blur1"/>
+            <feFlood flood-color="#42F2FF" flood-opacity="0.4" result="glowColor1"/>
+            <feComposite in="glowColor1" in2="blur1" operator="in" result="innerGlow"/>
+            <feGaussianBlur in="SourceAlpha" stdDeviation="9" result="blur2"/>
+            <feFlood flood-color="#18E1FF" flood-opacity="0.25" result="glowColor2"/>
+            <feComposite in="glowColor2" in2="blur2" operator="in" result="outerGlow"/>
+            <feMerge>
+              <feMergeNode in="outerGlow"/>
+              <feMergeNode in="innerGlow"/>
+              <feMergeNode in="SourceGraphic"/>
+            </feMerge>
+          </filter>
+          <filter id="triangleGlowPlay" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur in="SourceAlpha" stdDeviation="4" result="blur1"/>
+            <feFlood flood-color="#B6FFFB" flood-opacity="0.5" result="glowColor1"/>
+            <feComposite in="glowColor1" in2="blur1" operator="in" result="innerGlow"/>
+            <feGaussianBlur in="SourceAlpha" stdDeviation="10" result="blur2"/>
+            <feFlood flood-color="#8CFFF6" flood-opacity="0.3" result="glowColor2"/>
+            <feComposite in="glowColor2" in2="blur2" operator="in" result="outerGlow"/>
+            <feMerge>
+              <feMergeNode in="outerGlow"/>
+              <feMergeNode in="innerGlow"/>
+              <feMergeNode in="SourceGraphic"/>
+            </feMerge>
+          </filter>
+          <filter id="containerGlowPlay" x="-30%" y="-30%" width="160%" height="160%">
+            <feGaussianBlur in="SourceAlpha" stdDeviation="6" result="blur"/>
+            <feFlood flood-color="#18E1FF" flood-opacity="0.2" result="glowColor"/>
+            <feComposite in="glowColor" in2="blur" operator="in" result="glow"/>
+            <feMerge>
+              <feMergeNode in="glow"/>
+              <feMergeNode in="SourceGraphic"/>
+            </feMerge>
+          </filter>
+        </defs>
+        
+        <rect width="120" height="120" rx="36" ry="36" fill="#050B1E"/>
+        
+        <rect x="4" y="4" width="112" height="112" rx="32" ry="32" 
+              fill="none" 
+              stroke="#18E1FF" 
+              stroke-width="3.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              filter="url(#containerGlowPlay)"/>
+        
+        <path d="M 60 28 C 58 28, 55 30, 53 32 L 48 38, 45 42, 43 46 C 42 48, 41 50, 41 52 L 41 58, 42 62, 44 66 C 45 68, 47 70, 49 71 L 52 73, 55 74, 58 75 C 60 75, 62 75, 64 74 L 67 73, 70 71, 72 69 C 74 67, 75 65, 76 63 L 77 60, 78 57, 78 54 C 78 52, 77 50, 76 48 L 74 44, 72 41, 70 38 C 68 36, 66 34, 64 33 L 62 31, 61 30, 60 28 Z M 65 45 C 66 46, 67 47, 68 48 L 69 50, 70 52, 70 54 C 70 55, 69 56, 68 57 L 67 58, 66 59, 65 60 C 64 60, 63 60, 62 59 L 61 58, 60 57, 59 56 C 58 55, 58 54, 58 53 L 59 51, 60 49, 62 47 C 63 46, 64 45, 65 45 Z"
+              fill="none"
+              stroke="#18E1FF"
+              stroke-width="3"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              filter="url(#africaGlowPlay)"/>
+        
+        <line x1="68" y1="48" x2="82" y2="48" 
+              stroke="#18E1FF" 
+              stroke-width="2" 
+              stroke-linecap="round"
+              opacity="0.85"
+              filter="url(#africaGlowPlay)"/>
+        
+        <line x1="68" y1="52" x2="80" y2="52" 
+              stroke="#18E1FF" 
+              stroke-width="2" 
+              stroke-linecap="round"
+              opacity="0.85"
+              filter="url(#africaGlowPlay)"/>
+        
+        <line x1="68" y1="56" x2="78" y2="56" 
+              stroke="#18E1FF" 
+              stroke-width="2" 
+              stroke-linecap="round"
+              opacity="0.85"
+              filter="url(#africaGlowPlay)"/>
+        
+        <path d="M 50 45 L 70 54 L 50 63 Z"
+              fill="#8CFFF6"
+              filter="url(#triangleGlowPlay)"/>
+      </svg>
+    `;
+  }
+  
+  getBantuPauseSVG(size = 80) {
+    const scale = size / 120;
+    return `
+      <svg width="${size}" height="${size}" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <filter id="africaGlowPause" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur in="SourceAlpha" stdDeviation="3" result="blur1"/>
+            <feFlood flood-color="#42F2FF" flood-opacity="0.4" result="glowColor1"/>
+            <feComposite in="glowColor1" in2="blur1" operator="in" result="innerGlow"/>
+            <feGaussianBlur in="SourceAlpha" stdDeviation="9" result="blur2"/>
+            <feFlood flood-color="#18E1FF" flood-opacity="0.25" result="glowColor2"/>
+            <feComposite in="glowColor2" in2="blur2" operator="in" result="outerGlow"/>
+            <feMerge>
+              <feMergeNode in="outerGlow"/>
+              <feMergeNode in="innerGlow"/>
+              <feMergeNode in="SourceGraphic"/>
+            </feMerge>
+          </filter>
+          <filter id="pauseGlow" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur in="SourceAlpha" stdDeviation="4" result="blur1"/>
+            <feFlood flood-color="#B6FFFB" flood-opacity="0.5" result="glowColor1"/>
+            <feComposite in="glowColor1" in2="blur1" operator="in" result="innerGlow"/>
+            <feGaussianBlur in="SourceAlpha" stdDeviation="10" result="blur2"/>
+            <feFlood flood-color="#8CFFF6" flood-opacity="0.3" result="glowColor2"/>
+            <feComposite in="glowColor2" in2="blur2" operator="in" result="outerGlow"/>
+            <feMerge>
+              <feMergeNode in="outerGlow"/>
+              <feMergeNode in="innerGlow"/>
+              <feMergeNode in="SourceGraphic"/>
+            </feMerge>
+          </filter>
+          <filter id="containerGlowPause" x="-30%" y="-30%" width="160%" height="160%">
+            <feGaussianBlur in="SourceAlpha" stdDeviation="6" result="blur"/>
+            <feFlood flood-color="#18E1FF" flood-opacity="0.2" result="glowColor"/>
+            <feComposite in="glowColor" in2="blur" operator="in" result="glow"/>
+            <feMerge>
+              <feMergeNode in="glow"/>
+              <feMergeNode in="SourceGraphic"/>
+            </feMerge>
+          </filter>
+        </defs>
+        
+        <rect width="120" height="120" rx="36" ry="36" fill="#050B1E"/>
+        
+        <rect x="4" y="4" width="112" height="112" rx="32" ry="32" 
+              fill="none" 
+              stroke="#18E1FF" 
+              stroke-width="3.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              filter="url(#containerGlowPause)"/>
+        
+        <path d="M 60 28 C 58 28, 55 30, 53 32 L 48 38, 45 42, 43 46 C 42 48, 41 50, 41 52 L 41 58, 42 62, 44 66 C 45 68, 47 70, 49 71 L 52 73, 55 74, 58 75 C 60 75, 62 75, 64 74 L 67 73, 70 71, 72 69 C 74 67, 75 65, 76 63 L 77 60, 78 57, 78 54 C 78 52, 77 50, 76 48 L 74 44, 72 41, 70 38 C 68 36, 66 34, 64 33 L 62 31, 61 30, 60 28 Z M 65 45 C 66 46, 67 47, 68 48 L 69 50, 70 52, 70 54 C 70 55, 69 56, 68 57 L 67 58, 66 59, 65 60 C 64 60, 63 60, 62 59 L 61 58, 60 57, 59 56 C 58 55, 58 54, 58 53 L 59 51, 60 49, 62 47 C 63 46, 64 45, 65 45 Z"
+              fill="none"
+              stroke="#18E1FF"
+              stroke-width="3"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              filter="url(#africaGlowPause)"/>
+        
+        <rect x="50" y="42" width="8" height="36" 
+              rx="2" ry="2"
+              fill="#8CFFF6"
+              filter="url(#pauseGlow)"/>
+        
+        <rect x="62" y="42" width="8" height="36" 
+              rx="2" ry="2"
+              fill="#8CFFF6"
+              filter="url(#pauseGlow)"/>
+      </svg>
+    `;
+  }
+  
+  getBantuLoadingSVG(size = 80) {
+    const scale = size / 120;
+    return `
+      <svg width="${size}" height="${size}" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <filter id="pulseGlowLoad" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur in="SourceAlpha" stdDeviation="6" result="blur1"/>
+            <feFlood flood-color="#B6FFFB" flood-opacity="0.6" result="glowColor1"/>
+            <feComposite in="glowColor1" in2="blur1" operator="in" result="innerGlow"/>
+            <feGaussianBlur in="SourceAlpha" stdDeviation="12" result="blur2"/>
+            <feFlood flood-color="#8CFFF6" flood-opacity="0.4" result="glowColor2"/>
+            <feComposite in="glowColor2" in2="blur2" operator="in" result="outerGlow"/>
+            <feMerge>
+              <feMergeNode in="outerGlow"/>
+              <feMergeNode in="innerGlow"/>
+              <feMergeNode in="SourceGraphic"/>
+            </feMerge>
+          </filter>
+          <filter id="africaGlowLoad" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur in="SourceAlpha" stdDeviation="3" result="blur1"/>
+            <feFlood flood-color="#42F2FF" flood-opacity="0.4" result="glowColor1"/>
+            <feComposite in="glowColor1" in2="blur1" operator="in" result="innerGlow"/>
+            <feGaussianBlur in="SourceAlpha" stdDeviation="8" result="blur2"/>
+            <feFlood flood-color="#18E1FF" flood-opacity="0.25" result="glowColor2"/>
+            <feComposite in="glowColor2" in2="blur2" operator="in" result="outerGlow"/>
+            <feMerge>
+              <feMergeNode in="outerGlow"/>
+              <feMergeNode in="innerGlow"/>
+              <feMergeNode in="SourceGraphic"/>
+            </feMerge>
+          </filter>
+        </defs>
+        
+        <rect width="120" height="120" rx="36" ry="36" fill="#050B1E"/>
+        
+        <rect x="4" y="4" width="112" height="112" rx="32" ry="32" 
+              fill="none" 
+              stroke="#18E1FF" 
+              stroke-width="3.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              filter="url(#africaGlowLoad)"/>
+        
+        <path d="M 60 28 C 58 28, 55 30, 53 32 L 48 38, 45 42, 43 46 C 42 48, 41 50, 41 52 L 41 58, 42 62, 44 66 C 45 68, 47 70, 49 71 L 52 73, 55 74, 58 75 C 60 75, 62 75, 64 74 L 67 73, 70 71, 72 69 C 74 67, 75 65, 76 63 L 77 60, 78 57, 78 54 C 78 52, 77 50, 76 48 L 74 44, 72 41, 70 38 C 68 36, 66 34, 64 33 L 62 31, 61 30, 60 28 Z M 65 45 C 66 46, 67 47, 68 48 L 69 50, 70 52, 70 54 C 70 55, 69 56, 68 57 L 67 58, 66 59, 65 60 C 64 60, 63 60, 62 59 L 61 58, 60 57, 59 56 C 58 55, 58 54, 58 53 L 59 51, 60 49, 62 47 C 63 46, 64 45, 65 45 Z"
+              fill="none"
+              stroke="#18E1FF"
+              stroke-width="3"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              filter="url(#africaGlowLoad)"/>
+        
+        <circle cx="60" cy="60" r="24" 
+                fill="none" 
+                stroke="#8CFFF6" 
+                stroke-width="4"
+                stroke-dasharray="30 120"
+                stroke-linecap="round"
+                opacity="0.9"
+                filter="url(#pulseGlowLoad)">
+          <animate attributeName="stroke-dashoffset" 
+                   dur="1.5s" 
+                   repeatCount="indefinite" 
+                   values="0;150"/>
+          <animate attributeName="transform" 
+                   dur="2s" 
+                   repeatCount="indefinite" 
+                   attributeType="XML" 
+                   attributeName="transform" 
+                   values="rotate(0 60 60);rotate(360 60 60)"/>
+        </circle>
+        
+        <circle cx="60" cy="60" r="12" 
+                fill="none" 
+                stroke="#B6FFFB" 
+                stroke-width="3"
+                stroke-dasharray="18 50"
+                stroke-linecap="round"
+                opacity="0.8">
+          <animate attributeName="stroke-dashoffset" 
+                   dur="1s" 
+                   repeatCount="indefinite" 
+                   values="0;68"/>
+          <animate attributeName="opacity" 
+                   dur="2s" 
+                   repeatCount="indefinite" 
+                   values="0.8;1;0.8"/>
+        </circle>
+        
+        <circle cx="60" cy="60" r="4" 
+                fill="#8CFFF6"
+                opacity="0.9">
+          <animate attributeName="r" 
+                   dur="1.5s" 
+                   repeatCount="indefinite" 
+                   values="4;6;4"/>
+          <animate attributeName="opacity" 
+                   dur="1.5s" 
+                   repeatCount="indefinite" 
+                   values="0.9;1;0.9"/>
+        </circle>
+      </svg>
+    `;
+  }
+  
+  // ======================
+  // STATE MANAGEMENT
+  // ======================
+  
+  updatePlayPauseState() {
+    if (!this.playPauseToggle) return;
+    
+    const playState = this.playPauseToggle.querySelector('.play-state');
+    const pauseState = this.playPauseToggle.querySelector('.pause-state');
+    const loadingState = this.playPauseToggle.querySelector('.loading-state');
+    
+    if (this.isBuffering) {
+      // Show loading state
+      playState.style.display = 'none';
+      pauseState.style.display = 'none';
+      loadingState.style.display = 'block';
+      this.playPauseToggle.style.opacity = '1';
+      this.playPauseToggle.style.pointerEvents = 'none';
+    } else if (this.video.paused) {
+      // Show play state
+      playState.style.display = 'block';
+      pauseState.style.display = 'none';
+      loadingState.style.display = 'none';
+      this.playPauseToggle.style.opacity = '1';
+      this.playPauseToggle.style.pointerEvents = 'auto';
+    } else {
+      // Show pause state (or hide overlay)
+      playState.style.display = 'none';
+      pauseState.style.display = 'block';
+      loadingState.style.display = 'none';
+      this.playPauseToggle.style.opacity = '0';
+      this.playPauseToggle.style.pointerEvents = 'none';
+    }
+  }
+  
+  // ======================
+  // EVENT HANDLERS
+  // ======================
   
   setupVideoEventListeners() {
     const events = [
@@ -213,18 +600,19 @@ class EnhancedVideoPlayer {
       case 'canplaythrough':
         this.handleCanPlay();
         break;
+      case 'ended':
+        this.handleEnded();
+        break;
     }
+    
+    // Always update play/pause state
+    this.updatePlayPauseState();
   }
   
   handlePlay() {
+    this.isPlaying = true;
     this.playbackStartTime = Date.now();
     this.stats.playCount++;
-    
-    // Update play button icon
-    const playBtn = this.controls?.querySelector('.play-pause');
-    if (playBtn) {
-      playBtn.innerHTML = '<i class="fas fa-pause"></i>';
-    }
     
     this.emit('playbackstart', {
       timestamp: this.playbackStartTime,
@@ -233,22 +621,22 @@ class EnhancedVideoPlayer {
   }
   
   handlePause() {
+    this.isPlaying = false;
     if (this.playbackStartTime) {
       const watchTime = Date.now() - this.playbackStartTime;
       this.stats.totalWatchTime += watchTime;
       this.playbackStartTime = null;
-      
-      // Update play button icon
-      const playBtn = this.controls?.querySelector('.play-pause');
-      if (playBtn) {
-        playBtn.innerHTML = '<i class="fas fa-play"></i>';
-      }
       
       this.emit('playbackpause', {
         watchTime,
         currentTime: this.video.currentTime
       });
     }
+  }
+  
+  handleEnded() {
+    this.isPlaying = false;
+    this.updatePlayPauseState();
   }
   
   handleError(error) {
@@ -270,7 +658,7 @@ class EnhancedVideoPlayer {
     this.bufferingTimeout = setTimeout(() => {
       if (this.isBuffering) {
         this.stats.bufferingTime += Date.now() - startTime;
-        this.showBufferingIndicator();
+        this.updatePlayPauseState();
       }
     }, 500);
     
@@ -280,13 +668,13 @@ class EnhancedVideoPlayer {
   handleCanPlay() {
     this.isBuffering = false;
     clearTimeout(this.bufferingTimeout);
-    this.hideBufferingIndicator();
+    this.updatePlayPauseState();
     
     this.emit('bufferingend');
   }
   
   // ======================
-  // PLAYER CONTROLS
+  // CUSTOM CONTROLS (Compact)
   // ======================
   
   createCustomControls() {
@@ -303,43 +691,8 @@ class EnhancedVideoPlayer {
     this.controls.className = 'enhanced-video-controls';
     this.controls.innerHTML = this.getControlsHTML();
     
-    // Style controls
-    this.controls.style.cssText = `
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      background: linear-gradient(to top, rgba(0, 0, 0, 0.8), transparent);
-      padding: 10px;
-      z-index: 100;
-      transition: opacity 0.3s ease;
-      opacity: 0;
-    `;
-    
-    // Add to container
     this.container.appendChild(this.controls);
-    
-    // Setup control listeners
     this.setupControlListeners();
-    
-    // Show/hide controls on hover
-    this.container.addEventListener('mouseenter', () => {
-      this.controls.style.opacity = '1';
-    });
-    
-    this.container.addEventListener('mouseleave', () => {
-      if (!this.video.paused) {
-        this.controls.style.opacity = '0';
-      }
-    });
-    
-    this.video.addEventListener('play', () => {
-      this.controls.style.opacity = '1';
-    });
-    
-    this.video.addEventListener('pause', () => {
-      this.controls.style.opacity = '1';
-    });
     
     console.log('✅ Custom controls created');
   }
@@ -361,11 +714,12 @@ class EnhancedVideoPlayer {
           <input type="range" class="progress-bar" min="0" max="100" value="0">
         </div>
         
-        <button class="control-btn volume-btn" title="Volume">
-          <i class="fas fa-volume-up"></i>
-        </button>
-        
-        <input type="range" class="volume-bar" min="0" max="100" value="100">
+        <div class="volume-controls">
+          <button class="control-btn volume-btn" title="Volume">
+            <i class="fas fa-volume-up"></i>
+          </button>
+          <input type="range" class="volume-bar" min="0" max="100" value="100">
+        </div>
         
         <button class="control-btn settings-btn" title="Settings">
           <i class="fas fa-cog"></i>
@@ -378,7 +732,7 @@ class EnhancedVideoPlayer {
       
       <div class="settings-menu" style="display: none;">
         <div class="settings-section">
-          <h4>Playback Speed</h4>
+          <h4><i class="fas fa-tachometer-alt"></i> Playback Speed</h4>
           <div class="speed-options">
             ${this.config.playbackRates.map(rate => `
               <button class="speed-option ${rate === 1 ? 'active' : ''}" data-rate="${rate}">
@@ -501,6 +855,7 @@ class EnhancedVideoPlayer {
     if (progressBar) {
       const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
       progressBar.value = progress;
+      progressBar.parentElement.style.setProperty('--progress', `${progress}%`);
     }
   }
   
@@ -509,6 +864,7 @@ class EnhancedVideoPlayer {
   // ======================
   
   play() {
+    this.isPlaying = true;
     return this.video.play().catch(error => {
       this.handleError({ target: this.video });
       throw error;
@@ -516,6 +872,7 @@ class EnhancedVideoPlayer {
   }
   
   pause() {
+    this.isPlaying = false;
     this.video.pause();
   }
   
@@ -525,6 +882,7 @@ class EnhancedVideoPlayer {
     } else {
       this.pause();
     }
+    this.updatePlayPauseState();
   }
   
   seek(time) {
@@ -545,17 +903,8 @@ class EnhancedVideoPlayer {
     this.emit('volumechange', this.video.volume);
   }
   
-  // ======================
-  // CRITICAL FIX: FULLSCREEN
-  // ======================
-  
   toggleFullscreen() {
-    // Use the player container, not video element
-    const playerContainer = document.querySelector('.inline-player');
-    if (!playerContainer) {
-      console.error('Player container not found for fullscreen');
-      return;
-    }
+    const playerContainer = this.container.closest('.inline-player') || this.container;
     
     if (!this.isFullscreen) {
       if (playerContainer.requestFullscreen) {
@@ -581,19 +930,9 @@ class EnhancedVideoPlayer {
     
     this.isFullscreen = !this.isFullscreen;
     
-    // Force custom controls to show in fullscreen
     setTimeout(() => {
       if (this.controls) this.controls.style.opacity = '1';
     }, 100);
-  }
-  
-  // ======================
-  // SOCIAL FEATURES
-  // ======================
-  
-  initializeSocialFeatures() {
-    console.log('🔧 Initializing social features');
-    // This will be handled by content-detail.js
   }
   
   // ======================
@@ -601,41 +940,16 @@ class EnhancedVideoPlayer {
   // ======================
   
   showBufferingIndicator() {
-    // Create or show buffering indicator
-    let indicator = this.container.querySelector('.buffering-indicator');
-    if (!indicator) {
-      indicator = document.createElement('div');
-      indicator.className = 'buffering-indicator';
-      indicator.innerHTML = `
-        <div class="spinner"></div>
-        <p>Buffering...</p>
-      `;
-      indicator.style.cssText = `
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        background: rgba(0, 0, 0, 0.7);
-        padding: 20px;
-        border-radius: 10px;
-        color: white;
-        text-align: center;
-        z-index: 90;
-      `;
-      this.container.appendChild(indicator);
-    }
-    indicator.style.display = 'block';
+    this.isBuffering = true;
+    this.updatePlayPauseState();
   }
   
   hideBufferingIndicator() {
-    const indicator = this.container.querySelector('.buffering-indicator');
-    if (indicator) {
-      indicator.style.display = 'none';
-    }
+    this.isBuffering = false;
+    this.updatePlayPauseState();
   }
   
   showErrorOverlay(message) {
-    // Create or show error overlay
     let overlay = this.container.querySelector('.error-overlay');
     if (!overlay) {
       overlay = document.createElement('div');
@@ -662,7 +976,6 @@ class EnhancedVideoPlayer {
       `;
       this.container.appendChild(overlay);
       
-      // Add retry button listener
       const retryBtn = overlay.querySelector('.retry-btn');
       if (retryBtn) {
         retryBtn.addEventListener('click', () => {
@@ -703,10 +1016,6 @@ class EnhancedVideoPlayer {
     return num.toString();
   }
   
-  // ======================
-  // EVENT SYSTEM
-  // ======================
-  
   on(event, callback) {
     if (!this.eventListeners.has(event)) {
       this.eventListeners.set(event, []);
@@ -737,15 +1046,12 @@ class EnhancedVideoPlayer {
   }
   
   // ======================
-  // CRITICAL FIX: DESTROY METHOD
+  // DESTROY METHOD
   // ======================
   
   destroy() {
     console.log('🗑️ Destroying EnhancedVideoPlayer...');
     
-    // ============================================
-    // CRITICAL FIX: Preserve video source on destroy
-    // ============================================
     let preservedSource = null;
     let preservedType = null;
     
@@ -764,7 +1070,6 @@ class EnhancedVideoPlayer {
     
     console.log('💾 Preserving video source on destroy:', preservedSource);
 
-    // Remove event listeners
     if (this.video) {
         const events = [
           'play', 'pause', 'ended', 'error', 'waiting', 'canplay',
@@ -778,58 +1083,47 @@ class EnhancedVideoPlayer {
         });
     }
     
-    // Clear timeouts/intervals
     if (this.bufferingTimeout) clearTimeout(this.bufferingTimeout);
     if (this.networkCheckInterval) clearInterval(this.networkCheckInterval);
     
-    // Remove controls
     if (this.controls && this.controls.parentNode) {
       this.controls.parentNode.removeChild(this.controls);
     }
     
-    // Remove social panel
+    if (this.playPauseToggle && this.playPauseToggle.parentNode) {
+      this.playPauseToggle.parentNode.removeChild(this.playPauseToggle);
+    }
+    
     if (this.socialPanel && this.socialPanel.parentNode) {
       this.socialPanel.parentNode.removeChild(this.socialPanel);
     }
     
-    // Clear event listeners
     this.eventListeners.clear();
 
-    // ============================================
-    // CRITICAL: Restore native controls and source
-    // ============================================
     if (this.video) {
-        // Restore video source
         if (preservedSource) {
             console.log('🔄 Restoring video source after destroy...');
             
-            // Clear existing sources
             while (this.video.firstChild) {
                 this.video.removeChild(this.video.firstChild);
             }
             
-            // Remove src attribute
             this.video.removeAttribute('src');
             
-            // Create new source element
             const source = document.createElement('source');
             source.src = preservedSource;
             source.type = preservedType || 'video/mp4';
             
-            // Add source back
             this.video.appendChild(source);
             
-            // Reload video
             this.video.load();
         }
         
-        // Restore native controls
         this.video.controls = true;
         
         console.log('✅ Video source preserved after destroy');
     }
 
-    // Clear references
     this.video = null;
     this.container = null;
     
@@ -867,6 +1161,6 @@ class EnhancedVideoPlayer {
 
 // Export for global use
 window.EnhancedVideoPlayer = EnhancedVideoPlayer;
-window.BantuVideoPlayer = EnhancedVideoPlayer; // For compatibility
+window.BantuVideoPlayer = EnhancedVideoPlayer;
 
-console.log('✅ Enhanced Video Player loaded successfully');
+console.log('✅ Enhanced Video Player with Bantu branded controls loaded successfully');
