@@ -1,2309 +1,2626 @@
-// js/content-detail.js - UPDATED WITH SINGLE-TABLE FIXES & CONNECTOR SUPPORT
-
-console.log('🎬 Content Detail Initializing with all fixes...');
-
-// Global variables
-let currentContent = null;
-let enhancedVideoPlayer = null;
-let isInitialized = false;
-let currentUserId = null;
-let viewRecorded = false; // Track if view has been recorded THIS SESSION
-
-// ============================================
-// VIDEO URL VALIDATION & DEBUGGING
-// ============================================
-async function validateVideoUrl(url) {
-    try {
-        console.log('🔍 Validating video URL:', url);
-        
-        // Check if URL is accessible
-        const response = await fetch(url, { 
-            method: 'HEAD', 
-            mode: 'cors',
-            cache: 'no-cache'
-        });
-        
-        if (response.ok) {
-            console.log('✅ Video URL is accessible');
-            console.log('📊 Content-Type:', response.headers.get('content-type'));
-            console.log('📊 Content-Length:', response.headers.get('content-length'));
-            return true;
-        } else {
-            console.error('❌ Video URL returned status:', response.status, response.statusText);
-            return false;
-        }
-    } catch (error) {
-        console.error('❌ Error validating video URL:', error);
-        return false;
-    }
+/* Content Hero Section - More Compact */
+.content-hero {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 16px;
+  padding: 24px;
+  margin: 20px 0;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+  position: relative;
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  gap: 24px;
+  align-items: center;
 }
-
-// Helper to get file extension
-function getFileExtension(filename) {
-    return filename.slice((filename.lastIndexOf(".") - 1 >>> 0) + 2);
+.content-hero::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  background: linear-gradient(45deg, var(--bantu-blue), var(--warm-gold));
+  border-radius: 18px;
+  z-index: -1;
+  opacity: 0.08;
 }
-
-// Initialize when DOM is ready
-document.addEventListener('DOMContentLoaded', async () => {
-  console.log('✅ DOM loaded, starting initialization...');
-  
-  // Initialize Supabase client
-  if (!window.supabaseClient) {
-    window.supabaseClient = supabase.createClient(
-      'https://ydnxqnbjoshvxteevemc.supabase.co',
-      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U'
-    );
-  }
-  
-  // Load helpers
-  if (!window.SupabaseHelper) await import('./js/supabase-helper.js');
-  if (!window.AuthHelper) await import('./js/auth-helper.js');
-  
-  // Wait for helpers
-  await waitForHelpers();
-  
-  // Setup auth listeners
-  setupAuthListeners();
-  
-  // Load content
-  await loadContentFromURL();
-  
-  // Setup UI
-  setupEventListeners();
-  
-  // Initialize video player (FIXED VERSION)
-  initializeEnhancedVideoPlayer();
-  
-  // Initialize all modals/panels
-  initAnalyticsModal();
-  initSearchModal();
-  initNotificationsPanel();
-  initThemeSelector();
-  initGlobalNavigation();
-  
-  // Show app
-  document.getElementById('loading').style.display = 'none';
-  document.getElementById('app').style.display = 'block';
-  
-  console.log('✅ Content Detail fully initialized with all fixes');
-});
-
-async function waitForHelpers() {
-  return new Promise((resolve) => {
-    const check = setInterval(() => {
-      if (window.SupabaseHelper?.isInitialized && window.AuthHelper?.isInitialized) {
-        clearInterval(check);
-        resolve();
-      }
-    }, 100);
-  });
-}
-
-// Authentication setup
-function setupAuthListeners() {
-  window.supabaseClient.auth.onAuthStateChange(async (event, session) => {
-    if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-      await window.AuthHelper.initialize();
-      currentUserId = window.AuthHelper.getUserProfile()?.id || null;
-      updateProfileUI();
-      showToast('Welcome back!', 'success');
-    } else if (event === 'SIGNED_OUT') {
-      currentUserId = null;
-      resetProfileUI();
-      showToast('Signed out successfully', 'info');
-    }
-  });
-  
-  // Initial update
-  if (window.AuthHelper?.isAuthenticated?.()) {
-    currentUserId = window.AuthHelper.getUserProfile()?.id || null;
-    updateProfileUI();
-  } else {
-    resetProfileUI();
+@media (max-width: 768px) {
+  .content-hero {
+    grid-template-columns: 1fr;
+    padding: 20px 16px;
   }
 }
-
-function updateProfileUI() {
-  const profileBtn = document.getElementById('profile-btn');
-  const userProfilePlaceholder = document.getElementById('userProfilePlaceholder');
-  
-  if (!profileBtn || !userProfilePlaceholder) return;
-  
-  // Check if user is authenticated
-  if (window.AuthHelper?.isAuthenticated?.()) {
-    const userProfile = window.AuthHelper.getUserProfile();
-    const displayName = window.AuthHelper.getDisplayName();
-    const avatarUrl = window.AuthHelper.getAvatarUrl();
-    const initial = displayName.charAt(0).toUpperCase();
-    
-    if (avatarUrl) {
-      userProfilePlaceholder.innerHTML = `
-        <img src="${avatarUrl}" alt="${displayName}" 
-             class="profile-img" 
-             style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover;">
-      `;
-    } else {
-      userProfilePlaceholder.innerHTML = `
-        <div class="profile-placeholder" style="
-          width: 32px; 
-          height: 32px; 
-          border-radius: 50%; 
-          background: linear-gradient(135deg, #1D4ED8, #F59E0B); 
-          display: flex; 
-          align-items: center; 
-          justify-content: center; 
-          color: white; 
-          font-weight: bold;
-        ">${initial}</div>
-      `;
-    }
-    
-    profileBtn.onclick = () => {
-      window.location.href = 'profile.html';
-    };
-  } else {
-    // Guest user
-    userProfilePlaceholder.innerHTML = `
-      <div class="profile-placeholder">
-        <i class="fas fa-user"></i>
-      </div>
-    `;
-    profileBtn.onclick = () => {
-      window.location.href = `login.html?redirect=${encodeURIComponent(window.location.href)}`;
-    };
+.hero-poster {
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+  border: 2px solid rgba(245, 158, 11, 0.2);
+  height: 220px;
+  background: linear-gradient(45deg, #0A1128, #002855);
+  position: relative;
+  cursor: pointer;
+}
+.hero-poster img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.poster-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--bantu-blue);
+  font-size: 2.5rem;
+  background: var(--card-bg);
+}
+.play-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+.hero-poster:hover .play-overlay {
+  opacity: 1;
+}
+.play-icon-large {
+  width: 70px;
+  height: 70px;
+  background: rgba(245, 158, 11, 0.9);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--deep-black);
+  font-size: 2rem;
+  transform: scale(0.8);
+  transition: all 0.3s ease;
+}
+.hero-poster:hover .play-icon-large {
+  transform: scale(1);
+}
+.hero-info {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.hero-info h1 {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 22px;
+  font-weight: 700;
+  background: linear-gradient(135deg, var(--soft-white), var(--warm-gold));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin-bottom: 5px;
+  line-height: 1.3;
+}
+.hero-meta {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+  font-size: 13px;
+}
+.meta-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 13px;
+}
+.meta-item i {
+  color: var(--bantu-blue);
+  font-size: 14px;
+}
+.hero-description {
+  color: rgba(255, 255, 255, 0.65);
+  line-height: 1.5;
+  margin-bottom: 16px;
+  font-size: 14px;
+}
+.hero-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+/* Inline Video Player - REMAINS LARGE & PROMINENT */
+.inline-player {
+  background: var(--deep-navy);
+  border: 1px solid var(--card-border);
+  border-radius: 16px;
+  padding: 24px;
+  margin: 24px 0;
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.35);
+  animation: slideDown 0.3s ease;
+  display: none;
+  position: relative;
+  z-index: 10;
+}
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
   }
-  
-  // ============================================
-  // FIX: Enable/disable comment section based on auth state
-  // ============================================
-  const commentInput = document.getElementById('commentInput');
-  const sendCommentBtn = document.getElementById('sendCommentBtn');
-  if (commentInput && sendCommentBtn) {
-    if (window.AuthHelper?.isAuthenticated?.()) {
-      commentInput.disabled = false;
-      commentInput.placeholder = 'Write a comment...';
-      sendCommentBtn.disabled = false;
-      // Show user avatar in comment section
-      const userProfile = window.AuthHelper.getUserProfile();
-      const displayName = window.AuthHelper.getDisplayName();
-      const avatarUrl = window.AuthHelper.getAvatarUrl();
-      const commentAvatar = document.getElementById('userCommentAvatar');
-      if (commentAvatar) {
-        if (avatarUrl) {
-          commentAvatar.innerHTML = `<img src="${avatarUrl}" alt="${displayName}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`;
-        } else {
-          commentAvatar.innerHTML = `<div style="width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,#1D4ED8,#F59E0B);display:flex;align-items:center;justify-content:center;color:white;font-weight:bold">${displayName.charAt(0)}</div>`;
-        }
-      }
-    } else {
-      commentInput.disabled = true;
-      commentInput.placeholder = 'Sign in to add a comment...';
-      sendCommentBtn.disabled = true;
-      // Reset avatar
-      const commentAvatar = document.getElementById('userCommentAvatar');
-      if (commentAvatar) {
-        commentAvatar.innerHTML = '<i class="fas fa-user"></i>';
-      }
-    }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
-
-function resetProfileUI() {
-  const profileBtn = document.getElementById('profile-btn');
-  const userProfilePlaceholder = document.getElementById('userProfilePlaceholder');
-  
-  if (!profileBtn || !userProfilePlaceholder) return;
-  
-  userProfilePlaceholder.innerHTML = `
-    <div class="profile-placeholder">
-      <i class="fas fa-user"></i>
-    </div>
-  `;
-  
-  profileBtn.onclick = () => {
-    window.location.href = `login.html?redirect=${encodeURIComponent(window.location.href)}`;
-  };
+.player-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--card-border);
 }
-
-// Load content from URL - UPDATED WITH DEBUG LOGGING
-async function loadContentFromURL() {
-  const urlParams = new URLSearchParams(window.location.search);
-  const contentId = urlParams.get('id') || '68';
-  
-  try {
-    // Fetch real content from Supabase
-    const { data, error } = await window.supabaseClient
-      .from('Content')
-      .select('*, user_profiles!user_id(*)')
-      .eq('id', contentId)
-      .single();
-
-    if (error) throw error;
-
-    // Process data
-    currentContent = {
-      id: data.id,
-      title: data.title || 'Untitled',
-      description: data.description || '',
-      thumbnail_url: data.thumbnail_url,
-      file_url: data.file_url,
-      media_type: data.media_type || 'video',
-      genre: data.genre || 'General',
-      created_at: data.created_at,
-      duration: data.duration || data.duration_seconds || 3600,
-      language: data.language || 'English',
-      views_count: data.views_count || 0,
-      likes_count: data.likes_count || 0,
-      favorites_count: data.favorites_count || 0,
-      comments_count: data.comments_count || 0,
-      creator: data.user_profiles?.full_name || data.user_profiles?.username || 'Creator',
-      creator_display_name: data.user_profiles?.full_name || data.user_profiles?.username || 'Creator',
-      creator_id: data.user_profiles?.id || data.user_id,
-      user_id: data.user_id
-    };
-
-    // ============================================
-    // DEBUG: Log the file URLs
-    // ============================================
-    console.log('📥 Content loaded:', currentContent.title);
-    console.log('📁 Raw file_url from DB:', data.file_url);
-    console.log('📁 Raw thumbnail_url from DB:', data.thumbnail_url);
-    
-    // Construct full URLs for debugging
-    if (data.file_url && !data.file_url.startsWith('http')) {
-      const cleanPath = data.file_url.startsWith('/') ? data.file_url.substring(1) : data.file_url;
-      const fullUrl = `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/content-media/${cleanPath}`;
-      console.log('🔗 Full video URL:', fullUrl);
-      
-      // Validate it
-      validateVideoUrl(fullUrl);
-    }
-
-    console.log('✅ Real content loaded:', currentContent.title);
-    
-    // Update UI
-    updateContentUI(currentContent);
-    
-    // Load comments
-    await loadComments(contentId);
-    
-    // Load related content
-    await loadRelatedContent(contentId);
-  } catch (error) {
-    console.error('❌ Content load failed:', error);
-    showToast('Content not available. Please try again.', 'error');
-    document.getElementById('contentTitle').textContent = 'Content Unavailable';
-  }
+.player-header h3 {
+  font-size: 16px;
+  color: var(--soft-white);
+  margin: 0;
+  font-weight: 600;
 }
-
-// Update UI with content
-function updateContentUI(content) {
-  if (!content) return;
-  
-  // Update title
-  safeSetText('contentTitle', content.title);
-  safeSetText('creatorName', content.creator);
-  safeSetText('creatorDisplayName', content.creator_display_name);
-  
-  // Update stats
-  safeSetText('viewsCount', formatNumber(content.views_count) + ' views');
-  safeSetText('viewsCountFull', formatNumber(content.views_count));
-  safeSetText('likesCount', formatNumber(content.likes_count));
-  
-  // Update duration (FIXED: Never shows dash)
-  const duration = formatDuration(content.duration || 3600);
-  safeSetText('durationText', duration);
-  safeSetText('contentDurationFull', duration);
-  
-  // Update date
-  safeSetText('uploadDate', formatDate(content.created_at));
-  
-  // Update genre and language
-  safeSetText('contentGenre', content.genre || 'General');
-  
-  // Update descriptions
-  safeSetText('contentDescriptionShort', truncateText(content.description, 150));
-  safeSetText('contentDescriptionFull', content.description);
-  
-  // Update poster image
-  const posterPlaceholder = document.getElementById('posterPlaceholder');
-  if (posterPlaceholder && content.thumbnail_url) {
-    const imgUrl = window.SupabaseHelper?.fixMediaUrl?.(content.thumbnail_url) || content.thumbnail_url;
-    posterPlaceholder.innerHTML = `
-      <img src="${imgUrl}" alt="${content.title}"
-           style="width:100%; height:100%; object-fit:cover; border-radius: 12px;"
-           onerror="this.src='https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=800&h=450&fit=crop'">
-      <div class="play-overlay">
-        <div class="play-icon-large">
-          <i class="fas fa-play"></i>
-        </div>
-      </div>
-    `;
-  }
-  
-  // Update player title
-  const playerTitle = document.getElementById('playerTitle');
-  if (playerTitle) {
-    playerTitle.textContent = `Now Playing: ${content.title}`;
-  }
-  
-  // Initialize like button state
-  const likeBtn = document.getElementById('likeBtn');
-  if (likeBtn && content.likes_count > 0) {
-    likeBtn.classList.add('active');
-    likeBtn.innerHTML = '<i class="fas fa-heart"></i><span>Liked</span>';
-  }
-  
-  // Initialize favorite button state
-  const favoriteBtn = document.getElementById('favoriteBtn');
-  if (favoriteBtn && content.favorites_count > 0) {
-    favoriteBtn.classList.add('active');
-    favoriteBtn.innerHTML = '<i class="fas fa-star"></i><span>Favorited</span>';
-  }
+.close-player {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--card-border);
+  padding: 6px 12px;
+  font-size: 13px;
 }
-
-// Load comments (FIXED VERSION - handles missing relationship)
-async function loadComments(contentId) {
-  try {
-    console.log('💬 Loading comments for content:', contentId);
-    
-    // Try multiple approaches to load comments
-    let comments = [];
-    
-    // APPROACH 1: Try with user_profiles relationship
-    try {
-      const { data, error } = await window.supabaseClient
-        .from('comments')
-        .select('*, user_profiles!user_id(*)')
-        .eq('content_id', contentId)
-        .order('created_at', { ascending: false });
-      
-      if (!error && data) {
-        comments = data;
-        console.log(`✅ Loaded ${comments.length} comments with user profiles`);
-      } else {
-        console.warn('User profiles relationship failed, trying without...');
-        throw error;
-      }
-    } catch (relationshipError) {
-      // APPROACH 2: Try without user_profiles relationship
-      try {
-        const { data, error } = await window.supabaseClient
-          .from('comments')
-          .select('*')
-          .eq('content_id', contentId)
-          .order('created_at', { ascending: false });
-        
-        if (!error && data) {
-          comments = data;
-          console.log(`✅ Loaded ${comments.length} comments without user profiles`);
-        } else {
-          console.error('Comments load error:', error);
-        }
-      } catch (simpleError) {
-        console.error('Simple comments load also failed:', simpleError);
-      }
-    }
-    
-    // Render whatever comments we got
-    renderComments(comments || []);
-    
-  } catch (error) {
-    console.error('❌ Error loading comments:', error);
-    renderComments([]);
-  }
+.close-player:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: scale(1.1);
 }
-
-// Render comments
-function renderComments(comments) {
-  const container = document.getElementById('commentsList');
-  const noComments = document.getElementById('noComments');
-  const countEl = document.getElementById('commentsCount');
-  
-  if (!container) return;
-  
-  // Clear container
-  container.innerHTML = '';
-  
-  if (!comments || comments.length === 0) {
-    if (noComments) noComments.style.display = 'flex';
-    if (countEl) countEl.textContent = '(0)';
-    return;
-  }
-  
-  // Hide "no comments" message
-  if (noComments) noComments.style.display = 'none';
-  
-  // Update count - FIXED: Always use actual count
-  if (countEl) countEl.textContent = `(${comments.length})`;
-  
-  // Add comments using DocumentFragment for performance
-  const fragment = document.createDocumentFragment();
-  comments.forEach(comment => {
-    const commentEl = createCommentElement(comment);
-    fragment.appendChild(commentEl);
-  });
-  container.appendChild(fragment);
+.video-container {
+  border-radius: 12px;
+  overflow: hidden;
+  background: #000;
+  margin-bottom: 15px;
+  position: relative;
+  aspect-ratio: 16/9;
 }
-
-function createCommentElement(comment) {
-  const div = document.createElement('div');
-  div.className = 'comment-item';
-  
-  let authorName = 'User';
-  let avatarUrl = null;
-  
-  if (comment.author_name) {
-    authorName = comment.author_name;
-  } else if (comment.user_profiles?.full_name || comment.user_profiles?.username) {
-    authorName = comment.user_profiles.full_name || comment.user_profiles.username;
-  }
-  
-  if (comment.user_profiles?.avatar_url) {
-    avatarUrl = comment.user_profiles.avatar_url;
-    if (avatarUrl && !avatarUrl.startsWith('http')) {
-      avatarUrl = `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/profile-pictures/${avatarUrl}`;
-    }
-  }
-  
-  const time = formatCommentTime(comment.created_at);
-  const commentText = comment.comment_text || '';
-  const initial = authorName.charAt(0).toUpperCase();
-  
-  div.innerHTML = `
-    <div class="comment-header">
-      <div class="comment-avatar-sm">
-        ${avatarUrl ?
-          `<img src="${avatarUrl}" alt="${authorName}"
-               style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover; border: 2px solid rgba(29, 78, 216, 0.2);">` :
-          `<div style="
-               width: 32px;
-               height: 32px;
-               border-radius: 50%;
-               background: linear-gradient(135deg, #1D4ED8, #F59E0B);
-               color: white;
-               display: flex;
-               align-items: center;
-               justify-content: center;
-               font-weight: bold;
-               font-size: 14px;
-               border: 2px solid rgba(29, 78, 216, 0.2);
-             ">
-            ${initial}
-          </div>`
-        }
-      </div>
-      <div class="comment-user">
-        <strong>${escapeHtml(authorName)}</strong>
-        <div class="comment-time">${time}</div>
-      </div>
-    </div>
-    <div class="comment-content">
-      ${escapeHtml(commentText)}
-    </div>
-  `;
-  
-  return div;
+.video-container video {
+  width: 100%;
+  height: 100%;
+  display: block;
+  background: #000;
 }
-
-// Load related content
-async function loadRelatedContent(contentId) {
-  try {
-    const { data, error } = await window.supabaseClient
-      .from('Content')
-      .select('id, title, thumbnail_url, views_count')
-      .neq('id', contentId)
-      .limit(6);
-    
-    if (error) throw error;
-    
-    renderRelatedContent(data || []);
-  } catch (error) {
-    console.error('Error loading related content:', error);
-    renderRelatedContent([]);
-  }
+.player-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 15px;
 }
-
-function renderRelatedContent(items) {
-  const container = document.getElementById('relatedGrid');
-  if (!container) return;
-  
-  if (!items || items.length === 0) {
-    container.innerHTML = `
-      <div class="related-placeholder card">
-        <i class="fas fa-video-slash"></i>
-        <p>No related content found</p>
-      </div>
-    `;
-    return;
-  }
-  
-  container.innerHTML = '';
-  
-  items.forEach(item => {
-    const card = document.createElement('a');
-    card.className = 'content-card';
-    card.href = `content-detail.html?id=${item.id}`;
-    card.onclick = function(e) {
-      e.preventDefault();
-      window.location.href = `content-detail.html?id=${item.id}`;
-    };
-    
-    const imgUrl = window.SupabaseHelper?.fixMediaUrl?.(item.thumbnail_url) || item.thumbnail_url;
-    const title = item.title || 'Untitled';
-    
-    card.innerHTML = `
-      <div class="card-thumbnail">
-        <img src="${imgUrl}" alt="${title}"
-             onerror="this.src='https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop'">
-        <div class="thumbnail-overlay"></div>
-      </div>
-      <div class="card-content">
-        <h3 class="card-title">${truncateText(title, 50)}</h3>
-        <div class="related-meta">
-          <i class="fas fa-eye"></i>
-          <span>${formatNumber(item.views_count || 0)} views</span>
-        </div>
-      </div>
-    `;
-    
-    container.appendChild(card);
-  });
+.player-controls {
+  display: flex;
+  gap: 10px;
 }
-
-// ====================================================
-// CRITICAL FIX: Enhanced Video Player Initialization
-// ====================================================
-
-// Initialize enhanced video player - CLEAN VERSION (NO DUPLICATE CONTROLS)
-function initializeEnhancedVideoPlayer() {
-  const videoElement = document.getElementById('inlineVideoPlayer');
-  const videoContainer = document.querySelector('.video-container');
-  
-  if (!videoElement || !videoContainer) {
-    console.warn('⚠️ Video elements not found');
-    return;
+.control-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--card-border);
+  color: var(--soft-white);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+.control-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: scale(1.1);
+}
+.fullscreen-btn {
+  background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+  color: var(--soft-white);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+.fullscreen-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(29, 78, 216, 0.3);
+}
+/* Creator Info Section - More Compact */
+.creator-section {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  padding: 18px;
+  margin-bottom: 20px;
+  backdrop-filter: blur(10px);
+}
+.creator-info {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.creator-avatar {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  color: white;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.creator-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.creator-details {
+  flex: 1;
+}
+.creator-details h3 {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 4px;
+  color: var(--soft-white);
+}
+.creator-details p {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 13px;
+  margin-bottom: 8px;
+}
+.connect-btn {
+  padding: 8px 20px;
+  background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+  color: var(--soft-white);
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.3s ease;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: 13px;
+}
+.connect-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px rgba(29, 78, 216, 0.4);
+}
+.connect-btn.connected {
+  background: linear-gradient(135deg, var(--success-color), #2b8a3e);
+}
+/* Stats Grid - More Compact */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.stat-card {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  padding: 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  backdrop-filter: blur(10px);
+  transition: all 0.3s ease;
+}
+.stat-card:hover {
+  transform: translateY(-5px);
+  border-color: var(--warm-gold);
+}
+.stat-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: rgba(29, 78, 216, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--bantu-blue);
+  font-size: 1.2rem;
+  flex-shrink: 0;
+}
+.stat-content h4 {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 12px;
+  margin-bottom: 3px;
+}
+.stat-content p {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--soft-white);
+}
+/* Description Section - More Compact */
+.description-section {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  padding: 18px;
+  margin-bottom: 20px;
+  backdrop-filter: blur(10px);
+}
+.description-section h2 {
+  margin-bottom: 12px;
+  font-size: 18px;
+  font-weight: 700;
+  font-size: 16px;
+}
+.description-content {
+  color: rgba(255, 255, 255, 0.75);
+  line-height: 1.6;
+  margin-bottom: 12px;
+  font-size: 14px;
+}
+/* Comments Section - More Compact */
+.comments-section {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  padding: 18px;
+  margin-bottom: 20px;
+  backdrop-filter: blur(10px);
+}
+.refresh-btn {
+  padding: 6px 12px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--card-border);
+  border-radius: 8px;
+  color: var(--bantu-blue);
+  font-size: 13px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.3s ease;
+  font-size: 12px;
+}
+.refresh-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: var(--bantu-blue);
+}
+.add-comment {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.comment-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 1rem;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.comment-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.comment-input-container {
+  flex: 1;
+  display: flex;
+  gap: 15px;
+}
+.comment-input-container textarea {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--card-border);
+  border-radius: 10px;
+  padding: 12px;
+  color: var(--soft-white);
+  font-family: inherit;
+  font-size: 14px;
+  resize: vertical;
+  min-height: 50px;
+  outline: none;
+}
+.comment-input-container textarea:focus {
+  border-color: var(--bantu-blue);
+}
+.send-comment-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+  color: var(--soft-white);
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  font-size: 16px;
+}
+.send-comment-btn:hover {
+  transform: scale(1.1);
+}
+.comments-list {
+  max-height: 350px;
+  overflow-y: auto;
+  padding-right: 8px;
+}
+.comments-list::-webkit-scrollbar {
+  width: 6px;
+}
+.comments-list::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+}
+.comments-list::-webkit-scrollbar-thumb {
+  background: var(--bantu-blue);
+  border-radius: 3px;
+}
+.no-comments {
+  text-align: center;
+  padding: 40px 20px;
+  color: rgba(255, 255, 255, 0.5);
+}
+.no-comments i {
+  font-size: 3rem;
+  margin-bottom: 15px;
+  color: rgba(255, 255, 255, 0.3);
+}
+.comment-item {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--card-border);
+  border-radius: 10px;
+  padding: 14px;
+  margin-bottom: 12px;
+}
+.comment-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+.comment-avatar-sm {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 0.9rem;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.comment-avatar-sm img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.comment-user {
+  flex: 1;
+}
+.comment-user strong {
+  font-size: 14px;
+  display: block;
+  margin-bottom: 2px;
+  color: var(--soft-white);
+}
+.comment-time {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 11px;
+}
+.comment-content {
+  color: rgba(255, 255, 255, 0.75);
+  line-height: 1.5;
+  margin-bottom: 10px;
+  padding: 0 5px;
+  font-size: 14px;
+}
+/* Related Content Section - More Compact */
+.related-section {
+  margin-bottom: 30px;
+}
+.content-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 16px;
+}
+.content-card {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  overflow: hidden;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  text-decoration: none;
+  color: inherit;
+  backdrop-filter: blur(10px);
+}
+.content-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+  border-color: rgba(245, 158, 11, 0.3);
+}
+.card-thumbnail {
+  position: relative;
+  height: 100px;
+  overflow: hidden;
+}
+.card-thumbnail img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+.content-card:hover .card-thumbnail img {
+  transform: scale(1.05);
+}
+.thumbnail-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(to bottom, transparent 50%, rgba(0, 0, 0, 0.5) 100%);
+}
+.card-content {
+  padding: 10px;
+}
+.card-title {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  min-height: 36px;
+  color: var(--soft-white);
+  line-height: 1.3;
+}
+.related-meta {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 12px;
+}
+.related-meta i {
+  color: var(--bantu-blue);
+}
+.related-placeholder {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 60px 20px;
+  color: rgba(255, 255, 255, 0.5);
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 16px;
+  backdrop-filter: blur(10px);
+}
+.related-placeholder i {
+  font-size: 3rem;
+  margin-bottom: 15px;
+  color: rgba(255, 255, 255, 0.3);
+}
+/* Mobile Responsiveness - Adjusted */
+@media (max-width: 768px) {
+  .content-grid {
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 12px;
   }
-
-  try {
-    // ============================================
-    // DEBUG: Check video source before creating player
-    // ============================================
-    const existingSrc = videoElement.src || videoElement.getAttribute('src');
-    const existingSources = videoElement.querySelectorAll('source');
-    
-    console.log('🔍 Before EnhancedVideoPlayer creation:');
-    console.log('  - video.src:', videoElement.src);
-    console.log('  - video.getAttribute("src"):', videoElement.getAttribute('src'));
-    console.log('  - source elements:', existingSources.length);
-    if (existingSources.length > 0) {
-        console.log('  - first source src:', existingSources[0].src);
-        console.log('  - first source type:', existingSources[0].type);
-    }
-
-    // Get preferences
-    const preferences = window.state ? window.state.getPreferences() : {
-      autoplay: false,
-      playbackSpeed: 1.0,
-      quality: 'auto'
-    };
-
-    console.log('🎬 Creating EnhancedVideoPlayer with content:', currentContent?.id);
-
-    // Create player instance
-    enhancedVideoPlayer = new EnhancedVideoPlayer({
-      autoplay: preferences.autoplay,
-      defaultSpeed: preferences.playbackSpeed,
-      defaultQuality: preferences.quality,
-      defaultVolume: window.stateManager ? window.stateManager.getState('session.volume') : 1.0,
-      muted: window.stateManager ? window.stateManager.getState('session.muted') : false,
-      contentId: currentContent?.id || null,
-      supabaseClient: window.supabaseClient,
-      userId: currentUserId
-    });
-
-    // ============================================
-    // DEBUG: Check video source before attach
-    // ============================================
-    console.log('🔍 Before attach:');
-    console.log('  - video.src:', videoElement.src);
-    console.log('  - source elements:', videoElement.querySelectorAll('source').length);
-
-    // Attach to video element
-    enhancedVideoPlayer.attach(videoElement, videoContainer);
-
-    // ============================================
-    // DEBUG: Check video source after attach
-    // ============================================
-    console.log('🔍 After attach:');
-    console.log('  - video.src:', videoElement.src);
-    console.log('  - currentSrc:', videoElement.currentSrc);
-    console.log('  - source elements:', videoElement.querySelectorAll('source').length);
-    console.log('  - networkState:', videoElement.networkState);
-    console.log('  - readyState:', videoElement.readyState);
-
-    // ====================================================
-    // PHASE 1 FIX: UPDATED VIEW TRACKING WITH SINGLE-TABLE FIX
-    // ====================================================
-    
-    // Setup view tracking
-    let viewRecordedThisSession = false;
-    enhancedVideoPlayer.on('play', () => {
-        console.log('▶️ Video playing, recording view...');
-        
-        if (window.stateManager) {
-            window.stateManager.setState('session.playing', true);
-        }
-
-        // Record view ONLY ONCE per session when video actually plays
-        if (currentContent && !viewRecordedThisSession) {
-            viewRecordedThisSession = true;
-            
-            // Check client-side deduplication first
-            if (hasViewedContentRecently(currentContent.id)) {
-                console.log('📊 View already recorded recently (client-side check)');
-                return;
-            }
-            
-            // Optimistic UI update
-            const currentViews = parseInt(document.getElementById('viewsCount')?.textContent.replace(/\D/g, '') || '0') || 0;
-            const newViews = currentViews + 1;
-            
-            document.getElementById('viewsCount').textContent = formatNumber(newViews) + ' views';
-            document.getElementById('viewsCountFull').textContent = formatNumber(newViews);
-            
-            // SINGLE-TABLE FIX: Record view directly to Content table
-            recordContentView(currentContent.id, currentViews, newViews);
-            
-            // Mark as viewed in client-side storage
-            markContentAsViewed(currentContent.id);
-        }
-    });
-    
-    // Setup other event handlers
-    enhancedVideoPlayer.on('pause', () => {
-      if (window.stateManager) {
-        window.stateManager.setState('session.playing', false);
-      }
-    });
-    
-    enhancedVideoPlayer.on('volumechange', (volume) => {
-      if (window.stateManager) {
-        window.stateManager.setState('session.volume', volume);
-      }
-    });
-
-    // ============================================
-    // UPDATED ERROR HANDLER WITH DETAILED LOGGING
-    // ============================================
-    enhancedVideoPlayer.on('error', (error) => {
-        console.error('🔴 Video player error:', error);
-        
-        if (error?.target) {
-            const video = error.target;
-            console.error('Video element error details:');
-            console.error('  - Network state:', video.networkState);
-            console.error('  - Ready state:', video.readyState);
-            console.error('  - Error code:', video.error?.code);
-            console.error('  - Error message:', video.error?.message);
-            
-            const errorMessages = {
-                1: 'MEDIA_ERR_ABORTED: Video load was aborted',
-                2: 'MEDIA_ERR_NETWORK: Network error occurred',
-                3: 'MEDIA_ERR_DECODE: Video decoding failed (corrupted or unsupported format)',
-                4: 'MEDIA_ERR_SRC_NOT_SUPPORTED: Video format not supported or URL invalid'
-            };
-            
-            const errorMsg = errorMessages[video.error?.code] || 'Unknown playback error';
-            console.error('  - Detailed error:', errorMsg);
-            
-            showToast(`Playback failed: ${errorMsg}`, 'error');
-        } else {
-            showToast('Video playback error occurred', 'error');
-        }
-        
-        // Show retry option
-        const retryBtn = document.createElement('button');
-        retryBtn.textContent = 'Retry';
-        retryBtn.className = 'btn btn-secondary';
-        retryBtn.onclick = () => {
-            if (enhancedVideoPlayer) {
-                enhancedVideoPlayer.video.load();
-                enhancedVideoPlayer.play().catch(console.error);
-            }
-        };
-        
-        // Add to UI somewhere visible
-        const errorContainer = document.querySelector('.inline-player');
-        if (errorContainer) {
-            let existingRetry = errorContainer.querySelector('.retry-button');
-            if (existingRetry) existingRetry.remove();
-            
-            retryBtn.className += ' retry-button';
-            retryBtn.style.cssText = `
-                position: absolute;
-                top: 50%;
-                left: 50%;
-                transform: translate(-50%, -50%);
-                z-index: 100;
-                padding: 12px 24px;
-                background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
-                color: white;
-                border: none;
-                border-radius: 12px;
-                font-weight: 600;
-                cursor: pointer;
-                box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
-            `;
-            errorContainer.appendChild(retryBtn);
-        }
-    });
-    
-    // Setup time update for watch history (FIXED: removed track.watchProgress error)
-    enhancedVideoPlayer.on('timeupdate', (time) => {
-      if (window.stateManager) {
-        window.stateManager.setState('session.currentTime', time);
-      }
-      
-      // Update watch history every 30 seconds (without analytics error)
-      if (Math.floor(time) % 30 === 0 && currentContent) {
-        const duration = enhancedVideoPlayer.getDuration() || currentContent.duration || 3600;
-        if (window.state && window.state.updateWatchHistory) {
-          try {
-            window.state.updateWatchHistory(currentContent.id, time, duration);
-          } catch (error) {
-            console.warn('Watch history update failed:', error);
-          }
-        }
-      }
-    });
-    
-    console.log('✅ Enhanced video player initialized successfully with all fixes');
-    
-  } catch (error) {
-    console.error('❌ Failed to initialize enhanced video player:', error);
-    showToast('Video player failed to load. Using basic player.', 'warning');
-    
-    // Fallback: Show basic controls
-    videoElement.controls = true;
+  
+  .hero-poster {
+    height: 200px;
+  }
+  
+  .stats-grid {
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 10px;
+  }
+  
+  .add-comment {
+    flex-direction: column;
+  }
+  
+  .creator-info {
+    flex-direction: column;
+    text-align: center;
+  }
+  .creator-avatar {
+    width: 70px;
+    height: 70px;
+  }
+  .connect-btn {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .comment-input-container {
+    width: 100%;
+  }
+  .video-container {
+    aspect-ratio: 16/9;
+  }
+  .player-actions {
+    flex-direction: column;
+  }
+  .player-controls {
+    width: 100%;
+    justify-content: center;
+  }
+  .fullscreen-btn {
+    width: 100%;
   }
 }
 
-// ====================================================
-// SINGLE-TABLE FIX: VIEW COUNTING FUNCTION
-// ====================================================
-
-/**
- * SINGLE-TABLE FIX: Directly update views_count in Content table
- */
-async function recordContentView(contentId, currentViews, newViews) {
-    try {
-        if (!window.SupabaseHelper?.client) {
-            console.warn('Supabase client not available');
-            return;
-        }
-
-        // DIRECTLY update views_count in Content table
-        const { error } = await window.SupabaseHelper.client
-            .from('Content')
-            .update({ views_count: newViews })
-            .eq('id', contentId);
-
-        if (error) {
-            console.error('❌ View count update failed:', error.message);
-            // Revert UI on error
-            document.getElementById('viewsCount').textContent = formatNumber(currentViews) + ' views';
-            document.getElementById('viewsCountFull').textContent = formatNumber(currentViews);
-            showToast('Failed to record view', 'error');
-            return;
-        }
-
-        console.log(`✅ View count updated to ${newViews} for content ${contentId}`);
-        
-        // Update local state
-        if (currentContent) {
-            currentContent.views_count = newViews;
-        }
-        
-        // Track analytics if available
-        if (window.track?.contentView) {
-            window.track.contentView(contentId, 'video');
-        }
-    } catch (error) {
-        console.error('❌ View recording error:', error);
-        // Revert UI
-        document.getElementById('viewsCount').textContent = formatNumber(currentViews) + ' views';
-        document.getElementById('viewsCountFull').textContent = formatNumber(currentViews);
-        showToast('View recording failed', 'error');
-    }
-}
-
-// ====================================================
-// CLIENT-SIDE VIEW DEDUPLICATION FUNCTIONS
-// ====================================================
-
-/**
- * Check if content was viewed in the last 24 hours (client-side)
- */
-function hasViewedContentRecently(contentId) {
-  try {
-    const viewedContent = JSON.parse(localStorage.getItem('bantu_viewed_content') || '{}');
-    const viewTime = viewedContent[contentId];
-    
-    if (!viewTime) return false;
-    
-    const hoursSinceView = (Date.now() - viewTime) / (1000 * 60 * 60);
-    return hoursSinceView < 24;
-  } catch (error) {
-    console.error('Error checking view history:', error);
-    return false;
+@media (max-width: 480px) {
+  .content-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .card-thumbnail {
+    height: 90px;
+  }
+  
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .hero-info h1 {
+    font-size: 18px;
   }
 }
-
-/**
- * Mark content as viewed in client-side storage
- */
-function markContentAsViewed(contentId) {
-  try {
-    const viewedContent = JSON.parse(localStorage.getItem('bantu_viewed_content') || '{}');
-    viewedContent[contentId] = Date.now();
-    
-    // Clean up old entries (older than 7 days)
-    const sevenDaysAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);
-    Object.keys(viewedContent).forEach(id => {
-      if (viewedContent[id] < sevenDaysAgo) {
-        delete viewedContent[id];
-      }
-    });
-    
-    localStorage.setItem('bantu_viewed_content', JSON.stringify(viewedContent));
-    return true;
-  } catch (error) {
-    console.error('Error marking content as viewed:', error);
-    return false;
-  }
+/* Navigation Button - MOBILE OPTIMIZED */
+.navigation-button-container {
+  position: fixed;
+  bottom: 15px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 999;
+  width: calc(100% - 30px);
+  max-width: 500px;
+  padding-bottom: env(safe-area-inset-bottom);
 }
-
-// ============================================
-// CRITICAL FIX: UPDATED handlePlay Function
-// ============================================
-function handlePlay() {
-    if (!currentContent) {
-        showToast('No content to play', 'error');
-        return;
-    }
-
-    const player = document.getElementById('inlinePlayer');
-    const videoElement = document.getElementById('inlineVideoPlayer');
-    
-    if (!player || !videoElement) {
-        showToast('Video player not available', 'error');
-        return;
-    }
-
-    // ============================================
-    // Get CORRECT video URL
-    // ============================================
-    let videoUrl = currentContent.file_url;
-    
-    console.log('📥 Raw file_url from database:', videoUrl);
-    
-    // If it's just a path (not full URL), construct proper Supabase URL
-    if (videoUrl && !videoUrl.startsWith('http')) {
-        if (videoUrl.startsWith('/')) {
-            videoUrl = videoUrl.substring(1);
-        }
-        videoUrl = `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/content-media/${videoUrl}`;
-    }
-    
-    // Fallback to thumbnail_url if needed
-    if (!videoUrl || videoUrl === 'null' || videoUrl === 'undefined' || videoUrl === '') {
-        if (currentContent.thumbnail_url && !currentContent.thumbnail_url.startsWith('http')) {
-            const cleanPath = currentContent.thumbnail_url.startsWith('/') 
-                ? currentContent.thumbnail_url.substring(1) 
-                : currentContent.thumbnail_url;
-            videoUrl = `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/content-media/${cleanPath}`;
-        }
-    }
-
-    console.log('🎥 Final video URL:', videoUrl);
-
-    // Validate URL
-    if (!videoUrl || (!videoUrl.includes('.mp4') && !videoUrl.includes('.webm') && !videoUrl.includes('.mov'))) {
-        console.error('❌ Invalid video URL or format:', videoUrl);
-        showToast('Invalid video format or URL', 'error');
-        return;
-    }
-
-    // Show player
-    player.style.display = 'block';
-
-    // Hide placeholder
-    const placeholder = document.getElementById('videoPlaceholder');
-    if (placeholder) {
-        placeholder.style.display = 'none';
-    }
-
-    // ============================================
-    // CRITICAL FIX: Destroy existing player FIRST
-    // ============================================
-    if (enhancedVideoPlayer) {
-        try {
-            console.log('🗑️ Destroying existing player...');
-            enhancedVideoPlayer.destroy();
-        } catch (e) {
-            console.warn('Error destroying old player:', e);
-        }
-        enhancedVideoPlayer = null;
-    }
-
-    // ============================================
-    // CRITICAL: Clear and set video source BEFORE initializing player
-    // ============================================
-    console.log('🔧 Setting video source...');
-    
-    // Clear existing sources
-    while (videoElement.firstChild) {
-        videoElement.removeChild(videoElement.firstChild);
-    }
-    
-    videoElement.removeAttribute('src');
-    videoElement.src = '';
-    
-    // Create source element
-    const source = document.createElement('source');
-    source.src = videoUrl;
-    
-    // Set MIME type
-    if (videoUrl.endsWith('.mp4')) {
-        source.type = 'video/mp4';
-    } else if (videoUrl.endsWith('.webm')) {
-        source.type = 'video/webm';
-    } else if (videoUrl.endsWith('.mov')) {
-        source.type = 'video/quicktime';
-    } else {
-        source.type = 'video/mp4';
-    }
-    
-    videoElement.appendChild(source);
-    
-    // Force load
-    videoElement.load();
-    
-    console.log('✅ Video source set successfully');
-
-    // ============================================
-    // Initialize player AFTER source is set
-    // ============================================
-    console.log('🎬 Initializing EnhancedVideoPlayer...');
-    initializeEnhancedVideoPlayer();
-
-    // Try to play after delay
-    setTimeout(() => {
-        if (enhancedVideoPlayer) {
-            console.log('▶️ Attempting to play...');
-            enhancedVideoPlayer.play().catch(err => {
-                console.error('🔴 Play failed:', err);
-                console.error('  - Error name:', err.name);
-                console.error('  - Error message:', err.message);
-                
-                // Check video element state
-                console.log('📊 Video element state:');
-                console.log('  - src:', videoElement.src);
-                console.log('  - currentSrc:', videoElement.currentSrc);
-                console.log('  - networkState:', videoElement.networkState);
-                console.log('  - readyState:', videoElement.readyState);
-                console.log('  - error:', videoElement.error);
-                
-                showToast('Click play button in video player', 'info');
-            });
-        } else {
-            console.log('▶️ Using native player...');
-            videoElement.play().catch(err => {
-                console.error('🔴 Autoplay failed:', err);
-                showToast('Click play button in video player', 'info');
-            });
-        }
-    }, 500);
-
-    // Scroll to player
-    setTimeout(() => {
-        player.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }, 100);
+.navigation-button {
+  display: flex;
+  background: rgba(15, 23, 42, 0.85) !important;
+  border: 1px solid rgba(148, 163, 184, 0.25) !important;
+  border-radius: 50px;
+  padding: 8px 15px;
+  backdrop-filter: blur(12px) !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+  gap: 8px;
+  max-width: 100%;
+  overflow: hidden;
 }
-
-// Helper function to copy to clipboard
-function copyToClipboard(text) {
-  navigator.clipboard.writeText(text).then(() => {
-    showToast('Link copied to clipboard!', 'success');
-    // Track share
-    if (currentContent && window.track) {
-      window.track.contentShare(currentContent.id, 'clipboard');
-      // Update share count
-      const shareCountEl = document.querySelector('.share-count');
-      if (shareCountEl) {
-        const current = parseInt(shareCountEl.textContent) || 0;
-        shareCountEl.textContent = current + 1;
-      }
-    }
-  }).catch(() => {
-    showToast('Failed to copy link', 'error');
-  });
+.nav-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: var(--soft-white);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 16px;
 }
-
-// ====================================================
-// SINGLE-TABLE FIX: CONNECT BUTTONS WITH CONNECTORS TABLE
-// ====================================================
-
-function setupConnectButtons() {
-    // Helper to check connection status using connectors table
-    async function checkConnectionStatus(creatorId) {
-        if (!window.AuthHelper?.isAuthenticated() || !creatorId) return false;
-        
-        const userProfile = window.AuthHelper.getUserProfile();
-        if (!userProfile?.id) return false;
-        
-        try {
-            const { data, error } = await window.supabaseClient
-                .from('connectors')
-                .select('id')
-                .eq('connector_id', userProfile.id)
-                .eq('connected_id', creatorId)
-                .single();
-            
-            return !error && data !== null;
-        } catch (error) {
-            console.error('Error checking connection:', error);
-            return false;
-        }
-    }
-    
-    // PLAYER CONNECT BUTTON
-    const connectBtn = document.getElementById('connectBtn');
-    if (connectBtn && currentContent?.creator_id) {
-        // Check initial connection status
-        checkConnectionStatus(currentContent.creator_id).then(isConnected => {
-            if (isConnected) {
-                connectBtn.classList.add('connected');
-                connectBtn.innerHTML = '<i class="fas fa-user-check"></i><span>Connected</span>';
-            }
-        });
-        
-        connectBtn.addEventListener('click', async function() {
-            if (!window.AuthHelper?.isAuthenticated?.()) {
-                const shouldLogin = confirm('You need to sign in to connect. Would you like to sign in now?');
-                if (shouldLogin) {
-                    window.location.href = `login.html?redirect=${encodeURIComponent(window.location.href)}`;
-                }
-                return;
-            }
-            
-            const userProfile = window.AuthHelper.getUserProfile();
-            if (!userProfile?.id) {
-                showToast('User profile not found', 'error');
-                return;
-            }
-            
-            const isConnected = connectBtn.classList.contains('connected');
-            
-            try {
-                if (isConnected) {
-                    // Disconnect - remove from connectors table
-                    const { error } = await window.supabaseClient
-                        .from('connectors')
-                        .delete()
-                        .eq('connector_id', userProfile.id)
-                        .eq('connected_id', currentContent.creator_id);
-                    
-                    if (error) throw error;
-                    
-                    connectBtn.classList.remove('connected');
-                    connectBtn.innerHTML = '<i class="fas fa-user-plus"></i><span>Connect</span>';
-                    showToast('Disconnected', 'info');
-                } else {
-                    // Connect - add to connectors table
-                    const { error } = await window.supabaseClient
-                        .from('connectors')
-                        .insert({
-                            connector_id: userProfile.id,
-                            connected_id: currentContent.creator_id,
-                            connection_type: 'creator'
-                        });
-                    
-                    if (error) throw error;
-                    
-                    connectBtn.classList.add('connected');
-                    connectBtn.innerHTML = '<i class="fas fa-user-check"></i><span>Connected</span>';
-                    showToast('Connected successfully!', 'success');
-                    
-                    // Track analytics
-                    if (window.track?.userConnect) {
-                        window.track.userConnect(currentContent.creator_id);
-                    }
-                }
-            } catch (error) {
-                console.error('Connection update failed:', error);
-                showToast('Failed to update connection', 'error');
-            }
-        });
-    }
-    
-    // CREATOR SECTION CONNECT BUTTON
-    const connectCreatorBtn = document.getElementById('connectCreatorBtn');
-    if (connectCreatorBtn && currentContent?.creator_id) {
-        // Check initial connection status
-        checkConnectionStatus(currentContent.creator_id).then(isConnected => {
-            if (isConnected) {
-                connectCreatorBtn.classList.add('connected');
-                connectCreatorBtn.innerHTML = '<i class="fas fa-user-check"></i><span>Connected</span>';
-            }
-        });
-        
-        connectCreatorBtn.addEventListener('click', async function() {
-            if (!window.AuthHelper?.isAuthenticated?.()) {
-                const shouldLogin = confirm('You need to sign in to connect. Would you like to sign in now?');
-                if (shouldLogin) {
-                    window.location.href = `login.html?redirect=${encodeURIComponent(window.location.href)}`;
-                }
-                return;
-            }
-            
-            const userProfile = window.AuthHelper.getUserProfile();
-            if (!userProfile?.id) {
-                showToast('User profile not found', 'error');
-                return;
-            }
-            
-            const isConnected = connectCreatorBtn.classList.contains('connected');
-            
-            try {
-                if (isConnected) {
-                    // Disconnect
-                    const { error } = await window.supabaseClient
-                        .from('connectors')
-                        .delete()
-                        .eq('connector_id', userProfile.id)
-                        .eq('connected_id', currentContent.creator_id);
-                    
-                    if (error) throw error;
-                    
-                    connectCreatorBtn.classList.remove('connected');
-                    connectCreatorBtn.innerHTML = '<i class="fas fa-user-plus"></i><span>Connect</span>';
-                    showToast('Disconnected', 'info');
-                } else {
-                    // Connect
-                    const { error } = await window.supabaseClient
-                        .from('connectors')
-                        .insert({
-                            connector_id: userProfile.id,
-                            connected_id: currentContent.creator_id,
-                            connection_type: 'creator'
-                        });
-                    
-                    if (error) throw error;
-                    
-                    connectCreatorBtn.classList.add('connected');
-                    connectCreatorBtn.innerHTML = '<i class="fas fa-user-check"></i><span>Connected</span>';
-                    showToast('Connected successfully!', 'success');
-                    
-                    if (window.track?.userConnect) {
-                        window.track.userConnect(currentContent.creator_id);
-                    }
-                }
-            } catch (error) {
-                console.error('Connection update failed:', error);
-                showToast('Failed to update connection', 'error');
-            }
-        });
-    }
+.nav-icon:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: translateY(-3px);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
 }
-
-// Setup event listeners
-function setupEventListeners() {
-  console.log('🔧 Setting up event listeners...');
-  
-  // Play button
-  const playBtn = document.getElementById('playBtn');
-  if (playBtn) {
-    playBtn.addEventListener('click', handlePlay);
-  }
-  
-  // Poster click
-  const poster = document.getElementById('heroPoster');
-  if (poster) {
-    poster.addEventListener('click', handlePlay);
-  }
-  
-  // Close player
-  const closePlayer = document.getElementById('closePlayerBtn');
-  if (closePlayer) {
-    closePlayer.addEventListener('click', function() {
-      const player = document.getElementById('inlinePlayer');
-      const video = document.getElementById('inlineVideoPlayer');
-      if (player) player.style.display = 'none';
-      if (video) {
-        video.pause();
-        video.currentTime = 0;
-      }
-      if (enhancedVideoPlayer) {
-        // Proper cleanup
-        if (enhancedVideoPlayer.video) {
-          enhancedVideoPlayer.video.pause();
-          enhancedVideoPlayer.video.currentTime = 0;
-        }
-        enhancedVideoPlayer.destroy();
-        enhancedVideoPlayer = null;
-      }
-    });
-  }
-  
-  // Fullscreen button handlers
-  const fullscreenBtn = document.getElementById('fullscreenBtn');
-  const fullPlayerBtn = document.getElementById('fullPlayerBtn');
-
-  if (fullscreenBtn) {
-    fullscreenBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      if (enhancedVideoPlayer) {
-        enhancedVideoPlayer.toggleFullscreen();
-      }
-    });
-  }
-
-  if (fullPlayerBtn) {
-    fullPlayerBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      if (enhancedVideoPlayer) {
-        enhancedVideoPlayer.toggleFullscreen();
-      }
-    });
-  }
-  
-  // ============================================
-  // SINGLE-TABLE FIX: LIKE BUTTON FUNCTIONALITY
-  // ============================================
-  const likeBtn = document.getElementById('likeBtn');
-  if (likeBtn) {
-    likeBtn.addEventListener('click', async () => {
-      if (!currentContent) return;
-      
-      // Check authentication FIRST
-      if (!window.AuthHelper?.isAuthenticated?.()) {
-        showToast('Sign in to like content', 'warning');
-        return;
-      }
-
-      const isLiked = likeBtn.classList.contains('active');
-      const currentLikes = parseInt(document.getElementById('likesCount')?.textContent.replace(/\D/g, '') || '0') || 0;
-      const newLikes = isLiked ? currentLikes - 1 : currentLikes + 1;
-
-      try {
-        // Optimistic UI update
-        likeBtn.classList.toggle('active', !isLiked);
-        likeBtn.innerHTML = !isLiked 
-          ? '<i class="fas fa-heart"></i><span>Liked</span>' 
-          : '<i class="far fa-heart"></i><span>Like</span>';
-        document.getElementById('likesCount').textContent = formatNumber(newLikes);
-
-        // DIRECT update to Content table
-        const { error } = await window.SupabaseHelper.client
-          .from('Content')
-          .update({ likes_count: newLikes })
-          .eq('id', currentContent.id);
-
-        if (error) throw error;
-        
-        // Update local state
-        currentContent.likes_count = newLikes;
-        showToast(!isLiked ? 'Liked!' : 'Like removed', !isLiked ? 'success' : 'info');
-        
-        // Track analytics
-        if (window.track?.contentLike) {
-          window.track.contentLike(currentContent.id, !isLiked);
-        }
-      } catch (error) {
-        console.error('Like update failed:', error);
-        // Revert UI on error
-        likeBtn.classList.toggle('active', isLiked);
-        likeBtn.innerHTML = isLiked 
-          ? '<i class="fas fa-heart"></i><span>Liked</span>' 
-          : '<i class="far fa-heart"></i><span>Like</span>';
-        document.getElementById('likesCount').textContent = formatNumber(currentLikes);
-        showToast('Failed to update like', 'error');
-      }
-    });
-  }
-  
-  // ============================================
-  // SINGLE-TABLE FIX: FAVORITES BUTTON FUNCTIONALITY
-  // ============================================
-  const favoriteBtn = document.getElementById('favoriteBtn');
-  if (favoriteBtn) {
-    favoriteBtn.addEventListener('click', async () => {
-      if (!currentContent) return;
-      
-      if (!window.AuthHelper?.isAuthenticated?.()) {
-        showToast('Sign in to favorite content', 'warning');
-        return;
-      }
-
-      const isFavorited = favoriteBtn.classList.contains('active');
-      const currentFavorites = parseInt(document.getElementById('favoritesCount')?.textContent.replace(/\D/g, '') || '0') || 0;
-      const newFavorites = isFavorited ? currentFavorites - 1 : currentFavorites + 1;
-
-      try {
-        // Optimistic UI update
-        favoriteBtn.classList.toggle('active', !isFavorited);
-        favoriteBtn.innerHTML = !isFavorited 
-          ? '<i class="fas fa-star"></i><span>Favorited</span>' 
-          : '<i class="far fa-star"></i><span>Favorite</span>';
-        
-        // Update count display if element exists
-        const favCountEl = document.getElementById('favoritesCount');
-        if (favCountEl) favCountEl.textContent = formatNumber(newFavorites);
-
-        // DIRECT update to Content table
-        const { error } = await window.SupabaseHelper.client
-          .from('Content')
-          .update({ favorites_count: newFavorites })
-          .eq('id', currentContent.id);
-
-        if (error) throw error;
-        
-        currentContent.favorites_count = newFavorites;
-        showToast(!isFavorited ? 'Added to favorites!' : 'Removed from favorites', !isFavorited ? 'success' : 'info');
-      } catch (error) {
-        console.error('Favorite update failed:', error);
-        // Revert UI
-        favoriteBtn.classList.toggle('active', isFavorited);
-        favoriteBtn.innerHTML = isFavorited 
-          ? '<i class="fas fa-star"></i><span>Favorited</span>' 
-          : '<i class="far fa-star"></i><span>Favorite</span>';
-        if (favCountEl) favCountEl.textContent = formatNumber(currentFavorites);
-        showToast('Failed to update favorite', 'error');
-      }
-    });
-  }
-  
-  // Refresh comments
-  const refreshBtn = document.getElementById('refreshCommentsBtn');
-  if (refreshBtn) {
-    refreshBtn.addEventListener('click', async function() {
-      if (currentContent) {
-        showToast('Refreshing comments...', 'info');
-        await loadComments(currentContent.id);
-        showToast('Comments refreshed!', 'success');
-      }
-    });
-  }
-  
-  // ============================================
-  // SINGLE-TABLE FIX: COMMENT SUBMISSION HANDLER
-  // ============================================
-  const sendBtn = document.getElementById('sendCommentBtn');
-  const commentInput = document.getElementById('commentInput');
-  if (sendBtn && commentInput) {
-    sendBtn.addEventListener('click', async function() {
-      const text = commentInput.value.trim();
-      if (!text) {
-        showToast('Please enter a comment', 'warning');
-        return;
-      }
-      
-      if (!window.AuthHelper?.isAuthenticated?.()) {
-        showToast('You need to sign in to comment', 'warning');
-        return;
-      }
-      
-      if (!currentContent) return;
-      
-      // Show loading state
-      const originalHTML = sendBtn.innerHTML;
-      sendBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-      sendBtn.disabled = true;
-      
-      try {
-        // 1. FIRST: Insert comment into comments table (required for display)
-        const userProfile = window.AuthHelper.getUserProfile();
-        const displayName = window.AuthHelper.getDisplayName();
-        
-        const { data: newComment, error: insertError } = await window.supabaseClient
-          .from('comments')
-          .insert({
-            content_id: currentContent.id,
-            user_id: userProfile.id,
-            author_name: displayName,
-            comment_text: text,
-            created_at: new Date().toISOString()
-          })
-          .select()
-          .single();
-        
-        if (insertError) throw insertError;
-        
-        // 2. Update comments_count in Content table
-        const currentComments = parseInt(document.getElementById('commentsCount')?.textContent.replace(/\D/g, '') || '0') || 0;
-        const newCommentCount = currentComments + 1;
-        
-        const { error: updateError } = await window.SupabaseHelper.client
-          .from('Content')
-          .update({ comments_count: newCommentCount })
-          .eq('id', currentContent.id);
-        
-        if (updateError) {
-          console.warn('Comment count update failed (but comment saved):', updateError);
-          // Don't fail the whole operation - comment was saved
-        }
-        
-        // 3. Update UI
-        commentInput.value = '';
-        await loadComments(currentContent.id); // Refresh comments list
-        currentContent.comments_count = newCommentCount;
-        
-        // Update comment count display
-        const countEl = document.getElementById('commentsCount');
-        if (countEl) countEl.textContent = `(${newCommentCount})`;
-        
-        showToast('Comment added!', 'success');
-        
-        // Track analytics
-        if (window.track?.contentComment) {
-          window.track.contentComment(currentContent.id);
-        }
-      } catch (error) {
-        console.error('Comment submission failed:', error);
-        showToast(error.message || 'Failed to add comment', 'error');
-      } finally {
-        sendBtn.innerHTML = originalHTML;
-        sendBtn.disabled = false;
-      }
-    });
-    
-    // Enter key support
-    commentInput.addEventListener('keypress', function(e) {
-      if (e.key === 'Enter' && !e.shiftKey && !commentInput.disabled) {
-        e.preventDefault();
-        sendBtn.click();
-      }
-    });
-  }
-  
-  // Back to top
-  const backToTopBtn = document.getElementById('backToTopBtn');
-  if (backToTopBtn) {
-    backToTopBtn.addEventListener('click', function() {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    });
-    
-    window.addEventListener('scroll', function() {
-      if (window.pageYOffset > 300) {
-        backToTopBtn.style.display = 'flex';
-      } else {
-        backToTopBtn.style.display = 'none';
-      }
-    });
-  }
-  
-  // PIP button
-  const pipBtn = document.getElementById('pipBtn');
-  if (pipBtn) {
-    pipBtn.addEventListener('click', function() {
-      const video = document.getElementById('inlineVideoPlayer');
-      if (video.requestPictureInPicture && document.pictureInPictureElement !== video) {
-        video.requestPictureInPicture();
-      }
-    });
-  }
-  
-  // Setup connect buttons
-  setupConnectButtons();
-  
-  console.log('✅ Event listeners setup complete');
+/* Notification badges */
+.notification-badge, .nav-notification-badge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  background: var(--error-color);
+  color: white;
+  font-size: 10px;
+  font-weight: bold;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--deep-black);
 }
-
-// ===================================================================
-// MODAL & PANEL SYSTEMS (Analytics, Search, Notifications, Theme)
-// ===================================================================
-
-// ======================
-// ANALYTICS MODAL
-// ======================
-function initAnalyticsModal() {
-  const analyticsBtn = document.getElementById('analytics-btn');
-  const analyticsModal = document.getElementById('analytics-modal');
-  const closeAnalytics = document.getElementById('close-analytics');
-  
-  if (!analyticsBtn || !analyticsModal) return;
-  
-  analyticsBtn.addEventListener('click', (e) => {
-    e.stopPropagation();
-    analyticsModal.classList.add('active');
-    loadContentAnalytics();
-  });
-  
-  if (closeAnalytics) {
-    closeAnalytics.addEventListener('click', () => {
-      analyticsModal.classList.remove('active');
-    });
+/* Desktop optimization */
+@media (min-width: 769px) {
+  .navigation-button-container {
+    bottom: 30px;
+    width: auto;
+    max-width: none;
   }
-  
-  analyticsModal.addEventListener('click', (e) => {
-    if (e.target === analyticsModal) {
-      analyticsModal.classList.remove('active');
-    }
-  });
-}
-
-async function loadContentAnalytics() {
-  if (!currentContent) return;
-  
-  try {
-    // Get view stats
-    const { data: viewsData } = await window.supabaseClient
-      .from('content_views')
-      .select('id, viewed_at')
-      .eq('content_id', currentContent.id)
-      .order('viewed_at', { ascending: false })
-      .limit(100);
-    
-    // Get comment stats
-    const { data: commentsData } = await window.supabaseClient
-      .from('comments')
-      .select('id, created_at')
-      .eq('content_id', currentContent.id);
-    
-    // Calculate metrics
-    const totalViews = viewsData?.length || 0;
-    const totalComments = commentsData?.length || 0;
-    
-    // Update UI
-    document.getElementById('content-total-views').textContent = formatNumber(totalViews);
-    document.getElementById('total-comments').textContent = formatNumber(totalComments);
-    
-    // Simulate engagement metrics (would come from analytics system)
-    document.getElementById('avg-watch-time').textContent = '4m 23s';
-    document.getElementById('engagement-rate').textContent = '68%';
-    
-    // Set trends (simulated)
-    document.getElementById('views-trend').textContent = '+12%';
-    document.getElementById('comments-trend').textContent = '+8%';
-    document.getElementById('watch-time-trend').textContent = '+5%';
-    document.getElementById('engagement-trend').textContent = '+3%';
-    
-    // Initialize chart if Chart.js is available
-    if (typeof Chart !== 'undefined') {
-      initEngagementChart();
-    }
-  } catch (error) {
-    console.error('Error loading analytics:', error);
+  .navigation-button {
+    padding: 10px 20px;
+    border-radius: 50px;
+    gap: 12px;
+    box-shadow: 0 6px 25px rgba(0, 0, 0, 0.35);
+  }
+  .nav-icon {
+    width: 48px;
+    height: 48px;
+    font-size: 20px;
   }
 }
 
-function initEngagementChart() {
-  const ctx = document.getElementById('content-engagement-chart');
-  if (!ctx) return;
-  
-  // Destroy existing chart if exists
-  if (window.contentEngagementChart) {
-    window.contentEngagementChart.destroy();
-  }
-  
-  window.contentEngagementChart = new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-      datasets: [{
-        label: 'Views',
-        data: [65, 59, 80, 81, 56, 55, 40],
-        borderColor: '#F59E0B',
-        backgroundColor: 'rgba(245, 158, 11, 0.1)',
-        tension: 0.4,
-        fill: true
-      }, {
-        label: 'Comments',
-        data: [28, 48, 40, 19, 86, 27, 90],
-        borderColor: '#1D4ED8',
-        backgroundColor: 'rgba(29, 78, 216, 0.1)',
-        tension: 0.4,
-        fill: true
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: {
-          labels: {
-            color: 'var(--soft-white)'
-          }
-        }
-      },
-      scales: {
-        x: {
-          grid: { color: 'rgba(255, 255, 255, 0.1)' },
-          ticks: { color: 'var(--slate-grey)' }
-        },
-        y: {
-          grid: { color: 'rgba(255, 255, 255, 0.1)' },
-          ticks: { color: 'var(--slate-grey)' }
-        }
-      }
-    }
-  });
-}
+/* =================================================================== */
+/* PROFESSIONAL HEADER & FOOTER SIZING FOR ALL DEVICES                */
+/* =================================================================== */
 
-// ======================
-// SEARCH MODAL
-// ======================
-function initSearchModal() {
-  const searchBtn = document.getElementById('search-btn');
-  const searchModal = document.getElementById('search-modal');
-  const closeSearchBtn = document.getElementById('close-search-btn');
-  const searchInput = document.getElementById('search-input');
-  
-  if (!searchBtn || !searchModal) return;
-  
-  searchBtn.addEventListener('click', (e) => {
-    e.stopPropagation();
-    searchModal.classList.add('active');
-    setTimeout(() => {
-      if (searchInput) searchInput.focus();
-    }, 300);
-  });
-  
-  if (closeSearchBtn) {
-    closeSearchBtn.addEventListener('click', () => {
-      searchModal.classList.remove('active');
-      if (searchInput) searchInput.value = '';
-      document.getElementById('search-results-grid').innerHTML = '';
-    });
+/* DESKTOP HEADER OPTIMIZATION (769px and above) */
+@media (min-width: 769px) {
+  .header {
+    padding: 12px 24px !important; /* Reduced from 16px */
+    min-height: 60px !important;
   }
-  
-  searchModal.addEventListener('click', (e) => {
-    if (e.target === searchModal) {
-      searchModal.classList.remove('active');
-      if (searchInput) searchInput.value = '';
-      document.getElementById('search-results-grid').innerHTML = '';
-    }
-  });
-  
-  // Search functionality
-  if (searchInput) {
-    searchInput.addEventListener('input', debounce(async (e) => {
-      const query = e.target.value.trim();
-      const category = document.getElementById('category-filter')?.value;
-      const sortBy = document.getElementById('sort-filter')?.value;
-      
-      if (query.length < 2) {
-        document.getElementById('search-results-grid').innerHTML = 
-          '<div class="no-results">Start typing to search...</div>';
-        return;
-      }
-      
-      document.getElementById('search-results-grid').innerHTML = 
-          '<div class="infinite-scroll-loading"><div class="infinite-scroll-spinner"></div><div>Searching...</div></div>';
-      
-      try {
-        const results = await searchContent(query, category, sortBy);
-        renderSearchResults(results);
-      } catch (error) {
-        console.error('Search error:', error);
-        document.getElementById('search-results-grid').innerHTML = 
-          '<div class="no-results">Error searching. Please try again.</div>';
-      }
-    }, 300));
+  .logo-icon {
+    width: 36px !important; /* Reduced from 40px */
+    height: 36px !important;
   }
-  
-  // Filter change handlers
-  document.getElementById('category-filter')?.addEventListener('change', triggerSearch);
-  document.getElementById('sort-filter')?.addEventListener('change', triggerSearch);
-}
-
-function debounce(func, wait) {
-  let timeout;
-  return function executedFunction(...args) {
-    const later = () => {
-      clearTimeout(timeout);
-      func(...args);
-    };
-    clearTimeout(timeout);
-    timeout = setTimeout(later, wait);
-  };
-}
-
-function triggerSearch() {
-  const searchInput = document.getElementById('search-input');
-  if (searchInput) {
-    const event = new Event('input');
-    searchInput.dispatchEvent(event);
+  .logo-icon img {
+    width: 32px !important;
+    height: 32px !important;
+    border-radius: 8px !important;
+  }
+  .logo-text {
+    font-size: 17px !important; /* Reduced from 18px */
+    letter-spacing: 0.4px !important;
+  }
+  .header-actions .icon-btn,
+  .header-actions .profile-btn {
+    width: 38px !important; /* Reduced from 40px */
+    height: 38px !important;
+    min-width: 38px !important;
+    min-height: 38px !important;
+  }
+  .profile-placeholder {
+    width: 34px !important;
+    height: 34px !important;
+    font-size: 15px !important;
+  }
+  .footer {
+    padding: 24px 20px !important; /* Reduced from 30px */
+    font-size: 14px !important;
+    margin-top: 40px !important;
+  }
+  .footer-links {
+    gap: 12px !important;
+  }
+  .footer-links a {
+    font-size: 14px !important;
   }
 }
 
-async function searchContent(query, category = '', sortBy = 'newest') {
-  try {
-    let orderBy = 'created_at';
-    let order = 'desc';
-    
-    if (sortBy === 'popular') {
-      orderBy = 'views_count';
-    } else if (sortBy === 'trending') {
-      orderBy = 'likes_count';
-    }
-    
-    let queryBuilder = window.supabaseClient
-      .from('Content')
-      .select('*, user_profiles!user_id(*)')
-      .ilike('title', `%${query}%`)
-      .eq('status', 'published')
-      .order(orderBy, { ascending: order === 'asc' })
-      .limit(20);
-    
-    if (category) {
-      queryBuilder = queryBuilder.eq('genre', category);
-    }
-    
-    const { data, error } = await queryBuilder;
-    
-    if (error) throw error;
-    return data || [];
-  } catch (error) {
-    console.error('Search error:', error);
-    return [];
+/* TABLET OPTIMIZATION (768px and below) */
+@media (max-width: 768px) {
+  .header {
+    padding: 10px 16px !important;
+    min-height: 52px !important;
+  }
+  .logo {
+    gap: 10px !important;
+  }
+  .logo-icon {
+    width: 34px !important;
+    height: 34px !important;
+  }
+  .logo-icon img {
+    width: 30px !important;
+    height: 30px !important;
+    border-radius: 8px !important;
+  }
+  .logo-text {
+    font-size: 16px !important;
+    max-width: 160px;
+    letter-spacing: 0.4px !important;
+  }
+  .header-actions {
+    gap: 8px !important;
+  }
+  .icon-btn, .profile-btn {
+    width: 38px !important;
+    height: 38px !important;
+    min-width: 38px !important;
+    min-height: 38px !important;
+  }
+  .profile-placeholder {
+    width: 32px !important;
+    height: 32px !important;
+    font-size: 14px !important;
+  }
+  .footer {
+    padding: 20px 16px !important;
+    font-size: 13px !important;
+    margin-top: 35px !important;
+  }
+  .footer-links {
+    flex-direction: row !important;
+    flex-wrap: wrap !important;
+    gap: 10px !important;
+    margin: 15px 0 !important;
+  }
+  .footer-links a {
+    font-size: 13px !important;
+  }
+  .footer-contact {
+    font-size: 13px !important;
+    margin-top: 12px !important;
+  }
+  /* Prevent navigation overlap */
+  .navigation-button-container {
+    bottom: 90px !important;
+  }
+  .container {
+    padding-bottom: 130px !important;
   }
 }
 
-function renderSearchResults(results) {
-  const grid = document.getElementById('search-results-grid');
-  if (!grid) return;
-  
-  if (!results || results.length === 0) {
-    grid.innerHTML = '<div class="no-results">No results found. Try different keywords.</div>';
-    return;
+/* MOBILE OPTIMIZATION (480px and below) */
+@media (max-width: 480px) {
+  .header {
+    padding: 8px 14px !important;
+    min-height: 48px !important;
   }
-  
-  grid.innerHTML = results.map(item => {
-    const creator = item.user_profiles?.full_name || item.user_profiles?.username || item.creator || 'Creator';
-    return `
-      <div class="content-card" data-content-id="${item.id}">
-        <div class="card-thumbnail">
-          <img src="${item.thumbnail_url || 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop'}" 
-               alt="${item.title}" 
-               onerror="this.src='https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop'">
-          <div class="thumbnail-overlay"></div>
-        </div>
-        <div class="card-content">
-          <h3 class="card-title">${truncateText(item.title, 45)}</h3>
-          <div class="related-meta">
-            <i class="fas fa-eye"></i>
-            <span>${formatNumber(item.views_count || 0)} views</span>
-          </div>
-          <button class="creator-btn" data-creator-id="${item.user_id}" data-creator-name="${creator}">
-            <i class="fas fa-user"></i>
-            ${truncateText(creator, 15)}
-          </button>
-        </div>
-      </div>
-    `;
-  }).join('');
-  
-  // Add click handlers
-  grid.querySelectorAll('.content-card').forEach(card => {
-    card.addEventListener('click', (e) => {
-      if (e.target.closest('.creator-btn')) return;
-      const id = card.dataset.contentId;
-      if (id) window.location.href = `content-detail.html?id=${id}`;
-    });
-  });
-  
-  grid.querySelectorAll('.creator-btn').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      const id = btn.dataset.creatorId;
-      const name = btn.dataset.creatorName;
-      if (id) window.location.href = `creator-channel.html?id=${id}&name=${encodeURIComponent(name)}`;
-    });
-  });
-}
-
-// ======================
-// NOTIFICATIONS PANEL
-// ======================
-function initNotificationsPanel() {
-  const notificationsBtn = document.getElementById('notifications-btn');
-  const navNotificationsBtn = document.getElementById('nav-notifications-btn');
-  const notificationsPanel = document.getElementById('notifications-panel');
-  const closeNotifications = document.getElementById('close-notifications');
-  const markAllReadBtn = document.getElementById('mark-all-read');
-  
-  if (!notificationsBtn || !notificationsPanel) return;
-  
-  // Both notification buttons should open the panel
-  [notificationsBtn, navNotificationsBtn].forEach(btn => {
-    if (btn) {
-      btn.addEventListener('click', async (e) => {
-        e.stopPropagation();
-        notificationsPanel.classList.add('active');
-        await loadUserNotifications();
-        await markAllNotificationsAsRead();
-      });
-    }
-  });
-  
-  if (closeNotifications) {
-    closeNotifications.addEventListener('click', () => {
-      notificationsPanel.classList.remove('active');
-    });
+  .logo-icon {
+    width: 30px !important;
+    height: 30px !important;
   }
-  
-  // Close when clicking outside
-  document.addEventListener('click', (e) => {
-    if (notificationsPanel.classList.contains('active') && 
-        !notificationsPanel.contains(e.target) && 
-        !notificationsBtn.contains(e.target) && 
-        (!navNotificationsBtn || !navNotificationsBtn.contains(e.target))) {
-      notificationsPanel.classList.remove('active');
-    }
-  });
-  
-  if (markAllReadBtn) {
-    markAllReadBtn.addEventListener('click', async () => {
-      await markAllNotificationsAsRead();
-      await loadUserNotifications();
-    });
+  .logo-icon img {
+    width: 26px !important;
+    height: 26px !important;
+    border-radius: 6px !important;
   }
-  
-  // Load notifications on page load if user is authenticated
-  if (window.AuthHelper?.isAuthenticated()) {
-    loadUserNotifications();
-    updateNotificationBadge();
+  .logo-text {
+    font-size: 14px !important;
+    max-width: 130px;
+    letter-spacing: 0.3px !important;
   }
-  
-  // Listen for auth changes
-  document.addEventListener('authReady', loadUserNotifications);
-}
-
-async function loadUserNotifications() {
-  const notificationsList = document.getElementById('notifications-list');
-  if (!notificationsList) return;
-  
-  try {
-    // Check authentication
-    if (!window.AuthHelper || !window.AuthHelper.isAuthenticated()) {
-      notificationsList.innerHTML = `
-        <div class="empty-notifications">
-          <i class="fas fa-bell-slash"></i>
-          <p>Sign in to see notifications</p>
-        </div>
-      `;
-      updateNotificationBadge(0);
-      return;
-    }
-    
-    const userProfile = window.AuthHelper.getUserProfile();
-    if (!userProfile?.id) {
-      notificationsList.innerHTML = `
-        <div class="empty-notifications">
-          <i class="fas fa-exclamation-triangle"></i>
-          <p>User profile not found</p>
-        </div>
-      `;
-      return;
-    }
-    
-    // Fetch notifications from Supabase
-    const { data, error } = await window.supabaseClient
-      .from('notifications')
-      .select('*')
-      .eq('user_id', userProfile.id)
-      .order('created_at', { ascending: false })
-      .limit(20);
-    
-    if (error) throw error;
-    
-    if (!data || data.length === 0) {
-      notificationsList.innerHTML = `
-        <div class="empty-notifications">
-          <i class="fas fa-bell-slash"></i>
-          <p>No notifications yet</p>
-        </div>
-      `;
-      updateNotificationBadge(0);
-      return;
-    }
-    
-    // Render notifications
-    notificationsList.innerHTML = data.map(notification => `
-      <div class="notification-item ${notification.is_read ? 'read' : 'unread'}" data-id="${notification.id}">
-        <div class="notification-icon">
-          <i class="${getNotificationIcon(notification.type)}"></i>
-        </div>
-        <div class="notification-content">
-          <h4>${escapeHtml(notification.title)}</h4>
-          <p>${escapeHtml(notification.message)}</p>
-          <span class="notification-time">${formatNotificationTime(notification.created_at)}</span>
-        </div>
-        ${!notification.is_read ? '<div class="notification-dot"></div>' : ''}
-      </div>
-    `).join('');
-    
-    // Add click handlers
-    notificationsList.querySelectorAll('.notification-item').forEach(item => {
-      item.addEventListener('click', async () => {
-        const id = item.dataset.id;
-        await markNotificationAsRead(id);
-        
-        // Handle navigation based on notification type
-        const notification = data.find(n => n.id === id);
-        if (notification?.content_id) {
-          window.location.href = `content-detail.html?id=${notification.content_id}`;
-        }
-        notificationsPanel.classList.remove('active');
-      });
-    });
-    
-    // Update badge count
-    const unreadCount = data.filter(n => !n.is_read).length;
-    updateNotificationBadge(unreadCount);
-  } catch (error) {
-    console.error('Error loading notifications:', error);
-    notificationsList.innerHTML = `
-      <div class="empty-notifications">
-        <i class="fas fa-exclamation-triangle"></i>
-        <p>Error loading notifications</p>
-      </div>
-    `;
+  .header-actions {
+    gap: 6px !important;
+  }
+  .icon-btn, .profile-btn {
+    width: 34px !important;
+    height: 34px !important;
+    min-width: 34px !important;
+    min-height: 34px !important;
+  }
+  .profile-placeholder {
+    width: 30px !important;
+    height: 30px !important;
+    font-size: 13px !important;
+  }
+  .footer {
+    padding: 16px 14px !important;
+    font-size: 12px !important;
+    margin-top: 30px !important;
+  }
+  .footer-links {
+    flex-direction: column !important;
+    align-items: center !important;
+    gap: 8px !important;
+    margin: 10px 0 !important;
+  }
+  .footer-links a {
+    font-size: 12px !important;
+  }
+  .footer-contact {
+    font-size: 11px !important;
+    margin-top: 8px !important;
+  }
+  .navigation-button-container {
+    bottom: 85px !important;
+    width: calc(100% - 24px) !important;
+    padding-bottom: max(env(safe-area-inset-bottom), 8px) !important;
+  }
+  .navigation-button {
+    padding: 7px 12px !important;
+    gap: 7px !important;
+  }
+  .nav-icon {
+    width: 38px !important;
+    height: 38px !important;
+    font-size: 17px !important;
+  }
+  .container {
+    padding-bottom: 135px !important;
   }
 }
 
-function getNotificationIcon(type) {
-  switch(type) {
-    case 'like': return 'fas fa-heart';
-    case 'comment': return 'fas fa-comment';
-    case 'follow': return 'fas fa-user-plus';
-    case 'view_milestone': return 'fas fa-trophy';
-    case 'system': return 'fas fa-bell';
-    default: return 'fas fa-bell';
+/* ULTRA-MOBILE OPTIMIZATION (360px and below) */
+@media (max-width: 360px) {
+  .header {
+    padding: 7px 12px !important;
+    min-height: 46px !important;
+  }
+  .logo-icon {
+    width: 28px !important;
+    height: 28px !important;
+  }
+  .logo-icon img {
+    width: 24px !important;
+    height: 24px !important;
+  }
+  .logo-text {
+    font-size: 13px !important;
+    max-width: 110px;
+  }
+  .header-actions {
+    gap: 5px !important;
+  }
+  .icon-btn, .profile-btn {
+    width: 32px !important;
+    height: 32px !important;
+  }
+  .profile-placeholder {
+    width: 28px !important;
+    height: 28px !important;
+    font-size: 12px !important;
+  }
+  .navigation-button-container {
+    bottom: 80px !important;
+    width: calc(100% - 20px) !important;
+  }
+  .navigation-button {
+    padding: 6px 10px !important;
+    gap: 6px !important;
+  }
+  .nav-icon {
+    width: 36px !important;
+    height: 36px !important;
+    font-size: 16px !important;
+  }
+  .footer {
+    padding: 14px 12px !important;
+    font-size: 11.5px !important;
+  }
+  .footer-links a {
+    font-size: 11.5px !important;
   }
 }
 
-async function markNotificationAsRead(notificationId) {
-  try {
-    const { error } = await window.supabaseClient
-      .from('notifications')
-      .update({ is_read: true })
-      .eq('id', notificationId);
-    
-    if (error) throw error;
-    
-    // Update UI immediately
-    const item = document.querySelector(`.notification-item[data-id="${notificationId}"]`);
-    if (item) {
-      item.classList.remove('unread');
-      item.classList.add('read');
-      const dot = item.querySelector('.notification-dot');
-      if (dot) dot.remove();
-    }
-    
-    // Update badge
-    await loadUserNotifications();
-  } catch (error) {
-    console.error('Error marking notification as read:', error);
+/* ACCESSIBILITY & TOUCH TARGETS */
+@media (hover: none) and (pointer: coarse) {
+  /* Ensure all interactive elements have minimum 44x44px touch targets */
+  .icon-btn, .profile-btn, .nav-icon, .send-comment-btn {
+    min-width: 44px !important;
+    min-height: 44px !important;
+  }
+  /* Prevent text selection on tap */
+  .header, .navigation-button, .footer {
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
   }
 }
 
-async function markAllNotificationsAsRead() {
-  try {
-    if (!window.AuthHelper?.isAuthenticated()) return;
-    
-    const userProfile = window.AuthHelper.getUserProfile();
-    if (!userProfile?.id) return;
-    
-    const { error } = await window.supabaseClient
-      .from('notifications')
-      .update({ is_read: true })
-      .eq('user_id', userProfile.id)
-      .eq('is_read', false);
-    
-    if (error) throw error;
-    
-    // Update UI
-    document.querySelectorAll('.notification-item.unread').forEach(item => {
-      item.classList.remove('unread');
-      item.classList.add('read');
-      const dot = item.querySelector('.notification-dot');
-      if (dot) dot.remove();
-    });
-    
-    updateNotificationBadge(0);
-  } catch (error) {
-    console.error('Error marking all notifications as read:', error);
+/* =================================================================== */
+/* MODALS & PANELS (Analytics, Search, Notifications, Theme)          */
+/* =================================================================== */
+
+/* Analytics Modal */
+.analytics-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(10, 14, 18, 0.95);
+  backdrop-filter: blur(20px);
+  z-index: 1000;
+  display: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+.analytics-modal.active {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 1;
+  animation: fadeIn 0.3s ease;
+}
+.analytics-content {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 24px;
+  width: 90%;
+  max-width: 800px;
+  max-height: 90vh;
+  overflow-y: auto;
+  backdrop-filter: blur(20px);
+}
+.analytics-header {
+  padding: 25px;
+  border-bottom: 1px solid var(--card-border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.analytics-body {
+  padding: 25px;
+}
+.analytics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 20px;
+  margin-bottom: 30px;
+}
+.analytics-card {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--card-border);
+  border-radius: 16px;
+  padding: 20px;
+  text-align: center;
+}
+.analytics-card h3 {
+  font-size: 14px;
+  color: var(--slate-grey);
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+.analytics-value {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--warm-gold);
+  margin-bottom: 5px;
+}
+.analytics-trend {
+  font-size: 12px;
+  color: var(--success-color);
+}
+.charts-container {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--card-border);
+  border-radius: 16px;
+  padding: 20px;
+  height: 250px;
+}
+.close-search-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--card-border);
+  color: var(--soft-white);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+.close-search-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: rotate(90deg);
+}
+
+/* Search Modal */
+.search-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(10, 14, 18, 0.95);
+  backdrop-filter: blur(20px);
+  z-index: 1000;
+  display: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+.search-modal.active {
+  display: block;
+  opacity: 1;
+  animation: fadeIn 0.3s ease;
+}
+.search-modal-header {
+  padding: 20px;
+  border-bottom: 1px solid var(--card-border);
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+.search-input-container {
+  flex: 1;
+  position: relative;
+}
+.search-input {
+  width: 100%;
+  padding: 15px 20px 15px 50px;
+  background: var(--deep-navy);
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  color: var(--soft-white);
+  font-size: 16px;
+  transition: all 0.3s ease;
+}
+.search-icon {
+  position: absolute;
+  left: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--slate-grey);
+}
+.search-filters {
+  padding: 20px;
+  border-bottom: 1px solid var(--card-border);
+  display: flex;
+  gap: 15px;
+  flex-wrap: wrap;
+}
+.filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.filter-label {
+  font-size: 14px;
+  color: var(--slate-grey);
+  font-weight: 500;
+}
+.filter-select {
+  padding: 10px 15px;
+  background: var(--deep-navy);
+  border: 1px solid var(--card-border);
+  border-radius: 8px;
+  color: var(--soft-white);
+  font-size: 14px;
+  min-width: 150px;
+  cursor: pointer;
+}
+.search-results {
+  padding: 20px;
+  max-height: calc(100vh - 200px);
+  overflow-y: auto;
+}
+.search-results-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 15px;
+}
+.no-results {
+  text-align: center;
+  padding: 40px;
+  color: var(--slate-grey);
+  font-size: 16px;
+}
+
+/* Notifications Panel */
+.notifications-panel {
+  position: fixed;
+  top: 0;
+  right: -400px;
+  width: 380px;
+  height: 100%;
+  background: var(--card-bg);
+  backdrop-filter: blur(20px);
+  border-left: 1px solid var(--card-border);
+  z-index: 999;
+  transition: right 0.3s ease;
+  display: flex;
+  flex-direction: column;
+}
+.notifications-panel.active {
+  right: 0;
+}
+.notifications-header {
+  padding: 20px;
+  border-bottom: 1px solid var(--card-border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.notifications-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+}
+.notification-item {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  padding: 15px;
+  margin-bottom: 10px;
+  border: 1px solid var(--card-border);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  gap: 12px;
+  position: relative;
+}
+.notification-item.unread {
+  border-left: 3px solid var(--bantu-blue);
+  background: rgba(29, 78, 216, 0.1);
+}
+.notification-icon {
+  color: var(--warm-gold);
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+}
+.notification-content {
+  flex: 1;
+}
+.notification-content h4 {
+  font-size: 14px;
+  margin-bottom: 5px;
+  color: var(--soft-white);
+}
+.notification-content p {
+  font-size: 12px;
+  color: var(--slate-grey);
+  margin-bottom: 5px;
+}
+.notification-time {
+  font-size: 11px;
+  color: var(--slate-grey);
+  opacity: 0.8;
+}
+.notification-dot {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  width: 8px;
+  height: 8px;
+  background: var(--error-color);
+  border-radius: 50%;
+}
+.empty-notifications {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--slate-grey);
+}
+.empty-notifications i {
+  font-size: 48px;
+  margin-bottom: 20px;
+  opacity: 0.5;
+}
+.notifications-footer {
+  padding: 15px 20px;
+  border-top: 1px solid var(--card-border);
+  display: flex;
+  justify-content: space-between;
+}
+.text-btn {
+  background: none;
+  border: none;
+  color: var(--warm-gold);
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.3s ease;
+}
+.text-btn:hover {
+  color: var(--soft-white);
+}
+
+/* Theme Selector */
+.theme-selector {
+  position: fixed;
+  top: 80px;
+  right: 20px;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  padding: 10px;
+  z-index: 1000;
+  display: none;
+  flex-direction: column;
+  gap: 5px;
+  backdrop-filter: blur(20px);
+  min-width: 180px;
+}
+.theme-selector.active {
+  display: flex;
+}
+.theme-option {
+  background: none;
+  border: none;
+  color: var(--soft-white);
+  padding: 10px 15px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transition: all 0.3s ease;
+  font-size: 14px;
+}
+.theme-option:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+.theme-option.active {
+  background: rgba(29, 78, 216, 0.2);
+  color: var(--bantu-blue);
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* =================================================================== */
+/* CRITICAL FIX: NUCLEAR OPTION TO HIDE ALL BROWSER VIDEO CONTROLS    */
+/* =================================================================== */
+
+/* NUCLEAR OPTION: PERMANENTLY HIDE ALL BROWSER VIDEO CONTROLS */
+#inlineVideoPlayer,
+.video-container video {
+  /* Remove all default controls */
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  appearance: none !important;
+  outline: none !important;
+  border: none !important;
+}
+
+/* Hide all browser UI elements */
+#inlineVideoPlayer::-webkit-media-controls,
+#inlineVideoPlayer::-webkit-media-control-panel,
+#inlineVideoPlayer::-webkit-media-control-play-button,
+#inlineVideoPlayer::-webkit-media-control-current-time-display,
+#inlineVideoPlayer::-webkit-media-control-time-remaining-display,
+#inlineVideoPlayer::-webkit-media-control-timeline,
+#inlineVideoPlayer::-webkit-media-control-volume-slider,
+#inlineVideoPlayer::-webkit-media-control-mute-button,
+#inlineVideoPlayer::-webkit-media-control-fullscreen-button,
+#inlineVideoPlayer::-webkit-media-control-rewind-button,
+#inlineVideoPlayer::-webkit-media-control-return-to-realtime-button,
+#inlineVideoPlayer::-webkit-media-control-toggle-closed-captions-button,
+#inlineVideoPlayer::-moz-media-controls {
+  display: none !important;
+  opacity: 0 !important;
+  height: 0 !important;
+  width: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  pointer-events: none !important;
+}
+
+/* Prevent right-click menu on video */
+#inlineVideoPlayer {
+  user-select: none !important;
+  -webkit-user-select: none !important;
+  -moz-user-select: none !important;
+  -ms-user-select: none !important;
+}
+
+/* Force our custom controls to always show */
+.video-controls {
+  opacity: 1 !important;
+  pointer-events: all !important;
+  display: block !important;
+}
+
+/* =================================================================== */
+/* BANTU STREAM CONNECT BRANDED VIDEO PLAYER - NO DEFAULT CONTROLS!   */
+/* =================================================================== */
+
+/* CRITICAL: Hide ALL default browser video controls */
+#inlineVideoPlayer {
+  outline: none !important;
+  box-shadow: none !important;
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  appearance: none !important;
+}
+
+/* Prevent browser from showing native controls */
+video::-webkit-media-controls {
+  display: none !important;
+  -webkit-appearance: none !important;
+}
+
+video::-webkit-media-controls-enclosure {
+  display: none !important;
+}
+
+video::-moz-media-controls {
+  display: none !important;
+}
+
+video::-webkit-media-controls-panel {
+  display: none !important;
+  -webkit-appearance: none !important;
+}
+
+video::-webkit-media-controls-play-button {
+  display: none !important;
+  -webkit-appearance: none !important;
+}
+
+video::-webkit-media-controls-current-time-display {
+  display: none !important;
+}
+
+/* Bantu Player Placeholder */
+.bantu-player-placeholder {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #0A1128 0%, #0F172A 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 5;
+  animation: pulse-glow 3s infinite alternate;
+}
+
+.bantu-logo-spinner {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.bantu-logo {
+  width: 80px;
+  height: 80px;
+  background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 15px;
+  box-shadow: 0 0 30px rgba(29, 78, 216, 0.5);
+  animation: spin 2s linear infinite;
+}
+
+.bantu-logo i {
+  font-size: 2.5rem;
+  color: white;
+}
+
+.bantu-brand-text {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  background: linear-gradient(to right, var(--soft-white), var(--warm-gold));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  letter-spacing: 1px;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+}
+
+.loading-text {
+  color: var(--slate-grey);
+  font-size: 14px;
+  margin-top: 10px;
+  font-family: 'Inter', sans-serif;
+}
+
+@keyframes pulse-glow {
+  0% { box-shadow: 0 0 10px rgba(29, 78, 216, 0.3); }
+  100% { box-shadow: 0 0 30px rgba(245, 158, 11, 0.6); }
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Force hide any lingering browser UI */
+.bantu-video-wrapper video {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: #000;
+  z-index: 1;
+}
+
+/* Social Controls Panel - ALWAYS VISIBLE ON PLAYER */
+.bantu-social-panel {
+  position: absolute;
+  right: 20px;
+  bottom: 100px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  z-index: 100;
+  animation: fadeIn 0.5s ease;
+}
+
+.bantu-social-btn {
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
+  background: rgba(255, 107, 53, 0.15);
+  border: 1px solid var(--bantu-blue);
+  color: var(--soft-white);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+}
+
+.bantu-social-btn:hover {
+  transform: translateY(-3px) scale(1.05);
+  background: rgba(255, 107, 53, 0.25);
+  box-shadow: 0 6px 20px rgba(29, 78, 216, 0.4);
+}
+
+.bantu-social-btn i {
+  font-size: 20px;
+  margin-bottom: 4px;
+}
+
+.bantu-social-btn .count {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--warm-gold);
+  margin-top: 2px;
+}
+
+.bantu-social-btn.active {
+  background: var(--bantu-blue);
+  border-color: var(--bantu-blue);
+  box-shadow: 0 0 20px rgba(29, 78, 216, 0.6);
+}
+
+.bantu-social-btn.active i {
+  color: white;
+}
+
+.bantu-social-btn.active .count {
+  color: white;
+}
+
+/* View Counter Badge */
+.view-counter {
+  background: rgba(29, 78, 216, 0.2);
+  border-color: var(--bantu-blue);
+}
+
+/* Clip Button */
+.clip-btn {
+  background: linear-gradient(135deg, var(--bantu-secondary), var(--bantu-dark));
+  border: 1px solid var(--bantu-blue);
+  color: var(--warm-gold);
+  font-weight: 600;
+  font-size: 13px;
+  padding: 8px 0;
+  margin-top: 8px;
+}
+
+.clip-btn:hover {
+  background: linear-gradient(135deg, #2563eb, #1e40af);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(26, 83, 92, 0.5);
+}
+
+/* Player Brand Watermark */
+.player-watermark {
+  position: absolute;
+  bottom: 20px;
+  left: 20px;
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid rgba(29, 78, 216, 0.5);
+  border-radius: 20px;
+  padding: 6px 15px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  z-index: 90;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--soft-white);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+  animation: slideIn 0.5s ease;
+}
+
+.player-watermark i {
+  color: var(--warm-gold);
+  font-size: 16px;
+}
+
+/* Hide on mobile for performance */
+@media (max-width: 768px) {
+  .bantu-social-panel {
+    right: 15px;
+    bottom: 90px;
+  }
+  
+  .bantu-social-btn {
+    width: 48px;
+    height: 48px;
+  }
+  
+  .bantu-social-btn i {
+    font-size: 18px;
+  }
+  
+  .bantu-social-btn .count {
+    font-size: 10px;
+  }
+  
+  .clip-btn {
+    font-size: 12px;
+    padding: 6px 0;
+  }
+  
+  .player-watermark {
+    bottom: 15px;
+    left: 15px;
+    padding: 4px 10px;
+    font-size: 11px;
+  }
+  
+  .player-watermark i {
+    font-size: 14px;
   }
 }
 
-function updateNotificationBadge(count = null) {
-  // If count not provided, calculate from DOM
-  if (count === null) {
-    count = document.querySelectorAll('.notification-item.unread').length;
+/* =================================================================== */
+/* BANTU BRANDED VIDEO CONTROLS - FULL FEATURE SET                    */
+/* =================================================================== */
+
+/* Main Controls Container */
+.bantu-video-controls {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(to top, rgba(7, 59, 76, 0.95), transparent);
+  padding: 15px;
+  z-index: 50;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  opacity: 1;
+  pointer-events: none;
+}
+
+.video-container:hover .bantu-video-controls,
+.bantu-video-controls:hover,
+.bantu-video-controls:active {
+  opacity: 1;
+  pointer-events: all;
+  transform: translateY(0);
+}
+
+/* Control Bar */
+.bantu-control-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: 100%;
+  overflow-x: auto;
+  padding: 0 5px;
+  scrollbar-width: none; /* Firefox */
+}
+
+.bantu-control-bar::-webkit-scrollbar {
+  display: none; /* Chrome/Safari */
+}
+
+/* Control Buttons */
+.bantu-control-btn {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: var(--soft-white);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  pointer-events: all;
+  flex-shrink: 0;
+}
+
+.bantu-control-btn:hover {
+  background: rgba(255, 107, 53, 0.25);
+  border-color: var(--bantu-blue);
+  transform: scale(1.1);
+  box-shadow: 0 0 15px rgba(29, 78, 216, 0.4);
+}
+
+.bantu-control-btn:active {
+  transform: scale(0.95);
+}
+
+.bantu-control-btn i {
+  font-size: 18px;
+}
+
+/* Time Display */
+.bantu-time-display {
+  color: var(--soft-white);
+  font-family: 'Orbitron', monospace;
+  font-size: 15px;
+  min-width: 110px;
+  text-align: center;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  pointer-events: none;
+}
+
+/* Progress Bar */
+.bantu-progress-bar {
+  flex: 1;
+  height: 6px;
+  -webkit-appearance: none;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+  outline: none;
+  cursor: pointer;
+  pointer-events: all;
+  max-width: 100%;
+}
+
+.bantu-progress-bar::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--warm-gold);
+  cursor: pointer;
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.7);
+}
+
+.bantu-progress-bar::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--warm-gold);
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.7);
+}
+
+/* Volume Bar */
+.bantu-volume-bar {
+  width: 80px;
+  height: 5px;
+  -webkit-appearance: none;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+  outline: none;
+  cursor: pointer;
+  pointer-events: all;
+}
+
+.bantu-volume-bar::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--warm-gold);
+  cursor: pointer;
+}
+
+/* Social Controls Container */
+.bantu-social-controls {
+  display: flex;
+  gap: 8px;
+  margin-left: auto;
+  padding-left: 15px;
+  border-left: 1px solid rgba(255, 255, 255, 0.15);
+  align-items: center;
+}
+
+/* Social Buttons */
+.bantu-social-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  color: var(--soft-white);
+  padding: 8px 12px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  min-width: 60px;
+  font-size: 13px;
+  pointer-events: all;
+}
+
+.bantu-social-btn:hover {
+  background: rgba(255, 107, 53, 0.2);
+  border-color: var(--warm-gold);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+}
+
+.bantu-social-btn i {
+  font-size: 16px;
+}
+
+.bantu-social-btn .like-count,
+.bantu-social-btn .favorite-count,
+.bantu-social-btn .share-count,
+.bantu-social-btn .comment-count {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--warm-gold);
+}
+
+.bantu-social-btn.liked i,
+.bantu-social-btn.favorited i {
+  color: var(--error-color);
+}
+
+/* Playback Speed & Quality */
+.bantu-playback-speed,
+.bantu-quality-selector {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.speed-label,
+.quality-label {
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 600;
+  color: var(--warm-gold);
+  font-size: 13px;
+}
+
+/* Settings Menu */
+.bantu-settings-menu {
+  position: absolute;
+  bottom: 75px;
+  right: 15px;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 16px;
+  padding: 20px;
+  min-width: 280px;
+  backdrop-filter: blur(20px);
+  z-index: 60;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+  display: none;
+  pointer-events: all;
+}
+
+.bantu-settings-menu.active {
+  display: block;
+  animation: slideInUp 0.3s ease;
+}
+
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.bantu-settings-section {
+  margin-bottom: 20px;
+}
+
+.bantu-settings-section:last-child {
+  margin-bottom: 0;
+}
+
+.bantu-settings-section h4 {
+  color: var(--soft-white);
+  margin-bottom: 12px;
+  font-size: 15px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.bantu-settings-section h4 i {
+  color: var(--bantu-blue);
+  font-size: 16px;
+}
+
+.bantu-speed-options,
+.bantu-quality-options {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.speed-option,
+.quality-option,
+.bantu-option-btn {
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--card-border);
+  border-radius: 10px;
+  color: var(--soft-white);
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: center;
+  display: block;
+  width: 100%;
+}
+
+.speed-option:hover,
+.quality-option:hover,
+.bantu-option-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: var(--bantu-blue);
+  transform: translateY(-1px);
+}
+
+.speed-option.active,
+.quality-option.active {
+  background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+  border-color: transparent;
+  color: white;
+  font-weight: 600;
+  box-shadow: 0 4px 12px rgba(29, 78, 216, 0.3);
+}
+
+.bantu-option-btn {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 10px;
+  border-radius: 12px;
+  padding: 10px 15px;
+  margin-top: 8px;
+}
+
+.bantu-option-btn i {
+  width: 20px;
+  text-align: center;
+  font-size: 16px;
+}
+
+/* Buffering Indicator */
+.bantu-buffering-indicator {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.7);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 40;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.bantu-buffering-indicator.active {
+  display: flex;
+  animation: fadeIn 0.3s ease;
+}
+
+.bantu-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(255, 255, 255, 0.2);
+  border-top-color: var(--warm-gold);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+/* Error Overlay */
+.bantu-error-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.85);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 45;
+  padding: 20px;
+}
+
+.bantu-error-overlay.active {
+  display: flex;
+  animation: fadeIn 0.3s ease;
+}
+
+.bantu-error-content {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 20px;
+  padding: 30px;
+  text-align: center;
+  max-width: 450px;
+  width: 100%;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+
+.bantu-error-content i {
+  font-size: 3.5rem;
+  color: var(--error-color);
+  margin-bottom: 15px;
+}
+
+.bantu-error-content h3 {
+  color: var(--soft-white);
+  font-size: 24px;
+  margin-bottom: 12px;
+  font-weight: 700;
+}
+
+.bantu-error-message {
+  color: rgba(255, 255, 255, 0.75);
+  margin-bottom: 25px;
+  line-height: 1.5;
+  font-size: 16px;
+}
+
+.bantu-retry-btn,
+.bantu-cancel-btn {
+  padding: 10px 25px;
+  border-radius: 12px;
+  border: none;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin: 0 8px;
+  font-size: 15px;
+}
+
+.bantu-retry-btn {
+  background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+  color: white;
+}
+
+.bantu-cancel-btn {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--soft-white);
+  border: 1px solid var(--card-border);
+}
+
+.bantu-retry-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(29, 78, 216, 0.4);
+}
+
+.bantu-cancel-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+/* Bantu Watermark */
+.bantu-watermark {
+  position: absolute;
+  bottom: 20px;
+  left: 20px;
+  background: rgba(15, 23, 42, 0.85);
+  border: 1px solid rgba(29, 78, 216, 0.5);
+  border-radius: 20px;
+  padding: 6px 15px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  z-index: 30;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--soft-white);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+  animation: slideIn 0.5s ease;
+}
+
+.bantu-watermark i {
+  color: var(--warm-gold);
+  font-size: 16px;
+}
+
+/* Fullscreen Mode Enhancements */
+.bantu-video-controls.fullscreen {
+  bottom: 30px;
+  padding: 20px;
+  background: linear-gradient(to top, rgba(7, 59, 76, 0.98), transparent);
+}
+
+.video-container:fullscreen .bantu-social-controls,
+.video-container:-webkit-full-screen .bantu-social-controls {
+  display: flex;
+  margin-left: 20px;
+  padding-left: 20px;
+  border-left: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.video-container:fullscreen .bantu-time-display,
+.video-container:-webkit-full-screen .bantu-time-display {
+  min-width: 130px;
+  font-size: 17px;
+}
+
+/* Mobile Optimizations */
+@media (max-width: 768px) {
+  .bantu-control-bar {
+    flex-wrap: wrap;
+    gap: 8px;
   }
   
-  const mainBadge = document.getElementById('notification-count');
-  const navBadge = document.getElementById('nav-notification-count');
-  
-  [mainBadge, navBadge].forEach(badge => {
-    if (badge) {
-      badge.textContent = count > 99 ? '99+' : count;
-      badge.style.display = count > 0 ? 'flex' : 'none';
-    }
-  });
-}
-
-function formatNotificationTime(timestamp) {
-  const now = new Date();
-  const diffMs = now - new Date(timestamp);
-  const diffMins = Math.floor(diffMs / 60000);
-  const diffHours = Math.floor(diffMs / 3600000);
-  const diffDays = Math.floor(diffMs / 86400000);
-  
-  if (diffMins < 1) return 'Just now';
-  if (diffMins < 60) return `${diffMins}m ago`;
-  if (diffHours < 24) return `${diffHours}h ago`;
-  if (diffDays < 7) return `${diffDays}d ago`;
-  return new Date(timestamp).toLocaleDateString();
-}
-
-// ======================
-// THEME SELECTOR
-// ======================
-function initThemeSelector() {
-  const themeToggle = document.getElementById('nav-theme-toggle');
-  const themeSelector = document.getElementById('theme-selector');
-  const themeOptions = document.querySelectorAll('.theme-option');
-  
-  if (!themeToggle || !themeSelector) return;
-  
-  themeToggle.addEventListener('click', (e) => {
-    e.stopPropagation();
-    themeSelector.classList.toggle('active');
-  });
-  
-  // Close when clicking outside
-  document.addEventListener('click', (e) => {
-    if (themeSelector.classList.contains('active') && 
-        !themeSelector.contains(e.target) && 
-        !themeToggle.contains(e.target)) {
-      themeSelector.classList.remove('active');
-    }
-  });
-  
-  // Set up theme options
-  themeOptions.forEach(option => {
-    option.addEventListener('click', (e) => {
-      e.stopPropagation();
-      const theme = option.dataset.theme;
-      applyTheme(theme);
-      themeSelector.classList.remove('active');
-    });
-  });
-  
-  // Initialize theme
-  initCurrentTheme();
-}
-
-function applyTheme(theme) {
-  document.body.className = `theme-${theme}`;
-  localStorage.setItem('theme', theme);
-  
-  // Update active state
-  document.querySelectorAll('.theme-option').forEach(option => {
-    option.classList.toggle('active', option.dataset.theme === theme);
-  });
-  
-  // Show confirmation
-  showToast(`Theme changed to ${theme}`, 'success');
-}
-
-function initCurrentTheme() {
-  // Load saved theme or use system preference
-  const savedTheme = localStorage.getItem('theme');
-  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-  const defaultTheme = savedTheme || (prefersDark ? 'dark' : 'light');
-  
-  // Set initial theme
-  applyTheme(defaultTheme);
-  
-  // Set active state on load
-  document.querySelector(`.theme-option[data-theme="${defaultTheme}"]`)?.classList.add('active');
-}
-
-// ======================
-// GLOBAL NAVIGATION
-// ======================
-function initGlobalNavigation() {
-  // Home button - redirect to home-feed
-  const homeBtn = document.querySelector('.nav-icon:nth-child(1)');
-  if (homeBtn) {
-    homeBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      window.location.href = 'https://bantustreamconnect.com/';
-    });
+  .bantu-time-display {
+    min-width: 90px;
+    font-size: 14px;
   }
   
-  // Theme toggle already handled in initThemeSelector
-  
-  // Create Content button
-  const createBtn = document.querySelector('.nav-icon:nth-child(3)');
-  if (createBtn) {
-    createBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      if (window.AuthHelper?.isAuthenticated()) {
-        window.location.href = 'creator-upload.html';
-      } else {
-        showToast('Please sign in to upload content', 'warning');
-        window.location.href = 'login.html?redirect=creator-upload.html';
-      }
-    });
+  .bantu-social-controls {
+    margin-left: 0;
+    padding-left: 0;
+    border-left: none;
+    width: 100%;
+    justify-content: space-around;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
   }
   
-  // Creator Dashboard button
-  const dashboardBtn = document.querySelector('.nav-icon:nth-child(4)');
-  if (dashboardBtn) {
-    dashboardBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      if (window.AuthHelper?.isAuthenticated()) {
-        window.location.href = 'creator-dashboard.html';
-      } else {
-        showToast('Please sign in to access dashboard', 'warning');
-        window.location.href = 'login.html?redirect=creator-dashboard.html';
-      }
-    });
+  .bantu-social-btn {
+    min-width: auto;
+    padding: 6px 10px;
+    font-size: 12px;
   }
   
-  // Notifications button already handled in initNotificationsPanel
-}
-
-// Utility functions
-function safeSetText(id, text) {
-  const el = document.getElementById(id);
-  if (el) {
-    el.textContent = text || '';
+  .bantu-social-btn i {
+    font-size: 14px;
+  }
+  
+  .bantu-social-btn .like-count,
+  .bantu-social-btn .favorite-count,
+  .bantu-social-btn .share-count,
+  .bantu-social-btn .comment-count {
+    font-size: 10px;
+  }
+  
+  .bantu-volume-bar {
+    width: 60px;
+  }
+  
+  .bantu-settings-menu {
+    min-width: 95%;
+    bottom: 85px;
+    right: 2.5%;
+    left: 2.5%;
+  }
+  
+  .bantu-watermark {
+    bottom: 15px;
+    left: 15px;
+    font-size: 12px;
+    padding: 5px 12px;
   }
 }
 
-function formatDate(dateString) {
-  if (!dateString) return '-';
-  try {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
-  } catch {
-    return '-';
-  }
-}
-
-// FIXED: Duration never shows dash
-function formatDuration(seconds) {
-  if (!seconds || seconds <= 0 || isNaN(seconds)) {
-    return '0m 0s';
+@media (max-width: 480px) {
+  .bantu-control-btn {
+    width: 38px;
+    height: 38px;
   }
   
-  seconds = Math.floor(seconds);
-  const hours = Math.floor(seconds / 3600);
-  const minutes = Math.floor((seconds % 3600) / 60);
-  const secs = seconds % 60;
+  .bantu-control-btn i {
+    font-size: 16px;
+  }
   
-  if (hours > 0) {
-    return `${hours}h ${minutes}m`;
-  } else if (minutes > 0) {
-    return `${minutes}m ${secs}s`;
-  } else {
-    return `${secs}s`;
+  .bantu-time-display {
+    min-width: 80px;
+    font-size: 13px;
+  }
+  
+  .bantu-progress-bar {
+    height: 5px;
+  }
+  
+  .bantu-social-btn {
+    padding: 5px 8px;
+    min-width: 50px;
+  }
+  
+  .bantu-social-btn span {
+    display: none;
+  }
+  
+  .bantu-watermark span {
+    display: none;
+  }
+  
+  .bantu-watermark i {
+    font-size: 14px;
   }
 }
 
-function formatNumber(num) {
-  if (!num) return '0';
-  if (num >= 1000000) {
-    return (num / 1000000).toFixed(1) + 'M';
-  }
-  if (num >= 1000) {
-    return (num / 1000).toFixed(1) + 'K';
-  }
-  return num.toString();
+/* Animations */
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
-function truncateText(text, maxLength) {
-  if (!text) return '';
-  if (text.length <= maxLength) return text;
-  return text.substring(0, maxLength) + '...';
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
-function escapeHtml(text) {
-  if (!text) return '';
-  const div = document.createElement('div');
-  div.textContent = text;
-  return div.innerHTML;
+/* Enhanced Video Player Controls */
+.enhanced-video-controls {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.8), transparent);
+  padding: 10px;
+  z-index: 100;
+  transition: opacity 0.3s ease;
 }
 
-function formatCommentTime(timestamp) {
-  if (!timestamp) return 'Just now';
-  try {
-    const date = new Date(timestamp);
-    const now = new Date();
-    const diffMs = now - date;
-    const diffMins = Math.floor(diffMs / 60000);
-    const diffHours = Math.floor(diffMs / 3600000);
-    const diffDays = Math.floor(diffMs / 86400000);
-    
-    if (diffMins < 1) return 'Just now';
-    if (diffMins < 60) return `${diffMins} min ago`;
-    if (diffHours < 24) return `${diffHours} hour${diffHours !== 1 ? 's' : ''} ago`;
-    if (diffDays < 7) return `${diffDays} day${diffDays !== 1 ? 's' : ''} ago`;
-    return date.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric'
-    });
-  } catch {
-    return 'Recently';
-  }
+.controls-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: white;
 }
 
-function showToast(message, type = 'info') {
-  let container = document.getElementById('toast-container');
-  if (!container) {
-    container = document.createElement('div');
-    container.id = 'toast-container';
-    document.body.appendChild(container);
-  }
-  
-  const toast = document.createElement('div');
-  toast.className = `toast ${type}`;
-  const icons = {
-    error: 'fas fa-exclamation-triangle',
-    success: 'fas fa-check-circle',
-    warning: 'fas fa-exclamation-circle',
-    info: 'fas fa-info-circle'
-  };
-  
-  toast.innerHTML = `
-    <i class="${icons[type] || 'fas fa-info-circle'}"></i>
-    <span>${escapeHtml(message)}</span>
-  `;
-  
-  container.appendChild(toast);
-  
-  setTimeout(() => {
-    if (toast.parentNode) {
-      toast.remove();
-    }
-  }, 3000);
+.control-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
 }
 
-// Export key functions for VideoPlayerFeatures
-window.hasViewedContentRecently = hasViewedContentRecently;
-window.markContentAsViewed = markContentAsViewed;
-window.recordContentView = recordContentView;
+.control-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: scale(1.1);
+}
 
-console.log('✅ Content detail script loaded with Single-Table fixes & Connectors table support');
+.time-display {
+  font-family: monospace;
+  font-size: 14px;
+  min-width: 100px;
+}
+
+.progress-container {
+  flex: 1;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 2px;
+  position: relative;
+}
+
+.progress-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.progress-container::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  background: #1D4ED8;
+  border-radius: 2px;
+  width: 0%;
+  transition: width 0.1s linear;
+}
+
+.progress-bar:hover ~ .progress-container::after {
+  width: var(--progress, 0%);
+}
+
+.volume-bar {
+  width: 60px;
+  height: 4px;
+  -webkit-appearance: none;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 2px;
+}
+
+.volume-bar::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: white;
+  cursor: pointer;
+}
+
+.settings-menu {
+  position: absolute;
+  bottom: 50px;
+  right: 10px;
+  background: rgba(15, 23, 42, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  padding: 15px;
+  min-width: 150px;
+  backdrop-filter: blur(10px);
+}
+
+.settings-section h4 {
+  color: white;
+  font-size: 12px;
+  margin-bottom: 8px;
+  opacity: 0.8;
+}
+
+.speed-options {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 5px;
+}
+
+.speed-option {
+  padding: 5px 10px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  color: white;
+  font-size: 12px;
+  cursor: pointer;
+  text-align: center;
+}
+
+.speed-option:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.speed-option.active {
+  background: #1D4ED8;
+  border-color: #1D4ED8;
+}
+
+/* Buffering indicator */
+.buffering-indicator .spinner {
+  width: 30px;
+  height: 30px;
+  border: 3px solid rgba(255, 255, 255, 0.2);
+  border-top-color: #1D4ED8;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 10px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Error overlay */
+.error-overlay .error-content {
+  background: rgba(15, 23, 42, 0.95);
+  border: 1px solid rgba(220, 38, 38, 0.5);
+  border-radius: 12px;
+  padding: 20px;
+  text-align: center;
+  max-width: 300px;
+  width: 90%;
+}
+
+.error-overlay i {
+  font-size: 2.5rem;
+  color: #EF4444;
+  margin-bottom: 10px;
+}
+
+.error-overlay h3 {
+  color: white;
+  margin-bottom: 10px;
+}
+
+.error-overlay .error-message {
+  color: rgba(255, 255, 255, 0.7);
+  margin-bottom: 15px;
+  font-size: 14px;
+}
+
+.error-overlay .retry-btn {
+  padding: 8px 20px;
+  background: #1D4ED8;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.error-overlay .retry-btn:hover {
+  background: #2563EB;
+}
+
+/* =================================================================== */
+/* SINGLE VIDEO PLAYER FIXES - NO DUPLICATE CONTROLS                  */
+/* =================================================================== */
+
+/* Hide ALL Bantu branded controls that conflict with EnhancedVideoPlayer */
+.bantu-video-controls,
+.bantu-control-bar,
+.bantu-social-controls,
+.bantu-settings-menu,
+.bantu-buffering-indicator,
+.bantu-error-overlay,
+.bantu-watermark {
+  display: none !important;
+}
+
+/* Ensure only EnhancedVideoPlayer controls are visible */
+.enhanced-video-controls {
+  display: block !important;
+  opacity: 1 !important;
+  pointer-events: all !important;
+}
+
+/* Style for our single player controls */
+.enhanced-video-controls .controls-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  background: rgba(7, 59, 76, 0.9);
+  backdrop-filter: blur(10px);
+  border-radius: 12px;
+  margin: 0 10px 10px;
+  border: 1px solid rgba(29, 78, 216, 0.3);
+}
+
+.enhanced-video-controls .control-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: var(--soft-white);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.enhanced-video-controls .control-btn:hover {
+  background: rgba(255, 107, 53, 0.25);
+  border-color: var(--bantu-blue);
+  transform: scale(1.1);
+}
+
+.enhanced-video-controls .time-display {
+  font-family: 'Orbitron', monospace;
+  font-size: 14px;
+  color: var(--soft-white);
+  min-width: 100px;
+  text-align: center;
+}
+
+.enhanced-video-controls .progress-container {
+  flex: 1;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+  position: relative;
+  cursor: pointer;
+}
+
+.enhanced-video-controls .progress-container::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  background: linear-gradient(90deg, var(--bantu-blue), var(--warm-gold));
+  border-radius: 3px;
+  width: var(--progress, 0%);
+}
+
+.enhanced-video-controls .volume-bar {
+  width: 80px;
+  height: 5px;
+  -webkit-appearance: none;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+}
+
+.enhanced-video-controls .volume-bar::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--warm-gold);
+  cursor: pointer;
+}
+
+.enhanced-video-controls .settings-menu {
+  position: absolute;
+  bottom: 60px;
+  right: 20px;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  padding: 15px;
+  min-width: 180px;
+  backdrop-filter: blur(20px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+  z-index: 1000;
+}
+
+.enhanced-video-controls .speed-options {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.enhanced-video-controls .speed-option {
+  padding: 6px 10px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--card-border);
+  border-radius: 8px;
+  color: var(--soft-white);
+  font-size: 12px;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.2s ease;
+}
+
+.enhanced-video-controls .speed-option:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.enhanced-video-controls .speed-option.active {
+  background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+  border-color: transparent;
+  color: white;
+  font-weight: 600;
+}
+
+/* Hide video controls when placeholder is visible */
+.bantu-player-placeholder.active ~ .enhanced-video-controls {
+  display: none !important;
+}
+
+/* Fullscreen styles */
+.video-container:fullscreen .enhanced-video-controls,
+.video-container:-webkit-full-screen .enhanced-video-controls,
+.video-container:-moz-full-screen .enhanced-video-controls {
+  bottom: 20px;
+  padding: 15px 20px;
+  background: linear-gradient(to top, rgba(7, 59, 76, 0.95), transparent);
+}
+
+.video-container:fullscreen .enhanced-video-controls .controls-bar,
+.video-container:-webkit-full-screen .enhanced-video-controls .controls-bar,
+.video-container:-moz-full-screen .enhanced-video-controls .controls-bar {
+  margin: 0 20px 20px;
+  padding: 12px 20px;
+}
