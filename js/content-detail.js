@@ -1,4 +1,4 @@
-// js/content-detail.js - UPDATED WITH SINGLE-TABLE FIXES & CONNECTOR SUPPORT
+// js/content-detail.js - UPDATED WITH ALL FIXES
 
 console.log('🎬 Content Detail Initializing with all fixes...');
 
@@ -7,7 +7,7 @@ let currentContent = null;
 let enhancedVideoPlayer = null;
 let isInitialized = false;
 let currentUserId = null;
-let viewRecorded = false; // Track if view has been recorded THIS SESSION
+let viewRecordedThisSession = false; // Track if view has been recorded THIS SESSION
 
 // ============================================
 // VIDEO URL VALIDATION & DEBUGGING
@@ -225,16 +225,18 @@ function resetProfileUI() {
   };
 }
 
-// Load content from URL - UPDATED WITH DEBUG LOGGING
+// Load content from URL - UPDATED WITH ALL FIXES
 async function loadContentFromURL() {
   const urlParams = new URLSearchParams(window.location.search);
   const contentId = urlParams.get('id') || '68';
   
   try {
-    // Fetch real content from Supabase
+    // ============================================
+    // FIX: Explicitly select views_count, favorites_count, comments_count
+    // ============================================
     const { data, error } = await window.supabaseClient
       .from('Content')
-      .select('*, user_profiles!user_id(*)')
+      .select('*, user_profiles!user_id(*), views_count, favorites_count, comments_count')
       .eq('id', contentId)
       .single();
 
@@ -284,6 +286,13 @@ async function loadContentFromURL() {
     // Update UI
     updateContentUI(currentContent);
     
+    // ============================================
+    // FIX: Initialize favorite button after content loads
+    // ============================================
+    if (currentUserId) {
+      await initializeFavoriteButton(contentId, currentUserId);
+    }
+    
     // Load comments
     await loadComments(contentId);
     
@@ -293,6 +302,45 @@ async function loadContentFromURL() {
     console.error('❌ Content load failed:', error);
     showToast('Content not available. Please try again.', 'error');
     document.getElementById('contentTitle').textContent = 'Content Unavailable';
+  }
+}
+
+// ============================================
+// FIX: Favorite button initialization
+// ============================================
+async function checkUserFavorite(contentId, userId) {
+  if (!userId) return false;
+  
+  try {
+    const { data } = await window.supabaseClient
+      .from('favorites')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('content_id', contentId)
+      .single();
+    
+    return !!data;
+  } catch (error) {
+    // PGRST116 = no rows found (expected when not favorited)
+    if (error.code === 'PGRST116') return false;
+    console.error('Favorite check error:', error);
+    return false;
+  }
+}
+
+async function initializeFavoriteButton(contentId, userId) {
+  const btn = document.getElementById('favoriteBtn');
+  if (!btn) return;
+  
+  btn.classList.remove('active');
+  btn.innerHTML = '<i class="far fa-star"></i><span>Favorite</span>';
+  
+  if (!userId) return; // Skip if not logged in
+  
+  const isFavorited = await checkUserFavorite(contentId, userId);
+  if (isFavorited) {
+    btn.classList.add('active');
+    btn.innerHTML = '<i class="fas fa-star"></i><span>Favorited</span>';
   }
 }
 
@@ -309,6 +357,8 @@ function updateContentUI(content) {
   safeSetText('viewsCount', formatNumber(content.views_count) + ' views');
   safeSetText('viewsCountFull', formatNumber(content.views_count));
   safeSetText('likesCount', formatNumber(content.likes_count));
+  safeSetText('favoritesCount', formatNumber(content.favorites_count));
+  safeSetText('commentsCount', `(${formatNumber(content.comments_count)})`);
   
   // Update duration (FIXED: Never shows dash)
   const duration = formatDuration(content.duration || 3600);
@@ -347,74 +397,42 @@ function updateContentUI(content) {
     playerTitle.textContent = `Now Playing: ${content.title}`;
   }
   
-  // Initialize like button state
+  // Initialize like button state (based on content likes)
   const likeBtn = document.getElementById('likeBtn');
   if (likeBtn && content.likes_count > 0) {
     likeBtn.classList.add('active');
     likeBtn.innerHTML = '<i class="fas fa-heart"></i><span>Liked</span>';
   }
   
-  // Initialize favorite button state
-  const favoriteBtn = document.getElementById('favoriteBtn');
-  if (favoriteBtn && content.favorites_count > 0) {
-    favoriteBtn.classList.add('active');
-    favoriteBtn.innerHTML = '<i class="fas fa-star"></i><span>Favorited</span>';
-  }
+  // Favorite button state is now handled by initializeFavoriteButton()
 }
 
-// Load comments (FIXED VERSION - handles missing relationship)
+// ============================================
+// FIX: Load comments without joins (Issue 3 fix)
+// ============================================
 async function loadComments(contentId) {
   try {
     console.log('💬 Loading comments for content:', contentId);
     
-    // Try multiple approaches to load comments
-    let comments = [];
+    // FETCH COMMENTS DIRECTLY - NO JOINS NEEDED
+    const { data: comments, error } = await window.supabaseClient
+      .from('comments')
+      .select('*') // author_name and author_avatar are already in comments table!
+      .eq('content_id', contentId)
+      .order('created_at', { ascending: false });
     
-    // APPROACH 1: Try with user_profiles relationship
-    try {
-      const { data, error } = await window.supabaseClient
-        .from('comments')
-        .select('*, user_profiles!user_id(*)')
-        .eq('content_id', contentId)
-        .order('created_at', { ascending: false });
-      
-      if (!error && data) {
-        comments = data;
-        console.log(`✅ Loaded ${comments.length} comments with user profiles`);
-      } else {
-        console.warn('User profiles relationship failed, trying without...');
-        throw error;
-      }
-    } catch (relationshipError) {
-      // APPROACH 2: Try without user_profiles relationship
-      try {
-        const { data, error } = await window.supabaseClient
-          .from('comments')
-          .select('*')
-          .eq('content_id', contentId)
-          .order('created_at', { ascending: false });
-        
-        if (!error && data) {
-          comments = data;
-          console.log(`✅ Loaded ${comments.length} comments without user profiles`);
-        } else {
-          console.error('Comments load error:', error);
-        }
-      } catch (simpleError) {
-        console.error('Simple comments load also failed:', simpleError);
-      }
-    }
+    if (error) throw error;
     
-    // Render whatever comments we got
+    console.log(`✅ Loaded ${comments.length} comments`);
     renderComments(comments || []);
-    
   } catch (error) {
-    console.error('❌ Error loading comments:', error);
+    console.error('❌ Comments load failed:', error);
+    showToast('Failed to load comments', 'error');
     renderComments([]);
   }
 }
 
-// Render comments
+// Render comments - UPDATED to use fields from comments table
 function renderComments(comments) {
   const container = document.getElementById('commentsList');
   const noComments = document.getElementById('noComments');
@@ -450,21 +468,9 @@ function createCommentElement(comment) {
   const div = document.createElement('div');
   div.className = 'comment-item';
   
-  let authorName = 'User';
-  let avatarUrl = null;
-  
-  if (comment.author_name) {
-    authorName = comment.author_name;
-  } else if (comment.user_profiles?.full_name || comment.user_profiles?.username) {
-    authorName = comment.user_profiles.full_name || comment.user_profiles.username;
-  }
-  
-  if (comment.user_profiles?.avatar_url) {
-    avatarUrl = comment.user_profiles.avatar_url;
-    if (avatarUrl && !avatarUrl.startsWith('http')) {
-      avatarUrl = `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/profile-pictures/${avatarUrl}`;
-    }
-  }
+  // USE FIELDS DIRECTLY FROM COMMENTS TABLE
+  let authorName = comment.author_name || 'User';
+  let avatarUrl = comment.author_avatar || null;
   
   const time = formatCommentTime(comment.created_at);
   const commentText = comment.comment_text || '';
@@ -643,11 +649,12 @@ function initializeEnhancedVideoPlayer() {
     console.log('  - readyState:', videoElement.readyState);
 
     // ====================================================
-    // PHASE 1 FIX: UPDATED VIEW TRACKING WITH SINGLE-TABLE FIX
+    // FIX: UPDATED VIEW TRACKING WITH SINGLE-TABLE FIX (Issue 1 fix)
     // ====================================================
     
-    // Setup view tracking
-    let viewRecordedThisSession = false;
+    // Reset session tracking
+    viewRecordedThisSession = false;
+    
     enhancedVideoPlayer.on('play', () => {
         console.log('▶️ Video playing, recording view...');
         
@@ -659,24 +666,26 @@ function initializeEnhancedVideoPlayer() {
         if (currentContent && !viewRecordedThisSession) {
             viewRecordedThisSession = true;
             
-            // Check client-side deduplication first
-            if (hasViewedContentRecently(currentContent.id)) {
-                console.log('📊 View already recorded recently (client-side check)');
-                return;
-            }
-            
             // Optimistic UI update
-            const currentViews = parseInt(document.getElementById('viewsCount')?.textContent.replace(/\D/g, '') || '0') || 0;
+            const viewsEl = document.getElementById('viewsCount');
+            const viewsFullEl = document.getElementById('viewsCountFull');
+            const currentViews = parseInt(viewsEl?.textContent.replace(/\D/g, '') || '0') || 0;
             const newViews = currentViews + 1;
             
-            document.getElementById('viewsCount').textContent = formatNumber(newViews) + ' views';
-            document.getElementById('viewsCountFull').textContent = formatNumber(newViews);
+            if (viewsEl) viewsEl.textContent = `${formatNumber(newViews)} views`;
+            if (viewsFullEl) viewsFullEl.textContent = formatNumber(newViews);
             
-            // SINGLE-TABLE FIX: Record view directly to Content table
-            recordContentView(currentContent.id, currentViews, newViews);
+            // CRITICAL: Record view WITHOUT client-side deduplication blocking DB update
+            recordContentView(currentContent.id, currentViews, newViews)
+              .catch(err => {
+                console.error('View recording failed:', err);
+                // Revert UI on failure
+                if (viewsEl) viewsEl.textContent = `${formatNumber(currentViews)} views`;
+                if (viewsFullEl) viewsFullEl.textContent = formatNumber(currentViews);
+              });
             
-            // Mark as viewed in client-side storage
-            markContentAsViewed(currentContent.id);
+            // Session-only tracking (resets on refresh)
+            sessionStorage.setItem(`bantu_viewed_${currentContent.id}`, 'true');
         }
     });
     
@@ -812,7 +821,7 @@ async function recordContentView(contentId, currentViews, newViews) {
         if (error) {
             console.error('❌ View count update failed:', error.message);
             // Revert UI on error
-            document.getElementById('viewsCount').textContent = formatNumber(currentViews) + ' views';
+            document.getElementById('viewsCount').textContent = `${formatNumber(currentViews)} views`;
             document.getElementById('viewsCountFull').textContent = formatNumber(currentViews);
             showToast('Failed to record view', 'error');
             return;
@@ -832,7 +841,7 @@ async function recordContentView(contentId, currentViews, newViews) {
     } catch (error) {
         console.error('❌ View recording error:', error);
         // Revert UI
-        document.getElementById('viewsCount').textContent = formatNumber(currentViews) + ' views';
+        document.getElementById('viewsCount').textContent = `${formatNumber(currentViews)} views`;
         document.getElementById('viewsCountFull').textContent = formatNumber(currentViews);
         showToast('View recording failed', 'error');
     }
@@ -1280,7 +1289,7 @@ function setupEventListeners() {
   }
   
   // ============================================
-  // SINGLE-TABLE FIX: LIKE BUTTON FUNCTIONALITY
+  // FIX: LIKE BUTTON FUNCTIONALITY
   // ============================================
   const likeBtn = document.getElementById('likeBtn');
   if (likeBtn) {
@@ -1335,52 +1344,64 @@ function setupEventListeners() {
   }
   
   // ============================================
-  // SINGLE-TABLE FIX: FAVORITES BUTTON FUNCTIONALITY
+  // FIX: FAVORITES BUTTON FUNCTIONALITY (Issue 2 fix)
   // ============================================
   const favoriteBtn = document.getElementById('favoriteBtn');
   if (favoriteBtn) {
     favoriteBtn.addEventListener('click', async () => {
-      if (!currentContent) return;
-      
-      if (!window.AuthHelper?.isAuthenticated?.()) {
+      if (!currentContent || !currentUserId) {
         showToast('Sign in to favorite content', 'warning');
         return;
       }
-
-      const isFavorited = favoriteBtn.classList.contains('active');
-      const currentFavorites = parseInt(document.getElementById('favoritesCount')?.textContent.replace(/\D/g, '') || '0') || 0;
-      const newFavorites = isFavorited ? currentFavorites - 1 : currentFavorites + 1;
-
+      
+      const btn = document.getElementById('favoriteBtn');
+      const isFavorited = btn.classList.contains('active');
+      const countEl = document.getElementById('favoritesCount');
+      const currentCount = parseInt(countEl?.textContent.replace(/\D/g, '') || '0') || 0;
+      const newCount = isFavorited ? currentCount - 1 : currentCount + 1;
+      
+      // Optimistic UI update
+      btn.classList.toggle('active', !isFavorited);
+      btn.innerHTML = !isFavorited 
+        ? '<i class="fas fa-star"></i><span>Favorited</span>' 
+        : '<i class="far fa-star"></i><span>Favorite</span>';
+      if (countEl) countEl.textContent = formatNumber(newCount);
+      
       try {
-        // Optimistic UI update
-        favoriteBtn.classList.toggle('active', !isFavorited);
-        favoriteBtn.innerHTML = !isFavorited 
-          ? '<i class="fas fa-star"></i><span>Favorited</span>' 
-          : '<i class="far fa-star"></i><span>Favorite</span>';
+        if (!isFavorited) {
+          // ADD to favorites table (uses your EXISTING table structure)
+          await window.supabaseClient
+            .from('favorites')
+            .insert({ 
+              user_id: currentUserId,    // uuid → matches user_profiles(id)
+              content_id: currentContent.id // bigint → matches your schema
+            });
+        } else {
+          // REMOVE from favorites table
+          await window.supabaseClient
+            .from('favorites')
+            .delete()
+            .eq('user_id', currentUserId)
+            .eq('content_id', currentContent.id);
+        }
         
-        // Update count display if element exists
-        const favCountEl = document.getElementById('favoritesCount');
-        if (favCountEl) favCountEl.textContent = formatNumber(newFavorites);
-
-        // DIRECT update to Content table
-        const { error } = await window.SupabaseHelper.client
+        // Update aggregate count in Content table
+        await window.supabaseClient
           .from('Content')
-          .update({ favorites_count: newFavorites })
+          .update({ favorites_count: newCount })
           .eq('id', currentContent.id);
-
-        if (error) throw error;
         
-        currentContent.favorites_count = newFavorites;
+        currentContent.favorites_count = newCount;
         showToast(!isFavorited ? 'Added to favorites!' : 'Removed from favorites', !isFavorited ? 'success' : 'info');
       } catch (error) {
-        console.error('Favorite update failed:', error);
-        // Revert UI
-        favoriteBtn.classList.toggle('active', isFavorited);
-        favoriteBtn.innerHTML = isFavorited 
+        console.error('Favorite operation failed:', error);
+        // Revert UI on error
+        btn.classList.toggle('active', isFavorited);
+        btn.innerHTML = isFavorited 
           ? '<i class="fas fa-star"></i><span>Favorited</span>' 
           : '<i class="far fa-star"></i><span>Favorite</span>';
-        if (favCountEl) favCountEl.textContent = formatNumber(currentFavorites);
-        showToast('Failed to update favorite', 'error');
+        if (countEl) countEl.textContent = formatNumber(currentCount);
+        showToast('Operation failed. Please try again.', 'error');
       }
     });
   }
@@ -2306,4 +2327,4 @@ window.hasViewedContentRecently = hasViewedContentRecently;
 window.markContentAsViewed = markContentAsViewed;
 window.recordContentView = recordContentView;
 
-console.log('✅ Content detail script loaded with Single-Table fixes & Connectors table support');
+console.log('✅ Content detail script loaded with ALL fixes applied');
