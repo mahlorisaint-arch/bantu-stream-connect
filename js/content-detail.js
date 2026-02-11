@@ -1,4 +1,4 @@
-// js/content-detail.js - FIXED FOR RLS POLICIES
+// js/content-detail.js - FIXED FOR RLS POLICIES - WITH ACCURATE COUNT BYPASS
 console.log('🎬 Content Detail Initializing with RLS-compliant fixes...');
 
 // Global variables
@@ -187,45 +187,57 @@ function resetProfileUI() {
 }
 
 // ============================================
-// FIXED: Load content with FRESH counts from database
+// FIXED: Load content with ACCURATE counts from source tables (bypass broken triggers)
 // ============================================
 async function loadContentFromURL() {
   const urlParams = new URLSearchParams(window.location.search);
   const contentId = urlParams.get('id') || '68';
   
   try {
-    // FETCH FRESH DATA FROM DATABASE (NO CACHING)
-    const { data, error } = await window.supabaseClient
+    // 1. Load content metadata FIRST
+    const { data: contentData, error: contentError } = await window.supabaseClient
       .from('Content')
       .select('*, user_profiles!user_id(*)')
       .eq('id', contentId)
       .single();
     
-    if (error) throw error;
+    if (contentError) throw contentError;
     
-    // Process data
+    // 2. COUNT VIEWS BY QUERYING content_views TABLE (bypass broken trigger)
+    const { count: viewsCount, error: viewsError } = await window.supabaseClient
+      .from('content_views')
+      .select('*', { count: 'exact', head: true })
+      .eq('content_id', contentId);
+    
+    // 3. COUNT LIKES BY QUERYING content_likes TABLE (bypass broken trigger)
+    const { count: likesCount, error: likesError } = await window.supabaseClient
+      .from('content_likes')
+      .select('*', { count: 'exact', head: true })
+      .eq('content_id', contentId);
+    
+    // Process data with ACCURATE counts from source tables
     currentContent = {
-      id: data.id,
-      title: data.title || 'Untitled',
-      description: data.description || '',
-      thumbnail_url: data.thumbnail_url,
-      file_url: data.file_url,
-      media_type: data.media_type || 'video',
-      genre: data.genre || 'General',
-      created_at: data.created_at,
-      duration: data.duration || data.duration_seconds || 3600,
-      language: data.language || 'English',
-      views_count: data.views_count || 0,  // FRESH from DB
-      likes_count: data.likes_count || 0,   // FRESH from DB
-      favorites_count: data.favorites_count || 0,
-      comments_count: data.comments_count || 0,
-      creator: data.user_profiles?.full_name || data.user_profiles?.username || 'Creator',
-      creator_display_name: data.user_profiles?.full_name || data.user_profiles?.username || 'Creator',
-      creator_id: data.user_profiles?.id || data.user_id,
-      user_id: data.user_id
+      id: contentData.id,
+      title: contentData.title || 'Untitled',
+      description: contentData.description || '',
+      thumbnail_url: contentData.thumbnail_url,
+      file_url: contentData.file_url,
+      media_type: contentData.media_type || 'video',
+      genre: contentData.genre || 'General',
+      created_at: contentData.created_at,
+      duration: contentData.duration || contentData.duration_seconds || 3600,
+      language: contentData.language || 'English',
+      views_count: viewsCount || 0,   // ✅ ACCURATE COUNT FROM SOURCE
+      likes_count: likesCount || 0,   // ✅ ACCURATE COUNT FROM SOURCE
+      favorites_count: contentData.favorites_count || 0,
+      comments_count: contentData.comments_count || 0,
+      creator: contentData.user_profiles?.full_name || contentData.user_profiles?.username || 'Creator',
+      creator_display_name: contentData.user_profiles?.full_name || contentData.user_profiles?.username || 'Creator',
+      creator_id: contentData.user_profiles?.id || contentData.user_id,
+      user_id: contentData.user_id
     };
     
-    console.log('📥 Content loaded with FRESH counts:', {
+    console.log('📥 Content loaded with ACCURATE counts:', {
       views: currentContent.views_count,
       likes: currentContent.likes_count
     });
@@ -233,16 +245,14 @@ async function loadContentFromURL() {
     // Update UI
     updateContentUI(currentContent);
     
-    // Initialize user-specific button states
+    // Initialize user-specific states
     if (currentUserId) {
       await initializeLikeButton(contentId, currentUserId);
       await initializeFavoriteButton(contentId, currentUserId);
     }
     
-    // Load comments
+    // Load comments & related content
     await loadComments(contentId);
-    
-    // Load related content
     await loadRelatedContent(contentId);
     
   } catch (error) {
@@ -253,14 +263,14 @@ async function loadContentFromURL() {
 }
 
 // ============================================
-// CHECK IF USER HAS LIKED (using user_likes table)
+// CHECK IF USER HAS LIKED (using content_likes table)
 // ============================================
 async function checkUserLike(contentId, userId) {
   if (!userId) return false;
   
   try {
     const { data, error } = await window.supabaseClient
-      .from('user_likes')
+      .from('content_likes')
       .select('id')
       .eq('user_id', userId)
       .eq('content_id', contentId)
@@ -357,7 +367,7 @@ function updateContentUI(content) {
   safeSetText('creatorName', content.creator);
   safeSetText('creatorDisplayName', content.creator_display_name);
   
-  // Update stats - ALWAYS use FRESH counts from database
+  // Update stats - ALWAYS use ACCURATE counts from source tables
   safeSetText('viewsCount', formatNumber(content.views_count) + ' views');
   safeSetText('viewsCountFull', formatNumber(content.views_count));
   safeSetText('likesCount', formatNumber(content.likes_count));
@@ -624,17 +634,10 @@ function initializeEnhancedVideoPlayer() {
         window.stateManager.setState('session.playing', true);
       }
       
-      // Record view ONLY ONCE per session
       if (currentContent && !viewRecordedThisSession) {
         viewRecordedThisSession = true;
         
-        // Skip if already viewed recently
-        if (hasViewedContentRecently(currentContent.id)) {
-          console.log('📊 View already recorded recently');
-          return;
-        }
-        
-        // OPTIMISTIC UI UPDATE
+        // Optimistic UI update
         const viewsEl = document.getElementById('viewsCount');
         const viewsFullEl = document.getElementById('viewsCountFull');
         const currentViews = parseInt(viewsEl?.textContent.replace(/\D/g, '') || '0') || 0;
@@ -649,28 +652,18 @@ function initializeEnhancedVideoPlayer() {
         recordContentView(currentContent.id)
           .then(async (success) => {
             if (success) {
-              markContentAsViewed(currentContent.id);
-              
-              // REFRESH to get accurate count from database
-              await refreshContentCounts();
-              
               if (window.track?.contentView) {
                 window.track.contentView(currentContent.id, 'video');
               }
+              
+              // ✅ CRITICAL: Refresh counts from SOURCE tables after recording
+              await refreshCountsFromSource();
             } else {
               // Revert UI on failure
               if (viewsEl && viewsFullEl) {
                 viewsEl.textContent = `${formatNumber(currentViews)} views`;
                 viewsFullEl.textContent = formatNumber(currentViews);
               }
-            }
-          })
-          .catch((error) => {
-            console.error('View recording error:', error);
-            // Revert UI on error
-            if (viewsEl && viewsFullEl) {
-              viewsEl.textContent = `${formatNumber(currentViews)} views`;
-              viewsFullEl.textContent = formatNumber(currentViews);
             }
           });
       }
@@ -702,38 +695,34 @@ function initializeEnhancedVideoPlayer() {
 }
 
 // ============================================
-// RECORD VIEW - WORKS WITH RLS POLICIES
+// RECORD VIEW - ONLY record, NO trigger updates (bypass broken triggers)
 // ============================================
 async function recordContentView(contentId) {
   try {
-    // Get viewer ID (only if authenticated)
-    let viewerId = null;
-    if (window.AuthHelper?.isAuthenticated?.()) {
-      const userProfile = window.AuthHelper.getUserProfile();
-      viewerId = userProfile?.id || null;
+    // Skip if already viewed recently (client-side deduplication)
+    if (hasViewedContentRecently(contentId)) {
+      console.log('📊 View already recorded recently');
+      return false;
     }
     
-    // INSERT into content_views table
-    const { data, error } = await window.supabaseClient
+    // ONLY record the view - NO count updates (trigger is broken anyway)
+    const { error } = await window.supabaseClient
       .from('content_views')
       .insert({
         content_id: contentId,
-        viewer_id: viewerId,
+        viewer_id: currentUserId || null,
         view_duration: 0,
-        device_type: /Mobile|Android|iP(hone|od)|IEMobile|Windows Phone|BlackBerry/i.test(navigator.userAgent)
-          ? 'mobile'
-          : 'desktop',
+        device_type: /Mobile|Android/i.test(navigator.userAgent) ? 'mobile' : 'desktop',
         created_at: new Date().toISOString()
-      })
-      .select()
-      .single();
+      });
     
     if (error) {
       console.error('❌ View recording failed:', error);
       return false;
     }
     
-    console.log('✅ View recorded in content_views:', data);
+    console.log('✅ View recorded in content_views');
+    markContentAsViewed(contentId);
     return true;
     
   } catch (error) {
@@ -743,44 +732,40 @@ async function recordContentView(contentId) {
 }
 
 // ============================================
-// REFRESH CONTENT COUNTS FROM DATABASE
+// ✅ CRITICAL: Refresh counts by COUNTING rows in source tables (bypass broken triggers)
 // ============================================
-async function refreshContentCounts() {
+async function refreshCountsFromSource() {
   if (!currentContent) return;
   
   try {
-    // FETCH FRESH counts from database
-    const { data, error } = await window.supabaseClient
-      .from('Content')
-      .select('views_count, likes_count, favorites_count, comments_count')
-      .eq('id', currentContent.id)
-      .single();
+    // Re-count views from content_views table
+    const { count: newViews } = await window.supabaseClient
+      .from('content_views')
+      .select('*', { count: 'exact', head: true })
+      .eq('content_id', currentContent.id);
     
-    if (error) {
-      console.error('❌ Failed to refresh content counts:', error);
-      return;
-    }
+    // Re-count likes from content_likes table
+    const { count: newLikes } = await window.supabaseClient
+      .from('content_likes')
+      .select('*', { count: 'exact', head: true })
+      .eq('content_id', currentContent.id);
     
     // Update local state
-    currentContent.views_count = data.views_count;
-    currentContent.likes_count = data.likes_count;
-    currentContent.favorites_count = data.favorites_count;
-    currentContent.comments_count = data.comments_count;
+    currentContent.views_count = newViews || 0;
+    currentContent.likes_count = newLikes || 0;
     
-    // Update UI with FRESH counts
-    safeSetText('viewsCount', formatNumber(data.views_count) + ' views');
-    safeSetText('viewsCountFull', formatNumber(data.views_count));
-    safeSetText('likesCount', formatNumber(data.likes_count));
-    safeSetText('favoritesCount', formatNumber(data.favorites_count));
-    safeSetText('commentsCount', `(${formatNumber(data.comments_count)})`);
+    // Update UI
+    safeSetText('viewsCount', formatNumber(newViews) + ' views');
+    safeSetText('viewsCountFull', formatNumber(newViews));
+    safeSetText('likesCount', formatNumber(newLikes));
     
-    console.log('✅ Content counts refreshed from DB:', {
-      views: data.views_count,
-      likes: data.likes_count
+    console.log('✅ Counts refreshed from source tables:', {
+      views: newViews,
+      likes: newLikes
     });
     
   } catch (error) {
-    console.error('❌ Failed to refresh content counts:', error);
+    console.error('❌ Failed to refresh counts from source:', error);
   }
 }
 
@@ -1017,14 +1002,13 @@ function setupEventListeners() {
   }
   
   // ============================================
-  // LIKE BUTTON - RLS-COMPLIANT
+  // LIKE BUTTON - RLS-COMPLIANT (bypass broken triggers)
   // ============================================
   const likeBtn = document.getElementById('likeBtn');
   if (likeBtn) {
     likeBtn.addEventListener('click', async () => {
       if (!currentContent) return;
       
-      // Check authentication FIRST
       if (!window.AuthHelper?.isAuthenticated?.()) {
         showToast('Sign in to like content', 'warning');
         return;
@@ -1042,21 +1026,21 @@ function setupEventListeners() {
       const newLikes = isLiked ? currentLikes - 1 : currentLikes + 1;
       
       try {
-        // OPTIMISTIC UI UPDATE
+        // Optimistic UI update
         likeBtn.classList.toggle('active', !isLiked);
-        likeBtn.innerHTML = !isLiked
-          ? '<i class="fas fa-heart"></i><span>Liked</span>'
+        likeBtn.innerHTML = !isLiked 
+          ? '<i class="fas fa-heart"></i><span>Liked</span>' 
           : '<i class="far fa-heart"></i><span>Like</span>';
         
         if (likesCountEl) {
           likesCountEl.textContent = formatNumber(newLikes);
         }
         
-        // Update database using user_likes table (RLS-compliant)
+        // Update database using content_likes table
         if (!isLiked) {
           // Add like
           const { error } = await window.supabaseClient
-            .from('user_likes')
+            .from('content_likes')
             .insert({
               user_id: userProfile.id,
               content_id: currentContent.id
@@ -1066,7 +1050,7 @@ function setupEventListeners() {
         } else {
           // Remove like
           const { error } = await window.supabaseClient
-            .from('user_likes')
+            .from('content_likes')
             .delete()
             .eq('user_id', userProfile.id)
             .eq('content_id', currentContent.id);
@@ -1074,43 +1058,29 @@ function setupEventListeners() {
           if (error) throw error;
         }
         
-        // UPDATE Content.likes_count MANUALLY (bypass trigger issues)
-        const { error: updateError } = await window.supabaseClient
-          .from('Content')
-          .update({ likes_count: newLikes })
-          .eq('id', currentContent.id);
-        
-        if (updateError) {
-          console.warn('Likes count update failed:', updateError);
-        }
-        
-        // Update local state
-        currentContent.likes_count = newLikes;
+        // ✅ CRITICAL: Refresh counts from SOURCE tables after like operation
+        await refreshCountsFromSource();
         
         showToast(!isLiked ? 'Liked!' : 'Like removed', !isLiked ? 'success' : 'info');
         
-        // Track analytics
         if (window.track?.contentLike) {
           window.track.contentLike(currentContent.id, !isLiked);
         }
         
-        // REFRESH to confirm
-        await refreshContentCounts();
-        
       } catch (error) {
-        console.error('Like update failed:', error);
+        console.error('Like operation failed:', error);
         
-        // REVERT UI ON ERROR
+        // Revert UI on error
         likeBtn.classList.toggle('active', isLiked);
-        likeBtn.innerHTML = isLiked
-          ? '<i class="fas fa-heart"></i><span>Liked</span>'
+        likeBtn.innerHTML = isLiked 
+          ? '<i class="fas fa-heart"></i><span>Liked</span>' 
           : '<i class="far fa-heart"></i><span>Like</span>';
         
         if (likesCountEl) {
           likesCountEl.textContent = formatNumber(currentLikes);
         }
         
-        showToast('Failed to update like: ' + error.message, 'error');
+        showToast('Failed: ' + error.message, 'error');
       }
     });
   }
@@ -1184,8 +1154,8 @@ function setupEventListeners() {
         
         showToast(!isFavorited ? 'Added to favorites!' : 'Removed from favorites', !isFavorited ? 'success' : 'info');
         
-        // REFRESH to confirm
-        await refreshContentCounts();
+        // Refresh counts
+        await refreshCountsFromSource();
         
       } catch (error) {
         console.error('Favorite update failed:', error);
@@ -1275,7 +1245,7 @@ function setupEventListeners() {
         
         // Refresh comments and counts
         await loadComments(currentContent.id);
-        await refreshContentCounts();
+        await refreshCountsFromSource();
         
         // Clear input
         commentInput.value = '';
@@ -2285,7 +2255,7 @@ function showToast(message, type = 'info') {
 window.hasViewedContentRecently = hasViewedContentRecently;
 window.markContentAsViewed = markContentAsViewed;
 window.recordContentView = recordContentView;
-window.refreshContentCounts = refreshContentCounts;
+window.refreshCountsFromSource = refreshCountsFromSource;
 window.clearViewCache = clearViewCache;
 
-console.log('✅ Content detail script loaded with RLS-compliant fixes');
+console.log('✅ Content detail script loaded with ACCURATE COUNT BYPASS (matches mobile app)');
