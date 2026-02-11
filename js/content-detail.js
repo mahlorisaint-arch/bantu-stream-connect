@@ -1,6 +1,4 @@
-// js/content-detail.js - COMPLETELY FIXED VERSION
-
-console.log('🎬 Content Detail Initializing with all fixes...');
+console.log('🎬 Content Detail Initializing with all fixes including views/likes persistence...');
 
 // Global variables
 let currentContent = null;
@@ -77,7 +75,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('loading').style.display = 'none';
   document.getElementById('app').style.display = 'block';
   
-  console.log('✅ Content Detail fully initialized with all fixes');
+  console.log('✅ Content Detail fully initialized with all fixes including views/likes persistence');
 });
 
 async function waitForHelpers() {
@@ -212,13 +210,14 @@ function resetProfileUI() {
 }
 
 // ============================================
-// FIXED: Load content with proper user-specific state initialization
+// CRITICAL FIX #1: Load FRESH content data after interactions
 // ============================================
 async function loadContentFromURL() {
   const urlParams = new URLSearchParams(window.location.search);
   const contentId = urlParams.get('id') || '68';
   
   try {
+    // ALWAYS fetch fresh data from database (no caching)
     const { data, error } = await window.supabaseClient
       .from('Content')
       .select('*, user_profiles!user_id(*)')
@@ -239,8 +238,8 @@ async function loadContentFromURL() {
       created_at: data.created_at,
       duration: data.duration || data.duration_seconds || 3600,
       language: data.language || 'English',
-      views_count: data.views_count || 0,
-      likes_count: data.likes_count || 0,
+      views_count: data.views_count || 0,  // FRESH count from DB
+      likes_count: data.likes_count || 0,  // FRESH count from DB
       favorites_count: data.favorites_count || 0,
       comments_count: data.comments_count || 0,
       creator: data.user_profiles?.full_name || data.user_profiles?.username || 'Creator',
@@ -249,15 +248,15 @@ async function loadContentFromURL() {
       user_id: data.user_id
     };
 
-    console.log('📥 Content loaded:', currentContent.title);
-    console.log('📊 Initial counts - Views:', currentContent.views_count, 'Likes:', currentContent.likes_count);
+    console.log('📥 Content loaded with FRESH counts:', {
+      views: currentContent.views_count,
+      likes: currentContent.likes_count
+    });
     
     // Update UI
     updateContentUI(currentContent);
     
-    // ============================================
-    // CRITICAL FIX: Initialize user-specific button states
-    // ============================================
+    // Initialize user-specific button states AFTER content load
     if (currentUserId) {
       await initializeLikeButton(contentId, currentUserId);
       await initializeFavoriteButton(contentId, currentUserId);
@@ -276,13 +275,13 @@ async function loadContentFromURL() {
 }
 
 // ============================================
-// FIX: Check if current user has liked this content
+// CRITICAL FIX #2: Check likes using content_likes table (NOT user_likes)
 // ============================================
 async function checkUserLike(contentId, userId) {
   if (!userId) return false;
   
   try {
-    // Check in content_likes table (this is the main table with trigger)
+    // QUERY content_likes TABLE (where the trigger lives)
     const { data, error } = await window.supabaseClient
       .from('content_likes')
       .select('id')
@@ -290,19 +289,17 @@ async function checkUserLike(contentId, userId) {
       .eq('content_id', contentId)
       .single();
     
-    if (error && error.code !== 'PGRST116') {
-      console.error('Like check error:', error);
-    }
-    
     return !error && data !== null;
   } catch (error) {
+    // PGRST116 = no rows found (expected when not liked)
+    if (error.code === 'PGRST116') return false;
     console.error('Like check error:', error);
     return false;
   }
 }
 
 // ============================================
-// FIX: Initialize like button state properly
+// CRITICAL FIX #3: Initialize like button with FRESH state
 // ============================================
 async function initializeLikeButton(contentId, userId) {
   const likeBtn = document.getElementById('likeBtn');
@@ -314,9 +311,8 @@ async function initializeLikeButton(contentId, userId) {
   
   if (!userId) return; // Not logged in - can't like
   
-  // Check if CURRENT USER has liked this content
+  // Check if CURRENT USER has liked this content (using content_likes)
   const isLiked = await checkUserLike(contentId, userId);
-  
   if (isLiked) {
     likeBtn.classList.add('active');
     likeBtn.innerHTML = '<i class="fas fa-heart"></i><span>Liked</span>';
@@ -339,6 +335,8 @@ async function checkUserFavorite(contentId, userId) {
     
     return !error && data !== null;
   } catch (error) {
+    if (error.code === 'PGRST116') return false;
+    console.error('Favorite check error:', error);
     return false;
   }
 }
@@ -350,15 +348,12 @@ async function initializeFavoriteButton(contentId, userId) {
   const favoriteBtn = document.getElementById('favoriteBtn');
   if (!favoriteBtn) return;
   
-  // Reset state
   favoriteBtn.classList.remove('active');
   favoriteBtn.innerHTML = '<i class="far fa-star"></i><span>Favorite</span>';
   
-  if (!userId) return; // Not logged in - can't favorite
+  if (!userId) return;
   
-  // Check if CURRENT USER has favorited this content
   const isFavorited = await checkUserFavorite(contentId, userId);
-  
   if (isFavorited) {
     favoriteBtn.classList.add('active');
     favoriteBtn.innerHTML = '<i class="fas fa-star"></i><span>Favorited</span>';
@@ -374,10 +369,10 @@ function updateContentUI(content) {
   safeSetText('creatorName', content.creator);
   safeSetText('creatorDisplayName', content.creator_display_name);
   
-  // Update stats - USE ACTUAL COUNTS FROM DATABASE
+  // CRITICAL: Display FRESH counts from database
   safeSetText('viewsCount', formatNumber(content.views_count) + ' views');
   safeSetText('viewsCountFull', formatNumber(content.views_count));
-  safeSetText('likesCount', formatNumber(content.likes_count));
+  safeSetText('likesCount', formatNumber(content.likes_count)); // FRESH count
   safeSetText('favoritesCount', formatNumber(content.favorites_count));
   safeSetText('commentsCount', `(${formatNumber(content.comments_count)})`);
   
@@ -420,15 +415,16 @@ function updateContentUI(content) {
 }
 
 // ============================================
-// FIX: Load comments
+// FIX: Load comments without joins (Issue 1 fix)
 // ============================================
 async function loadComments(contentId) {
   try {
     console.log('💬 Loading comments for content:', contentId);
     
+    // FETCH COMMENTS DIRECTLY - NO JOINS NEEDED
     const { data: comments, error } = await window.supabaseClient
       .from('comments')
-      .select('*')
+      .select('*') // author_name and author_avatar are already in comments table!
       .eq('content_id', contentId)
       .order('created_at', { ascending: false });
     
@@ -442,6 +438,18 @@ async function loadComments(contentId) {
     if (countEl) {
       countEl.textContent = `(${comments.length})`;
     }
+    
+    // Update Content table comments_count to match actual count
+    if (currentContent) {
+      const { error: updateError } = await window.supabaseClient
+        .from('Content')
+        .update({ comments_count: comments.length })
+        .eq('id', currentContent.id);
+      
+      if (updateError) {
+        console.warn('Failed to update comments_count:', updateError);
+      }
+    }
   } catch (error) {
     console.error('❌ Comments load failed:', error);
     showToast('Failed to load comments', 'error');
@@ -449,7 +457,7 @@ async function loadComments(contentId) {
   }
 }
 
-// Render comments
+// Render comments - UPDATED to use fields from comments table
 function renderComments(comments) {
   const container = document.getElementById('commentsList');
   const noComments = document.getElementById('noComments');
@@ -472,7 +480,7 @@ function renderComments(comments) {
   // Update count
   if (countEl) countEl.textContent = `(${comments.length})`;
   
-  // Add comments
+  // Add comments using DocumentFragment for performance
   const fragment = document.createDocumentFragment();
   comments.forEach(comment => {
     const commentEl = createCommentElement(comment);
@@ -485,6 +493,7 @@ function createCommentElement(comment) {
   const div = document.createElement('div');
   div.className = 'comment-item';
   
+  // USE FIELDS DIRECTLY FROM COMMENTS TABLE
   let authorName = comment.author_name || 'User';
   let avatarUrl = comment.author_avatar || null;
   
@@ -631,13 +640,13 @@ function initializeEnhancedVideoPlayer() {
     enhancedVideoPlayer.attach(videoElement, videoContainer);
 
     // ============================================
-    // CRITICAL FIX: VIEW TRACKING THAT ACTUALLY WORKS
+    // CRITICAL FIX #4: UPDATED VIEW TRACKING WITH content_views TABLE
     // ============================================
     
     // Reset session tracking
     viewRecordedThisSession = false;
     
-    enhancedVideoPlayer.on('play', async () => {
+    enhancedVideoPlayer.on('play', () => {
         console.log('▶️ Video playing, recording view...');
         
         if (window.stateManager) {
@@ -650,12 +659,41 @@ function initializeEnhancedVideoPlayer() {
             
             // Check if already viewed recently (client-side deduplication)
             if (hasViewedContentRecently(currentContent.id)) {
-                console.log('📊 View already recorded recently');
+                console.log('📊 View already recorded recently (within 24h)');
                 return;
             }
             
-            // Record view using the function that actually works
-            await recordAndUpdateView(currentContent.id);
+            // Optimistic UI update
+            const viewsEl = document.getElementById('viewsCount');
+            const viewsFullEl = document.getElementById('viewsCountFull');
+            const currentViews = parseInt(viewsEl?.textContent.replace(/\D/g, '') || '0') || 0;
+            const newViews = currentViews + 1;
+            
+            if (viewsEl && viewsFullEl) {
+                viewsEl.textContent = `${formatNumber(newViews)} views`;
+                viewsFullEl.textContent = formatNumber(newViews);
+            }
+            
+            // Record view in content_views table (trigger updates Content.views_count)
+            recordContentView(currentContent.id)
+                .then(async (success) => {
+                    if (success) {
+                        markContentAsViewed(currentContent.id);
+                        
+                        // CRITICAL FIX: REFRESH content data to get accurate count
+                        await refreshContentCounts();
+                        
+                        if (window.track?.contentView) {
+                            window.track.contentView(currentContent.id, 'video');
+                        }
+                    } else {
+                        // Revert UI on failure
+                        if (viewsEl && viewsFullEl) {
+                            viewsEl.textContent = `${formatNumber(currentViews)} views`;
+                            viewsFullEl.textContent = formatNumber(currentViews);
+                        }
+                    }
+                });
         }
     });
     
@@ -750,74 +788,37 @@ function initializeEnhancedVideoPlayer() {
 }
 
 // ============================================
-// FIX: VIEW TRACKING THAT ACTUALLY UPDATES THE COUNT
+// CRITICAL FIX #5: Record views using content_views table
 // ============================================
-async function recordAndUpdateView(contentId) {
+async function recordContentView(contentId) {
   try {
-    // Get user ID if logged in
     let viewerId = null;
     if (window.AuthHelper?.isAuthenticated?.()) {
       const userProfile = window.AuthHelper.getUserProfile();
       viewerId = userProfile?.id || null;
     }
     
-    console.log('📝 Recording view for content:', contentId, 'viewer:', viewerId);
-    
-    // FIRST: Try to insert into content_views (trigger should update Content.views_count)
-    const { data: viewData, error: viewError } = await window.supabaseClient
+    // INSERT into content_views table - trigger updates Content.views_count
+    const { data, error } = await window.supabaseClient
       .from('content_views')
       .insert({
         content_id: contentId,
         viewer_id: viewerId,
         view_duration: 0,
-        device_type: /Mobile|Android|iP(hone|od)|IEMobile|Windows Phone|BlackBerry/i.test(navigator.userAgent) 
-          ? 'mobile' 
+        device_type: /Mobile|Android|iP(hone|od)|IEMobile|Windows Phone|BlackBerry/i.test(navigator.userAgent)
+          ? 'mobile'
           : 'desktop',
         created_at: new Date().toISOString()
       })
       .select()
       .single();
     
-    // If trigger failed or we need to ensure update, directly update Content table
-    if (viewError) {
-      console.log('⚠️ View insert failed, trying direct update:', viewError);
+    if (error) {
+      console.error('❌ View recording failed:', error);
+      return false;
     }
     
-    // ALWAYS update the Content table directly to ensure count is updated
-    const { data: contentData, error: updateError } = await window.supabaseClient
-      .rpc('increment_views', { content_id: contentId });
-    
-    if (updateError) {
-      console.log('⚠️ RPC increment failed, using manual update:', updateError);
-      
-      // Manual update as fallback
-      const { data: currentContentData } = await window.supabaseClient
-        .from('Content')
-        .select('views_count')
-        .eq('id', contentId)
-        .single();
-      
-      const newViews = (currentContentData?.views_count || 0) + 1;
-      
-      await window.supabaseClient
-        .from('Content')
-        .update({ views_count: newViews })
-        .eq('id', contentId);
-    }
-    
-    // Fetch updated view count
-    await refreshContentViewCount();
-    
-    // Mark as viewed to prevent duplicate recording this session
-    markContentAsViewed(contentId);
-    
-    console.log('✅ View recorded and count updated');
-    
-    // Track analytics
-    if (window.track?.contentView) {
-      window.track.contentView(contentId, 'video');
-    }
-    
+    console.log('✅ View recorded in content_views:', data);
     return true;
   } catch (error) {
     console.error('❌ View recording error:', error);
@@ -826,72 +827,49 @@ async function recordAndUpdateView(contentId) {
 }
 
 // ============================================
-// FIX: REFRESH VIEW COUNT FROM DATABASE
+// CRITICAL FIX #6: REFRESH content counts after interactions
 // ============================================
-async function refreshContentViewCount() {
+async function refreshContentCounts() {
   if (!currentContent) return;
   
   try {
+    // Fetch FRESH counts from database
     const { data, error } = await window.supabaseClient
       .from('Content')
-      .select('views_count')
+      .select('views_count, likes_count, favorites_count, comments_count')
       .eq('id', currentContent.id)
       .single();
     
-    if (error) {
-      console.error('Failed to fetch view count:', error);
-      return;
-    }
+    if (error) throw error;
     
-    // Update current content and UI
-    currentContent.views_count = data.views_count || 0;
-    safeSetText('viewsCount', formatNumber(currentContent.views_count) + ' views');
-    safeSetText('viewsCountFull', formatNumber(currentContent.views_count));
+    // Update local state
+    currentContent.views_count = data.views_count;
+    currentContent.likes_count = data.likes_count;
+    currentContent.favorites_count = data.favorites_count;
+    currentContent.comments_count = data.comments_count;
     
-    console.log('✅ Updated view count:', currentContent.views_count);
+    // Update UI with FRESH counts
+    safeSetText('viewsCount', formatNumber(data.views_count) + ' views');
+    safeSetText('viewsCountFull', formatNumber(data.views_count));
+    safeSetText('likesCount', formatNumber(data.likes_count));
+    safeSetText('favoritesCount', formatNumber(data.favorites_count));
+    safeSetText('commentsCount', `(${formatNumber(data.comments_count)})`);
+    
+    console.log('✅ Content counts refreshed:', {
+      views: data.views_count,
+      likes: data.likes_count
+    });
   } catch (error) {
-    console.error('❌ Failed to refresh view count:', error);
+    console.error('❌ Failed to refresh content counts:', error);
   }
 }
 
-// ============================================
-// FIX: REFRESH LIKE COUNT FROM DATABASE
-// ============================================
-async function refreshContentLikeCount() {
-  if (!currentContent) return;
-  
-  try {
-    const { data, error } = await window.supabaseClient
-      .from('Content')
-      .select('likes_count')
-      .eq('id', currentContent.id)
-      .single();
-    
-    if (error) {
-      console.error('Failed to fetch like count:', error);
-      return;
-    }
-    
-    // Update current content and UI
-    currentContent.likes_count = data.likes_count || 0;
-    safeSetText('likesCount', formatNumber(currentContent.likes_count));
-    
-    console.log('✅ Updated like count:', currentContent.likes_count);
-  } catch (error) {
-    console.error('❌ Failed to refresh like count:', error);
-  }
-}
-
-// ============================================
-// CLIENT-SIDE VIEW DEDUPLICATION FUNCTIONS
-// ============================================
+// Client-side view deduplication
 function hasViewedContentRecently(contentId) {
   try {
     const viewedContent = JSON.parse(localStorage.getItem('bantu_viewed_content') || '{}');
     const viewTime = viewedContent[contentId];
-    
     if (!viewTime) return false;
-    
     const hoursSinceView = (Date.now() - viewTime) / (1000 * 60 * 60);
     return hoursSinceView < 24;
   } catch (error) {
@@ -904,7 +882,6 @@ function markContentAsViewed(contentId) {
   try {
     const viewedContent = JSON.parse(localStorage.getItem('bantu_viewed_content') || '{}');
     viewedContent[contentId] = Date.now();
-    
     // Clean up old entries (older than 7 days)
     const sevenDaysAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);
     Object.keys(viewedContent).forEach(id => {
@@ -912,7 +889,6 @@ function markContentAsViewed(contentId) {
         delete viewedContent[id];
       }
     });
-    
     localStorage.setItem('bantu_viewed_content', JSON.stringify(viewedContent));
     return true;
   } catch (error) {
@@ -1054,12 +1030,185 @@ function handlePlay() {
 function copyToClipboard(text) {
   navigator.clipboard.writeText(text).then(() => {
     showToast('Link copied to clipboard!', 'success');
+    // Track share
     if (currentContent && window.track) {
       window.track.contentShare(currentContent.id, 'clipboard');
+      // Update share count
+      const shareCountEl = document.querySelector('.share-count');
+      if (shareCountEl) {
+        const current = parseInt(shareCountEl.textContent) || 0;
+        shareCountEl.textContent = current + 1;
+      }
     }
   }).catch(() => {
     showToast('Failed to copy link', 'error');
   });
+}
+
+// ====================================================
+// SINGLE-TABLE FIX: CONNECT BUTTONS WITH CONNECTORS TABLE
+// ====================================================
+function setupConnectButtons() {
+    // Helper to check connection status using connectors table
+    async function checkConnectionStatus(creatorId) {
+        if (!window.AuthHelper?.isAuthenticated() || !creatorId) return false;
+        
+        const userProfile = window.AuthHelper.getUserProfile();
+        if (!userProfile?.id) return false;
+        
+        try {
+            const { data, error } = await window.supabaseClient
+                .from('connectors')
+                .select('id')
+                .eq('connector_id', userProfile.id)
+                .eq('connected_id', creatorId)
+                .single();
+            
+            return !error && data !== null;
+        } catch (error) {
+            console.error('Error checking connection:', error);
+            return false;
+        }
+    }
+    
+    // PLAYER CONNECT BUTTON
+    const connectBtn = document.getElementById('connectBtn');
+    if (connectBtn && currentContent?.creator_id) {
+        // Check initial connection status
+        checkConnectionStatus(currentContent.creator_id).then(isConnected => {
+            if (isConnected) {
+                connectBtn.classList.add('connected');
+                connectBtn.innerHTML = '<i class="fas fa-user-check"></i><span>Connected</span>';
+            }
+        });
+        
+        connectBtn.addEventListener('click', async function() {
+            if (!window.AuthHelper?.isAuthenticated?.()) {
+                const shouldLogin = confirm('You need to sign in to connect. Would you like to sign in now?');
+                if (shouldLogin) {
+                    window.location.href = `login.html?redirect=${encodeURIComponent(window.location.href)}`;
+                }
+                return;
+            }
+            
+            const userProfile = window.AuthHelper.getUserProfile();
+            if (!userProfile?.id) {
+                showToast('User profile not found', 'error');
+                return;
+            }
+            
+            const isConnected = connectBtn.classList.contains('connected');
+            
+            try {
+                if (isConnected) {
+                    // Disconnect - remove from connectors table
+                    const { error } = await window.supabaseClient
+                        .from('connectors')
+                        .delete()
+                        .eq('connector_id', userProfile.id)
+                        .eq('connected_id', currentContent.creator_id);
+                    
+                    if (error) throw error;
+                    
+                    connectBtn.classList.remove('connected');
+                    connectBtn.innerHTML = '<i class="fas fa-user-plus"></i><span>Connect</span>';
+                    showToast('Disconnected', 'info');
+                } else {
+                    // Connect - add to connectors table
+                    const { error } = await window.supabaseClient
+                        .from('connectors')
+                        .insert({
+                            connector_id: userProfile.id,
+                            connected_id: currentContent.creator_id,
+                            connection_type: 'creator'
+                        });
+                    
+                    if (error) throw error;
+                    
+                    connectBtn.classList.add('connected');
+                    connectBtn.innerHTML = '<i class="fas fa-user-check"></i><span>Connected</span>';
+                    showToast('Connected successfully!', 'success');
+                    
+                    // Track analytics
+                    if (window.track?.userConnect) {
+                        window.track.userConnect(currentContent.creator_id);
+                    }
+                }
+            } catch (error) {
+                console.error('Connection update failed:', error);
+                showToast('Failed to update connection', 'error');
+            }
+        });
+    }
+    
+    // CREATOR SECTION CONNECT BUTTON
+    const connectCreatorBtn = document.getElementById('connectCreatorBtn');
+    if (connectCreatorBtn && currentContent?.creator_id) {
+        // Check initial connection status
+        checkConnectionStatus(currentContent.creator_id).then(isConnected => {
+            if (isConnected) {
+                connectCreatorBtn.classList.add('connected');
+                connectCreatorBtn.innerHTML = '<i class="fas fa-user-check"></i><span>Connected</span>';
+            }
+        });
+        
+        connectCreatorBtn.addEventListener('click', async function() {
+            if (!window.AuthHelper?.isAuthenticated?.()) {
+                const shouldLogin = confirm('You need to sign in to connect. Would you like to sign in now?');
+                if (shouldLogin) {
+                    window.location.href = `login.html?redirect=${encodeURIComponent(window.location.href)}`;
+                }
+                return;
+            }
+            
+            const userProfile = window.AuthHelper.getUserProfile();
+            if (!userProfile?.id) {
+                showToast('User profile not found', 'error');
+                return;
+            }
+            
+            const isConnected = connectCreatorBtn.classList.contains('connected');
+            
+            try {
+                if (isConnected) {
+                    // Disconnect
+                    const { error } = await window.supabaseClient
+                        .from('connectors')
+                        .delete()
+                        .eq('connector_id', userProfile.id)
+                        .eq('connected_id', currentContent.creator_id);
+                    
+                    if (error) throw error;
+                    
+                    connectCreatorBtn.classList.remove('connected');
+                    connectCreatorBtn.innerHTML = '<i class="fas fa-user-plus"></i><span>Connect</span>';
+                    showToast('Disconnected', 'info');
+                } else {
+                    // Connect
+                    const { error } = await window.supabaseClient
+                        .from('connectors')
+                        .insert({
+                            connector_id: userProfile.id,
+                            connected_id: currentContent.creator_id,
+                            connection_type: 'creator'
+                        });
+                    
+                    if (error) throw error;
+                    
+                    connectCreatorBtn.classList.add('connected');
+                    connectCreatorBtn.innerHTML = '<i class="fas fa-user-check"></i><span>Connected</span>';
+                    showToast('Connected successfully!', 'success');
+                    
+                    if (window.track?.userConnect) {
+                        window.track.userConnect(currentContent.creator_id);
+                    }
+                }
+            } catch (error) {
+                console.error('Connection update failed:', error);
+                showToast('Failed to update connection', 'error');
+            }
+        });
+    }
 }
 
 // Setup event listeners
@@ -1090,6 +1239,7 @@ function setupEventListeners() {
         video.currentTime = 0;
       }
       if (enhancedVideoPlayer) {
+        // Proper cleanup
         if (enhancedVideoPlayer.video) {
           enhancedVideoPlayer.video.pause();
           enhancedVideoPlayer.video.currentTime = 0;
@@ -1123,7 +1273,7 @@ function setupEventListeners() {
   }
   
   // ============================================
-  // FIX: LIKE BUTTON THAT ACTUALLY WORKS
+  // CRITICAL FIX #7: LIKE BUTTON USING content_likes TABLE
   // ============================================
   const likeBtn = document.getElementById('likeBtn');
   if (likeBtn) {
@@ -1143,153 +1293,68 @@ function setupEventListeners() {
       }
       
       const isLiked = likeBtn.classList.contains('active');
-      
-      // Show loading state
-      const originalHTML = likeBtn.innerHTML;
-      likeBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i><span>Updating...</span>';
-      likeBtn.disabled = true;
+      const currentLikes = parseInt(document.getElementById('likesCount')?.textContent.replace(/\D/g, '') || '0') || 0;
+      const newLikes = isLiked ? currentLikes - 1 : currentLikes + 1;
       
       try {
+        // Optimistic UI update
+        likeBtn.classList.toggle('active', !isLiked);
+        likeBtn.innerHTML = !isLiked
+          ? '<i class="fas fa-heart"></i><span>Liked</span>'
+          : '<i class="far fa-heart"></i><span>Like</span>';
+        document.getElementById('likesCount').textContent = formatNumber(newLikes);
+        
+        // CRITICAL: Use content_likes table (NOT user_likes) to trigger count update
         if (!isLiked) {
-          // ADD LIKE
-          console.log('Adding like for content:', currentContent.id, 'user:', userProfile.id);
-          
-          // Try to insert into content_likes table (has trigger)
-          const { error: likeError } = await window.supabaseClient
+          // Add like to content_likes table
+          const { error } = await window.supabaseClient
             .from('content_likes')
-            .insert({
-              content_id: currentContent.id,
-              user_id: userProfile.id
-            });
-          
-          if (likeError) {
-            // If unique constraint violation, user already liked
-            if (likeError.code === '23505') {
-              console.log('User already liked this content');
-            } else {
-              console.error('Like insert failed:', likeError);
-              throw likeError;
-            }
-          }
-          
-          // Also insert into user_likes for consistency
-          await window.supabaseClient
-            .from('user_likes')
             .insert({
               user_id: userProfile.id,
               content_id: currentContent.id
-            })
-            .catch(e => console.log('Note: Could not add to user_likes:', e.message));
-          
-          // Update Content table directly to ensure count is correct
-          const currentLikes = currentContent.likes_count || 0;
-          const newLikes = currentLikes + 1;
-          
-          const { error: updateError } = await window.supabaseClient
-            .from('Content')
-            .update({ likes_count: newLikes })
-            .eq('id', currentContent.id);
-          
-          if (updateError) {
-            console.error('Failed to update likes count:', updateError);
-            // Try RPC as fallback
-            await window.supabaseClient
-              .rpc('increment_likes', { content_id: currentContent.id })
-              .catch(e => console.log('RPC also failed:', e));
-          }
-          
-          // Update UI
-          likeBtn.classList.add('active');
-          likeBtn.innerHTML = '<i class="fas fa-heart"></i><span>Liked</span>';
-          
-          // Refresh count from database
-          await refreshContentLikeCount();
-          
-          showToast('Liked!', 'success');
-          
+            });
+          if (error) throw error;
         } else {
-          // REMOVE LIKE
-          console.log('Removing like for content:', currentContent.id, 'user:', userProfile.id);
-          
-          // Delete from content_likes table (trigger should handle decrement)
-          const { error: deleteError } = await window.supabaseClient
+          // Remove like from content_likes table
+          const { error } = await window.supabaseClient
             .from('content_likes')
             .delete()
             .eq('user_id', userProfile.id)
             .eq('content_id', currentContent.id);
-          
-          if (deleteError) {
-            console.error('Like delete failed:', deleteError);
-            throw deleteError;
-          }
-          
-          // Also delete from user_likes
-          await window.supabaseClient
-            .from('user_likes')
-            .delete()
-            .eq('user_id', userProfile.id)
-            .eq('content_id', currentContent.id)
-            .catch(e => console.log('Note: Could not remove from user_likes:', e.message));
-          
-          // Update Content table directly
-          const currentLikes = currentContent.likes_count || 0;
-          const newLikes = Math.max(0, currentLikes - 1);
-          
-          const { error: updateError } = await window.supabaseClient
-            .from('Content')
-            .update({ likes_count: newLikes })
-            .eq('id', currentContent.id);
-          
-          if (updateError) {
-            console.error('Failed to update likes count:', updateError);
-            // Try RPC as fallback
-            await window.supabaseClient
-              .rpc('decrement_likes', { content_id: currentContent.id })
-              .catch(e => console.log('RPC also failed:', e));
-          }
-          
-          // Update UI
-          likeBtn.classList.remove('active');
-          likeBtn.innerHTML = '<i class="far fa-heart"></i><span>Like</span>';
-          
-          // Refresh count from database
-          await refreshContentLikeCount();
-          
-          showToast('Like removed', 'info');
+          if (error) throw error;
         }
+        
+        // CRITICAL FIX: REFRESH counts to get accurate value from database
+        await refreshContentCounts();
+        
+        showToast(!isLiked ? 'Liked!' : 'Like removed', !isLiked ? 'success' : 'info');
         
         // Track analytics
         if (window.track?.contentLike) {
           window.track.contentLike(currentContent.id, !isLiked);
         }
       } catch (error) {
-        console.error('❌ Like update failed:', error);
-        showToast('Failed to update like: ' + (error.message || 'Unknown error'), 'error');
-        
-        // Revert UI state
+        console.error('Like update failed:', error);
+        // Revert UI on error
         likeBtn.classList.toggle('active', isLiked);
-        likeBtn.innerHTML = isLiked 
+        likeBtn.innerHTML = isLiked
           ? '<i class="fas fa-heart"></i><span>Liked</span>'
           : '<i class="far fa-heart"></i><span>Like</span>';
-      } finally {
-        likeBtn.disabled = false;
+        document.getElementById('likesCount').textContent = formatNumber(currentLikes);
+        showToast('Failed to update like', 'error');
       }
     });
   }
   
-  // ============================================
-  // FIX: FAVORITE BUTTON
-  // ============================================
+  // Favorite button (unchanged - already uses favorites table)
   const favoriteBtn = document.getElementById('favoriteBtn');
   if (favoriteBtn) {
     favoriteBtn.addEventListener('click', async () => {
       if (!currentContent) return;
-      
       if (!window.AuthHelper?.isAuthenticated?.()) {
         showToast('Sign in to favorite content', 'warning');
         return;
       }
-      
       const userProfile = window.AuthHelper.getUserProfile();
       if (!userProfile?.id) {
         showToast('User profile not found', 'error');
@@ -1297,66 +1362,52 @@ function setupEventListeners() {
       }
       
       const isFavorited = favoriteBtn.classList.contains('active');
+      const favCountEl = document.getElementById('favoritesCount');
+      const currentFavorites = parseInt(favCountEl?.textContent.replace(/\D/g, '') || '0') || 0;
+      const newFavorites = isFavorited ? currentFavorites - 1 : currentFavorites + 1;
       
       try {
+        // Optimistic UI update
+        favoriteBtn.classList.toggle('active', !isFavorited);
+        favoriteBtn.innerHTML = !isFavorited
+          ? '<i class="fas fa-star"></i><span>Favorited</span>'
+          : '<i class="far fa-star"></i><span>Favorite</span>';
+        if (favCountEl) {
+          favCountEl.textContent = formatNumber(newFavorites);
+        }
+        
+        // Update database
         if (!isFavorited) {
-          // Add favorite
           const { error } = await window.supabaseClient
             .from('favorites')
             .insert({
               user_id: userProfile.id,
               content_id: currentContent.id
             });
-          
           if (error) throw error;
-          
-          // Update Content table
-          const currentFavorites = currentContent.favorites_count || 0;
-          const newFavorites = currentFavorites + 1;
-          
-          await window.supabaseClient
-            .from('Content')
-            .update({ favorites_count: newFavorites })
-            .eq('id', currentContent.id);
-          
-          currentContent.favorites_count = newFavorites;
-          
-          favoriteBtn.classList.add('active');
-          favoriteBtn.innerHTML = '<i class="fas fa-star"></i><span>Favorited</span>';
-          
-          safeSetText('favoritesCount', formatNumber(newFavorites));
-          
-          showToast('Added to favorites!', 'success');
         } else {
-          // Remove favorite
           const { error } = await window.supabaseClient
             .from('favorites')
             .delete()
             .eq('user_id', userProfile.id)
             .eq('content_id', currentContent.id);
-          
           if (error) throw error;
-          
-          // Update Content table
-          const currentFavorites = currentContent.favorites_count || 0;
-          const newFavorites = Math.max(0, currentFavorites - 1);
-          
-          await window.supabaseClient
-            .from('Content')
-            .update({ favorites_count: newFavorites })
-            .eq('id', currentContent.id);
-          
-          currentContent.favorites_count = newFavorites;
-          
-          favoriteBtn.classList.remove('active');
-          favoriteBtn.innerHTML = '<i class="far fa-star"></i><span>Favorite</span>';
-          
-          safeSetText('favoritesCount', formatNumber(newFavorites));
-          
-          showToast('Removed from favorites', 'info');
         }
+        
+        // Refresh counts to ensure accuracy
+        await refreshContentCounts();
+        
+        showToast(!isFavorited ? 'Added to favorites!' : 'Removed from favorites', !isFavorited ? 'success' : 'info');
       } catch (error) {
         console.error('Favorite update failed:', error);
+        // Revert UI on error
+        favoriteBtn.classList.toggle('active', isFavorited);
+        favoriteBtn.innerHTML = isFavorited
+          ? '<i class="fas fa-star"></i><span>Favorited</span>'
+          : '<i class="far fa-star"></i><span>Favorite</span>';
+        if (favCountEl) {
+          favCountEl.textContent = formatNumber(currentFavorites);
+        }
         showToast('Failed to update favorite', 'error');
       }
     });
@@ -1374,7 +1425,9 @@ function setupEventListeners() {
     });
   }
   
-  // Comment submission
+  // ============================================
+  // FIX: COMMENT SUBMISSION HANDLER (Issue 1 fix)
+  // ============================================
   const sendBtn = document.getElementById('sendCommentBtn');
   const commentInput = document.getElementById('commentInput');
   if (sendBtn && commentInput) {
@@ -1392,11 +1445,13 @@ function setupEventListeners() {
       
       if (!currentContent) return;
       
+      // Show loading state
       const originalHTML = sendBtn.innerHTML;
       sendBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
       sendBtn.disabled = true;
       
       try {
+        // Get user profile data
         const userProfile = window.AuthHelper.getUserProfile();
         const displayName = window.AuthHelper.getDisplayName();
         const avatarUrl = window.AuthHelper.getAvatarUrl();
@@ -1405,14 +1460,15 @@ function setupEventListeners() {
           throw new Error('User profile not found');
         }
         
+        // 1. Insert comment with ALL required fields
         const { data: newComment, error: insertError } = await window.supabaseClient
           .from('comments')
           .insert({
             content_id: currentContent.id,
             user_id: userProfile.id,
-            author_name: displayName,
+            author_name: displayName, // REQUIRED - NOT NULL
             comment_text: text,
-            author_avatar: avatarUrl || null,
+            author_avatar: avatarUrl || null, // Optional
             created_at: new Date().toISOString()
           })
           .select()
@@ -1425,12 +1481,18 @@ function setupEventListeners() {
         
         console.log('✅ Comment inserted:', newComment);
         
+        // 2. Refresh comments to show new comment immediately
         await loadComments(currentContent.id);
         
+        // CRITICAL FIX: Refresh counts after comment
+        await refreshContentCounts();
+        
+        // 3. Clear input
         commentInput.value = '';
         
         showToast('Comment added!', 'success');
         
+        // Track analytics
         if (window.track?.contentComment) {
           window.track.contentComment(currentContent.id);
         }
@@ -1443,6 +1505,7 @@ function setupEventListeners() {
       }
     });
     
+    // Enter key support
     commentInput.addEventListener('keypress', function(e) {
       if (e.key === 'Enter' && !e.shiftKey && !commentInput.disabled) {
         e.preventDefault();
@@ -1478,14 +1541,19 @@ function setupEventListeners() {
     });
   }
   
+  // Setup connect buttons
+  setupConnectButtons();
+  
   console.log('✅ Event listeners setup complete');
 }
 
 // ===================================================================
-// MODAL & PANEL SYSTEMS
+// MODAL & PANEL SYSTEMS (Analytics, Search, Notifications, Theme)
 // ===================================================================
 
-// Analytics Modal
+// ======================
+// ANALYTICS MODAL
+// ======================
 function initAnalyticsModal() {
   const analyticsBtn = document.getElementById('analytics-btn');
   const analyticsModal = document.getElementById('analytics-modal');
@@ -1516,30 +1584,39 @@ async function loadContentAnalytics() {
   if (!currentContent) return;
   
   try {
+    // Get view stats
     const { data: viewsData } = await window.supabaseClient
       .from('content_views')
-      .select('id, created_at')
-      .eq('content_id', currentContent.id);
+      .select('id, viewed_at')
+      .eq('content_id', currentContent.id)
+      .order('viewed_at', { ascending: false })
+      .limit(100);
     
+    // Get comment stats
     const { data: commentsData } = await window.supabaseClient
       .from('comments')
       .select('id, created_at')
       .eq('content_id', currentContent.id);
     
+    // Calculate metrics
     const totalViews = viewsData?.length || 0;
     const totalComments = commentsData?.length || 0;
     
+    // Update UI
     document.getElementById('content-total-views').textContent = formatNumber(totalViews);
     document.getElementById('total-comments').textContent = formatNumber(totalComments);
     
+    // Simulate engagement metrics (would come from analytics system)
     document.getElementById('avg-watch-time').textContent = '4m 23s';
     document.getElementById('engagement-rate').textContent = '68%';
     
+    // Set trends (simulated)
     document.getElementById('views-trend').textContent = '+12%';
     document.getElementById('comments-trend').textContent = '+8%';
     document.getElementById('watch-time-trend').textContent = '+5%';
     document.getElementById('engagement-trend').textContent = '+3%';
     
+    // Initialize chart if Chart.js is available
     if (typeof Chart !== 'undefined') {
       initEngagementChart();
     }
@@ -1552,6 +1629,7 @@ function initEngagementChart() {
   const ctx = document.getElementById('content-engagement-chart');
   if (!ctx) return;
   
+  // Destroy existing chart if exists
   if (window.contentEngagementChart) {
     window.contentEngagementChart.destroy();
   }
@@ -1600,7 +1678,9 @@ function initEngagementChart() {
   });
 }
 
-// Search Modal
+// ======================
+// SEARCH MODAL
+// ======================
 function initSearchModal() {
   const searchBtn = document.getElementById('search-btn');
   const searchModal = document.getElementById('search-modal');
@@ -1633,6 +1713,7 @@ function initSearchModal() {
     }
   });
   
+  // Search functionality
   if (searchInput) {
     searchInput.addEventListener('input', debounce(async (e) => {
       const query = e.target.value.trim();
@@ -1659,6 +1740,7 @@ function initSearchModal() {
     }, 300));
   }
   
+  // Filter change handlers
   document.getElementById('category-filter')?.addEventListener('change', triggerSearch);
   document.getElementById('sort-filter')?.addEventListener('change', triggerSearch);
 }
@@ -1750,6 +1832,7 @@ function renderSearchResults(results) {
     `;
   }).join('');
   
+  // Add click handlers
   grid.querySelectorAll('.content-card').forEach(card => {
     card.addEventListener('click', (e) => {
       if (e.target.closest('.creator-btn')) return;
@@ -1768,7 +1851,9 @@ function renderSearchResults(results) {
   });
 }
 
-// Notifications Panel
+// ======================
+// NOTIFICATIONS PANEL
+// ======================
 function initNotificationsPanel() {
   const notificationsBtn = document.getElementById('notifications-btn');
   const navNotificationsBtn = document.getElementById('nav-notifications-btn');
@@ -1778,6 +1863,7 @@ function initNotificationsPanel() {
   
   if (!notificationsBtn || !notificationsPanel) return;
   
+  // Both notification buttons should open the panel
   [notificationsBtn, navNotificationsBtn].forEach(btn => {
     if (btn) {
       btn.addEventListener('click', async (e) => {
@@ -1795,6 +1881,7 @@ function initNotificationsPanel() {
     });
   }
   
+  // Close when clicking outside
   document.addEventListener('click', (e) => {
     if (notificationsPanel.classList.contains('active') && 
         !notificationsPanel.contains(e.target) && 
@@ -1811,11 +1898,13 @@ function initNotificationsPanel() {
     });
   }
   
+  // Load notifications on page load if user is authenticated
   if (window.AuthHelper?.isAuthenticated()) {
     loadUserNotifications();
     updateNotificationBadge();
   }
   
+  // Listen for auth changes
   document.addEventListener('authReady', loadUserNotifications);
 }
 
@@ -1824,6 +1913,7 @@ async function loadUserNotifications() {
   if (!notificationsList) return;
   
   try {
+    // Check authentication
     if (!window.AuthHelper || !window.AuthHelper.isAuthenticated()) {
       notificationsList.innerHTML = `
         <div class="empty-notifications">
@@ -1846,6 +1936,7 @@ async function loadUserNotifications() {
       return;
     }
     
+    // Fetch notifications from Supabase
     const { data, error } = await window.supabaseClient
       .from('notifications')
       .select('*')
@@ -1866,6 +1957,7 @@ async function loadUserNotifications() {
       return;
     }
     
+    // Render notifications
     notificationsList.innerHTML = data.map(notification => `
       <div class="notification-item ${notification.is_read ? 'read' : 'unread'}" data-id="${notification.id}">
         <div class="notification-icon">
@@ -1880,11 +1972,13 @@ async function loadUserNotifications() {
       </div>
     `).join('');
     
+    // Add click handlers
     notificationsList.querySelectorAll('.notification-item').forEach(item => {
       item.addEventListener('click', async () => {
         const id = item.dataset.id;
         await markNotificationAsRead(id);
         
+        // Handle navigation based on notification type
         const notification = data.find(n => n.id === id);
         if (notification?.content_id) {
           window.location.href = `content-detail.html?id=${notification.content_id}`;
@@ -1893,6 +1987,7 @@ async function loadUserNotifications() {
       });
     });
     
+    // Update badge count
     const unreadCount = data.filter(n => !n.is_read).length;
     updateNotificationBadge(unreadCount);
   } catch (error) {
@@ -1926,6 +2021,7 @@ async function markNotificationAsRead(notificationId) {
     
     if (error) throw error;
     
+    // Update UI immediately
     const item = document.querySelector(`.notification-item[data-id="${notificationId}"]`);
     if (item) {
       item.classList.remove('unread');
@@ -1934,6 +2030,7 @@ async function markNotificationAsRead(notificationId) {
       if (dot) dot.remove();
     }
     
+    // Update badge
     await loadUserNotifications();
   } catch (error) {
     console.error('Error marking notification as read:', error);
@@ -1955,6 +2052,7 @@ async function markAllNotificationsAsRead() {
     
     if (error) throw error;
     
+    // Update UI
     document.querySelectorAll('.notification-item.unread').forEach(item => {
       item.classList.remove('unread');
       item.classList.add('read');
@@ -1969,6 +2067,7 @@ async function markAllNotificationsAsRead() {
 }
 
 function updateNotificationBadge(count = null) {
+  // If count not provided, calculate from DOM
   if (count === null) {
     count = document.querySelectorAll('.notification-item.unread').length;
   }
@@ -1998,7 +2097,9 @@ function formatNotificationTime(timestamp) {
   return new Date(timestamp).toLocaleDateString();
 }
 
-// Theme Selector
+// ======================
+// THEME SELECTOR
+// ======================
 function initThemeSelector() {
   const themeToggle = document.getElementById('nav-theme-toggle');
   const themeSelector = document.getElementById('theme-selector');
@@ -2011,6 +2112,7 @@ function initThemeSelector() {
     themeSelector.classList.toggle('active');
   });
   
+  // Close when clicking outside
   document.addEventListener('click', (e) => {
     if (themeSelector.classList.contains('active') && 
         !themeSelector.contains(e.target) && 
@@ -2019,6 +2121,7 @@ function initThemeSelector() {
     }
   });
   
+  // Set up theme options
   themeOptions.forEach(option => {
     option.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -2028,6 +2131,7 @@ function initThemeSelector() {
     });
   });
   
+  // Initialize theme
   initCurrentTheme();
 }
 
@@ -2035,25 +2139,33 @@ function applyTheme(theme) {
   document.body.className = `theme-${theme}`;
   localStorage.setItem('theme', theme);
   
+  // Update active state
   document.querySelectorAll('.theme-option').forEach(option => {
     option.classList.toggle('active', option.dataset.theme === theme);
   });
   
+  // Show confirmation
   showToast(`Theme changed to ${theme}`, 'success');
 }
 
 function initCurrentTheme() {
+  // Load saved theme or use system preference
   const savedTheme = localStorage.getItem('theme');
   const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
   const defaultTheme = savedTheme || (prefersDark ? 'dark' : 'light');
   
+  // Set initial theme
   applyTheme(defaultTheme);
   
+  // Set active state on load
   document.querySelector(`.theme-option[data-theme="${defaultTheme}"]`)?.classList.add('active');
 }
 
-// Global Navigation
+// ======================
+// GLOBAL NAVIGATION
+// ======================
 function initGlobalNavigation() {
+  // Home button - redirect to home-feed
   const homeBtn = document.querySelector('.nav-icon:nth-child(1)');
   if (homeBtn) {
     homeBtn.addEventListener('click', (e) => {
@@ -2062,6 +2174,9 @@ function initGlobalNavigation() {
     });
   }
   
+  // Theme toggle already handled in initThemeSelector
+  
+  // Create Content button
   const createBtn = document.querySelector('.nav-icon:nth-child(3)');
   if (createBtn) {
     createBtn.addEventListener('click', (e) => {
@@ -2075,6 +2190,7 @@ function initGlobalNavigation() {
     });
   }
   
+  // Creator Dashboard button
   const dashboardBtn = document.querySelector('.nav-icon:nth-child(4)');
   if (dashboardBtn) {
     dashboardBtn.addEventListener('click', (e) => {
@@ -2087,6 +2203,8 @@ function initGlobalNavigation() {
       }
     });
   }
+  
+  // Notifications button already handled in initNotificationsPanel
 }
 
 // Utility functions
@@ -2111,6 +2229,7 @@ function formatDate(dateString) {
   }
 }
 
+// FIXED: Duration never shows dash
 function formatDuration(seconds) {
   if (!seconds || seconds <= 0 || isNaN(seconds)) {
     return '0m 0s';
@@ -2208,9 +2327,10 @@ function showToast(message, type = 'info') {
   }, 3000);
 }
 
-// Export key functions
+// Export key functions for VideoPlayerFeatures
 window.hasViewedContentRecently = hasViewedContentRecently;
 window.markContentAsViewed = markContentAsViewed;
-window.recordAndUpdateView = recordAndUpdateView;
+window.recordContentView = recordContentView;
+window.refreshContentCounts = refreshContentCounts;
 
-console.log('✅ Content detail script loaded with ALL fixes applied');
+console.log('✅ Content detail script loaded with ALL fixes including VIEWS/LIKES PERSISTENCE');
