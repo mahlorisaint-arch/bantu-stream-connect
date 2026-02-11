@@ -1,12 +1,11 @@
-// js/content-detail.js - FIXED FOR RLS POLICIES - WITH ACCURATE COUNT BYPASS
-console.log('🎬 Content Detail Initializing with RLS-compliant fixes...');
+// js/content-detail.js - FIXED FOR RLS POLICIES - WITH ACCURATE COUNT BYPASS - VIEWS RECORDED ON PLAY BUTTON CLICK (LIKE MOBILE APP)
+console.log('🎬 Content Detail Initializing with RLS-compliant fixes and view tracking on Play button click...');
 
 // Global variables
 let currentContent = null;
 let enhancedVideoPlayer = null;
 let isInitialized = false;
 let currentUserId = null;
-let viewRecordedThisSession = false;
 
 // Initialize when DOM is ready
 document.addEventListener('DOMContentLoaded', async () => {
@@ -624,49 +623,15 @@ function initializeEnhancedVideoPlayer() {
     
     enhancedVideoPlayer.attach(videoElement, videoContainer);
     
-    // Reset session tracking
-    viewRecordedThisSession = false;
-    
     enhancedVideoPlayer.on('play', () => {
-      console.log('▶️ Video playing, recording view...');
+      console.log('▶️ Video playing...');
       
       if (window.stateManager) {
         window.stateManager.setState('session.playing', true);
       }
       
-      if (currentContent && !viewRecordedThisSession) {
-        viewRecordedThisSession = true;
-        
-        // Optimistic UI update
-        const viewsEl = document.getElementById('viewsCount');
-        const viewsFullEl = document.getElementById('viewsCountFull');
-        const currentViews = parseInt(viewsEl?.textContent.replace(/\D/g, '') || '0') || 0;
-        const newViews = currentViews + 1;
-        
-        if (viewsEl && viewsFullEl) {
-          viewsEl.textContent = `${formatNumber(newViews)} views`;
-          viewsFullEl.textContent = formatNumber(newViews);
-        }
-        
-        // Record view
-        recordContentView(currentContent.id)
-          .then(async (success) => {
-            if (success) {
-              if (window.track?.contentView) {
-                window.track.contentView(currentContent.id, 'video');
-              }
-              
-              // ✅ CRITICAL: Refresh counts from SOURCE tables after recording
-              await refreshCountsFromSource();
-            } else {
-              // Revert UI on failure
-              if (viewsEl && viewsFullEl) {
-                viewsEl.textContent = `${formatNumber(currentViews)} views`;
-                viewsFullEl.textContent = formatNumber(currentViews);
-              }
-            }
-          });
-      }
+      // ❌ VIEW RECORDING REMOVED - Views are now recorded on Play button click
+      // This matches mobile app behavior
     });
     
     enhancedVideoPlayer.on('pause', () => {
@@ -695,34 +660,38 @@ function initializeEnhancedVideoPlayer() {
 }
 
 // ============================================
-// RECORD VIEW - ONLY record, NO trigger updates (bypass broken triggers)
+// FIXED: Record view in content_views table
 // ============================================
 async function recordContentView(contentId) {
   try {
-    // Skip if already viewed recently (client-side deduplication)
-    if (hasViewedContentRecently(contentId)) {
-      console.log('📊 View already recorded recently');
-      return false;
+    // Get viewer ID (only if authenticated)
+    let viewerId = null;
+    if (window.AuthHelper?.isAuthenticated?.()) {
+      const userProfile = window.AuthHelper.getUserProfile();
+      viewerId = userProfile?.id || null;
     }
     
-    // ONLY record the view - NO count updates (trigger is broken anyway)
-    const { error } = await window.supabaseClient
+    // INSERT into content_views table
+    const { data, error } = await window.supabaseClient
       .from('content_views')
       .insert({
         content_id: contentId,
-        viewer_id: currentUserId || null,
+        viewer_id: viewerId,
         view_duration: 0,
-        device_type: /Mobile|Android/i.test(navigator.userAgent) ? 'mobile' : 'desktop',
+        device_type: /Mobile|Android|iP(hone|od)|IEMobile|Windows Phone|BlackBerry/i.test(navigator.userAgent)
+          ? 'mobile'
+          : 'desktop',
         created_at: new Date().toISOString()
-      });
+      })
+      .select()
+      .single();
     
     if (error) {
       console.error('❌ View recording failed:', error);
       return false;
     }
     
-    console.log('✅ View recorded in content_views');
-    markContentAsViewed(contentId);
+    console.log('✅ View recorded in content_views:', data);
     return true;
     
   } catch (error) {
@@ -732,7 +701,7 @@ async function recordContentView(contentId) {
 }
 
 // ============================================
-// ✅ CRITICAL: Refresh counts by COUNTING rows in source tables (bypass broken triggers)
+// CRITICAL: Refresh counts by counting rows in source tables (bypass broken triggers)
 // ============================================
 async function refreshCountsFromSource() {
   if (!currentContent) return;
@@ -816,7 +785,7 @@ function clearViewCache() {
 }
 
 // ============================================
-// HANDLE PLAY BUTTON
+// FIXED: Record view when Play button is clicked (like mobile app)
 // ============================================
 function handlePlay() {
   if (!currentContent) {
@@ -830,6 +799,49 @@ function handlePlay() {
   if (!player || !videoElement) {
     showToast('Video player not available', 'error');
     return;
+  }
+  
+  // ✅ CRITICAL FIX: Record view IMMEDIATELY when Play button is clicked
+  if (!hasViewedContentRecently(currentContent.id)) {
+    // Optimistic UI update
+    const viewsEl = document.getElementById('viewsCount');
+    const viewsFullEl = document.getElementById('viewsCountFull');
+    const currentViews = parseInt(viewsEl?.textContent.replace(/\D/g, '') || '0') || 0;
+    const newViews = currentViews + 1;
+    
+    if (viewsEl && viewsFullEl) {
+      viewsEl.textContent = `${formatNumber(newViews)} views`;
+      viewsFullEl.textContent = formatNumber(newViews);
+    }
+    
+    // Record view in database
+    recordContentView(currentContent.id)
+      .then(async (success) => {
+        if (success) {
+          markContentAsViewed(currentContent.id);
+          
+          // ✅ REFRESH counts from source tables to ensure accuracy
+          await refreshCountsFromSource();
+          
+          if (window.track?.contentView) {
+            window.track.contentView(currentContent.id, 'video');
+          }
+        } else {
+          // Revert UI on failure
+          if (viewsEl && viewsFullEl) {
+            viewsEl.textContent = `${formatNumber(currentViews)} views`;
+            viewsFullEl.textContent = formatNumber(currentViews);
+          }
+        }
+      })
+      .catch((error) => {
+        console.error('View recording error:', error);
+        // Revert UI on error
+        if (viewsEl && viewsFullEl) {
+          viewsEl.textContent = `${formatNumber(currentViews)} views`;
+          viewsFullEl.textContent = formatNumber(currentViews);
+        }
+      });
   }
   
   // Get video URL
@@ -2258,4 +2270,4 @@ window.recordContentView = recordContentView;
 window.refreshCountsFromSource = refreshCountsFromSource;
 window.clearViewCache = clearViewCache;
 
-console.log('✅ Content detail script loaded with ACCURATE COUNT BYPASS (matches mobile app)');
+console.log('✅ Content detail script loaded with ACCURATE COUNT BYPASS - Views recorded on Play button click (matches mobile app)');
