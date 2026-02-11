@@ -1,5 +1,20 @@
 console.log('🎬 Content Detail Initializing with all fixes including views/likes persistence...');
 
+// ============================================
+// DEBUG MODE - SEE EXACTLY WHAT'S HAPPENING
+// ============================================
+const DEBUG_MODE = true;
+
+function debugLog(message, data = null) {
+  if (DEBUG_MODE) {
+    console.log('🔍 [DEBUG]', message, data ? ':' : '', data);
+  }
+}
+
+function debugError(message, error) {
+  console.error('🔴 [DEBUG ERROR]', message, ':', error);
+}
+
 // Global variables
 let currentContent = null;
 let enhancedVideoPlayer = null;
@@ -1339,8 +1354,16 @@ function setupEventListeners() {
       const likesCountEl = document.getElementById('likesCount');
       const currentLikes = parseInt(likesCountEl?.textContent.replace(/\D/g, '') || '0') || 0;
       
+      debugLog('🎯 LIKE BUTTON CLICKED', {
+        contentId: currentContent.id,
+        userId: userProfile.id,
+        currentlyLiked: isLiked,
+        currentLikesCount: currentLikes,
+        newLikesCount: isLiked ? currentLikes - 1 : currentLikes + 1
+      });
+      
       try {
-        // OPTIMISTIC UI UPDATE FIRST
+        // OPTIMISTIC UI UPDATE
         likeBtn.classList.toggle('active', !isLiked);
         likeBtn.innerHTML = !isLiked 
           ? '<i class="fas fa-heart"></i><span>Liked</span>' 
@@ -1349,7 +1372,8 @@ function setupEventListeners() {
         let newLikes = currentLikes;
         
         if (!isLiked) {
-          // ADD LIKE - Check if exists first to avoid 409 conflict
+          // CHECK IF LIKE EXISTS FIRST
+          debugLog('🔍 Checking if like already exists...');
           const { data: existingLike, error: checkError } = await window.supabaseClient
             .from('user_likes')
             .select('id')
@@ -1357,63 +1381,105 @@ function setupEventListeners() {
             .eq('content_id', currentContent.id)
             .single();
           
+          if (checkError && checkError.code !== 'PGRST116') {
+            debugError('❌ Error checking existing like:', checkError);
+          }
+          
           if (!existingLike) {
-            // Only insert if doesn't exist
-            const { error: insertError } = await window.supabaseClient
+            debugLog('➕ Inserting new like into user_likes...');
+            const { data: insertData, error: insertError } = await window.supabaseClient
               .from('user_likes')
               .insert({
                 user_id: userProfile.id,
                 content_id: currentContent.id
-              });
+              })
+              .select();
             
-            if (insertError) throw insertError;
+            if (insertError) {
+              debugError('❌ Insert failed:', insertError);
+              throw insertError;
+            }
             
-            // INCREMENT count
+            debugLog('✅ Like inserted successfully:', insertData);
             newLikes = currentLikes + 1;
+          } else {
+            debugLog('⚠️ Like already exists, skipping insert');
+            newLikes = currentLikes;
           }
         } else {
           // REMOVE LIKE
-          const { error: deleteError } = await window.supabaseClient
+          debugLog('➖ Deleting like from user_likes...');
+          const { data: deleteData, error: deleteError } = await window.supabaseClient
             .from('user_likes')
             .delete()
             .eq('user_id', userProfile.id)
-            .eq('content_id', currentContent.id);
+            .eq('content_id', currentContent.id)
+            .select();
           
-          if (deleteError) throw deleteError;
+          if (deleteError) {
+            debugError('❌ Delete failed:', deleteError);
+            throw deleteError;
+          }
           
-          // DECREMENT count
+          debugLog('✅ Like deleted successfully:', deleteData);
           newLikes = currentLikes - 1;
         }
         
-        // MANUALLY UPDATE Content.likes_count in database
-        const { error: updateError } = await window.supabaseClient
+        // GET CURRENT COUNT FROM DATABASE FIRST
+        debugLog('📊 Fetching current likes_count from database...');
+        const { data: contentData, error: fetchError } = await window.supabaseClient
           .from('Content')
-          .update({ likes_count: newLikes })
-          .eq('id', currentContent.id);
+          .select('likes_count')
+          .eq('id', currentContent.id)
+          .single();
         
-        if (updateError) {
-          console.warn('Likes count update failed:', updateError);
+        if (fetchError) {
+          debugError('❌ Failed to fetch current likes_count:', fetchError);
+        } else {
+          debugLog('📈 Current likes_count from DB:', contentData.likes_count);
         }
         
-        // UPDATE UI with new count
+        // UPDATE Content.likes_count
+        debugLog('✏️ Updating Content.likes_count to:', newLikes);
+        const { data: updateData, error: updateError } = await window.supabaseClient
+          .from('Content')
+          .update({ likes_count: newLikes })
+          .eq('id', currentContent.id)
+          .select();
+        
+        if (updateError) {
+          debugError('❌ Update failed:', updateError);
+        } else {
+          debugLog('✅ Content.likes_count updated successfully:', updateData);
+        }
+        
+        // VERIFY THE UPDATE WORKED
+        debugLog('🔍 Verifying update...');
+        const { data: verifyData, error: verifyError } = await window.supabaseClient
+          .from('Content')
+          .select('likes_count')
+          .eq('id', currentContent.id)
+          .single();
+        
+        if (verifyError) {
+          debugError('❌ Verification failed:', verifyError);
+        } else {
+          debugLog('✅ Verification result - likes_count is now:', verifyData.likes_count);
+        }
+        
+        // UPDATE UI
         if (likesCountEl) {
           likesCountEl.textContent = formatNumber(newLikes);
         }
         
-        // UPDATE local state
         currentContent.likes_count = newLikes;
         
         showToast(!isLiked ? 'Liked!' : 'Like removed', !isLiked ? 'success' : 'info');
         
-        // Track analytics
-        if (window.track?.contentLike) {
-          window.track.contentLike(currentContent.id, !isLiked);
-        }
-        
       } catch (error) {
-        console.error('Like operation failed:', error);
+        debugError('💥 Like operation failed:', error);
         
-        // REVERT UI ON ERROR
+        // REVERT UI
         likeBtn.classList.toggle('active', isLiked);
         likeBtn.innerHTML = isLiked 
           ? '<i class="fas fa-heart"></i><span>Liked</span>' 
@@ -1423,7 +1489,7 @@ function setupEventListeners() {
           likesCountEl.textContent = formatNumber(currentLikes);
         }
         
-        showToast('Failed to update like. Please retry.', 'error');
+        showToast('Failed to update like: ' + error.message, 'error');
       }
     });
   }
