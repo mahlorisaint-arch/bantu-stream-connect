@@ -641,61 +641,57 @@ function initializeEnhancedVideoPlayer() {
     enhancedVideoPlayer.attach(videoElement, videoContainer);
 
     // ============================================
-    // CRITICAL FIX #4: REPLACED - UPDATED VIEW TRACKING WITH MANUAL COUNT UPDATE
+    // 🔴 CRITICAL FIX #4: REPLACED - VIDEO PLAY HANDLER (Lines ~650-690)
     // ============================================
-    
-    // Reset session tracking
-    viewRecordedThisSession = false;
-    
     enhancedVideoPlayer.on('play', () => {
-        console.log('▶️ Video playing, recording view...');
+      console.log('▶️ Video playing, recording view...');
+      if (window.stateManager) {
+        window.stateManager.setState('session.playing', true);
+      }
+      
+      // Record view ONLY ONCE per session when video actually plays
+      if (currentContent && !viewRecordedThisSession) {
+        viewRecordedThisSession = true;
         
-        if (window.stateManager) {
-            window.stateManager.setState('session.playing', true);
+        // Optimistic UI update
+        const viewsEl = document.getElementById('viewsCount');
+        const viewsFullEl = document.getElementById('viewsCountFull');
+        const currentViews = parseInt(viewsEl?.textContent.replace(/\D/g, '') || '0') || 0;
+        const newViews = currentViews + 1;
+        
+        if (viewsEl && viewsFullEl) {
+          viewsEl.textContent = `${formatNumber(newViews)} views`;
+          viewsFullEl.textContent = formatNumber(newViews);
         }
-
-        // Record view ONLY ONCE per session when video actually plays
-        if (currentContent && !viewRecordedThisSession) {
-            viewRecordedThisSession = true;
-            
-            // Check if already viewed recently (client-side deduplication)
-            if (hasViewedContentRecently(currentContent.id)) {
-                console.log('📊 View already recorded recently (within 24h)');
-                return;
+        
+        // Record view in content_views table
+        recordContentView(currentContent.id)
+          .then(async (success) => {
+            if (success) {
+              // Track analytics
+              if (window.track?.contentView) {
+                window.track.contentView(currentContent.id, 'video');
+              }
+              
+              // REFRESH to get accurate count from database
+              await refreshContentCounts();
+            } else {
+              // Revert UI on failure
+              if (viewsEl && viewsFullEl) {
+                viewsEl.textContent = `${formatNumber(currentViews)} views`;
+                viewsFullEl.textContent = formatNumber(currentViews);
+              }
             }
-            
-            // Optimistic UI update
-            const viewsEl = document.getElementById('viewsCount');
-            const viewsFullEl = document.getElementById('viewsCountFull');
-            const currentViews = parseInt(viewsEl?.textContent.replace(/\D/g, '') || '0') || 0;
-            const newViews = currentViews + 1;
-            
+          })
+          .catch((error) => {
+            console.error('View recording promise error:', error);
+            // Revert UI on error
             if (viewsEl && viewsFullEl) {
-                viewsEl.textContent = `${formatNumber(newViews)} views`;
-                viewsFullEl.textContent = formatNumber(newViews);
+              viewsEl.textContent = `${formatNumber(currentViews)} views`;
+              viewsFullEl.textContent = formatNumber(currentViews);
             }
-            
-            // Record view in content_views table with MANUAL count update
-            recordContentView(currentContent.id)
-                .then(async (success) => {
-                    if (success) {
-                        markContentAsViewed(currentContent.id);
-                        
-                        // CRITICAL FIX: REFRESH content data to get accurate count
-                        await refreshContentCounts();
-                        
-                        if (window.track?.contentView) {
-                            window.track.contentView(currentContent.id, 'video');
-                        }
-                    } else {
-                        // Revert UI on failure
-                        if (viewsEl && viewsFullEl) {
-                            viewsEl.textContent = `${formatNumber(currentViews)} views`;
-                            viewsFullEl.textContent = formatNumber(currentViews);
-                        }
-                    }
-                });
-        }
+          });
+      }
     });
     
     // Setup other event handlers
@@ -789,75 +785,123 @@ function initializeEnhancedVideoPlayer() {
 }
 
 // ============================================
-// CRITICAL FIX #5: REPLACED - Record views with MANUAL count update (trigger not working)
+// 🔴 CRITICAL FIX #2: REPLACED - VIEW RECORDING FUNCTION (Lines ~795-835)
 // ============================================
 async function recordContentView(contentId) {
   try {
-    const viewerId = window.AuthHelper?.isAuthenticated?.() 
-      ? window.AuthHelper.getUserProfile()?.id 
-      : null;
+    // Only record if user is authenticated
+    let viewerId = null;
+    if (window.AuthHelper?.isAuthenticated?.()) {
+      const userProfile = window.AuthHelper.getUserProfile();
+      viewerId = userProfile?.id || null;
+    }
     
-    // 1. Record view in content_views
-    await window.supabaseClient
+    // Check if view already recorded recently (prevent duplicates)
+    if (hasViewedContentRecently(contentId)) {
+      console.log('📊 View already recorded recently');
+      return false;
+    }
+    
+    // 1. INSERT into content_views table
+    const { data, error: insertError } = await window.supabaseClient
       .from('content_views')
       .insert({
         content_id: contentId,
         viewer_id: viewerId,
         view_duration: 0,
-        device_type: /Mobile|Android/i.test(navigator.userAgent) ? 'mobile' : 'desktop',
+        device_type: /Mobile|Android|iP(hone|od)|IEMobile|Windows Phone|BlackBerry/i.test(navigator.userAgent)
+          ? 'mobile'
+          : 'desktop',
         created_at: new Date().toISOString()
-      });
+      })
+      .select()
+      .single();
     
-    console.log('✅ View recorded in content_views');
+    if (insertError) {
+      console.error('❌ View recording failed:', insertError);
+      return false;
+    }
     
-    // 2. MANUALLY UPDATE Content.views_count (CRITICAL FIX - TRIGGER NOT WORKING)
-    const currentViews = currentContent?.views_count || 0;
-    await window.supabaseClient
+    console.log('✅ View recorded in content_views:', data);
+    
+    // 2. GET CURRENT views_count FROM DATABASE
+    const { data: contentData, error: fetchError } = await window.supabaseClient
       .from('Content')
-      .update({ views_count: currentViews + 1 })
+      .select('views_count')
+      .eq('id', contentId)
+      .single();
+    
+    if (fetchError) {
+      console.error('❌ Failed to fetch current views_count:', fetchError);
+      return false;
+    }
+    
+    // 3. INCREMENT and UPDATE Content.views_count
+    const currentViews = contentData.views_count || 0;
+    const newViews = currentViews + 1;
+    
+    const { error: updateError } = await window.supabaseClient
+      .from('Content')
+      .update({ views_count: newViews })
       .eq('id', contentId);
     
-    console.log('✅ Manually updated views_count to', currentViews + 1);
+    if (updateError) {
+      console.error('❌ Failed to update views_count:', updateError);
+      return false;
+    }
+    
+    console.log('✅ Manually updated views_count to', newViews);
+    
+    // 4. Mark as viewed to prevent duplicate recording
+    markContentAsViewed(contentId);
+    
     return true;
+    
   } catch (error) {
-    console.error('❌ View recording failed:', error);
+    console.error('❌ View recording error:', error);
     return false;
   }
 }
 
 // ============================================
-// CRITICAL FIX #6: REFRESH content counts after interactions
+// 🔴 CRITICAL FIX #3: REPLACED - REFRESH FUNCTION (Lines ~840-870)
 // ============================================
 async function refreshContentCounts() {
   if (!currentContent) return;
   
   try {
-    // Fetch FRESH counts from database
+    // FETCH FRESH counts directly from database
     const { data, error } = await window.supabaseClient
       .from('Content')
       .select('views_count, likes_count, favorites_count, comments_count')
       .eq('id', currentContent.id)
       .single();
     
-    if (error) throw error;
+    if (error) {
+      console.error('❌ Failed to refresh content counts:', error);
+      return;
+    }
     
-    // Update local state
+    // UPDATE local state
     currentContent.views_count = data.views_count;
     currentContent.likes_count = data.likes_count;
     currentContent.favorites_count = data.favorites_count;
     currentContent.comments_count = data.comments_count;
     
-    // Update UI with FRESH counts
+    // UPDATE UI with FRESH counts
     safeSetText('viewsCount', formatNumber(data.views_count) + ' views');
     safeSetText('viewsCountFull', formatNumber(data.views_count));
     safeSetText('likesCount', formatNumber(data.likes_count));
     safeSetText('favoritesCount', formatNumber(data.favorites_count));
     safeSetText('commentsCount', `(${formatNumber(data.comments_count)})`);
     
-    console.log('✅ Content counts refreshed:', {
+    console.log('✅ Content counts refreshed from DB:', {
       views: data.views_count,
-      likes: data.likes_count
+      likes: data.likes_count,
+      favorites: data.favorites_count,
+      comments: data.comments_count
     });
+    
   } catch (error) {
     console.error('❌ Failed to refresh content counts:', error);
   }
@@ -1272,7 +1316,7 @@ function setupEventListeners() {
   }
   
   // ============================================
-  // CRITICAL FIX #7: REPLACED - LIKE BUTTON USING user_likes TABLE + MANUAL COUNT UPDATE
+  // 🔴 CRITICAL FIX #1: REPLACED - LIKE BUTTON HANDLER (Lines ~1245-1320)
   // ============================================
   const likeBtn = document.getElementById('likeBtn');
   if (likeBtn) {
@@ -1294,7 +1338,6 @@ function setupEventListeners() {
       const isLiked = likeBtn.classList.contains('active');
       const likesCountEl = document.getElementById('likesCount');
       const currentLikes = parseInt(likesCountEl?.textContent.replace(/\D/g, '') || '0') || 0;
-      const newLikes = isLiked ? currentLikes - 1 : currentLikes + 1;
       
       try {
         // OPTIMISTIC UI UPDATE FIRST
@@ -1302,40 +1345,84 @@ function setupEventListeners() {
         likeBtn.innerHTML = !isLiked 
           ? '<i class="fas fa-heart"></i><span>Liked</span>' 
           : '<i class="far fa-heart"></i><span>Like</span>';
-        if (likesCountEl) likesCountEl.textContent = formatNumber(newLikes);
         
-        // 1. Update user_likes table
+        let newLikes = currentLikes;
+        
         if (!isLiked) {
-          await window.supabaseClient
+          // ADD LIKE - Check if exists first to avoid 409 conflict
+          const { data: existingLike, error: checkError } = await window.supabaseClient
             .from('user_likes')
-            .insert({ user_id: userProfile.id, content_id: currentContent.id });
+            .select('id')
+            .eq('user_id', userProfile.id)
+            .eq('content_id', currentContent.id)
+            .single();
+          
+          if (!existingLike) {
+            // Only insert if doesn't exist
+            const { error: insertError } = await window.supabaseClient
+              .from('user_likes')
+              .insert({
+                user_id: userProfile.id,
+                content_id: currentContent.id
+              });
+            
+            if (insertError) throw insertError;
+            
+            // INCREMENT count
+            newLikes = currentLikes + 1;
+          }
         } else {
-          await window.supabaseClient
+          // REMOVE LIKE
+          const { error: deleteError } = await window.supabaseClient
             .from('user_likes')
             .delete()
             .eq('user_id', userProfile.id)
             .eq('content_id', currentContent.id);
+          
+          if (deleteError) throw deleteError;
+          
+          // DECREMENT count
+          newLikes = currentLikes - 1;
         }
         
-        // 2. MANUALLY UPDATE Content.likes_count (CRITICAL FIX)
-        await window.supabaseClient
+        // MANUALLY UPDATE Content.likes_count in database
+        const { error: updateError } = await window.supabaseClient
           .from('Content')
           .update({ likes_count: newLikes })
           .eq('id', currentContent.id);
         
-        // 3. Refresh to confirm (handles race conditions)
-        await refreshContentCounts();
+        if (updateError) {
+          console.warn('Likes count update failed:', updateError);
+        }
+        
+        // UPDATE UI with new count
+        if (likesCountEl) {
+          likesCountEl.textContent = formatNumber(newLikes);
+        }
+        
+        // UPDATE local state
+        currentContent.likes_count = newLikes;
         
         showToast(!isLiked ? 'Liked!' : 'Like removed', !isLiked ? 'success' : 'info');
-        if (window.track?.contentLike) window.track.contentLike(currentContent.id, !isLiked);
+        
+        // Track analytics
+        if (window.track?.contentLike) {
+          window.track.contentLike(currentContent.id, !isLiked);
+        }
+        
       } catch (error) {
         console.error('Like operation failed:', error);
+        
         // REVERT UI ON ERROR
         likeBtn.classList.toggle('active', isLiked);
         likeBtn.innerHTML = isLiked 
           ? '<i class="fas fa-heart"></i><span>Liked</span>' 
           : '<i class="far fa-heart"></i><span>Like</span>';
-        if (likesCountEl) likesCountEl.textContent = formatNumber(currentLikes);
+        
+        if (likesCountEl) {
+          likesCountEl.textContent = formatNumber(currentLikes);
+        }
+        
         showToast('Failed to update like. Please retry.', 'error');
       }
     });
@@ -2083,7 +2170,7 @@ function formatNotificationTime(timestamp) {
   const diffMs = now - new Date(timestamp);
   const diffMins = Math.floor(diffMs / 60000);
   const diffHours = Math.floor(diffMs / 3600000);
-  const diffDays = Math.floor(diffMs / 86400000);
+  const diffDays = Math.floor(diffMs / 8640000);
   
   if (diffMins < 1) return 'Just now';
   if (diffMins < 60) return `${diffMins}m ago`;
