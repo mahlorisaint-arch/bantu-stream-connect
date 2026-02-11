@@ -250,6 +250,7 @@ async function loadContentFromURL() {
     };
 
     console.log('📥 Content loaded:', currentContent.title);
+    console.log('📊 Initial counts - Views:', currentContent.views_count, 'Likes:', currentContent.likes_count);
     
     // Update UI
     updateContentUI(currentContent);
@@ -281,6 +282,7 @@ async function checkUserLike(contentId, userId) {
   if (!userId) return false;
   
   try {
+    // Check in BOTH tables to be safe (user_likes and content_likes)
     const { data, error } = await window.supabaseClient
       .from('user_likes')
       .select('id')
@@ -288,7 +290,17 @@ async function checkUserLike(contentId, userId) {
       .eq('content_id', contentId)
       .single();
     
-    return !error && data !== null;
+    if (!error && data !== null) return true;
+    
+    // Also check content_likes table
+    const { data: contentLikeData, error: contentLikeError } = await window.supabaseClient
+      .from('content_likes')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('content_id', contentId)
+      .single();
+    
+    return !contentLikeError && contentLikeData !== null;
   } catch (error) {
     // PGRST116 = no rows found (expected when not liked)
     if (error.code === 'PGRST116') return false;
@@ -373,7 +385,7 @@ function updateContentUI(content) {
   safeSetText('creatorName', content.creator);
   safeSetText('creatorDisplayName', content.creator_display_name);
   
-  // Update stats
+  // Update stats - USE ACTUAL COUNTS FROM DATABASE
   safeSetText('viewsCount', formatNumber(content.views_count) + ' views');
   safeSetText('viewsCountFull', formatNumber(content.views_count));
   safeSetText('likesCount', formatNumber(content.likes_count));
@@ -416,21 +428,18 @@ function updateContentUI(content) {
   if (playerTitle) {
     playerTitle.textContent = `Now Playing: ${content.title}`;
   }
-  
-  // Note: Like and favorite buttons are now initialized by initializeLikeButton and initializeFavoriteButton
 }
 
 // ============================================
-// FIX: Load comments without joins (Issue 1 fix)
+// FIX: Load comments without joins
 // ============================================
 async function loadComments(contentId) {
   try {
     console.log('💬 Loading comments for content:', contentId);
     
-    // FETCH COMMENTS DIRECTLY - NO JOINS NEEDED
     const { data: comments, error } = await window.supabaseClient
       .from('comments')
-      .select('*') // author_name and author_avatar are already in comments table!
+      .select('*')
       .eq('content_id', contentId)
       .order('created_at', { ascending: false });
     
@@ -444,18 +453,6 @@ async function loadComments(contentId) {
     if (countEl) {
       countEl.textContent = `(${comments.length})`;
     }
-    
-    // Update Content table comments_count to match actual count
-    if (currentContent) {
-      const { error: updateError } = await window.supabaseClient
-        .from('Content')
-        .update({ comments_count: comments.length })
-        .eq('id', currentContent.id);
-      
-      if (updateError) {
-        console.warn('Failed to update comments_count:', updateError);
-      }
-    }
   } catch (error) {
     console.error('❌ Comments load failed:', error);
     showToast('Failed to load comments', 'error');
@@ -463,7 +460,7 @@ async function loadComments(contentId) {
   }
 }
 
-// Render comments - UPDATED to use fields from comments table
+// Render comments
 function renderComments(comments) {
   const container = document.getElementById('commentsList');
   const noComments = document.getElementById('noComments');
@@ -486,7 +483,7 @@ function renderComments(comments) {
   // Update count
   if (countEl) countEl.textContent = `(${comments.length})`;
   
-  // Add comments using DocumentFragment for performance
+  // Add comments
   const fragment = document.createDocumentFragment();
   comments.forEach(comment => {
     const commentEl = createCommentElement(comment);
@@ -499,7 +496,6 @@ function createCommentElement(comment) {
   const div = document.createElement('div');
   div.className = 'comment-item';
   
-  // USE FIELDS DIRECTLY FROM COMMENTS TABLE
   let authorName = comment.author_name || 'User';
   let avatarUrl = comment.author_avatar || null;
   
@@ -646,13 +642,13 @@ function initializeEnhancedVideoPlayer() {
     enhancedVideoPlayer.attach(videoElement, videoContainer);
 
     // ============================================
-    // FIX: UPDATED VIEW TRACKING WITH content_views TABLE (Issue 2 fix)
+    // CRITICAL FIX: VIEW TRACKING THAT PERSISTS
     // ============================================
     
     // Reset session tracking
     viewRecordedThisSession = false;
     
-    enhancedVideoPlayer.on('play', () => {
+    enhancedVideoPlayer.on('play', async () => {
         console.log('▶️ Video playing, recording view...');
         
         if (window.stateManager) {
@@ -669,39 +665,21 @@ function initializeEnhancedVideoPlayer() {
                 return;
             }
             
-            // Optimistic UI update
-            const viewsEl = document.getElementById('viewsCount');
-            const viewsFullEl = document.getElementById('viewsCountFull');
+            // Record view in content_views table
+            const success = await recordContentView(currentContent.id);
             
-            if (viewsEl && viewsFullEl) {
-                const currentViews = parseInt(viewsEl.textContent.replace(/\D/g, '') || '0') || 0;
-                const newViews = currentViews + 1;
+            if (success) {
+                // Mark as viewed to prevent duplicate recording this session
+                markContentAsViewed(currentContent.id);
                 
-                viewsEl.textContent = `${formatNumber(newViews)} views`;
-                viewsFullEl.textContent = formatNumber(newViews);
+                // IMPORTANT: Fetch updated view count from database
+                await refreshContentViewCount();
+                
+                // Track analytics
+                if (window.track?.contentView) {
+                    window.track.contentView(currentContent.id, 'video');
+                }
             }
-            
-            // Record view in content_views table (trigger will update Content.views_count)
-            recordContentView(currentContent.id)
-                .then(success => {
-                    if (success) {
-                        // Mark as viewed to prevent duplicate recording this session
-                        markContentAsViewed(currentContent.id);
-                        
-                        // Track analytics
-                        if (window.track?.contentView) {
-                            window.track.contentView(currentContent.id, 'video');
-                        }
-                    } else {
-                        // Revert UI on failure
-                        if (viewsEl && viewsFullEl) {
-                            const currentViews = parseInt(viewsEl.textContent.replace(/\D/g, '') || '0') || 0;
-                            const oldViews = currentViews - 1;
-                            viewsEl.textContent = `${formatNumber(oldViews)} views`;
-                            viewsFullEl.textContent = formatNumber(oldViews);
-                        }
-                    }
-                });
         }
     });
     
@@ -796,16 +774,69 @@ function initializeEnhancedVideoPlayer() {
 }
 
 // ============================================
-// FIX: Views counting using content_views table (Issue 2 fix)
+// FIX: REFRESH VIEW COUNT FROM DATABASE
+// ============================================
+async function refreshContentViewCount() {
+  if (!currentContent) return;
+  
+  try {
+    const { data, error } = await window.supabaseClient
+      .from('Content')
+      .select('views_count')
+      .eq('id', currentContent.id)
+      .single();
+    
+    if (error) throw error;
+    
+    // Update current content and UI
+    currentContent.views_count = data.views_count || 0;
+    safeSetText('viewsCount', formatNumber(currentContent.views_count) + ' views');
+    safeSetText('viewsCountFull', formatNumber(currentContent.views_count));
+    
+    console.log('✅ Updated view count:', currentContent.views_count);
+  } catch (error) {
+    console.error('❌ Failed to refresh view count:', error);
+  }
+}
+
+// ============================================
+// FIX: REFRESH LIKE COUNT FROM DATABASE
+// ============================================
+async function refreshContentLikeCount() {
+  if (!currentContent) return;
+  
+  try {
+    const { data, error } = await window.supabaseClient
+      .from('Content')
+      .select('likes_count')
+      .eq('id', currentContent.id)
+      .single();
+    
+    if (error) throw error;
+    
+    // Update current content and UI
+    currentContent.likes_count = data.likes_count || 0;
+    safeSetText('likesCount', formatNumber(currentContent.likes_count));
+    
+    console.log('✅ Updated like count:', currentContent.likes_count);
+  } catch (error) {
+    console.error('❌ Failed to refresh like count:', error);
+  }
+}
+
+// ============================================
+// FIX: Views counting using content_views table
 // ============================================
 async function recordContentView(contentId) {
   try {
-    // Only record if user is authenticated (viewer_id is required for trigger to work properly)
+    // Only record if user is authenticated
     let viewerId = null;
     if (window.AuthHelper?.isAuthenticated?.()) {
       const userProfile = window.AuthHelper.getUserProfile();
       viewerId = userProfile?.id || null;
     }
+    
+    console.log('📝 Recording view for content:', contentId, 'viewer:', viewerId);
     
     // INSERT into content_views table - the trigger will automatically update Content.views_count
     const { data, error } = await window.supabaseClient
@@ -1250,7 +1281,7 @@ function setupEventListeners() {
   }
   
   // ============================================
-  // FIX: LIKE BUTTON WITH USER-SPECIFIC STATE (Issue 3 fix)
+  // FIX: LIKE BUTTON WITH PROPER PERSISTENCE
   // ============================================
   const likeBtn = document.getElementById('likeBtn');
   if (likeBtn) {
@@ -1270,51 +1301,65 @@ function setupEventListeners() {
       }
       
       const isLiked = likeBtn.classList.contains('active');
-      const currentLikes = parseInt(document.getElementById('likesCount')?.textContent.replace(/\D/g, '') || '0') || 0;
-      const newLikes = isLiked ? currentLikes - 1 : currentLikes + 1;
       
       try {
-        // Optimistic UI update
-        likeBtn.classList.toggle('active', !isLiked);
-        likeBtn.innerHTML = !isLiked
-          ? '<i class="fas fa-heart"></i><span>Liked</span>'
-          : '<i class="far fa-heart"></i><span>Like</span>';
-        
-        document.getElementById('likesCount').textContent = formatNumber(newLikes);
-        
-        // Update database
         if (!isLiked) {
-          // Add like
+          // Add like - Insert into content_likes table (trigger will update Content.likes_count)
           const { error } = await window.supabaseClient
+            .from('content_likes')
+            .insert({
+              content_id: currentContent.id,
+              user_id: userProfile.id
+            });
+          
+          if (error) {
+            // If unique constraint violation, it means already liked
+            if (error.code === '23505') {
+              console.log('User already liked this content');
+              likeBtn.classList.add('active');
+              likeBtn.innerHTML = '<i class="fas fa-heart"></i><span>Liked</span>';
+              await refreshContentLikeCount();
+              return;
+            }
+            throw error;
+          }
+          
+          // Also add to user_likes table for consistency
+          await window.supabaseClient
             .from('user_likes')
             .insert({
               user_id: userProfile.id,
               content_id: currentContent.id
-            });
+            })
+            .catch(e => console.log('Note: Could not add to user_likes:', e.message));
           
-          if (error) throw error;
         } else {
-          // Remove like
+          // Remove like - Delete from content_likes table (trigger will update Content.likes_count)
           const { error } = await window.supabaseClient
-            .from('user_likes')
+            .from('content_likes')
             .delete()
             .eq('user_id', userProfile.id)
             .eq('content_id', currentContent.id);
           
           if (error) throw error;
+          
+          // Also remove from user_likes table
+          await window.supabaseClient
+            .from('user_likes')
+            .delete()
+            .eq('user_id', userProfile.id)
+            .eq('content_id', currentContent.id)
+            .catch(e => console.log('Note: Could not remove from user_likes:', e.message));
         }
         
-        // Update aggregate count in Content table
-        const { error: updateError } = await window.supabaseClient
-          .from('Content')
-          .update({ likes_count: newLikes })
-          .eq('id', currentContent.id);
+        // Update UI optimistically
+        likeBtn.classList.toggle('active');
+        likeBtn.innerHTML = !isLiked
+          ? '<i class="fas fa-heart"></i><span>Liked</span>'
+          : '<i class="far fa-heart"></i><span>Like</span>';
         
-        if (updateError) {
-          console.warn('Likes count update failed:', updateError);
-        }
-        
-        currentContent.likes_count = newLikes;
+        // IMPORTANT: Fetch updated like count from database
+        await refreshContentLikeCount();
         
         showToast(!isLiked ? 'Liked!' : 'Like removed', !isLiked ? 'success' : 'info');
         
@@ -1324,21 +1369,13 @@ function setupEventListeners() {
         }
       } catch (error) {
         console.error('Like update failed:', error);
-        // Revert UI on error
-        likeBtn.classList.toggle('active', isLiked);
-        likeBtn.innerHTML = isLiked
-          ? '<i class="fas fa-heart"></i><span>Liked</span>'
-          : '<i class="far fa-heart"></i><span>Like</span>';
-        
-        document.getElementById('likesCount').textContent = formatNumber(currentLikes);
-        
         showToast('Failed to update like', 'error');
       }
     });
   }
   
   // ============================================
-  // FIX: FAVORITE BUTTON WITH USER-SPECIFIC STATE (Issue 4 fix)
+  // FIX: FAVORITE BUTTON WITH USER-SPECIFIC STATE
   // ============================================
   const favoriteBtn = document.getElementById('favoriteBtn');
   if (favoriteBtn) {
@@ -1438,7 +1475,7 @@ function setupEventListeners() {
   }
   
   // ============================================
-  // FIX: COMMENT SUBMISSION HANDLER (Issue 1 fix)
+  // FIX: COMMENT SUBMISSION HANDLER
   // ============================================
   const sendBtn = document.getElementById('sendCommentBtn');
   const commentInput = document.getElementById('commentInput');
@@ -1472,15 +1509,15 @@ function setupEventListeners() {
           throw new Error('User profile not found');
         }
         
-        // 1. Insert comment with ALL required fields
+        // 1. Insert comment
         const { data: newComment, error: insertError } = await window.supabaseClient
           .from('comments')
           .insert({
             content_id: currentContent.id,
             user_id: userProfile.id,
-            author_name: displayName, // REQUIRED - NOT NULL
+            author_name: displayName,
             comment_text: text,
-            author_avatar: avatarUrl || null, // Optional
+            author_avatar: avatarUrl || null,
             created_at: new Date().toISOString()
           })
           .select()
@@ -1596,9 +1633,9 @@ async function loadContentAnalytics() {
     // Get view stats
     const { data: viewsData } = await window.supabaseClient
       .from('content_views')
-      .select('id, viewed_at')
+      .select('id, created_at')
       .eq('content_id', currentContent.id)
-      .order('viewed_at', { ascending: false })
+      .order('created_at', { ascending: false })
       .limit(100);
     
     // Get comment stats
@@ -1615,7 +1652,7 @@ async function loadContentAnalytics() {
     document.getElementById('content-total-views').textContent = formatNumber(totalViews);
     document.getElementById('total-comments').textContent = formatNumber(totalComments);
     
-    // Simulate engagement metrics (would come from analytics system)
+    // Simulate engagement metrics
     document.getElementById('avg-watch-time').textContent = '4m 23s';
     document.getElementById('engagement-rate').textContent = '68%';
     
