@@ -1,4 +1,4 @@
-// js/content-detail.js - UPDATED WITH ALL FIXES
+// js/content-detail.js - COMPLETELY UPDATED WITH ALL FIXES
 
 console.log('🎬 Content Detail Initializing with all fixes...');
 
@@ -7,7 +7,7 @@ let currentContent = null;
 let enhancedVideoPlayer = null;
 let isInitialized = false;
 let currentUserId = null;
-let viewRecordedThisSession = false; // Track if view has been recorded THIS SESSION
+let viewRecordedThisSession = false;
 
 // ============================================
 // VIDEO URL VALIDATION & DEBUGGING
@@ -16,7 +16,6 @@ async function validateVideoUrl(url) {
     try {
         console.log('🔍 Validating video URL:', url);
         
-        // Check if URL is accessible
         const response = await fetch(url, { 
             method: 'HEAD', 
             mode: 'cors',
@@ -25,22 +24,15 @@ async function validateVideoUrl(url) {
         
         if (response.ok) {
             console.log('✅ Video URL is accessible');
-            console.log('📊 Content-Type:', response.headers.get('content-type'));
-            console.log('📊 Content-Length:', response.headers.get('content-length'));
             return true;
         } else {
-            console.error('❌ Video URL returned status:', response.status, response.statusText);
+            console.error('❌ Video URL returned status:', response.status);
             return false;
         }
     } catch (error) {
         console.error('❌ Error validating video URL:', error);
         return false;
     }
-}
-
-// Helper to get file extension
-function getFileExtension(filename) {
-    return filename.slice((filename.lastIndexOf(".") - 1 >>> 0) + 2);
 }
 
 // Initialize when DOM is ready
@@ -71,7 +63,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Setup UI
   setupEventListeners();
   
-  // Initialize video player (FIXED VERSION)
+  // Initialize video player
   initializeEnhancedVideoPlayer();
   
   // Initialize all modals/panels
@@ -129,7 +121,6 @@ function updateProfileUI() {
   
   if (!profileBtn || !userProfilePlaceholder) return;
   
-  // Check if user is authenticated
   if (window.AuthHelper?.isAuthenticated?.()) {
     const userProfile = window.AuthHelper.getUserProfile();
     const displayName = window.AuthHelper.getDisplayName();
@@ -162,7 +153,6 @@ function updateProfileUI() {
       window.location.href = 'profile.html';
     };
   } else {
-    // Guest user
     userProfilePlaceholder.innerHTML = `
       <div class="profile-placeholder">
         <i class="fas fa-user"></i>
@@ -173,9 +163,7 @@ function updateProfileUI() {
     };
   }
   
-  // ============================================
-  // FIX: Enable/disable comment section based on auth state
-  // ============================================
+  // Enable/disable comment section based on auth state
   const commentInput = document.getElementById('commentInput');
   const sendCommentBtn = document.getElementById('sendCommentBtn');
   if (commentInput && sendCommentBtn) {
@@ -183,7 +171,6 @@ function updateProfileUI() {
       commentInput.disabled = false;
       commentInput.placeholder = 'Write a comment...';
       sendCommentBtn.disabled = false;
-      // Show user avatar in comment section
       const userProfile = window.AuthHelper.getUserProfile();
       const displayName = window.AuthHelper.getDisplayName();
       const avatarUrl = window.AuthHelper.getAvatarUrl();
@@ -199,7 +186,6 @@ function updateProfileUI() {
       commentInput.disabled = true;
       commentInput.placeholder = 'Sign in to add a comment...';
       sendCommentBtn.disabled = true;
-      // Reset avatar
       const commentAvatar = document.getElementById('userCommentAvatar');
       if (commentAvatar) {
         commentAvatar.innerHTML = '<i class="fas fa-user"></i>';
@@ -225,18 +211,17 @@ function resetProfileUI() {
   };
 }
 
-// Load content from URL - UPDATED WITH ALL FIXES
+// ============================================
+// FIXED: Load content with proper user-specific state initialization
+// ============================================
 async function loadContentFromURL() {
   const urlParams = new URLSearchParams(window.location.search);
   const contentId = urlParams.get('id') || '68';
   
   try {
-    // ============================================
-    // FIX: Explicitly select views_count, favorites_count, comments_count
-    // ============================================
     const { data, error } = await window.supabaseClient
       .from('Content')
-      .select('*, user_profiles!user_id(*), views_count, favorites_count, comments_count')
+      .select('*, user_profiles!user_id(*)')
       .eq('id', contentId)
       .single();
 
@@ -264,32 +249,16 @@ async function loadContentFromURL() {
       user_id: data.user_id
     };
 
-    // ============================================
-    // DEBUG: Log the file URLs
-    // ============================================
     console.log('📥 Content loaded:', currentContent.title);
-    console.log('📁 Raw file_url from DB:', data.file_url);
-    console.log('📁 Raw thumbnail_url from DB:', data.thumbnail_url);
-    
-    // Construct full URLs for debugging
-    if (data.file_url && !data.file_url.startsWith('http')) {
-      const cleanPath = data.file_url.startsWith('/') ? data.file_url.substring(1) : data.file_url;
-      const fullUrl = `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/content-media/${cleanPath}`;
-      console.log('🔗 Full video URL:', fullUrl);
-      
-      // Validate it
-      validateVideoUrl(fullUrl);
-    }
-
-    console.log('✅ Real content loaded:', currentContent.title);
     
     // Update UI
     updateContentUI(currentContent);
     
     // ============================================
-    // FIX: Initialize favorite button after content loads
+    // CRITICAL FIX: Initialize user-specific button states
     // ============================================
     if (currentUserId) {
+      await initializeLikeButton(contentId, currentUserId);
       await initializeFavoriteButton(contentId, currentUserId);
     }
     
@@ -306,20 +275,65 @@ async function loadContentFromURL() {
 }
 
 // ============================================
-// FIX: Favorite button initialization
+// FIX: Check if current user has liked this content
+// ============================================
+async function checkUserLike(contentId, userId) {
+  if (!userId) return false;
+  
+  try {
+    const { data, error } = await window.supabaseClient
+      .from('user_likes')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('content_id', contentId)
+      .single();
+    
+    return !error && data !== null;
+  } catch (error) {
+    // PGRST116 = no rows found (expected when not liked)
+    if (error.code === 'PGRST116') return false;
+    console.error('Like check error:', error);
+    return false;
+  }
+}
+
+// ============================================
+// FIX: Initialize like button state properly
+// ============================================
+async function initializeLikeButton(contentId, userId) {
+  const likeBtn = document.getElementById('likeBtn');
+  if (!likeBtn) return;
+  
+  // Reset state
+  likeBtn.classList.remove('active');
+  likeBtn.innerHTML = '<i class="far fa-heart"></i><span>Like</span>';
+  
+  if (!userId) return; // Not logged in - can't like
+  
+  // Check if CURRENT USER has liked this content
+  const isLiked = await checkUserLike(contentId, userId);
+  
+  if (isLiked) {
+    likeBtn.classList.add('active');
+    likeBtn.innerHTML = '<i class="fas fa-heart"></i><span>Liked</span>';
+  }
+}
+
+// ============================================
+// FIX: Check if current user has favorited this content
 // ============================================
 async function checkUserFavorite(contentId, userId) {
   if (!userId) return false;
   
   try {
-    const { data } = await window.supabaseClient
+    const { data, error } = await window.supabaseClient
       .from('favorites')
       .select('id')
       .eq('user_id', userId)
       .eq('content_id', contentId)
       .single();
     
-    return !!data;
+    return !error && data !== null;
   } catch (error) {
     // PGRST116 = no rows found (expected when not favorited)
     if (error.code === 'PGRST116') return false;
@@ -328,19 +342,25 @@ async function checkUserFavorite(contentId, userId) {
   }
 }
 
+// ============================================
+// FIX: Initialize favorite button state properly
+// ============================================
 async function initializeFavoriteButton(contentId, userId) {
-  const btn = document.getElementById('favoriteBtn');
-  if (!btn) return;
+  const favoriteBtn = document.getElementById('favoriteBtn');
+  if (!favoriteBtn) return;
   
-  btn.classList.remove('active');
-  btn.innerHTML = '<i class="far fa-star"></i><span>Favorite</span>';
+  // Reset state
+  favoriteBtn.classList.remove('active');
+  favoriteBtn.innerHTML = '<i class="far fa-star"></i><span>Favorite</span>';
   
-  if (!userId) return; // Skip if not logged in
+  if (!userId) return; // Not logged in - can't favorite
   
+  // Check if CURRENT USER has favorited this content
   const isFavorited = await checkUserFavorite(contentId, userId);
+  
   if (isFavorited) {
-    btn.classList.add('active');
-    btn.innerHTML = '<i class="fas fa-star"></i><span>Favorited</span>';
+    favoriteBtn.classList.add('active');
+    favoriteBtn.innerHTML = '<i class="fas fa-star"></i><span>Favorited</span>';
   }
 }
 
@@ -360,7 +380,7 @@ function updateContentUI(content) {
   safeSetText('favoritesCount', formatNumber(content.favorites_count));
   safeSetText('commentsCount', `(${formatNumber(content.comments_count)})`);
   
-  // Update duration (FIXED: Never shows dash)
+  // Update duration
   const duration = formatDuration(content.duration || 3600);
   safeSetText('durationText', duration);
   safeSetText('contentDurationFull', duration);
@@ -397,18 +417,11 @@ function updateContentUI(content) {
     playerTitle.textContent = `Now Playing: ${content.title}`;
   }
   
-  // Initialize like button state (based on content likes)
-  const likeBtn = document.getElementById('likeBtn');
-  if (likeBtn && content.likes_count > 0) {
-    likeBtn.classList.add('active');
-    likeBtn.innerHTML = '<i class="fas fa-heart"></i><span>Liked</span>';
-  }
-  
-  // Favorite button state is now handled by initializeFavoriteButton()
+  // Note: Like and favorite buttons are now initialized by initializeLikeButton and initializeFavoriteButton
 }
 
 // ============================================
-// FIX: Load comments without joins (Issue 3 fix)
+// FIX: Load comments without joins (Issue 1 fix)
 // ============================================
 async function loadComments(contentId) {
   try {
@@ -425,6 +438,24 @@ async function loadComments(contentId) {
     
     console.log(`✅ Loaded ${comments.length} comments`);
     renderComments(comments || []);
+    
+    // Update comment count in UI
+    const countEl = document.getElementById('commentsCount');
+    if (countEl) {
+      countEl.textContent = `(${comments.length})`;
+    }
+    
+    // Update Content table comments_count to match actual count
+    if (currentContent) {
+      const { error: updateError } = await window.supabaseClient
+        .from('Content')
+        .update({ comments_count: comments.length })
+        .eq('id', currentContent.id);
+      
+      if (updateError) {
+        console.warn('Failed to update comments_count:', updateError);
+      }
+    }
   } catch (error) {
     console.error('❌ Comments load failed:', error);
     showToast('Failed to load comments', 'error');
@@ -452,7 +483,7 @@ function renderComments(comments) {
   // Hide "no comments" message
   if (noComments) noComments.style.display = 'none';
   
-  // Update count - FIXED: Always use actual count
+  // Update count
   if (countEl) countEl.textContent = `(${comments.length})`;
   
   // Add comments using DocumentFragment for performance
@@ -578,10 +609,8 @@ function renderRelatedContent(items) {
 }
 
 // ====================================================
-// CRITICAL FIX: Enhanced Video Player Initialization
+// VIDEO PLAYER INITIALIZATION
 // ====================================================
-
-// Initialize enhanced video player - CLEAN VERSION (NO DUPLICATE CONTROLS)
 function initializeEnhancedVideoPlayer() {
   const videoElement = document.getElementById('inlineVideoPlayer');
   const videoContainer = document.querySelector('.video-container');
@@ -592,21 +621,6 @@ function initializeEnhancedVideoPlayer() {
   }
 
   try {
-    // ============================================
-    // DEBUG: Check video source before creating player
-    // ============================================
-    const existingSrc = videoElement.src || videoElement.getAttribute('src');
-    const existingSources = videoElement.querySelectorAll('source');
-    
-    console.log('🔍 Before EnhancedVideoPlayer creation:');
-    console.log('  - video.src:', videoElement.src);
-    console.log('  - video.getAttribute("src"):', videoElement.getAttribute('src'));
-    console.log('  - source elements:', existingSources.length);
-    if (existingSources.length > 0) {
-        console.log('  - first source src:', existingSources[0].src);
-        console.log('  - first source type:', existingSources[0].type);
-    }
-
     // Get preferences
     const preferences = window.state ? window.state.getPreferences() : {
       autoplay: false,
@@ -628,29 +642,12 @@ function initializeEnhancedVideoPlayer() {
       userId: currentUserId
     });
 
-    // ============================================
-    // DEBUG: Check video source before attach
-    // ============================================
-    console.log('🔍 Before attach:');
-    console.log('  - video.src:', videoElement.src);
-    console.log('  - source elements:', videoElement.querySelectorAll('source').length);
-
     // Attach to video element
     enhancedVideoPlayer.attach(videoElement, videoContainer);
 
     // ============================================
-    // DEBUG: Check video source after attach
+    // FIX: UPDATED VIEW TRACKING WITH content_views TABLE (Issue 2 fix)
     // ============================================
-    console.log('🔍 After attach:');
-    console.log('  - video.src:', videoElement.src);
-    console.log('  - currentSrc:', videoElement.currentSrc);
-    console.log('  - source elements:', videoElement.querySelectorAll('source').length);
-    console.log('  - networkState:', videoElement.networkState);
-    console.log('  - readyState:', videoElement.readyState);
-
-    // ====================================================
-    // FIX: UPDATED VIEW TRACKING WITH SINGLE-TABLE FIX (Issue 1 fix)
-    // ====================================================
     
     // Reset session tracking
     viewRecordedThisSession = false;
@@ -666,26 +663,45 @@ function initializeEnhancedVideoPlayer() {
         if (currentContent && !viewRecordedThisSession) {
             viewRecordedThisSession = true;
             
+            // Check if already viewed recently (client-side deduplication)
+            if (hasViewedContentRecently(currentContent.id)) {
+                console.log('📊 View already recorded recently');
+                return;
+            }
+            
             // Optimistic UI update
             const viewsEl = document.getElementById('viewsCount');
             const viewsFullEl = document.getElementById('viewsCountFull');
-            const currentViews = parseInt(viewsEl?.textContent.replace(/\D/g, '') || '0') || 0;
-            const newViews = currentViews + 1;
             
-            if (viewsEl) viewsEl.textContent = `${formatNumber(newViews)} views`;
-            if (viewsFullEl) viewsFullEl.textContent = formatNumber(newViews);
+            if (viewsEl && viewsFullEl) {
+                const currentViews = parseInt(viewsEl.textContent.replace(/\D/g, '') || '0') || 0;
+                const newViews = currentViews + 1;
+                
+                viewsEl.textContent = `${formatNumber(newViews)} views`;
+                viewsFullEl.textContent = formatNumber(newViews);
+            }
             
-            // CRITICAL: Record view WITHOUT client-side deduplication blocking DB update
-            recordContentView(currentContent.id, currentViews, newViews)
-              .catch(err => {
-                console.error('View recording failed:', err);
-                // Revert UI on failure
-                if (viewsEl) viewsEl.textContent = `${formatNumber(currentViews)} views`;
-                if (viewsFullEl) viewsFullEl.textContent = formatNumber(currentViews);
-              });
-            
-            // Session-only tracking (resets on refresh)
-            sessionStorage.setItem(`bantu_viewed_${currentContent.id}`, 'true');
+            // Record view in content_views table (trigger will update Content.views_count)
+            recordContentView(currentContent.id)
+                .then(success => {
+                    if (success) {
+                        // Mark as viewed to prevent duplicate recording this session
+                        markContentAsViewed(currentContent.id);
+                        
+                        // Track analytics
+                        if (window.track?.contentView) {
+                            window.track.contentView(currentContent.id, 'video');
+                        }
+                    } else {
+                        // Revert UI on failure
+                        if (viewsEl && viewsFullEl) {
+                            const currentViews = parseInt(viewsEl.textContent.replace(/\D/g, '') || '0') || 0;
+                            const oldViews = currentViews - 1;
+                            viewsEl.textContent = `${formatNumber(oldViews)} views`;
+                            viewsFullEl.textContent = formatNumber(oldViews);
+                        }
+                    }
+                });
         }
     });
     
@@ -702,33 +718,15 @@ function initializeEnhancedVideoPlayer() {
       }
     });
 
-    // ============================================
-    // UPDATED ERROR HANDLER WITH DETAILED LOGGING
-    // ============================================
     enhancedVideoPlayer.on('error', (error) => {
         console.error('🔴 Video player error:', error);
         
         if (error?.target) {
             const video = error.target;
             console.error('Video element error details:');
-            console.error('  - Network state:', video.networkState);
-            console.error('  - Ready state:', video.readyState);
             console.error('  - Error code:', video.error?.code);
             console.error('  - Error message:', video.error?.message);
-            
-            const errorMessages = {
-                1: 'MEDIA_ERR_ABORTED: Video load was aborted',
-                2: 'MEDIA_ERR_NETWORK: Network error occurred',
-                3: 'MEDIA_ERR_DECODE: Video decoding failed (corrupted or unsupported format)',
-                4: 'MEDIA_ERR_SRC_NOT_SUPPORTED: Video format not supported or URL invalid'
-            };
-            
-            const errorMsg = errorMessages[video.error?.code] || 'Unknown playback error';
-            console.error('  - Detailed error:', errorMsg);
-            
-            showToast(`Playback failed: ${errorMsg}`, 'error');
-        } else {
-            showToast('Video playback error occurred', 'error');
+            showToast('Playback error occurred', 'error');
         }
         
         // Show retry option
@@ -742,7 +740,6 @@ function initializeEnhancedVideoPlayer() {
             }
         };
         
-        // Add to UI somewhere visible
         const errorContainer = document.querySelector('.inline-player');
         if (errorContainer) {
             let existingRetry = errorContainer.querySelector('.retry-button');
@@ -768,13 +765,13 @@ function initializeEnhancedVideoPlayer() {
         }
     });
     
-    // Setup time update for watch history (FIXED: removed track.watchProgress error)
+    // Setup time update for watch history
     enhancedVideoPlayer.on('timeupdate', (time) => {
       if (window.stateManager) {
         window.stateManager.setState('session.currentTime', time);
       }
       
-      // Update watch history every 30 seconds (without analytics error)
+      // Update watch history every 30 seconds
       if (Math.floor(time) % 30 === 0 && currentContent) {
         const duration = enhancedVideoPlayer.getDuration() || currentContent.duration || 3600;
         if (window.state && window.state.updateWatchHistory) {
@@ -787,7 +784,7 @@ function initializeEnhancedVideoPlayer() {
       }
     });
     
-    console.log('✅ Enhanced video player initialized successfully with all fixes');
+    console.log('✅ Enhanced video player initialized successfully');
     
   } catch (error) {
     console.error('❌ Failed to initialize enhanced video player:', error);
@@ -798,62 +795,49 @@ function initializeEnhancedVideoPlayer() {
   }
 }
 
-// ====================================================
-// SINGLE-TABLE FIX: VIEW COUNTING FUNCTION
-// ====================================================
-
-/**
- * SINGLE-TABLE FIX: Directly update views_count in Content table
- */
-async function recordContentView(contentId, currentViews, newViews) {
-    try {
-        if (!window.SupabaseHelper?.client) {
-            console.warn('Supabase client not available');
-            return;
-        }
-
-        // DIRECTLY update views_count in Content table
-        const { error } = await window.SupabaseHelper.client
-            .from('Content')
-            .update({ views_count: newViews })
-            .eq('id', contentId);
-
-        if (error) {
-            console.error('❌ View count update failed:', error.message);
-            // Revert UI on error
-            document.getElementById('viewsCount').textContent = `${formatNumber(currentViews)} views`;
-            document.getElementById('viewsCountFull').textContent = formatNumber(currentViews);
-            showToast('Failed to record view', 'error');
-            return;
-        }
-
-        console.log(`✅ View count updated to ${newViews} for content ${contentId}`);
-        
-        // Update local state
-        if (currentContent) {
-            currentContent.views_count = newViews;
-        }
-        
-        // Track analytics if available
-        if (window.track?.contentView) {
-            window.track.contentView(contentId, 'video');
-        }
-    } catch (error) {
-        console.error('❌ View recording error:', error);
-        // Revert UI
-        document.getElementById('viewsCount').textContent = `${formatNumber(currentViews)} views`;
-        document.getElementById('viewsCountFull').textContent = formatNumber(currentViews);
-        showToast('View recording failed', 'error');
+// ============================================
+// FIX: Views counting using content_views table (Issue 2 fix)
+// ============================================
+async function recordContentView(contentId) {
+  try {
+    // Only record if user is authenticated (viewer_id is required for trigger to work properly)
+    let viewerId = null;
+    if (window.AuthHelper?.isAuthenticated?.()) {
+      const userProfile = window.AuthHelper.getUserProfile();
+      viewerId = userProfile?.id || null;
     }
+    
+    // INSERT into content_views table - the trigger will automatically update Content.views_count
+    const { data, error } = await window.supabaseClient
+      .from('content_views')
+      .insert({
+        content_id: contentId,
+        viewer_id: viewerId,
+        view_duration: 0,
+        device_type: /Mobile|Android|iP(hone|od)|IEMobile|Windows Phone|BlackBerry/i.test(navigator.userAgent) 
+          ? 'mobile' 
+          : 'desktop',
+        created_at: new Date().toISOString()
+      })
+      .select()
+      .single();
+    
+    if (error) {
+      console.error('❌ View recording failed:', error);
+      return false;
+    }
+    
+    console.log('✅ View recorded in content_views:', data);
+    return true;
+  } catch (error) {
+    console.error('❌ View recording error:', error);
+    return false;
+  }
 }
 
-// ====================================================
+// ============================================
 // CLIENT-SIDE VIEW DEDUPLICATION FUNCTIONS
-// ====================================================
-
-/**
- * Check if content was viewed in the last 24 hours (client-side)
- */
+// ============================================
 function hasViewedContentRecently(contentId) {
   try {
     const viewedContent = JSON.parse(localStorage.getItem('bantu_viewed_content') || '{}');
@@ -869,9 +853,6 @@ function hasViewedContentRecently(contentId) {
   }
 }
 
-/**
- * Mark content as viewed in client-side storage
- */
 function markContentAsViewed(contentId) {
   try {
     const viewedContent = JSON.parse(localStorage.getItem('bantu_viewed_content') || '{}');
@@ -910,9 +891,7 @@ function handlePlay() {
         return;
     }
 
-    // ============================================
     // Get CORRECT video URL
-    // ============================================
     let videoUrl = currentContent.file_url;
     
     console.log('📥 Raw file_url from database:', videoUrl);
@@ -953,9 +932,7 @@ function handlePlay() {
         placeholder.style.display = 'none';
     }
 
-    // ============================================
-    // CRITICAL FIX: Destroy existing player FIRST
-    // ============================================
+    // Destroy existing player FIRST
     if (enhancedVideoPlayer) {
         try {
             console.log('🗑️ Destroying existing player...');
@@ -966,9 +943,7 @@ function handlePlay() {
         enhancedVideoPlayer = null;
     }
 
-    // ============================================
-    // CRITICAL: Clear and set video source BEFORE initializing player
-    // ============================================
+    // Clear and set video source BEFORE initializing player
     console.log('🔧 Setting video source...');
     
     // Clear existing sources
@@ -1001,9 +976,7 @@ function handlePlay() {
     
     console.log('✅ Video source set successfully');
 
-    // ============================================
     // Initialize player AFTER source is set
-    // ============================================
     console.log('🎬 Initializing EnhancedVideoPlayer...');
     initializeEnhancedVideoPlayer();
 
@@ -1013,17 +986,6 @@ function handlePlay() {
             console.log('▶️ Attempting to play...');
             enhancedVideoPlayer.play().catch(err => {
                 console.error('🔴 Play failed:', err);
-                console.error('  - Error name:', err.name);
-                console.error('  - Error message:', err.message);
-                
-                // Check video element state
-                console.log('📊 Video element state:');
-                console.log('  - src:', videoElement.src);
-                console.log('  - currentSrc:', videoElement.currentSrc);
-                console.log('  - networkState:', videoElement.networkState);
-                console.log('  - readyState:', videoElement.readyState);
-                console.log('  - error:', videoElement.error);
-                
                 showToast('Click play button in video player', 'info');
             });
         } else {
@@ -1063,7 +1025,6 @@ function copyToClipboard(text) {
 // ====================================================
 // SINGLE-TABLE FIX: CONNECT BUTTONS WITH CONNECTORS TABLE
 // ====================================================
-
 function setupConnectButtons() {
     // Helper to check connection status using connectors table
     async function checkConnectionStatus(creatorId) {
@@ -1289,7 +1250,7 @@ function setupEventListeners() {
   }
   
   // ============================================
-  // FIX: LIKE BUTTON FUNCTIONALITY
+  // FIX: LIKE BUTTON WITH USER-SPECIFIC STATE (Issue 3 fix)
   // ============================================
   const likeBtn = document.getElementById('likeBtn');
   if (likeBtn) {
@@ -1301,29 +1262,60 @@ function setupEventListeners() {
         showToast('Sign in to like content', 'warning');
         return;
       }
-
+      
+      const userProfile = window.AuthHelper.getUserProfile();
+      if (!userProfile?.id) {
+        showToast('User profile not found', 'error');
+        return;
+      }
+      
       const isLiked = likeBtn.classList.contains('active');
       const currentLikes = parseInt(document.getElementById('likesCount')?.textContent.replace(/\D/g, '') || '0') || 0;
       const newLikes = isLiked ? currentLikes - 1 : currentLikes + 1;
-
+      
       try {
         // Optimistic UI update
         likeBtn.classList.toggle('active', !isLiked);
-        likeBtn.innerHTML = !isLiked 
-          ? '<i class="fas fa-heart"></i><span>Liked</span>' 
+        likeBtn.innerHTML = !isLiked
+          ? '<i class="fas fa-heart"></i><span>Liked</span>'
           : '<i class="far fa-heart"></i><span>Like</span>';
+        
         document.getElementById('likesCount').textContent = formatNumber(newLikes);
-
-        // DIRECT update to Content table
-        const { error } = await window.SupabaseHelper.client
+        
+        // Update database
+        if (!isLiked) {
+          // Add like
+          const { error } = await window.supabaseClient
+            .from('user_likes')
+            .insert({
+              user_id: userProfile.id,
+              content_id: currentContent.id
+            });
+          
+          if (error) throw error;
+        } else {
+          // Remove like
+          const { error } = await window.supabaseClient
+            .from('user_likes')
+            .delete()
+            .eq('user_id', userProfile.id)
+            .eq('content_id', currentContent.id);
+          
+          if (error) throw error;
+        }
+        
+        // Update aggregate count in Content table
+        const { error: updateError } = await window.supabaseClient
           .from('Content')
           .update({ likes_count: newLikes })
           .eq('id', currentContent.id);
-
-        if (error) throw error;
         
-        // Update local state
+        if (updateError) {
+          console.warn('Likes count update failed:', updateError);
+        }
+        
         currentContent.likes_count = newLikes;
+        
         showToast(!isLiked ? 'Liked!' : 'Like removed', !isLiked ? 'success' : 'info');
         
         // Track analytics
@@ -1334,74 +1326,101 @@ function setupEventListeners() {
         console.error('Like update failed:', error);
         // Revert UI on error
         likeBtn.classList.toggle('active', isLiked);
-        likeBtn.innerHTML = isLiked 
-          ? '<i class="fas fa-heart"></i><span>Liked</span>' 
+        likeBtn.innerHTML = isLiked
+          ? '<i class="fas fa-heart"></i><span>Liked</span>'
           : '<i class="far fa-heart"></i><span>Like</span>';
+        
         document.getElementById('likesCount').textContent = formatNumber(currentLikes);
+        
         showToast('Failed to update like', 'error');
       }
     });
   }
   
   // ============================================
-  // FIX: FAVORITES BUTTON FUNCTIONALITY (Issue 2 fix)
+  // FIX: FAVORITE BUTTON WITH USER-SPECIFIC STATE (Issue 4 fix)
   // ============================================
   const favoriteBtn = document.getElementById('favoriteBtn');
   if (favoriteBtn) {
     favoriteBtn.addEventListener('click', async () => {
-      if (!currentContent || !currentUserId) {
+      if (!currentContent) return;
+      
+      // Check authentication FIRST
+      if (!window.AuthHelper?.isAuthenticated?.()) {
         showToast('Sign in to favorite content', 'warning');
         return;
       }
       
-      const btn = document.getElementById('favoriteBtn');
-      const isFavorited = btn.classList.contains('active');
-      const countEl = document.getElementById('favoritesCount');
-      const currentCount = parseInt(countEl?.textContent.replace(/\D/g, '') || '0') || 0;
-      const newCount = isFavorited ? currentCount - 1 : currentCount + 1;
+      const userProfile = window.AuthHelper.getUserProfile();
+      if (!userProfile?.id) {
+        showToast('User profile not found', 'error');
+        return;
+      }
       
-      // Optimistic UI update
-      btn.classList.toggle('active', !isFavorited);
-      btn.innerHTML = !isFavorited 
-        ? '<i class="fas fa-star"></i><span>Favorited</span>' 
-        : '<i class="far fa-star"></i><span>Favorite</span>';
-      if (countEl) countEl.textContent = formatNumber(newCount);
+      const isFavorited = favoriteBtn.classList.contains('active');
+      const favCountEl = document.getElementById('favoritesCount');
+      const currentFavorites = parseInt(favCountEl?.textContent.replace(/\D/g, '') || '0') || 0;
+      const newFavorites = isFavorited ? currentFavorites - 1 : currentFavorites + 1;
       
       try {
+        // Optimistic UI update
+        favoriteBtn.classList.toggle('active', !isFavorited);
+        favoriteBtn.innerHTML = !isFavorited
+          ? '<i class="fas fa-star"></i><span>Favorited</span>'
+          : '<i class="far fa-star"></i><span>Favorite</span>';
+        
+        if (favCountEl) {
+          favCountEl.textContent = formatNumber(newFavorites);
+        }
+        
+        // Update database
         if (!isFavorited) {
-          // ADD to favorites table (uses your EXISTING table structure)
-          await window.supabaseClient
+          // Add favorite
+          const { error } = await window.supabaseClient
             .from('favorites')
-            .insert({ 
-              user_id: currentUserId,    // uuid → matches user_profiles(id)
-              content_id: currentContent.id // bigint → matches your schema
+            .insert({
+              user_id: userProfile.id,
+              content_id: currentContent.id
             });
+          
+          if (error) throw error;
         } else {
-          // REMOVE from favorites table
-          await window.supabaseClient
+          // Remove favorite
+          const { error } = await window.supabaseClient
             .from('favorites')
             .delete()
-            .eq('user_id', currentUserId)
+            .eq('user_id', userProfile.id)
             .eq('content_id', currentContent.id);
+          
+          if (error) throw error;
         }
         
         // Update aggregate count in Content table
-        await window.supabaseClient
+        const { error: updateError } = await window.supabaseClient
           .from('Content')
-          .update({ favorites_count: newCount })
+          .update({ favorites_count: newFavorites })
           .eq('id', currentContent.id);
         
-        currentContent.favorites_count = newCount;
+        if (updateError) {
+          console.warn('Favorites count update failed:', updateError);
+        }
+        
+        currentContent.favorites_count = newFavorites;
+        
         showToast(!isFavorited ? 'Added to favorites!' : 'Removed from favorites', !isFavorited ? 'success' : 'info');
       } catch (error) {
-        console.error('Favorite operation failed:', error);
+        console.error('Favorite update failed:', error);
         // Revert UI on error
-        btn.classList.toggle('active', isFavorited);
-        btn.innerHTML = isFavorited 
-          ? '<i class="fas fa-star"></i><span>Favorited</span>' 
+        favoriteBtn.classList.toggle('active', isFavorited);
+        favoriteBtn.innerHTML = isFavorited
+          ? '<i class="fas fa-star"></i><span>Favorited</span>'
           : '<i class="far fa-star"></i><span>Favorite</span>';
-        if (countEl) countEl.textContent = formatNumber(currentCount);
-        showToast('Operation failed. Please try again.', 'error');
+        
+        if (favCountEl) {
+          favCountEl.textContent = formatNumber(currentFavorites);
+        }
+        
+        showToast('Failed to update favorite', 'error');
       }
     });
   }
@@ -1419,7 +1438,7 @@ function setupEventListeners() {
   }
   
   // ============================================
-  // SINGLE-TABLE FIX: COMMENT SUBMISSION HANDLER
+  // FIX: COMMENT SUBMISSION HANDLER (Issue 1 fix)
   // ============================================
   const sendBtn = document.getElementById('sendCommentBtn');
   const commentInput = document.getElementById('commentInput');
@@ -1444,46 +1463,41 @@ function setupEventListeners() {
       sendBtn.disabled = true;
       
       try {
-        // 1. FIRST: Insert comment into comments table (required for display)
+        // Get user profile data
         const userProfile = window.AuthHelper.getUserProfile();
         const displayName = window.AuthHelper.getDisplayName();
+        const avatarUrl = window.AuthHelper.getAvatarUrl();
         
+        if (!userProfile?.id) {
+          throw new Error('User profile not found');
+        }
+        
+        // 1. Insert comment with ALL required fields
         const { data: newComment, error: insertError } = await window.supabaseClient
           .from('comments')
           .insert({
             content_id: currentContent.id,
             user_id: userProfile.id,
-            author_name: displayName,
+            author_name: displayName, // REQUIRED - NOT NULL
             comment_text: text,
+            author_avatar: avatarUrl || null, // Optional
             created_at: new Date().toISOString()
           })
           .select()
           .single();
         
-        if (insertError) throw insertError;
-        
-        // 2. Update comments_count in Content table
-        const currentComments = parseInt(document.getElementById('commentsCount')?.textContent.replace(/\D/g, '') || '0') || 0;
-        const newCommentCount = currentComments + 1;
-        
-        const { error: updateError } = await window.SupabaseHelper.client
-          .from('Content')
-          .update({ comments_count: newCommentCount })
-          .eq('id', currentContent.id);
-        
-        if (updateError) {
-          console.warn('Comment count update failed (but comment saved):', updateError);
-          // Don't fail the whole operation - comment was saved
+        if (insertError) {
+          console.error('Comment insert error:', insertError);
+          throw insertError;
         }
         
-        // 3. Update UI
-        commentInput.value = '';
-        await loadComments(currentContent.id); // Refresh comments list
-        currentContent.comments_count = newCommentCount;
+        console.log('✅ Comment inserted:', newComment);
         
-        // Update comment count display
-        const countEl = document.getElementById('commentsCount');
-        if (countEl) countEl.textContent = `(${newCommentCount})`;
+        // 2. Refresh comments to show new comment immediately
+        await loadComments(currentContent.id);
+        
+        // 3. Clear input
+        commentInput.value = '';
         
         showToast('Comment added!', 'success');
         
@@ -1492,7 +1506,7 @@ function setupEventListeners() {
           window.track.contentComment(currentContent.id);
         }
       } catch (error) {
-        console.error('Comment submission failed:', error);
+        console.error('❌ Comment submission failed:', error);
         showToast(error.message || 'Failed to add comment', 'error');
       } finally {
         sendBtn.innerHTML = originalHTML;
