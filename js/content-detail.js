@@ -656,19 +656,19 @@ function initializeEnhancedVideoPlayer() {
     enhancedVideoPlayer.attach(videoElement, videoContainer);
 
     // ============================================
-    // 🔴 CRITICAL FIX #4: REPLACED - VIDEO PLAY HANDLER (Lines ~650-690)
+    // 🔴 CRITICAL FIX #3: REPLACED - VIDEO PLAY HANDLER (Lines ~660-690)
     // ============================================
     enhancedVideoPlayer.on('play', () => {
-      console.log('▶️ Video playing, recording view...');
+      console.log('▶️ Video playing...');
+      
       if (window.stateManager) {
         window.stateManager.setState('session.playing', true);
       }
       
-      // Record view ONLY ONCE per session when video actually plays
       if (currentContent && !viewRecordedThisSession) {
         viewRecordedThisSession = true;
         
-        // Optimistic UI update
+        // OPTIMISTIC UI UPDATE
         const viewsEl = document.getElementById('viewsCount');
         const viewsFullEl = document.getElementById('viewsCountFull');
         const currentViews = parseInt(viewsEl?.textContent.replace(/\D/g, '') || '0') || 0;
@@ -679,31 +679,19 @@ function initializeEnhancedVideoPlayer() {
           viewsFullEl.textContent = formatNumber(newViews);
         }
         
-        // Record view in content_views table
+        // RECORD VIEW
         recordContentView(currentContent.id)
           .then(async (success) => {
             if (success) {
-              // Track analytics
               if (window.track?.contentView) {
                 window.track.contentView(currentContent.id, 'video');
               }
-              
-              // REFRESH to get accurate count from database
-              await refreshContentCounts();
             } else {
-              // Revert UI on failure
+              // REVERT on failure
               if (viewsEl && viewsFullEl) {
                 viewsEl.textContent = `${formatNumber(currentViews)} views`;
                 viewsFullEl.textContent = formatNumber(currentViews);
               }
-            }
-          })
-          .catch((error) => {
-            console.error('View recording promise error:', error);
-            // Revert UI on error
-            if (viewsEl && viewsFullEl) {
-              viewsEl.textContent = `${formatNumber(currentViews)} views`;
-              viewsFullEl.textContent = formatNumber(currentViews);
             }
           });
       }
@@ -804,78 +792,53 @@ function initializeEnhancedVideoPlayer() {
 // ============================================
 async function recordContentView(contentId) {
   try {
-    // Only record if user is authenticated
+    // SKIP if already viewed recently
+    if (hasViewedContentRecently(contentId)) {
+      console.log('📊 View skipped - already recorded recently');
+      return false;
+    }
+    
     let viewerId = null;
     if (window.AuthHelper?.isAuthenticated?.()) {
       const userProfile = window.AuthHelper.getUserProfile();
       viewerId = userProfile?.id || null;
     }
     
-    // Check if view already recorded recently (prevent duplicates)
-    if (hasViewedContentRecently(contentId)) {
-      console.log('📊 View already recorded recently');
-      return false;
-    }
-    
-    // 1. INSERT into content_views table
-    const { data, error: insertError } = await window.supabaseClient
+    // INSERT into content_views
+    const { data, error } = await window.supabaseClient
       .from('content_views')
       .insert({
         content_id: contentId,
         viewer_id: viewerId,
         view_duration: 0,
-        device_type: /Mobile|Android|iP(hone|od)|IEMobile|Windows Phone|BlackBerry/i.test(navigator.userAgent)
-          ? 'mobile'
-          : 'desktop',
+        device_type: /Mobile|Android/i.test(navigator.userAgent) ? 'mobile' : 'desktop',
         created_at: new Date().toISOString()
       })
       .select()
       .single();
     
-    if (insertError) {
-      console.error('❌ View recording failed:', insertError);
+    if (error) {
+      console.error('View insert error:', error);
       return false;
     }
     
-    console.log('✅ View recorded in content_views:', data);
-    
-    // 2. GET CURRENT views_count FROM DATABASE
-    const { data: contentData, error: fetchError } = await window.supabaseClient
-      .from('Content')
-      .select('views_count')
-      .eq('id', contentId)
-      .single();
-    
-    if (fetchError) {
-      console.error('❌ Failed to fetch current views_count:', fetchError);
-      return false;
-    }
-    
-    // 3. INCREMENT and UPDATE Content.views_count
-    const currentViews = contentData.views_count || 0;
-    const newViews = currentViews + 1;
-    
-    const { error: updateError } = await window.supabaseClient
-      .from('Content')
-      .update({ views_count: newViews })
-      .eq('id', contentId);
-    
-    if (updateError) {
-      console.error('❌ Failed to update views_count:', updateError);
-      return false;
-    }
-    
-    console.log('✅ Manually updated views_count to', newViews);
-    
-    // 4. Mark as viewed to prevent duplicate recording
+    console.log('✅ View recorded');
     markContentAsViewed(contentId);
-    
     return true;
     
   } catch (error) {
-    console.error('❌ View recording error:', error);
+    console.error('View error:', error);
     return false;
   }
+}
+
+// ============================================
+// ADD THIS FUNCTION TO CLEAR VIEW CACHE (Add after `markContentAsViewed`)
+// ============================================
+// ADD THIS NEW FUNCTION
+function clearViewCache() {
+  localStorage.removeItem('bantu_viewed_content');
+  console.log('🧹 View cache cleared');
 }
 
 // ============================================
@@ -1331,14 +1294,13 @@ function setupEventListeners() {
   }
   
   // ============================================
-  // 🔴 CRITICAL FIX #1: REPLACED - LIKE BUTTON HANDLER (Lines ~1245-1320)
+  // 🔴 CRITICAL FIX #1: REPLACED - LIKE BUTTON HANDLER (Lines ~1274-1380)
   // ============================================
   const likeBtn = document.getElementById('likeBtn');
   if (likeBtn) {
     likeBtn.addEventListener('click', async () => {
       if (!currentContent) return;
       
-      // Check authentication FIRST
       if (!window.AuthHelper?.isAuthenticated?.()) {
         showToast('Sign in to like content', 'warning');
         return;
@@ -1354,14 +1316,6 @@ function setupEventListeners() {
       const likesCountEl = document.getElementById('likesCount');
       const currentLikes = parseInt(likesCountEl?.textContent.replace(/\D/g, '') || '0') || 0;
       
-      debugLog('🎯 LIKE BUTTON CLICKED', {
-        contentId: currentContent.id,
-        userId: userProfile.id,
-        currentlyLiked: isLiked,
-        currentLikesCount: currentLikes,
-        newLikesCount: isLiked ? currentLikes - 1 : currentLikes + 1
-      });
-      
       try {
         // OPTIMISTIC UI UPDATE
         likeBtn.classList.toggle('active', !isLiked);
@@ -1372,44 +1326,24 @@ function setupEventListeners() {
         let newLikes = currentLikes;
         
         if (!isLiked) {
-          // CHECK IF LIKE EXISTS FIRST
-          debugLog('🔍 Checking if like already exists...');
-          const { data: existingLike, error: checkError } = await window.supabaseClient
+          // ADD LIKE
+          const {  insertData, error: insertError } = await window.supabaseClient
             .from('user_likes')
-            .select('id')
-            .eq('user_id', userProfile.id)
-            .eq('content_id', currentContent.id)
-            .single();
+            .insert({
+              user_id: userProfile.id,
+              content_id: currentContent.id
+            })
+            .select();
           
-          if (checkError && checkError.code !== 'PGRST116') {
-            debugError('❌ Error checking existing like:', checkError);
+          if (insertError) {
+            console.error('Insert error:', insertError);
+            throw insertError;
           }
           
-          if (!existingLike) {
-            debugLog('➕ Inserting new like into user_likes...');
-            const { data: insertData, error: insertError } = await window.supabaseClient
-              .from('user_likes')
-              .insert({
-                user_id: userProfile.id,
-                content_id: currentContent.id
-              })
-              .select();
-            
-            if (insertError) {
-              debugError('❌ Insert failed:', insertError);
-              throw insertError;
-            }
-            
-            debugLog('✅ Like inserted successfully:', insertData);
-            newLikes = currentLikes + 1;
-          } else {
-            debugLog('⚠️ Like already exists, skipping insert');
-            newLikes = currentLikes;
-          }
+          newLikes = currentLikes + 1;
         } else {
           // REMOVE LIKE
-          debugLog('➖ Deleting like from user_likes...');
-          const { data: deleteData, error: deleteError } = await window.supabaseClient
+          const {  deleteData, error: deleteError } = await window.supabaseClient
             .from('user_likes')
             .delete()
             .eq('user_id', userProfile.id)
@@ -1417,57 +1351,14 @@ function setupEventListeners() {
             .select();
           
           if (deleteError) {
-            debugError('❌ Delete failed:', deleteError);
+            console.error('Delete error:', deleteError);
             throw deleteError;
           }
           
-          debugLog('✅ Like deleted successfully:', deleteData);
           newLikes = currentLikes - 1;
         }
         
-        // GET CURRENT COUNT FROM DATABASE FIRST
-        debugLog('📊 Fetching current likes_count from database...');
-        const { data: contentData, error: fetchError } = await window.supabaseClient
-          .from('Content')
-          .select('likes_count')
-          .eq('id', currentContent.id)
-          .single();
-        
-        if (fetchError) {
-          debugError('❌ Failed to fetch current likes_count:', fetchError);
-        } else {
-          debugLog('📈 Current likes_count from DB:', contentData.likes_count);
-        }
-        
-        // UPDATE Content.likes_count
-        debugLog('✏️ Updating Content.likes_count to:', newLikes);
-        const { data: updateData, error: updateError } = await window.supabaseClient
-          .from('Content')
-          .update({ likes_count: newLikes })
-          .eq('id', currentContent.id)
-          .select();
-        
-        if (updateError) {
-          debugError('❌ Update failed:', updateError);
-        } else {
-          debugLog('✅ Content.likes_count updated successfully:', updateData);
-        }
-        
-        // VERIFY THE UPDATE WORKED
-        debugLog('🔍 Verifying update...');
-        const { data: verifyData, error: verifyError } = await window.supabaseClient
-          .from('Content')
-          .select('likes_count')
-          .eq('id', currentContent.id)
-          .single();
-        
-        if (verifyError) {
-          debugError('❌ Verification failed:', verifyError);
-        } else {
-          debugLog('✅ Verification result - likes_count is now:', verifyData.likes_count);
-        }
-        
-        // UPDATE UI
+        // UPDATE UI IMMEDIATELY
         if (likesCountEl) {
           likesCountEl.textContent = formatNumber(newLikes);
         }
@@ -1476,8 +1367,13 @@ function setupEventListeners() {
         
         showToast(!isLiked ? 'Liked!' : 'Like removed', !isLiked ? 'success' : 'info');
         
+        // Track analytics
+        if (window.track?.contentLike) {
+          window.track.contentLike(currentContent.id, !isLiked);
+        }
+        
       } catch (error) {
-        debugError('💥 Like operation failed:', error);
+        console.error('Like operation failed:', error);
         
         // REVERT UI
         likeBtn.classList.toggle('active', isLiked);
@@ -1489,7 +1385,7 @@ function setupEventListeners() {
           likesCountEl.textContent = formatNumber(currentLikes);
         }
         
-        showToast('Failed to update like: ' + error.message, 'error');
+        showToast('Failed: ' + error.message, 'error');
       }
     });
   }
@@ -2480,5 +2376,6 @@ window.hasViewedContentRecently = hasViewedContentRecently;
 window.markContentAsViewed = markContentAsViewed;
 window.recordContentView = recordContentView;
 window.refreshContentCounts = refreshContentCounts;
+window.clearViewCache = clearViewCache; // Added new function
 
 console.log('✅ Content detail script loaded with ALL fixes including VIEWS/LIKES PERSISTENCE');
