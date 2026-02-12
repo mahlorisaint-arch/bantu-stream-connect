@@ -203,34 +203,36 @@ async function loadContentFromURL() {
     
     if (contentError) throw contentError;
     
-    // 2. ✅ MOBILE APP LOGIC: COUNT VIEWS BY QUERYING content_views TABLE (NEVER trust Content.views_count)
+    // 2. ✅ COUNT VIEWS FROM content_views TABLE
     const { count: realViews } = await window.supabaseClient
       .from('content_views')
       .select('*', { count: 'exact', head: true })
       .eq('content_id', contentId);
     
-    // 3. ✅ MOBILE APP LOGIC: COUNT LIKES BY QUERYING content_likes TABLE (NEVER trust Content.likes_count)
+    // 3. ✅ COUNT LIKES FROM content_likes TABLE
     const { count: realLikes } = await window.supabaseClient
       .from('content_likes')
       .select('*', { count: 'exact', head: true })
       .eq('content_id', contentId);
     
-    // 4. ✅ MOBILE APP LOGIC: CHECK IF CURRENT USER LIKED THIS CONTENT
+    // 4. ✅ CHECK IF CURRENT USER LIKED THIS CONTENT
     let userHasLiked = false;
-    const { data: { user } } = await window.supabaseClient.auth.getUser();
-    if (user) {
-      const { data: likeCheck } = await window.supabaseClient
+    const { data: authData } = await window.supabaseClient.auth.getUser();
+    if (authData?.user) {
+      const { data: likeCheck, error: likeError } = await window.supabaseClient
         .from('content_likes')
         .select('id')
-        .eq('user_id', user.id)
+        .eq('user_id', authData.user.id)
         .eq('content_id', contentId)
-        .single()
-        .throwOnError(false); // Don't throw if not found
+        .single();
       
-      userHasLiked = !!likeCheck;
+      // No error means like exists
+      if (!likeError && likeCheck) {
+        userHasLiked = true;
+      }
     }
     
-    // Process with REAL counts from source tables ONLY
+    // Process with REAL counts from source tables
     currentContent = {
       id: contentData.id,
       title: contentData.title || 'Untitled',
@@ -242,8 +244,8 @@ async function loadContentFromURL() {
       created_at: contentData.created_at,
       duration: contentData.duration || contentData.duration_seconds || 3600,
       language: contentData.language || 'English',
-      views_count: realViews || 0,   // ✅ REAL COUNT FROM SOURCE
-      likes_count: realLikes || 0,   // ✅ REAL COUNT FROM SOURCE
+      views_count: realViews || 0,
+      likes_count: realLikes || 0,
       favorites_count: contentData.favorites_count || 0,
       comments_count: contentData.comments_count || 0,
       creator: contentData.user_profiles?.full_name || contentData.user_profiles?.username || 'Creator',
@@ -252,7 +254,7 @@ async function loadContentFromURL() {
       user_id: contentData.user_id
     };
     
-    console.log('✅ Content loaded with REAL counts (mobile app logic):', {
+    console.log('✅ Content loaded with REAL counts:', {
       views: currentContent.views_count,
       likes: currentContent.likes_count,
       userHasLiked: userHasLiked
@@ -261,7 +263,7 @@ async function loadContentFromURL() {
     // Update UI
     updateContentUI(currentContent);
     
-    // Set like button state based on actual check
+    // Set like button state
     const likeBtn = document.getElementById('likeBtn');
     if (likeBtn) {
       likeBtn.classList.toggle('active', userHasLiked);
@@ -832,9 +834,9 @@ function handlePlay() {
     return;
   }
   
-  // ✅ MOBILE APP LOGIC: RECORD VIEW ON PLAY BUTTON CLICK (not video play event)
+  // ✅ RECORD VIEW ON PLAY BUTTON CLICK
   if (!hasViewedContentRecently(currentContent.id)) {
-    // Optimistic UI update (like mobile app's _viewCount++)
+    // Optimistic UI update
     const viewsEl = document.getElementById('viewsCount');
     const viewsFullEl = document.getElementById('viewsCountFull');
     const currentViews = parseInt(viewsEl?.textContent.replace(/\D/g, '') || '0') || 0;
@@ -865,12 +867,12 @@ function handlePlay() {
           }
         } else {
           markContentAsViewed(currentContent.id);
-          console.log('✅ View recorded (mobile app logic)');
+          console.log('✅ View recorded');
         }
       });
   }
   
-  // Rest of video player initialization (unchanged)
+  // Rest of video player initialization
   const player = document.getElementById('inlinePlayer');
   const videoElement = document.getElementById('inlineVideoPlayer');
   if (!player || !videoElement) {
@@ -1168,7 +1170,7 @@ function setupEventListeners() {
   // ============================================
   // COMMENT SUBMISSION HANDLER
   // ============================================
-  const sendBtn = document.getElementById('sendCommentBtn');
+ const sendBtn = document.getElementById('sendCommentBtn');
 const commentInput = document.getElementById('commentInput');
 if (sendBtn && commentInput) {
   sendBtn.addEventListener('click', async function() {
@@ -1178,9 +1180,9 @@ if (sendBtn && commentInput) {
       return;
     }
     
-    // ✅ MOBILE APP LOGIC: Get current session user
-    const { data: { user }, error: authError } = await window.supabaseClient.auth.getUser();
-    if (authError || !user) {
+    // ✅ Get current session user
+    const { data: authData } = await window.supabaseClient.auth.getUser();
+    if (!authData?.user) {
       showToast('Sign in to comment', 'warning');
       return;
     }
@@ -1193,29 +1195,28 @@ if (sendBtn && commentInput) {
     sendBtn.disabled = true;
     
     try {
-      // ✅ MOBILE APP LOGIC: Get avatar from user_profiles table
+      // ✅ Get avatar from user_profiles table
       const { data: profile } = await window.supabaseClient
         .from('user_profiles')
         .select('avatar_url, full_name, username')
-        .eq('id', user.id)
-        .single()
-        .throwOnError(false);
+        .eq('id', authData.user.id)
+        .single();
       
       const authorName = profile?.full_name || 
                          profile?.username || 
-                         user.email?.split('@')[0] || 
+                         authData.user.email?.split('@')[0] || 
                          'User';
       
       const avatarUrl = profile?.avatar_url || null;
       
-      // ✅ MOBILE APP LOGIC: Insert comment with ALL fields
+      // ✅ Insert comment with ALL fields
       const { error: insertError } = await window.supabaseClient
         .from('comments')
         .insert({
           content_id: currentContent.id,
-          user_id: user.id,
+          user_id: authData.user.id,
           author_name: authorName,
-          author_avatar: avatarUrl, // ✅ CRITICAL: Include avatar URL
+          author_avatar: avatarUrl,
           comment_text: text,
           created_at: new Date().toISOString()
         });
@@ -1224,7 +1225,7 @@ if (sendBtn && commentInput) {
       
       console.log('✅ Comment inserted with avatar:', { authorName, avatarUrl });
       
-      // ✅ MOBILE APP LOGIC: IMMEDIATELY RELOAD COMMENTS (like _loadComments())
+      // ✅ IMMEDIATELY RELOAD COMMENTS
       await loadComments(currentContent.id);
       
       // Clear input
