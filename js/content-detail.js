@@ -477,7 +477,7 @@ function renderComments(comments) {
   container.appendChild(fragment);
 }
 
-// ✅ UPDATED: createCommentElement with avatar support
+// ✅ MOBILE APP LOGIC: Use author_avatar field from comment data
 function createCommentElement(comment) {
   const div = document.createElement('div');
   div.className = 'comment-item';
@@ -544,11 +544,11 @@ async function loadRelatedContent(contentId) {
     // ✅ CRITICAL: Get REAL view counts for each item (like mobile app)
     const relatedWithViews = await Promise.all(
       (data || []).map(async (item) => {
-        const { data: viewsData } = await window.supabaseClient
+        const { count: realViews } = await window.supabaseClient
           .from('content_views')
-          .select('id')
+          .select('*', { count: 'exact', head: true })
           .eq('content_id', item.id);
-        return { ...item, real_views_count: viewsData?.length || 0 };
+        return { ...item, real_views_count: realViews || 0 };
       })
     );
     
@@ -723,11 +723,41 @@ async function recordContentView(contentId) {
 }
 
 // ============================================
-// CRITICAL: Refresh counts by reloading content (bypass broken triggers)
+// CRITICAL: Refresh counts by counting rows in source tables (bypass broken triggers)
 // ============================================
 async function refreshCountsFromSource() {
   if (!currentContent) return;
-  await loadContentFromURL();
+  
+  try {
+    // Re-count views from content_views table
+    const { count: newViews } = await window.supabaseClient
+      .from('content_views')
+      .select('*', { count: 'exact', head: true })
+      .eq('content_id', currentContent.id);
+    
+    // Re-count likes from content_likes table
+    const { count: newLikes } = await window.supabaseClient
+      .from('content_likes')
+      .select('*', { count: 'exact', head: true })
+      .eq('content_id', currentContent.id);
+    
+    // Update local state
+    currentContent.views_count = newViews || 0;
+    currentContent.likes_count = newLikes || 0;
+    
+    // Update UI
+    safeSetText('viewsCount', formatNumber(newViews) + ' views');
+    safeSetText('viewsCountFull', formatNumber(newViews));
+    safeSetText('likesCount', formatNumber(newLikes));
+    
+    console.log('✅ Counts refreshed from source tables:', {
+      views: newViews,
+      likes: newLikes
+    });
+    
+  } catch (error) {
+    console.error('❌ Failed to refresh counts from source:', error);
+  }
 }
 
 // ============================================
@@ -1086,7 +1116,7 @@ function setupEventListeners() {
   }
   
   // ============================================
-  // FIXED: FAVORITE BUTTON - Mobile app logic
+  // FAVORITE BUTTON
   // ============================================
   const favoriteBtn = document.getElementById('favoriteBtn');
   if (favoriteBtn) {
@@ -1174,7 +1204,7 @@ function setupEventListeners() {
   }
   
   // ============================================
-  // FIXED: COMMENT SUBMISSION HANDLER - Instant display + profile pictures
+  // COMMENT SUBMISSION HANDLER
   // ============================================
   const sendBtn = document.getElementById('sendCommentBtn');
   const commentInput = document.getElementById('commentInput');
@@ -1343,14 +1373,14 @@ function setupConnectButtons() {
     async function checkConnectionStatus(creatorId) {
         if (!window.AuthHelper?.isAuthenticated() || !creatorId) return false;
         
-        const { data: { user } } = await window.supabaseClient.auth.getUser();
-        if (!user) return false;
+        const userProfile = window.AuthHelper.getUserProfile();
+        if (!userProfile?.id) return false;
         
         try {
             const { data, error } = await window.supabaseClient
                 .from('connectors')
                 .select('id')
-                .eq('connector_id', user.id)
+                .eq('connector_id', userProfile.id)
                 .eq('connected_id', creatorId)
                 .single();
             
@@ -1373,12 +1403,17 @@ function setupConnectButtons() {
         });
         
         connectBtn.addEventListener('click', async function() {
-            const { data: { user } } = await window.supabaseClient.auth.getUser();
-            if (!user) {
+            if (!window.AuthHelper?.isAuthenticated?.()) {
                 const shouldLogin = confirm('You need to sign in to connect. Would you like to sign in now?');
                 if (shouldLogin) {
                     window.location.href = `login.html?redirect=${encodeURIComponent(window.location.href)}`;
                 }
+                return;
+            }
+            
+            const userProfile = window.AuthHelper.getUserProfile();
+            if (!userProfile?.id) {
+                showToast('User profile not found', 'error');
                 return;
             }
             
@@ -1390,7 +1425,7 @@ function setupConnectButtons() {
                     const { error } = await window.supabaseClient
                         .from('connectors')
                         .delete()
-                        .eq('connector_id', user.id)
+                        .eq('connector_id', userProfile.id)
                         .eq('connected_id', currentContent.creator_id);
                     
                     if (error) throw error;
@@ -1403,7 +1438,7 @@ function setupConnectButtons() {
                     const { error } = await window.supabaseClient
                         .from('connectors')
                         .insert({
-                            connector_id: user.id,
+                            connector_id: userProfile.id,
                             connected_id: currentContent.creator_id,
                             connection_type: 'creator'
                         });
@@ -1438,12 +1473,17 @@ function setupConnectButtons() {
         });
         
         connectCreatorBtn.addEventListener('click', async function() {
-            const { data: { user } } = await window.supabaseClient.auth.getUser();
-            if (!user) {
+            if (!window.AuthHelper?.isAuthenticated?.()) {
                 const shouldLogin = confirm('You need to sign in to connect. Would you like to sign in now?');
                 if (shouldLogin) {
                     window.location.href = `login.html?redirect=${encodeURIComponent(window.location.href)}`;
                 }
+                return;
+            }
+            
+            const userProfile = window.AuthHelper.getUserProfile();
+            if (!userProfile?.id) {
+                showToast('User profile not found', 'error');
                 return;
             }
             
@@ -1455,7 +1495,7 @@ function setupConnectButtons() {
                     const { error } = await window.supabaseClient
                         .from('connectors')
                         .delete()
-                        .eq('connector_id', user.id)
+                        .eq('connector_id', userProfile.id)
                         .eq('connected_id', currentContent.creator_id);
                     
                     if (error) throw error;
@@ -1468,7 +1508,7 @@ function setupConnectButtons() {
                     const { error } = await window.supabaseClient
                         .from('connectors')
                         .insert({
-                            connector_id: user.id,
+                            connector_id: userProfile.id,
                             connected_id: currentContent.creator_id,
                             connection_type: 'creator'
                         });
@@ -1742,11 +1782,11 @@ async function searchContent(query, category = '', sortBy = 'newest') {
     // ✅ ENRICH SEARCH RESULTS WITH REAL VIEW COUNTS (like mobile app)
     const enrichedResults = await Promise.all(
       (data || []).map(async (item) => {
-        const { data: viewsData } = await window.supabaseClient
+        const { count: realViews } = await window.supabaseClient
           .from('content_views')
-          .select('id')
+          .select('*', { count: 'exact', head: true })
           .eq('content_id', item.id);
-        return { ...item, real_views_count: viewsData?.length || 0 };
+        return { ...item, real_views_count: realViews || 0 };
       })
     );
     
