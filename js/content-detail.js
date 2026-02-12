@@ -1037,23 +1037,20 @@ function setupEventListeners() {
   }
   
   // ============================================
-  // LIKE BUTTON - RLS-COMPLIANT (bypass broken triggers)
+  // CRITICAL FIX: LIKE BUTTON - Use Supabase auth session ID to satisfy RLS policy on content_likes
   // ============================================
   const likeBtn = document.getElementById('likeBtn');
   if (likeBtn) {
     likeBtn.addEventListener('click', async () => {
       if (!currentContent) return;
       
-      if (!window.AuthHelper?.isAuthenticated?.()) {
+      // ✅ CRITICAL: Get CURRENT auth user ID DIRECTLY from Supabase session
+      const { data: { user }, error: authError } = await window.supabaseClient.auth.getUser();
+      if (authError || !user) {
         showToast('Sign in to like content', 'warning');
         return;
       }
-      
-      const userProfile = window.AuthHelper.getUserProfile();
-      if (!userProfile?.id) {
-        showToast('User profile not found', 'error');
-        return;
-      }
+      const authUserId = user.id; // This matches auth.uid() in RLS policy
       
       const isLiked = likeBtn.classList.contains('active');
       const likesCountEl = document.getElementById('likesCount');
@@ -1071,29 +1068,30 @@ function setupEventListeners() {
           likesCountEl.textContent = formatNumber(newLikes);
         }
         
-        // Update database using content_likes table
+        // ✅ USE authUserId (matches RLS policy requirement)
         if (!isLiked) {
-          // Add like
+          // Add like to content_likes
           const { error } = await window.supabaseClient
             .from('content_likes')
             .insert({
-              user_id: userProfile.id,
+              user_id: authUserId, // MUST match auth.uid() in RLS policy
               content_id: currentContent.id
             });
-          
           if (error) throw error;
         } else {
-          // Remove like
+          // Remove like from content_likes
           const { error } = await window.supabaseClient
             .from('content_likes')
             .delete()
-            .eq('user_id', userProfile.id)
+            .eq('user_id', authUserId) // MUST match auth.uid()
             .eq('content_id', currentContent.id);
-          
           if (error) throw error;
         }
         
-        // ✅ CRITICAL: Refresh counts from SOURCE tables after like operation
+        // Update local state
+        currentContent.likes_count = newLikes;
+        
+        // ✅ REFRESH COUNTS FROM SOURCE TABLE (bypass broken triggers)
         await refreshCountsFromSource();
         
         showToast(!isLiked ? 'Liked!' : 'Like removed', !isLiked ? 'success' : 'info');
@@ -1115,7 +1113,12 @@ function setupEventListeners() {
           likesCountEl.textContent = formatNumber(currentLikes);
         }
         
-        showToast('Failed: ' + error.message, 'error');
+        // Show specific RLS error message
+        if (error?.code === '42501') {
+          showToast('Authentication mismatch. Please refresh and try again.', 'error');
+        } else {
+          showToast('Failed: ' + (error.message || 'Unknown error'), 'error');
+        }
       }
     });
   }
