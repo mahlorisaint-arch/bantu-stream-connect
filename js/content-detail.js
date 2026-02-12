@@ -194,7 +194,7 @@ async function loadContentFromURL() {
   const contentId = urlParams.get('id') || '68';
   
   try {
-    // 1. Load content metadata FIRST
+    // 1. Load content metadata
     const { data: contentData, error: contentError } = await window.supabaseClient
       .from('Content')
       .select('*, user_profiles!user_id(*)')
@@ -203,19 +203,21 @@ async function loadContentFromURL() {
     
     if (contentError) throw contentError;
     
-    // 2. COUNT VIEWS BY QUERYING content_views TABLE (bypass broken trigger)
-    const { count: viewsCount, error: viewsError } = await window.supabaseClient
-      .from('content_views')
-      .select('*', { count: 'exact', head: true })
-      .eq('content_id', contentId);
-    
-    // 3. COUNT LIKES BY QUERYING content_likes TABLE (CRITICAL FIX - matches mobile app)
-    const { count: likesCount, error: likesError } = await window.supabaseClient
+    // 2. ✅ MOBILE APP LOGIC: COUNT LIKES FROM content_likes TABLE (NOT Content.likes_count)
+    const { data: likesData } = await window.supabaseClient
       .from('content_likes')
-      .select('*', { count: 'exact', head: true })
+      .select('id')
       .eq('content_id', contentId);
+    const realLikesCount = likesData?.length || 0;
     
-    // Process data with ACCURATE counts from source tables
+    // 3. ✅ MOBILE APP LOGIC: COUNT VIEWS FROM content_views TABLE
+    const { data: viewsData } = await window.supabaseClient
+      .from('content_views')
+      .select('id')
+      .eq('content_id', contentId);
+    const realViewsCount = viewsData?.length || 0;
+    
+    // Process with REAL counts
     currentContent = {
       id: contentData.id,
       title: contentData.title || 'Untitled',
@@ -227,8 +229,8 @@ async function loadContentFromURL() {
       created_at: contentData.created_at,
       duration: contentData.duration || contentData.duration_seconds || 3600,
       language: contentData.language || 'English',
-      views_count: viewsCount || 0,   // ✅ ACCURATE COUNT FROM SOURCE
-      likes_count: likesCount || 0,   // ✅ ACCURATE COUNT FROM SOURCE (FIXES MULTIPLE USERS)
+      views_count: realViewsCount,   // ✅ REAL COUNT
+      likes_count: realLikesCount,   // ✅ REAL COUNT (FIXES MULTIPLE USERS)
       favorites_count: contentData.favorites_count || 0,
       comments_count: contentData.comments_count || 0,
       creator: contentData.user_profiles?.full_name || contentData.user_profiles?.username || 'Creator',
@@ -237,9 +239,9 @@ async function loadContentFromURL() {
       user_id: contentData.user_id
     };
     
-    console.log('📥 Content loaded with ACCURATE counts:', {
+    console.log('📥 Content loaded with REAL counts:', {
       views: currentContent.views_count,
-      likes: currentContent.likes_count // Now shows 2 when 2 users like it
+      likes: currentContent.likes_count // Now shows 4 when 4 users like it
     });
     
     // Update UI
@@ -267,8 +269,8 @@ async function loadContentFromURL() {
 // ============================================
 async function checkUserLike(contentId, userId) {
   if (!userId) return false;
-  
   try {
+    // ✅ MOBILE APP LOGIC: Check content_likes table (NOT user_likes)
     const { data, error } = await window.supabaseClient
       .from('content_likes')
       .select('id')
@@ -276,12 +278,7 @@ async function checkUserLike(contentId, userId) {
       .eq('content_id', contentId)
       .single();
     
-    if (error?.code === 'PGRST116') return false; // No rows found
-    if (error) {
-      console.warn('Like check failed (using optimistic state):', error.message);
-      return false;
-    }
-    
+    if (error?.code === 'PGRST116') return false; // No rows
     return !!data;
   } catch (error) {
     console.error('Like check error:', error);
@@ -480,12 +477,14 @@ function renderComments(comments) {
   container.appendChild(fragment);
 }
 
+// ✅ UPDATED: createCommentElement with avatar support
 function createCommentElement(comment) {
   const div = document.createElement('div');
   div.className = 'comment-item';
   
+  // ✅ MOBILE APP LOGIC: Use author_avatar field from comment data
   let authorName = comment.author_name || 'User';
-  let avatarUrl = comment.author_avatar || null;
+  let avatarUrl = comment.author_avatar || null; // ✅ DIRECTLY FROM COMMENT
   const time = formatCommentTime(comment.created_at);
   const commentText = comment.comment_text || '';
   const initial = authorName.charAt(0).toUpperCase();
@@ -493,7 +492,7 @@ function createCommentElement(comment) {
   div.innerHTML = `
     <div class="comment-header">
       <div class="comment-avatar-sm">
-        ${avatarUrl ?
+        ${avatarUrl && avatarUrl !== 'null' && avatarUrl.trim() !== '' ?
           `<img src="${avatarUrl}" alt="${authorName}"
           style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover; border: 2px solid rgba(29, 78, 216, 0.2);">` :
           `<div style="
@@ -545,11 +544,11 @@ async function loadRelatedContent(contentId) {
     // ✅ CRITICAL: Get REAL view counts for each item (like mobile app)
     const relatedWithViews = await Promise.all(
       (data || []).map(async (item) => {
-        const { count: realViews } = await window.supabaseClient
+        const { data: viewsData } = await window.supabaseClient
           .from('content_views')
-          .select('*', { count: 'exact', head: true })
+          .select('id')
           .eq('content_id', item.id);
-        return { ...item, real_views_count: realViews || 0 };
+        return { ...item, real_views_count: viewsData?.length || 0 };
       })
     );
     
@@ -724,41 +723,11 @@ async function recordContentView(contentId) {
 }
 
 // ============================================
-// CRITICAL: Refresh counts by counting rows in source tables (bypass broken triggers)
+// CRITICAL: Refresh counts by reloading content (bypass broken triggers)
 // ============================================
 async function refreshCountsFromSource() {
   if (!currentContent) return;
-  
-  try {
-    // Re-count views from content_views table
-    const { count: newViews } = await window.supabaseClient
-      .from('content_views')
-      .select('*', { count: 'exact', head: true })
-      .eq('content_id', currentContent.id);
-    
-    // Re-count likes from content_likes table
-    const { count: newLikes } = await window.supabaseClient
-      .from('content_likes')
-      .select('*', { count: 'exact', head: true })
-      .eq('content_id', currentContent.id);
-    
-    // Update local state
-    currentContent.views_count = newViews || 0;
-    currentContent.likes_count = newLikes || 0;
-    
-    // Update UI
-    safeSetText('viewsCount', formatNumber(newViews) + ' views');
-    safeSetText('viewsCountFull', formatNumber(newViews));
-    safeSetText('likesCount', formatNumber(newLikes));
-    
-    console.log('✅ Counts refreshed from source tables:', {
-      views: newViews,
-      likes: newLikes
-    });
-    
-  } catch (error) {
-    console.error('❌ Failed to refresh counts from source:', error);
-  }
+  await loadContentFromURL();
 }
 
 // ============================================
@@ -1044,13 +1013,13 @@ function setupEventListeners() {
     likeBtn.addEventListener('click', async () => {
       if (!currentContent) return;
       
-      // ✅ CRITICAL: Get CURRENT auth user ID DIRECTLY from Supabase session
+      // ✅ MOBILE APP LOGIC: Get CURRENT auth session user ID
       const { data: { user }, error: authError } = await window.supabaseClient.auth.getUser();
       if (authError || !user) {
         showToast('Sign in to like content', 'warning');
         return;
       }
-      const authUserId = user.id; // This matches auth.uid() in RLS policy
+      const authUserId = user.id;
       
       const isLiked = likeBtn.classList.contains('active');
       const likesCountEl = document.getElementById('likesCount');
@@ -1068,31 +1037,29 @@ function setupEventListeners() {
           likesCountEl.textContent = formatNumber(newLikes);
         }
         
-        // ✅ USE authUserId (matches RLS policy requirement)
+        // ✅ MOBILE APP LOGIC: Use content_likes table (NOT user_likes)
         if (!isLiked) {
-          // Add like to content_likes
+          // Add like
           const { error } = await window.supabaseClient
             .from('content_likes')
             .insert({
-              user_id: authUserId, // MUST match auth.uid() in RLS policy
-              content_id: currentContent.id
+              user_id: authUserId, // Session-matched ID
+              content_id: currentContent.id,
+              created_at: new Date().toISOString()
             });
           if (error) throw error;
         } else {
-          // Remove like from content_likes
+          // Remove like
           const { error } = await window.supabaseClient
             .from('content_likes')
             .delete()
-            .eq('user_id', authUserId) // MUST match auth.uid()
+            .eq('user_id', authUserId)
             .eq('content_id', currentContent.id);
           if (error) throw error;
         }
         
-        // Update local state
-        currentContent.likes_count = newLikes;
-        
-        // ✅ REFRESH COUNTS FROM SOURCE TABLE (bypass broken triggers)
-        await refreshCountsFromSource();
+        // ✅ MOBILE APP LOGIC: Refresh counts by RELOADING content data
+        await loadContentFromURL(); // This fetches REAL counts from source tables
         
         showToast(!isLiked ? 'Liked!' : 'Like removed', !isLiked ? 'success' : 'info');
         
@@ -1103,7 +1070,7 @@ function setupEventListeners() {
       } catch (error) {
         console.error('Like operation failed:', error);
         
-        // Revert UI on error
+        // Revert UI
         likeBtn.classList.toggle('active', isLiked);
         likeBtn.innerHTML = isLiked 
           ? '<i class="fas fa-heart"></i><span>Liked</span>' 
@@ -1113,34 +1080,26 @@ function setupEventListeners() {
           likesCountEl.textContent = formatNumber(currentLikes);
         }
         
-        // Show specific RLS error message
-        if (error?.code === '42501') {
-          showToast('Authentication mismatch. Please refresh and try again.', 'error');
-        } else {
-          showToast('Failed: ' + (error.message || 'Unknown error'), 'error');
-        }
+        showToast('Failed: ' + (error.message || 'Unknown error'), 'error');
       }
     });
   }
   
   // ============================================
-  // FAVORITE BUTTON
+  // FIXED: FAVORITE BUTTON - Mobile app logic
   // ============================================
   const favoriteBtn = document.getElementById('favoriteBtn');
   if (favoriteBtn) {
     favoriteBtn.addEventListener('click', async () => {
       if (!currentContent) return;
       
-      if (!window.AuthHelper?.isAuthenticated?.()) {
+      // ✅ MOBILE APP LOGIC: Get CURRENT auth session user ID
+      const { data: { user }, error: authError } = await window.supabaseClient.auth.getUser();
+      if (authError || !user) {
         showToast('Sign in to favorite content', 'warning');
         return;
       }
-      
-      const userProfile = window.AuthHelper.getUserProfile();
-      if (!userProfile?.id) {
-        showToast('User profile not found', 'error');
-        return;
-      }
+      const authUserId = user.id;
       
       const isFavorited = favoriteBtn.classList.contains('active');
       const favCountEl = document.getElementById('favoritesCount');
@@ -1148,7 +1107,7 @@ function setupEventListeners() {
       const newFavorites = isFavorited ? currentFavorites - 1 : currentFavorites + 1;
       
       try {
-        // OPTIMISTIC UI UPDATE
+        // Optimistic UI update
         favoriteBtn.classList.toggle('active', !isFavorited);
         favoriteBtn.innerHTML = !isFavorited
           ? '<i class="fas fa-star"></i><span>Favorited</span>'
@@ -1158,47 +1117,36 @@ function setupEventListeners() {
           favCountEl.textContent = formatNumber(newFavorites);
         }
         
-        // Update database
+        // ✅ MOBILE APP LOGIC: Use favorites table
         if (!isFavorited) {
+          // Add favorite
           const { error } = await window.supabaseClient
             .from('favorites')
             .insert({
-              user_id: userProfile.id,
-              content_id: currentContent.id
+              user_id: authUserId,
+              content_id: currentContent.id,
+              created_at: new Date().toISOString()
             });
-          
           if (error) throw error;
         } else {
+          // Remove favorite
           const { error } = await window.supabaseClient
             .from('favorites')
             .delete()
-            .eq('user_id', userProfile.id)
+            .eq('user_id', authUserId)
             .eq('content_id', currentContent.id);
-          
           if (error) throw error;
         }
         
-        // UPDATE Content.favorites_count
-        const { error: updateError } = await window.supabaseClient
-          .from('Content')
-          .update({ favorites_count: newFavorites })
-          .eq('id', currentContent.id);
-        
-        if (updateError) {
-          console.warn('Favorites count update failed:', updateError);
-        }
-        
-        currentContent.favorites_count = newFavorites;
+        // ✅ MOBILE APP LOGIC: Refresh content to update state
+        await loadContentFromURL();
         
         showToast(!isFavorited ? 'Added to favorites!' : 'Removed from favorites', !isFavorited ? 'success' : 'info');
-        
-        // Refresh counts
-        await refreshCountsFromSource();
         
       } catch (error) {
         console.error('Favorite update failed:', error);
         
-        // REVERT UI ON ERROR
+        // Revert UI
         favoriteBtn.classList.toggle('active', isFavorited);
         favoriteBtn.innerHTML = isFavorited
           ? '<i class="fas fa-star"></i><span>Favorited</span>'
@@ -1208,7 +1156,7 @@ function setupEventListeners() {
           favCountEl.textContent = formatNumber(currentFavorites);
         }
         
-        showToast('Failed to update favorite', 'error');
+        showToast('Failed: ' + (error.message || 'Unknown error'), 'error');
       }
     });
   }
@@ -1226,7 +1174,7 @@ function setupEventListeners() {
   }
   
   // ============================================
-  // COMMENT SUBMISSION HANDLER
+  // FIXED: COMMENT SUBMISSION HANDLER - Instant display + profile pictures
   // ============================================
   const sendBtn = document.getElementById('sendCommentBtn');
   const commentInput = document.getElementById('commentInput');
@@ -1239,8 +1187,10 @@ function setupEventListeners() {
         return;
       }
       
-      if (!window.AuthHelper?.isAuthenticated?.()) {
-        showToast('You need to sign in to comment', 'warning');
+      // ✅ MOBILE APP LOGIC: Get CURRENT auth session user
+      const { data: { user }, error: authError } = await window.supabaseClient.auth.getUser();
+      if (authError || !user) {
+        showToast('Sign in to comment', 'warning');
         return;
       }
       
@@ -1252,38 +1202,41 @@ function setupEventListeners() {
       sendBtn.disabled = true;
       
       try {
-        const userProfile = window.AuthHelper.getUserProfile();
-        const displayName = window.AuthHelper.getDisplayName();
-        const avatarUrl = window.AuthHelper.getAvatarUrl();
+        // ✅ MOBILE APP LOGIC: Get author name and avatar from session user
+        const authorName = user.user_metadata?.full_name || 
+                           user.user_metadata?.username || 
+                           user.email?.split('@')[0] || 
+                           'User';
         
-        if (!userProfile?.id) {
-          throw new Error('User profile not found');
-        }
+        // ✅ CRITICAL: Get avatar URL from user_profiles table
+        const { data: profileData } = await window.supabaseClient
+          .from('user_profiles')
+          .select('avatar_url')
+          .eq('id', user.id)
+          .single();
         
-        // Insert comment
+        const avatarUrl = profileData?.avatar_url || null;
+        
+        // ✅ MOBILE APP LOGIC: Insert comment with ALL required fields
         const { data: newComment, error: insertError } = await window.supabaseClient
           .from('comments')
           .insert({
             content_id: currentContent.id,
-            user_id: userProfile.id,
-            author_name: displayName,
+            user_id: user.id,
+            author_name: authorName,
+            author_avatar: avatarUrl, // ✅ INCLUDE AVATAR URL
             comment_text: text,
-            author_avatar: avatarUrl || null,
             created_at: new Date().toISOString()
           })
           .select()
           .single();
         
-        if (insertError) {
-          console.error('Comment insert error:', insertError);
-          throw insertError;
-        }
+        if (insertError) throw insertError;
         
         console.log('✅ Comment inserted:', newComment);
         
-        // Refresh comments and counts
+        // ✅ MOBILE APP LOGIC: IMMEDIATELY RELOAD COMMENTS (no delay)
         await loadComments(currentContent.id);
-        await refreshCountsFromSource();
         
         // Clear input
         commentInput.value = '';
@@ -1390,14 +1343,14 @@ function setupConnectButtons() {
     async function checkConnectionStatus(creatorId) {
         if (!window.AuthHelper?.isAuthenticated() || !creatorId) return false;
         
-        const userProfile = window.AuthHelper.getUserProfile();
-        if (!userProfile?.id) return false;
+        const { data: { user } } = await window.supabaseClient.auth.getUser();
+        if (!user) return false;
         
         try {
             const { data, error } = await window.supabaseClient
                 .from('connectors')
                 .select('id')
-                .eq('connector_id', userProfile.id)
+                .eq('connector_id', user.id)
                 .eq('connected_id', creatorId)
                 .single();
             
@@ -1420,17 +1373,12 @@ function setupConnectButtons() {
         });
         
         connectBtn.addEventListener('click', async function() {
-            if (!window.AuthHelper?.isAuthenticated?.()) {
+            const { data: { user } } = await window.supabaseClient.auth.getUser();
+            if (!user) {
                 const shouldLogin = confirm('You need to sign in to connect. Would you like to sign in now?');
                 if (shouldLogin) {
                     window.location.href = `login.html?redirect=${encodeURIComponent(window.location.href)}`;
                 }
-                return;
-            }
-            
-            const userProfile = window.AuthHelper.getUserProfile();
-            if (!userProfile?.id) {
-                showToast('User profile not found', 'error');
                 return;
             }
             
@@ -1442,7 +1390,7 @@ function setupConnectButtons() {
                     const { error } = await window.supabaseClient
                         .from('connectors')
                         .delete()
-                        .eq('connector_id', userProfile.id)
+                        .eq('connector_id', user.id)
                         .eq('connected_id', currentContent.creator_id);
                     
                     if (error) throw error;
@@ -1455,7 +1403,7 @@ function setupConnectButtons() {
                     const { error } = await window.supabaseClient
                         .from('connectors')
                         .insert({
-                            connector_id: userProfile.id,
+                            connector_id: user.id,
                             connected_id: currentContent.creator_id,
                             connection_type: 'creator'
                         });
@@ -1490,17 +1438,12 @@ function setupConnectButtons() {
         });
         
         connectCreatorBtn.addEventListener('click', async function() {
-            if (!window.AuthHelper?.isAuthenticated?.()) {
+            const { data: { user } } = await window.supabaseClient.auth.getUser();
+            if (!user) {
                 const shouldLogin = confirm('You need to sign in to connect. Would you like to sign in now?');
                 if (shouldLogin) {
                     window.location.href = `login.html?redirect=${encodeURIComponent(window.location.href)}`;
                 }
-                return;
-            }
-            
-            const userProfile = window.AuthHelper.getUserProfile();
-            if (!userProfile?.id) {
-                showToast('User profile not found', 'error');
                 return;
             }
             
@@ -1512,7 +1455,7 @@ function setupConnectButtons() {
                     const { error } = await window.supabaseClient
                         .from('connectors')
                         .delete()
-                        .eq('connector_id', userProfile.id)
+                        .eq('connector_id', user.id)
                         .eq('connected_id', currentContent.creator_id);
                     
                     if (error) throw error;
@@ -1525,7 +1468,7 @@ function setupConnectButtons() {
                     const { error } = await window.supabaseClient
                         .from('connectors')
                         .insert({
-                            connector_id: userProfile.id,
+                            connector_id: user.id,
                             connected_id: currentContent.creator_id,
                             connection_type: 'creator'
                         });
@@ -1799,11 +1742,11 @@ async function searchContent(query, category = '', sortBy = 'newest') {
     // ✅ ENRICH SEARCH RESULTS WITH REAL VIEW COUNTS (like mobile app)
     const enrichedResults = await Promise.all(
       (data || []).map(async (item) => {
-        const { count: realViews } = await window.supabaseClient
+        const { data: viewsData } = await window.supabaseClient
           .from('content_views')
-          .select('*', { count: 'exact', head: true })
+          .select('id')
           .eq('content_id', item.id);
-        return { ...item, real_views_count: realViews || 0 };
+        return { ...item, real_views_count: viewsData?.length || 0 };
       })
     );
     
