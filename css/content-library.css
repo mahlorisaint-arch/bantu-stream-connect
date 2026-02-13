@@ -236,6 +236,102 @@ body {
   gap: 20px;
 }
 
+/* Skeleton Loading States */
+.skeleton-card {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 20px;
+  overflow: hidden;
+  animation: skeleton-pulse 1.5s ease-in-out infinite;
+}
+
+.skeleton-thumbnail {
+  height: 140px;
+  background: linear-gradient(90deg, 
+    rgba(255,255,255,0.05) 25%, 
+    rgba(255,255,255,0.1) 50%, 
+    rgba(255,255,255,0.05) 75%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.5s infinite;
+}
+
+.skeleton-title {
+  height: 20px;
+  width: 80%;
+  margin: 15px 15px 10px;
+  background: linear-gradient(90deg, 
+    rgba(255,255,255,0.05) 25%, 
+    rgba(255,255,255,0.1) 50%, 
+    rgba(255,255,255,0.05) 75%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.5s infinite;
+  border-radius: 4px;
+}
+
+.skeleton-creator {
+  height: 16px;
+  width: 60%;
+  margin: 0 15px 10px;
+  background: linear-gradient(90deg, 
+    rgba(255,255,255,0.05) 25%, 
+    rgba(255,255,255,0.1) 50%, 
+    rgba(255,255,255,0.05) 75%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.5s infinite;
+  border-radius: 4px;
+}
+
+.skeleton-stats {
+  height: 14px;
+  width: 40%;
+  margin: 0 15px 15px;
+  background: linear-gradient(90deg, 
+    rgba(255,255,255,0.05) 25%, 
+    rgba(255,255,255,0.1) 50%, 
+    rgba(255,255,255,0.05) 75%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.5s infinite;
+  border-radius: 4px;
+}
+
+@keyframes skeleton-pulse {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 0.8; }
+}
+
+@keyframes skeleton-shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/* Duration Badge */
+.card-badge.badge-duration {
+  background: rgba(0, 0, 0, 0.7);
+  color: var(--soft-white);
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  backdrop-filter: blur(4px);
+}
+
+/* Rating Stars */
+.card-rating {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--slate-grey);
+  margin-top: 5px;
+}
+
+.card-rating i {
+  font-size: 10px;
+}
+
 /* Footer Base */
 .footer {
   background: var(--card-bg);
