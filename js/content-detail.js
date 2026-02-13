@@ -187,6 +187,7 @@ function resetProfileUI() {
 
 // ============================================
 // FIXED: Load content with ACCURATE counts from source tables (bypass broken triggers)
+// This matches mobile app's _loadContentDetails method exactly
 // ============================================
 async function loadContentFromURL() {
   const urlParams = new URLSearchParams(window.location.search);
@@ -208,7 +209,7 @@ async function loadContentFromURL() {
       .select('*', { count: 'exact', head: true })
       .eq('content_id', contentId);
     
-    // 3. COUNT LIKES BY QUERYING content_likes TABLE (bypass broken trigger)
+    // 3. COUNT LIKES BY QUERYING content_likes TABLE (CRITICAL FIX - matches mobile app)
     const { count: likesCount, error: likesError } = await window.supabaseClient
       .from('content_likes')
       .select('*', { count: 'exact', head: true })
@@ -227,7 +228,7 @@ async function loadContentFromURL() {
       duration: contentData.duration || contentData.duration_seconds || 3600,
       language: contentData.language || 'English',
       views_count: viewsCount || 0,   // ✅ ACCURATE COUNT FROM SOURCE
-      likes_count: likesCount || 0,   // ✅ ACCURATE COUNT FROM SOURCE
+      likes_count: likesCount || 0,   // ✅ ACCURATE COUNT FROM SOURCE (FIXES MULTIPLE USERS)
       favorites_count: contentData.favorites_count || 0,
       comments_count: contentData.comments_count || 0,
       creator: contentData.user_profiles?.full_name || contentData.user_profiles?.username || 'Creator',
@@ -238,7 +239,7 @@ async function loadContentFromURL() {
     
     console.log('📥 Content loaded with ACCURATE counts:', {
       views: currentContent.views_count,
-      likes: currentContent.likes_count
+      likes: currentContent.likes_count // Now shows 2 when 2 users like it
     });
     
     // Update UI
@@ -525,23 +526,43 @@ function createCommentElement(comment) {
   return div;
 }
 
-// Load related content
+// ============================================
+// FIXED: Load related content with REAL view counts from source table
+// This matches mobile app's _loadRelatedContent method exactly
+// ============================================
 async function loadRelatedContent(contentId) {
   try {
+    // Fetch related content items
     const { data, error } = await window.supabaseClient
       .from('Content')
-      .select('id, title, thumbnail_url, views_count')
+      .select('id, title, thumbnail_url, user_id, genre, duration, media_type, status')
       .neq('id', contentId)
+      .eq('status', 'published')
       .limit(6);
     
     if (error) throw error;
-    renderRelatedContent(data || []);
+    
+    // ✅ CRITICAL: Get REAL view counts for each item (like mobile app)
+    const relatedWithViews = await Promise.all(
+      (data || []).map(async (item) => {
+        const { count: realViews } = await window.supabaseClient
+          .from('content_views')
+          .select('*', { count: 'exact', head: true })
+          .eq('content_id', item.id);
+        return { ...item, real_views_count: realViews || 0 };
+      })
+    );
+    
+    renderRelatedContent(relatedWithViews);
   } catch (error) {
     console.error('Error loading related content:', error);
     renderRelatedContent([]);
   }
 }
 
+// ============================================
+// FIXED: Render related content with REAL view counts
+// ============================================
 function renderRelatedContent(items) {
   const container = document.getElementById('relatedGrid');
   if (!container) return;
@@ -569,6 +590,8 @@ function renderRelatedContent(items) {
     
     const imgUrl = window.SupabaseHelper?.fixMediaUrl?.(item.thumbnail_url) || item.thumbnail_url;
     const title = item.title || 'Untitled';
+    // ✅ USE REAL VIEW COUNT (not broken column)
+    const viewsCount = item.real_views_count !== undefined ? item.real_views_count : 0;
     
     card.innerHTML = `
       <div class="card-thumbnail">
@@ -580,7 +603,7 @@ function renderRelatedContent(items) {
         <h3 class="card-title">${truncateText(title, 50)}</h3>
         <div class="related-meta">
           <i class="fas fa-eye"></i>
-          <span>${formatNumber(item.views_count || 0)} views</span>
+          <span>${formatNumber(viewsCount)} views</span> <!-- ✅ REAL COUNT -->
         </div>
       </div>
     `;
@@ -1312,6 +1335,44 @@ function setupEventListeners() {
     });
   }
   
+  // ============================================
+  // FIXED: SHARE BUTTON WITH BRAND IDENTITY (NO DNA, JUST RSA)
+  // ============================================
+  const shareBtn = document.getElementById('shareBtn');
+  if (shareBtn) {
+    shareBtn.addEventListener('click', async () => {
+      if (!currentContent) return;
+      
+      const shareText = `📺 ${currentContent.title}\n\n${currentContent.description || 'Check out this amazing content!'}\n\n👉 Watch on Bantu Stream Connect\nNO DNA, JUST RSA\n\n`;
+      const shareUrl = window.location.href;
+      
+      try {
+        if (navigator.share && navigator.canShare({ text: shareText, url: shareUrl })) {
+          // ✅ NATIVE SHARE (mobile)
+          await navigator.share({
+            title: 'Bantu Stream Connect',
+            text: shareText,
+            url: shareUrl
+          });
+        } else {
+          // ✅ FALLBACK: Copy to clipboard with brand message
+          await navigator.clipboard.writeText(`${shareText}${shareUrl}`);
+          showToast('✨ Link copied! Share with "NO DNA, JUST RSA" ✨', 'success');
+          
+          // Track share analytics
+          if (window.track?.contentShare) {
+            window.track.contentShare(currentContent.id, 'clipboard');
+          }
+        }
+      } catch (err) {
+        if (err.name !== 'AbortError') {
+          console.error('Share failed:', err);
+          showToast('Failed to share. Try copying link manually.', 'error');
+        }
+      }
+    });
+  }
+  
   // Setup connect buttons
   setupConnectButtons();
   
@@ -1702,6 +1763,9 @@ function triggerSearch() {
   }
 }
 
+// ============================================
+// FIXED: Search content with REAL view counts from source table
+// ============================================
 async function searchContent(query, category = '', sortBy = 'newest') {
   try {
     let orderBy = 'created_at';
@@ -1728,13 +1792,28 @@ async function searchContent(query, category = '', sortBy = 'newest') {
     const { data, error } = await queryBuilder;
     
     if (error) throw error;
-    return data || [];
+    
+    // ✅ ENRICH SEARCH RESULTS WITH REAL VIEW COUNTS (like mobile app)
+    const enrichedResults = await Promise.all(
+      (data || []).map(async (item) => {
+        const { count: realViews } = await window.supabaseClient
+          .from('content_views')
+          .select('*', { count: 'exact', head: true })
+          .eq('content_id', item.id);
+        return { ...item, real_views_count: realViews || 0 };
+      })
+    );
+    
+    return enrichedResults || [];
   } catch (error) {
     console.error('Search error:', error);
     return [];
   }
 }
 
+// ============================================
+// FIXED: Render search results with REAL view counts
+// ============================================
 function renderSearchResults(results) {
   const grid = document.getElementById('search-results-grid');
   if (!grid) return;
@@ -1746,6 +1825,9 @@ function renderSearchResults(results) {
   
   grid.innerHTML = results.map(item => {
     const creator = item.user_profiles?.full_name || item.user_profiles?.username || item.creator || 'Creator';
+    // ✅ USE REAL VIEW COUNT
+    const viewsCount = item.real_views_count !== undefined ? item.real_views_count : (item.views_count || 0);
+    
     return `
       <div class="content-card" data-content-id="${item.id}">
         <div class="card-thumbnail">
@@ -1758,7 +1840,7 @@ function renderSearchResults(results) {
           <h3 class="card-title">${truncateText(item.title, 45)}</h3>
           <div class="related-meta">
             <i class="fas fa-eye"></i>
-            <span>${formatNumber(item.views_count || 0)} views</span>
+            <span>${formatNumber(viewsCount)} views</span> <!-- ✅ REAL COUNT -->
           </div>
           <button class="creator-btn" data-creator-id="${item.user_id}" data-creator-name="${creator}">
             <i class="fas fa-user"></i>
@@ -2035,7 +2117,7 @@ function formatNotificationTime(timestamp) {
 }
 
 // ======================
-// THEME SELECTOR
+// FIXED: THEME SELECTOR (Proper class handling + forced repaint)
 // ======================
 function initThemeSelector() {
   const themeToggle = document.getElementById('nav-theme-toggle');
@@ -2072,29 +2154,39 @@ function initThemeSelector() {
   initCurrentTheme();
 }
 
+// ============================================
+// FIXED: applyTheme - Proper class management without breaking other classes
+// ============================================
 function applyTheme(theme) {
-  document.body.className = `theme-${theme}`;
+  // ✅ CRITICAL FIX: Properly manage theme classes without breaking other classes
+  document.body.classList.remove('theme-light', 'theme-dark', 'theme-high-contrast');
+  document.body.classList.add(`theme-${theme}`);
+  
   localStorage.setItem('theme', theme);
   
-  // Update active state
+  // Update active state on theme options
   document.querySelectorAll('.theme-option').forEach(option => {
     option.classList.toggle('active', option.dataset.theme === theme);
   });
   
-  // Show confirmation
   showToast(`Theme changed to ${theme}`, 'success');
+  
+  // ✅ FORCE REPAINT FOR IMMEDIATE VISUAL FEEDBACK
+  document.body.offsetHeight;
 }
 
+// ============================================
+// FIXED: initCurrentTheme - Apply theme before setting active state
+// ============================================
 function initCurrentTheme() {
-  // Load saved theme or use system preference
   const savedTheme = localStorage.getItem('theme');
   const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
   const defaultTheme = savedTheme || (prefersDark ? 'dark' : 'light');
   
-  // Set initial theme
+  // ✅ CRITICAL: Apply theme BEFORE setting active state
   applyTheme(defaultTheme);
   
-  // Set active state on load
+  // Set active indicator
   document.querySelector(`.theme-option[data-theme="${defaultTheme}"]`)?.classList.add('active');
 }
 
