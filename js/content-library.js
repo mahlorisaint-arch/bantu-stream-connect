@@ -34,12 +34,6 @@ const categories = [
   'Videos'
 ];
 
-// Pagination state
-let currentPage = 0;
-let isLoadingMore = false;
-let hasMoreContent = true;
-const PAGE_SIZE = 20;
-
 // ============================================
 // AUTHENTICATION FUNCTIONS
 // ============================================
@@ -191,7 +185,7 @@ async function fetchContent(page = 0, pageSize = 20) {
     const from = page * pageSize;
     const to = (page + 1) * pageSize - 1;
     
-    // Use rate limiter
+    // Use rate limiter with null check
     const fetchFn = async () => {
       const { data: contentData, error: contentError } = await window.supabaseClient
         .from('Content')
@@ -205,41 +199,66 @@ async function fetchContent(page = 0, pageSize = 20) {
     };
     
     const userId = window.currentUser?.id;
-    const rateLimiter = userId ? window.authRateLimiter : window.rateLimiter;
-    const contentData = await rateLimiter.wrapSupabaseRequest(
-      userId, 
-      'fetch-content',
-      fetchFn
-    );
+    const rateLimiter = userId ? (window.authRateLimiter || window.rateLimiter) : window.rateLimiter;
+    
+    let contentData;
+    if (!rateLimiter) {
+      console.warn('Rate limiter not initialized, proceeding without rate limiting');
+      contentData = await fetchFn();
+    } else {
+      contentData = await rateLimiter.wrapSupabaseRequest(
+        userId, 
+        'fetch-content',
+        fetchFn
+      );
+    }
     
     // Enrich with real counts (limit concurrent requests)
     const enrichedContent = [];
     for (const item of contentData) {
       // Get real view count with rate limiting
-      const viewsCount = await rateLimiter.wrapSupabaseRequest(
-        userId,
-        'get-views',
-        async () => {
-          const { count } = await window.supabaseClient
-            .from('content_views')
-            .select('*', { count: 'exact', head: true })
-            .eq('content_id', item.id);
-          return count || 0;
-        }
-      );
+      let viewsCount = 0;
+      let likesCount = 0;
       
-      // Get real like count with rate limiting
-      const likesCount = await rateLimiter.wrapSupabaseRequest(
-        userId,
-        'get-likes',
-        async () => {
-          const { count } = await window.supabaseClient
-            .from('content_likes')
-            .select('*', { count: 'exact', head: true })
-            .eq('content_id', item.id);
-          return count || 0;
-        }
-      );
+      if (rateLimiter) {
+        viewsCount = await rateLimiter.wrapSupabaseRequest(
+          userId,
+          'get-views',
+          async () => {
+            const { count } = await window.supabaseClient
+              .from('content_views')
+              .select('*', { count: 'exact', head: true })
+              .eq('content_id', item.id);
+            return count || 0;
+          }
+        );
+        
+        // Get real like count with rate limiting
+        likesCount = await rateLimiter.wrapSupabaseRequest(
+          userId,
+          'get-likes',
+          async () => {
+            const { count } = await window.supabaseClient
+              .from('content_likes')
+              .select('*', { count: 'exact', head: true })
+              .eq('content_id', item.id);
+            return count || 0;
+          }
+        );
+      } else {
+        // Fallback without rate limiting
+        const { count: viewsCountResult } = await window.supabaseClient
+          .from('content_views')
+          .select('*', { count: 'exact', head: true })
+          .eq('content_id', item.id);
+        viewsCount = viewsCountResult || 0;
+        
+        const { count: likesCountResult } = await window.supabaseClient
+          .from('content_likes')
+          .select('*', { count: 'exact', head: true })
+          .eq('content_id', item.id);
+        likesCount = likesCountResult || 0;
+      }
       
       enrichedContent.push({
         ...item,
@@ -742,11 +761,12 @@ async function initContentLibrary() {
       `;
     }
     
-    // Load first page of content
-    const result = await fetchContent(0, PAGE_SIZE);
+    // Load first page of content - use global pagination variables
+    const result = await fetchContent(0, window.PAGE_SIZE || 20);
     window.allContentData = result.items;
     window.filteredContentData = window.allContentData;
-    hasMoreContent = result.hasMore;
+    window.hasMoreContent = result.hasMore;
+    window.currentPage = 0;
     
     // Render UI
     loadingText.textContent = 'Setting up interface...';
