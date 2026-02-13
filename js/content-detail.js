@@ -187,14 +187,13 @@ function resetProfileUI() {
 
 // ============================================
 // FIXED: Load content with ACCURATE counts from source tables (bypass broken triggers)
-// This matches mobile app's _loadContentDetails method exactly
 // ============================================
 async function loadContentFromURL() {
   const urlParams = new URLSearchParams(window.location.search);
   const contentId = urlParams.get('id') || '68';
   
   try {
-    // 1. Load content metadata
+    // 1. Load content metadata FIRST
     const { data: contentData, error: contentError } = await window.supabaseClient
       .from('Content')
       .select('*, user_profiles!user_id(*)')
@@ -203,36 +202,19 @@ async function loadContentFromURL() {
     
     if (contentError) throw contentError;
     
-    // 2. ✅ COUNT VIEWS FROM content_views TABLE
-    const { count: realViews } = await window.supabaseClient
+    // 2. COUNT VIEWS BY QUERYING content_views TABLE (bypass broken trigger)
+    const { count: viewsCount, error: viewsError } = await window.supabaseClient
       .from('content_views')
       .select('*', { count: 'exact', head: true })
       .eq('content_id', contentId);
     
-    // 3. ✅ COUNT LIKES FROM content_likes TABLE
-    const { count: realLikes } = await window.supabaseClient
+    // 3. COUNT LIKES BY QUERYING content_likes TABLE (bypass broken trigger)
+    const { count: likesCount, error: likesError } = await window.supabaseClient
       .from('content_likes')
       .select('*', { count: 'exact', head: true })
       .eq('content_id', contentId);
     
-    // 4. ✅ CHECK IF CURRENT USER LIKED THIS CONTENT
-    let userHasLiked = false;
-    const { data: authData } = await window.supabaseClient.auth.getUser();
-    if (authData?.user) {
-      const { data: likeCheck, error: likeError } = await window.supabaseClient
-        .from('content_likes')
-        .select('id')
-        .eq('user_id', authData.user.id)
-        .eq('content_id', contentId)
-        .single();
-      
-      // No error means like exists
-      if (!likeError && likeCheck) {
-        userHasLiked = true;
-      }
-    }
-    
-    // Process with REAL counts from source tables
+    // Process data with ACCURATE counts from source tables
     currentContent = {
       id: contentData.id,
       title: contentData.title || 'Untitled',
@@ -244,8 +226,8 @@ async function loadContentFromURL() {
       created_at: contentData.created_at,
       duration: contentData.duration || contentData.duration_seconds || 3600,
       language: contentData.language || 'English',
-      views_count: realViews || 0,
-      likes_count: realLikes || 0,
+      views_count: viewsCount || 0,   // ✅ ACCURATE COUNT FROM SOURCE
+      likes_count: likesCount || 0,   // ✅ ACCURATE COUNT FROM SOURCE
       favorites_count: contentData.favorites_count || 0,
       comments_count: contentData.comments_count || 0,
       creator: contentData.user_profiles?.full_name || contentData.user_profiles?.username || 'Creator',
@@ -254,22 +236,18 @@ async function loadContentFromURL() {
       user_id: contentData.user_id
     };
     
-    console.log('✅ Content loaded with REAL counts:', {
+    console.log('📥 Content loaded with ACCURATE counts:', {
       views: currentContent.views_count,
-      likes: currentContent.likes_count,
-      userHasLiked: userHasLiked
+      likes: currentContent.likes_count
     });
     
     // Update UI
     updateContentUI(currentContent);
     
-    // Set like button state
-    const likeBtn = document.getElementById('likeBtn');
-    if (likeBtn) {
-      likeBtn.classList.toggle('active', userHasLiked);
-      likeBtn.innerHTML = userHasLiked 
-        ? '<i class="fas fa-heart"></i><span>Liked</span>' 
-        : '<i class="far fa-heart"></i><span>Like</span>';
+    // Initialize user-specific states
+    if (currentUserId) {
+      await initializeLikeButton(contentId, currentUserId);
+      await initializeFavoriteButton(contentId, currentUserId);
     }
     
     // Load comments & related content
@@ -288,8 +266,8 @@ async function loadContentFromURL() {
 // ============================================
 async function checkUserLike(contentId, userId) {
   if (!userId) return false;
+  
   try {
-    // ✅ MOBILE APP LOGIC: Check content_likes table (NOT user_likes)
     const { data, error } = await window.supabaseClient
       .from('content_likes')
       .select('id')
@@ -297,7 +275,12 @@ async function checkUserLike(contentId, userId) {
       .eq('content_id', contentId)
       .single();
     
-    if (error?.code === 'PGRST116') return false; // No rows
+    if (error?.code === 'PGRST116') return false; // No rows found
+    if (error) {
+      console.warn('Like check failed (using optimistic state):', error.message);
+      return false;
+    }
+    
     return !!data;
   } catch (error) {
     console.error('Like check error:', error);
@@ -496,14 +479,12 @@ function renderComments(comments) {
   container.appendChild(fragment);
 }
 
-// ✅ MOBILE APP LOGIC: Use author_avatar field from comment data
 function createCommentElement(comment) {
   const div = document.createElement('div');
   div.className = 'comment-item';
   
-  // ✅ MOBILE APP LOGIC: Use author_avatar field from comment data
   let authorName = comment.author_name || 'User';
-  let avatarUrl = comment.author_avatar || null; // ✅ DIRECTLY FROM COMMENT
+  let avatarUrl = comment.author_avatar || null;
   const time = formatCommentTime(comment.created_at);
   const commentText = comment.comment_text || '';
   const initial = authorName.charAt(0).toUpperCase();
@@ -511,7 +492,7 @@ function createCommentElement(comment) {
   div.innerHTML = `
     <div class="comment-header">
       <div class="comment-avatar-sm">
-        ${avatarUrl && avatarUrl !== 'null' && avatarUrl.trim() !== '' ?
+        ${avatarUrl ?
           `<img src="${avatarUrl}" alt="${authorName}"
           style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover; border: 2px solid rgba(29, 78, 216, 0.2);">` :
           `<div style="
@@ -544,43 +525,23 @@ function createCommentElement(comment) {
   return div;
 }
 
-// ============================================
-// FIXED: Load related content with REAL view counts from source table
-// This matches mobile app's _loadRelatedContent method exactly
-// ============================================
+// Load related content
 async function loadRelatedContent(contentId) {
   try {
-    // Fetch related content items
     const { data, error } = await window.supabaseClient
       .from('Content')
-      .select('id, title, thumbnail_url, user_id, genre, duration, media_type, status')
+      .select('id, title, thumbnail_url, views_count')
       .neq('id', contentId)
-      .eq('status', 'published')
       .limit(6);
     
     if (error) throw error;
-    
-    // ✅ CRITICAL: Get REAL view counts for each item (like mobile app)
-    const relatedWithViews = await Promise.all(
-      (data || []).map(async (item) => {
-        const { count: realViews } = await window.supabaseClient
-          .from('content_views')
-          .select('*', { count: 'exact', head: true })
-          .eq('content_id', item.id);
-        return { ...item, real_views_count: realViews || 0 };
-      })
-    );
-    
-    renderRelatedContent(relatedWithViews);
+    renderRelatedContent(data || []);
   } catch (error) {
     console.error('Error loading related content:', error);
     renderRelatedContent([]);
   }
 }
 
-// ============================================
-// FIXED: Render related content with REAL view counts
-// ============================================
 function renderRelatedContent(items) {
   const container = document.getElementById('relatedGrid');
   if (!container) return;
@@ -608,8 +569,6 @@ function renderRelatedContent(items) {
     
     const imgUrl = window.SupabaseHelper?.fixMediaUrl?.(item.thumbnail_url) || item.thumbnail_url;
     const title = item.title || 'Untitled';
-    // ✅ USE REAL VIEW COUNT (not broken column)
-    const viewsCount = item.real_views_count !== undefined ? item.real_views_count : 0;
     
     card.innerHTML = `
       <div class="card-thumbnail">
@@ -621,7 +580,7 @@ function renderRelatedContent(items) {
         <h3 class="card-title">${truncateText(title, 50)}</h3>
         <div class="related-meta">
           <i class="fas fa-eye"></i>
-          <span>${formatNumber(viewsCount)} views</span> <!-- ✅ REAL COUNT -->
+          <span>${formatNumber(item.views_count || 0)} views</span>
         </div>
       </div>
     `;
@@ -834,7 +793,15 @@ function handlePlay() {
     return;
   }
   
-  // ✅ RECORD VIEW ON PLAY BUTTON CLICK
+  const player = document.getElementById('inlinePlayer');
+  const videoElement = document.getElementById('inlineVideoPlayer');
+  
+  if (!player || !videoElement) {
+    showToast('Video player not available', 'error');
+    return;
+  }
+  
+  // ✅ CRITICAL FIX: Record view IMMEDIATELY when Play button is clicked
   if (!hasViewedContentRecently(currentContent.id)) {
     // Optimistic UI update
     const viewsEl = document.getElementById('viewsCount');
@@ -848,88 +815,135 @@ function handlePlay() {
     }
     
     // Record view in database
-    window.supabaseClient
-      .from('content_views')
-      .insert({
-        content_id: currentContent.id,
-        viewer_id: currentUserId || null,
-        view_duration: 0,
-        device_type: /Mobile|Android/i.test(navigator.userAgent) ? 'mobile' : 'desktop',
-        created_at: new Date().toISOString()
-      })
-      .then(({ error }) => {
-        if (error) {
-          console.error('View insert failed:', error);
+    recordContentView(currentContent.id)
+      .then(async (success) => {
+        if (success) {
+          markContentAsViewed(currentContent.id);
+          
+          // ✅ REFRESH counts from source tables to ensure accuracy
+          await refreshCountsFromSource();
+          
+          if (window.track?.contentView) {
+            window.track.contentView(currentContent.id, 'video');
+          }
+        } else {
           // Revert UI on failure
           if (viewsEl && viewsFullEl) {
             viewsEl.textContent = `${formatNumber(currentViews)} views`;
             viewsFullEl.textContent = formatNumber(currentViews);
           }
-        } else {
-          markContentAsViewed(currentContent.id);
-          console.log('✅ View recorded');
+        }
+      })
+      .catch((error) => {
+        console.error('View recording error:', error);
+        // Revert UI on error
+        if (viewsEl && viewsFullEl) {
+          viewsEl.textContent = `${formatNumber(currentViews)} views`;
+          viewsFullEl.textContent = formatNumber(currentViews);
         }
       });
   }
   
-  // Rest of video player initialization
-  const player = document.getElementById('inlinePlayer');
-  const videoElement = document.getElementById('inlineVideoPlayer');
-  if (!player || !videoElement) {
-    showToast('Video player not available', 'error');
-    return;
-  }
-  
+  // Get video URL
   let videoUrl = currentContent.file_url;
+  console.log('📥 Raw file_url from database:', videoUrl);
+  
+  // Construct proper Supabase URL if needed
   if (videoUrl && !videoUrl.startsWith('http')) {
-    videoUrl = videoUrl.startsWith('/') ? videoUrl.substring(1) : videoUrl;
+    if (videoUrl.startsWith('/')) {
+      videoUrl = videoUrl.substring(1);
+    }
     videoUrl = `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/content-media/${videoUrl}`;
   }
   
+  // Fallback to thumbnail if needed
+  if (!videoUrl || videoUrl === 'null' || videoUrl === 'undefined' || videoUrl === '') {
+    if (currentContent.thumbnail_url && !currentContent.thumbnail_url.startsWith('http')) {
+      const cleanPath = currentContent.thumbnail_url.startsWith('/')
+        ? currentContent.thumbnail_url.substring(1)
+        : currentContent.thumbnail_url;
+      videoUrl = `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/content-media/${cleanPath}`;
+    }
+  }
+  
+  console.log('🎥 Final video URL:', videoUrl);
+  
+  // Validate URL format
   if (!videoUrl || (!videoUrl.includes('.mp4') && !videoUrl.includes('.webm') && !videoUrl.includes('.mov'))) {
+    console.error('❌ Invalid video URL or format:', videoUrl);
     showToast('Invalid video format or URL', 'error');
     return;
   }
   
+  // Show player
   player.style.display = 'block';
-  const placeholder = document.getElementById('videoPlaceholder');
-  if (placeholder) placeholder.style.display = 'none';
   
+  // Hide placeholder
+  const placeholder = document.getElementById('videoPlaceholder');
+  if (placeholder) {
+    placeholder.style.display = 'none';
+  }
+  
+  // Destroy existing player FIRST
   if (enhancedVideoPlayer) {
-    try { enhancedVideoPlayer.destroy(); } catch (e) {}
+    try {
+      console.log('🗑️ Destroying existing player...');
+      enhancedVideoPlayer.destroy();
+    } catch (e) {
+      console.warn('Error destroying old player:', e);
+    }
     enhancedVideoPlayer = null;
   }
   
-  while (videoElement.firstChild) videoElement.removeChild(videoElement.firstChild);
+  // Clear and set video source
+  console.log('🔧 Setting video source...');
+  
+  while (videoElement.firstChild) {
+    videoElement.removeChild(videoElement.firstChild);
+  }
+  
+  videoElement.removeAttribute('src');
   videoElement.src = '';
   
   const source = document.createElement('source');
   source.src = videoUrl;
-  source.type = videoUrl.endsWith('.mp4') ? 'video/mp4' : 
-               videoUrl.endsWith('.webm') ? 'video/webm' : 
-               videoUrl.endsWith('.mov') ? 'video/quicktime' : 'video/mp4';
+  
+  // Set MIME type
+  if (videoUrl.endsWith('.mp4')) {
+    source.type = 'video/mp4';
+  } else if (videoUrl.endsWith('.webm')) {
+    source.type = 'video/webm';
+  } else if (videoUrl.endsWith('.mov')) {
+    source.type = 'video/quicktime';
+  } else {
+    source.type = 'video/mp4';
+  }
   
   videoElement.appendChild(source);
   videoElement.load();
   
+  console.log('✅ Video source set successfully');
+  
+  // Initialize player AFTER source is set
+  console.log('🎬 Initializing EnhancedVideoPlayer...');
   initializeEnhancedVideoPlayer();
   
+  // Try to play after delay
   setTimeout(() => {
     if (enhancedVideoPlayer) {
+      console.log('▶️ Attempting to play...');
       enhancedVideoPlayer.play().catch(err => {
-        console.error('Play failed:', err);
+        console.error('🔴 Play failed:', err);
         showToast('Click play button in video player', 'info');
       });
     } else {
+      console.log('▶️ Using native player...');
       videoElement.play().catch(err => {
-        console.error('Autoplay failed:', err);
+        console.error('🔴 Autoplay failed:', err);
         showToast('Click play button in video player', 'info');
       });
     }
   }, 500);
-  
-  setTimeout(() => player.scrollIntoView({ behavior: 'smooth', block: 'center' }), 100);
-}
   
   // Scroll to player
   setTimeout(() => {
@@ -1000,20 +1014,23 @@ function setupEventListeners() {
   }
   
   // ============================================
-  // CRITICAL FIX: LIKE BUTTON - Use Supabase auth session ID to satisfy RLS policy on content_likes
+  // LIKE BUTTON - RLS-COMPLIANT (bypass broken triggers)
   // ============================================
   const likeBtn = document.getElementById('likeBtn');
   if (likeBtn) {
     likeBtn.addEventListener('click', async () => {
       if (!currentContent) return;
       
-      // ✅ MOBILE APP LOGIC: Get CURRENT auth session user ID
-      const { data: { user }, error: authError } = await window.supabaseClient.auth.getUser();
-      if (authError || !user) {
+      if (!window.AuthHelper?.isAuthenticated?.()) {
         showToast('Sign in to like content', 'warning');
         return;
       }
-      const authUserId = user.id;
+      
+      const userProfile = window.AuthHelper.getUserProfile();
+      if (!userProfile?.id) {
+        showToast('User profile not found', 'error');
+        return;
+      }
       
       const isLiked = likeBtn.classList.contains('active');
       const likesCountEl = document.getElementById('likesCount');
@@ -1031,29 +1048,30 @@ function setupEventListeners() {
           likesCountEl.textContent = formatNumber(newLikes);
         }
         
-        // ✅ MOBILE APP LOGIC: Use content_likes table (NOT user_likes)
+        // Update database using content_likes table
         if (!isLiked) {
           // Add like
           const { error } = await window.supabaseClient
             .from('content_likes')
             .insert({
-              user_id: authUserId, // Session-matched ID
-              content_id: currentContent.id,
-              created_at: new Date().toISOString()
+              user_id: userProfile.id,
+              content_id: currentContent.id
             });
+          
           if (error) throw error;
         } else {
           // Remove like
           const { error } = await window.supabaseClient
             .from('content_likes')
             .delete()
-            .eq('user_id', authUserId)
+            .eq('user_id', userProfile.id)
             .eq('content_id', currentContent.id);
+          
           if (error) throw error;
         }
         
-        // ✅ MOBILE APP LOGIC: Refresh counts by RELOADING content data
-        await loadContentFromURL(); // This fetches REAL counts from source tables
+        // ✅ CRITICAL: Refresh counts from SOURCE tables after like operation
+        await refreshCountsFromSource();
         
         showToast(!isLiked ? 'Liked!' : 'Like removed', !isLiked ? 'success' : 'info');
         
@@ -1064,7 +1082,7 @@ function setupEventListeners() {
       } catch (error) {
         console.error('Like operation failed:', error);
         
-        // Revert UI
+        // Revert UI on error
         likeBtn.classList.toggle('active', isLiked);
         likeBtn.innerHTML = isLiked 
           ? '<i class="fas fa-heart"></i><span>Liked</span>' 
@@ -1074,7 +1092,7 @@ function setupEventListeners() {
           likesCountEl.textContent = formatNumber(currentLikes);
         }
         
-        showToast('Failed: ' + (error.message || 'Unknown error'), 'error');
+        showToast('Failed: ' + error.message, 'error');
       }
     });
   }
@@ -1087,13 +1105,16 @@ function setupEventListeners() {
     favoriteBtn.addEventListener('click', async () => {
       if (!currentContent) return;
       
-      // ✅ MOBILE APP LOGIC: Get CURRENT auth session user ID
-      const { data: { user }, error: authError } = await window.supabaseClient.auth.getUser();
-      if (authError || !user) {
+      if (!window.AuthHelper?.isAuthenticated?.()) {
         showToast('Sign in to favorite content', 'warning');
         return;
       }
-      const authUserId = user.id;
+      
+      const userProfile = window.AuthHelper.getUserProfile();
+      if (!userProfile?.id) {
+        showToast('User profile not found', 'error');
+        return;
+      }
       
       const isFavorited = favoriteBtn.classList.contains('active');
       const favCountEl = document.getElementById('favoritesCount');
@@ -1101,7 +1122,7 @@ function setupEventListeners() {
       const newFavorites = isFavorited ? currentFavorites - 1 : currentFavorites + 1;
       
       try {
-        // Optimistic UI update
+        // OPTIMISTIC UI UPDATE
         favoriteBtn.classList.toggle('active', !isFavorited);
         favoriteBtn.innerHTML = !isFavorited
           ? '<i class="fas fa-star"></i><span>Favorited</span>'
@@ -1111,36 +1132,47 @@ function setupEventListeners() {
           favCountEl.textContent = formatNumber(newFavorites);
         }
         
-        // ✅ MOBILE APP LOGIC: Use favorites table
+        // Update database
         if (!isFavorited) {
-          // Add favorite
           const { error } = await window.supabaseClient
             .from('favorites')
             .insert({
-              user_id: authUserId,
-              content_id: currentContent.id,
-              created_at: new Date().toISOString()
+              user_id: userProfile.id,
+              content_id: currentContent.id
             });
+          
           if (error) throw error;
         } else {
-          // Remove favorite
           const { error } = await window.supabaseClient
             .from('favorites')
             .delete()
-            .eq('user_id', authUserId)
+            .eq('user_id', userProfile.id)
             .eq('content_id', currentContent.id);
+          
           if (error) throw error;
         }
         
-        // ✅ MOBILE APP LOGIC: Refresh content to update state
-        await loadContentFromURL();
+        // UPDATE Content.favorites_count
+        const { error: updateError } = await window.supabaseClient
+          .from('Content')
+          .update({ favorites_count: newFavorites })
+          .eq('id', currentContent.id);
+        
+        if (updateError) {
+          console.warn('Favorites count update failed:', updateError);
+        }
+        
+        currentContent.favorites_count = newFavorites;
         
         showToast(!isFavorited ? 'Added to favorites!' : 'Removed from favorites', !isFavorited ? 'success' : 'info');
+        
+        // Refresh counts
+        await refreshCountsFromSource();
         
       } catch (error) {
         console.error('Favorite update failed:', error);
         
-        // Revert UI
+        // REVERT UI ON ERROR
         favoriteBtn.classList.toggle('active', isFavorited);
         favoriteBtn.innerHTML = isFavorited
           ? '<i class="fas fa-star"></i><span>Favorited</span>'
@@ -1150,7 +1182,7 @@ function setupEventListeners() {
           favCountEl.textContent = formatNumber(currentFavorites);
         }
         
-        showToast('Failed: ' + (error.message || 'Unknown error'), 'error');
+        showToast('Failed to update favorite', 'error');
       }
     });
   }
@@ -1170,84 +1202,88 @@ function setupEventListeners() {
   // ============================================
   // COMMENT SUBMISSION HANDLER
   // ============================================
- const sendBtn = document.getElementById('sendCommentBtn');
-const commentInput = document.getElementById('commentInput');
-if (sendBtn && commentInput) {
-  sendBtn.addEventListener('click', async function() {
-    const text = commentInput.value.trim();
-    if (!text) {
-      showToast('Please enter a comment', 'warning');
-      return;
-    }
-    
-    // ✅ Get current session user
-    const { data: authData } = await window.supabaseClient.auth.getUser();
-    if (!authData?.user) {
-      showToast('Sign in to comment', 'warning');
-      return;
-    }
-    
-    if (!currentContent) return;
-    
-    // Show loading state
-    const originalHTML = sendBtn.innerHTML;
-    sendBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-    sendBtn.disabled = true;
-    
-    try {
-      // ✅ Get avatar from user_profiles table
-      const { data: profile } = await window.supabaseClient
-        .from('user_profiles')
-        .select('avatar_url, full_name, username')
-        .eq('id', authData.user.id)
-        .single();
-      
-      const authorName = profile?.full_name || 
-                         profile?.username || 
-                         authData.user.email?.split('@')[0] || 
-                         'User';
-      
-      const avatarUrl = profile?.avatar_url || null;
-      
-      // ✅ Insert comment with ALL fields
-      const { error: insertError } = await window.supabaseClient
-        .from('comments')
-        .insert({
-          content_id: currentContent.id,
-          user_id: authData.user.id,
-          author_name: authorName,
-          author_avatar: avatarUrl,
-          comment_text: text,
-          created_at: new Date().toISOString()
-        });
-      
-      if (insertError) throw insertError;
-      
-      console.log('✅ Comment inserted with avatar:', { authorName, avatarUrl });
-      
-      // ✅ IMMEDIATELY RELOAD COMMENTS
-      await loadComments(currentContent.id);
-      
-      // Clear input
-      commentInput.value = '';
-      showToast('Comment added!', 'success');
-      
-    } catch (error) {
-      console.error('❌ Comment failed:', error);
-      showToast(error.message || 'Failed to add comment', 'error');
-    } finally {
-      sendBtn.innerHTML = originalHTML;
-      sendBtn.disabled = false;
-    }
-  });
+  const sendBtn = document.getElementById('sendCommentBtn');
+  const commentInput = document.getElementById('commentInput');
   
-  commentInput.addEventListener('keypress', function(e) {
-    if (e.key === 'Enter' && !e.shiftKey && !commentInput.disabled) {
-      e.preventDefault();
-      sendBtn.click();
-    }
-  });
-}
+  if (sendBtn && commentInput) {
+    sendBtn.addEventListener('click', async function() {
+      const text = commentInput.value.trim();
+      if (!text) {
+        showToast('Please enter a comment', 'warning');
+        return;
+      }
+      
+      if (!window.AuthHelper?.isAuthenticated?.()) {
+        showToast('You need to sign in to comment', 'warning');
+        return;
+      }
+      
+      if (!currentContent) return;
+      
+      // Show loading state
+      const originalHTML = sendBtn.innerHTML;
+      sendBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+      sendBtn.disabled = true;
+      
+      try {
+        const userProfile = window.AuthHelper.getUserProfile();
+        const displayName = window.AuthHelper.getDisplayName();
+        const avatarUrl = window.AuthHelper.getAvatarUrl();
+        
+        if (!userProfile?.id) {
+          throw new Error('User profile not found');
+        }
+        
+        // Insert comment
+        const { data: newComment, error: insertError } = await window.supabaseClient
+          .from('comments')
+          .insert({
+            content_id: currentContent.id,
+            user_id: userProfile.id,
+            author_name: displayName,
+            comment_text: text,
+            author_avatar: avatarUrl || null,
+            created_at: new Date().toISOString()
+          })
+          .select()
+          .single();
+        
+        if (insertError) {
+          console.error('Comment insert error:', insertError);
+          throw insertError;
+        }
+        
+        console.log('✅ Comment inserted:', newComment);
+        
+        // Refresh comments and counts
+        await loadComments(currentContent.id);
+        await refreshCountsFromSource();
+        
+        // Clear input
+        commentInput.value = '';
+        showToast('Comment added!', 'success');
+        
+        // Track analytics
+        if (window.track?.contentComment) {
+          window.track.contentComment(currentContent.id);
+        }
+      } catch (error) {
+        console.error('❌ Comment submission failed:', error);
+        showToast(error.message || 'Failed to add comment', 'error');
+      } finally {
+        sendBtn.innerHTML = originalHTML;
+        sendBtn.disabled = false;
+      }
+    });
+    
+    // Enter key support
+    commentInput.addEventListener('keypress', function(e) {
+      if (e.key === 'Enter' && !e.shiftKey && !commentInput.disabled) {
+        e.preventDefault();
+        sendBtn.click();
+      }
+    });
+  }
   
   // Back to top
   const backToTopBtn = document.getElementById('backToTopBtn');
@@ -1272,44 +1308,6 @@ if (sendBtn && commentInput) {
       const video = document.getElementById('inlineVideoPlayer');
       if (video.requestPictureInPicture && document.pictureInPictureElement !== video) {
         video.requestPictureInPicture();
-      }
-    });
-  }
-  
-  // ============================================
-  // FIXED: SHARE BUTTON WITH BRAND IDENTITY (NO DNA, JUST RSA)
-  // ============================================
-  const shareBtn = document.getElementById('shareBtn');
-  if (shareBtn) {
-    shareBtn.addEventListener('click', async () => {
-      if (!currentContent) return;
-      
-      const shareText = `📺 ${currentContent.title}\n\n${currentContent.description || 'Check out this amazing content!'}\n\n👉 Watch on Bantu Stream Connect\nNO DNA, JUST RSA\n\n`;
-      const shareUrl = window.location.href;
-      
-      try {
-        if (navigator.share && navigator.canShare({ text: shareText, url: shareUrl })) {
-          // ✅ NATIVE SHARE (mobile)
-          await navigator.share({
-            title: 'Bantu Stream Connect',
-            text: shareText,
-            url: shareUrl
-          });
-        } else {
-          // ✅ FALLBACK: Copy to clipboard with brand message
-          await navigator.clipboard.writeText(`${shareText}${shareUrl}`);
-          showToast('✨ Link copied! Share with "NO DNA, JUST RSA" ✨', 'success');
-          
-          // Track share analytics
-          if (window.track?.contentShare) {
-            window.track.contentShare(currentContent.id, 'clipboard');
-          }
-        }
-      } catch (err) {
-        if (err.name !== 'AbortError') {
-          console.error('Share failed:', err);
-          showToast('Failed to share. Try copying link manually.', 'error');
-        }
       }
     });
   }
@@ -1704,9 +1702,6 @@ function triggerSearch() {
   }
 }
 
-// ============================================
-// FIXED: Search content with REAL view counts from source table
-// ============================================
 async function searchContent(query, category = '', sortBy = 'newest') {
   try {
     let orderBy = 'created_at';
@@ -1733,28 +1728,13 @@ async function searchContent(query, category = '', sortBy = 'newest') {
     const { data, error } = await queryBuilder;
     
     if (error) throw error;
-    
-    // ✅ ENRICH SEARCH RESULTS WITH REAL VIEW COUNTS (like mobile app)
-    const enrichedResults = await Promise.all(
-      (data || []).map(async (item) => {
-        const { count: realViews } = await window.supabaseClient
-          .from('content_views')
-          .select('*', { count: 'exact', head: true })
-          .eq('content_id', item.id);
-        return { ...item, real_views_count: realViews || 0 };
-      })
-    );
-    
-    return enrichedResults || [];
+    return data || [];
   } catch (error) {
     console.error('Search error:', error);
     return [];
   }
 }
 
-// ============================================
-// FIXED: Render search results with REAL view counts
-// ============================================
 function renderSearchResults(results) {
   const grid = document.getElementById('search-results-grid');
   if (!grid) return;
@@ -1766,9 +1746,6 @@ function renderSearchResults(results) {
   
   grid.innerHTML = results.map(item => {
     const creator = item.user_profiles?.full_name || item.user_profiles?.username || item.creator || 'Creator';
-    // ✅ USE REAL VIEW COUNT
-    const viewsCount = item.real_views_count !== undefined ? item.real_views_count : (item.views_count || 0);
-    
     return `
       <div class="content-card" data-content-id="${item.id}">
         <div class="card-thumbnail">
@@ -1781,7 +1758,7 @@ function renderSearchResults(results) {
           <h3 class="card-title">${truncateText(item.title, 45)}</h3>
           <div class="related-meta">
             <i class="fas fa-eye"></i>
-            <span>${formatNumber(viewsCount)} views</span> <!-- ✅ REAL COUNT -->
+            <span>${formatNumber(item.views_count || 0)} views</span>
           </div>
           <button class="creator-btn" data-creator-id="${item.user_id}" data-creator-name="${creator}">
             <i class="fas fa-user"></i>
@@ -2058,7 +2035,7 @@ function formatNotificationTime(timestamp) {
 }
 
 // ======================
-// FIXED: THEME SELECTOR (Proper class handling + forced repaint)
+// THEME SELECTOR
 // ======================
 function initThemeSelector() {
   const themeToggle = document.getElementById('nav-theme-toggle');
@@ -2095,39 +2072,29 @@ function initThemeSelector() {
   initCurrentTheme();
 }
 
-// ============================================
-// FIXED: applyTheme - Proper class management without breaking other classes
-// ============================================
 function applyTheme(theme) {
-  // ✅ CRITICAL FIX: Properly manage theme classes without breaking other classes
-  document.body.classList.remove('theme-light', 'theme-dark', 'theme-high-contrast');
-  document.body.classList.add(`theme-${theme}`);
-  
+  document.body.className = `theme-${theme}`;
   localStorage.setItem('theme', theme);
   
-  // Update active state on theme options
+  // Update active state
   document.querySelectorAll('.theme-option').forEach(option => {
     option.classList.toggle('active', option.dataset.theme === theme);
   });
   
+  // Show confirmation
   showToast(`Theme changed to ${theme}`, 'success');
-  
-  // ✅ FORCE REPAINT FOR IMMEDIATE VISUAL FEEDBACK
-  document.body.offsetHeight;
 }
 
-// ============================================
-// FIXED: initCurrentTheme - Apply theme before setting active state
-// ============================================
 function initCurrentTheme() {
+  // Load saved theme or use system preference
   const savedTheme = localStorage.getItem('theme');
   const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
   const defaultTheme = savedTheme || (prefersDark ? 'dark' : 'light');
   
-  // ✅ CRITICAL: Apply theme BEFORE setting active state
+  // Set initial theme
   applyTheme(defaultTheme);
   
-  // Set active indicator
+  // Set active state on load
   document.querySelector(`.theme-option[data-theme="${defaultTheme}"]`)?.classList.add('active');
 }
 
