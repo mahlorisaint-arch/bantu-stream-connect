@@ -18,8 +18,6 @@
     
     <!-- CSS Files -->
     <link rel="stylesheet" href="css/content-library.css">
-    <link rel="stylesheet" href="css/content-library-features.css">
-    <link rel="stylesheet" href="css/content-library-themes.css">
 </head>
 <body>
     <!-- Loading Screen -->
@@ -256,38 +254,7 @@
         console.log('✅ Supabase client initialized');
     </script>
 
-    <!-- JavaScript Modules -->
-    <script type="module">
-        // Main entry point for Content Library
-        import { initContentLibrary } from './js/content-library.js';
-        import { initTheme } from './js/content-library-themes.js';
-        import { setupFeatureEventListeners } from './js/content-library-features.js';
-        
-        // Wait for DOM to be ready
-        document.addEventListener('DOMContentLoaded', async () => {
-            try {
-                // Initialize core content library
-                await initContentLibrary();
-                
-                // Initialize theme system
-                initTheme();
-                
-                // Setup auth state change listener
-                window.supabaseClient.auth.onAuthStateChange((event, session) => {
-                    console.log('Auth state changed:', event);
-                    
-                    if (event === 'SIGNED_IN') {
-                        window.location.reload();
-                    } else if (event === 'SIGNED_OUT') {
-                        window.location.reload();
-                    }
-                });
-                
-            } catch (error) {
-                console.error('❌ Initialization error:', error);
-                document.getElementById('loading-text').textContent = 'Error loading content. Please refresh.';
-            }
-        });
-    </script>
+    <!-- Main JavaScript File -->
+    <script src="js/content-library.js"></script>
 </body>
 </html>
