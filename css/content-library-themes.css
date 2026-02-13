@@ -1,0 +1,91 @@
+/* ============================================
+   CONTENT LIBRARY - THEME VARIANTS
+   Light and High Contrast themes
+   ============================================ */
+
+/* Theme variants - applied to body */
+body.theme-light {
+    --deep-black: #F8FAFC;
+    --deep-navy: #FFFFFF;
+    --soft-white: #0F172A;
+    --slate-grey: #64748B;
+    --card-bg: rgba(255, 255, 255, 0.9);
+    --card-border: rgba(100, 116, 139, 0.2);
+}
+
+body.theme-high-contrast {
+    --deep-black: #000000;
+    --deep-navy: #111827;
+    --soft-white: #FFFFFF;
+    --slate-grey: #E5E7EB;
+    --card-bg: rgba(17, 24, 39, 0.95);
+    --card-border: #FFFFFF;
+}
+
+/* Light theme adjustments */
+body.theme-light .header {
+    background: rgba(255, 255, 255, 0.9);
+}
+
+body.theme-light .logo-text {
+    background: linear-gradient(to right, var(--soft-white), var(--bantu-blue));
+    -webkit-background-clip: text;
+    background-clip: text;
+}
+
+body.theme-light .card-title {
+    color: var(--deep-navy);
+}
+
+body.theme-light .section-title {
+    -webkit-text-fill-color: initial;
+    color: var(--deep-navy);
+    background: none;
+}
+
+body.theme-light .hero h1 {
+    -webkit-text-fill-color: initial;
+    color: var(--deep-navy);
+    background: none;
+}
+
+/* High contrast theme adjustments */
+body.theme-high-contrast .card-badge {
+    background: #000000;
+    border: 2px solid #FFFFFF;
+    color: #FFFFFF;
+}
+
+body.theme-high-contrast .content-card {
+    border: 2px solid #FFFFFF;
+}
+
+body.theme-high-contrast .icon-btn,
+body.theme-high-contrast .nav-icon {
+    border: 2px solid #FFFFFF;
+    background: #000000;
+}
+
+body.theme-high-contrast .category-tab {
+    border: 2px solid #FFFFFF;
+    color: #FFFFFF;
+    background: #000000;
+}
+
+body.theme-high-contrast .category-tab.active {
+    background: #FFFFFF;
+    color: #000000;
+}
+
+/* Accessibility & Touch Targets */
+@media (hover: none) and (pointer: coarse) {
+    .icon-btn, .profile-btn, .nav-icon, .creator-btn {
+        min-width: 44px !important;
+        min-height: 44px !important;
+    }
+    
+    .header, .navigation-button, .footer {
+        -webkit-tap-highlight-color: transparent;
+        user-select: none;
+    }
+}
