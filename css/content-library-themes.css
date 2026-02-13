@@ -49,6 +49,22 @@ body.theme-light .hero h1 {
     background: none;
 }
 
+body.theme-light .hero p {
+    color: var(--slate-grey);
+}
+
+body.theme-light .category-tab {
+    color: var(--slate-grey);
+}
+
+body.theme-light .category-tab.active {
+    color: var(--soft-white);
+}
+
+body.theme-light .card-stats {
+    color: var(--slate-grey);
+}
+
 /* High contrast theme adjustments */
 body.theme-high-contrast .card-badge {
     background: #000000;
@@ -77,15 +93,23 @@ body.theme-high-contrast .category-tab.active {
     color: #000000;
 }
 
-/* Accessibility & Touch Targets */
-@media (hover: none) and (pointer: coarse) {
-    .icon-btn, .profile-btn, .nav-icon, .creator-btn {
-        min-width: 44px !important;
-        min-height: 44px !important;
-    }
-    
-    .header, .navigation-button, .footer {
-        -webkit-tap-highlight-color: transparent;
-        user-select: none;
-    }
+body.theme-high-contrast .hero-btn,
+body.theme-high-contrast .creator-btn {
+    border: 2px solid #FFFFFF;
+}
+
+body.theme-high-contrast .card-stat i {
+    color: #FFFFFF;
+}
+
+body.theme-high-contrast .section-title {
+    -webkit-text-fill-color: initial;
+    color: #FFFFFF;
+    background: none;
+}
+
+body.theme-high-contrast .hero h1 {
+    -webkit-text-fill-color: initial;
+    color: #FFFFFF;
+    background: none;
 }
