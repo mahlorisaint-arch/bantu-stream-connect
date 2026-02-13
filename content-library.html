@@ -1,280 +1,255 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
-    <title>Content Library - Bantu Stream Connect</title>
-    
-    <!-- Google Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Orbitron:wght@400;500;600;700&display=swap" rel="stylesheet">
-    
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    <!-- Supabase JS SDK -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    
-    <!-- Content Library Styles -->
-    <link rel="stylesheet" href="css/content-library.css">
-    <link rel="stylesheet" href="css/content-library-features.css">
-    <link rel="stylesheet" href="css/content-library-themes.css">
-    
-    <!-- Supabase Configuration -->
-    <script>
-        // Supabase Configuration
-        const SUPABASE_URL = 'https://ydnxqnbjoshvxteevemc.supabase.co';
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U';
-        
-        // Initialize Supabase client
-        window.supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-        
-        console.log('✅ Supabase client initialized');
-    </script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+  <title>Content Library - Bantu Stream Connect</title>
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Orbitron:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- CSS Files -->
+  <link rel="stylesheet" href="css/content-library-themes.css">
+  <link rel="stylesheet" href="css/content-library.css">
+  <link rel="stylesheet" href="css/content-library-features.css">
+  
+  <!-- Supabase JS SDK -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
-    <!-- Loading Screen -->
-    <div id="loading" class="loading-screen">
-        <div class="spinner"></div>
-        <div id="loading-text">Loading Content Library...</div>
-    </div>
-
-    <!-- Animated Background -->
-    <div class="animated-bg">
-        <div class="glow-cycle glow-1"></div>
-        <div class="glow-cycle glow-2"></div>
-        <div class="glow-cycle glow-3"></div>
-        <div class="glow-cycle glow-4"></div>
-    </div>
-
-    <!-- Main Content (hidden until loaded) -->
-    <div id="app" style="display: none;">
-        <!-- Enhanced Header with all features -->
-        <header class="header">
-            <div class="logo" onclick="window.location.href='index.html'">
-                <div class="logo-icon">
-                    <i class="fas fa-film" style="color: var(--warm-gold); font-size: 20px;"></i>
-                </div>
-                <div class="logo-text">BANTU STREAM CONNECT</div>
-            </div>
-            <div class="header-actions">
-                <!-- Analytics Button -->
-                <button id="analytics-btn" class="icon-btn" title="Analytics">
-                    <i class="fas fa-chart-line"></i>
-                </button>
-                <!-- Search Button -->
-                <button id="search-btn" class="icon-btn search-btn" title="Search">
-                    <i class="fas fa-search"></i>
-                </button>
-                <!-- Notifications Button -->
-                <button id="notifications-btn" class="icon-btn" title="Notifications">
-                    <i class="fas fa-bell"></i>
-                    <span class="notification-badge" id="notification-count" style="display: none;">0</span>
-                </button>
-                <!-- Profile Button -->
-                <button id="profile-btn" class="profile-btn" title="Profile">
-                    <div class="profile-placeholder" id="userProfilePlaceholder">
-                        <i class="fas fa-user"></i>
-                    </div>
-                </button>
-            </div>
-        </header>
-
-        <!-- Category Tabs -->
-        <div class="category-tabs-container">
-            <div id="category-tabs" class="category-tabs">
-                <!-- Categories will be loaded here -->
-            </div>
+  <!-- Loading Screen -->
+  <div id="loading" class="loading-screen">
+    <div class="spinner"></div>
+    <div id="loading-text">Loading Content Library...</div>
+  </div>
+  
+  <!-- Animated Background -->
+  <div class="animated-bg">
+    <div class="glow-cycle glow-1"></div>
+    <div class="glow-cycle glow-2"></div>
+    <div class="glow-cycle glow-3"></div>
+    <div class="glow-cycle glow-4"></div>
+  </div>
+  
+  <!-- Main Content (hidden until loaded) -->
+  <div id="app" style="display: none;">
+    <!-- Enhanced Header with all features -->
+    <header class="header">
+      <div class="logo" onclick="window.location.href='index.html'">
+        <div class="logo-icon">
+          <i class="fas fa-film" style="color: var(--warm-gold); font-size: 20px;"></i>
         </div>
-
-        <!-- Main Content -->
-        <main class="container">
-            <!-- Hero Section -->
-            <section class="hero">
-                <h1>CONTENT LIBRARY</h1>
-                <p>Browse and discover amazing content from creators across Africa</p>
-                <button id="browse-all-btn" class="hero-btn">Explore All Content</button>
-            </section>
-
-            <!-- Content Sections -->
-            <div id="content-sections">
-                <!-- Content will be loaded here -->
-            </div>
-        </main>
-
-        <!-- Footer -->
-        <footer class="footer">
-            <p>Bantu Stream Connect © 2025 • Built in South Africa • NO DNA, JUST RSA</p>
-            <div class="footer-links">
-                <a href="privacy-policy.html">Privacy Policy</a>
-                <a href="terms-of-service.html">Terms of Service</a>
-                <a href="support.html">Support</a>
-            </div>
-        </footer>
-
-        <!-- Global Navigation Button - Fixed with centered icons -->
-        <div class="navigation-button-container">
-            <div class="navigation-button">
-                <div class="nav-icon" id="nav-home-btn" title="Home">
-                    <i class="fas fa-home"></i>
-                </div>
-                <div class="nav-icon" id="nav-theme-toggle" title="Change Theme">
-                    <i class="fas fa-palette"></i>
-                </div>
-                <div class="nav-icon" id="nav-create-btn" title="Create Content">
-                    <i class="fas fa-plus-circle"></i>
-                </div>
-                <div class="nav-icon" id="nav-dashboard-btn" title="Creator Dashboard">
-                    <i class="fas fa-tachometer-alt"></i>
-                </div>
-                <div class="nav-icon" id="nav-notifications-btn" title="Notifications">
-                    <i class="fas fa-bell"></i>
-                    <span class="nav-notification-badge" id="nav-notification-count" style="display: none;">0</span>
-                </div>
-            </div>
-        </div>
-
-        <!-- Toast Container -->
-        <div id="toast-container"></div>
-        
-        <!-- Back to Top Button -->
-        <button id="backToTopBtn" class="back-to-top">
-            <i class="fas fa-arrow-up"></i>
+        <div class="logo-text">BANTU STREAM CONNECT</div>
+      </div>
+      <div class="header-actions">
+        <!-- Analytics Button -->
+        <button id="analytics-btn" class="icon-btn" title="Analytics">
+          <i class="fas fa-chart-line"></i>
         </button>
-
-        <!-- =================================================================== -->
-        <!-- MODALS & PANELS                                                     -->
-        <!-- =================================================================== -->
-
-        <!-- Analytics Modal -->
-        <div id="analytics-modal" class="analytics-modal">
-            <div class="analytics-content">
-                <div class="analytics-header">
-                    <h2>Platform Analytics</h2>
-                    <button id="close-analytics" class="close-search-btn">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </div>
-                <div class="analytics-body">
-                    <div class="analytics-grid">
-                        <div class="analytics-card">
-                            <h3>Total Views</h3>
-                            <div class="analytics-value" id="total-views">0</div>
-                            <div class="analytics-trend" id="views-trend">+0%</div>
-                        </div>
-                        <div class="analytics-card">
-                            <h3>Total Content</h3>
-                            <div class="analytics-value" id="total-content">0</div>
-                            <div class="analytics-trend" id="content-trend">+0%</div>
-                        </div>
-                        <div class="analytics-card">
-                            <h3>Active Creators</h3>
-                            <div class="analytics-value" id="active-creators">0</div>
-                            <div class="analytics-trend" id="creators-trend">+0%</div>
-                        </div>
-                        <div class="analytics-card">
-                            <h3>Engagement</h3>
-                            <div class="analytics-value" id="engagement-rate">0%</div>
-                            <div class="analytics-trend" id="engagement-trend">+0%</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Search Modal -->
-        <div id="search-modal" class="search-modal">
-            <div class="search-modal-header">
-                <div class="search-input-container">
-                    <i class="search-icon fas fa-search"></i>
-                    <input type="text" id="search-input" class="search-input" placeholder="Search content, creators, or categories..." autocomplete="off">
-                </div>
-                <button id="close-search-btn" class="close-search-btn">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <div class="search-filters">
-                <div class="filter-group">
-                    <label class="filter-label">Category</label>
-                    <select id="category-filter" class="filter-select">
-                        <option value="">All Categories</option>
-                        <option value="Music">Music</option>
-                        <option value="STEM">STEM</option>
-                        <option value="Culture">Culture</option>
-                        <option value="News">News</option>
-                        <option value="Sports">Sports</option>
-                        <option value="Movies">Movies</option>
-                        <option value="Documentaries">Documentaries</option>
-                        <option value="Podcasts">Podcasts</option>
-                    </select>
-                </div>
-                <div class="filter-group">
-                    <label class="filter-label">Sort By</label>
-                    <select id="sort-filter" class="filter-select">
-                        <option value="newest">Newest First</option>
-                        <option value="popular">Most Popular</option>
-                        <option value="trending">Trending</option>
-                    </select>
-                </div>
-            </div>
-            <div id="search-results" class="search-results">
-                <div id="search-results-grid" class="search-results-grid">
-                    <!-- Results loaded here -->
-                </div>
-            </div>
-        </div>
-
-        <!-- Notifications Panel -->
-        <div id="notifications-panel" class="notifications-panel">
-            <div class="notifications-header">
-                <h2>Notifications</h2>
-                <button id="close-notifications" class="icon-btn">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <div class="notifications-list" id="notifications-list">
-                <!-- Notifications loaded here -->
-            </div>
-            <div class="notifications-footer">
-                <button id="mark-all-read" class="text-btn">Mark all as read</button>
-                <button id="notification-settings" class="text-btn">Settings</button>
-            </div>
-        </div>
-
-        <!-- Theme Selector -->
-        <div id="theme-selector" class="theme-selector">
-            <button class="theme-option" data-theme="dark">
-                <i class="fas fa-moon"></i> Dark
-            </button>
-            <button class="theme-option" data-theme="light">
-                <i class="fas fa-sun"></i> Light
-            </button>
-            <button class="theme-option" data-theme="high-contrast">
-                <i class="fas fa-eye"></i> High Contrast
-            </button>
-        </div>
-    </div>
-
-    <!-- Content Library JavaScript -->
-    <script src="js/content-library.js"></script>
-    <script src="js/content-library-features.js"></script>
-    <script src="js/content-library-themes.js"></script>
+        <!-- Search Button -->
+        <button id="search-btn" class="icon-btn search-btn" title="Search">
+          <i class="fas fa-search"></i>
+        </button>
+        <!-- Notifications Button -->
+        <button id="notifications-btn" class="icon-btn" title="Notifications">
+          <i class="fas fa-bell"></i>
+          <span class="notification-badge" id="notification-count" style="display: none;">0</span>
+        </button>
+        <!-- Profile Button -->
+        <button id="profile-btn" class="profile-btn" title="Profile">
+          <div class="profile-placeholder" id="userProfilePlaceholder">
+            <i class="fas fa-user"></i>
+          </div>
+        </button>
+      </div>
+    </header>
     
-    <!-- Additional initialization for features that depend on global variables -->
-    <script>
-        // This script ensures feature functions have access to global state
-        document.addEventListener('DOMContentLoaded', function() {
-            // Wait for core to initialize, then setup features
-            setTimeout(function() {
-                if (typeof setupFeatureEventListeners === 'function') {
-                    setupFeatureEventListeners();
-                }
-                if (typeof setupThemeEventListeners === 'function') {
-                    setupThemeEventListeners();
-                }
-            }, 100);
-        });
-    </script>
+    <!-- Category Tabs -->
+    <div class="category-tabs-container">
+      <div id="category-tabs" class="category-tabs">
+        <!-- Categories will be loaded here -->
+      </div>
+    </div>
+    
+    <!-- Main Content -->
+    <main class="container">
+      <!-- Hero Section -->
+      <section class="hero">
+        <h1>CONTENT LIBRARY</h1>
+        <p>Browse and discover amazing content from creators across Africa</p>
+        <button id="browse-all-btn" class="hero-btn">Explore All Content</button>
+      </section>
+      
+      <!-- Content Sections -->
+      <div id="content-sections">
+        <!-- Content will be loaded here -->
+      </div>
+    </main>
+    
+    <!-- Footer -->
+    <footer class="footer">
+      <p>Bantu Stream Connect © 2025 • Built in South Africa • NO DNA, JUST RSA</p>
+      <div class="footer-links">
+        <a href="privacy-policy.html">Privacy Policy</a>
+        <a href="terms-of-service.html">Terms of Service</a>
+        <a href="support.html">Support</a>
+      </div>
+    </footer>
+    
+    <!-- Global Navigation Button - Fixed with centered icons -->
+    <div class="navigation-button-container">
+      <div class="navigation-button">
+        <div class="nav-icon" id="nav-home-btn" title="Home">
+          <i class="fas fa-home"></i>
+        </div>
+        <div class="nav-icon" id="nav-theme-toggle" title="Change Theme">
+          <i class="fas fa-palette"></i>
+        </div>
+        <div class="nav-icon" id="nav-create-btn" title="Create Content">
+          <i class="fas fa-plus-circle"></i>
+        </div>
+        <div class="nav-icon" id="nav-dashboard-btn" title="Creator Dashboard">
+          <i class="fas fa-tachometer-alt"></i>
+        </div>
+        <div class="nav-icon" id="nav-notifications-btn" title="Notifications">
+          <i class="fas fa-bell"></i>
+          <span class="nav-notification-badge" id="nav-notification-count" style="display: none;">0</span>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Toast Container -->
+    <div id="toast-container"></div>
+    
+    <!-- Back to Top Button -->
+    <button id="backToTopBtn" class="back-to-top">
+      <i class="fas fa-arrow-up"></i>
+    </button>
+    
+    <!-- =================================================================== -->
+    <!-- MODALS & PANELS                                                     -->
+    <!-- =================================================================== -->
+    
+    <!-- Analytics Modal -->
+    <div id="analytics-modal" class="analytics-modal">
+      <div class="analytics-content">
+        <div class="analytics-header">
+          <h2>Platform Analytics</h2>
+          <button id="close-analytics" class="close-search-btn">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        <div class="analytics-body">
+          <div class="analytics-grid">
+            <div class="analytics-card">
+              <h3>Total Views</h3>
+              <div class="analytics-value" id="total-views">0</div>
+              <div class="analytics-trend" id="views-trend">+0%</div>
+            </div>
+            <div class="analytics-card">
+              <h3>Total Content</h3>
+              <div class="analytics-value" id="total-content">0</div>
+              <div class="analytics-trend" id="content-trend">+0%</div>
+            </div>
+            <div class="analytics-card">
+              <h3>Active Creators</h3>
+              <div class="analytics-value" id="active-creators">0</div>
+              <div class="analytics-trend" id="creators-trend">+0%</div>
+            </div>
+            <div class="analytics-card">
+              <h3>Engagement</h3>
+              <div class="analytics-value" id="engagement-rate">0%</div>
+              <div class="analytics-trend" id="engagement-trend">+0%</div>
+            </div>
+          </div>
+          <div class="charts-container">
+            <!-- Charts would be rendered here dynamically -->
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Search Modal -->
+    <div id="search-modal" class="search-modal">
+      <div class="search-modal-header">
+        <div class="search-input-container">
+          <i class="search-icon fas fa-search"></i>
+          <input type="text" id="search-input" class="search-input" placeholder="Search content, creators, or categories..." autocomplete="off">
+        </div>
+        <button id="close-search-btn" class="close-search-btn">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="search-filters">
+        <div class="filter-group">
+          <label class="filter-label">Category</label>
+          <select id="category-filter" class="filter-select">
+            <option value="">All Categories</option>
+            <option value="Music">Music</option>
+            <option value="STEM">STEM</option>
+            <option value="Culture">Culture</option>
+            <option value="News">News</option>
+            <option value="Sports">Sports</option>
+            <option value="Movies">Movies</option>
+            <option value="Documentaries">Documentaries</option>
+            <option value="Podcasts">Podcasts</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label class="filter-label">Sort By</label>
+          <select id="sort-filter" class="filter-select">
+            <option value="newest">Newest First</option>
+            <option value="popular">Most Popular</option>
+            <option value="trending">Trending</option>
+          </select>
+        </div>
+      </div>
+      <div id="search-results" class="search-results">
+        <div id="search-results-grid" class="search-results-grid">
+          <!-- Results loaded here -->
+        </div>
+      </div>
+    </div>
+    
+    <!-- Notifications Panel -->
+    <div id="notifications-panel" class="notifications-panel">
+      <div class="notifications-header">
+        <h2>Notifications</h2>
+        <button id="close-notifications" class="icon-btn">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="notifications-list" id="notifications-list">
+        <!-- Notifications loaded here -->
+      </div>
+      <div class="notifications-footer">
+        <button id="mark-all-read" class="text-btn">Mark all as read</button>
+        <button id="notification-settings" class="text-btn">Settings</button>
+      </div>
+    </div>
+    
+    <!-- Theme Selector -->
+    <div id="theme-selector" class="theme-selector">
+      <button class="theme-option" data-theme="dark">
+        <i class="fas fa-moon"></i> Dark
+      </button>
+      <button class="theme-option" data-theme="light">
+        <i class="fas fa-sun"></i> Light
+      </button>
+      <button class="theme-option" data-theme="high-contrast">
+        <i class="fas fa-eye"></i> High Contrast
+      </button>
+    </div>
+  </div>
+  
+  <!-- JavaScript Files -->
+  <script src="js/content-library-themes.js"></script>
+  <script src="js/content-library-features.js"></script>
+  <script src="js/content-library.js"></script>
 </body>
 </html>
