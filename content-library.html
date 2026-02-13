@@ -89,6 +89,9 @@
       <div id="content-sections">
         <!-- Content will be loaded here -->
       </div>
+      
+      <!-- Infinite Scroll Sentinel -->
+      <div id="infinite-scroll-sentinel" style="height: 20px;"></div>
     </main>
     
     <!-- Footer -->
@@ -247,7 +250,9 @@
     </div>
   </div>
   
-  <!-- JavaScript Files -->
+  <!-- JavaScript Files (load in correct order) -->
+  <script src="env.js"></script>
+  <script src="js/rate-limiter.js"></script>
   <script src="js/content-library-themes.js"></script>
   <script src="js/content-library-features.js"></script>
   <script src="js/content-library.js"></script>
