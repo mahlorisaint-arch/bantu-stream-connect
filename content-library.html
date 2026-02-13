@@ -256,5 +256,104 @@
   <script src="js/content-library-themes.js"></script>
   <script src="js/content-library-features.js"></script>
   <script src="js/content-library.js"></script>
+  
+  <!-- Debug Script for Loading Issues -->
+  <script>
+    // Debug loading issues
+    console.log('🔍 Debug: Script loading order check');
+    console.log('- env.js loaded:', !!window.ENV);
+    console.log('- rate-limiter.js loaded:', !!(window.rateLimiter || window.authRateLimiter));
+    console.log('- themes.js loaded:', typeof initTheme === 'function');
+    console.log('- features.js loaded:', typeof initFeatures === 'function');
+    console.log('- content-library.js loaded:', typeof initContentLibrary === 'function');
+    
+    // Check for variable conflicts
+    const conflicts = [];
+    if (typeof currentPage !== 'undefined' && currentPage !== window.currentPage) conflicts.push('currentPage');
+    if (typeof isLoadingMore !== 'undefined' && isLoadingMore !== window.isLoadingMore) conflicts.push('isLoadingMore');
+    if (typeof hasMoreContent !== 'undefined' && hasMoreContent !== window.hasMoreContent) conflicts.push('hasMoreContent');
+    if (typeof PAGE_SIZE !== 'undefined' && PAGE_SIZE !== window.PAGE_SIZE) conflicts.push('PAGE_SIZE');
+    
+    if (conflicts.length > 0) {
+      console.error('❌ Variable conflicts detected:', conflicts);
+      console.error('These variables should be on window object or removed');
+      
+      // Provide more detailed debugging info
+      conflicts.forEach(varName => {
+        console.error(`- ${varName}: local=${eval(varName)}, window.${varName}=${window[varName]}`);
+      });
+    } else {
+      console.log('✅ No variable conflicts detected');
+    }
+    
+    // Check pagination state
+    console.log('📊 Pagination state:', {
+      currentPage: window.currentPage,
+      isLoadingMore: window.isLoadingMore,
+      hasMoreContent: window.hasMoreContent,
+      PAGE_SIZE: window.PAGE_SIZE
+    });
+    
+    // Check Supabase client
+    console.log('🔌 Supabase client:', !!window.supabaseClient);
+    
+    // Check if all required DOM elements exist
+    const requiredElements = [
+      'loading', 'app', 'content-sections', 'category-tabs',
+      'infinite-scroll-sentinel', 'toast-container'
+    ];
+    
+    const missingElements = requiredElements.filter(id => !document.getElementById(id));
+    if (missingElements.length > 0) {
+      console.warn('⚠️ Missing DOM elements:', missingElements);
+    } else {
+      console.log('✅ All required DOM elements present');
+    }
+    
+    // Performance monitoring
+    if (window.performance) {
+      const perfData = window.performance.timing;
+      const pageLoadTime = perfData.loadEventEnd - perfData.navigationStart;
+      console.log(`⏱️ Page load time: ${pageLoadTime}ms`);
+    }
+    
+    // Memory usage if available
+    if (window.performance && window.performance.memory) {
+      console.log('💾 Memory usage:', {
+        usedJSHeapSize: Math.round(window.performance.memory.usedJSHeapSize / 1048576) + 'MB',
+        totalJSHeapSize: Math.round(window.performance.memory.totalJSHeapSize / 1048576) + 'MB'
+      });
+    }
+    
+    console.log('🚀 Ready to initialize content library...');
+  </script>
+  
+  <!-- Fallback error handler -->
+  <script>
+    // Global error handler for debugging
+    window.addEventListener('error', function(e) {
+      console.error('❌ Global error caught:', {
+        message: e.message,
+        filename: e.filename,
+        lineno: e.lineno,
+        colno: e.colno,
+        error: e.error
+      });
+      
+      // Show user-friendly error message
+      const loadingScreen = document.getElementById('loading');
+      const loadingText = document.getElementById('loading-text');
+      if (loadingScreen && loadingText) {
+        loadingText.innerHTML = `Error loading page. Please refresh.<br><small>${e.message}</small>`;
+      }
+      
+      return false;
+    });
+    
+    // Handle unhandled promise rejections
+    window.addEventListener('unhandledrejection', function(e) {
+      console.error('❌ Unhandled promise rejection:', e.reason);
+    });
+  </script>
 </body>
 </html>
