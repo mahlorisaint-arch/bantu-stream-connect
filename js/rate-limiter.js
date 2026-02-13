@@ -94,14 +94,15 @@ class RateLimiter {
   }
 }
 
-// Create global instance
+// Create global instances
 window.rateLimiter = new RateLimiter({
   maxRequests: 50, // Stricter limit for anonymous
   windowMs: 60000 // 1 minute
 });
 
-// Create authenticated instance for logged-in users
 window.authRateLimiter = new RateLimiter({
   maxRequests: 200, // Higher limit for authenticated users
   windowMs: 60000 // 1 minute
 });
+
+console.log('✅ Rate limiter initialized');
