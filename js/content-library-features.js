@@ -7,10 +7,11 @@
 // INFINITE SCROLL / PAGINATION
 // ============================================
 
-let currentPage = 0;
-let isLoadingMore = false;
-let hasMoreContent = true;
-const PAGE_SIZE = 20;
+// Use window object to make these globally accessible
+window.currentPage = 0;
+window.isLoadingMore = false;
+window.hasMoreContent = true;
+window.PAGE_SIZE = 20;
 
 // Setup infinite scroll
 function setupInfiniteScroll() {
@@ -25,7 +26,7 @@ function setupInfiniteScroll() {
   
   const observer = new IntersectionObserver(async (entries) => {
     const entry = entries[0];
-    if (entry.isIntersecting && hasMoreContent && !isLoadingMore) {
+    if (entry.isIntersecting && window.hasMoreContent && !window.isLoadingMore) {
       await loadMoreContent();
     }
   }, {
@@ -39,10 +40,10 @@ function setupInfiniteScroll() {
 
 // Load more content when scrolling
 async function loadMoreContent() {
-  if (isLoadingMore || !hasMoreContent) return;
+  if (window.isLoadingMore || !window.hasMoreContent) return;
   
-  isLoadingMore = true;
-  currentPage++;
+  window.isLoadingMore = true;
+  window.currentPage++;
   
   // Show loading indicator
   const loadingIndicator = document.createElement('div');
@@ -55,7 +56,7 @@ async function loadMoreContent() {
   document.querySelector('.container').appendChild(loadingIndicator);
   
   try {
-    const result = await fetchContent(currentPage, PAGE_SIZE);
+    const result = await fetchContent(window.currentPage, window.PAGE_SIZE);
     
     // Remove loading indicator
     document.getElementById('infinite-scroll-loading')?.remove();
@@ -63,9 +64,9 @@ async function loadMoreContent() {
     if (result.items.length > 0) {
       // Append to existing sections
       appendContentToSections(result.items);
-      hasMoreContent = result.hasMore;
+      window.hasMoreContent = result.hasMore;
     } else {
-      hasMoreContent = false;
+      window.hasMoreContent = false;
       
       // Show end of content message
       const endMessage = document.createElement('div');
@@ -78,9 +79,9 @@ async function loadMoreContent() {
   } catch (error) {
     console.error('Error loading more content:', error);
     document.getElementById('infinite-scroll-loading')?.remove();
-    hasMoreContent = false;
+    window.hasMoreContent = false;
   } finally {
-    isLoadingMore = false;
+    window.isLoadingMore = false;
   }
 }
 
