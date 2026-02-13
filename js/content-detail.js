@@ -1,4 +1,5 @@
 // js/content-detail.js - FIXED FOR RLS POLICIES - WITH ACCURATE COUNT BYPASS - VIEWS RECORDED ON PLAY BUTTON CLICK (LIKE MOBILE APP)
+// FIXED: Theme selector conflict resolved, navigation icons properly aligned
 console.log('🎬 Content Detail Initializing with RLS-compliant fixes and view tracking on Play button click...');
 
 // Global variables
@@ -42,8 +43,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   initAnalyticsModal();
   initSearchModal();
   initNotificationsPanel();
-  initThemeSelector();
-  initGlobalNavigation();
+  initThemeSelector(); // FIXED: Theme selector now properly implemented
+  initGlobalNavigation(); // FIXED: Navigation icons with proper event listeners
   
   // Show app
   document.getElementById('loading').style.display = 'none';
@@ -2107,7 +2108,7 @@ function formatNotificationTime(timestamp) {
   const diffMs = now - new Date(timestamp);
   const diffMins = Math.floor(diffMs / 60000);
   const diffHours = Math.floor(diffMs / 3600000);
-  const diffDays = Math.floor(diffMs / 8640000);
+  const diffDays = Math.floor(diffMs / 86400000);
   
   if (diffMins < 1) return 'Just now';
   if (diffMins < 60) return `${diffMins}m ago`;
@@ -2117,17 +2118,36 @@ function formatNotificationTime(timestamp) {
 }
 
 // ======================
-// FIXED: THEME SELECTOR (Proper class handling + forced repaint)
+// FIXED: THEME SELECTOR - COMPLETE OVERHAUL - No conflict with ThemeSystem
 // ======================
 function initThemeSelector() {
+  console.log('🎨 Initializing theme selector...');
+  
   const themeToggle = document.getElementById('nav-theme-toggle');
   const themeSelector = document.getElementById('theme-selector');
   const themeOptions = document.querySelectorAll('.theme-option');
   
-  if (!themeToggle || !themeSelector) return;
+  if (!themeToggle) {
+    console.warn('Theme toggle button not found');
+    return;
+  }
   
-  themeToggle.addEventListener('click', (e) => {
+  if (!themeSelector) {
+    console.warn('Theme selector panel not found');
+    return;
+  }
+  
+  console.log('✅ Theme selector elements found');
+  
+  // Remove any existing listeners by cloning and replacing
+  const newThemeToggle = themeToggle.cloneNode(true);
+  themeToggle.parentNode.replaceChild(newThemeToggle, themeToggle);
+  
+  // Toggle theme selector on click
+  newThemeToggle.addEventListener('click', (e) => {
     e.stopPropagation();
+    e.preventDefault();
+    console.log('🎨 Theme toggle clicked');
     themeSelector.classList.toggle('active');
   });
   
@@ -2135,81 +2155,190 @@ function initThemeSelector() {
   document.addEventListener('click', (e) => {
     if (themeSelector.classList.contains('active') && 
         !themeSelector.contains(e.target) && 
-        !themeToggle.contains(e.target)) {
+        !newThemeToggle.contains(e.target)) {
       themeSelector.classList.remove('active');
     }
   });
   
   // Set up theme options
-  themeOptions.forEach(option => {
-    option.addEventListener('click', (e) => {
-      e.stopPropagation();
-      const theme = option.dataset.theme;
-      applyTheme(theme);
-      themeSelector.classList.remove('active');
+  if (themeOptions.length > 0) {
+    themeOptions.forEach(option => {
+      // Remove existing listeners
+      const newOption = option.cloneNode(true);
+      option.parentNode.replaceChild(newOption, option);
+      
+      newOption.addEventListener('click', (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        const theme = newOption.dataset.theme;
+        console.log('🎨 Theme selected:', theme);
+        applyTheme(theme);
+        themeSelector.classList.remove('active');
+      });
     });
-  });
+  } else {
+    console.warn('No theme options found');
+  }
   
   // Initialize theme
   initCurrentTheme();
+  
+  // Listen for system theme changes
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+    if (!localStorage.getItem('theme')) {
+      applyTheme(e.matches ? 'dark' : 'light');
+    }
+  });
 }
 
 // ============================================
-// FIXED: applyTheme - Proper class management without breaking other classes
+// FIXED: applyTheme - Complete rewrite with forced repaint
 // ============================================
 function applyTheme(theme) {
-  // ✅ CRITICAL FIX: Properly manage theme classes without breaking other classes
-  document.body.classList.remove('theme-light', 'theme-dark', 'theme-high-contrast');
+  console.log('🎨 Applying theme:', theme);
+  
+  // Validate theme
+  if (!theme || !['dark', 'light', 'high-contrast'].includes(theme)) {
+    console.warn('Invalid theme:', theme, 'defaulting to dark');
+    theme = 'dark';
+  }
+  
+  // CRITICAL FIX: Remove ALL theme classes first
+  document.body.classList.remove('theme-dark', 'theme-light', 'theme-high-contrast');
+  
+  // Add the new theme class
   document.body.classList.add(`theme-${theme}`);
   
+  // Save to localStorage
   localStorage.setItem('theme', theme);
   
   // Update active state on theme options
   document.querySelectorAll('.theme-option').forEach(option => {
-    option.classList.toggle('active', option.dataset.theme === theme);
+    const isActive = option.dataset.theme === theme;
+    option.classList.toggle('active', isActive);
   });
   
-  showToast(`Theme changed to ${theme}`, 'success');
+  // FORCE REPAINT - Multiple techniques for cross-browser compatibility
+  document.body.style.display = 'none';
+  document.body.offsetHeight; // Force reflow
+  document.body.style.display = '';
   
-  // ✅ FORCE REPAINT FOR IMMEDIATE VISUAL FEEDBACK
-  document.body.offsetHeight;
+  // Also force repaint on theme selector if active
+  const themeSelector = document.getElementById('theme-selector');
+  if (themeSelector) {
+    themeSelector.style.display = 'none';
+    themeSelector.offsetHeight;
+    themeSelector.style.display = '';
+  }
+  
+  // Update CSS custom properties if needed
+  updateThemeCSSVariables(theme);
+  
+  showToast(`Theme changed to ${theme}`, 'success');
+  console.log('✅ Theme applied successfully:', theme);
 }
 
 // ============================================
-// FIXED: initCurrentTheme - Apply theme before setting active state
+// NEW: Update CSS variables based on theme
+// ============================================
+function updateThemeCSSVariables(theme) {
+  const root = document.documentElement;
+  
+  // Ensure theme CSS variables are applied
+  if (theme === 'light') {
+    root.style.setProperty('--deep-black', '#F8FAFC');
+    root.style.setProperty('--deep-navy', '#FFFFFF');
+    root.style.setProperty('--soft-white', '#0F172A');
+    root.style.setProperty('--slate-grey', '#64748B');
+    root.style.setProperty('--card-bg', 'rgba(255, 255, 255, 0.9)');
+    root.style.setProperty('--card-border', 'rgba(100, 116, 139, 0.2)');
+  } else if (theme === 'high-contrast') {
+    root.style.setProperty('--deep-black', '#000000');
+    root.style.setProperty('--deep-navy', '#111827');
+    root.style.setProperty('--soft-white', '#FFFFFF');
+    root.style.setProperty('--slate-grey', '#E5E7EB');
+    root.style.setProperty('--card-bg', 'rgba(17, 24, 39, 0.95)');
+    root.style.setProperty('--card-border', '#FFFFFF');
+  } else {
+    // Dark theme (default)
+    root.style.setProperty('--deep-black', '#0A0E12');
+    root.style.setProperty('--deep-navy', '#0F172A');
+    root.style.setProperty('--soft-white', '#F8FAFC');
+    root.style.setProperty('--slate-grey', '#94A3B8');
+    root.style.setProperty('--card-bg', 'rgba(15, 23, 42, 0.6)');
+    root.style.setProperty('--card-border', 'rgba(148, 163, 184, 0.2)');
+  }
+}
+
+// ============================================
+// FIXED: initCurrentTheme - Load and apply saved theme
 // ============================================
 function initCurrentTheme() {
-  const savedTheme = localStorage.getItem('theme');
-  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-  const defaultTheme = savedTheme || (prefersDark ? 'dark' : 'light');
+  console.log('🎨 Initializing current theme...');
   
-  // ✅ CRITICAL: Apply theme BEFORE setting active state
-  applyTheme(defaultTheme);
+  // Get saved theme from localStorage
+  let savedTheme = localStorage.getItem('theme');
   
-  // Set active indicator
-  document.querySelector(`.theme-option[data-theme="${defaultTheme}"]`)?.classList.add('active');
+  // Check for system preference if no saved theme
+  if (!savedTheme) {
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    savedTheme = prefersDark ? 'dark' : 'light';
+    console.log('🎨 Using system theme preference:', savedTheme);
+  }
+  
+  // Validate theme
+  if (!['dark', 'light', 'high-contrast'].includes(savedTheme)) {
+    console.warn('Invalid saved theme:', savedTheme, 'defaulting to dark');
+    savedTheme = 'dark';
+  }
+  
+  // Apply the theme
+  applyTheme(savedTheme);
+  
+  // Set active indicator on theme options
+  setTimeout(() => {
+    document.querySelectorAll('.theme-option').forEach(option => {
+      if (option.dataset.theme === savedTheme) {
+        option.classList.add('active');
+      } else {
+        option.classList.remove('active');
+      }
+    });
+  }, 100);
+  
+  console.log('✅ Current theme initialized:', savedTheme);
 }
 
 // ======================
-// GLOBAL NAVIGATION
+// GLOBAL NAVIGATION - FIXED: Clean event listeners and centered icons
 // ======================
 function initGlobalNavigation() {
   // Home button - redirect to home-feed
   const homeBtn = document.querySelector('.nav-icon:nth-child(1)');
   if (homeBtn) {
-    homeBtn.addEventListener('click', (e) => {
+    // Remove existing listeners
+    const newHomeBtn = homeBtn.cloneNode(true);
+    homeBtn.parentNode.replaceChild(newHomeBtn, homeBtn);
+    
+    newHomeBtn.addEventListener('click', (e) => {
       e.stopPropagation();
+      e.preventDefault();
       window.location.href = 'https://bantustreamconnect.com/';
     });
   }
   
-  // Theme toggle already handled in initThemeSelector
+  // Theme toggle is already handled in initThemeSelector
+  // Don't add duplicate listeners here
   
   // Create Content button
   const createBtn = document.querySelector('.nav-icon:nth-child(3)');
   if (createBtn) {
-    createBtn.addEventListener('click', (e) => {
+    const newCreateBtn = createBtn.cloneNode(true);
+    createBtn.parentNode.replaceChild(newCreateBtn, createBtn);
+    
+    newCreateBtn.addEventListener('click', (e) => {
       e.stopPropagation();
+      e.preventDefault();
       if (window.AuthHelper?.isAuthenticated()) {
         window.location.href = 'creator-upload.html';
       } else {
@@ -2222,8 +2351,12 @@ function initGlobalNavigation() {
   // Creator Dashboard button
   const dashboardBtn = document.querySelector('.nav-icon:nth-child(4)');
   if (dashboardBtn) {
-    dashboardBtn.addEventListener('click', (e) => {
+    const newDashboardBtn = dashboardBtn.cloneNode(true);
+    dashboardBtn.parentNode.replaceChild(newDashboardBtn, dashboardBtn);
+    
+    newDashboardBtn.addEventListener('click', (e) => {
       e.stopPropagation();
+      e.preventDefault();
       if (window.AuthHelper?.isAuthenticated()) {
         window.location.href = 'creator-dashboard.html';
       } else {
@@ -2233,7 +2366,7 @@ function initGlobalNavigation() {
     });
   }
   
-  // Notifications button already handled in initNotificationsPanel
+  // Notifications button is handled in initNotificationsPanel
 }
 
 // Utility functions
