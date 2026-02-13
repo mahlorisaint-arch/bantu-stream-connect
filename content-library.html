@@ -16,8 +16,10 @@
     <!-- Supabase JS SDK -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
-    <!-- CSS Files -->
+    <!-- Content Library Styles -->
     <link rel="stylesheet" href="css/content-library.css">
+    <link rel="stylesheet" href="css/content-library-features.css">
+    <link rel="stylesheet" href="css/content-library-themes.css">
 </head>
 <body>
     <!-- Loading Screen -->
@@ -242,19 +244,25 @@
         </div>
     </div>
 
-    <!-- Initialize Supabase Client -->
-    <script>
-        // Supabase Configuration
-        const SUPABASE_URL = 'https://ydnxqnbjoshvxteevemc.supabase.co';
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U';
-        
-        // Initialize Supabase client
-        window.supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-        
-        console.log('✅ Supabase client initialized');
-    </script>
-
-    <!-- Main JavaScript File -->
+    <!-- Content Library JavaScript -->
     <script src="js/content-library.js"></script>
+    <script src="js/content-library-features.js"></script>
+    <script src="js/content-library-themes.js"></script>
+    
+    <!-- Additional initialization for features that depend on global variables -->
+    <script>
+        // This script ensures feature functions have access to global state
+        document.addEventListener('DOMContentLoaded', function() {
+            // Wait for core to initialize, then setup features
+            setTimeout(function() {
+                if (typeof setupFeatureEventListeners === 'function') {
+                    setupFeatureEventListeners();
+                }
+                if (typeof setupThemeEventListeners === 'function') {
+                    setupThemeEventListeners();
+                }
+            }, 100);
+        });
+    </script>
 </body>
 </html>
