@@ -3,9 +3,14 @@
  * Handles initialization, authentication, content fetching, and rendering
  */
 
-// Supabase Configuration (initialized in HTML)
-const SUPABASE_URL = 'https://ydnxqnbjoshvxteevemc.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U';
+// Supabase Configuration from environment
+const SUPABASE_URL = window.ENV?.SUPABASE_URL || 'https://ydnxqnbjoshvxteevemc.supabase.co';
+const SUPABASE_ANON_KEY = window.ENV?.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U';
+
+// Environment check
+if (!window.ENV) {
+  console.warn('⚠️ Using fallback credentials. Set up environment variables for production.');
+}
 
 // Global state variables
 window.currentUser = null;
@@ -28,6 +33,12 @@ const categories = [
   'Skits',
   'Videos'
 ];
+
+// Pagination state
+let currentPage = 0;
+let isLoadingMore = false;
+let hasMoreContent = true;
+const PAGE_SIZE = 20;
 
 // ============================================
 // AUTHENTICATION FUNCTIONS
@@ -81,10 +92,15 @@ async function loadUserProfile() {
   }
 }
 
-// Update profile UI with user data
+// Update profile UI with user data (XSS-safe version)
 function updateProfileUI(profile) {
   const userProfilePlaceholder = document.getElementById('userProfilePlaceholder');
   if (!userProfilePlaceholder) return;
+  
+  // Clear existing content safely
+  while (userProfilePlaceholder.firstChild) {
+    userProfilePlaceholder.removeChild(userProfilePlaceholder.firstChild);
+  }
   
   if (profile) {
     const displayName = profile.full_name || 
@@ -95,39 +111,50 @@ function updateProfileUI(profile) {
     const avatarUrl = profile.avatar_url;
     
     if (avatarUrl) {
-      let fullAvatarUrl = avatarUrl;
-      if (!avatarUrl.startsWith('http')) {
-        if (avatarUrl.startsWith('avatars/')) {
-          fullAvatarUrl = `${SUPABASE_URL}/storage/v1/object/public/${avatarUrl}`;
-        } else {
-          fullAvatarUrl = `${SUPABASE_URL}/storage/v1/object/public/avatars/${avatarUrl}`;
-        }
-      }
+      const img = document.createElement('img');
+      img.className = 'profile-img';
+      img.alt = displayName;
+      img.style.cssText = 'width: 100%; height: 100%; border-radius: 50%; object-fit: cover;';
       
-      userProfilePlaceholder.innerHTML = `
-        <img src="${fullAvatarUrl}" alt="${displayName}"
-             class="profile-img"
-             style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;"
-             onerror="this.parentElement.innerHTML = '<div class=\\'profile-placeholder\\' style=\\'width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,#1D4ED8,#F59E0B);display:flex;align-items:center;justify-content:center;color:white;font-weight:bold\\'>${initial}</div>'">
-      `;
+      // Validate and construct URL safely
+      try {
+        if (avatarUrl.startsWith('http')) {
+          img.src = avatarUrl;
+        } else if (avatarUrl.startsWith('avatars/')) {
+          img.src = `${SUPABASE_URL}/storage/v1/object/public/${avatarUrl}`;
+        } else {
+          img.src = `${SUPABASE_URL}/storage/v1/object/public/avatars/${avatarUrl}`;
+        }
+        
+        img.onerror = () => {
+          const fallback = document.createElement('div');
+          fallback.className = 'profile-placeholder';
+          fallback.style.cssText = 'width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,#1D4ED8,#F59E0B);display:flex;align-items:center;justify-content:center;color:white;font-weight:bold';
+          fallback.textContent = initial;
+          userProfilePlaceholder.innerHTML = '';
+          userProfilePlaceholder.appendChild(fallback);
+        };
+        
+        userProfilePlaceholder.appendChild(img);
+      } catch (e) {
+        console.error('Invalid avatar URL:', e);
+        const fallback = document.createElement('div');
+        fallback.className = 'profile-placeholder';
+        fallback.style.cssText = 'width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,#1D4ED8,#F59E0B);display:flex;align-items:center;justify-content:center;color:white;font-weight:bold';
+        fallback.textContent = initial;
+        userProfilePlaceholder.appendChild(fallback);
+      }
     } else {
-      userProfilePlaceholder.innerHTML = `
-        <div class="profile-placeholder" style="
-          width: 100%;
-          height: 100%;
-          border-radius: 50%;
-          background: linear-gradient(135deg, #1D4ED8, #F59E0B);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          color: white;
-          font-weight: bold;
-          font-size: 16px;
-        ">${initial}</div>
-      `;
+      const fallback = document.createElement('div');
+      fallback.className = 'profile-placeholder';
+      fallback.style.cssText = 'width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,#1D4ED8,#F59E0B);display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:16px';
+      fallback.textContent = initial;
+      userProfilePlaceholder.appendChild(fallback);
     }
   } else {
-    userProfilePlaceholder.innerHTML = '<i class="fas fa-user"></i>';
+    const icon = document.createElement('i');
+    icon.className = 'fas fa-user';
+    userProfilePlaceholder.appendChild(icon);
   }
 }
 
@@ -142,51 +169,130 @@ function fixMediaUrl(url) {
   return `${SUPABASE_URL}/storage/v1/object/public/${url.replace(/^\/+/, '')}`;
 }
 
-// Fetch content with real view/like counts
-async function fetchContent() {
+// Format duration from seconds to MM:SS or HH:MM:SS
+function formatDuration(seconds) {
+  if (!seconds) return '0:00';
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  const secs = seconds % 60;
+  
+  if (hours > 0) {
+    return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  }
+  return `${minutes}:${secs.toString().padStart(2, '0')}`;
+}
+
+// Fetch content with pagination and real view/like counts
+async function fetchContent(page = 0, pageSize = 20) {
   try {
-    console.log('🔄 Fetching content from Supabase...');
+    console.log(`🔄 Fetching content page ${page + 1}...`);
     
-    // Fetch content items
-    const { data: contentData, error: contentError } = await window.supabaseClient
-      .from('Content')
-      .select('*, user_profiles!user_id(*)')
-      .eq('status', 'published')
-      .order('created_at', { ascending: false })
-      .limit(100);
+    // Calculate range for pagination
+    const from = page * pageSize;
+    const to = (page + 1) * pageSize - 1;
     
-    if (contentError) throw contentError;
+    // Use rate limiter
+    const fetchFn = async () => {
+      const { data: contentData, error: contentError } = await window.supabaseClient
+        .from('Content')
+        .select('*, user_profiles!user_id(*)')
+        .eq('status', 'published')
+        .order('created_at', { ascending: false })
+        .range(from, to);
+      
+      if (contentError) throw contentError;
+      return contentData || [];
+    };
     
-    // Enrich with real counts
-    const enrichedContent = await Promise.all(
-      (contentData || []).map(async (item) => {
-        // Get real view count
-        const { count: viewsCount } = await window.supabaseClient
-          .from('content_views')
-          .select('*', { count: 'exact', head: true })
-          .eq('content_id', item.id);
-        
-        // Get real like count
-        const { count: likesCount } = await window.supabaseClient
-          .from('content_likes')
-          .select('*', { count: 'exact', head: true })
-          .eq('content_id', item.id);
-        
-        return {
-          ...item,
-          real_views: viewsCount || 0,
-          real_likes: likesCount || 0,
-          is_new: isContentNew(item.created_at)
-        };
-      })
+    const userId = window.currentUser?.id;
+    const rateLimiter = userId ? window.authRateLimiter : window.rateLimiter;
+    const contentData = await rateLimiter.wrapSupabaseRequest(
+      userId, 
+      'fetch-content',
+      fetchFn
     );
     
-    console.log('✅ Loaded', enrichedContent.length, 'content items with real counts');
-    return enrichedContent;
+    // Enrich with real counts (limit concurrent requests)
+    const enrichedContent = [];
+    for (const item of contentData) {
+      // Get real view count with rate limiting
+      const viewsCount = await rateLimiter.wrapSupabaseRequest(
+        userId,
+        'get-views',
+        async () => {
+          const { count } = await window.supabaseClient
+            .from('content_views')
+            .select('*', { count: 'exact', head: true })
+            .eq('content_id', item.id);
+          return count || 0;
+        }
+      );
+      
+      // Get real like count with rate limiting
+      const likesCount = await rateLimiter.wrapSupabaseRequest(
+        userId,
+        'get-likes',
+        async () => {
+          const { count } = await window.supabaseClient
+            .from('content_likes')
+            .select('*', { count: 'exact', head: true })
+            .eq('content_id', item.id);
+          return count || 0;
+        }
+      );
+      
+      enrichedContent.push({
+        ...item,
+        real_views: viewsCount,
+        real_likes: likesCount,
+        is_new: isContentNew(item.created_at)
+      });
+      
+      // Small delay to avoid overwhelming
+      await new Promise(resolve => setTimeout(resolve, 50));
+    }
+    
+    console.log(`✅ Loaded page ${page + 1} with`, enrichedContent.length, 'items');
+    
+    // Store for potential future use
+    if (!window.allContentData) window.allContentData = [];
+    if (page === 0) {
+      window.allContentData = enrichedContent;
+    } else {
+      window.allContentData = [...window.allContentData, ...enrichedContent];
+    }
+    
+    return {
+      items: enrichedContent,
+      hasMore: enrichedContent.length === pageSize,
+      page,
+      pageSize
+    };
   } catch (error) {
     console.error('Error fetching content:', error);
-    showToast('Failed to load content', 'error');
-    return getFallbackContent();
+    
+    if (error.message?.includes('Rate limit')) {
+      showToast(error.message, 'warning');
+    } else {
+      showToast('Failed to load content', 'error');
+    }
+    
+    // Return fallback for first page only
+    if (page === 0) {
+      return {
+        items: getFallbackContent(),
+        hasMore: false,
+        page,
+        pageSize
+      };
+    }
+    
+    return {
+      items: [],
+      hasMore: false,
+      page,
+      pageSize
+    };
   }
 }
 
@@ -208,7 +314,8 @@ function getFallbackContent() {
       creator_id: 1,
       real_views: 12500,
       real_likes: 890,
-      is_new: true
+      is_new: true,
+      duration: 245
     },
     {
       id: 2,
@@ -218,7 +325,8 @@ function getFallbackContent() {
       creator_id: 2,
       real_views: 8900,
       real_likes: 650,
-      is_new: true
+      is_new: true,
+      duration: 187
     },
     {
       id: 3,
@@ -228,7 +336,8 @@ function getFallbackContent() {
       creator_id: 3,
       real_views: 15600,
       real_likes: 1200,
-      is_new: true
+      is_new: true,
+      duration: 320
     },
     {
       id: 4,
@@ -238,7 +347,8 @@ function getFallbackContent() {
       creator_id: 4,
       real_views: 7800,
       real_likes: 540,
-      is_new: true
+      is_new: true,
+      duration: 420
     },
     {
       id: 5,
@@ -248,7 +358,8 @@ function getFallbackContent() {
       creator_id: 5,
       real_views: 11200,
       real_likes: 890,
-      is_new: true
+      is_new: true,
+      duration: 280
     },
     {
       id: 6,
@@ -258,7 +369,8 @@ function getFallbackContent() {
       creator_id: 6,
       real_views: 21500,
       real_likes: 1800,
-      is_new: true
+      is_new: true,
+      duration: 195
     }
   ];
 }
@@ -307,7 +419,7 @@ function renderCategoryTabs() {
   categoryTabs.innerHTML = categories.map((category, index) => `
     <button class="category-tab ${index === window.selectedCategoryIndex ? 'active' : ''}"
             data-index="${index}">
-      ${category}
+      ${escapeHtml(category)}
     </button>
   `).join('');
   
@@ -341,6 +453,22 @@ function onCategoryChanged(index) {
   }
   
   renderContentSections();
+}
+
+// Render skeleton loaders
+function renderSkeletonLoaders(count = 6) {
+  let skeletons = '';
+  for (let i = 0; i < count; i++) {
+    skeletons += `
+      <div class="skeleton-card">
+        <div class="skeleton-thumbnail"></div>
+        <div class="skeleton-title"></div>
+        <div class="skeleton-creator"></div>
+        <div class="skeleton-stats"></div>
+      </div>
+    `;
+  }
+  return skeletons;
 }
 
 // Render content sections (featured, trending, category)
@@ -400,7 +528,7 @@ function renderContentSections() {
   sectionsHTML += `
     <section class="section">
       <div class="section-header">
-        <h2 class="section-title">${categories[window.selectedCategoryIndex]}</h2>
+        <h2 class="section-title">${escapeHtml(categories[window.selectedCategoryIndex])}</h2>
         <div style="color: var(--slate-grey); font-size: 14px;">
           ${window.filteredContentData.length} items
         </div>
@@ -437,10 +565,13 @@ function renderContentCards(contentItems, isTrending = false) {
     if (isTrending) badges.push('TRENDING');
     if (content.is_new) badges.push('NEW');
     
+    // Calculate rating if available
+    const rating = content.rating || (content.real_likes ? Math.min(5, (content.real_likes / 100) + 3) : null);
+    
     return `
       <a href="content-detail.html?id=${content.id}" class="content-card" data-content-id="${content.id}">
         <div class="card-thumbnail">
-          <img src="${thumbnailUrl}"
+          <img src="${escapeHtml(thumbnailUrl)}"
                alt="${escapeHtml(content.title)}"
                loading="lazy"
                onerror="this.src='https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop'">
@@ -450,6 +581,12 @@ function renderContentCards(contentItems, isTrending = false) {
               <i class="fas fa-play"></i>
             </div>
           </div>
+          ${content.duration ? `
+            <div class="card-badge badge-duration" style="position:absolute;bottom:10px;right:10px;z-index:2;">
+              <i class="fas fa-clock"></i>
+              ${formatDuration(content.duration)}
+            </div>
+          ` : ''}
           ${badges.length > 0 ? `
             <div class="card-badges">
               ${badges.map(badge => `
@@ -463,13 +600,19 @@ function renderContentCards(contentItems, isTrending = false) {
         </div>
         <div class="card-content">
           <h3 class="card-title" title="${escapeHtml(content.title)}">
-            ${truncateText(content.title, 50)}
+            ${truncateText(escapeHtml(content.title), 50)}
           </h3>
           <button class="creator-btn"
                   onclick="event.preventDefault(); event.stopPropagation(); window.location.href='creator-channel.html?id=${creatorId}&name=${encodeURIComponent(creator)}'">
             <i class="fas fa-user"></i>
-            ${truncateText(creator, 15)}
+            ${truncateText(escapeHtml(creator), 15)}
           </button>
+          ${rating ? `
+            <div class="card-rating">
+              <i class="fas fa-star" style="color: var(--warm-gold);"></i>
+              ${rating.toFixed(1)}
+            </div>
+          ` : ''}
           <div class="card-stats">
             <div class="card-stat">
               <i class="fas fa-eye"></i>
@@ -575,16 +718,35 @@ async function initContentLibrary() {
   
   try {
     // Initialize theme first to avoid FOUC
-    initTheme();
+    if (typeof initTheme === 'function') initTheme();
     
     // Check authentication
     loadingText.textContent = 'Checking authentication...';
     await checkAuth();
     
-    // Load content
+    // Load content with skeleton loading
     loadingText.textContent = 'Loading content...';
-    window.allContentData = await fetchContent();
+    
+    // Show skeleton loading in content sections
+    const contentSections = document.getElementById('content-sections');
+    if (contentSections) {
+      contentSections.innerHTML = `
+        <section class="section">
+          <div class="section-header">
+            <h2 class="section-title">Featured Content</h2>
+          </div>
+          <div class="content-grid">
+            ${renderSkeletonLoaders(6)}
+          </div>
+        </section>
+      `;
+    }
+    
+    // Load first page of content
+    const result = await fetchContent(0, PAGE_SIZE);
+    window.allContentData = result.items;
     window.filteredContentData = window.allContentData;
+    hasMoreContent = result.hasMore;
     
     // Render UI
     loadingText.textContent = 'Setting up interface...';
@@ -593,7 +755,13 @@ async function initContentLibrary() {
     
     // Setup listeners
     setupCoreListeners();
-    initFeatures();
+    if (typeof initFeatures === 'function') initFeatures();
+    if (typeof setupInfiniteScroll === 'function') setupInfiniteScroll();
+    if (typeof setupKeyboardNavigation === 'function') setupKeyboardNavigation();
+    
+    // Initialize rate limiter cleanup
+    if (window.rateLimiter) window.rateLimiter.startCleanup();
+    if (window.authRateLimiter) window.authRateLimiter.startCleanup();
     
     // Show app after brief delay for smooth transition
     setTimeout(() => {
@@ -635,7 +803,7 @@ async function initContentLibrary() {
       updateProfileUI(null);
       updateNotificationBadge(0);
       window.notifications = [];
-      renderNotifications();
+      if (typeof renderNotifications === 'function') renderNotifications();
       showToast('You have been signed out', 'info');
     }
   });
