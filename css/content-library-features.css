@@ -4,7 +4,7 @@
  */
 
 /* ==========================================================================
-   Content Cards
+   Content Cards - Enhanced with all features
    ========================================================================== */
 
 .content-grid {
@@ -187,7 +187,80 @@
 }
 
 /* ==========================================================================
-   Notifications Panel
+   Infinite Scroll Loading
+   ========================================================================== */
+
+.infinite-scroll-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+    gap: 15px;
+    color: var(--slate-grey);
+}
+
+.infinite-scroll-spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid rgba(255, 255, 255, 0.1);
+    border-radius: 50%;
+    border-top-color: var(--bantu-blue);
+    animation: spin 1s linear infinite;
+}
+
+/* ==========================================================================
+   Theme Selector (additional styles)
+   ========================================================================== */
+
+.theme-selector {
+    position: fixed;
+    top: 80px;
+    right: 20px;
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 12px;
+    padding: 10px;
+    z-index: 1000;
+    display: none;
+    flex-direction: column;
+    gap: 5px;
+    backdrop-filter: blur(20px);
+    min-width: 180px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+}
+
+.theme-selector.active {
+    display: flex;
+}
+
+.theme-option {
+    background: none;
+    border: none;
+    color: var(--soft-white);
+    padding: 10px 15px;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: all 0.3s ease;
+    font-size: 14px;
+    width: 100%;
+    text-align: left;
+}
+
+.theme-option:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.theme-option.active {
+    background: rgba(29, 78, 216, 0.2);
+    color: var(--bantu-blue);
+}
+
+/* ==========================================================================
+   Notifications Panel (additional styles)
    ========================================================================== */
 
 .notifications-panel {
@@ -325,7 +398,7 @@
 }
 
 /* ==========================================================================
-   Search Modal
+   Search Modal (additional styles)
    ========================================================================== */
 
 .search-modal {
@@ -455,27 +528,8 @@
     font-size: 16px;
 }
 
-.infinite-scroll-loading {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 40px;
-    gap: 15px;
-    color: var(--slate-grey);
-}
-
-.infinite-scroll-spinner {
-    width: 40px;
-    height: 40px;
-    border: 3px solid rgba(255, 255, 255, 0.1);
-    border-radius: 50%;
-    border-top-color: var(--bantu-blue);
-    animation: spin 1s linear infinite;
-}
-
 /* ==========================================================================
-   Analytics Modal
+   Analytics Modal (additional styles)
    ========================================================================== */
 
 .analytics-modal {
