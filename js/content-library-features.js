@@ -3,54 +3,15 @@
  * Bantu Stream Connect
  */
 
-// ============================================================================
-// NOTIFICATION FUNCTIONS
-// ============================================================================
+// This file contains the feature-specific functions that were defined in the original HTML
+// These functions are called from the main content-library.js file
 
-/**
- * Load user notifications
- */
-async function loadNotifications() {
-    try {
-        if (!currentUser) {
-            updateNotificationBadge(0);
-            return;
-        }
-        
-        const { data, error } = await window.supabaseClient
-            .from('notifications')
-            .select('*')
-            .eq('user_id', currentUser.id)
-            .order('created_at', { ascending: false })
-            .limit(20);
-        
-        if (error) throw error;
-        
-        notifications = data || [];
-        const unreadCount = notifications.filter(n => !n.is_read).length;
-        updateNotificationBadge(unreadCount);
-        
-    } catch (error) {
-        console.error('Error loading notifications:', error);
-        updateNotificationBadge(0);
-    }
-}
+// Note: The functions in this file rely on variables and functions defined in content-library.js
+// They should be included after content-library.js in the HTML
 
-/**
- * Update notification badge
- * @param {number} count - Unread count
- */
-function updateNotificationBadge(count) {
-    const mainBadge = document.getElementById('notification-count');
-    const navBadge = document.getElementById('nav-notification-count');
-    
-    [mainBadge, navBadge].forEach(badge => {
-        if (badge) {
-            badge.textContent = count > 99 ? '99+' : count;
-            badge.style.display = count > 0 ? 'flex' : 'none';
-        }
-    });
-}
+// ============================================================================
+// NOTIFICATION FUNCTIONS (additional)
+// ============================================================================
 
 /**
  * Get notification icon based on type
@@ -67,49 +28,26 @@ function getNotificationIcon(type) {
 }
 
 /**
- * Render notifications in panel
+ * Format notification time
+ * @param {string} timestamp - ISO timestamp
+ * @returns {string} Formatted time
  */
-function renderNotifications() {
-    const notificationsList = document.getElementById('notifications-list');
-    if (!notificationsList) return;
+function formatNotificationTime(timestamp) {
+    if (!timestamp) return 'Just now';
+    const diffMs = Date.now() - new Date(timestamp).getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
     
-    if (!currentUser) {
-        notificationsList.innerHTML = `
-            <div class="empty-notifications">
-                <i class="fas fa-bell-slash"></i>
-                <p>Sign in to see notifications</p>
-            </div>
-        `;
-        return;
-    }
-    
-    if (notifications.length === 0) {
-        notificationsList.innerHTML = `
-            <div class="empty-notifications">
-                <i class="fas fa-bell-slash"></i>
-                <p>No notifications yet</p>
-            </div>
-        `;
-        return;
-    }
-    
-    notificationsList.innerHTML = notifications.map(notification => `
-        <div class="notification-item ${notification.is_read ? 'read' : 'unread'}" data-id="${notification.id}">
-            <div class="notification-icon">
-                <i class="${getNotificationIcon(notification.type)}"></i>
-            </div>
-            <div class="notification-content">
-                <h4>${escapeHtml(notification.title)}</h4>
-                <p>${escapeHtml(notification.message)}</p>
-                <span class="notification-time">${formatNotificationTime(notification.created_at)}</span>
-            </div>
-            ${!notification.is_read ? '<div class="notification-dot"></div>' : ''}
-        </div>
-    `).join('');
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffDays < 7) return `${diffDays}d ago`;
+    return new Date(timestamp).toLocaleDateString();
 }
 
 // ============================================================================
-// SEARCH FUNCTIONALITY
+// SEARCH FUNCTIONALITY (additional)
 // ============================================================================
 
 /**
@@ -133,6 +71,8 @@ async function searchContent(query, category = '', sortBy = 'newest') {
         
         if (sortBy === 'newest') {
             queryBuilder = queryBuilder.order('created_at', { ascending: false });
+        } else if (sortBy === 'popular') {
+            // Will sort by views after fetching
         }
         
         const { data, error } = await queryBuilder.limit(50);
@@ -244,18 +184,19 @@ function renderSearchResults(results) {
 
 /**
  * Update analytics modal with data
+ * @param {Array} contentData - All content data
  */
-function updateAnalytics() {
-    const totalViews = allContentData.reduce((sum, item) => sum + (item.real_views || 0), 0);
-    const totalContent = allContentData.length;
-    const activeCreators = new Set(allContentData.map(item => item.user_id)).size;
+function updateAnalytics(contentData) {
+    const totalViews = contentData.reduce((sum, item) => sum + (item.real_views || 0), 0);
+    const totalContent = contentData.length;
+    const activeCreators = new Set(contentData.map(item => item.user_id)).size;
     
     document.getElementById('total-views').textContent = formatNumber(totalViews);
     document.getElementById('total-content').textContent = totalContent;
     document.getElementById('active-creators').textContent = activeCreators;
     
     // Calculate engagement rate
-    const totalEngagement = allContentData.reduce((sum, item) => sum + (item.real_likes || 0), 0);
+    const totalEngagement = contentData.reduce((sum, item) => sum + (item.real_likes || 0), 0);
     const engagementRate = totalViews > 0 ? ((totalEngagement / totalViews) * 100).toFixed(1) : '0.0';
     document.getElementById('engagement-rate').textContent = engagementRate + '%';
     
@@ -272,8 +213,11 @@ function updateAnalytics() {
 
 /**
  * Mark all notifications as read
+ * @param {Object} currentUser - Current user object
+ * @param {Array} notifications - Notifications array
+ * @returns {Promise<void>}
  */
-async function markAllNotificationsRead() {
+async function markAllNotificationsRead(currentUser, notifications) {
     if (!currentUser) return;
     
     try {
@@ -297,215 +241,25 @@ async function markAllNotificationsRead() {
 }
 
 // ============================================================================
-// FEATURE EVENT LISTENERS SETUP
+// FEATURE-SPECIFIC EVENT LISTENERS SETUP
 // ============================================================================
 
 /**
  * Setup feature-specific event listeners
+ * This function should be called after the main initialization
  */
 function setupFeatureEventListeners() {
-    // Search button and modal
-    const searchBtn = document.getElementById('search-btn');
-    const searchModal = document.getElementById('search-modal');
-    const closeSearchBtn = document.getElementById('close-search-btn');
-    const searchInput = document.getElementById('search-input');
-    
-    if (searchBtn && searchModal) {
-        searchBtn.addEventListener('click', () => {
-            searchModal.classList.add('active');
-            setTimeout(() => searchInput?.focus(), 300);
-        });
-        
-        if (closeSearchBtn) {
-            closeSearchBtn.addEventListener('click', () => {
-                searchModal.classList.remove('active');
-                if (searchInput) searchInput.value = '';
-                document.getElementById('search-results-grid').innerHTML = '';
-            });
-        }
-        
-        searchModal.addEventListener('click', (e) => {
-            if (e.target === searchModal) {
-                searchModal.classList.remove('active');
-                if (searchInput) searchInput.value = '';
-                document.getElementById('search-results-grid').innerHTML = '';
-            }
-        });
-        
-        if (searchInput) {
-            searchInput.addEventListener('input', debounce(async (e) => {
-                const query = e.target.value.trim();
-                const category = document.getElementById('category-filter')?.value;
-                const sortBy = document.getElementById('sort-filter')?.value;
-                
-                if (query.length < 2) {
-                    document.getElementById('search-results-grid').innerHTML = 
-                        '<div class="no-results">Start typing to search...</div>';
-                    return;
-                }
-                
-                document.getElementById('search-results-grid').innerHTML = 
-                    '<div class="infinite-scroll-loading"><div class="infinite-scroll-spinner"></div><div>Searching...</div></div>';
-                
-                const results = await searchContent(query, category, sortBy);
-                renderSearchResults(results);
-            }, 300));
-        }
-        
-        document.getElementById('category-filter')?.addEventListener('change', () => {
-            if (searchInput) searchInput.dispatchEvent(new Event('input'));
-        });
-        
-        document.getElementById('sort-filter')?.addEventListener('change', () => {
-            if (searchInput) searchInput.dispatchEvent(new Event('input'));
-        });
-    }
-    
-    // Notifications button and panel
-    const notificationsBtn = document.getElementById('notifications-btn');
-    const navNotificationsBtn = document.getElementById('nav-notifications-btn');
-    const notificationsPanel = document.getElementById('notifications-panel');
-    const closeNotifications = document.getElementById('close-notifications');
-    
-    if (notificationsBtn && notificationsPanel) {
-        const openNotifications = () => {
-            notificationsPanel.classList.add('active');
-            renderNotifications();
-        };
-        
-        notificationsBtn.addEventListener('click', openNotifications);
-        if (navNotificationsBtn) {
-            navNotificationsBtn.addEventListener('click', openNotifications);
-        }
-        
-        if (closeNotifications) {
-            closeNotifications.addEventListener('click', () => {
-                notificationsPanel.classList.remove('active');
-            });
-        }
-        
-        document.addEventListener('click', (e) => {
-            if (notificationsPanel.classList.contains('active') && 
-                !notificationsPanel.contains(e.target) && 
-                !notificationsBtn.contains(e.target) && 
-                (!navNotificationsBtn || !navNotificationsBtn.contains(e.target))) {
-                notificationsPanel.classList.remove('active');
-            }
-        });
-    }
-    
-    // Mark all as read
-    const markAllRead = document.getElementById('mark-all-read');
-    if (markAllRead) {
-        markAllRead.addEventListener('click', markAllNotificationsRead);
-    }
-    
-    // Analytics button and modal
-    const analyticsBtn = document.getElementById('analytics-btn');
-    const analyticsModal = document.getElementById('analytics-modal');
-    const closeAnalytics = document.getElementById('close-analytics');
-    
-    if (analyticsBtn && analyticsModal) {
-        analyticsBtn.addEventListener('click', async () => {
-            const { data: { session } } = await window.supabaseClient.auth.getSession();
-            if (!session) {
-                showToast('Please sign in to view analytics', 'warning');
-                return;
-            }
-            
-            analyticsModal.classList.add('active');
-            updateAnalytics();
-        });
-        
-        if (closeAnalytics) {
-            closeAnalytics.addEventListener('click', () => {
-                analyticsModal.classList.remove('active');
-            });
-        }
-        
-        analyticsModal.addEventListener('click', (e) => {
-            if (e.target === analyticsModal) {
-                analyticsModal.classList.remove('active');
-            }
-        });
-    }
-    
-    // Profile button
-    const profileBtn = document.getElementById('profile-btn');
-    if (profileBtn) {
-        profileBtn.addEventListener('click', async () => {
-            const { data: { session } } = await window.supabaseClient.auth.getSession();
-            if (session) {
-                window.location.href = 'profile.html';
-            } else {
-                window.location.href = `login.html?redirect=${encodeURIComponent(window.location.href)}`;
-            }
-        });
-    }
-    
-    // Back to top
-    const backToTopBtn = document.getElementById('backToTopBtn');
-    if (backToTopBtn) {
-        backToTopBtn.addEventListener('click', () => {
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        });
-        
-        window.addEventListener('scroll', () => {
-            backToTopBtn.style.display = window.pageYOffset > 300 ? 'flex' : 'none';
-        });
-    }
-    
-    // Home button
-    const homeBtn = document.getElementById('nav-home-btn');
-    if (homeBtn) {
-        homeBtn.addEventListener('click', () => {
-            window.location.href = 'index.html';
-        });
-    }
-    
-    // Create button
-    const createBtn = document.getElementById('nav-create-btn');
-    if (createBtn) {
-        createBtn.addEventListener('click', async () => {
-            const { data: { session } } = await window.supabaseClient.auth.getSession();
-            if (session) {
-                window.location.href = 'creator-upload.html';
-            } else {
-                showToast('Please sign in to upload content', 'warning');
-                window.location.href = `login.html?redirect=creator-upload.html`;
-            }
-        });
-    }
-    
-    // Dashboard button
-    const dashboardBtn = document.getElementById('nav-dashboard-btn');
-    if (dashboardBtn) {
-        dashboardBtn.addEventListener('click', async () => {
-            const { data: { session } } = await window.supabaseClient.auth.getSession();
-            if (session) {
-                window.location.href = 'creator-dashboard.html';
-            } else {
-                showToast('Please sign in to access dashboard', 'warning');
-                window.location.href = `login.html?redirect=creator-dashboard.html`;
-            }
-        });
-    }
-    
-    // Browse all button
-    const browseAllBtn = document.getElementById('browse-all-btn');
-    if (browseAllBtn) {
-        browseAllBtn.addEventListener('click', () => {
-            if (allContentData.length > 0) {
-                window.location.href = `content-detail.html?id=${allContentData[0].id}`;
-            }
-        });
-    }
-    
-    // See all buttons (delegated)
-    document.addEventListener('click', (e) => {
-        if (e.target.closest('[data-action]')) {
-            const action = e.target.closest('[data-action]').dataset.action;
-            showToast(`Viewing all ${action.replace('view-all-', '')} content`, 'info');
-        }
-    });
+    // This function is implemented in the main content-library.js
+    // but we're keeping it here for completeness
+    console.log('Feature event listeners setup');
 }
+
+// Export functions for use in other files
+window.features = {
+    getNotificationIcon,
+    formatNotificationTime,
+    searchContent,
+    renderSearchResults,
+    updateAnalytics,
+    markAllNotificationsRead
+};
