@@ -1,341 +1,88 @@
-/**
- * content-library-themes.css - Theme variants for Content Library
- * Bantu Stream Connect
- */
+/* Color Theme Variables */
+:root {
+  --deep-black: #0A0E12;
+  --deep-navy: #0F172A;
+  --soft-white: #F8FAFC;
+  --slate-grey: #94A3B8;
+  --bantu-blue: #1D4ED8;
+  --warm-gold: #F59E0B;
+  --error-color: #EF4444;
+  --success-color: #10B981;
+  --glow-cycle-1: #00A3FF;
+  --glow-cycle-2: #0066FF;
+  --glow-cycle-3: #8B5CF6;
+  --glow-cycle-4: #EC4899;
+  --card-bg: rgba(15, 23, 42, 0.6);
+  --card-border: rgba(148, 163, 184, 0.2);
+  --hover-overlay: rgba(255, 255, 255, 0.05);
+  --active-overlay: rgba(245, 158, 11, 0.1);
+  --indigo: #4F46E5;
+  --gold-glow: rgba(245, 158, 11, 0.3);
+  --blue-glow: rgba(29, 78, 216, 0.3);
+}
 
-/* ==========================================================================
-   Light Theme
-   ========================================================================== */
-
+/* Theme Variants */
 body.theme-light {
-    --deep-black: #F8FAFC;
-    --deep-navy: #FFFFFF;
-    --soft-white: #0F172A;
-    --slate-grey: #64748B;
-    --card-bg: rgba(255, 255, 255, 0.9);
-    --card-border: rgba(100, 116, 139, 0.2);
+  --deep-black: #F8FAFC;
+  --deep-navy: #FFFFFF;
+  --soft-white: #0F172A;
+  --slate-grey: #64748B;
+  --card-bg: rgba(255, 255, 255, 0.9);
+  --card-border: rgba(100, 116, 139, 0.2);
 }
-
-body.theme-light .header {
-    background: rgba(255, 255, 255, 0.9);
-}
-
-body.theme-light .category-tabs-container {
-    background: rgba(255, 255, 255, 0.9);
-}
-
-body.theme-light .category-tab {
-    background: rgba(0, 0, 0, 0.05);
-    color: var(--soft-white);
-}
-
-body.theme-light .category-tab:hover {
-    background: rgba(0, 0, 0, 0.1);
-}
-
-body.theme-light .hero p {
-    color: rgba(15, 23, 42, 0.8);
-}
-
-body.theme-light .card-title {
-    color: var(--soft-white);
-}
-
-body.theme-light .footer {
-    background: rgba(255, 255, 255, 0.9);
-}
-
-body.theme-light .footer p,
-body.theme-light .footer-links a {
-    color: var(--soft-white);
-}
-
-body.theme-light .footer-links a:hover {
-    color: var(--bantu-blue);
-}
-
-body.theme-light .search-modal,
-body.theme-light .analytics-modal {
-    background: rgba(248, 250, 252, 0.95);
-}
-
-body.theme-light .search-input,
-body.theme-light .filter-select {
-    background: var(--deep-navy);
-    color: var(--soft-white);
-    border-color: var(--card-border);
-}
-
-body.theme-light .search-input::placeholder {
-    color: var(--slate-grey);
-}
-
-body.theme-light .filter-label {
-    color: var(--soft-white);
-}
-
-body.theme-light .notification-item {
-    background: rgba(0, 0, 0, 0.05);
-}
-
-body.theme-light .notification-item.unread {
-    background: rgba(29, 78, 216, 0.1);
-}
-
-body.theme-light .analytics-card {
-    background: rgba(0, 0, 0, 0.05);
-}
-
-body.theme-light .analytics-value {
-    color: var(--bantu-blue);
-}
-
-body.theme-light .charts-container {
-    background: rgba(0, 0, 0, 0.05);
-}
-
-body.theme-light .navigation-button {
-    background: rgba(255, 255, 255, 0.85) !important;
-    border-color: rgba(100, 116, 139, 0.25) !important;
-}
-
-body.theme-light .nav-icon {
-    color: var(--soft-white);
-    background: rgba(0, 0, 0, 0.1);
-    border-color: rgba(100, 116, 139, 0.2);
-}
-
-body.theme-light .nav-icon:hover {
-    background: rgba(0, 0, 0, 0.15);
-}
-
-body.theme-light .glow-cycle {
-    opacity: 0.05;
-}
-
-/* ==========================================================================
-   High Contrast Theme
-   ========================================================================== */
 
 body.theme-high-contrast {
-    --deep-black: #000000;
-    --deep-navy: #111827;
-    --soft-white: #FFFFFF;
-    --slate-grey: #E5E7EB;
-    --card-bg: rgba(17, 24, 39, 0.95);
-    --card-border: #FFFFFF;
+  --deep-black: #000000;
+  --deep-navy: #111827;
+  --soft-white: #FFFFFF;
+  --slate-grey: #E5E7EB;
+  --card-bg: rgba(17, 24, 39, 0.95);
+  --card-border: #FFFFFF;
 }
 
-body.theme-high-contrast .header,
-body.theme-high-contrast .category-tabs-container {
-    background: var(--deep-navy);
-    border-bottom-color: var(--soft-white);
+/* Theme Selector UI */
+.theme-selector {
+  position: fixed;
+  top: 80px;
+  right: 20px;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  padding: 10px;
+  z-index: 1000;
+  display: none;
+  flex-direction: column;
+  gap: 5px;
+  backdrop-filter: blur(20px);
+  min-width: 180px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
 }
 
-body.theme-high-contrast .category-tab {
-    background: transparent;
-    border-color: var(--soft-white);
-    color: var(--soft-white);
+.theme-selector.active {
+  display: flex;
 }
 
-body.theme-high-contrast .category-tab.active {
-    background: var(--soft-white);
-    color: var(--deep-navy);
-    box-shadow: none;
+.theme-option {
+  background: none;
+  border: none;
+  color: var(--soft-white);
+  padding: 10px 15px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transition: all 0.3s ease;
+  font-size: 14px;
+  width: 100%;
+  text-align: left;
 }
 
-body.theme-high-contrast .category-tab:hover {
-    background: rgba(255, 255, 255, 0.2);
+.theme-option:hover {
+  background: rgba(255, 255, 255, 0.1);
 }
 
-body.theme-high-contrast .hero {
-    border: 2px solid var(--soft-white);
-}
-
-body.theme-high-contrast .hero::before {
-    display: none;
-}
-
-body.theme-high-contrast .hero h1 {
-    -webkit-text-fill-color: var(--soft-white);
-    background: none;
-    color: var(--soft-white);
-}
-
-body.theme-high-contrast .section-title {
-    -webkit-text-fill-color: var(--soft-white);
-    background: none;
-    color: var(--soft-white);
-}
-
-body.theme-high-contrast .content-card {
-    border: 2px solid var(--soft-white);
-}
-
-body.theme-high-contrast .content-card:hover {
-    border-color: var(--warm-gold);
-}
-
-body.theme-high-contrast .card-badge {
-    background: var(--deep-navy);
-    border: 1px solid var(--soft-white);
-    color: var(--soft-white);
-}
-
-body.theme-high-contrast .badge-trending {
-    background: var(--deep-navy);
-    border-color: var(--warm-gold);
-}
-
-body.theme-high-contrast .badge-new {
-    background: var(--deep-navy);
-    border-color: var(--bantu-blue);
-}
-
-body.theme-high-contrast .creator-btn {
-    border: 2px solid var(--soft-white);
-    background: transparent;
-    color: var(--soft-white);
-}
-
-body.theme-high-contrast .creator-btn:hover {
-    background: var(--soft-white);
-    color: var(--deep-navy);
-}
-
-body.theme-high-contrast .icon-btn {
-    border: 2px solid var(--soft-white);
-    background: transparent;
-}
-
-body.theme-high-contrast .icon-btn:hover {
-    background: var(--soft-white);
-    color: var(--deep-navy);
-}
-
-body.theme-high-contrast .profile-btn {
-    border: 2px solid var(--soft-white);
-    background: transparent;
-}
-
-body.theme-high-contrast .footer {
-    border-top: 2px solid var(--soft-white);
-}
-
-body.theme-high-contrast .footer-links a {
-    color: var(--soft-white);
-    text-decoration: underline;
-}
-
-body.theme-high-contrast .footer-links a:hover {
-    color: var(--warm-gold);
-}
-
-body.theme-high-contrast .search-modal,
-body.theme-high-contrast .analytics-modal {
-    background: var(--deep-black);
-}
-
-body.theme-high-contrast .search-input,
-body.theme-high-contrast .filter-select {
-    border: 2px solid var(--soft-white);
-    background: var(--deep-navy);
-}
-
-body.theme-high-contrast .search-input:focus {
-    border-color: var(--warm-gold);
-    box-shadow: none;
-}
-
-body.theme-high-contrast .filter-select {
-    border: 2px solid var(--soft-white);
-}
-
-body.theme-high-contrast .notification-item {
-    border: 1px solid var(--soft-white);
-    background: transparent;
-}
-
-body.theme-high-contrast .notification-item.unread {
-    border-left: 4px solid var(--bantu-blue);
-}
-
-body.theme-high-contrast .notification-item:hover {
-    background: rgba(255, 255, 255, 0.1);
-}
-
-body.theme-high-contrast .analytics-card {
-    border: 2px solid var(--soft-white);
-    background: transparent;
-}
-
-body.theme-high-contrast .analytics-value {
-    color: var(--soft-white);
-}
-
-body.theme-high-contrast .charts-container {
-    border: 2px solid var(--soft-white);
-    background: transparent;
-}
-
-body.theme-high-contrast .navigation-button {
-    background: var(--deep-navy) !important;
-    border: 2px solid var(--soft-white) !important;
-}
-
-body.theme-high-contrast .nav-icon {
-    background: transparent;
-    border: 2px solid var(--soft-white);
-    color: var(--soft-white);
-}
-
-body.theme-high-contrast .nav-icon:hover {
-    background: var(--soft-white);
-    color: var(--deep-navy);
-}
-
-body.theme-high-contrast .glow-cycle {
-    display: none;
-}
-
-body.theme-high-contrast .empty-state {
-    border: 2px solid var(--soft-white);
-}
-
-body.theme-high-contrast .toast {
-    border: 2px solid var(--soft-white);
-    background: var(--deep-navy);
-}
-
-body.theme-high-contrast .toast.error {
-    border-color: var(--error-color);
-}
-
-body.theme-high-contrast .toast.success {
-    border-color: var(--success-color);
-}
-
-body.theme-high-contrast .toast.warning {
-    border-color: var(--warm-gold);
-}
-
-body.theme-high-contrast .close-search-btn {
-    border: 2px solid var(--soft-white);
-    background: transparent;
-}
-
-body.theme-high-contrast .close-search-btn:hover {
-    background: var(--soft-white);
-    color: var(--deep-navy);
-}
-
-body.theme-high-contrast .see-all-btn {
-    border: 2px solid var(--soft-white);
-    background: transparent;
-    color: var(--soft-white);
-}
-
-body.theme-high-contrast .see-all-btn:hover {
-    background: var(--soft-white);
-    color: var(--deep-navy);
+.theme-option.active {
+  background: rgba(29, 78, 216, 0.2);
+  color: var(--bantu-blue);
 }
