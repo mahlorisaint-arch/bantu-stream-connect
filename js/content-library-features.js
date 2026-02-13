@@ -1,7 +1,236 @@
 /**
  * Feature Module
- * Handles search, notifications, analytics, and utility functions
+ * Handles search, notifications, analytics, infinite scroll, keyboard navigation, and utility functions
  */
+
+// ============================================
+// INFINITE SCROLL / PAGINATION
+// ============================================
+
+let currentPage = 0;
+let isLoadingMore = false;
+let hasMoreContent = true;
+const PAGE_SIZE = 20;
+
+// Setup infinite scroll
+function setupInfiniteScroll() {
+  const sentinel = document.getElementById('infinite-scroll-sentinel');
+  if (!sentinel) {
+    // Create sentinel if it doesn't exist
+    const newSentinel = document.createElement('div');
+    newSentinel.id = 'infinite-scroll-sentinel';
+    newSentinel.style.height = '1px';
+    document.querySelector('.container').appendChild(newSentinel);
+  }
+  
+  const observer = new IntersectionObserver(async (entries) => {
+    const entry = entries[0];
+    if (entry.isIntersecting && hasMoreContent && !isLoadingMore) {
+      await loadMoreContent();
+    }
+  }, {
+    root: null,
+    rootMargin: '100px', // Start loading 100px before reaching the sentinel
+    threshold: 0.1
+  });
+  
+  observer.observe(document.getElementById('infinite-scroll-sentinel'));
+}
+
+// Load more content when scrolling
+async function loadMoreContent() {
+  if (isLoadingMore || !hasMoreContent) return;
+  
+  isLoadingMore = true;
+  currentPage++;
+  
+  // Show loading indicator
+  const loadingIndicator = document.createElement('div');
+  loadingIndicator.className = 'infinite-scroll-loading';
+  loadingIndicator.id = 'infinite-scroll-loading';
+  loadingIndicator.innerHTML = `
+    <div class="infinite-scroll-spinner"></div>
+    <div>Loading more content...</div>
+  `;
+  document.querySelector('.container').appendChild(loadingIndicator);
+  
+  try {
+    const result = await fetchContent(currentPage, PAGE_SIZE);
+    
+    // Remove loading indicator
+    document.getElementById('infinite-scroll-loading')?.remove();
+    
+    if (result.items.length > 0) {
+      // Append to existing sections
+      appendContentToSections(result.items);
+      hasMoreContent = result.hasMore;
+    } else {
+      hasMoreContent = false;
+      
+      // Show end of content message
+      const endMessage = document.createElement('div');
+      endMessage.className = 'infinite-scroll-end';
+      endMessage.innerHTML = 'You\'ve reached the end of content';
+      document.querySelector('.container').appendChild(endMessage);
+      
+      setTimeout(() => endMessage.remove(), 3000);
+    }
+  } catch (error) {
+    console.error('Error loading more content:', error);
+    document.getElementById('infinite-scroll-loading')?.remove();
+    hasMoreContent = false;
+  } finally {
+    isLoadingMore = false;
+  }
+}
+
+// Append content to existing sections
+function appendContentToSections(newItems) {
+  const categorySection = document.querySelectorAll('.section')[2]; // Get the category section
+  if (!categorySection) return;
+  
+  const contentGrid = categorySection.querySelector('.content-grid');
+  if (!contentGrid) return;
+  
+  const newCardsHTML = renderContentCards(newItems);
+  
+  // Append using DOM manipulation for better performance
+  const tempDiv = document.createElement('div');
+  tempDiv.innerHTML = newCardsHTML;
+  
+  while (tempDiv.firstChild) {
+    contentGrid.appendChild(tempDiv.firstChild);
+  }
+  
+  // Update item count
+  const itemCount = categorySection.querySelector('[style*="color: var(--slate-grey)"]');
+  if (itemCount) {
+    const currentCount = parseInt(itemCount.textContent) || 0;
+    itemCount.textContent = `${currentCount + newItems.length} items`;
+  }
+}
+
+// ============================================
+// KEYBOARD NAVIGATION
+// ============================================
+
+function setupKeyboardNavigation() {
+  document.addEventListener('keydown', (e) => {
+    // Don't trigger when typing in input fields
+    if (e.target.matches('input, textarea, select')) return;
+    
+    switch(e.key) {
+      case 'ArrowRight':
+        e.preventDefault();
+        navigateContent('next');
+        break;
+      case 'ArrowLeft':
+        e.preventDefault();
+        navigateContent('prev');
+        break;
+      case 'Enter':
+        e.preventDefault();
+        openSelectedContent();
+        break;
+      case 'Escape':
+        e.preventDefault();
+        closeAllModals();
+        break;
+      case '/':
+        // Ctrl+/ or Cmd+/ to focus search
+        if (e.ctrlKey || e.metaKey) {
+          e.preventDefault();
+          openSearch();
+        }
+        break;
+      case 'n':
+      case 'N':
+        // Alt+N for notifications
+        if (e.altKey) {
+          e.preventDefault();
+          toggleNotifications();
+        }
+        break;
+    }
+  });
+  
+  // Track focused card for keyboard navigation
+  let focusedCardIndex = -1;
+  let cards = [];
+  
+  function updateCardsList() {
+    cards = Array.from(document.querySelectorAll('.content-card'));
+  }
+  
+  function navigateContent(direction) {
+    updateCardsList();
+    if (cards.length === 0) return;
+    
+    if (focusedCardIndex === -1) {
+      focusedCardIndex = 0;
+    } else {
+      focusedCardIndex = direction === 'next' 
+        ? (focusedCardIndex + 1) % cards.length
+        : (focusedCardIndex - 1 + cards.length) % cards.length;
+    }
+    
+    // Remove focus from all cards
+    cards.forEach(card => {
+      card.classList.remove('keyboard-focused');
+      card.setAttribute('tabindex', '-1');
+    });
+    
+    // Focus new card
+    const focusedCard = cards[focusedCardIndex];
+    focusedCard.classList.add('keyboard-focused');
+    focusedCard.setAttribute('tabindex', '0');
+    focusedCard.focus();
+    
+    // Scroll into view if needed
+    focusedCard.scrollIntoView({
+      behavior: 'smooth',
+      block: 'nearest',
+      inline: 'nearest'
+    });
+  }
+  
+  function openSelectedContent() {
+    const focused = document.querySelector('.content-card.keyboard-focused');
+    if (focused && focused.dataset.contentId) {
+      window.location.href = `content-detail.html?id=${focused.dataset.contentId}`;
+    }
+  }
+  
+  function closeAllModals() {
+    document.querySelectorAll('.modal.active, .search-modal.active, .analytics-modal.active, .notifications-panel.active')
+      .forEach(el => el.classList.remove('active'));
+  }
+  
+  function openSearch() {
+    const searchModal = document.getElementById('search-modal');
+    if (searchModal) {
+      searchModal.classList.add('active');
+      setTimeout(() => document.getElementById('search-input')?.focus(), 300);
+    }
+  }
+  
+  function toggleNotifications() {
+    const panel = document.getElementById('notifications-panel');
+    if (panel) {
+      panel.classList.toggle('active');
+    }
+  }
+  
+  // Update cards list when content changes
+  const observer = new MutationObserver(() => {
+    updateCardsList();
+  });
+  
+  observer.observe(document.getElementById('content-sections'), {
+    childList: true,
+    subtree: true
+  });
+}
 
 // ============================================
 // SEARCH FUNCTIONALITY
@@ -98,11 +327,11 @@ function renderSearchResults(results) {
           </div>
         </div>
         <div class="card-content">
-          <h3 class="card-title">${truncateText(item.title, 45)}</h3>
+          <h3 class="card-title">${truncateText(escapeHtml(item.title), 45)}</h3>
           <button class="creator-btn"
                   onclick="event.stopPropagation(); window.location.href='creator-channel.html?id=${creatorId}&name=${encodeURIComponent(creator)}'">
             <i class="fas fa-user"></i>
-            ${truncateText(creator, 15)}
+            ${truncateText(escapeHtml(creator), 15)}
           </button>
           <div class="card-stats">
             <div class="card-stat">
@@ -518,5 +747,5 @@ function initFeatures() {
   setupNotifications();
   setupAnalytics();
   setupBackToTop();
-  setupThemeListeners();
+  if (typeof setupThemeListeners === 'function') setupThemeListeners();
 }
