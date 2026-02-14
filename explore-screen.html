@@ -373,46 +373,6 @@ border: 1px solid rgba(255, 255, 255, 0.1);
 transform: translateY(-3px);
 box-shadow: 0 10px 25px rgba(29, 78, 216, 0.4);
 }
-/* Quick Links */
-.quick-links {
-display: grid;
-grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-gap: 20px;
-margin-bottom: 40px;
-}
-.quick-link-card {
-background: var(--card-bg);
-border: 1px solid var(--card-border);
-border-radius: 20px;
-padding: 25px;
-text-align: center;
-transition: all 0.3s ease;
-cursor: pointer;
-text-decoration: none;
-color: inherit;
-backdrop-filter: blur(10px);
-}
-.quick-link-card:hover {
-transform: translateY(-8px);
-border-color: rgba(245, 158, 11, 0.3);
-box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
-}
-.quick-link-icon {
-font-size: 36px;
-margin-bottom: 15px;
-color: var(--warm-gold);
-}
-.quick-link-title {
-font-family: 'Orbitron', sans-serif;
-font-size: 18px;
-font-weight: 600;
-margin-bottom: 10px;
-color: var(--soft-white);
-}
-.quick-link-desc {
-font-size: 14px;
-color: var(--slate-grey);
-}
 /* Content Sections */
 .section {
 margin-bottom: 40px;
@@ -657,7 +617,7 @@ justify-content: space-between;
 font-size: 12px;
 color: var(--slate-grey);
 }
-/* Featured Creators */
+/* Featured Creators - FIXED CIRCLE AVATAR */
 .featured-creators {
 padding: 20px 10px;
 margin-bottom: 40px;
@@ -672,7 +632,7 @@ transition: all 0.3s ease;
 cursor: pointer;
 text-decoration: none;
 color: inherit;
-height: 380px;
+height: 400px;
 display: flex;
 flex-direction: column;
 align-items: center;
@@ -686,25 +646,26 @@ border-color: rgba(245, 158, 11, 0.3);
 box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
 }
 .creator-avatar {
-width: 100px;
-height: 100px;
+/* PERFECT CIRCLE FIX - Equal dimensions with proper border-radius */
+width: 130px;
+height: 130px;
 border-radius: 50%;
 overflow: hidden;
 margin-bottom: 20px;
-border: 3px solid var(--warm-gold);
-box-shadow: 0 0 20px rgba(245, 158, 11, 0.3);
+border: 4px solid var(--warm-gold);
+box-shadow: 0 0 25px rgba(245, 158, 11, 0.4);
 display: flex;
 align-items: center;
 justify-content: center;
 background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
-color: white;
-font-size: 40px;
-font-weight: bold;
+flex-shrink: 0;
 }
 .creator-avatar img {
 width: 100%;
 height: 100%;
 object-fit: cover;
+display: block;
+border-radius: 50%;
 }
 .creator-initials {
 width: 100%;
@@ -714,8 +675,9 @@ align-items: center;
 justify-content: center;
 background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
 color: white;
-font-size: 40px;
+font-size: 48px;
 font-weight: bold;
+border-radius: 50%;
 }
 .founder-badge {
 background: linear-gradient(135deg, var(--warm-gold), #f97316);
@@ -1109,17 +1071,18 @@ font-size: 36px;
 .hero-subtitle {
 font-size: 16px;
 }
-.quick-links {
-grid-template-columns: repeat(2, 1fr);
-}
 .category-tab {
 padding: 8px 16px;
 min-width: 80px;
 font-size: 13px;
 }
 .creator-card {
-height: 350px;
+height: 370px;
 padding: 20px;
+}
+.creator-avatar {
+width: 110px;
+height: 110px;
 }
 .section-header {
 flex-direction: column;
@@ -1140,17 +1103,19 @@ height: 45px;
 .hero-title {
 font-size: 28px;
 }
-.quick-links {
-grid-template-columns: 1fr;
-}
 .category-tab {
 padding: 6px 12px;
 min-width: 70px;
 font-size: 12px;
 }
 .creator-card {
-height: 330px;
+height: 350px;
 padding: 15px;
+}
+.creator-avatar {
+width: 100px;
+height: 100px;
+font-size: 40px;
 }
 .event-actions {
 flex-direction: column;
@@ -1262,37 +1227,7 @@ user-select: none;
 <p class="hero-subtitle">Explore amazing content, connect with creators, and join live streams from across Africa</p>
 <button id="browse-all-btn" class="hero-btn">Explore All Content</button>
 </section>
-<!-- Quick Links -->
-<div class="quick-links">
-<a href="https://bantustreamconnect.com/content-library" class="quick-link-card">
-<div class="quick-link-icon">
-<i class="fas fa-video"></i>
-</div>
-<div class="quick-link-title">Content Library</div>
-<div class="quick-link-desc">Browse all videos and audio content</div>
-</a>
-<a href="https://bantustreamconnect.com/trending_screen" class="quick-link-card">
-<div class="quick-link-icon">
-<i class="fas fa-fire"></i>
-</div>
-<div class="quick-link-title">Trending</div>
-<div class="quick-link-desc">Discover what's popular right now</div>
-</a>
-<a href="creator-upload.html" class="quick-link-card">
-<div class="quick-link-icon">
-<i class="fas fa-upload"></i>
-</div>
-<div class="quick-link-title">Upload Content</div>
-<div class="quick-link-desc">Share your own videos and audio</div>
-</a>
-<a href="creator-dashboard.html" class="quick-link-card">
-<div class="quick-link-icon">
-<i class="fas fa-chart-line"></i>
-</div>
-<div class="quick-link-title">Creator Dashboard</div>
-<div class="quick-link-desc">Manage your content and analytics</div>
-</a>
-</div>
+<!-- REMOVED QUICK LINKS SECTION -->
 <!-- Featured Creators -->
 <section class="section">
 <div class="section-header">
