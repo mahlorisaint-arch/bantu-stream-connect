@@ -447,6 +447,8 @@ transition: all 0.3s ease;
 display: flex;
 align-items: center;
 gap: 8px;
+text-decoration: none;
+color: var(--warm-gold);
 }
 .see-all-btn:hover {
 background: rgba(255, 255, 255, 0.2);
@@ -595,6 +597,14 @@ width: 30px;
 height: 30px;
 border-radius: 50%;
 overflow: hidden;
+display: flex;
+align-items: center;
+justify-content: center;
+background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+color: white;
+font-weight: bold;
+font-size: 12px;
+flex-shrink: 0;
 }
 .creator-avatar-small img {
 width: 100%;
@@ -683,6 +693,13 @@ overflow: hidden;
 margin-bottom: 20px;
 border: 3px solid var(--warm-gold);
 box-shadow: 0 0 20px rgba(245, 158, 11, 0.3);
+display: flex;
+align-items: center;
+justify-content: center;
+background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+color: white;
+font-size: 40px;
+font-weight: bold;
 }
 .creator-avatar img {
 width: 100%;
@@ -1190,7 +1207,7 @@ user-select: none;
 <!-- Loading Screen -->
 <div id="loading" class="loading-screen">
 <div class="spinner"></div>
-<div id="loading-text">Exploring Amazing Content...</div>
+<div id="loading-text">Loading Top Creators...</div>
 </div>
 <!-- Animated Background -->
 <div class="animated-bg">
@@ -1588,83 +1605,6 @@ if (url.startsWith('http')) return url;
 if (url.includes('supabase.co')) return url;
 return `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/${url.replace(/^\/+/, '')}`;
 }
-// Get featured creators with real data based on content count and connector count
-async getFeaturedCreators() {
-try {
-// Step 1: Get content count per creator
-const contentCountQuery = await supabaseAuth
-.from('Content')
-.select('user_id, count')
-.groupBy('user_id')
-.count();
-// Step 2: Get connector count per creator
-const connectorCountQuery = await supabaseAuth
-.from('connectors')
-.select('connected_id, count')
-.groupBy('connected_id')
-.count();
-// Step 3: Combine data and get top creators
-const { data: creators, error } = await supabaseAuth
-.rpc('get_top_creators', {
-limit_count: 6
-});
-if (error) {
-console.warn('RPC function not available, falling back to manual query');
-// Manual fallback query
-const { data: contentCreators } = await supabaseAuth
-.from('Content')
-.select('user_id, user_profiles(full_name, username, avatar_url, bio, email)')
-.eq('status', 'published')
-.not('user_id', 'is', null);
-// Group by user_id and count content
-const creatorMap = new Map();
-contentCreators.forEach(item => {
-if (item.user_id) {
-if (!creatorMap.has(item.user_id)) {
-creatorMap.set(item.user_id, {
-id: item.user_id,
-full_name: item.user_profiles?.full_name || '',
-username: item.user_profiles?.username || '',
-avatar_url: item.user_profiles?.avatar_url || '',
-bio: item.user_profiles?.bio || '',
-email: item.user_profiles?.email || '',
-video_count: 0,
-follower_count: 0
-});
-}
-creatorMap.get(item.user_id).video_count++;
-}
-});
-// Get connector counts
-const { data: connectorData } = await supabaseAuth
-.from('connectors')
-.select('connected_id')
-.not('connected_id', 'is', null);
-const connectorMap = new Map();
-connectorData.forEach(conn => {
-if (conn.connected_id) {
-connectorMap.set(conn.connected_id, (connectorMap.get(conn.connected_id) || 0) + 1);
-}
-});
-// Merge connector counts
-creatorMap.forEach((creator, userId) => {
-creator.follower_count = connectorMap.get(userId) || 0;
-});
-// Convert to array and sort by combined score
-let creatorsArray = Array.from(creatorMap.values());
-creatorsArray.sort((a, b) => {
-const aScore = (a.video_count * 2) + a.follower_count;
-const bScore = (b.video_count * 2) + b.follower_count;
-return bScore - aScore;
-});
-return creatorsArray.slice(0, 6);
-}
-return creators || [];
-} catch (error) {
-console.error('Error getting featured creators:', error);
-return [];
-}
-}
 // Get live streams
 async getLiveStreams() {
 try {
@@ -1908,10 +1848,10 @@ return new Date(timestamp).toLocaleDateString();
 }
 // Get initials from name
 function getInitials(name) {
-if (!name) return '?';
-const names = name.split(' ');
+if (!name || name.trim() === '') return '?';
+const names = name.trim().split(' ');
 if (names.length >= 2) {
-return (names[0][0] + names[1][0]).toUpperCase();
+return (names[0][0] + names[names.length - 1][0]).toUpperCase();
 }
 return name[0].toUpperCase();
 }
@@ -2285,14 +2225,20 @@ const moreHTML = newItems.map(content => {
 const thumbnailUrl = content.thumbnail_url
 ? contentSupabase.fixMediaUrl(content.thumbnail_url)
 : 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=225&fit=crop';
-const creatorAvatar = content.user_profiles?.avatar_url
-? contentSupabase.fixMediaUrl(content.user_profiles.avatar_url)
-: 'https://images.unsplash.com/photo-1633332755192-727a05c4013d?w=400&h=400&fit=crop';
-const creatorName = content.user_profiles?.full_name ||
-content.user_profiles?.username ||
-content.creator ||
-'Creator';
+const creatorProfile = content.user_profiles;
+const creatorName = creatorProfile?.full_name || creatorProfile?.username || content.creator || 'Creator';
+const displayName = creatorProfile?.full_name || creatorProfile?.username || 'User';
+const initials = getInitials(displayName);
 const isNew = (new Date() - new Date(content.created_at)) < 7 * 24 * 60 * 60 * 1000;
+const views = content.real_views || content.views_count || 0;
+// Build avatar HTML with initials fallback
+let avatarHtml = '';
+if (creatorProfile?.avatar_url) {
+const avatarUrl = contentSupabase.fixMediaUrl(creatorProfile.avatar_url);
+avatarHtml = `<img src="${avatarUrl}" alt="${escapeHtml(displayName)}" onerror="this.parentElement.innerHTML='<div class=\\'creator-initials-small\\'>${initials}</div>'">`;
+} else {
+avatarHtml = `<div class="creator-initials-small">${initials}</div>`;
+}
 return `
 <a href="content-detail.html?id=${content.id}" class="content-card">
 <div class="card-thumbnail">
@@ -2314,13 +2260,12 @@ ${truncateText(escapeHtml(content.title), 50)}
 </h3>
 <div class="creator-info">
 <div class="creator-avatar-small">
-<img src="${creatorAvatar}" alt="${escapeHtml(creatorName)}"
-onerror="this.src='https://images.unsplash.com/photo-1633332755192-727a05c4013d?w=400&h=400&fit=crop'">
+${avatarHtml}
 </div>
-<div class="creator-name-small">@${escapeHtml(content.user_profiles?.username || creatorName)}</div>
+<div class="creator-name-small">@${escapeHtml(creatorProfile?.username || creatorName)}</div>
 </div>
 <div class="card-meta">
-<span><i class="fas fa-eye"></i> ${formatNumber(content.real_views || content.views_count || 0)}</span>
+<span><i class="fas fa-eye"></i> ${formatNumber(views)}</span>
 <span>${content.media_type || 'video'}</span>
 </div>
 </div>
@@ -2442,6 +2387,75 @@ showToast('Failed to filter content', 'error');
 setLoading(false);
 }
 }
+// Get top creators based on content count and connector count
+async function getTopCreators() {
+try {
+loadingText.textContent = 'Finding top creators...';
+// Step 1: Get content counts per creator (published content only)
+const { data: contentData, error: contentError } = await supabaseAuth
+.from('Content')
+.select('user_id')
+.eq('status', 'published')
+.not('user_id', 'is', null);
+if (contentError) throw contentError;
+// Aggregate content counts
+const contentCountMap = new Map();
+contentData.forEach(item => {
+if (item.user_id) {
+contentCountMap.set(item.user_id, (contentCountMap.get(item.user_id) || 0) + 1);
+}
+});
+// Step 2: Get connector counts per creator
+const { data: connectorData, error: connectorError } = await supabaseAuth
+.from('connectors')
+.select('connected_id')
+.eq('connection_type', 'creator')
+.not('connected_id', 'is', null);
+if (connectorError) throw connectorError;
+// Aggregate connector counts
+const connectorCountMap = new Map();
+connectorData.forEach(item => {
+if (item.connected_id) {
+connectorCountMap.set(item.connected_id, (connectorCountMap.get(item.connected_id) || 0) + 1);
+}
+});
+// Step 3: Calculate scores and get top user IDs
+const creatorScores = new Map();
+// Add content counts (weighted x2)
+contentCountMap.forEach((count, userId) => {
+creatorScores.set(userId, (creatorScores.get(userId) || 0) + count * 2);
+});
+// Add connector counts
+connectorCountMap.forEach((count, userId) => {
+creatorScores.set(userId, (creatorScores.get(userId) || 0) + count);
+});
+// Convert to array and sort by score descending
+const sortedCreators = Array.from(creatorScores.entries())
+.sort((a, b) => b[1] - a[1])
+.slice(0, 6) // Get top 6
+.map(([userId, score]) => userId);
+if (sortedCreators.length === 0) {
+console.warn('No creators found with published content');
+return [];
+}
+// Step 4: Fetch user profiles for top creators
+const { data: profiles, error: profilesError } = await supabaseAuth
+.from('user_profiles')
+.select('*')
+.in('id', sortedCreators);
+if (profilesError) throw profilesError;
+// Attach counts to each profile
+return profiles.map(profile => ({
+...profile,
+video_count: contentCountMap.get(profile.id) || 0,
+follower_count: connectorCountMap.get(profile.id) || 0
+}));
+} catch (error) {
+console.error('Error getting top creators:', error);
+showToast('Failed to load top creators', 'error');
+return [];
+}
+}
 // Update featured creators with real profile data and proper initials
 function updateFeaturedCreators() {
 const creatorsList = document.getElementById('creators-list');
@@ -2469,10 +2483,10 @@ const fullName = creator.full_name || creator.username || 'Creator';
 const username = creator.username || 'creator';
 const displayName = fullName || username;
 const initials = getInitials(displayName);
-const videoCount = creator.video_count || Math.floor(Math.random() * 50) + 10;
-const followerCount = creator.follower_count || Math.floor(Math.random() * 5000) + 1000;
+const videoCount = creator.video_count || 0;
+const followerCount = creator.follower_count || 0;
 // Determine if this creator is a top performer
-const isTopCreator = videoCount > 20 || followerCount > 2000;
+const isTopCreator = videoCount > 5 || followerCount > 100;
 return `
 <div class="swiper-slide">
 <a href="creator-channel.html?id=${creator.id}" class="creator-card">
@@ -2534,15 +2548,20 @@ liveStreamsGrid.innerHTML = liveStreams.slice(0, 6).map(stream => {
 const thumbnailUrl = stream.thumbnail_url
 ? contentSupabase.fixMediaUrl(stream.thumbnail_url)
 : 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop';
-const creatorAvatar = stream.user_profiles?.avatar_url
-? contentSupabase.fixMediaUrl(stream.user_profiles.avatar_url)
-: 'https://images.unsplash.com/photo-1633332755192-727a05c4013d?w=400&h=400&fit=crop';
-const creatorName = stream.user_profiles?.full_name ||
-stream.user_profiles?.username ||
-stream.creator ||
-'Creator';
-const username = stream.user_profiles?.username || 'creator';
+const creatorProfile = stream.user_profiles;
+const creatorName = creatorProfile?.full_name || creatorProfile?.username || stream.creator || 'Creator';
+const displayName = creatorProfile?.full_name || creatorProfile?.username || 'User';
+const initials = getInitials(displayName);
+const username = creatorProfile?.username || 'creator';
 const viewers = Math.floor(Math.random() * 10000) + 1000;
+// Build avatar HTML with initials fallback
+let avatarHtml = '';
+if (creatorProfile?.avatar_url) {
+const avatarUrl = contentSupabase.fixMediaUrl(creatorProfile.avatar_url);
+avatarHtml = `<img src="${avatarUrl}" alt="${escapeHtml(displayName)}" onerror="this.parentElement.innerHTML='<div class=\\'creator-initials-small\\'>${initials}</div>'">`;
+} else {
+avatarHtml = `<div class="creator-initials-small">${initials}</div>`;
+}
 return `
 <a href="content-detail.html?id=${stream.id}" class="content-card">
 <div class="card-thumbnail">
@@ -2565,8 +2584,7 @@ ${truncateText(escapeHtml(stream.title), 50)}
 </h3>
 <div class="creator-info">
 <div class="creator-avatar-small">
-<img src="${creatorAvatar}" alt="${escapeHtml(creatorName)}"
-onerror="this.src='https://images.unsplash.com/photo-1633332755192-727a05c4013d?w=400&h=400&fit=crop'">
+${avatarHtml}
 </div>
 <div class="creator-name-small">@${escapeHtml(username)}</div>
 </div>
@@ -2598,15 +2616,20 @@ trendingGrid.innerHTML = trendingContent.slice(0, 8).map(content => {
 const thumbnailUrl = content.thumbnail_url
 ? contentSupabase.fixMediaUrl(content.thumbnail_url)
 : 'https://images.unsplash.com/photo-1574717024653-61fd2cf4d44d?w=400&h=225&fit=crop';
-const creatorAvatar = content.user_profiles?.avatar_url
-? contentSupabase.fixMediaUrl(content.user_profiles.avatar_url)
-: 'https://images.unsplash.com/photo-1633332755192-727a05c4013d?w=400&h=400&fit=crop';
-const creatorName = content.user_profiles?.full_name ||
-content.user_profiles?.username ||
-content.creator ||
-'Creator';
-const username = content.user_profiles?.username || 'creator';
+const creatorProfile = content.user_profiles;
+const creatorName = creatorProfile?.full_name || creatorProfile?.username || content.creator || 'Creator';
+const displayName = creatorProfile?.full_name || creatorProfile?.username || 'User';
+const initials = getInitials(displayName);
+const username = creatorProfile?.username || 'creator';
 const views = content.real_views || content.views_count || Math.floor(Math.random() * 100000) + 1000;
+// Build avatar HTML with initials fallback
+let avatarHtml = '';
+if (creatorProfile?.avatar_url) {
+const avatarUrl = contentSupabase.fixMediaUrl(creatorProfile.avatar_url);
+avatarHtml = `<img src="${avatarUrl}" alt="${escapeHtml(displayName)}" onerror="this.parentElement.innerHTML='<div class=\\'creator-initials-small\\'>${initials}</div>'">`;
+} else {
+avatarHtml = `<div class="creator-initials-small">${initials}</div>`;
+}
 return `
 <a href="content-detail.html?id=${content.id}" class="content-card">
 <div class="card-thumbnail">
@@ -2629,8 +2652,7 @@ ${truncateText(escapeHtml(content.title), 50)}
 </h3>
 <div class="creator-info">
 <div class="creator-avatar-small">
-<img src="${creatorAvatar}" alt="${escapeHtml(creatorName)}"
-onerror="this.src='https://images.unsplash.com/photo-1633332755192-727a05c4013d?w=400&h=400&fit=crop'">
+${avatarHtml}
 </div>
 <div class="creator-name-small">@${escapeHtml(username)}</div>
 </div>
@@ -2662,16 +2684,21 @@ newContentGrid.innerHTML = newContent.slice(0, 8).map(content => {
 const thumbnailUrl = content.thumbnail_url
 ? contentSupabase.fixMediaUrl(content.thumbnail_url)
 : 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=225&fit=crop';
-const creatorAvatar = content.user_profiles?.avatar_url
-? contentSupabase.fixMediaUrl(content.user_profiles.avatar_url)
-: 'https://images.unsplash.com/photo-1633332755192-727a05c4013d?w=400&h=400&fit=crop';
-const creatorName = content.user_profiles?.full_name ||
-content.user_profiles?.username ||
-content.creator ||
-'Creator';
-const username = content.user_profiles?.username || 'creator';
+const creatorProfile = content.user_profiles;
+const creatorName = creatorProfile?.full_name || creatorProfile?.username || content.creator || 'Creator';
+const displayName = creatorProfile?.full_name || creatorProfile?.username || 'User';
+const initials = getInitials(displayName);
+const username = creatorProfile?.username || 'creator';
 const isNew = (new Date() - new Date(content.created_at)) < 7 * 24 * 60 * 60 * 1000;
 const views = content.real_views || content.views_count || 0;
+// Build avatar HTML with initials fallback
+let avatarHtml = '';
+if (creatorProfile?.avatar_url) {
+const avatarUrl = contentSupabase.fixMediaUrl(creatorProfile.avatar_url);
+avatarHtml = `<img src="${avatarUrl}" alt="${escapeHtml(displayName)}" onerror="this.parentElement.innerHTML='<div class=\\'creator-initials-small\\'>${initials}</div>'">`;
+} else {
+avatarHtml = `<div class="creator-initials-small">${initials}</div>`;
+}
 return `
 <a href="content-detail.html?id=${content.id}" class="content-card">
 <div class="card-thumbnail">
@@ -2693,8 +2720,7 @@ ${truncateText(escapeHtml(content.title), 50)}
 </h3>
 <div class="creator-info">
 <div class="creator-avatar-small">
-<img src="${creatorAvatar}" alt="${escapeHtml(creatorName)}"
-onerror="this.src='https://images.unsplash.com/photo-1633332755192-727a05c4013d?w=400&h=400&fit=crop'">
+${avatarHtml}
 </div>
 <div class="creator-name-small">@${escapeHtml(username)}</div>
 </div>
@@ -2774,7 +2800,7 @@ async function loadExploreData() {
 try {
 // Load featured creators with real data based on content and connector counts
 loadingText.textContent = 'Loading top creators...';
-featuredCreators = await contentSupabase.getFeaturedCreators();
+featuredCreators = await getTopCreators();
 // Load live streams
 loadingText.textContent = 'Loading live streams...';
 liveStreams = await contentSupabase.getLiveStreams();
@@ -2880,7 +2906,7 @@ thumbnail_url: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=400&
 user_profiles: {
 full_name: 'Tech Innovators',
 username: 'techinnovators',
-avatar_url: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=400&h=400&fit=crop'
+avatar_url: null
 }
 }
 ];
@@ -2904,7 +2930,7 @@ thumbnail_url: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=400&
 user_profiles: {
 full_name: 'Tech Innovators',
 username: 'techinnovators',
-avatar_url: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=400&h=400&fit=crop'
+avatar_url: null
 },
 views_count: 8900,
 created_at: new Date().toISOString()
@@ -3188,7 +3214,7 @@ window.location.href = 'https://bantustreamconnect.com/live-streams';
 // Initialize the explore screen
 async function initializeExploreScreen() {
 try {
-setLoading(true, 'Exploring Amazing Content...');
+setLoading(true, 'Loading Top Creators...');
 // Initialize theme
 if (typeof window.initTheme === 'function') {
 window.initTheme();
