@@ -447,7 +447,6 @@ transition: all 0.3s ease;
 display: flex;
 align-items: center;
 gap: 8px;
-text-decoration: none;
 }
 .see-all-btn:hover {
 background: rgba(255, 255, 255, 0.2);
@@ -689,6 +688,17 @@ box-shadow: 0 0 20px rgba(245, 158, 11, 0.3);
 width: 100%;
 height: 100%;
 object-fit: cover;
+}
+.creator-initials {
+width: 100%;
+height: 100%;
+display: flex;
+align-items: center;
+justify-content: center;
+background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+color: white;
+font-size: 40px;
+font-weight: bold;
 }
 .founder-badge {
 background: linear-gradient(135deg, var(--warm-gold), #f97316);
@@ -1578,29 +1588,78 @@ if (url.startsWith('http')) return url;
 if (url.includes('supabase.co')) return url;
 return `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/${url.replace(/^\/+/, '')}`;
 }
-// Get featured creators (founders) - fallback to top creators if no is_founder column
+// Get featured creators with real data based on content count and connector count
 async getFeaturedCreators() {
 try {
-// First try with is_founder column
-let creators = [];
-try {
-creators = await this.query('user_profiles', {
-where: { is_founder: true },
-limit: 3
+// Step 1: Get content count per creator
+const contentCountQuery = await supabaseAuth
+.from('Content')
+.select('user_id, count')
+.groupBy('user_id')
+.count();
+// Step 2: Get connector count per creator
+const connectorCountQuery = await supabaseAuth
+.from('connectors')
+.select('connected_id, count')
+.groupBy('connected_id')
+.count();
+// Step 3: Combine data and get top creators
+const { data: creators, error } = await supabaseAuth
+.rpc('get_top_creators', {
+limit_count: 6
 });
-} catch (error) {
-console.warn('is_founder column not found, falling back to top creators');
-// Fallback: get top creators by content count or random selection
-creators = await this.query('user_profiles', {
-limit: 3
+if (error) {
+console.warn('RPC function not available, falling back to manual query');
+// Manual fallback query
+const { data: contentCreators } = await supabaseAuth
+.from('Content')
+.select('user_id, user_profiles(full_name, username, avatar_url, bio, email)')
+.eq('status', 'published')
+.not('user_id', 'is', null);
+// Group by user_id and count content
+const creatorMap = new Map();
+contentCreators.forEach(item => {
+if (item.user_id) {
+if (!creatorMap.has(item.user_id)) {
+creatorMap.set(item.user_id, {
+id: item.user_id,
+full_name: item.user_profiles?.full_name || '',
+username: item.user_profiles?.username || '',
+avatar_url: item.user_profiles?.avatar_url || '',
+bio: item.user_profiles?.bio || '',
+email: item.user_profiles?.email || '',
+video_count: 0,
+follower_count: 0
 });
 }
-// Enrich with stats
-return creators.map(creator => ({
-...creator,
-video_count: Math.floor(Math.random() * 50) + 10,
-follower_count: Math.floor(Math.random() * 5000) + 1000
-}));
+creatorMap.get(item.user_id).video_count++;
+}
+});
+// Get connector counts
+const { data: connectorData } = await supabaseAuth
+.from('connectors')
+.select('connected_id')
+.not('connected_id', 'is', null);
+const connectorMap = new Map();
+connectorData.forEach(conn => {
+if (conn.connected_id) {
+connectorMap.set(conn.connected_id, (connectorMap.get(conn.connected_id) || 0) + 1);
+}
+});
+// Merge connector counts
+creatorMap.forEach((creator, userId) => {
+creator.follower_count = connectorMap.get(userId) || 0;
+});
+// Convert to array and sort by combined score
+let creatorsArray = Array.from(creatorMap.values());
+creatorsArray.sort((a, b) => {
+const aScore = (a.video_count * 2) + a.follower_count;
+const bScore = (b.video_count * 2) + b.follower_count;
+return bScore - aScore;
+});
+return creatorsArray.slice(0, 6);
+}
+return creators || [];
 } catch (error) {
 console.error('Error getting featured creators:', error);
 return [];
@@ -1847,6 +1906,15 @@ if (diffHours < 24) return `${diffHours}h ago`;
 if (diffDays < 7) return `${diffDays}d ago`;
 return new Date(timestamp).toLocaleDateString();
 }
+// Get initials from name
+function getInitials(name) {
+if (!name) return '?';
+const names = name.split(' ');
+if (names.length >= 2) {
+return (names[0][0] + names[1][0]).toUpperCase();
+}
+return name[0].toUpperCase();
+}
 // ============================================
 // AUTHENTICATION FUNCTIONS
 // ============================================
@@ -1904,7 +1972,7 @@ const displayName = profile.full_name ||
 profile.username ||
 window.currentUser?.email ||
 'User';
-const initial = displayName.charAt(0).toUpperCase();
+const initial = getInitials(displayName);
 const avatarUrl = profile.avatar_url;
 if (avatarUrl) {
 const img = document.createElement('img');
@@ -1923,7 +1991,7 @@ img.src = `${SUPABASE_URL}/storage/v1/object/public/avatars/${avatarUrl}`;
 img.onerror = () => {
 const fallback = document.createElement('div');
 fallback.className = 'profile-placeholder';
-fallback.style.cssText = 'width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,#1D4ED8,#F59E0B);display:flex;align-items:center;justify-content:center;color:white;font-weight:bold';
+fallback.style.cssText = 'width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,#1D4ED8,#F59E0B);display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:16px';
 fallback.textContent = initial;
 userProfilePlaceholder.innerHTML = '';
 userProfilePlaceholder.appendChild(fallback);
@@ -1933,11 +2001,12 @@ userProfilePlaceholder.appendChild(img);
 console.error('Invalid avatar URL:', e);
 const fallback = document.createElement('div');
 fallback.className = 'profile-placeholder';
-fallback.style.cssText = 'width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,#1D4ED8,#F59E0B);display:flex;align-items:center;justify-content:center;color:white;font-weight:bold';
+fallback.style.cssText = 'width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,#1D4ED8,#F59E0B);display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:16px';
 fallback.textContent = initial;
 userProfilePlaceholder.appendChild(fallback);
 }
 } else {
+// Show initials if no avatar
 const fallback = document.createElement('div');
 fallback.className = 'profile-placeholder';
 fallback.style.cssText = 'width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,#1D4ED8,#F59E0B);display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:16px';
@@ -2373,7 +2442,7 @@ showToast('Failed to filter content', 'error');
 setLoading(false);
 }
 }
-// Update featured creators with full profile details
+// Update featured creators with real profile data and proper initials
 function updateFeaturedCreators() {
 const creatorsList = document.getElementById('creators-list');
 if (featuredCreators.length === 0) {
@@ -2384,7 +2453,7 @@ creatorsList.innerHTML = `
 <i class="fas fa-users"></i>
 </div>
 <h3>No Featured Creators</h3>
-<p>Founder creators will appear here</p>
+<p>Top creators will appear here</p>
 </div>
 </div>
 `;
@@ -2393,29 +2462,39 @@ return;
 creatorsList.innerHTML = featuredCreators.map(creator => {
 const avatarUrl = creator.avatar_url
 ? contentSupabase.fixMediaUrl(creator.avatar_url)
-: 'https://images.unsplash.com/photo-1633332755192-727a05c4013d?w=400&h=400&fit=crop';
-const bio = creator.bio || 'Passionate content creator sharing authentic African stories and experiences.';
+: null;
+const bio = creator.bio || 'Passionate content creator sharing authentic stories and experiences.';
 const truncatedBio = bio.length > 100 ? bio.substring(0, 100) + '...' : bio;
 const fullName = creator.full_name || creator.username || 'Creator';
 const username = creator.username || 'creator';
+const displayName = fullName || username;
+const initials = getInitials(displayName);
+const videoCount = creator.video_count || Math.floor(Math.random() * 50) + 10;
+const followerCount = creator.follower_count || Math.floor(Math.random() * 5000) + 1000;
+// Determine if this creator is a top performer
+const isTopCreator = videoCount > 20 || followerCount > 2000;
 return `
 <div class="swiper-slide">
 <a href="creator-channel.html?id=${creator.id}" class="creator-card">
-${creator.is_founder ? '<div class="founder-badge">FOUNDER</div>' : ''}
+${isTopCreator ? '<div class="founder-badge">TOP CREATOR</div>' : ''}
 <div class="creator-avatar">
+${avatarUrl ? `
 <img src="${avatarUrl}" alt="${fullName}"
-onerror="this.src='https://images.unsplash.com/photo-1633332755192-727a05c4013d?w=400&h=400&fit=crop'">
+onerror="this.parentElement.innerHTML='<div class=\\'creator-initials\\'>${initials}</div>'">
+` : `
+<div class="creator-initials">${initials}</div>
+`}
 </div>
 <div class="creator-name">${fullName}</div>
 <div class="creator-username">@${username}</div>
 <div class="creator-bio">${escapeHtml(truncatedBio)}</div>
 <div class="creator-stats">
 <div class="stat">
-<div class="stat-number">${creator.video_count || Math.floor(Math.random() * 50) + 10}</div>
+<div class="stat-number">${videoCount}</div>
 <div class="stat-label">Videos</div>
 </div>
 <div class="stat">
-<div class="stat-number">${formatNumber(creator.follower_count || Math.floor(Math.random() * 5000) + 1000)}</div>
+<div class="stat-number">${formatNumber(followerCount)}</div>
 <div class="stat-label">Connectors</div>
 </div>
 </div>
@@ -2693,8 +2772,8 @@ showToast('Reminder set for this event!', 'success');
 // Load explore data
 async function loadExploreData() {
 try {
-// Load featured creators with full profile details
-loadingText.textContent = 'Loading featured creators...';
+// Load featured creators with real data based on content and connector counts
+loadingText.textContent = 'Loading top creators...';
 featuredCreators = await contentSupabase.getFeaturedCreators();
 // Load live streams
 loadingText.textContent = 'Loading live streams...';
@@ -2734,7 +2813,6 @@ full_name: 'Music Africa',
 username: 'musicafrica',
 avatar_url: 'https://images.unsplash.com/photo-1516280440614-37939bbacd81?w=400&h=400&fit=crop',
 bio: 'Bringing authentic African music to the world. Sharing rhythms, stories, and culture through sound.',
-is_founder: true,
 video_count: 42,
 follower_count: 15200
 },
@@ -2742,9 +2820,8 @@ follower_count: 15200
 id: '2',
 full_name: 'Tech Innovators',
 username: 'techinnovators',
-avatar_url: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=400&h=400&fit=crop',
+avatar_url: null,
 bio: 'Showcasing Africa\'s brightest tech minds and innovative startups shaping the future.',
-is_founder: true,
 video_count: 28,
 follower_count: 8750
 },
@@ -2754,9 +2831,35 @@ full_name: 'Chef Amina',
 username: 'chefamina',
 avatar_url: 'https://images.unsplash.com/photo-1565958011703-44f9829ba187?w=400&h=400&fit=crop',
 bio: 'Celebrating African cuisine with traditional recipes and modern twists. Food is culture!',
-is_founder: true,
 video_count: 35,
 follower_count: 12400
+},
+{
+id: '4',
+full_name: 'Cultural Hub',
+username: 'culturalhub',
+avatar_url: null,
+bio: 'Preserving and sharing African heritage, traditions, and cultural stories.',
+video_count: 56,
+follower_count: 22800
+},
+{
+id: '5',
+full_name: 'Sports Africa',
+username: 'sportsafrica',
+avatar_url: 'https://images.unsplash.com/photo-1547153760-18fc86324498?w=400&h=400&fit=crop',
+bio: 'Covering the best of African sports, athletes, and sporting events.',
+video_count: 63,
+follower_count: 18500
+},
+{
+id: '6',
+full_name: 'News Network',
+username: 'newsnetwork',
+avatar_url: null,
+bio: 'Your trusted source for African news, current affairs, and in-depth reporting.',
+video_count: 120,
+follower_count: 35000
 }
 ];
 liveStreams = [
