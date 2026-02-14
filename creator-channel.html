@@ -496,24 +496,9 @@ display: flex;
 align-items: center;
 gap: 10px;
 }
-.see-all-btn {
-padding: 10px 20px;
-background: rgba(255, 255, 255, 0.1);
-border: 1px solid var(--card-border);
-border-radius: 10px;
-color: var(--warm-gold);
+.content-count {
 font-size: 14px;
-font-weight: 500;
-cursor: pointer;
-transition: all 0.3s ease;
-display: flex;
-align-items: center;
-gap: 8px;
-text-decoration: none;
-}
-.see-all-btn:hover {
-background: rgba(255, 255, 255, 0.2);
-border-color: var(--warm-gold);
+color: var(--slate-grey);
 }
 /* Content Grid */
 .content-grid {
@@ -765,6 +750,19 @@ font-size: 14px;
 .footer-links a:hover {
 color: var(--warm-gold);
 }
+.footer-contact {
+margin-top: 20px;
+font-size: 14px;
+color: var(--slate-grey);
+text-align: center;
+}
+.footer-contact a {
+color: var(--warm-gold);
+text-decoration: none;
+}
+.footer-contact a:hover {
+text-decoration: underline;
+}
 /* Toast Container */
 #toast-container {
 position: fixed;
@@ -915,6 +913,118 @@ border: 1px solid rgba(255, 255, 255, 0.1);
 transform: translateY(-2px);
 box-shadow: 0 4px 15px rgba(245, 158, 11, 0.4);
 }
+/* Search Modal */
+.search-modal {
+position: fixed;
+top: 0;
+left: 0;
+width: 100%;
+height: 100%;
+background: rgba(0, 0, 0, 0.9);
+display: none;
+align-items: center;
+justify-content: center;
+z-index: 2000;
+backdrop-filter: blur(5px);
+}
+.search-modal.active {
+display: flex;
+}
+.search-modal-header {
+display: flex;
+justify-content: space-between;
+align-items: center;
+margin-bottom: 20px;
+padding-bottom: 15px;
+border-bottom: 1px solid var(--card-border);
+width: 100%;
+}
+.search-input-container {
+position: relative;
+width: 100%;
+max-width: 600px;
+}
+.search-icon {
+position: absolute;
+left: 15px;
+top: 50%;
+transform: translateY(-50%);
+color: var(--slate-grey);
+font-size: 18px;
+}
+.search-input {
+width: 100%;
+padding: 15px 15px 15px 45px;
+border-radius: 12px;
+border: 1px solid var(--card-border);
+background: var(--card-bg);
+color: var(--soft-white);
+font-size: 16px;
+backdrop-filter: blur(10px);
+}
+.search-input::placeholder {
+color: var(--slate-grey);
+}
+.search-input:focus {
+outline: none;
+border-color: var(--warm-gold);
+box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.2);
+}
+.close-search-btn {
+background: none;
+border: none;
+color: var(--soft-white);
+font-size: 24px;
+cursor: pointer;
+width: 40px;
+height: 40px;
+border-radius: 50%;
+display: flex;
+align-items: center;
+justify-content: center;
+transition: all 0.3s ease;
+}
+.close-search-btn:hover {
+background: rgba(255, 255, 255, 0.1);
+transform: rotate(90deg);
+}
+.search-filters {
+display: flex;
+gap: 15px;
+margin-bottom: 20px;
+width: 100%;
+max-width: 600px;
+}
+.filter-group {
+flex: 1;
+}
+.filter-label {
+display: block;
+margin-bottom: 8px;
+font-size: 14px;
+color: var(--slate-grey);
+}
+.filter-select {
+width: 100%;
+padding: 12px;
+border-radius: 10px;
+border: 1px solid var(--card-border);
+background: var(--card-bg);
+color: var(--soft-white);
+font-size: 14px;
+backdrop-filter: blur(10px);
+}
+.search-results {
+width: 100%;
+max-width: 800px;
+max-height: 70vh;
+overflow-y: auto;
+}
+.search-results-grid {
+display: grid;
+grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+gap: 15px;
+}
 /* Custom Scrollbar */
 ::-webkit-scrollbar {
 width: 8px;
@@ -964,6 +1074,9 @@ flex-direction: column;
 align-items: flex-start;
 gap: 10px;
 }
+.search-filters {
+flex-direction: column;
+}
 }
 @media (max-width: 480px) {
 .creator-avatar-container {
@@ -1005,6 +1118,10 @@ max-width: 130px;
 width: 34px;
 height: 34px;
 }
+.search-input {
+padding: 12px 12px 12px 40px;
+font-size: 14px;
+}
 }
 /* Accessibility & Touch Targets */
 @media (hover: none) and (pointer: coarse) {
@@ -1044,6 +1161,49 @@ user-select: none;
 </div>
 </div>
 </div>
+<!-- Search Modal -->
+<div id="search-modal" class="search-modal">
+<div style="width: 90%; max-width: 800px; background: var(--card-bg); border-radius: 20px; padding: 30px; backdrop-filter: blur(10px);">
+<div class="search-modal-header">
+<div class="search-input-container">
+<i class="search-icon fas fa-search"></i>
+<input type="text" id="search-input" class="search-input" placeholder="Search content, creators, or categories..." autocomplete="off">
+</div>
+<button id="close-search-btn" class="close-search-btn">
+<i class="fas fa-times"></i>
+</button>
+</div>
+<div class="search-filters">
+<div class="filter-group">
+<label class="filter-label">Category</label>
+<select id="category-filter" class="filter-select">
+<option value="">All Categories</option>
+<option value="Music">Music</option>
+<option value="STEM">STEM</option>
+<option value="Culture">Culture</option>
+<option value="News">News</option>
+<option value="Sports">Sports</option>
+<option value="Movies">Movies</option>
+<option value="Documentaries">Documentaries</option>
+<option value="Podcasts">Podcasts</option>
+</select>
+</div>
+<div class="filter-group">
+<label class="filter-label">Sort By</label>
+<select id="sort-filter" class="filter-select">
+<option value="newest">Newest First</option>
+<option value="popular">Most Popular</option>
+<option value="trending">Trending</option>
+</select>
+</div>
+</div>
+<div class="search-results">
+<div id="search-results-grid" class="search-results-grid">
+<!-- Results loaded here -->
+</div>
+</div>
+</div>
+</div>
 <!-- Main Content (hidden until loaded) -->
 <div id="app" style="display: none;">
 <!-- Header -->
@@ -1055,10 +1215,6 @@ user-select: none;
 <div class="logo-text">BANTU STREAM CONNECT</div>
 </div>
 <div class="header-actions">
-<!-- Analytics Button -->
-<button id="analytics-btn" class="icon-btn" title="Analytics">
-<i class="fas fa-chart-line"></i>
-</button>
 <!-- Search Button -->
 <button id="search-btn" class="icon-btn search-btn" title="Search">
 <i class="fas fa-search"></i>
@@ -1100,7 +1256,7 @@ user-select: none;
 <div id="videos-count" class="stat-number">0</div>
 <div class="stat-label">Videos</div>
 </div>
-<div class="stat-card" id="connectors-stat-card" onclick="showConnectorsModal()">
+<div class="stat-card" id="connectors-stat-card">
 <div id="connectors-count" class="stat-number">0</div>
 <div class="stat-label">Connectors</div>
 </div>
@@ -1120,66 +1276,17 @@ user-select: none;
 Share Channel
 </button>
 </section>
-<!-- Live Streams Section -->
+<!-- Uploads Section (SINGLE SECTION - NOT 3 SEPARATE ONES) -->
 <section class="section">
 <div class="section-header">
 <h2 class="section-title">
-<i class="fas fa-circle" style="color: #EF4444; font-size: 20px;"></i>
-LIVE NOW
+<i class="fas fa-video" style="color: var(--bantu-blue);"></i>
+UPLOADS
 </h2>
-<a href="https://bantustreamconnect.com/live-streams" class="see-all-btn">
-See All
-<i class="fas fa-arrow-right"></i>
-</a>
+<div id="content-count" class="content-count">0 items</div>
 </div>
-<div class="content-grid" id="live-streams-grid">
-<!-- Live streams will be loaded here -->
-</div>
-<div id="no-live-streams" class="empty-state" style="display: none; grid-column: 1 / -1;">
-<div class="empty-icon">
-<i class="fas fa-broadcast-tower"></i>
-</div>
-<h3>No Live Streams</h3>
-<p>This creator isn't live right now</p>
-</div>
-</section>
-<!-- Trending Content Section -->
-<section class="section">
-<div class="section-header">
-<h2 class="section-title">
-<i class="fas fa-fire" style="color: var(--warm-gold);"></i>
-TRENDING NOW
-</h2>
-<a href="https://bantustreamconnect.com/trending_screen" class="see-all-btn">
-See All
-<i class="fas fa-arrow-right"></i>
-</a>
-</div>
-<div class="content-grid" id="trending-grid">
-<!-- Trending content will be loaded here -->
-</div>
-<div id="no-trending" class="empty-state" style="display: none; grid-column: 1 / -1;">
-<div class="empty-icon">
-<i class="fas fa-chart-line"></i>
-</div>
-<h3>No Trending Content</h3>
-<p>This creator has no trending content yet</p>
-</div>
-</section>
-<!-- Latest Uploads Section -->
-<section class="section">
-<div class="section-header">
-<h2 class="section-title">
-<i class="fas fa-gem" style="color: var(--bantu-blue);"></i>
-LATEST UPLOADS
-</h2>
-<a href="https://bantustreamconnect.com/content-library" class="see-all-btn">
-See All
-<i class="fas fa-arrow-right"></i>
-</a>
-</div>
-<div class="content-grid" id="new-content-grid">
-<!-- New content will be loaded here -->
+<div class="content-grid" id="content-grid">
+<!-- All creator content will be loaded here -->
 </div>
 <div id="no-content" class="empty-state" style="display: none; grid-column: 1 / -1;">
 <div class="empty-icon">
@@ -1197,6 +1304,9 @@ See All
 <a href="privacy-policy.html">Privacy Policy</a>
 <a href="terms-of-service.html">Terms of Service</a>
 <a href="support.html">Support</a>
+</div>
+<div class="footer-contact">
+Need help? Contact us at <a href="mailto:support@bantustreamconnect.com">support@bantustreamconnect.com</a>
 </div>
 </footer>
 <!-- Global Navigation Button - Fixed with centered icons -->
@@ -1227,115 +1337,40 @@ See All
 <i class="fas fa-arrow-up"></i>
 </button>
 </div>
-<!-- =================================================================== -->
-<!-- MODALS & PANELS                                                     -->
-<!-- =================================================================== -->
-<!-- Analytics Modal -->
-<div id="analytics-modal" class="analytics-modal">
-<div class="analytics-content">
-<div class="analytics-header">
-<h2>Platform Analytics</h2>
-<button id="close-analytics" class="close-search-btn">
-<i class="fas fa-times"></i>
-</button>
-</div>
-<div class="analytics-body">
-<div class="analytics-grid">
-<div class="analytics-card">
-<h3>Total Views</h3>
-<div class="analytics-value" id="total-views">0</div>
-<div class="analytics-trend" id="views-trend">+0%</div>
-</div>
-<div class="analytics-card">
-<h3>Total Content</h3>
-<div class="analytics-value" id="total-content">0</div>
-<div class="analytics-trend" id="content-trend">+0%</div>
-</div>
-<div class="analytics-card">
-<h3>Active Creators</h3>
-<div class="analytics-value" id="active-creators">0</div>
-<div class="analytics-trend" id="creators-trend">+0%</div>
-</div>
-<div class="analytics-card">
-<h3>Engagement</h3>
-<div class="analytics-value" id="engagement-rate">0%</div>
-<div class="analytics-trend" id="engagement-trend">+0%</div>
-</div>
-</div>
-<div class="charts-container">
-<!-- Charts would be rendered here dynamically -->
-</div>
-</div>
-</div>
-</div>
-<!-- Search Modal -->
-<div id="search-modal" class="search-modal">
-<div class="search-modal-header">
-<div class="search-input-container">
-<i class="search-icon fas fa-search"></i>
-<input type="text" id="search-input" class="search-input" placeholder="Search content, creators, or categories..." autocomplete="off">
-</div>
-<button id="close-search-btn" class="close-search-btn">
-<i class="fas fa-times"></i>
-</button>
-</div>
-<div class="search-filters">
-<div class="filter-group">
-<label class="filter-label">Category</label>
-<select id="category-filter" class="filter-select">
-<option value="">All Categories</option>
-<option value="Music">Music</option>
-<option value="STEM">STEM</option>
-<option value="Culture">Culture</option>
-<option value="News">News</option>
-<option value="Sports">Sports</option>
-<option value="Movies">Movies</option>
-<option value="Documentaries">Documentaries</option>
-<option value="Podcasts">Podcasts</option>
-</select>
-</div>
-<div class="filter-group">
-<label class="filter-label">Sort By</label>
-<select id="sort-filter" class="filter-select">
-<option value="newest">Newest First</option>
-<option value="popular">Most Popular</option>
-<option value="trending">Trending</option>
-</select>
-</div>
-</div>
-<div id="search-results" class="search-results">
-<div id="search-results-grid" class="search-results-grid">
-<!-- Results loaded here -->
-</div>
-</div>
-</div>
 <!-- Notifications Panel -->
-<div id="notifications-panel" class="notifications-panel">
-<div class="notifications-header">
-<h2>Notifications</h2>
-<button id="close-notifications" class="icon-btn">
+<div id="notifications-panel" class="modal">
+<div class="modal-content">
+<div class="notifications-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+<h2 style="font-family: 'Orbitron', sans-serif; font-size: 24px; margin: 0; color: var(--soft-white);">Notifications</h2>
+<button id="close-notifications" class="close-search-btn">
 <i class="fas fa-times"></i>
 </button>
 </div>
-<div class="notifications-list" id="notifications-list">
+<div class="notifications-list" id="notifications-list" style="max-height: 60vh; overflow-y: auto;">
 <!-- Notifications loaded here -->
 </div>
-<div class="notifications-footer">
-<button id="mark-all-read" class="text-btn">Mark all as read</button>
-<button id="notification-settings" class="text-btn">Settings</button>
+<div class="notifications-footer" style="display: flex; gap: 15px; margin-top: 20px;">
+<button id="mark-all-read" class="modal-btn close" style="flex: 1;">Mark all as read</button>
+<button id="notification-settings" class="modal-btn close" style="flex: 1; background: var(--card-bg); border-color: var(--card-border);">Settings</button>
+</div>
 </div>
 </div>
 <!-- Theme Selector -->
-<div id="theme-selector" class="theme-selector">
-<button class="theme-option" data-theme="dark">
+<div id="theme-selector" class="modal" style="display: none; background: rgba(0,0,0,0.5);">
+<div style="background: var(--card-bg); border-radius: 20px; padding: 20px; max-width: 400px; width: 90%;">
+<div style="font-family: 'Orbitron', sans-serif; font-size: 20px; margin-bottom: 15px; text-align: center; color: var(--soft-white);">Choose Theme</div>
+<div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;">
+<button class="theme-option" data-theme="dark" style="padding: 15px; border-radius: 12px; border: 1px solid var(--card-border); background: #1e293b; color: white; font-weight: 500; cursor: pointer; transition: all 0.3s ease;">
 <i class="fas fa-moon"></i> Dark
 </button>
-<button class="theme-option" data-theme="light">
+<button class="theme-option" data-theme="light" style="padding: 15px; border-radius: 12px; border: 1px solid var(--card-border); background: #f8fafc; color: #0f172a; font-weight: 500; cursor: pointer; transition: all 0.3s ease;">
 <i class="fas fa-sun"></i> Light
 </button>
-<button class="theme-option" data-theme="high-contrast">
+<button class="theme-option" data-theme="high-contrast" style="padding: 15px; border-radius: 12px; border: 1px solid var(--card-border); background: linear-gradient(135deg, #000, #fff); color: white; font-weight: 500; cursor: pointer; transition: all 0.3s ease;">
 <i class="fas fa-eye"></i> High Contrast
 </button>
+</div>
+</div>
 </div>
 <!-- JavaScript Files (load in correct order) -->
 <script src="env.js"></script>
@@ -1655,8 +1690,8 @@ const notificationsList = document.getElementById('notifications-list');
 if (!notificationsList) return;
 if (!window.currentUser) {
 notificationsList.innerHTML = `
-<div class="empty-notifications">
-<i class="fas fa-bell-slash"></i>
+<div style="text-align: center; padding: 40px; color: var(--slate-grey);">
+<i class="fas fa-bell-slash" style="font-size: 48px; margin-bottom: 15px; opacity: 0.5;"></i>
 <p>Sign in to see notifications</p>
 </div>
 `;
@@ -1664,24 +1699,26 @@ return;
 }
 if (!window.notifications || window.notifications.length === 0) {
 notificationsList.innerHTML = `
-<div class="empty-notifications">
-<i class="fas fa-bell-slash"></i>
+<div style="text-align: center; padding: 40px; color: var(--slate-grey);">
+<i class="fas fa-bell" style="font-size: 48px; margin-bottom: 15px; opacity: 0.3;"></i>
 <p>No notifications yet</p>
 </div>
 `;
 return;
 }
 notificationsList.innerHTML = window.notifications.map(notification => `
-<div class="notification-item ${notification.is_read ? 'read' : 'unread'}" data-id="${notification.id}">
-<div class="notification-icon">
-<i class="${getNotificationIcon(notification.type)}"></i>
+<div style="padding: 15px; border-bottom: 1px solid var(--card-border); ${notification.is_read ? 'opacity: 0.7;' : 'background: rgba(245, 158, 11, 0.1);'}">
+<div style="display: flex; gap: 12px;">
+<div style="width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold)); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+<i class="${getNotificationIcon(notification.type)}" style="font-size: 18px;"></i>
 </div>
-<div class="notification-content">
-<h4>${escapeHtml(notification.title)}</h4>
-<p>${escapeHtml(notification.message)}</p>
-<span class="notification-time">${formatNotificationTime(notification.created_at)}</span>
+<div style="flex: 1;">
+<div style="font-weight: 600; margin-bottom: 5px; color: var(--soft-white);">${escapeHtml(notification.title)}</div>
+<div style="font-size: 14px; color: var(--slate-grey); margin-bottom: 8px;">${escapeHtml(notification.message)}</div>
+<div style="font-size: 12px; color: var(--warm-gold);">${formatNotificationTime(notification.created_at)}</div>
 </div>
-${!notification.is_read ? '<div class="notification-dot"></div>' : ''}
+${!notification.is_read ? '<div style="width: 10px; height: 10px; border-radius: 50%; background: var(--warm-gold); margin-top: 5px;"></div>' : ''}
+</div>
 </div>
 `).join('');
 }
@@ -1706,6 +1743,146 @@ if (diffMins < 60) return `${diffMins}m ago`;
 if (diffHours < 24) return `${diffHours}h ago`;
 if (diffDays < 7) return `${diffDays}d ago`;
 return new Date(timestamp).toLocaleDateString();
+}
+// ============================================
+// SEARCH FUNCTIONALITY
+// ============================================
+// Search content with filters
+async function searchContent(query, category = '', sortBy = 'newest') {
+try {
+let queryBuilder = supabaseAuth
+.from('Content')
+.select('*, user_profiles!user_id(*)')
+.ilike('title', `%${query}%`)
+.eq('status', 'published');
+if (category) {
+queryBuilder = queryBuilder.eq('genre', category);
+}
+if (sortBy === 'newest') {
+queryBuilder = queryBuilder.order('created_at', { ascending: false });
+}
+const { data, error } = await queryBuilder.limit(50);
+if (error) throw error;
+// Enrich with real counts
+const enriched = await Promise.all(
+(data || []).map(async (item) => {
+const { count: viewsCount } = await supabaseAuth
+.from('content_views')
+.select('*', { count: 'exact', head: true })
+.eq('content_id', item.id);
+const { count: likesCount } = await supabaseAuth
+.from('content_likes')
+.select('*', { count: 'exact', head: true })
+.eq('content_id', item.id);
+return {
+...item,
+real_views: viewsCount || 0,
+real_likes: likesCount || 0
+};
+})
+);
+// Additional sorting for popularity/trending
+if (sortBy === 'popular') {
+enriched.sort((a, b) => (b.real_views || 0) - (a.real_views || 0));
+} else if (sortBy === 'trending') {
+enriched.sort((a, b) => {
+const aScore = (a.real_views || 0) + ((a.real_likes || 0) * 2);
+const bScore = (b.real_views || 0) + ((b.real_likes || 0) * 2);
+return bScore - aScore;
+});
+}
+return enriched;
+} catch (error) {
+console.error('Search error:', error);
+return [];
+}
+}
+// Render search results into the grid
+function renderSearchResults(results) {
+const grid = document.getElementById('search-results-grid');
+if (!grid) return;
+if (!results || results.length === 0) {
+grid.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--slate-grey);">No results found. Try different keywords.</div>';
+return;
+}
+grid.innerHTML = results.map(item => {
+const creator = item.user_profiles?.full_name ||
+item.user_profiles?.username ||
+item.creator ||
+'Creator';
+const creatorId = item.user_profiles?.id || item.user_id;
+const thumbnailUrl = item.thumbnail_url
+? fixMediaUrl(item.thumbnail_url)
+: 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop';
+const creatorProfile = item.user_profiles;
+const displayName = creatorProfile?.full_name || creatorProfile?.username || 'User';
+const initials = getInitials(displayName);
+// Build avatar HTML with initials fallback
+let avatarHtml = '';
+if (creatorProfile?.avatar_url) {
+const avatarUrl = fixMediaUrl(creatorProfile.avatar_url);
+avatarHtml = `<img src="${avatarUrl}" alt="${escapeHtml(displayName)}" onerror="this.parentElement.innerHTML='<div class=\\'creator-initials-small\\'>${initials}</div>'" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`;
+} else {
+avatarHtml = `<div class="creator-initials-small" style="width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,var(--bantu-blue),var(--warm-gold));display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:12px;">${initials}</div>`;
+}
+return `
+<div class="content-card" data-content-id="${item.id}" style="background:var(--card-bg);border:1px solid var(--card-border);border-radius:20px;overflow:hidden;transition:all 0.3s ease;text-decoration:none;color:inherit;backdrop-filter:blur(10px);">
+<div class="card-thumbnail" style="position:relative;height:140px;overflow:hidden;">
+<img src="${thumbnailUrl}"
+alt="${escapeHtml(item.title)}"
+loading="lazy"
+onerror="this.src='https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop'"
+style="width:100%;height:100%;object-fit:cover;transition:transform 0.3s ease;">
+<div style="position:absolute;top:0;left:0;right:0;bottom:0;background:linear-gradient(to bottom, transparent 50%, rgba(0,0,0,0.5) 100%);"></div>
+<div style="position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity 0.3s ease;">
+<div style="width:50px;height:50px;background:rgba(245,158,11,0.9);border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--deep-black);font-size:1.5rem;transform:scale(0.8);transition:all 0.3s ease;">
+<i class="fas fa-play"></i>
+</div>
+</div>
+</div>
+<div class="card-content" style="padding:15px;">
+<h3 class="card-title" style="font-size:16px;font-weight:600;margin-bottom:10px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:40px;color:var(--soft-white);">${truncateText(escapeHtml(item.title), 45)}</h3>
+<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+<div style="width:30px;height:30px;border-radius:50%;overflow:hidden;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--bantu-blue),var(--warm-gold));color:white;font-weight:bold;font-size:12px;flex-shrink:0;">
+${avatarHtml}
+</div>
+<div style="font-size:14px;color:var(--slate-grey);">@${escapeHtml(creatorProfile?.username || creator)}</div>
+</div>
+<div style="display:flex;gap:15px;font-size:12px;color:var(--slate-grey);">
+<div style="display:flex;align-items:center;gap:4px;"><i class="fas fa-eye" style="color:var(--bantu-blue);"></i> ${formatNumber(item.real_views || item.views_count || 0)}</div>
+<div style="display:flex;align-items:center;gap:4px;"><i class="fas fa-heart" style="color:#ef4444;"></i> ${formatNumber(item.real_likes || 0)}</div>
+</div>
+</div>
+</div>
+`;
+}).join('');
+// Add click handlers to cards
+grid.querySelectorAll('.content-card').forEach(card => {
+card.addEventListener('click', (e) => {
+if (e.target.closest('.creator-btn')) return;
+const id = card.dataset.contentId;
+if (id) window.location.href = `content-detail.html?id=${id}`;
+});
+});
+// Add hover effect with CSS
+const style = document.createElement('style');
+style.textContent = `
+.content-card:hover {
+transform: translateY(-8px);
+box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+border-color: rgba(245, 158, 11, 0.3);
+}
+.content-card:hover .card-thumbnail img {
+transform: scale(1.05);
+}
+.content-card:hover .card-thumbnail > div:nth-child(2) {
+opacity: 1;
+}
+.content-card:hover .card-thumbnail > div:nth-child(2) > div {
+transform: scale(1);
+}
+`;
+document.head.appendChild(style);
 }
 // ============================================
 // CREATOR DATA FUNCTIONS
@@ -1748,9 +1925,9 @@ const { data: content, error: contentError } = await supabaseAuth
 .order('created_at', { ascending: false })
 .limit(50);
 if (contentError) throw contentError;
-// Get connector count
+// Get connector count from CORRECT TABLE NAME: connectors
 const { count: connectorCount, error: countError } = await supabaseAuth
-.from('user_connections')
+.from('connectors') // FIXED: Changed from 'user_connections' to 'connectors'
 .select('*', { count: 'exact', head: true })
 .eq('connected_id', window.creatorId)
 .eq('connection_type', 'creator');
@@ -1759,13 +1936,15 @@ window.connectorCount = connectorCount || 0;
 // Check connection status
 if (window.currentUser) {
 const { data: connections } = await supabaseAuth
-.from('user_connections')
+.from('connectors') // FIXED: Changed from 'user_connections' to 'connectors'
 .select('*')
 .eq('connector_id', window.currentUser.id)
 .eq('connected_id', window.creatorId)
 .eq('connection_type', 'creator')
 .limit(1);
 window.isConnected = connections && connections.length > 0;
+} else {
+window.isConnected = false;
 }
 console.log('✅ Creator data loaded:', {
 profile: window.creatorProfile,
@@ -1801,7 +1980,8 @@ const initials = getInitials(displayName);
 if (avatarUrl) {
 avatarContainer.innerHTML = `
 <img src="${avatarUrl}" alt="${displayName}"
-onerror="this.parentElement.innerHTML='<div class=\\'creator-initials\\'>${initials}</div>'">
+onerror="this.parentElement.innerHTML='<div class=\\'creator-initials\\'>${initials}</div>'"
+style="width:100%;height:100%;object-fit:cover;display:block;border-radius:50%;">
 `;
 } else {
 avatarContainer.innerHTML = `<div class="creator-initials">${initials}</div>`;
@@ -1825,150 +2005,27 @@ connectBtn.classList.remove('connect-btn', 'connected-btn');
 connectBtn.classList.add('share-btn');
 }
 }
-// Update content UI
+// Update content UI - SINGLE UPLOADS SECTION
 function updateContentUI(content) {
-const liveStreamsGrid = document.getElementById('live-streams-grid');
-const noLiveStreams = document.getElementById('no-live-streams');
-const trendingGrid = document.getElementById('trending-grid');
-const noTrending = document.getElementById('no-trending');
-const newContentGrid = document.getElementById('new-content-grid');
+const contentGrid = document.getElementById('content-grid');
 const noContent = document.getElementById('no-content');
-// Filter live streams
-const liveStreams = content.filter(item => item.is_live);
-const nonLiveContent = content.filter(item => !item.is_live);
-// Update video/upload counts
+const contentCount = document.getElementById('content-count');
+// Update counts
 document.getElementById('videos-count').textContent = content.length;
 document.getElementById('uploads-count').textContent = content.length;
-// Live streams
-if (liveStreams.length === 0) {
-liveStreamsGrid.style.display = 'none';
-noLiveStreams.style.display = 'block';
-} else {
-liveStreamsGrid.style.display = 'grid';
-noLiveStreams.style.display = 'none';
-liveStreamsGrid.innerHTML = liveStreams.slice(0, 6).map(stream => {
-const thumbnailUrl = stream.thumbnail_url
-? fixMediaUrl(stream.thumbnail_url)
-: 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop';
-const creatorProfile = stream.user_profiles;
-const creatorName = creatorProfile?.full_name || creatorProfile?.username || stream.creator || 'Creator';
-const displayName = creatorProfile?.full_name || creatorProfile?.username || 'User';
-const initials = getInitials(displayName);
-const username = creatorProfile?.username || 'creator';
-const viewers = Math.floor(Math.random() * 10000) + 1000;
-// Build avatar HTML with initials fallback
-let avatarHtml = '';
-if (creatorProfile?.avatar_url) {
-const avatarUrl = fixMediaUrl(creatorProfile.avatar_url);
-avatarHtml = `<img src="${avatarUrl}" alt="${escapeHtml(displayName)}" onerror="this.parentElement.innerHTML='<div class=\\'creator-initials-small\\'>${initials}</div>'">`;
-} else {
-avatarHtml = `<div class="creator-initials-small">${initials}</div>`;
-}
-return `
-<a href="content-detail.html?id=${stream.id}" class="content-card">
-<div class="card-thumbnail">
-<img src="${thumbnailUrl}"
-alt="${escapeHtml(stream.title)}"
-onerror="this.src='https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop'">
-<div class="thumbnail-overlay"></div>
-<div class="badge-live card-badge">
-<i class="fas fa-circle"></i> LIVE
-</div>
-<div class="play-overlay">
-<div class="play-icon">
-<i class="fas fa-play"></i>
-</div>
-</div>
-</div>
-<div class="card-content">
-<h3 class="card-title" title="${escapeHtml(stream.title)}">
-${truncateText(escapeHtml(stream.title), 50)}
-</h3>
-<div class="creator-info">
-<div class="creator-avatar-small">
-${avatarHtml}
-</div>
-<div class="creator-name-small">@${escapeHtml(username)}</div>
-</div>
-<div class="card-meta">
-<span><i class="fas fa-eye"></i> ${formatNumber(viewers)} watching</span>
-<span>Live Now</span>
-</div>
-</div>
-</a>
-`;
-}).join('');
-}
-// Trending content (top 8 by views)
-const trendingContent = [...nonLiveContent].sort((a, b) => (b.views_count || 0) - (a.views_count || 0)).slice(0, 8);
-if (trendingContent.length === 0) {
-trendingGrid.style.display = 'none';
-noTrending.style.display = 'block';
-} else {
-trendingGrid.style.display = 'grid';
-noTrending.style.display = 'none';
-trendingGrid.innerHTML = trendingContent.map(item => {
-const thumbnailUrl = item.thumbnail_url
-? fixMediaUrl(item.thumbnail_url)
-: 'https://images.unsplash.com/photo-1574717024653-61fd2cf4d44d?w=400&h=225&fit=crop';
-const creatorProfile = item.user_profiles;
-const creatorName = creatorProfile?.full_name || creatorProfile?.username || item.creator || 'Creator';
-const displayName = creatorProfile?.full_name || creatorProfile?.username || 'User';
-const initials = getInitials(displayName);
-const username = creatorProfile?.username || 'creator';
-const views = item.views_count || Math.floor(Math.random() * 100000) + 1000;
-// Build avatar HTML with initials fallback
-let avatarHtml = '';
-if (creatorProfile?.avatar_url) {
-const avatarUrl = fixMediaUrl(creatorProfile.avatar_url);
-avatarHtml = `<img src="${avatarUrl}" alt="${escapeHtml(displayName)}" onerror="this.parentElement.innerHTML='<div class=\\'creator-initials-small\\'>${initials}</div>'">`;
-} else {
-avatarHtml = `<div class="creator-initials-small">${initials}</div>`;
-}
-return `
-<a href="content-detail.html?id=${item.id}" class="content-card">
-<div class="card-thumbnail">
-<img src="${thumbnailUrl}"
-alt="${escapeHtml(item.title)}"
-onerror="this.src='https://images.unsplash.com/photo-1574717024653-61fd2cf4d44d?w=400&h=225&fit=crop'">
-<div class="thumbnail-overlay"></div>
-<div class="badge-trending card-badge">
-<i class="fas fa-fire"></i> TRENDING
-</div>
-<div class="play-overlay">
-<div class="play-icon">
-<i class="fas fa-play"></i>
-</div>
-</div>
-</div>
-<div class="card-content">
-<h3 class="card-title" title="${escapeHtml(item.title)}">
-${truncateText(escapeHtml(item.title), 50)}
-</h3>
-<div class="creator-info">
-<div class="creator-avatar-small">
-${avatarHtml}
-</div>
-<div class="creator-name-small">@${escapeHtml(username)}</div>
-</div>
-<div class="card-meta">
-<span><i class="fas fa-eye"></i> ${formatNumber(views)}</span>
-<span>${formatDate(item.created_at)}</span>
-</div>
-</div>
-</a>
-`;
-}).join('');
-}
-// Latest uploads (most recent 8)
-const latestContent = nonLiveContent.slice(0, 8);
-if (latestContent.length === 0) {
-newContentGrid.style.display = 'none';
+contentCount.textContent = `${content.length} item${content.length !== 1 ? 's' : ''}`;
+// Show/hide empty state
+if (content.length === 0) {
+contentGrid.style.display = 'none';
 noContent.style.display = 'block';
-} else {
-newContentGrid.style.display = 'grid';
+return;
+}
+contentGrid.style.display = 'grid';
 noContent.style.display = 'none';
-newContentGrid.innerHTML = latestContent.map(item => {
+// Clear existing content
+contentGrid.innerHTML = '';
+// Add content cards
+content.forEach(item => {
 const thumbnailUrl = item.thumbnail_url
 ? fixMediaUrl(item.thumbnail_url)
 : 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=225&fit=crop';
@@ -1982,12 +2039,14 @@ const isNew = (new Date() - new Date(item.created_at)) < 7 * 24 * 60 * 60 * 1000
 let avatarHtml = '';
 if (creatorProfile?.avatar_url) {
 const avatarUrl = fixMediaUrl(creatorProfile.avatar_url);
-avatarHtml = `<img src="${avatarUrl}" alt="${escapeHtml(displayName)}" onerror="this.parentElement.innerHTML='<div class=\\'creator-initials-small\\'>${initials}</div>'">`;
+avatarHtml = `<img src="${avatarUrl}" alt="${escapeHtml(displayName)}" onerror="this.parentElement.innerHTML='<div class=\\'creator-initials-small\\'>${initials}</div>'" style="width:100%;height:100%;object-fit:cover;">`;
 } else {
-avatarHtml = `<div class="creator-initials-small">${initials}</div>`;
+avatarHtml = `<div class="creator-initials-small" style="width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,var(--bantu-blue),var(--warm-gold));display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:12px;">${initials}</div>`;
 }
-return `
-<a href="content-detail.html?id=${item.id}" class="content-card">
+const contentCard = document.createElement('a');
+contentCard.className = 'content-card';
+contentCard.href = `content-detail.html?id=${item.id}`;
+contentCard.innerHTML = `
 <div class="card-thumbnail">
 <img src="${thumbnailUrl}"
 alt="${escapeHtml(item.title)}"
@@ -2016,10 +2075,9 @@ ${avatarHtml}
 <span>${item.media_type || 'video'}</span>
 </div>
 </div>
-</a>
 `;
-}).join('');
-}
+contentGrid.appendChild(contentCard);
+});
 }
 // Update connect button state
 function updateConnectButton() {
@@ -2056,7 +2114,7 @@ function handleLoginRequired() {
 showToast('Please log in to connect with creators', 'info');
 window.location.href = `login.html?redirect=creator-channel.html?id=${window.creatorId}`;
 }
-// Handle connect
+// Handle connect - FIXED TABLE NAME
 async function handleConnect() {
 if (!window.currentUser) {
 handleLoginRequired();
@@ -2067,8 +2125,9 @@ showToast('You cannot connect to your own channel', 'info');
 return;
 }
 try {
+// FIXED: Changed from 'user_connections' to 'connectors'
 const { error } = await supabaseAuth
-.from('user_connections')
+.from('connectors')
 .insert({
 connector_id: window.currentUser.id,
 connected_id: window.creatorId,
@@ -2080,17 +2139,20 @@ window.isConnected = true;
 window.connectorCount++;
 updateConnectButton();
 document.getElementById('connectors-count').textContent = formatNumber(window.connectorCount);
+// Update connectors stat card count
+document.getElementById('connectors-stat-card').querySelector('.stat-number').textContent = formatNumber(window.connectorCount);
 showToast(`Connected with ${window.creatorProfile.full_name || window.creatorProfile.username}`, 'success');
 } catch (error) {
 console.error('Error connecting:', error);
 showToast('Failed to connect', 'error');
 }
 }
-// Handle disconnect
+// Handle disconnect - FIXED TABLE NAME
 async function handleDisconnect() {
 try {
+// FIXED: Changed from 'user_connections' to 'connectors'
 const { error } = await supabaseAuth
-.from('user_connections')
+.from('connectors')
 .delete()
 .eq('connector_id', window.currentUser.id)
 .eq('connected_id', window.creatorId)
@@ -2100,6 +2162,8 @@ window.isConnected = false;
 window.connectorCount = Math.max(0, window.connectorCount - 1);
 updateConnectButton();
 document.getElementById('connectors-count').textContent = formatNumber(window.connectorCount);
+// Update connectors stat card count
+document.getElementById('connectors-stat-card').querySelector('.stat-number').textContent = formatNumber(window.connectorCount);
 showToast(`Disconnected from ${window.creatorProfile.full_name || window.creatorProfile.username}`, 'info');
 } catch (error) {
 console.error('Error disconnecting:', error);
@@ -2126,11 +2190,12 @@ navigator.clipboard.writeText(`${shareText}\n${shareUrl}`)
 .catch(() => showToast('Failed to copy link', 'error'));
 }
 }
-// Show connectors modal
+// Show connectors modal - FIXED TABLE NAME
 async function showConnectorsModal() {
 try {
-const { data: connections, error } = await supabaseAuth
-.from('user_connections')
+// FIXED: Changed from 'user_connections' to 'connectors'
+const { data: connectors, error } = await supabaseAuth
+.from('connectors')
 .select(`
 connector_id,
 user_profiles!inner(id, full_name, username, avatar_url)
@@ -2140,30 +2205,31 @@ user_profiles!inner(id, full_name, username, avatar_url)
 if (error) throw error;
 const modalTitle = document.getElementById('modal-title');
 const connectorsList = document.getElementById('connectors-list');
-modalTitle.textContent = `Connectors (${connections.length})`;
-if (connections.length === 0) {
-connectorsList.innerHTML = '<div class="empty-state">No connectors yet</div>';
+const connectorProfiles = connectors.map(c => c.user_profiles);
+modalTitle.textContent = `Connectors (${connectorProfiles.length})`;
+if (connectorProfiles.length === 0) {
+connectorsList.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--slate-grey);">No connectors yet</div>';
 } else {
-connectorsList.innerHTML = connections.map(conn => {
-const profile = conn.user_profiles;
-const avatarUrl = profile.avatar_url
-? fixMediaUrl(profile.avatar_url)
+connectorsList.innerHTML = connectorProfiles.map(connector => {
+const avatarUrl = connector.avatar_url
+? fixMediaUrl(connector.avatar_url)
 : 'https://images.unsplash.com/photo-1633332755192-727a05c4013d?w=400&h=400&fit=crop';
-const displayName = profile.full_name || profile.username || 'User';
+const displayName = connector.full_name || connector.username || 'User';
 const initials = getInitials(displayName);
+let avatarHtml = '';
+if (avatarUrl) {
+avatarHtml = `<img src="${avatarUrl}" alt="${escapeHtml(displayName)}" onerror="this.parentElement.innerHTML='<div style=\\'width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,#1D4ED8,#F59E0B);display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:16px\\'>${initials}</div>'" style="width:100%;height:100%;object-fit:cover;">`;
+} else {
+avatarHtml = `<div style="width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,#1D4ED8,#F59E0B);display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:16px">${initials}</div>`;
+}
 return `
 <div class="connector-item">
 <div class="connector-avatar">
-${avatarUrl ? `
-<img src="${avatarUrl}" alt="${escapeHtml(displayName)}"
-onerror="this.parentElement.innerHTML='<div style=\\'width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,#1D4ED8,#F59E0B);display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:16px\\'>${initials}</div>'">
-` : `
-<div style="width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,#1D4ED8,#F59E0B);display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:16px">${initials}</div>
-`}
+${avatarHtml}
 </div>
 <div class="connector-info">
-<div class="connector-name">${escapeHtml(profile.full_name || profile.username)}</div>
-<div class="connector-username">@${escapeHtml(profile.username || 'user')}</div>
+<div class="connector-name">${escapeHtml(connector.full_name || connector.username)}</div>
+<div class="connector-username">@${escapeHtml(connector.username || 'user')}</div>
 </div>
 </div>
 `;
@@ -2206,12 +2272,50 @@ document.getElementById('search-input').value = '';
 document.getElementById('search-results-grid').innerHTML = '';
 });
 }
-// Close modal on background click
+// Close search modal on background click
 document.getElementById('search-modal').addEventListener('click', (e) => {
 if (e.target === document.getElementById('search-modal')) {
 document.getElementById('search-modal').classList.remove('active');
 document.getElementById('search-input').value = '';
 document.getElementById('search-results-grid').innerHTML = '';
+}
+});
+// Live search with debounce
+const searchInput = document.getElementById('search-input');
+if (searchInput) {
+let searchTimeout;
+searchInput.addEventListener('input', (e) => {
+clearTimeout(searchTimeout);
+searchTimeout = setTimeout(async () => {
+const query = e.target.value.trim();
+const category = document.getElementById('category-filter')?.value;
+const sortBy = document.getElementById('sort-filter')?.value;
+const resultsGrid = document.getElementById('search-results-grid');
+if (!resultsGrid) return;
+if (query.length < 2) {
+resultsGrid.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--slate-grey);">Start typing to search...</div>';
+return;
+}
+resultsGrid.innerHTML = `
+<div style="text-align: center; padding: 40px;">
+<div style="width: 40px; height: 40px; border: 3px solid rgba(255,255,255,0.1); border-radius: 50%; border-top-color: var(--warm-gold); animation: spin 1s linear infinite; margin: 0 auto 15px;"></div>
+<div style="color: var(--slate-grey);">Searching...</div>
+</div>
+`;
+const results = await searchContent(query, category, sortBy);
+renderSearchResults(results);
+}, 300);
+});
+}
+// Filter change triggers search
+document.getElementById('category-filter')?.addEventListener('change', () => {
+if (searchInput && searchInput.value.trim().length >= 2) {
+searchInput.dispatchEvent(new Event('input'));
+}
+});
+document.getElementById('sort-filter')?.addEventListener('change', () => {
+if (searchInput && searchInput.value.trim().length >= 2) {
+searchInput.dispatchEvent(new Event('input'));
 }
 });
 // Share button
@@ -2271,49 +2375,19 @@ showToast('Failed to mark notifications as read', 'error');
 }
 });
 }
-// Analytics button
-const analyticsBtn = document.getElementById('analytics-btn');
-if (analyticsBtn) {
-analyticsBtn.addEventListener('click', async () => {
-const { data: { session } } = await supabaseAuth.auth.getSession();
-if (!session) {
-showToast('Please sign in to view analytics', 'warning');
-return;
-}
-document.getElementById('analytics-modal').classList.add('active');
-// Load analytics data
-document.getElementById('total-views').textContent = formatNumber(1250000);
-document.getElementById('total-content').textContent = '125';
-document.getElementById('active-creators').textContent = '45';
-document.getElementById('engagement-rate').textContent = '78%';
-});
-}
-// Close analytics modal
-const closeAnalytics = document.getElementById('close-analytics');
-if (closeAnalytics) {
-closeAnalytics.addEventListener('click', () => {
-document.getElementById('analytics-modal').classList.remove('active');
-});
-}
-// Close analytics modal on background click
-document.getElementById('analytics-modal').addEventListener('click', (e) => {
-if (e.target === document.getElementById('analytics-modal')) {
-document.getElementById('analytics-modal').classList.remove('active');
-}
-});
 // Theme toggle
 const themeToggle = document.getElementById('nav-theme-toggle');
 const themeSelector = document.getElementById('theme-selector');
 if (themeToggle && themeSelector) {
 themeToggle.addEventListener('click', (e) => {
 e.stopPropagation();
-themeSelector.classList.toggle('active');
+themeSelector.style.display = themeSelector.style.display === 'flex' ? 'none' : 'flex';
 });
 document.addEventListener('click', (e) => {
-if (themeSelector.classList.contains('active') &&
+if (themeSelector.style.display === 'flex' &&
 !themeSelector.contains(e.target) &&
 !themeToggle.contains(e.target)) {
-themeSelector.classList.remove('active');
+themeSelector.style.display = 'none';
 }
 });
 document.querySelectorAll('.theme-option').forEach(option => {
@@ -2321,7 +2395,7 @@ option.addEventListener('click', () => {
 if (typeof window.applyTheme === 'function') {
 window.applyTheme(option.dataset.theme);
 }
-themeSelector.classList.remove('active');
+themeSelector.style.display = 'none';
 });
 });
 }
@@ -2413,7 +2487,7 @@ showToast('Welcome back!', 'success');
 // Re-check connection status
 if (window.creatorId) {
 supabaseAuth
-.from('user_connections')
+.from('connectors') // FIXED: Changed from 'user_connections' to 'connectors'
 .select('*')
 .eq('connector_id', session.user.id)
 .eq('connected_id', window.creatorId)
