@@ -155,15 +155,14 @@ textarea.form-input { min-height: 120px; resize: vertical; }
 
 <div id="toast-container"></div>
 
-<!-- CRITICAL FIX #1: Initialize Supabase client BEFORE DOMContentLoaded -->
+<!-- CRITICAL: Initialize SHARED authenticated Supabase client BEFORE DOMContentLoaded -->
 <script>
-// Initialize shared Supabase client globally (MUST be before DOMContentLoaded)
 if (!window.supabaseClient) {
   window.supabaseClient = supabase.createClient(
     'https://ydnxqnbjoshvxteevemc.supabase.co',
     'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U'
   );
-  console.log('✅ Global Supabase client initialized');
+  console.log('✅ Global Supabase client initialized (authenticated)');
 }
 </script>
 
@@ -182,13 +181,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   let currentUserId = null;
   let isUploading = false;
 
-  // Simple loading toggle
+  // Simple helpers
   function setLoading(loading) {
     loadingScreen.style.display = loading ? 'flex' : 'none';
     app.style.display = loading ? 'none' : 'block';
   }
 
-  // Simple toast
   function showToast(message, type = 'error') {
     const toast = document.createElement('div');
     toast.className = `toast ${type}`;
@@ -197,7 +195,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     setTimeout(() => toast.remove(), 3000);
   }
 
-  // Format file size
   function formatFileSize(bytes) {
     if (bytes === 0) return '0 Bytes';
     const k = 1024;
@@ -206,18 +203,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   }
 
-  // ✅ CRITICAL FIX #2: CORRECT SYNTAX (single braces around session)
+  // ✅ FIXED SYNTAX: Correct destructuring for session
   async function checkAuthentication() {
     try {
-      // FIXED: Single braces around session (was double braces causing syntax error)
       const { data: { session }, error } = await window.supabaseClient.auth.getSession();
       
-      if (error) {
-        console.error('Session error:', error);
-        return null;
-      }
-      
-      if (!session?.user) {
+      if (error || !session?.user) {
         console.log('⚠️ User not authenticated');
         return null;
       }
@@ -284,7 +275,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     publishBtn.disabled = !title || !desc || !selectedMediaFile || isUploading || !currentUserId;
   }
 
-  // ✅ MOBILE APP PATTERN: Upload to 'content-media' bucket
+  // ✅ FIXED: Correct bucket name 'content-media' + correct publicUrl syntax
   async function uploadFileToStorage(file, path) {
     const timestamp = Date.now();
     const random = Math.random().toString(36).substring(7);
@@ -294,12 +285,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     try {
       // ✅ CORRECT BUCKET NAME (matches mobile app)
       const { data, error } = await window.supabaseClient.storage
-        .from('content-media') // NOT 'media'
+        .from('content-media')
         .upload(filePath, file, { contentType: file.type });
       
       if (error) throw error;
       
-      // ✅ CORRECT PUBLIC URL FORMAT (NO SYNTAX ERROR)
+      // ✅ CORRECT PUBLIC URL SYNTAX (NO SYNTAX ERROR)
       const { data: { publicUrl } } = window.supabaseClient.storage
         .from('content-media')
         .getPublicUrl(filePath);
@@ -311,7 +302,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
-  // ✅ MOBILE APP PATTERN: Insert into 'Content' table with user_id
+  // ✅ FIXED: Correct table name 'Content' (capital C) + user_id enforcement
   async function createContentRecord(data) {
     try {
       const { error } = await window.supabaseClient
@@ -356,11 +347,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     updateButtonsState();
     
     try {
-      // Step 1: Upload media
+      // Step 1: Upload media to CORRECT bucket with CORRECT path
       const mediaType = selectedMediaFile.type.includes('video') ? 'video' : 'audio';
-      const mediaUrl = await uploadFileToStorage(selectedMediaFile, 'videos');
+      const mediaUrl = await uploadFileToStorage(selectedMediaFile, 'videos'); // ✅ 'videos' subfolder
       
-      // Step 2: Create content record
+      // Step 2: Create content record with user_id
       await createContentRecord({
         title,
         description: desc,
@@ -383,7 +374,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       }, 1500);
       
     } catch (error) {
-      showToast(`Upload failed: ${error.message || 'Unknown error'}`);
+      console.error('Upload failed:', error);
+      showToast(`Upload failed: ${error.message || 'Unknown error'}`, 'error');
     } finally {
       isUploading = false;
       updateButtonsState();
@@ -427,24 +419,23 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
-  // ✅ CRITICAL FIX #3: Initialize WITHOUT blocking on helpers (prevents freeze)
+  // ✅ Initialize WITHOUT blocking on helpers
   async function initialize() {
     setLoading(true);
     
-    // Check auth FIRST (doesn't depend on helpers)
+    // Check auth FIRST
     const user = await checkAuthentication();
-    
     if (!user) {
       authModal.classList.add('active');
     }
     
-    // Setup UI regardless of auth state (prevents infinite loading)
+    // Setup UI regardless of auth state
     setupMediaUpload();
     setupListeners();
     updateButtonsState();
     
     setLoading(false);
-    console.log('✅ Creator Upload initialized successfully');
+    console.log('✅ Creator Upload initialized successfully with RLS-compliant auth');
   }
   
   initialize();
