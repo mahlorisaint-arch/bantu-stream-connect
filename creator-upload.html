@@ -166,8 +166,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const backBtn = document.getElementById('back-btn');
   
   let selectedMediaFile = null;
-  let currentUserId = null; // Full UUID with dashes
-  let currentUserIdNoDashes = null; // UUID without dashes (for RLS path)
+  let currentUserId = null;
   let isUploading = false;
 
   function setLoading(loading) {
@@ -191,15 +190,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   }
 
-  // ✅ CRITICAL FIX: Remove dashes from user ID for RLS path compliance
-  function getUserIdNoDashes(userId) {
-    return userId.replace(/-/g, '');
-  }
-
+  // ✅ CORRECT SYNTAX: No nested destructuring errors
   async function checkAuthentication() {
     try {
-      // CORRECT SYNTAX: Single braces
-      const { data: { session }, error } = await window.supabaseClient.auth.getSession();
+      // VALID SYNTAX: Single-level destructuring
+      const sessionResponse = await window.supabaseClient.auth.getSession();
+      const session = sessionResponse.data.session;
+      const error = sessionResponse.error;
       
       if (error || !session?.user) {
         console.log('⚠️ User not authenticated');
@@ -207,8 +204,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
       
       currentUserId = session.user.id;
-      currentUserIdNoDashes = getUserIdNoDashes(currentUserId); // ✅ FORMAT FOR RLS
-      console.log('✅ Authenticated user ID (no dashes):', currentUserIdNoDashes);
+      console.log('✅ Authenticated user ID:', currentUserId);
       
       profileBtn.innerHTML = session.user.email.charAt(0).toUpperCase();
       return session.user;
@@ -263,29 +259,37 @@ document.addEventListener('DOMContentLoaded', async () => {
     publishBtn.disabled = !title || !desc || !selectedMediaFile || isUploading || !currentUserId;
   }
 
-  // ✅ CRITICAL FIX: Use dashless user ID in storage path
-  async function uploadFileToStorage(file, basePath) {
+  // ✅ PATH MATCHES YOUR ACTUAL BUCKET STRUCTURE (from your working URL example)
+  async function uploadFileToStorage(file) {
     const timestamp = Date.now();
     const random = Math.random().toString(36).substring(7);
-    const fileName = `${timestamp}_${random}_${encodeURIComponent(file.name)}`;
+    // SANITIZE filename - replace problematic characters
+    const cleanFileName = file.name
+      .replace(/[^a-z0-9.]/gi, '_')
+      .replace(/_{2,}/g, '_')
+      .toLowerCase();
+    const fileName = `${timestamp}_${random}_${cleanFileName}`;
     
-    // ✅ PATH FORMAT: "videos/{user_id_no_dashes}/filename.mp4"
-    const filePath = `${basePath}/${currentUserIdNoDashes}/${fileName}`;
+    // ✅ CRITICAL: Path matches your working example structure:
+    // {user_id}/media/{filename}  (user_id WITH dashes, subfolder "media")
+    const filePath = `${currentUserId}/media/${fileName}`;
     console.log('📤 Uploading to path:', filePath);
     
     try {
-      const { data, error } = await window.supabaseClient.storage
+      // Upload file
+      const uploadResponse = await window.supabaseClient.storage
         .from('content-media')
         .upload(filePath, file, { contentType: file.type });
       
-      if (error) throw error;
+      if (uploadResponse.error) throw uploadResponse.error;
       
-      const {  { publicUrl } } = window.supabaseClient.storage
+      // ✅ SAFE PUBLIC URL RETRIEVAL (NO DESTRUCTURING SYNTAX ERRORS)
+      const urlResponse = window.supabaseClient.storage
         .from('content-media')
         .getPublicUrl(filePath);
       
-      console.log('✅ Upload successful. Public URL:', publicUrl);
-      return publicUrl;
+      console.log('✅ Upload successful. Public URL:', urlResponse.data.publicUrl);
+      return urlResponse.data.publicUrl;
     } catch (error) {
       console.error('❌ Storage upload failed:', error);
       throw error;
@@ -294,7 +298,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   async function createContentRecord(data) {
     try {
-      const { error } = await window.supabaseClient
+      const insertResponse = await window.supabaseClient
         .from('Content')
         .insert([{
           title: data.title,
@@ -308,7 +312,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           created_at: new Date().toISOString()
         }]);
       
-      if (error) throw error;
+      if (insertResponse.error) throw insertResponse.error;
       return true;
     } catch (error) {
       console.error('DB insert failed:', error);
@@ -337,8 +341,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     try {
       const mediaType = selectedMediaFile.type.includes('video') ? 'video' : 'audio';
-      // ✅ UPLOADS TO: videos/{dashless_user_id}/filename.mp4
-      const mediaUrl = await uploadFileToStorage(selectedMediaFile, 'videos');
+      // ✅ UPLOADS TO CORRECT PATH: {user_id}/media/filename
+      const mediaUrl = await uploadFileToStorage(selectedMediaFile);
       
       let thumbnailUrl = mediaType === 'video'
         ? 'https://images.unsplash.com/photo-1574717024653-61fd2cf4d44d?w=800&q=80'
@@ -417,7 +421,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     setupListeners();
     updateButtonsState();
     setLoading(false);
-    console.log('✅ Creator Upload initialized with RLS-compliant paths (dashless user ID)');
+    console.log('✅ Creator Upload initialized successfully');
   }
   
   initialize();
