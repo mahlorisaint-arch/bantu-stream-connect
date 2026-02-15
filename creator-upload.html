@@ -85,20 +85,375 @@ textarea.form-input { min-height: 120px; resize: vertical; }
 .icon-btn { width: 38px; height: 38px; border-radius: 50%; background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.2); color: var(--soft-white); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all .3s ease; position: relative; }
 .icon-btn:hover { background: rgba(255,255,255,.2); transform: translateY(-2px); }
 .notification-badge { position: absolute; top: -5px; right: -5px; background: var(--error-color); color: white; font-size: 10px; font-weight: bold; width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid var(--deep-black); }
-.search-modal, .notifications-panel { position: fixed; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,.9); display: none; align-items: center; justify-content: center; z-index: 2000; backdrop-filter: blur(5px); }
-.search-modal.active, .notifications-panel.active { display: flex; }
-.notifications-panel { right: -100%; width: 400px; height: 100%; background: var(--card-bg); border-left: 1px solid var(--card-border); box-shadow: -5px 0 25px rgba(0,0,0,.3); z-index: 1000; transition: right .3s ease; backdrop-filter: blur(10px); }
-.notifications-panel.active { right: 0; }
-.notifications-header { padding: 20px; border-bottom: 1px solid var(--card-border); display: flex; justify-content: space-between; align-items: center; width: 100%; }
-.notifications-list { max-height: calc(100vh - 150px); overflow-y: auto; padding: 20px; width: 100%; }
-.notification-item { padding: 15px; border-bottom: 1px solid var(--card-border); display: flex; gap: 12px; width: 100%; }
-.notification-icon { width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg,var(--bantu-blue),var(--warm-gold)); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-.notification-content h4 { font-weight: 600; margin-bottom: 5px; color: var(--soft-white); }
-.notification-content p { font-size: 14px; color: var(--slate-grey); margin-bottom: 8px; }
-.notification-time { font-size: 12px; color: var(--warm-gold); }
-.notifications-footer { padding: 20px; border-top: 1px solid var(--card-border); display: flex; gap: 15px; width: 100%; }
-.text-btn { flex: 1; padding: 12px; border-radius: 10px; border: 1px solid var(--card-border); background: rgba(255,255,255,.05); color: var(--soft-white); font-size: 16px; font-weight: 600; cursor: pointer; transition: all .3s ease; }
-.text-btn:hover { background: rgba(245,158,11,.1); border-color: var(--warm-gold); }
+
+/* 🔑 CRITICAL FIX: Notifications Panel Styles (EXACT from explore-screen.html) */
+.notifications-panel {
+position: fixed;
+top: 0;
+right: -100%;
+width: 400px;
+height: 100%;
+background: var(--card-bg);
+border-left: 1px solid var(--card-border);
+box-shadow: -5px 0 25px rgba(0, 0, 0, 0.3);
+z-index: 1000;
+transition: right 0.3s ease;
+backdrop-filter: blur(10px);
+}
+.notifications-panel.active {
+right: 0;
+}
+.notifications-header {
+padding: 20px;
+border-bottom: 1px solid var(--card-border);
+display: flex;
+justify-content: space-between;
+align-items: center;
+width: 100%;
+}
+.notifications-list {
+max-height: calc(100vh - 150px);
+overflow-y: auto;
+padding: 20px;
+width: 100%;
+}
+.notification-item {
+padding: 15px;
+border-bottom: 1px solid var(--card-border);
+display: flex;
+gap: 12px;
+width: 100%;
+position: relative;
+}
+.notification-item.read {
+opacity: 0.7;
+}
+.notification-icon {
+width: 40px;
+height: 40px;
+border-radius: 50%;
+background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+display: flex;
+align-items: center;
+justify-content: center;
+flex-shrink: 0;
+}
+.notification-content h4 {
+font-weight: 600;
+margin-bottom: 5px;
+color: var(--soft-white);
+font-size: 16px;
+}
+.notification-content p {
+font-size: 14px;
+color: var(--slate-grey);
+margin-bottom: 8px;
+line-height: 1.4;
+}
+.notification-time {
+font-size: 12px;
+color: var(--warm-gold);
+}
+.notification-dot {
+width: 10px;
+height: 10px;
+border-radius: 50%;
+background: var(--warm-gold);
+position: absolute;
+top: 15px;
+right: 15px;
+}
+.notifications-footer {
+padding: 20px;
+border-top: 1px solid var(--card-border);
+display: flex;
+gap: 15px;
+width: 100%;
+}
+.text-btn {
+flex: 1;
+padding: 12px;
+border-radius: 10px;
+border: 1px solid var(--card-border);
+background: rgba(255, 255, 255, 0.05);
+color: var(--soft-white);
+font-size: 16px;
+font-weight: 600;
+cursor: pointer;
+transition: all 0.3s ease;
+}
+.text-btn:hover {
+background: rgba(245, 158, 11, 0.1);
+border-color: var(--warm-gold);
+}
+.empty-notifications {
+text-align: center;
+padding: 40px 20px;
+color: var(--slate-grey);
+}
+.empty-notifications i {
+font-size: 48px;
+margin-bottom: 15px;
+opacity: 0.5;
+}
+
+/* 🔑 CRITICAL FIX: Search Modal Styles (EXACT from explore-screen.html) */
+.search-modal {
+position: fixed;
+top: 0;
+left: 0;
+width: 100%;
+height: 100%;
+background: rgba(0, 0, 0, 0.9);
+display: none;
+align-items: center;
+justify-content: center;
+z-index: 2000;
+backdrop-filter: blur(5px);
+}
+.search-modal.active {
+display: flex;
+}
+.search-modal-header {
+display: flex;
+justify-content: space-between;
+align-items: center;
+margin-bottom: 20px;
+padding-bottom: 15px;
+border-bottom: 1px solid var(--card-border);
+width: 100%;
+}
+.search-input-container {
+position: relative;
+width: 100%;
+max-width: 600px;
+}
+.search-icon {
+position: absolute;
+left: 15px;
+top: 50%;
+transform: translateY(-50%);
+color: var(--slate-grey);
+font-size: 18px;
+}
+.search-input {
+width: 100%;
+padding: 15px 15px 15px 45px;
+border-radius: 12px;
+border: 1px solid var(--card-border);
+background: var(--card-bg);
+color: var(--soft-white);
+font-size: 16px;
+backdrop-filter: blur(10px);
+}
+.search-input::placeholder {
+color: var(--slate-grey);
+}
+.search-input:focus {
+outline: none;
+border-color: var(--warm-gold);
+box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.2);
+}
+.close-search-btn {
+background: none;
+border: none;
+color: var(--soft-white);
+font-size: 24px;
+cursor: pointer;
+width: 40px;
+height: 40px;
+border-radius: 50%;
+display: flex;
+align-items: center;
+justify-content: center;
+transition: all 0.3s ease;
+}
+.close-search-btn:hover {
+background: rgba(255, 255, 255, 0.1);
+transform: rotate(90deg);
+}
+.search-filters {
+display: flex;
+gap: 15px;
+margin-bottom: 20px;
+width: 100%;
+max-width: 600px;
+}
+.filter-group {
+flex: 1;
+}
+.filter-label {
+display: block;
+margin-bottom: 8px;
+font-size: 14px;
+color: var(--slate-grey);
+}
+.filter-select {
+width: 100%;
+padding: 12px;
+border-radius: 10px;
+border: 1px solid var(--card-border);
+background: var(--card-bg);
+color: var(--soft-white);
+font-size: 14px;
+backdrop-filter: blur(10px);
+}
+.search-results {
+width: 100%;
+max-width: 800px;
+max-height: 70vh;
+overflow-y: auto;
+}
+.search-results-grid {
+display: grid;
+grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+gap: 15px;
+}
+.content-card {
+background: var(--card-bg);
+border: 1px solid var(--card-border);
+border-radius: 20px;
+overflow: hidden;
+transition: all 0.3s ease;
+cursor: pointer;
+text-decoration: none;
+color: inherit;
+backdrop-filter: blur(10px);
+position: relative;
+}
+.content-card:hover {
+transform: translateY(-8px);
+box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+border-color: rgba(245, 158, 11, 0.3);
+}
+.card-thumbnail {
+position: relative;
+height: 140px;
+overflow: hidden;
+}
+.card-thumbnail img {
+width: 100%;
+height: 100%;
+object-fit: cover;
+transition: transform 0.3s ease;
+}
+.content-card:hover .card-thumbnail img {
+transform: scale(1.05);
+}
+.thumbnail-overlay {
+position: absolute;
+top: 0;
+left: 0;
+right: 0;
+bottom: 0;
+background: linear-gradient(to bottom, transparent 50%, rgba(0, 0, 0, 0.5) 100%);
+}
+.play-overlay {
+position: absolute;
+top: 0;
+left: 0;
+width: 100%;
+height: 100%;
+background: rgba(0, 0, 0, 0.5);
+display: flex;
+align-items: center;
+justify-content: center;
+opacity: 0;
+transition: opacity 0.3s ease;
+}
+.content-card:hover .play-overlay {
+opacity: 1;
+}
+.play-icon {
+width: 50px;
+height: 50px;
+background: rgba(245, 158, 11, 0.9);
+border-radius: 50%;
+display: flex;
+align-items: center;
+justify-content: center;
+color: var(--deep-black);
+font-size: 1.5rem;
+transform: scale(0.8);
+transition: all 0.3s ease;
+}
+.content-card:hover .play-icon {
+transform: scale(1);
+}
+.card-content {
+padding: 15px;
+}
+.card-title {
+font-size: 16px;
+font-weight: 600;
+margin-bottom: 10px;
+display: -webkit-box;
+-webkit-line-clamp: 2;
+-webkit-box-orient: vertical;
+overflow: hidden;
+min-height: 40px;
+color: var(--soft-white);
+line-height: 1.4;
+}
+.creator-btn {
+background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+color: var(--soft-white);
+border: none;
+padding: 8px 15px;
+border-radius: 10px;
+font-size: 12px;
+font-weight: 500;
+cursor: pointer;
+display: inline-flex;
+align-items: center;
+gap: 5px;
+transition: all 0.3s ease;
+border: 1px solid rgba(255, 255, 255, 0.1);
+margin-top: 8px;
+}
+.creator-btn:hover {
+transform: translateY(-2px);
+box-shadow: 0 4px 12px rgba(29, 78, 216, 0.4);
+}
+.card-stats {
+display: flex;
+gap: 15px;
+margin-top: 8px;
+font-size: 12px;
+color: var(--slate-grey);
+}
+.card-stat {
+display: flex;
+align-items: center;
+gap: 4px;
+}
+.card-stat i {
+color: var(--bantu-blue);
+font-size: 12px;
+}
+.no-results {
+text-align: center;
+padding: 40px;
+color: var(--slate-grey);
+font-size: 16px;
+}
+.infinite-scroll-loading {
+display: flex;
+flex-direction: column;
+align-items: center;
+justify-content: center;
+padding: 40px;
+color: var(--slate-grey);
+}
+.infinite-scroll-spinner {
+width: 40px;
+height: 40px;
+border: 3px solid rgba(255, 255, 255, 0.1);
+border-radius: 50%;
+border-top-color: var(--warm-gold);
+animation: spin 1s linear infinite;
+margin-bottom: 15px;
+}
 .footer { background: var(--card-bg); border-top: 1px solid var(--card-border); padding: 30px 20px; margin-top: 50px; backdrop-filter: blur(10px); text-align: center; }
 .footer-links { display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; margin-top: 15px; }
 .footer-links a { color: var(--slate-grey); text-decoration: none; transition: color .3s ease; font-size: 14px; }
@@ -128,21 +483,22 @@ textarea.form-input { min-height: 120px; resize: vertical; }
   </div>
 </div>
 
+<!-- 🔑 CRITICAL FIX: Search Modal Structure (EXACT from explore-screen.html) -->
 <div id="search-modal" class="search-modal">
   <div style="width:90%;max-width:800px;background:var(--card-bg);border-radius:20px;padding:30px;backdrop-filter:blur(10px);">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;padding-bottom:15px;border-bottom:1px solid var(--card-border);width:100%">
-      <div style="position:relative;width:100%;max-width:600px">
-        <i style="position:absolute;left:15px;top:50%;transform:translateY(-50%);color:var(--slate-grey);font-size:18px" class="fas fa-search"></i>
-        <input type="text" id="search-input" style="width:100%;padding:15px 15px 15px 45px;border-radius:12px;border:1px solid var(--card-border);background:var(--card-bg);color:var(--soft-white);font-size:16px;backdrop-filter:blur(10px)" placeholder="Search content, creators, or categories..." autocomplete="off">
+    <div class="search-modal-header">
+      <div class="search-input-container">
+        <i class="search-icon fas fa-search"></i>
+        <input type="text" id="search-input" class="search-input" placeholder="Search content, creators, or categories..." autocomplete="off">
       </div>
-      <button id="close-search-btn" style="background:none;border:none;color:var(--soft-white);font-size:24px;cursor:pointer;width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;transition:all .3s ease">
+      <button id="close-search-btn" class="close-search-btn">
         <i class="fas fa-times"></i>
       </button>
     </div>
-    <div style="display:flex;gap:15px;margin-bottom:20px;width:100%;max-width:600px">
-      <div style="flex:1">
-        <div style="display:block;margin-bottom:8px;font-size:14px;color:var(--slate-grey)">Category</div>
-        <select id="category-filter" style="width:100%;padding:12px;border-radius:10px;border:1px solid var(--card-border);background:var(--card-bg);color:var(--soft-white);font-size:14px;backdrop-filter:blur(10px)">
+    <div class="search-filters">
+      <div class="filter-group">
+        <label class="filter-label">Category</label>
+        <select id="category-filter" class="filter-select">
           <option value="">All Categories</option>
           <option value="Music">Music</option>
           <option value="STEM">STEM</option>
@@ -154,29 +510,34 @@ textarea.form-input { min-height: 120px; resize: vertical; }
           <option value="Podcasts">Podcasts</option>
         </select>
       </div>
-      <div style="flex:1">
-        <div style="display:block;margin-bottom:8px;font-size:14px;color:var(--slate-grey)">Sort By</div>
-        <select id="sort-filter" style="width:100%;padding:12px;border-radius:10px;border:1px solid var(--card-border);background:var(--card-bg);color:var(--soft-white);font-size:14px;backdrop-filter:blur(10px)">
+      <div class="filter-group">
+        <label class="filter-label">Sort By</label>
+        <select id="sort-filter" class="filter-select">
           <option value="newest">Newest First</option>
           <option value="popular">Most Popular</option>
           <option value="trending">Trending</option>
         </select>
       </div>
     </div>
-    <div class="search-results" style="width:100%;max-width:800px;max-height:70vh;overflow-y:auto">
-      <div id="search-results-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:15px"></div>
+    <div class="search-results">
+      <div id="search-results-grid" class="search-results-grid">
+        <!-- Results loaded here -->
+      </div>
     </div>
   </div>
 </div>
 
+<!-- 🔑 CRITICAL FIX: Notifications Panel Structure (EXACT from explore-screen.html) -->
 <div id="notifications-panel" class="notifications-panel">
   <div class="notifications-header">
     <h2 style="font-family:'Orbitron',sans-serif;font-size:20px;margin:0;color:var(--soft-white)">Notifications</h2>
-    <button id="close-notifications" style="background:none;border:none;color:var(--soft-white);font-size:24px;cursor:pointer;width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center">
+    <button id="close-notifications" class="close-search-btn">
       <i class="fas fa-times"></i>
     </button>
   </div>
-  <div class="notifications-list" id="notifications-list"></div>
+  <div class="notifications-list" id="notifications-list">
+    <!-- Notifications loaded here -->
+  </div>
   <div class="notifications-footer">
     <button id="mark-all-read" class="text-btn">Mark all as read</button>
     <button id="notification-settings" class="text-btn">Settings</button>
@@ -324,8 +685,8 @@ textarea.form-input { min-height: 120px; resize: vertical; }
 
 <div id="toast-container"></div>
 
-<!-- CRITICAL: Initialize SHARED authenticated client BEFORE DOMContentLoaded -->
 <script>
+// Initialize shared Supabase client BEFORE DOMContentLoaded
 if (!window.supabaseClient) {
   window.supabaseClient = supabase.createClient(
     'https://ydnxqnbjoshvxteevemc.supabase.co',
@@ -404,7 +765,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     return fullName.charAt(0).toUpperCase();
   }
 
-  // ✅ FIXED: Load profile picture with proper avatar handling
+  // 🔑 CRITICAL FIX: Load profile picture with proper avatar handling (from explore-screen.html)
   async function loadUserProfilePicture(user) {
     try {
       if (!user || !profileBtn) return;
@@ -416,7 +777,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       placeholder.innerHTML = `<div class="profile-placeholder">${userInitials}</div>`;
       
       // Fetch user profile from database
-      const { data: profile, error: profileError } = await window.supabaseClient
+      const {  profile, error: profileError } = await window.supabaseClient
         .from('user_profiles')
         .select('*')
         .eq('id', user.id)
@@ -492,283 +853,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
-  // Media Upload Handlers
-  function setupMediaUpload() {
-    const zone = document.getElementById('media-upload-zone');
-    const input = document.getElementById('media-file-input');
-    
-    zone.addEventListener('click', () => input.click());
-    input.addEventListener('change', (e) => {
-      if (e.target.files.length > 0) handleMediaFile(e.target.files[0]);
-    });
-    
-    // Drag and drop
-    zone.addEventListener('dragover', (e) => {
-      e.preventDefault();
-      zone.style.borderColor = 'var(--warm-gold)';
-      zone.style.background = 'rgba(245,158,11,.05)';
-    });
-    zone.addEventListener('dragleave', () => {
-      zone.style.borderColor = 'rgba(255,255,255,.3)';
-      zone.style.background = 'transparent';
-    });
-    zone.addEventListener('drop', (e) => {
-      e.preventDefault();
-      zone.style.borderColor = 'rgba(255,255,255,.3)';
-      zone.style.background = 'transparent';
-      if (e.dataTransfer.files.length > 0) handleMediaFile(e.dataTransfer.files[0]);
-    });
-  }
-
-  function handleMediaFile(file) {
-    const maxSize = 800 * 1024 * 1024;
-    if (file.size > maxSize) {
-      showToast('File size must be less than 800MB');
-      return;
-    }
-    
-    const videoTypes = ['video/mp4', 'video/mov', 'video/avi', 'video/mkv', 'video/webm'];
-    const audioTypes = ['audio/mpeg', 'audio/mp3', 'audio/aac', 'audio/wav'];
-    if (!videoTypes.includes(file.type) && !audioTypes.includes(file.type)) {
-      showToast('Please select a valid video or audio file');
-      return;
-    }
-    
-    selectedMediaFile = file;
-    document.getElementById('media-file-name').textContent = file.name;
-    document.getElementById('media-file-size').textContent = formatFileSize(file.size);
-    document.getElementById('media-file-info').style.display = 'flex';
-    document.getElementById('media-zone-text').textContent = 'Click to change file';
-    updateButtonsState();
-  }
-
-  function removeMediaFile() {
-    selectedMediaFile = null;
-    document.getElementById('media-file-info').style.display = 'none';
-    document.getElementById('media-zone-text').textContent = 'Click or drag video/audio files here';
-    updateButtonsState();
-  }
-
-  // Thumbnail Upload Handlers
-  function setupThumbnailUpload() {
-    const zone = document.getElementById('thumbnail-upload-zone');
-    const input = document.getElementById('thumbnail-file-input');
-    const preview = document.getElementById('thumbnail-preview');
-    
-    zone.addEventListener('click', () => openImagePicker());
-    input.addEventListener('change', (e) => {
-      if (e.target.files.length > 0) handleThumbnailFile(e.target.files[0]);
-    });
-    
-    // Drag and drop
-    zone.addEventListener('dragover', (e) => {
-      e.preventDefault();
-      zone.style.borderColor = 'var(--warm-gold)';
-      zone.style.background = 'rgba(245,158,11,.05)';
-    });
-    zone.addEventListener('dragleave', () => {
-      zone.style.borderColor = 'rgba(255,255,255,.3)';
-      zone.style.background = 'transparent';
-    });
-    zone.addEventListener('drop', (e) => {
-      e.preventDefault();
-      zone.style.borderColor = 'rgba(255,255,255,.3)';
-      zone.style.background = 'transparent';
-      if (e.dataTransfer.files.length > 0) handleThumbnailFile(e.dataTransfer.files[0]);
-    });
-    
-    // Camera input
-    document.getElementById('camera-file-input').addEventListener('change', (e) => {
-      if (e.target.files.length > 0) handleThumbnailFile(e.target.files[0]);
-    });
-  }
-
-  function openImagePicker() {
-    document.getElementById('thumbnail-file-input').click();
-  }
-
-  function captureCameraImage() {
-    document.getElementById('camera-file-input').click();
-  }
-
-  function handleThumbnailFile(file) {
-    const imageTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
-    if (!imageTypes.includes(file.type)) {
-      showToast('Please select a valid image file (JPG, PNG, GIF)');
-      return;
-    }
-    
-    selectedThumbnailFile = file;
-    
-    // Create preview
-    const reader = new FileReader();
-    reader.onload = function(e) {
-      document.getElementById('thumbnail-image').src = e.target.result;
-      document.getElementById('thumbnail-preview').style.display = 'block';
-    };
-    reader.readAsDataURL(file);
-    
-    showToast('Thumbnail image selected', 'success');
-  }
-
-  // Button State Management
-  function updateButtonsState() {
-    const title = document.getElementById('content-title').value.trim();
-    const desc = document.getElementById('content-description').value.trim();
-    
-    saveDraftBtn.disabled = !title || isUploading || !currentUserId;
-    publishBtn.disabled = !title || !desc || !selectedMediaFile || isUploading || !currentUserId;
-    
-    if (isUploading) {
-      publishBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Publishing...';
-      saveDraftBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
-    } else {
-      publishBtn.innerHTML = '<i class="fas fa-cloud-upload-alt"></i> Publish Content';
-      saveDraftBtn.innerHTML = '<i class="fas fa-save"></i> Save Draft';
-    }
-  }
-
-  // Upload to Storage
-  async function uploadFileToStorage(file, bucket, basePath) {
-    // Sanitize filename
-    const cleanFileName = file.name
-      .replace(/[^a-z0-9.]/gi, '_')
-      .replace(/_{2,}/g, '_')
-      .toLowerCase();
-    
-    const timestamp = Date.now();
-    const random = Math.random().toString(36).substring(7);
-    const fileName = `${timestamp}_${random}_${cleanFileName}`;
-    
-    // Path structure: {user_id}/{basePath}/{filename}
-    const filePath = `${currentUserId}/${basePath}/${fileName}`;
-    console.log(`📤 Uploading to ${bucket}: ${filePath}`);
-    
-    try {
-      // Upload file
-      const uploadResponse = await window.supabaseClient.storage
-        .from(bucket)
-        .upload(filePath, file, { contentType: file.type });
-      
-      if (uploadResponse.error) throw uploadResponse.error;
-      
-      // Get public URL
-      const urlResponse = window.supabaseClient.storage
-        .from(bucket)
-        .getPublicUrl(filePath);
-      
-      console.log(`✅ Upload successful. Public URL: ${urlResponse.data.publicUrl}`);
-      return urlResponse.data.publicUrl;
-    } catch (error) {
-      console.error(`❌ ${bucket} upload failed:`, error);
-      throw error;
-    }
-  }
-
-  // Create Content Record
-  async function createContentRecord(data) {
-    try {
-      const insertResponse = await window.supabaseClient
-        .from('Content')
-        .insert([{
-          title: data.title,
-          description: data.description,
-          file_url: data.media_url,
-          thumbnail_url: data.thumbnail_url || '',
-          media_type: data.media_type,
-          genre: data.genre || null,
-          status: data.status,
-          user_id: currentUserId,
-          created_at: new Date().toISOString()
-        }]);
-      
-      if (insertResponse.error) throw insertResponse.error;
-      return true;
-    } catch (error) {
-      console.error('DB insert failed:', error);
-      throw error;
-    }
-  }
-
-  // Main Upload Flow
-  async function uploadContent(isDraft = false) {
-    if (!currentUserId) {
-      showToast('Please sign in to upload content');
-      authModal.classList.add('active');
-      return;
-    }
-    
-    const title = document.getElementById('content-title').value.trim();
-    const desc = document.getElementById('content-description').value.trim();
-    const genre = document.getElementById('content-genre').value;
-    
-    if (!title || !desc || !selectedMediaFile) {
-      showToast('Please fill all required fields');
-      return;
-    }
-    
-    isUploading = true;
-    updateButtonsState();
-    
-    try {
-      // STEP 1: Upload media file to content-media bucket
-      updateProgress(20, 'Uploading media file...');
-      const mediaType = selectedMediaFile.type.includes('video') ? 'video' : 'audio';
-      const mediaUrl = await uploadFileToStorage(selectedMediaFile, 'content-media', 'media');
-      
-      // STEP 2: Upload thumbnail to content-thumbnails bucket
-      let thumbnailUrl = null;
-      if (selectedThumbnailFile) {
-        updateProgress(60, 'Uploading thumbnail...');
-        thumbnailUrl = await uploadFileToStorage(selectedThumbnailFile, 'content-thumbnails', 'thumbnails');
-      } else {
-        // Default thumbnails based on media type
-        thumbnailUrl = mediaType === 'video'
-          ? 'https://images.unsplash.com/photo-1574717024653-61fd2cf4d44d?w=800&q=80'
-          : 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=800&q=80';
-      }
-      
-      // STEP 3: Create content record
-      updateProgress(85, 'Creating content record...');
-      await createContentRecord({
-        title,
-        description: desc,
-        media_url: mediaUrl,
-        thumbnail_url: thumbnailUrl,
-        media_type: mediaType,
-        genre,
-        status: isDraft ? 'draft' : 'published'
-      });
-      
-      // Complete
-      updateProgress(100, 'Upload complete!');
-      showToast(`Content ${isDraft ? 'saved as draft' : 'published'} successfully!`, 'success');
-      
-      // Reset form after delay
-      setTimeout(() => {
-        document.getElementById('content-title').value = '';
-        document.getElementById('content-description').value = '';
-        document.getElementById('content-genre').value = '';
-        removeMediaFile();
-        selectedThumbnailFile = null;
-        document.getElementById('thumbnail-preview').style.display = 'none';
-        document.getElementById('thumbnail-file-input').value = '';
-        document.getElementById('camera-file-input').value = '';
-        
-        if (!isDraft) window.location.href = 'content-library.html';
-      }, 1500);
-      
-    } catch (error) {
-      console.error('Upload failed:', error);
-      showToast(`Upload failed: ${error.message || 'Unknown error'}`, 'error');
-      updateProgress(0, '');
-    } finally {
-      isUploading = false;
-      updateButtonsState();
-    }
-  }
-
-  // Notifications Functions
+  // 🔑 CRITICAL FIX: Notifications functions (EXACT from explore-screen.html)
   async function loadNotifications() {
     try {
       if (!currentUserId) {
@@ -794,8 +879,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       
       if (!data || data.length === 0) {
         notificationsList.innerHTML = `
-          <div style="text-align:center;padding:40px;color:var(--slate-grey)">
-            <i class="fas fa-bell" style="font-size:48px;margin-bottom:15px;opacity:0.3"></i>
+          <div class="empty-notifications">
+            <i class="fas fa-bell-slash"></i>
             <p>No notifications yet</p>
           </div>
         `;
@@ -812,7 +897,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             <p>${escapeHtml(notification.message)}</p>
             <span class="notification-time">${formatNotificationTime(notification.created_at)}</span>
           </div>
-          ${!notification.is_read ? '<div class="notification-dot" style="width:10px;height:10px;border-radius:50%;background:var(--warm-gold);position:absolute;top:15px;right:15px"></div>' : ''}
+          ${!notification.is_read ? '<div class="notification-dot"></div>' : ''}
         </div>
       `).join('');
       
@@ -921,12 +1006,539 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (diffDays < 7) return `${diffDays}d ago`;
     return new Date(timestamp).toLocaleDateString();
   }
-  
+
+  // 🔑 CRITICAL FIX: Search functionality (EXACT from explore-screen.html)
+  function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+      const later = () => {
+        clearTimeout(timeout);
+        func(...args);
+      };
+      clearTimeout(timeout);
+      timeout = setTimeout(later, wait);
+    };
+  }
+
+  async function searchContent(query, category = '', sortBy = 'newest') {
+    try {
+      let queryBuilder = window.supabaseClient
+        .from('Content')
+        .select('*, user_profiles!user_id(*)')
+        .ilike('title', `%${query}%`)
+        .eq('status', 'published');
+      
+      if (category) {
+        queryBuilder = queryBuilder.eq('genre', category);
+      }
+      
+      if (sortBy === 'newest') {
+        queryBuilder = queryBuilder.order('created_at', { ascending: false });
+      }
+      
+      const { data, error } = await queryBuilder.limit(50);
+      
+      if (error) throw error;
+      
+      // Enrich with real counts from source tables
+      const enriched = await Promise.all(
+        (data || []).map(async (item) => {
+          const { count: viewsCount } = await window.supabaseClient
+            .from('content_views')
+            .select('*', { count: 'exact', head: true })
+            .eq('content_id', item.id);
+          
+          const { count: likesCount } = await window.supabaseClient
+            .from('content_likes')
+            .select('*', { count: 'exact', head: true })
+            .eq('content_id', item.id);
+          
+          return {
+            ...item,
+            real_views: viewsCount || 0,
+            real_likes: likesCount || 0
+          };
+        })
+      );
+      
+      // Additional sorting for popularity/trending
+      if (sortBy === 'popular') {
+        enriched.sort((a, b) => (b.real_views || 0) - (a.real_views || 0));
+      } else if (sortBy === 'trending') {
+        enriched.sort((a, b) => {
+          const aScore = (a.real_views || 0) + ((a.real_likes || 0) * 2);
+          const bScore = (b.real_views || 0) + ((b.real_likes || 0) * 2);
+          return bScore - aScore;
+        });
+      }
+      
+      return enriched;
+    } catch (error) {
+      console.error('Search error:', error);
+      return [];
+    }
+  }
+
   function escapeHtml(text) {
     if (!text) return '';
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
+  }
+
+  function truncateText(text, maxLength) {
+    if (!text) return '';
+    if (text.length <= maxLength) return text;
+    return text.substring(0, maxLength) + '...';
+  }
+
+  function formatNumber(num) {
+    if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+    if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+    return num.toString();
+  }
+
+  // 🔑 CRITICAL FIX: Render search results with proper structure (from explore-screen.html)
+  function renderSearchResults(results) {
+    const grid = document.getElementById('search-results-grid');
+    if (!grid) return;
+    
+    if (!results || results.length === 0) {
+      grid.innerHTML = '<div class="no-results">No results found. Try different keywords.</div>';
+      return;
+    }
+    
+    grid.innerHTML = results.map(item => {
+      const creator = item.user_profiles?.full_name || 
+                      item.user_profiles?.username || 
+                      item.creator || 
+                      'Creator';
+      const creatorId = item.user_profiles?.id || item.user_id;
+      const thumbnailUrl = item.thumbnail_url 
+        ? `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/${item.thumbnail_url.replace(/^\/+/, '')}`
+        : 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop';
+      
+      return `
+        <div class="content-card" data-content-id="${item.id}">
+          <div class="card-thumbnail">
+            <img src="${thumbnailUrl}"
+                 alt="${escapeHtml(item.title)}"
+                 loading="lazy"
+                 onerror="this.src='https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop'">
+            <div class="thumbnail-overlay"></div>
+            <div class="play-overlay">
+              <div class="play-icon">
+                <i class="fas fa-play"></i>
+              </div>
+            </div>
+          </div>
+          <div class="card-content">
+            <h3 class="card-title">${truncateText(escapeHtml(item.title), 45)}</h3>
+            <button class="creator-btn"
+                    onclick="event.stopPropagation(); window.location.href='creator-channel.html?id=${creatorId}&name=${encodeURIComponent(creator)}'">
+              <i class="fas fa-user"></i>
+              ${truncateText(escapeHtml(creator), 15)}
+            </button>
+            <div class="card-stats">
+              <div class="card-stat">
+                <i class="fas fa-eye"></i>
+                ${formatNumber(item.real_views || item.views_count || 0)}
+              </div>
+              <div class="card-stat">
+                <i class="fas fa-heart"></i>
+                ${formatNumber(item.real_likes || 0)}
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+    
+    // Add click handlers to cards
+    grid.querySelectorAll('.content-card').forEach(card => {
+      card.addEventListener('click', (e) => {
+        if (e.target.closest('.creator-btn')) return;
+        const id = card.dataset.contentId;
+        if (id) window.location.href = `content-detail.html?id=${id}`;
+      });
+    });
+  }
+
+  // Media Upload Handlers (unchanged from working version)
+  function setupMediaUpload() {
+    const zone = document.getElementById('media-upload-zone');
+    const input = document.getElementById('media-file-input');
+    
+    zone.addEventListener('click', () => input.click());
+    input.addEventListener('change', (e) => {
+      if (e.target.files.length > 0) handleMediaFile(e.target.files[0]);
+    });
+    
+    // Drag and drop
+    zone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      zone.style.borderColor = 'var(--warm-gold)';
+      zone.style.background = 'rgba(245,158,11,.05)';
+    });
+    zone.addEventListener('dragleave', () => {
+      zone.style.borderColor = 'rgba(255,255,255,.3)';
+      zone.style.background = 'transparent';
+    });
+    zone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      zone.style.borderColor = 'rgba(255,255,255,.3)';
+      zone.style.background = 'transparent';
+      if (e.dataTransfer.files.length > 0) handleMediaFile(e.dataTransfer.files[0]);
+    });
+  }
+
+  function handleMediaFile(file) {
+    const maxSize = 800 * 1024 * 1024;
+    if (file.size > maxSize) {
+      showToast('File size must be less than 800MB');
+      return;
+    }
+    
+    const videoTypes = ['video/mp4', 'video/mov', 'video/avi', 'video/mkv', 'video/webm'];
+    const audioTypes = ['audio/mpeg', 'audio/mp3', 'audio/aac', 'audio/wav'];
+    if (!videoTypes.includes(file.type) && !audioTypes.includes(file.type)) {
+      showToast('Please select a valid video or audio file');
+      return;
+    }
+    
+    selectedMediaFile = file;
+    document.getElementById('media-file-name').textContent = file.name;
+    document.getElementById('media-file-size').textContent = formatFileSize(file.size);
+    document.getElementById('media-file-info').style.display = 'flex';
+    document.getElementById('media-zone-text').textContent = 'Click to change file';
+    updateButtonsState();
+  }
+
+  function removeMediaFile() {
+    selectedMediaFile = null;
+    document.getElementById('media-file-info').style.display = 'none';
+    document.getElementById('media-zone-text').textContent = 'Click or drag video/audio files here';
+    updateButtonsState();
+  }
+
+  // Thumbnail Upload Handlers (unchanged)
+  function setupThumbnailUpload() {
+    const zone = document.getElementById('thumbnail-upload-zone');
+    const input = document.getElementById('thumbnail-file-input');
+    const preview = document.getElementById('thumbnail-preview');
+    
+    zone.addEventListener('click', () => openImagePicker());
+    input.addEventListener('change', (e) => {
+      if (e.target.files.length > 0) handleThumbnailFile(e.target.files[0]);
+    });
+    
+    // Drag and drop
+    zone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      zone.style.borderColor = 'var(--warm-gold)';
+      zone.style.background = 'rgba(245,158,11,.05)';
+    });
+    zone.addEventListener('dragleave', () => {
+      zone.style.borderColor = 'rgba(255,255,255,.3)';
+      zone.style.background = 'transparent';
+    });
+    zone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      zone.style.borderColor = 'rgba(255,255,255,.3)';
+      zone.style.background = 'transparent';
+      if (e.dataTransfer.files.length > 0) handleThumbnailFile(e.dataTransfer.files[0]);
+    });
+    
+    // Camera input
+    document.getElementById('camera-file-input').addEventListener('change', (e) => {
+      if (e.target.files.length > 0) handleThumbnailFile(e.target.files[0]);
+    });
+  }
+
+  function openImagePicker() {
+    document.getElementById('thumbnail-file-input').click();
+  }
+
+  function captureCameraImage() {
+    document.getElementById('camera-file-input').click();
+  }
+
+  function handleThumbnailFile(file) {
+    const imageTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+    if (!imageTypes.includes(file.type)) {
+      showToast('Please select a valid image file (JPG, PNG, GIF)');
+      return;
+    }
+    
+    selectedThumbnailFile = file;
+    
+    // Create preview
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      document.getElementById('thumbnail-image').src = e.target.result;
+      document.getElementById('thumbnail-preview').style.display = 'block';
+    };
+    reader.readAsDataURL(file);
+    
+    showToast('Thumbnail image selected', 'success');
+  }
+
+  // Button State Management
+  function updateButtonsState() {
+    const title = document.getElementById('content-title').value.trim();
+    const desc = document.getElementById('content-description').value.trim();
+    
+    saveDraftBtn.disabled = !title || isUploading || !currentUserId;
+    publishBtn.disabled = !title || !desc || !selectedMediaFile || isUploading || !currentUserId;
+    
+    if (isUploading) {
+      publishBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Publishing...';
+      saveDraftBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+    } else {
+      publishBtn.innerHTML = '<i class="fas fa-cloud-upload-alt"></i> Publish Content';
+      saveDraftBtn.innerHTML = '<i class="fas fa-save"></i> Save Draft';
+    }
+  }
+
+  // Upload to Storage (unchanged from working version)
+  async function uploadFileToStorage(file, bucket, basePath) {
+    // Sanitize filename
+    const cleanFileName = file.name
+      .replace(/[^a-z0-9.]/gi, '_')
+      .replace(/_{2,}/g, '_')
+      .toLowerCase();
+    
+    const timestamp = Date.now();
+    const random = Math.random().toString(36).substring(7);
+    const fileName = `${timestamp}_${random}_${cleanFileName}`;
+    
+    // Path structure: {user_id}/{basePath}/{filename}
+    const filePath = `${currentUserId}/${basePath}/${fileName}`;
+    console.log(`📤 Uploading to ${bucket}: ${filePath}`);
+    
+    try {
+      // Upload file
+      const uploadResponse = await window.supabaseClient.storage
+        .from(bucket)
+        .upload(filePath, file, { contentType: file.type });
+      
+      if (uploadResponse.error) throw uploadResponse.error;
+      
+      // Get public URL
+      const urlResponse = window.supabaseClient.storage
+        .from(bucket)
+        .getPublicUrl(filePath);
+      
+      console.log(`✅ Upload successful. Public URL: ${urlResponse.data.publicUrl}`);
+      return urlResponse.data.publicUrl;
+    } catch (error) {
+      console.error(`❌ ${bucket} upload failed:`, error);
+      throw error;
+    }
+  }
+
+  // Create Content Record (unchanged)
+  async function createContentRecord(data) {
+    try {
+      const insertResponse = await window.supabaseClient
+        .from('Content')
+        .insert([{
+          title: data.title,
+          description: data.description,
+          file_url: data.media_url,
+          thumbnail_url: data.thumbnail_url || '',
+          media_type: data.media_type,
+          genre: data.genre || null,
+          status: data.status,
+          user_id: currentUserId,
+          created_at: new Date().toISOString()
+        }]);
+      
+      if (insertResponse.error) throw insertResponse.error;
+      return true;
+    } catch (error) {
+      console.error('DB insert failed:', error);
+      throw error;
+    }
+  }
+
+  // Main Upload Flow (unchanged)
+  async function uploadContent(isDraft = false) {
+    if (!currentUserId) {
+      showToast('Please sign in to upload content');
+      authModal.classList.add('active');
+      return;
+    }
+    
+    const title = document.getElementById('content-title').value.trim();
+    const desc = document.getElementById('content-description').value.trim();
+    const genre = document.getElementById('content-genre').value;
+    
+    if (!title || !desc || !selectedMediaFile) {
+      showToast('Please fill all required fields');
+      return;
+    }
+    
+    isUploading = true;
+    updateButtonsState();
+    
+    try {
+      // STEP 1: Upload media file to content-media bucket
+      updateProgress(20, 'Uploading media file...');
+      const mediaType = selectedMediaFile.type.includes('video') ? 'video' : 'audio';
+      const mediaUrl = await uploadFileToStorage(selectedMediaFile, 'content-media', 'media');
+      
+      // STEP 2: Upload thumbnail to content-thumbnails bucket
+      let thumbnailUrl = null;
+      if (selectedThumbnailFile) {
+        updateProgress(60, 'Uploading thumbnail...');
+        thumbnailUrl = await uploadFileToStorage(selectedThumbnailFile, 'content-thumbnails', 'thumbnails');
+      } else {
+        // Default thumbnails based on media type
+        thumbnailUrl = mediaType === 'video'
+          ? 'https://images.unsplash.com/photo-1574717024653-61fd2cf4d44d?w=800&q=80'
+          : 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=800&q=80';
+      }
+      
+      // STEP 3: Create content record
+      updateProgress(85, 'Creating content record...');
+      await createContentRecord({
+        title,
+        description: desc,
+        media_url: mediaUrl,
+        thumbnail_url: thumbnailUrl,
+        media_type: mediaType,
+        genre,
+        status: isDraft ? 'draft' : 'published'
+      });
+      
+      // Complete
+      updateProgress(100, 'Upload complete!');
+      showToast(`Content ${isDraft ? 'saved as draft' : 'published'} successfully!`, 'success');
+      
+      // Reset form after delay
+      setTimeout(() => {
+        document.getElementById('content-title').value = '';
+        document.getElementById('content-description').value = '';
+        document.getElementById('content-genre').value = '';
+        removeMediaFile();
+        selectedThumbnailFile = null;
+        document.getElementById('thumbnail-preview').style.display = 'none';
+        document.getElementById('thumbnail-file-input').value = '';
+        document.getElementById('camera-file-input').value = '';
+        
+        if (!isDraft) window.location.href = 'content-library.html';
+      }, 1500);
+      
+    } catch (error) {
+      console.error('Upload failed:', error);
+      showToast(`Upload failed: ${error.message || 'Unknown error'}`, 'error');
+      updateProgress(0, '');
+    } finally {
+      isUploading = false;
+      updateButtonsState();
+    }
+  }
+
+  // 🔑 CRITICAL FIX: Setup Search Modal (EXACT from explore-screen.html)
+  function setupSearchModal() {
+    const searchModal = document.getElementById('search-modal');
+    const searchInput = document.getElementById('search-input');
+    const closeSearchBtn = document.getElementById('close-search-btn');
+    
+    if (!searchModal || !searchInput || !closeSearchBtn) return;
+    
+    // Open search modal
+    searchBtn.addEventListener('click', () => {
+      searchModal.classList.add('active');
+      setTimeout(() => searchInput.focus(), 300);
+    });
+    
+    // Close search modal
+    closeSearchBtn.addEventListener('click', () => {
+      searchModal.classList.remove('active');
+      searchInput.value = '';
+      document.getElementById('search-results-grid').innerHTML = '';
+    });
+    
+    // Close when clicking outside modal content
+    searchModal.addEventListener('click', (e) => {
+      if (e.target === searchModal) {
+        searchModal.classList.remove('active');
+        searchInput.value = '';
+        document.getElementById('search-results-grid').innerHTML = '';
+      }
+    });
+    
+    // Live search with debounce
+    searchInput.addEventListener('input', debounce(async (e) => {
+      const query = e.target.value.trim();
+      const category = document.getElementById('category-filter')?.value;
+      const sortBy = document.getElementById('sort-filter')?.value;
+      const resultsGrid = document.getElementById('search-results-grid');
+      
+      if (!resultsGrid) return;
+      
+      if (query.length < 2) {
+        resultsGrid.innerHTML = '<div class="no-results">Start typing to search...</div>';
+        return;
+      }
+      
+      resultsGrid.innerHTML = `
+        <div class="infinite-scroll-loading">
+          <div class="infinite-scroll-spinner"></div>
+          <div>Searching...</div>
+        </div>
+      `;
+      
+      const results = await searchContent(query, category, sortBy);
+      renderSearchResults(results);
+    }, 300));
+    
+    // Filter change triggers search
+    document.getElementById('category-filter')?.addEventListener('change', () => {
+      if (searchInput.value.trim().length >= 2) {
+        searchInput.dispatchEvent(new Event('input'));
+      }
+    });
+    
+    document.getElementById('sort-filter')?.addEventListener('change', () => {
+      if (searchInput.value.trim().length >= 2) {
+        searchInput.dispatchEvent(new Event('input'));
+      }
+    });
+  }
+
+  // 🔑 CRITICAL FIX: Setup Notifications Panel (EXACT from explore-screen.html)
+  function setupNotificationsPanel() {
+    const notificationsPanel = document.getElementById('notifications-panel');
+    const closeNotifications = document.getElementById('close-notifications');
+    const markAllReadBtn = document.getElementById('mark-all-read');
+    
+    if (!notificationsPanel || !closeNotifications || !markAllReadBtn) return;
+    
+    // Open notifications panel
+    notificationsBtn.addEventListener('click', () => {
+      notificationsPanel.classList.add('active');
+      loadNotifications();
+    });
+    
+    // Close notifications panel
+    closeNotifications.addEventListener('click', () => {
+      notificationsPanel.classList.remove('active');
+    });
+    
+    // Close when clicking outside panel
+    document.addEventListener('click', (e) => {
+      if (notificationsPanel.classList.contains('active') &&
+          !notificationsPanel.contains(e.target) &&
+          !notificationsBtn.contains(e.target)) {
+        notificationsPanel.classList.remove('active');
+      }
+    });
+    
+    // Mark all as read
+    markAllReadBtn.addEventListener('click', markAllNotificationsAsRead);
   }
 
   // Event Listeners
@@ -964,43 +1576,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       else window.location.href = `login.html?redirect=${encodeURIComponent('creator-upload.html')}`;
     });
     
-    // Search modal
-    searchBtn.addEventListener('click', () => {
-      document.getElementById('search-modal').classList.add('active');
-      setTimeout(() => document.getElementById('search-input')?.focus(), 300);
-    });
-    
-    document.getElementById('close-search-btn').addEventListener('click', () => {
-      document.getElementById('search-modal').classList.remove('active');
-      document.getElementById('search-input').value = '';
-      document.getElementById('search-results-grid').innerHTML = '';
-    });
-    
-    document.getElementById('search-modal').addEventListener('click', (e) => {
-      if (e.target === document.getElementById('search-modal')) {
-        document.getElementById('search-modal').classList.remove('active');
-        document.getElementById('search-input').value = '';
-        document.getElementById('search-results-grid').innerHTML = '';
-      }
-    });
-    
-    // Notifications panel
-    notificationsBtn.addEventListener('click', () => {
-      document.getElementById('notifications-panel').classList.add('active');
-      loadNotifications();
-    });
-    
-    document.getElementById('close-notifications').addEventListener('click', () => {
-      document.getElementById('notifications-panel').classList.remove('active');
-    });
-    
-    document.getElementById('notifications-panel').addEventListener('click', (e) => {
-      if (e.target === document.getElementById('notifications-panel')) {
-        document.getElementById('notifications-panel').classList.remove('active');
-      }
-    });
-    
-    document.getElementById('mark-all-read').addEventListener('click', markAllNotificationsAsRead);
+    // Setup search and notifications
+    setupSearchModal();
+    setupNotificationsPanel();
   }
 
   // Initialize
@@ -1023,7 +1601,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     
     setLoading(false);
-    console.log('✅ Creator Upload initialized with profile picture support and correct logo');
+    console.log('✅ Creator Upload initialized with FIXED search and notifications');
   }
   
   initialize();
