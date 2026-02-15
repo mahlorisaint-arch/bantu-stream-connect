@@ -1568,7 +1568,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   function showToast(message, type = 'error') {
     const toast = document.createElement('div');
     toast.className = `toast ${type}`;
-    toast.innerHTML = `<i class="fas fa-${type === 'success' ? 'check-circle' : type === 'warning' ? 'exclamation-triangle' : 'info-circle'}"></i> ${message}`;
+    const icon = type === 'success' ? 'check-circle' : type === 'warning' ? 'exclamation-triangle' : 'info-circle';
+    toast.innerHTML = `<i class="fas fa-${icon}"></i> ${message}`;
     document.getElementById('toast-container').appendChild(toast);
     setTimeout(() => toast.remove(), 3000);
   }
@@ -1654,7 +1655,6 @@ document.addEventListener('DOMContentLoaded', async () => {
       
       if (profile) {
         const displayName = profile.full_name || profile.username || user.email || 'User';
-        const initial = getInitials(displayName);
         
         // If avatar URL exists, display it
         if (profile.avatar_url) {
@@ -1690,7 +1690,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const fallback = document.createElement('div');
             fallback.className = 'profile-placeholder';
             fallback.style.cssText = 'width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,#1D4ED8,#F59E0B);display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:16px';
-            fallback.textContent = initial;
+            fallback.textContent = userInitials;
             placeholder.appendChild(fallback);
           }
         } else {
@@ -1730,9 +1730,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       
       const sessionResponse = await window.supabaseClient.auth.getSession();
       const session = sessionResponse.data.session;
-      const error = sessionResponse.error;
       
-      if (error || !session?.user) {
+      if (!session?.user) {
         console.log('⚠️ User not authenticated');
         showToast('Please sign in to view your uploads', 'error');
         localStorage.setItem('redirectAfterLogin', 'my-uploads.html');
@@ -1748,8 +1747,18 @@ document.addEventListener('DOMContentLoaded', async () => {
       return true;
     } catch (error) {
       console.error('❌ Authentication error:', error);
+      showError('Authentication Error', 'Failed to authenticate. Please try again.');
       return false;
     }
+  }
+  
+  // ✅ SHOW ERROR STATE
+  function showError(title, message) {
+    errorTitle.textContent = title;
+    errorMessage.textContent = message;
+    loadingScreen.style.display = 'none';
+    app.style.display = 'none';
+    errorState.style.display = 'block';
   }
   
   // ✅ LOAD NOTIFICATIONS
@@ -1760,15 +1769,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
       }
       
-      const notificationsResponse = await window.supabaseClient
+      const { data, error } = await window.supabaseClient
         .from('notifications')
         .select('*')
         .eq('user_id', currentUser.id)
         .order('created_at', { ascending: false })
         .limit(20);
-      
-      const data = notificationsResponse.data;
-      const error = notificationsResponse.error;
       
       if (error) throw error;
       
@@ -1783,11 +1789,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
   
   // ✅ UPDATE NOTIFICATION BADGE
-  function updateNotificationBadge(count = null) {
-    if (count === null) {
-      count = notifications.filter(n => !n.is_read).length;
-    }
-    
+  function updateNotificationBadge(count) {
     const badge = document.getElementById('notification-count');
     if (badge) {
       badge.textContent = count > 99 ? '99+' : count;
@@ -1798,16 +1800,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   // ✅ RENDER NOTIFICATIONS
   function renderNotifications() {
     if (!notificationsList) return;
-    
-    if (!currentUser) {
-      notificationsList.innerHTML = `
-        <div style="text-align:center;padding:40px 20px;color:var(--slate-grey)">
-          <i class="fas fa-bell-slash" style="font-size:48px;margin-bottom:15px;opacity:0.5"></i>
-          <p>Sign in to see notifications</p>
-        </div>
-      `;
-      return;
-    }
     
     if (!notifications || notifications.length === 0) {
       notificationsList.innerHTML = `
@@ -1888,12 +1880,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   // ✅ MARK NOTIFICATION AS READ
   async function markNotificationAsRead(notificationId) {
     try {
-      const updateResponse = await window.supabaseClient
+      await window.supabaseClient
         .from('notifications')
         .update({ is_read: true })
         .eq('id', notificationId);
-      
-      if (updateResponse.error) throw updateResponse.error;
       
       await loadNotifications();
     } catch (error) {
@@ -1906,13 +1896,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     try {
       if (!currentUser) return;
       
-      const updateResponse = await window.supabaseClient
+      await window.supabaseClient
         .from('notifications')
         .update({ is_read: true })
         .eq('user_id', currentUser.id)
         .eq('is_read', false);
-      
-      if (updateResponse.error) throw updateResponse.error;
       
       await loadNotifications();
       showToast('All notifications marked as read', 'success');
@@ -1931,14 +1919,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         throw new Error('No authenticated user');
       }
       
-      const contentResponse = await window.supabaseClient
+      const { data: content, error: contentError } = await window.supabaseClient
         .from('Content')
         .select('*, user_profiles!user_id(*)')
         .eq('user_id', currentUser.id)
         .order('created_at', { ascending: false });
-      
-      const content = contentResponse.data;
-      const contentError = contentResponse.error;
       
       if (contentError) throw contentError;
       
@@ -1946,34 +1931,28 @@ document.addEventListener('DOMContentLoaded', async () => {
       const enrichedContent = await Promise.all(
         (content || []).map(async (item) => {
           // Get real view count from content_views table
-          const viewsResponse = await window.supabaseClient
+          const { count: viewsCount, error: viewsError } = await window.supabaseClient
             .from('content_views')
             .select('*', { count: 'exact', head: true })
             .eq('content_id', item.id);
           
-          const viewsCount = viewsResponse.count || 0;
-          
           // Get real likes count from likes table
-          const likesResponse = await window.supabaseClient
+          const { count: likesCount, error: likesError } = await window.supabaseClient
             .from('likes')
             .select('*', { count: 'exact', head: true })
             .eq('content_id', item.id);
           
-          const likesCount = likesResponse.count || 0;
-          
           // Get real comments count from comments table
-          const commentsResponse = await window.supabaseClient
+          const { count: commentsCount, error: commentsError } = await window.supabaseClient
             .from('comments')
             .select('*', { count: 'exact', head: true })
             .eq('content_id', item.id);
           
-          const commentsCount = commentsResponse.count || 0;
-          
           return {
             ...item,
-            real_views: viewsCount,
-            real_likes: likesCount,
-            real_comments: commentsCount,
+            real_views: viewsCount || 0,
+            real_likes: likesCount || 0,
+            real_comments: commentsCount || 0,
             media_type: item.media_type || 'video',
             status: item.status || 'draft',
             genre: item.genre || ''
@@ -1996,15 +1975,6 @@ document.addEventListener('DOMContentLoaded', async () => {
       console.error('❌ Error loading content:', error);
       showError('Loading Error', 'Failed to load your content. Please try again.');
     }
-  }
-  
-  // ✅ SHOW ERROR STATE
-  function showError(title, message) {
-    errorTitle.textContent = title;
-    errorMessage.textContent = message;
-    loadingScreen.style.display = 'none';
-    app.style.display = 'none';
-    errorState.style.display = 'block';
   }
   
   // ✅ RENDER FILTER CHIPS
@@ -2060,7 +2030,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     
     const searchLower = query.toLowerCase();
-    filteredContent = allContent.filter(content => {
+    let results = allContent.filter(content => {
       const title = (content.title || '').toLowerCase();
       const description = (content.description || '').toLowerCase();
       const genre = (content.genre || '').toLowerCase();
@@ -2073,12 +2043,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Apply current filter
     if (selectedFilter !== 'all') {
       if (['published', 'draft'].includes(selectedFilter)) {
-        filteredContent = filteredContent.filter(content => content.status === selectedFilter);
+        results = results.filter(content => content.status === selectedFilter);
       } else {
-        filteredContent = filteredContent.filter(content => content.media_type === selectedFilter);
+        results = results.filter(content => content.media_type === selectedFilter);
       }
     }
     
+    filteredContent = results;
     renderContent();
   }
   
@@ -2115,7 +2086,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 <img src="${thumbnailUrl.startsWith('http') ? thumbnailUrl : `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/${thumbnailUrl}`}" 
                      alt="${escapeHtml(title)}"
                      class="thumbnail-img"
-                     onerror="this.parentElement.innerHTML='<div class=\'thumbnail-placeholder\'><i class=\'fas ${mediaIcon}\'></i></div>'">
+                     onerror="this.parentElement.innerHTML='<div class=\\'thumbnail-placeholder\\'><i class=\\'fas ${mediaIcon}\\'></i></div>'">
               ` : `
                 <div class="thumbnail-placeholder">
                   <i class="fas ${mediaIcon}"></i>
@@ -2172,19 +2143,19 @@ document.addEventListener('DOMContentLoaded', async () => {
           </div>
           
           <div class="action-buttons">
-            <div class="action-btn edit" onclick="window.editContentHandler('${content.id}')">
+            <div class="action-btn edit" onclick="window.editContent('${content.id}')">
               <i class="fas fa-edit"></i>
               <span>Edit</span>
             </div>
-            <div class="action-btn insights" onclick="window.showInsightsHandler('${content.id}')">
+            <div class="action-btn insights" onclick="window.showContentInsights('${content.id}')">
               <i class="fas fa-chart-line"></i>
               <span>Insights</span>
             </div>
-            <div class="action-btn view" onclick="window.viewContentHandler('${content.id}')">
+            <div class="action-btn view" onclick="window.viewContent('${content.id}')">
               <i class="fas fa-eye"></i>
               <span>View</span>
             </div>
-            <div class="action-btn delete" onclick="window.deleteContentHandler('${content.id}', '${escapeHtml(title)}')">
+            <div class="action-btn delete" onclick="window.deleteContent('${content.id}', '${escapeHtml(title).replace(/'/g, "\\'")}')">
               <i class="fas fa-trash"></i>
               <span>Delete</span>
             </div>
@@ -2295,8 +2266,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     editModal.style.display = 'flex';
   }
   
-  // ✅ SAVE EDIT
-  async function saveEdit() {
+  // ✅ SAVE EDIT HANDLER
+  async function handleSaveEdit() {
     try {
       const contentId = document.getElementById('editContentId').value;
       const title = document.getElementById('editTitle').value.trim();
@@ -2312,7 +2283,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       // Show loading toast
       showToast('Updating content...', 'info');
       
-      const updateResponse = await window.supabaseClient
+      const { error } = await window.supabaseClient
         .from('Content')
         .update({
           title: title,
@@ -2323,7 +2294,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         })
         .eq('id', contentId);
       
-      if (updateResponse.error) throw updateResponse.error;
+      if (error) throw error;
       
       // Update local data
       const contentIndex = allContent.findIndex(c => c.id === contentId);
@@ -2356,19 +2327,19 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
   
   // ✅ CONFIRM DELETE
-  async function confirmDeleteContent() {
+  async function handleConfirmDelete() {
     if (!currentDeleteId) return;
     
     try {
       // Show loading toast
       showToast('Deleting content...', 'info');
       
-      const deleteResponse = await window.supabaseClient
+      const { error } = await window.supabaseClient
         .from('Content')
         .delete()
         .eq('id', currentDeleteId);
       
-      if (deleteResponse.error) throw deleteResponse.error;
+      if (error) throw error;
       
       // Remove from local arrays
       allContent = allContent.filter(c => c.id !== currentDeleteId);
@@ -2467,25 +2438,21 @@ document.addEventListener('DOMContentLoaded', async () => {
         queryBuilder = queryBuilder.order('created_at', { ascending: false });
       }
       
-      const searchResponse = await queryBuilder.limit(50);
-      const data = searchResponse.data;
-      const error = searchResponse.error;
+      const { data, error } = await queryBuilder.limit(50);
       
       if (error) throw error;
       
       // Enrich with real counts
       const enriched = await Promise.all(
         (data || []).map(async (item) => {
-          const viewsResponse = await window.supabaseClient
+          const { count } = await window.supabaseClient
             .from('content_views')
             .select('*', { count: 'exact', head: true })
             .eq('content_id', item.id);
           
-          const viewsCount = viewsResponse.count || 0;
-          
           return {
             ...item,
-            real_views: viewsCount || 0
+            real_views: count || 0
           };
         })
       );
@@ -2604,8 +2571,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   function setupEventListeners() {
     // Profile button
     profileBtn.addEventListener('click', async () => {
-      const sessionResponse = await window.supabaseClient.auth.getSession();
-      const session = sessionResponse.data.session;
+      const { data: { session } } = await window.supabaseClient.auth.getSession();
       if (session) {
         window.location.href = 'profile.html';
       } else {
@@ -2657,7 +2623,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       currentDeleteId = null;
     });
     
-    confirmDelete.addEventListener('click', confirmDeleteContent);
+    confirmDelete.addEventListener('click', handleConfirmDelete);
     
     closeInsightsModal.addEventListener('click', () => {
       insightsModal.style.display = 'none';
@@ -2671,7 +2637,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       editModal.style.display = 'none';
     });
     
-    saveEdit.addEventListener('click', saveEdit);
+    saveEdit.addEventListener('click', handleSaveEdit);
     
     // Close modals when clicking outside
     deleteModal.addEventListener('click', (e) => {
@@ -2729,11 +2695,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     console.log('✅ My Uploads Page initialized successfully');
   }
   
-  // Make handlers globally accessible
-  window.editContentHandler = editContent;
-  window.showInsightsHandler = showContentInsights;
-  window.viewContentHandler = viewContent;
-  window.deleteContentHandler = deleteContent;
+  // Make handlers globally accessible (with unique names)
+  window.editContent = editContent;
+  window.showContentInsights = showContentInsights;
+  window.viewContent = viewContent;
+  window.deleteContent = deleteContent;
   
   // Start initialization
   await initializePage();
