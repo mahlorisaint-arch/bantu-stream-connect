@@ -1078,6 +1078,10 @@ user-select: none;
 <div class="logo-text">BANTU STREAM CONNECT</div>
 </div>
 <div class="header-actions">
+<!-- Back Button -->
+<button id="back-btn" class="icon-btn" title="Go Back">
+<i class="fas fa-arrow-left"></i>
+</button>
 <!-- Search Button -->
 <button id="search-btn" class="icon-btn search-btn" title="Search">
 <i class="fas fa-search"></i>
@@ -1267,9 +1271,9 @@ Please stay on this page until upload is complete.
 <!-- Toast Container -->
 <div id="toast-container"></div>
 
-<!-- FIXED: Initialize Supabase client globally (shared across app) -->
+<!-- CRITICAL FIX #1: Initialize shared Supabase client BEFORE DOMContentLoaded -->
 <script>
-// Initialize shared Supabase client BEFORE DOMContentLoaded
+// Initialize shared Supabase client globally (matches content-detail.js pattern)
 if (!window.supabaseClient) {
   window.supabaseClient = supabase.createClient(
     'https://ydnxqnbjoshvxteevemc.supabase.co',
@@ -1279,7 +1283,7 @@ if (!window.supabaseClient) {
 }
 </script>
 
-<!-- Creator Upload JavaScript - RLS-COMPLIANT FIXES -->
+<!-- CRITICAL FIX #2: Creator Upload JavaScript - RLS-COMPLIANT WITH MOBILE APP PATTERNS -->
 <script>
 document.addEventListener('DOMContentLoaded', async () => {
   console.log('📤 Creator Upload Initializing with RLS-compliant fixes...');
@@ -1299,6 +1303,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const profileBtn = document.getElementById('profile-btn');
   const notificationsBtn = document.getElementById('notifications-btn');
   const searchBtn = document.getElementById('search-btn');
+  const backBtn = document.getElementById('back-btn');
   
   // State variables
   let selectedMediaFile = null;
@@ -1316,7 +1321,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       setTimeout(() => {
         loadingScreen.style.display = 'none';
         app.style.display = 'block';
-      }, 500);
+      }, 300);
     }
   }
   
@@ -1367,7 +1372,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   }
   
-  // ✅ WAIT FOR AUTH HELPER
+  // ✅ WAIT FOR AUTH HELPER (matches content-detail.js pattern)
   async function waitForAuthHelper() {
     return new Promise((resolve) => {
       if (window.AuthHelper?.isInitialized) {
@@ -1383,7 +1388,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
   
-  // ✅ SETUP AUTH LISTENERS (RLS-COMPLIANT)
+  // ✅ SETUP AUTH LISTENERS (RLS-COMPLIANT - matches content-detail.js)
   function setupAuthListeners() {
     window.supabaseClient.auth.onAuthStateChange(async (event, session) => {
       console.log('Auth state changed:', event);
@@ -1414,10 +1419,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     checkAuthentication();
   }
   
-  // ✅ CHECK AUTHENTICATION (FIXED SYNTAX ERROR)
+  // ✅ CHECK AUTHENTICATION (FIXED SYNTAX ERROR - matches content-detail.js)
   async function checkAuthentication() {
     try {
-      // Use shared client
+      // CRITICAL FIX: Correct syntax - data: { session } not { { session } }
       const { data: { session }, error } = await window.supabaseClient.auth.getSession();
       
       if (error) {
@@ -1433,7 +1438,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         return false;
       }
       
-      // Initialize auth helper
+      // Initialize auth helper if not already initialized
       if (!window.AuthHelper?.isInitialized) {
         await import('./js/auth-helper.js');
         await waitForAuthHelper();
@@ -1455,7 +1460,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
   
-  // ✅ UPDATE PROFILE UI (MATCHES CONTENT-DETAIL.JS)
+  // ✅ UPDATE PROFILE UI (MATCHES content-detail.js EXACTLY)
   function updateProfileUI() {
     const profileBtn = document.getElementById('profile-btn');
     const userProfilePlaceholder = document.getElementById('userProfilePlaceholder');
@@ -1515,7 +1520,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
   }
   
-  // ✅ LOAD NOTIFICATIONS
+  // ✅ LOAD NOTIFICATIONS (matches content-detail.js)
   async function loadNotifications() {
     try {
       if (!currentUserId) {
@@ -1632,9 +1637,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
   
-  // ✅ HANDLE MEDIA FILE
+  // ✅ HANDLE MEDIA FILE (800MB limit - matches mobile app)
   function handleMediaFile(file) {
-    // Check file size (800MB limit)
+    // Check file size (800MB limit - matches mobile app)
     const maxSize = 800 * 1024 * 1024;
     if (file.size > maxSize) {
       showToast('File size must be less than 800MB', 'error');
@@ -1765,7 +1770,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     return 'video'; // Default
   }
   
-  // ✅ UPLOAD FILE TO SUPABASE STORAGE (RLS-COMPLIANT)
+  // ✅ UPLOAD FILE TO SUPABASE STORAGE (RLS-COMPLIANT - matches mobile app bucket paths)
   async function uploadFileToStorage(file, bucket, path = '') {
     // CRITICAL: Ensure user is authenticated for RLS
     if (!currentUserId) {
@@ -1789,7 +1794,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       
       if (error) throw error;
       
-      // Get public URL using proper method
+      // Get public URL using proper method (FIXED SYNTAX)
       const { data: { publicUrl } } = window.supabaseClient.storage
         .from(bucket)
         .getPublicUrl(filePath);
@@ -1801,12 +1806,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
   
-  // ✅ CREATE CONTENT RECORD (RLS-COMPLIANT - Uses 'Content' table)
+  // ✅ CREATE CONTENT RECORD (RLS-COMPLIANT - Uses 'Content' table with user_id)
   async function createContentRecord(contentData) {
     try {
       // RLS requires authenticated user_id - we use currentUserId from auth session
       const { data, error } = await window.supabaseClient
-        .from('Content') // Capital C to match schema
+        .from('Content') // Capital C to match schema (matches mobile app)
         .insert([{
           title: contentData.title,
           description: contentData.description,
@@ -1829,7 +1834,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
   
-  // ✅ UPLOAD CONTENT (FULL RLS-COMPLIANT FLOW)
+  // ✅ UPLOAD CONTENT (FULL RLS-COMPLIANT FLOW - matches mobile app patterns)
   async function uploadContent(isDraft = false) {
     // CRITICAL: Re-check authentication before upload
     const isAuthenticated = await checkAuthentication();
@@ -1855,9 +1860,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     updateProgress(0, 'Preparing upload...');
     
     try {
-      // Step 1: Upload media file (RLS-compliant)
+      // Step 1: Upload media file (RLS-compliant) - CORRECT BUCKET NAME
       updateProgress(20, 'Uploading media file...');
       const mediaType = getMediaType(selectedMediaFile);
+      // CRITICAL FIX: Use 'content-media' bucket (not 'media') to match mobile app & Supabase config
       const mediaUrl = await uploadFileToStorage(selectedMediaFile, 'content-media', 'videos');
       
       // Step 2: Upload thumbnail (if provided)
@@ -1894,7 +1900,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       setTimeout(() => {
         resetForm();
         if (!isDraft) {
-          // Redirect to content library after successful upload
+          // Redirect to content library after successful upload (matches mobile app flow)
           window.location.href = 'content-library.html';
         }
       }, 2000);
@@ -1972,6 +1978,11 @@ document.addEventListener('DOMContentLoaded', async () => {
       window.history.back();
     });
     
+    // Back button
+    backBtn.addEventListener('click', () => {
+      window.history.back();
+    });
+    
     // Profile button
     profileBtn.addEventListener('click', async () => {
       const isAuthenticated = await checkAuthentication();
@@ -2043,24 +2054,20 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('search-results-grid').innerHTML = '';
       }
     });
-    
-    // Back button functionality
-    const backBtn = document.createElement('button');
-    backBtn.className = 'icon-btn';
-    backBtn.innerHTML = '<i class="fas fa-arrow-left"></i>';
-    backBtn.title = 'Go Back';
-    backBtn.onclick = () => window.history.back();
-    document.querySelector('.header-actions').prepend(backBtn);
   }
   
-  // ✅ INITIALIZE CREATOR UPLOAD (RLS-COMPLIANT)
+  // ✅ INITIALIZE CREATOR UPLOAD (RLS-COMPLIANT - matches content-detail.js flow)
   async function initializeCreatorUpload() {
     try {
       setLoading(true, 'Loading Creator Upload...');
       
-      // Initialize Supabase helpers
-      if (!window.SupabaseHelper) await import('./js/supabase-helper.js');
-      if (!window.AuthHelper) await import('./js/auth-helper.js');
+      // Load helpers FIRST (critical fix to prevent freeze)
+      if (!window.SupabaseHelper) {
+        await import('./js/supabase-helper.js');
+      }
+      if (!window.AuthHelper) {
+        await import('./js/auth-helper.js');
+      }
       
       // Wait for helpers to initialize
       await new Promise((resolve) => {
@@ -2072,7 +2079,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         }, 100);
       });
       
-      // Setup auth listeners FIRST
+      console.log('✅ Helpers initialized successfully');
+      
+      // Setup auth listeners FIRST (critical for RLS)
       setupAuthListeners();
       
       // Setup UI elements
@@ -2085,9 +2094,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       // Initial button state
       updateButtonsState();
       
-      // Show the app
-      setLoading(false);
-      console.log('✅ Creator Upload initialized successfully with RLS-compliant auth');
+      // Show the app AFTER auth check completes
+      // (auth check happens in setupAuthListeners which calls checkAuthentication)
       
     } catch (error) {
       console.error('❌ Error initializing creator upload:', error);
