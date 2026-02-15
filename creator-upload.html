@@ -144,14 +144,14 @@ textarea.form-input{min-height:120px;resize:vertical}
 
 <div id="toast-container"></div>
 
-<!-- CRITICAL: Initialize SHARED authenticated client BEFORE DOMContentLoaded -->
 <script>
+// Initialize shared Supabase client
 if (!window.supabaseClient) {
   window.supabaseClient = supabase.createClient(
     'https://ydnxqnbjoshvxteevemc.supabase.co',
     'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U'
   );
-  console.log('✅ Global Supabase client initialized (authenticated)');
+  console.log('✅ Global Supabase client initialized');
 }
 </script>
 
@@ -166,7 +166,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   const backBtn = document.getElementById('back-btn');
   
   let selectedMediaFile = null;
-  let currentUserId = null; // CRITICAL: Will hold authenticated user ID
+  let currentUserId = null; // Full UUID with dashes
+  let currentUserIdNoDashes = null; // UUID without dashes (for RLS path)
   let isUploading = false;
 
   function setLoading(loading) {
@@ -190,10 +191,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   }
 
-  // ✅ FIXED: Correct destructuring syntax + sets currentUserId
+  // ✅ CRITICAL FIX: Remove dashes from user ID for RLS path compliance
+  function getUserIdNoDashes(userId) {
+    return userId.replace(/-/g, '');
+  }
+
   async function checkAuthentication() {
     try {
-      // CORRECT SYNTAX: Single braces around session
+      // CORRECT SYNTAX: Single braces
       const { data: { session }, error } = await window.supabaseClient.auth.getSession();
       
       if (error || !session?.user) {
@@ -201,12 +206,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         return null;
       }
       
-      currentUserId = session.user.id; // CRITICAL: Set user ID for RLS paths
-      console.log('✅ Authenticated user ID:', currentUserId);
+      currentUserId = session.user.id;
+      currentUserIdNoDashes = getUserIdNoDashes(currentUserId); // ✅ FORMAT FOR RLS
+      console.log('✅ Authenticated user ID (no dashes):', currentUserIdNoDashes);
       
-      // Simple profile UI update
       profileBtn.innerHTML = session.user.email.charAt(0).toUpperCase();
-      
       return session.user;
     } catch (error) {
       console.error('Auth check failed:', error);
@@ -217,7 +221,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   function setupMediaUpload() {
     const zone = document.getElementById('media-upload-zone');
     const input = document.getElementById('media-file-input');
-    
     zone.addEventListener('click', () => input.click());
     input.addEventListener('change', (e) => {
       if (e.target.files.length > 0) handleMediaFile(e.target.files[0]);
@@ -256,47 +259,43 @@ document.addEventListener('DOMContentLoaded', async () => {
   function updateButtonsState() {
     const title = document.getElementById('content-title').value.trim();
     const desc = document.getElementById('content-description').value.trim();
-    
     saveDraftBtn.disabled = !title || isUploading || !currentUserId;
     publishBtn.disabled = !title || !desc || !selectedMediaFile || isUploading || !currentUserId;
   }
 
-  // ✅ CRITICAL FIX: Path includes currentUserId to satisfy RLS policy
+  // ✅ CRITICAL FIX: Use dashless user ID in storage path
   async function uploadFileToStorage(file, basePath) {
-    // basePath = "videos" or "thumbnails"
-    // FINAL PATH = "videos/{currentUserId}/filename.mp4"
     const timestamp = Date.now();
     const random = Math.random().toString(36).substring(7);
-    const fileName = `${timestamp}_${random}_${file.name}`;
-    // ✅ INCLUDE USER ID IN PATH (required by RLS policy)
-    const filePath = `${basePath}/${currentUserId}/${fileName}`;
+    const fileName = `${timestamp}_${random}_${encodeURIComponent(file.name)}`;
+    
+    // ✅ PATH FORMAT: "videos/{user_id_no_dashes}/filename.mp4"
+    const filePath = `${basePath}/${currentUserIdNoDashes}/${fileName}`;
+    console.log('📤 Uploading to path:', filePath);
     
     try {
-      // Use authenticated shared client
       const { data, error } = await window.supabaseClient.storage
-        .from('content-media') // CORRECT BUCKET NAME
+        .from('content-media')
         .upload(filePath, file, { contentType: file.type });
       
       if (error) throw error;
       
-      // CORRECT PUBLIC URL SYNTAX
-      const { data: { publicUrl } } = window.supabaseClient.storage
+      const {  { publicUrl } } = window.supabaseClient.storage
         .from('content-media')
         .getPublicUrl(filePath);
       
-      console.log('✅ File uploaded to path:', filePath);
+      console.log('✅ Upload successful. Public URL:', publicUrl);
       return publicUrl;
     } catch (error) {
-      console.error('Storage upload error:', error);
+      console.error('❌ Storage upload failed:', error);
       throw error;
     }
   }
 
-  // ✅ CORRECT TABLE NAME + user_id enforcement
   async function createContentRecord(data) {
     try {
       const { error } = await window.supabaseClient
-        .from('Content') // Capital C to match schema
+        .from('Content')
         .insert([{
           title: data.title,
           description: data.description,
@@ -305,7 +304,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           media_type: data.media_type,
           genre: data.genre || null,
           status: data.status,
-          user_id: currentUserId, // CRITICAL FOR RLS
+          user_id: currentUserId,
           created_at: new Date().toISOString()
         }]);
       
@@ -337,19 +336,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     updateButtonsState();
     
     try {
-      // ✅ STEP 1: Upload media WITH USER ID IN PATH (fixes RLS error)
       const mediaType = selectedMediaFile.type.includes('video') ? 'video' : 'audio';
-      // PATH = "videos/{currentUserId}/filename.mp4" ✅
+      // ✅ UPLOADS TO: videos/{dashless_user_id}/filename.mp4
       const mediaUrl = await uploadFileToStorage(selectedMediaFile, 'videos');
       
-      // ✅ STEP 2: Upload thumbnail WITH USER ID IN PATH
-      let thumbnailUrl = null;
-      // For this minimal version, use default thumbnail
-      thumbnailUrl = mediaType === 'video'
+      let thumbnailUrl = mediaType === 'video'
         ? 'https://images.unsplash.com/photo-1574717024653-61fd2cf4d44d?w=800&q=80'
         : 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=800&q=80';
       
-      // ✅ STEP 3: Create content record with user_id
       await createContentRecord({
         title,
         description: desc,
@@ -360,9 +354,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         status: isDraft ? 'draft' : 'published'
       });
       
-      showToast(`Content ${isDraft ? 'saved as draft' : 'published'} successfully!`, 'success');
+      showToast(`Content ${isDraft ? 'saved' : 'published'} successfully!`, 'success');
       
-      // Reset form
       setTimeout(() => {
         document.getElementById('content-title').value = '';
         document.getElementById('content-description').value = '';
@@ -416,29 +409,20 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
-  // ✅ Initialize WITHOUT blocking
   async function initialize() {
     setLoading(true);
-    
-    // Check auth FIRST (sets currentUserId)
     const user = await checkAuthentication();
-    if (!user) {
-      authModal.classList.add('active');
-    }
-    
-    // Setup UI regardless of auth state
+    if (!user) authModal.classList.add('active');
     setupMediaUpload();
     setupListeners();
     updateButtonsState();
-    
     setLoading(false);
-    console.log('✅ Creator Upload initialized with RLS-compliant paths');
+    console.log('✅ Creator Upload initialized with RLS-compliant paths (dashless user ID)');
   }
   
   initialize();
 });
 
-// Global functions
 window.removeMediaFile = function() {
   document.getElementById('media-file-input').value = '';
   document.getElementById('media-file-info').style.display = 'none';
