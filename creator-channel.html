@@ -133,6 +133,40 @@ animation-delay: 6s;
 0%, 100% { transform: translateY(0) scale(1); }
 50% { transform: translateY(-20px) scale(1.05); }
 }
+/* Channel Banner - TIER 1 FEATURE */
+.channel-banner {
+height: 280px;
+border-radius: 20px;
+overflow: hidden;
+margin-bottom: -60px;
+position: relative;
+background: linear-gradient(rgba(10, 14, 18, 0.85), rgba(15, 23, 42, 0.95)), 
+            url('https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?w=1500&h=400&fit=crop') center/cover;
+display: flex;
+align-items: flex-end;
+padding: 0 40px 30px;
+}
+.channel-banner::after {
+content: '';
+position: absolute;
+bottom: 0;
+left: 0;
+right: 0;
+height: 60%;
+background: linear-gradient(to top, var(--deep-black), transparent);
+}
+.banner-title {
+font-family: 'Orbitron', sans-serif;
+font-size: 32px;
+font-weight: 700;
+color: white;
+text-shadow: 0 2px 15px rgba(0, 0, 0, 0.7);
+z-index: 2;
+background: linear-gradient(135deg, var(--soft-white), var(--warm-gold));
+-webkit-background-clip: text;
+-webkit-text-fill-color: transparent;
+letter-spacing: 1px;
+}
 /* Main Container */
 .container {
 max-width: 1200px;
@@ -265,6 +299,7 @@ border: 1px solid var(--card-border);
 border-radius: 24px;
 padding: 40px;
 margin-bottom: 30px;
+margin-top: 60px; /* Compensate for banner overlap */
 backdrop-filter: blur(10px);
 box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
 position: relative;
@@ -379,6 +414,67 @@ display: -webkit-box;
 -webkit-line-clamp: 3;
 -webkit-box-orient: vertical;
 overflow: hidden;
+}
+/* About Section - TIER 1 FEATURE */
+.about-section {
+background: var(--card-bg);
+border: 1px solid var(--card-border);
+border-radius: 20px;
+padding: 30px;
+margin-bottom: 30px;
+backdrop-filter: blur(10px);
+}
+.about-title {
+font-family: 'Orbitron', sans-serif;
+font-size: 24px;
+margin-bottom: 20px;
+display: flex;
+align-items: center;
+gap: 10px;
+color: var(--soft-white);
+}
+.about-content {
+display: grid;
+grid-template-columns: 1fr 1fr;
+gap: 25px;
+}
+@media (max-width: 768px) {
+.about-content {
+grid-template-columns: 1fr;
+}
+}
+.about-item {
+display: flex;
+align-items: flex-start;
+gap: 12px;
+padding: 12px;
+border-radius: 12px;
+background: rgba(255, 255, 255, 0.03);
+transition: all 0.3s ease;
+}
+.about-item:hover {
+background: rgba(245, 158, 11, 0.1);
+transform: translateX(5px);
+}
+.about-item i {
+font-size: 18px;
+color: var(--warm-gold);
+min-width: 24px;
+}
+.about-item span, .about-item a {
+color: var(--soft-white);
+text-decoration: none;
+font-size: 16px;
+}
+.about-item a:hover {
+color: var(--warm-gold);
+text-decoration: underline;
+}
+.full-bio {
+grid-column: 1 / -1;
+line-height: 1.7;
+font-size: 16px;
+color: rgba(248, 250, 252, 0.9);
 }
 /* Stats Section */
 .stats-section {
@@ -1046,8 +1142,17 @@ background: var(--warm-gold);
 padding: 16px;
 padding-bottom: 130px;
 }
+.channel-banner {
+height: 200px;
+padding: 0 20px 20px;
+margin-bottom: -40px;
+}
+.banner-title {
+font-size: 24px;
+}
 .creator-header {
 padding: 30px 20px;
+margin-top: 40px;
 }
 .creator-avatar-container {
 width: 110px;
@@ -1079,6 +1184,14 @@ flex-direction: column;
 }
 }
 @media (max-width: 480px) {
+.channel-banner {
+height: 160px;
+padding: 0 15px 15px;
+margin-bottom: -30px;
+}
+.banner-title {
+font-size: 20px;
+}
 .creator-avatar-container {
 width: 100px;
 height: 100px;
@@ -1232,6 +1345,12 @@ user-select: none;
 </button>
 </div>
 </header>
+
+<!-- Channel Banner - TIER 1 FEATURE -->
+<div class="channel-banner" id="channel-banner">
+<div class="banner-title" id="banner-title">OFFICIAL CHANNEL</div>
+</div>
+
 <!-- Main Content -->
 <main class="container">
 <!-- Creator Header -->
@@ -1250,6 +1369,34 @@ user-select: none;
 </div>
 </div>
 </section>
+
+<!-- About Section - TIER 1 FEATURE -->
+<section class="about-section">
+<h2 class="about-title">
+<i class="fas fa-info-circle"></i>
+About
+</h2>
+<div class="about-content">
+<div class="full-bio" id="full-bio">Full bio will appear here</div>
+<div class="about-item">
+<i class="fas fa-map-marker-alt"></i>
+<span id="location">Johannesburg, South Africa</span>
+</div>
+<div class="about-item">
+<i class="fas fa-calendar"></i>
+<span id="joined-date">Joined February 2025</span>
+</div>
+<div class="about-item">
+<i class="fas fa-link"></i>
+<a id="website-link" href="#" target="_blank">Website</a>
+</div>
+<div class="about-item">
+<i class="fas fa-tags"></i>
+<span id="interests">#Afrobeats #Tech #Culture</span>
+</div>
+</div>
+</section>
+
 <!-- Stats Section -->
 <section class="stats-section">
 <div class="stat-card">
@@ -1265,6 +1412,7 @@ user-select: none;
 <div class="stat-label">Uploads</div>
 </div>
 </section>
+
 <!-- Action Buttons -->
 <section class="action-buttons">
 <button id="connect-btn" class="action-btn connect-btn">
@@ -1276,7 +1424,8 @@ user-select: none;
 Share Channel
 </button>
 </section>
-<!-- Uploads Section (SINGLE SECTION - NOT 3 SEPARATE ONES) -->
+
+<!-- Uploads Section (SINGLE SECTION) -->
 <section class="section">
 <div class="section-header">
 <h2 class="section-title">
@@ -1297,6 +1446,7 @@ UPLOADS
 </div>
 </section>
 </main>
+
 <!-- Footer -->
 <footer class="footer">
 <p>Bantu Stream Connect © 2025 • Built in South Africa • NO DNA, JUST RSA</p>
@@ -1309,7 +1459,8 @@ UPLOADS
 Need help? Contact us at <a href="mailto:support@bantustreamconnect.com">support@bantustreamconnect.com</a>
 </div>
 </footer>
-<!-- Global Navigation Button - Fixed with centered icons -->
+
+<!-- Global Navigation -->
 <div class="navigation-button-container">
 <div class="navigation-button">
 <div class="nav-icon" id="nav-home-btn" title="Home">
@@ -1330,13 +1481,16 @@ Need help? Contact us at <a href="mailto:support@bantustreamconnect.com">support
 </div>
 </div>
 </div>
+
 <!-- Toast Container -->
 <div id="toast-container"></div>
+
 <!-- Back to Top Button -->
 <button id="backToTopBtn" class="back-to-top">
 <i class="fas fa-arrow-up"></i>
 </button>
 </div>
+
 <!-- Notifications Panel -->
 <div id="notifications-panel" class="modal">
 <div class="modal-content">
@@ -1355,6 +1509,7 @@ Need help? Contact us at <a href="mailto:support@bantustreamconnect.com">support
 </div>
 </div>
 </div>
+
 <!-- Theme Selector -->
 <div id="theme-selector" class="modal" style="display: none; background: rgba(0,0,0,0.5);">
 <div style="background: var(--card-bg); border-radius: 20px; padding: 20px; max-width: 400px; width: 90%;">
@@ -1372,183 +1527,113 @@ Need help? Contact us at <a href="mailto:support@bantustreamconnect.com">support
 </div>
 </div>
 </div>
-<!-- JavaScript Files (load in correct order) -->
+
+<!-- JavaScript Files -->
 <script src="env.js"></script>
 <script src="js/rate-limiter.js"></script>
 <script src="js/content-library-themes.js"></script>
 <script src="js/content-library-features.js"></script>
-<!-- Simple Supabase REST client for content queries -->
+
+<!-- Simple Supabase REST client -->
 <script>
-// Simple Supabase REST client for content queries (not authentication)
 class ContentSupabaseClient {
 constructor(url, key) {
 this.url = url;
 this.key = key;
 }
-async query(table, options = {}) {
-const {
-select = '*',
-where = {},
-orderBy = 'created_at',
-order = 'desc',
-limit = 100,
-offset = 0
-} = options;
-// Build query URL
-let queryUrl = `${this.url}/rest/v1/${table}?select=${select}`;
-// Add filters
-Object.keys(where).forEach(key => {
-queryUrl += `&${key}=eq.${encodeURIComponent(where[key])}`;
-});
-// Add ordering
-if (orderBy) {
-queryUrl += `&order=${orderBy}.${order}`;
-}
-// Add limit and offset
-queryUrl += `&limit=${limit}&offset=${offset}`;
-try {
-const response = await fetch(queryUrl, {
-headers: {
-'apikey': this.key,
-'Authorization': `Bearer ${this.key}`,
-'Content-Type': 'application/json'
-}
-});
-if (!response.ok) {
-throw new Error(`HTTP error! status: ${response.status}`);
-}
-return await response.json();
-} catch (error) {
-console.error('Supabase query error:', error);
-throw error;
-}
-}
-// Fix media URL helper
 fixMediaUrl(url) {
 if (!url) return '';
 if (url.startsWith('http')) return url;
-if (url.includes('supabase.co')) return url;
 return `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/${url.replace(/^\/+/, '')}`;
 }
 }
-// Initialize content Supabase client
 const contentSupabase = new ContentSupabaseClient(
 'https://ydnxqnbjoshvxteevemc.supabase.co',
 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U'
 );
 console.log('✅ Content Supabase client initialized');
 </script>
-<!-- Creator Channel JavaScript with all features -->
+
+<!-- Creator Channel JavaScript -->
 <script>
-// Supabase Configuration
 const SUPABASE_URL = 'https://ydnxqnbjoshvxteevemc.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U';
-// Initialize Supabase client for authentication
 const supabaseAuth = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 console.log('✅ Supabase Auth client initialized');
-// Global state variables
+
+// Global state
 window.currentUser = null;
 window.notifications = [];
 window.creatorId = null;
 window.creatorProfile = null;
 window.isConnected = false;
 window.connectorCount = 0;
-// Wait for DOM to be ready
+
 document.addEventListener('DOMContentLoaded', async () => {
-console.log('👤 Creator Channel Initializing with all features...');
-// DOM Elements
+console.log('👤 Creator Channel Initializing...');
 const loadingScreen = document.getElementById('loading');
 const loadingText = document.getElementById('loading-text');
 const app = document.getElementById('app');
-// ============================================
+
 // UTILITY FUNCTIONS
-// ============================================
-// Show toast message
 function showToast(message, type = 'info') {
 const container = document.getElementById('toast-container');
 if (!container) return;
 const toast = document.createElement('div');
 toast.className = `toast ${type}`;
-const icons = {
-error: 'fa-exclamation-triangle',
-success: 'fa-check-circle',
-warning: 'fa-exclamation-circle',
-info: 'fa-info-circle'
-};
-toast.innerHTML = `
-<i class="fas ${icons[type] || 'fa-info-circle'}"></i>
-<span>${escapeHtml(message)}</span>
-`;
+const icons = {error:'fa-exclamation-triangle',success:'fa-check-circle',warning:'fa-exclamation-circle',info:'fa-info-circle'};
+toast.innerHTML = `<i class="fas ${icons[type] || 'fa-info-circle'}"></i><span>${escapeHtml(message)}</span>`;
 container.appendChild(toast);
-// Auto-dismiss after 3 seconds
-setTimeout(() => {
-toast.style.opacity = '0';
-toast.style.transform = 'translateX(100%)';
-setTimeout(() => toast.remove(), 300);
-}, 3000);
+setTimeout(() => { toast.style.opacity='0'; toast.style.transform='translateX(100%)'; setTimeout(() => toast.remove(), 300); }, 3000);
 }
-// Format large numbers
+
 function formatNumber(num) {
-if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
-if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+if (num >= 1000000) return (num/1000000).toFixed(1)+'M';
+if (num >= 1000) return (num/1000).toFixed(1)+'K';
 return num.toString();
 }
-// Truncate text with ellipsis
+
 function truncateText(text, maxLength) {
 if (!text) return '';
 if (text.length <= maxLength) return text;
 return text.substring(0, maxLength) + '...';
 }
-// Escape HTML to prevent XSS
+
 function escapeHtml(text) {
 if (!text) return '';
 const div = document.createElement('div');
 div.textContent = text;
 return div.innerHTML;
 }
-// Format date
+
 function formatDate(dateString) {
 if (!dateString) return '';
 try {
 const date = new Date(dateString);
 const now = new Date();
-const diffTime = Math.abs(now - date);
-const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-if (diffDays === 0) {
-return 'Today';
-} else if (diffDays === 1) {
-return 'Yesterday';
-} else if (diffDays < 7) {
-return `${diffDays} days ago`;
-} else if (diffDays < 30) {
-const weeks = Math.floor(diffDays / 7);
-return `${weeks} week${weeks > 1 ? 's' : ''} ago`;
-} else {
-return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+const diffDays = Math.floor(Math.abs(now - date) / (1000*60*60*24));
+if (diffDays === 0) return 'Today';
+if (diffDays === 1) return 'Yesterday';
+if (diffDays < 7) return `${diffDays} days ago`;
+if (diffDays < 30) return `${Math.floor(diffDays/7)} week${Math.floor(diffDays/7)>1?'s':''} ago`;
+return date.toLocaleDateString('en-US', { month:'short', day:'numeric' });
+} catch (error) { return ''; }
 }
-} catch (error) {
-return '';
-}
-}
-// Get initials from name
+
 function getInitials(name) {
 if (!name || name.trim() === '') return '?';
 const names = name.trim().split(' ');
-if (names.length >= 2) {
-return (names[0][0] + names[names.length - 1][0]).toUpperCase();
-}
+if (names.length >= 2) return (names[0][0] + names[names.length-1][0]).toUpperCase();
 return name[0].toUpperCase();
 }
-// Fix media URL helper
+
 function fixMediaUrl(url) {
 if (!url) return '';
 if (url.startsWith('http')) return url;
 return `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/${url.replace(/^\/+/, '')}`;
 }
-// ============================================
-// AUTHENTICATION FUNCTIONS
-// ============================================
-// Check authentication status
+
+// AUTHENTICATION
 async function checkAuth() {
 try {
 const { data: { session }, error } = await supabaseAuth.auth.getSession();
@@ -1567,7 +1652,7 @@ console.error('Auth check error:', error);
 return null;
 }
 }
-// Load user profile from database
+
 async function loadUserProfile() {
 try {
 if (!window.currentUser) return;
@@ -1576,11 +1661,7 @@ const { data: profile, error } = await supabaseAuth
 .select('*')
 .eq('id', window.currentUser.id)
 .maybeSingle();
-if (error) {
-console.warn('Profile fetch error:', error);
-updateProfileUI(null);
-return;
-}
+if (error) { console.warn('Profile fetch error:', error); updateProfileUI(null); return; }
 updateProfileUI(profile);
 await loadNotifications();
 } catch (error) {
@@ -1588,76 +1669,59 @@ console.error('Error loading profile:', error);
 updateProfileUI(null);
 }
 }
-// Update profile UI with user data
+
 function updateProfileUI(profile) {
-const userProfilePlaceholder = document.getElementById('userProfilePlaceholder');
-if (!userProfilePlaceholder) return;
-// Clear existing content safely
-while (userProfilePlaceholder.firstChild) {
-userProfilePlaceholder.removeChild(userProfilePlaceholder.firstChild);
-}
+const el = document.getElementById('userProfilePlaceholder');
+if (!el) return;
+while (el.firstChild) el.removeChild(el.firstChild);
 if (profile) {
-const displayName = profile.full_name ||
-profile.username ||
-window.currentUser?.email ||
-'User';
+const displayName = profile.full_name || profile.username || window.currentUser?.email || 'User';
 const initial = getInitials(displayName);
 const avatarUrl = profile.avatar_url;
 if (avatarUrl) {
 const img = document.createElement('img');
 img.className = 'profile-img';
 img.alt = displayName;
-img.style.cssText = 'width: 100%; height: 100%; border-radius: 50%; object-fit: cover;';
-// Validate and construct URL safely
+img.style.cssText = 'width:100%;height:100%;border-radius:50%;object-fit:cover;';
 try {
-if (avatarUrl.startsWith('http')) {
-img.src = avatarUrl;
-} else if (avatarUrl.startsWith('avatars/')) {
-img.src = `${SUPABASE_URL}/storage/v1/object/public/${avatarUrl}`;
-} else {
-img.src = `${SUPABASE_URL}/storage/v1/object/public/avatars/${avatarUrl}`;
-}
+img.src = avatarUrl.startsWith('http') ? avatarUrl : 
+         (avatarUrl.startsWith('avatars/') ? 
+          `${SUPABASE_URL}/storage/v1/object/public/${avatarUrl}` : 
+          `${SUPABASE_URL}/storage/v1/object/public/avatars/${avatarUrl}`);
 img.onerror = () => {
 const fallback = document.createElement('div');
 fallback.className = 'profile-placeholder';
 fallback.style.cssText = 'width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,#1D4ED8,#F59E0B);display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:16px';
 fallback.textContent = initial;
-userProfilePlaceholder.innerHTML = '';
-userProfilePlaceholder.appendChild(fallback);
+el.innerHTML = ''; el.appendChild(fallback);
 };
-userProfilePlaceholder.appendChild(img);
+el.appendChild(img);
 } catch (e) {
 console.error('Invalid avatar URL:', e);
 const fallback = document.createElement('div');
 fallback.className = 'profile-placeholder';
 fallback.style.cssText = 'width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,#1D4ED8,#F59E0B);display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:16px';
 fallback.textContent = initial;
-userProfilePlaceholder.appendChild(fallback);
+el.appendChild(fallback);
 }
 } else {
-// Show initials if no avatar
 const fallback = document.createElement('div');
 fallback.className = 'profile-placeholder';
 fallback.style.cssText = 'width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,#1D4ED8,#F59E0B);display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:16px';
 fallback.textContent = initial;
-userProfilePlaceholder.appendChild(fallback);
+el.appendChild(fallback);
 }
 } else {
 const icon = document.createElement('i');
 icon.className = 'fas fa-user';
-userProfilePlaceholder.appendChild(icon);
+el.appendChild(icon);
 }
 }
-// ============================================
-// NOTIFICATIONS FUNCTIONS
-// ============================================
-// Load user notifications from database
+
+// NOTIFICATIONS
 async function loadNotifications() {
 try {
-if (!window.currentUser) {
-updateNotificationBadge(0);
-return;
-}
+if (!window.currentUser) { updateNotificationBadge(0); return; }
 const { data, error } = await supabaseAuth
 .from('notifications')
 .select('*')
@@ -1673,7 +1737,7 @@ console.error('Error loading notifications:', error);
 updateNotificationBadge(0);
 }
 }
-// Update notification badge counts in UI
+
 function updateNotificationBadge(count) {
 const mainBadge = document.getElementById('notification-count');
 const navBadge = document.getElementById('nav-notification-count');
@@ -1684,143 +1748,86 @@ badge.style.display = count > 0 ? 'flex' : 'none';
 }
 });
 }
-// Render notifications in the panel
+
 function renderNotifications() {
-const notificationsList = document.getElementById('notifications-list');
-if (!notificationsList) return;
+const list = document.getElementById('notifications-list');
+if (!list) return;
 if (!window.currentUser) {
-notificationsList.innerHTML = `
-<div style="text-align: center; padding: 40px; color: var(--slate-grey);">
-<i class="fas fa-bell-slash" style="font-size: 48px; margin-bottom: 15px; opacity: 0.5;"></i>
-<p>Sign in to see notifications</p>
-</div>
-`;
+list.innerHTML = `<div style="text-align:center;padding:40px;color:var(--slate-grey);"><i class="fas fa-bell-slash" style="font-size:48px;margin-bottom:15px;opacity:0.5;"></i><p>Sign in to see notifications</p></div>`;
 return;
 }
 if (!window.notifications || window.notifications.length === 0) {
-notificationsList.innerHTML = `
-<div style="text-align: center; padding: 40px; color: var(--slate-grey);">
-<i class="fas fa-bell" style="font-size: 48px; margin-bottom: 15px; opacity: 0.3;"></i>
-<p>No notifications yet</p>
-</div>
-`;
+list.innerHTML = `<div style="text-align:center;padding:40px;color:var(--slate-grey);"><i class="fas fa-bell" style="font-size:48px;margin-bottom:15px;opacity:0.3;"></i><p>No notifications yet</p></div>`;
 return;
 }
-notificationsList.innerHTML = window.notifications.map(notification => `
-<div style="padding: 15px; border-bottom: 1px solid var(--card-border); ${notification.is_read ? 'opacity: 0.7;' : 'background: rgba(245, 158, 11, 0.1);'}">
-<div style="display: flex; gap: 12px;">
-<div style="width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold)); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-<i class="${getNotificationIcon(notification.type)}" style="font-size: 18px;"></i>
+list.innerHTML = window.notifications.map(n => `
+<div style="padding:15px;border-bottom:1px solid var(--card-border);${n.is_read?'opacity:0.7;':'background:rgba(245,158,11,0.1);'}">
+<div style="display:flex;gap:12px;">
+<div style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,var(--bantu-blue),var(--warm-gold));display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+<i class="${getNotificationIcon(n.type)}" style="font-size:18px;"></i>
 </div>
-<div style="flex: 1;">
-<div style="font-weight: 600; margin-bottom: 5px; color: var(--soft-white);">${escapeHtml(notification.title)}</div>
-<div style="font-size: 14px; color: var(--slate-grey); margin-bottom: 8px;">${escapeHtml(notification.message)}</div>
-<div style="font-size: 12px; color: var(--warm-gold);">${formatNotificationTime(notification.created_at)}</div>
+<div style="flex:1;">
+<div style="font-weight:600;margin-bottom:5px;color:var(--soft-white);">${escapeHtml(n.title)}</div>
+<div style="font-size:14px;color:var(--slate-grey);margin-bottom:8px;">${escapeHtml(n.message)}</div>
+<div style="font-size:12px;color:var(--warm-gold);">${formatNotificationTime(n.created_at)}</div>
 </div>
-${!notification.is_read ? '<div style="width: 10px; height: 10px; border-radius: 50%; background: var(--warm-gold); margin-top: 5px;"></div>' : ''}
+${!n.is_read ? '<div style="width:10px;height:10px;border-radius:50%;background:var(--warm-gold);margin-top:5px;"></div>' : ''}
 </div>
 </div>
 `).join('');
 }
-// Get appropriate icon based on notification type
+
 function getNotificationIcon(type) {
-switch(type) {
-case 'like': return 'fas fa-heart';
-case 'comment': return 'fas fa-comment';
-case 'follow': return 'fas fa-user-plus';
-default: return 'fas fa-bell';
+switch(type) { case 'like': return 'fas fa-heart'; case 'comment': return 'fas fa-comment'; case 'follow': return 'fas fa-user-plus'; default: return 'fas fa-bell'; }
 }
-}
-// Format notification time
+
 function formatNotificationTime(timestamp) {
 if (!timestamp) return 'Just now';
 const diffMs = Date.now() - new Date(timestamp).getTime();
-const diffMins = Math.floor(diffMs / 60000);
-const diffHours = Math.floor(diffMs / 3600000);
-const diffDays = Math.floor(diffMs / 86400000);
+const diffMins = Math.floor(diffMs/60000);
+const diffHours = Math.floor(diffMs/3600000);
+const diffDays = Math.floor(diffMs/86400000);
 if (diffMins < 1) return 'Just now';
 if (diffMins < 60) return `${diffMins}m ago`;
 if (diffHours < 24) return `${diffHours}h ago`;
 if (diffDays < 7) return `${diffDays}d ago`;
 return new Date(timestamp).toLocaleDateString();
 }
-// ============================================
+
 // SEARCH FUNCTIONALITY
-// ============================================
-// Search content with filters
 async function searchContent(query, category = '', sortBy = 'newest') {
 try {
-let queryBuilder = supabaseAuth
-.from('Content')
-.select('*, user_profiles!user_id(*)')
-.ilike('title', `%${query}%`)
-.eq('status', 'published');
-if (category) {
-queryBuilder = queryBuilder.eq('genre', category);
-}
-if (sortBy === 'newest') {
-queryBuilder = queryBuilder.order('created_at', { ascending: false });
-}
-const { data, error } = await queryBuilder.limit(50);
+let qb = supabaseAuth.from('Content').select('*, user_profiles!user_id(*)').ilike('title', `%${query}%`).eq('status','published');
+if (category) qb = qb.eq('genre', category);
+if (sortBy === 'newest') qb = qb.order('created_at', {ascending:false});
+const {data, error} = await qb.limit(50);
 if (error) throw error;
-// Enrich with real counts
-const enriched = await Promise.all(
-(data || []).map(async (item) => {
-const { count: viewsCount } = await supabaseAuth
-.from('content_views')
-.select('*', { count: 'exact', head: true })
-.eq('content_id', item.id);
-const { count: likesCount } = await supabaseAuth
-.from('content_likes')
-.select('*', { count: 'exact', head: true })
-.eq('content_id', item.id);
-return {
-...item,
-real_views: viewsCount || 0,
-real_likes: likesCount || 0
-};
-})
-);
-// Additional sorting for popularity/trending
-if (sortBy === 'popular') {
-enriched.sort((a, b) => (b.real_views || 0) - (a.real_views || 0));
-} else if (sortBy === 'trending') {
-enriched.sort((a, b) => {
-const aScore = (a.real_views || 0) + ((a.real_likes || 0) * 2);
-const bScore = (b.real_views || 0) + ((b.real_likes || 0) * 2);
-return bScore - aScore;
-});
-}
+const enriched = await Promise.all((data||[]).map(async item => {
+const {count:views} = await supabaseAuth.from('content_views').select('*',{count:'exact',head:true}).eq('content_id',item.id);
+const {count:likes} = await supabaseAuth.from('content_likes').select('*',{count:'exact',head:true}).eq('content_id',item.id);
+return {...item, real_views:views||0, real_likes:likes||0};
+}));
+if (sortBy === 'popular') enriched.sort((a,b) => (b.real_views||0)-(a.real_views||0));
+else if (sortBy === 'trending') enriched.sort((a,b) => ((b.real_views||0)+((b.real_likes||0)*2)) - ((a.real_views||0)+((a.real_likes||0)*2)));
 return enriched;
-} catch (error) {
-console.error('Search error:', error);
-return [];
+} catch (error) { console.error('Search error:', error); return []; }
 }
-}
-// Render search results into the grid
+
 function renderSearchResults(results) {
 const grid = document.getElementById('search-results-grid');
 if (!grid) return;
 if (!results || results.length === 0) {
-grid.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--slate-grey);">No results found. Try different keywords.</div>';
+grid.innerHTML = '<div style="text-align:center;padding:40px;color:var(--slate-grey);">No results found. Try different keywords.</div>';
 return;
 }
 grid.innerHTML = results.map(item => {
-const creator = item.user_profiles?.full_name ||
-item.user_profiles?.username ||
-item.creator ||
-'Creator';
-const creatorId = item.user_profiles?.id || item.user_id;
-const thumbnailUrl = item.thumbnail_url
-? fixMediaUrl(item.thumbnail_url)
-: 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop';
-const creatorProfile = item.user_profiles;
-const displayName = creatorProfile?.full_name || creatorProfile?.username || 'User';
+const creator = item.user_profiles?.full_name || item.user_profiles?.username || item.creator || 'Creator';
+const thumbnailUrl = item.thumbnail_url ? fixMediaUrl(item.thumbnail_url) : 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop';
+const displayName = item.user_profiles?.full_name || item.user_profiles?.username || 'User';
 const initials = getInitials(displayName);
-// Build avatar HTML with initials fallback
 let avatarHtml = '';
-if (creatorProfile?.avatar_url) {
-const avatarUrl = fixMediaUrl(creatorProfile.avatar_url);
+if (item.user_profiles?.avatar_url) {
+const avatarUrl = fixMediaUrl(item.user_profiles.avatar_url);
 avatarHtml = `<img src="${avatarUrl}" alt="${escapeHtml(displayName)}" onerror="this.parentElement.innerHTML='<div class=\\'creator-initials-small\\'>${initials}</div>'" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`;
 } else {
 avatarHtml = `<div class="creator-initials-small" style="width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,var(--bantu-blue),var(--warm-gold));display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:12px;">${initials}</div>`;
@@ -1828,11 +1835,7 @@ avatarHtml = `<div class="creator-initials-small" style="width:100%;height:100%;
 return `
 <div class="content-card" data-content-id="${item.id}" style="background:var(--card-bg);border:1px solid var(--card-border);border-radius:20px;overflow:hidden;transition:all 0.3s ease;text-decoration:none;color:inherit;backdrop-filter:blur(10px);">
 <div class="card-thumbnail" style="position:relative;height:140px;overflow:hidden;">
-<img src="${thumbnailUrl}"
-alt="${escapeHtml(item.title)}"
-loading="lazy"
-onerror="this.src='https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop'"
-style="width:100%;height:100%;object-fit:cover;transition:transform 0.3s ease;">
+<img src="${thumbnailUrl}" alt="${escapeHtml(item.title)}" loading="lazy" onerror="this.src='https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop'" style="width:100%;height:100%;object-fit:cover;transition:transform 0.3s ease;">
 <div style="position:absolute;top:0;left:0;right:0;bottom:0;background:linear-gradient(to bottom, transparent 50%, rgba(0,0,0,0.5) 100%);"></div>
 <div style="position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity 0.3s ease;">
 <div style="width:50px;height:50px;background:rgba(245,158,11,0.9);border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--deep-black);font-size:1.5rem;transform:scale(0.8);transition:all 0.3s ease;">
@@ -1841,12 +1844,12 @@ style="width:100%;height:100%;object-fit:cover;transition:transform 0.3s ease;">
 </div>
 </div>
 <div class="card-content" style="padding:15px;">
-<h3 class="card-title" style="font-size:16px;font-weight:600;margin-bottom:10px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:40px;color:var(--soft-white);">${truncateText(escapeHtml(item.title), 45)}</h3>
+<h3 class="card-title" style="font-size:16px;font-weight:600;margin-bottom:10px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:40px;color:var(--soft-white);">${truncateText(escapeHtml(item.title),45)}</h3>
 <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
 <div style="width:30px;height:30px;border-radius:50%;overflow:hidden;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--bantu-blue),var(--warm-gold));color:white;font-weight:bold;font-size:12px;flex-shrink:0;">
 ${avatarHtml}
 </div>
-<div style="font-size:14px;color:var(--slate-grey);">@${escapeHtml(creatorProfile?.username || creator)}</div>
+<div style="font-size:14px;color:var(--slate-grey);">@${escapeHtml(item.user_profiles?.username || creator)}</div>
 </div>
 <div style="display:flex;gap:15px;font-size:12px;color:var(--slate-grey);">
 <div style="display:flex;align-items:center;gap:4px;"><i class="fas fa-eye" style="color:var(--bantu-blue);"></i> ${formatNumber(item.real_views || item.views_count || 0)}</div>
@@ -1856,66 +1859,38 @@ ${avatarHtml}
 </div>
 `;
 }).join('');
-// Add click handlers to cards
 grid.querySelectorAll('.content-card').forEach(card => {
-card.addEventListener('click', (e) => {
+card.addEventListener('click', e => {
 if (e.target.closest('.creator-btn')) return;
 const id = card.dataset.contentId;
 if (id) window.location.href = `content-detail.html?id=${id}`;
 });
 });
-// Add hover effect with CSS
 const style = document.createElement('style');
-style.textContent = `
-.content-card:hover {
-transform: translateY(-8px);
-box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
-border-color: rgba(245, 158, 11, 0.3);
-}
-.content-card:hover .card-thumbnail img {
-transform: scale(1.05);
-}
-.content-card:hover .card-thumbnail > div:nth-child(2) {
-opacity: 1;
-}
-.content-card:hover .card-thumbnail > div:nth-child(2) > div {
-transform: scale(1);
-}
-`;
+style.textContent = `.content-card:hover{transform:translateY(-8px);box-shadow:0 20px 40px rgba(0,0,0,0.4);border-color:rgba(245,158,11,0.3);}.content-card:hover .card-thumbnail img{transform:scale(1.05);}.content-card:hover .card-thumbnail>div:nth-child(2){opacity:1;}.content-card:hover .card-thumbnail>div:nth-child(2)>div{transform:scale(1);}`;
 document.head.appendChild(style);
 }
-// ============================================
+
 // CREATOR DATA FUNCTIONS
-// ============================================
-// Get URL parameters
 function getUrlParam(name) {
 const urlParams = new URLSearchParams(window.location.search);
 return urlParams.get(name);
 }
-// Load creator data
+
 async function loadCreatorData() {
 try {
-// Get creator ID from URL
 window.creatorId = getUrlParam('id');
-if (!window.creatorId) {
-showToast('Creator ID not found in URL', 'error');
-window.location.href = 'https://bantustreamconnect.com/content-library';
-return;
-}
-// Load creator profile from user_profiles table
+if (!window.creatorId) { showToast('Creator ID not found', 'error'); window.location.href='https://bantustreamconnect.com/content-library'; return; }
+
 loadingText.textContent = 'Loading creator profile...';
 const { data: profile, error: profileError } = await supabaseAuth
 .from('user_profiles')
 .select('*')
 .eq('id', window.creatorId)
 .maybeSingle();
-if (profileError || !profile) {
-showToast('Creator not found', 'error');
-window.location.href = 'https://bantustreamconnect.com/content-library';
-return;
-}
+if (profileError || !profile) { showToast('Creator not found', 'error'); window.location.href='https://bantustreamconnect.com/content-library'; return; }
 window.creatorProfile = profile;
-// Load creator content
+
 loadingText.textContent = 'Loading creator content...';
 const { data: content, error: contentError } = await supabaseAuth
 .from('Content')
@@ -1925,18 +1900,19 @@ const { data: content, error: contentError } = await supabaseAuth
 .order('created_at', { ascending: false })
 .limit(50);
 if (contentError) throw contentError;
-// Get connector count from CORRECT TABLE NAME: connectors
+
+// FIXED: Changed from 'user_connections' to 'connectors'
 const { count: connectorCount, error: countError } = await supabaseAuth
-.from('connectors') // FIXED: Changed from 'user_connections' to 'connectors'
+.from('connectors')
 .select('*', { count: 'exact', head: true })
 .eq('connected_id', window.creatorId)
 .eq('connection_type', 'creator');
 if (countError) throw countError;
 window.connectorCount = connectorCount || 0;
-// Check connection status
+
 if (window.currentUser) {
 const { data: connections } = await supabaseAuth
-.from('connectors') // FIXED: Changed from 'user_connections' to 'connectors'
+.from('connectors')
 .select('*')
 .eq('connector_id', window.currentUser.id)
 .eq('connected_id', window.creatorId)
@@ -1946,57 +1922,81 @@ window.isConnected = connections && connections.length > 0;
 } else {
 window.isConnected = false;
 }
-console.log('✅ Creator data loaded:', {
-profile: window.creatorProfile,
-contentCount: content.length,
-connectorCount: window.connectorCount,
-isConnected: window.isConnected
-});
-// Update UI
+
+console.log('✅ Creator data loaded:', { profile, contentCount: content.length, connectorCount, isConnected: window.isConnected });
 updateCreatorUI();
 updateContentUI(content);
 } catch (error) {
-console.error('❌ Error loading creator data:', error);
+console.error('❌ Error loading creator channel:', error);
 showToast('Failed to load creator channel', 'error');
 }
 }
-// Update creator UI with real data from user_profiles table
+
 function updateCreatorUI() {
 if (!window.creatorProfile) return;
+
 // Set creator info
-document.getElementById('creator-name').textContent =
-window.creatorProfile.full_name || window.creatorProfile.username || 'Creator';
-document.getElementById('creator-username').textContent =
-`@${window.creatorProfile.username || 'creator'}`;
-document.getElementById('creator-bio').textContent =
-window.creatorProfile.bio || 'Passionate content creator sharing authentic African stories and experiences.';
-// Set avatar with perfect circle and initials fallback
+document.getElementById('creator-name').textContent = window.creatorProfile.full_name || window.creatorProfile.username || 'Creator';
+document.getElementById('creator-username').textContent = `@${window.creatorProfile.username || 'creator'}`;
+document.getElementById('creator-bio').textContent = window.creatorProfile.bio || 'Passionate content creator sharing authentic African stories and experiences.';
+document.getElementById('full-bio').textContent = window.creatorProfile.bio || 'Passionate content creator sharing authentic African stories and experiences.';
+
+// Banner title
+document.getElementById('banner-title').textContent = `${window.creatorProfile.full_name || window.creatorProfile.username}'s Channel`;
+
+// Location (if available)
+if (window.creatorProfile.location) {
+document.getElementById('location').textContent = window.creatorProfile.location;
+} else {
+document.querySelector('.about-item:nth-child(2)').style.display = 'none';
+}
+
+// Joined date
+if (window.creatorProfile.created_at) {
+const joinDate = new Date(window.creatorProfile.created_at);
+document.getElementById('joined-date').textContent = `Joined ${joinDate.toLocaleString('default', { month: 'long', year: 'numeric' })}`;
+}
+
+// Website link
+if (window.creatorProfile.website_url) {
+const websiteLink = document.getElementById('website-link');
+websiteLink.href = window.creatorProfile.website_url;
+websiteLink.textContent = window.creatorProfile.website_url.replace(/^https?:\/\//, '');
+} else {
+document.querySelector('.about-item:nth-child(3)').style.display = 'none';
+}
+
+// Interests/tags
+if (window.creatorProfile.interests) {
+document.getElementById('interests').textContent = window.creatorProfile.interests;
+} else {
+document.querySelector('.about-item:nth-child(4)').style.display = 'none';
+}
+
+// Avatar with perfect circle
 const avatarContainer = document.getElementById('creator-avatar-container');
-const avatarUrl = window.creatorProfile.avatar_url
-? fixMediaUrl(window.creatorProfile.avatar_url)
-: null;
+const avatarUrl = window.creatorProfile.avatar_url ? fixMediaUrl(window.creatorProfile.avatar_url) : null;
 const displayName = window.creatorProfile.full_name || window.creatorProfile.username || 'Creator';
 const initials = getInitials(displayName);
 if (avatarUrl) {
-avatarContainer.innerHTML = `
-<img src="${avatarUrl}" alt="${displayName}"
-onerror="this.parentElement.innerHTML='<div class=\\'creator-initials\\'>${initials}</div>'"
-style="width:100%;height:100%;object-fit:cover;display:block;border-radius:50%;">
-`;
+avatarContainer.innerHTML = `<img src="${avatarUrl}" alt="${displayName}" onerror="this.parentElement.innerHTML='<div class=\\'creator-initials\\'>${initials}</div>'" style="width:100%;height:100%;object-fit:cover;display:block;border-radius:50%;">`;
 } else {
 avatarContainer.innerHTML = `<div class="creator-initials">${initials}</div>`;
 }
-// Show founder badge if applicable
+
+// Founder badge
 if (window.creatorProfile.is_founder) {
 document.getElementById('founder-badge').style.display = 'block';
 }
-// Update stats
-document.getElementById('videos-count').textContent = 
-document.getElementById('uploads-count').textContent = '0'; // Will be updated by content
+
+// Stats
+document.getElementById('videos-count').textContent = document.getElementById('uploads-count').textContent = '0';
 document.getElementById('connectors-count').textContent = formatNumber(window.connectorCount);
-// Update connect button
+
+// Connect button
 updateConnectButton();
-// Check if this is user's own channel
+
+// Check if own channel
 if (window.currentUser && window.currentUser.id === window.creatorId) {
 const connectBtn = document.getElementById('connect-btn');
 connectBtn.disabled = true;
@@ -2005,70 +2005,55 @@ connectBtn.classList.remove('connect-btn', 'connected-btn');
 connectBtn.classList.add('share-btn');
 }
 }
-// Update content UI - SINGLE UPLOADS SECTION
+
 function updateContentUI(content) {
-const contentGrid = document.getElementById('content-grid');
+const grid = document.getElementById('content-grid');
 const noContent = document.getElementById('no-content');
-const contentCount = document.getElementById('content-count');
-// Update counts
+const countEl = document.getElementById('content-count');
+
 document.getElementById('videos-count').textContent = content.length;
 document.getElementById('uploads-count').textContent = content.length;
-contentCount.textContent = `${content.length} item${content.length !== 1 ? 's' : ''}`;
-// Show/hide empty state
+countEl.textContent = `${content.length} item${content.length !== 1 ? 's' : ''}`;
+
 if (content.length === 0) {
-contentGrid.style.display = 'none';
+grid.style.display = 'none';
 noContent.style.display = 'block';
 return;
 }
-contentGrid.style.display = 'grid';
+
+grid.style.display = 'grid';
 noContent.style.display = 'none';
-// Clear existing content
-contentGrid.innerHTML = '';
-// Add content cards
+grid.innerHTML = '';
+
 content.forEach(item => {
-const thumbnailUrl = item.thumbnail_url
-? fixMediaUrl(item.thumbnail_url)
-: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=225&fit=crop';
-const creatorProfile = item.user_profiles;
-const creatorName = creatorProfile?.full_name || creatorProfile?.username || item.creator || 'Creator';
-const displayName = creatorProfile?.full_name || creatorProfile?.username || 'User';
+const thumbnailUrl = item.thumbnail_url ? fixMediaUrl(item.thumbnail_url) : 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=225&fit=crop';
+const displayName = item.user_profiles?.full_name || item.user_profiles?.username || 'User';
 const initials = getInitials(displayName);
-const username = creatorProfile?.username || 'creator';
-const isNew = (new Date() - new Date(item.created_at)) < 7 * 24 * 60 * 60 * 1000;
-// Build avatar HTML with initials fallback
 let avatarHtml = '';
-if (creatorProfile?.avatar_url) {
-const avatarUrl = fixMediaUrl(creatorProfile.avatar_url);
+if (item.user_profiles?.avatar_url) {
+const avatarUrl = fixMediaUrl(item.user_profiles.avatar_url);
 avatarHtml = `<img src="${avatarUrl}" alt="${escapeHtml(displayName)}" onerror="this.parentElement.innerHTML='<div class=\\'creator-initials-small\\'>${initials}</div>'" style="width:100%;height:100%;object-fit:cover;">`;
 } else {
 avatarHtml = `<div class="creator-initials-small" style="width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,var(--bantu-blue),var(--warm-gold));display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:12px;">${initials}</div>`;
 }
-const contentCard = document.createElement('a');
-contentCard.className = 'content-card';
-contentCard.href = `content-detail.html?id=${item.id}`;
-contentCard.innerHTML = `
+
+const card = document.createElement('a');
+card.className = 'content-card';
+card.href = `content-detail.html?id=${item.id}`;
+card.innerHTML = `
 <div class="card-thumbnail">
-<img src="${thumbnailUrl}"
-alt="${escapeHtml(item.title)}"
-loading="lazy"
-onerror="this.src='https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=225&fit=crop'">
+<img src="${thumbnailUrl}" alt="${escapeHtml(item.title)}" loading="lazy" onerror="this.src='https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=225&fit=crop'">
 <div class="thumbnail-overlay"></div>
-${isNew ? '<div class="badge-new card-badge"><i class="fas fa-gem"></i> NEW</div>' : ''}
+${(new Date() - new Date(item.created_at)) < 7*24*60*60*1000 ? '<div class="badge-new card-badge"><i class="fas fa-gem"></i> NEW</div>' : ''}
 <div class="play-overlay">
-<div class="play-icon">
-<i class="fas fa-play"></i>
-</div>
+<div class="play-icon"><i class="fas fa-play"></i></div>
 </div>
 </div>
 <div class="card-content">
-<h3 class="card-title" title="${escapeHtml(item.title)}">
-${truncateText(escapeHtml(item.title), 50)}
-</h3>
+<h3 class="card-title" title="${escapeHtml(item.title)}">${truncateText(escapeHtml(item.title), 50)}</h3>
 <div class="creator-info">
-<div class="creator-avatar-small">
-${avatarHtml}
-</div>
-<div class="creator-name-small">@${escapeHtml(username)}</div>
+<div class="creator-avatar-small">${avatarHtml}</div>
+<div class="creator-name-small">@${escapeHtml(item.user_profiles?.username || (item.user_profiles?.full_name || item.creator || 'Creator'))}</div>
 </div>
 <div class="card-meta">
 <span><i class="fas fa-eye"></i> ${formatNumber(item.views_count || 0)}</span>
@@ -2076,59 +2061,48 @@ ${avatarHtml}
 </div>
 </div>
 `;
-contentGrid.appendChild(contentCard);
+grid.appendChild(card);
 });
 }
-// Update connect button state
+
 function updateConnectButton() {
-const connectBtn = document.getElementById('connect-btn');
-const connectText = document.getElementById('connect-text');
+const btn = document.getElementById('connect-btn');
 if (!window.currentUser) {
-// User not logged in
-connectBtn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Log in to Connect';
-connectBtn.classList.remove('connected-btn');
-connectBtn.classList.add('connect-btn');
-connectBtn.onclick = handleLoginRequired;
+btn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Log in to Connect';
+btn.classList.remove('connected-btn');
+btn.classList.add('connect-btn');
+btn.onclick = handleLoginRequired;
 return;
 }
 if (window.currentUser.id === window.creatorId) {
-// User viewing own profile
-connectBtn.disabled = true;
-connectBtn.innerHTML = '<i class="fas fa-user"></i> This is your channel';
+btn.disabled = true;
+btn.innerHTML = '<i class="fas fa-user"></i> This is your channel';
 return;
 }
 if (window.isConnected) {
-connectBtn.innerHTML = '<i class="fas fa-link"></i> Connected';
-connectBtn.classList.remove('connect-btn');
-connectBtn.classList.add('connected-btn');
-connectBtn.onclick = handleDisconnect;
+btn.innerHTML = '<i class="fas fa-link"></i> Connected';
+btn.classList.remove('connect-btn');
+btn.classList.add('connected-btn');
+btn.onclick = handleDisconnect;
 } else {
-connectBtn.innerHTML = '<i class="fas fa-link"></i> Connect';
-connectBtn.classList.remove('connected-btn');
-connectBtn.classList.add('connect-btn');
-connectBtn.onclick = handleConnect;
+btn.innerHTML = '<i class="fas fa-link"></i> Connect';
+btn.classList.remove('connected-btn');
+btn.classList.add('connect-btn');
+btn.onclick = handleConnect;
 }
 }
-// Handle login required
+
 function handleLoginRequired() {
 showToast('Please log in to connect with creators', 'info');
 window.location.href = `login.html?redirect=creator-channel.html?id=${window.creatorId}`;
 }
-// Handle connect - FIXED TABLE NAME
-async function handleConnect() {
-if (!window.currentUser) {
-handleLoginRequired();
-return;
-}
-if (window.currentUser.id === window.creatorId) {
-showToast('You cannot connect to your own channel', 'info');
-return;
-}
-try {
+
 // FIXED: Changed from 'user_connections' to 'connectors'
-const { error } = await supabaseAuth
-.from('connectors')
-.insert({
+async function handleConnect() {
+if (!window.currentUser) { handleLoginRequired(); return; }
+if (window.currentUser.id === window.creatorId) { showToast('You cannot connect to your own channel', 'info'); return; }
+try {
+const { error } = await supabaseAuth.from('connectors').insert({
 connector_id: window.currentUser.id,
 connected_id: window.creatorId,
 connection_type: 'creator',
@@ -2139,21 +2113,18 @@ window.isConnected = true;
 window.connectorCount++;
 updateConnectButton();
 document.getElementById('connectors-count').textContent = formatNumber(window.connectorCount);
-// Update connectors stat card count
-document.getElementById('connectors-stat-card').querySelector('.stat-number').textContent = formatNumber(window.connectorCount);
+document.querySelector('#connectors-stat-card .stat-number').textContent = formatNumber(window.connectorCount);
 showToast(`Connected with ${window.creatorProfile.full_name || window.creatorProfile.username}`, 'success');
 } catch (error) {
 console.error('Error connecting:', error);
 showToast('Failed to connect', 'error');
 }
 }
-// Handle disconnect - FIXED TABLE NAME
+
+// FIXED: Changed from 'user_connections' to 'connectors'
 async function handleDisconnect() {
 try {
-// FIXED: Changed from 'user_connections' to 'connectors'
-const { error } = await supabaseAuth
-.from('connectors')
-.delete()
+const { error } = await supabaseAuth.from('connectors').delete()
 .eq('connector_id', window.currentUser.id)
 .eq('connected_id', window.creatorId)
 .eq('connection_type', 'creator');
@@ -2162,59 +2133,47 @@ window.isConnected = false;
 window.connectorCount = Math.max(0, window.connectorCount - 1);
 updateConnectButton();
 document.getElementById('connectors-count').textContent = formatNumber(window.connectorCount);
-// Update connectors stat card count
-document.getElementById('connectors-stat-card').querySelector('.stat-number').textContent = formatNumber(window.connectorCount);
+document.querySelector('#connectors-stat-card .stat-number').textContent = formatNumber(window.connectorCount);
 showToast(`Disconnected from ${window.creatorProfile.full_name || window.creatorProfile.username}`, 'info');
 } catch (error) {
 console.error('Error disconnecting:', error);
 showToast('Failed to disconnect', 'error');
 }
 }
-// Handle share
+
 function handleShare() {
 if (!window.creatorProfile) return;
-const creatorName = window.creatorProfile.full_name || window.creatorProfile.username || 'this creator';
-const shareText = `Check out ${creatorName}'s channel on Bantu Stream Connect! Connect with amazing creators and discover exclusive content. 🚀`;
-const shareUrl = window.location.href;
+const name = window.creatorProfile.full_name || window.creatorProfile.username || 'this creator';
+const text = `Check out ${name}'s channel on Bantu Stream Connect! Connect with amazing creators and discover exclusive content. 🚀`;
+const url = window.location.href;
 if (navigator.share) {
-// Use Web Share API if available
-navigator.share({
-title: `${creatorName}'s Channel`,
-text: shareText,
-url: shareUrl
-});
+navigator.share({ title: `${name}'s Channel`, text, url });
 } else {
-// Fallback: Copy to clipboard
-navigator.clipboard.writeText(`${shareText}\n${shareUrl}`)
+navigator.clipboard.writeText(`${text}\n${url}`)
 .then(() => showToast('Link copied to clipboard!', 'success'))
 .catch(() => showToast('Failed to copy link', 'error'));
 }
 }
-// Show connectors modal - FIXED TABLE NAME
+
+// FIXED: Changed from 'user_connections' to 'connectors'
 async function showConnectorsModal() {
 try {
-// FIXED: Changed from 'user_connections' to 'connectors'
 const { data: connectors, error } = await supabaseAuth
 .from('connectors')
-.select(`
-connector_id,
-user_profiles!inner(id, full_name, username, avatar_url)
-`)
+.select(`connector_id, user_profiles!inner(id, full_name, username, avatar_url)`)
 .eq('connected_id', window.creatorId)
 .eq('connection_type', 'creator');
 if (error) throw error;
-const modalTitle = document.getElementById('modal-title');
-const connectorsList = document.getElementById('connectors-list');
-const connectorProfiles = connectors.map(c => c.user_profiles);
-modalTitle.textContent = `Connectors (${connectorProfiles.length})`;
-if (connectorProfiles.length === 0) {
-connectorsList.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--slate-grey);">No connectors yet</div>';
+const title = document.getElementById('modal-title');
+const list = document.getElementById('connectors-list');
+const profiles = connectors.map(c => c.user_profiles);
+title.textContent = `Connectors (${profiles.length})`;
+if (profiles.length === 0) {
+list.innerHTML = '<div style="text-align:center;padding:40px;color:var(--slate-grey);">No connectors yet</div>';
 } else {
-connectorsList.innerHTML = connectorProfiles.map(connector => {
-const avatarUrl = connector.avatar_url
-? fixMediaUrl(connector.avatar_url)
-: 'https://images.unsplash.com/photo-1633332755192-727a05c4013d?w=400&h=400&fit=crop';
-const displayName = connector.full_name || connector.username || 'User';
+list.innerHTML = profiles.map(p => {
+const avatarUrl = p.avatar_url ? fixMediaUrl(p.avatar_url) : 'https://images.unsplash.com/photo-1633332755192-727a05c4013d?w=400&h=400&fit=crop';
+const displayName = p.full_name || p.username || 'User';
 const initials = getInitials(displayName);
 let avatarHtml = '';
 if (avatarUrl) {
@@ -2224,12 +2183,10 @@ avatarHtml = `<div style="width:100%;height:100%;border-radius:50%;background:li
 }
 return `
 <div class="connector-item">
-<div class="connector-avatar">
-${avatarHtml}
-</div>
+<div class="connector-avatar">${avatarHtml}</div>
 <div class="connector-info">
-<div class="connector-name">${escapeHtml(connector.full_name || connector.username)}</div>
-<div class="connector-username">@${escapeHtml(connector.username || 'user')}</div>
+<div class="connector-name">${escapeHtml(p.full_name || p.username)}</div>
+<div class="connector-username">@${escapeHtml(p.username || 'user')}</div>
 </div>
 </div>
 `;
@@ -2241,131 +2198,103 @@ console.error('Error loading connectors:', error);
 showToast('Failed to load connectors', 'error');
 }
 }
-// Setup event listeners
+
+// EVENT LISTENERS
 function setupEventListeners() {
-// Profile button navigation
-const profileBtn = document.getElementById('profile-btn');
-if (profileBtn) {
-profileBtn.addEventListener('click', async () => {
+// Profile button
+document.getElementById('profile-btn')?.addEventListener('click', async () => {
 const { data: { session } } = await supabaseAuth.auth.getSession();
-if (session) {
-window.location.href = 'profile.html';
-} else {
-window.location.href = `login.html?redirect=${encodeURIComponent(window.location.href)}`;
-}
+session ? window.location.href='profile.html' : window.location.href=`login.html?redirect=${encodeURIComponent(window.location.href)}`;
 });
-}
+
 // Search button
-const searchBtn = document.getElementById('search-btn');
-if (searchBtn) {
-searchBtn.addEventListener('click', () => {
+document.getElementById('search-btn')?.addEventListener('click', () => {
 document.getElementById('search-modal').classList.add('active');
 setTimeout(() => document.getElementById('search-input')?.focus(), 300);
 });
-}
+
 // Close search modal
-const closeSearchBtn = document.getElementById('close-search-btn');
-if (closeSearchBtn) {
-closeSearchBtn.addEventListener('click', () => {
+document.getElementById('close-search-btn')?.addEventListener('click', () => {
 document.getElementById('search-modal').classList.remove('active');
 document.getElementById('search-input').value = '';
 document.getElementById('search-results-grid').innerHTML = '';
 });
-}
-// Close search modal on background click
-document.getElementById('search-modal').addEventListener('click', (e) => {
+
+// Search modal background click
+document.getElementById('search-modal').addEventListener('click', e => {
 if (e.target === document.getElementById('search-modal')) {
 document.getElementById('search-modal').classList.remove('active');
 document.getElementById('search-input').value = '';
 document.getElementById('search-results-grid').innerHTML = '';
 }
 });
-// Live search with debounce
+
+// Live search
 const searchInput = document.getElementById('search-input');
 if (searchInput) {
-let searchTimeout;
-searchInput.addEventListener('input', (e) => {
-clearTimeout(searchTimeout);
-searchTimeout = setTimeout(async () => {
+let timeout;
+searchInput.addEventListener('input', e => {
+clearTimeout(timeout);
+timeout = setTimeout(async () => {
 const query = e.target.value.trim();
-const category = document.getElementById('category-filter')?.value;
-const sortBy = document.getElementById('sort-filter')?.value;
-const resultsGrid = document.getElementById('search-results-grid');
-if (!resultsGrid) return;
 if (query.length < 2) {
-resultsGrid.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--slate-grey);">Start typing to search...</div>';
+document.getElementById('search-results-grid').innerHTML = '<div style="text-align:center;padding:40px;color:var(--slate-grey);">Start typing to search...</div>';
 return;
 }
-resultsGrid.innerHTML = `
-<div style="text-align: center; padding: 40px;">
-<div style="width: 40px; height: 40px; border: 3px solid rgba(255,255,255,0.1); border-radius: 50%; border-top-color: var(--warm-gold); animation: spin 1s linear infinite; margin: 0 auto 15px;"></div>
-<div style="color: var(--slate-grey);">Searching...</div>
-</div>
-`;
-const results = await searchContent(query, category, sortBy);
+document.getElementById('search-results-grid').innerHTML = `
+<div style="text-align:center;padding:40px;">
+<div style="width:40px;height:40px;border:3px solid rgba(255,255,255,0.1);border-radius:50%;border-top-color:var(--warm-gold);animation:spin 1s linear infinite;margin:0 auto 15px;"></div>
+<div style="color:var(--slate-grey);">Searching...</div>
+</div>`;
+const results = await searchContent(query, document.getElementById('category-filter')?.value, document.getElementById('sort-filter')?.value);
 renderSearchResults(results);
 }, 300);
 });
 }
-// Filter change triggers search
+
+// Filter changes trigger search
 document.getElementById('category-filter')?.addEventListener('change', () => {
-if (searchInput && searchInput.value.trim().length >= 2) {
-searchInput.dispatchEvent(new Event('input'));
-}
+if (searchInput && searchInput.value.trim().length >= 2) searchInput.dispatchEvent(new Event('input'));
 });
 document.getElementById('sort-filter')?.addEventListener('change', () => {
-if (searchInput && searchInput.value.trim().length >= 2) {
-searchInput.dispatchEvent(new Event('input'));
-}
+if (searchInput && searchInput.value.trim().length >= 2) searchInput.dispatchEvent(new Event('input'));
 });
+
 // Share button
-document.getElementById('share-btn').addEventListener('click', handleShare);
-// Connectors stat card click
-document.getElementById('connectors-stat-card').addEventListener('click', showConnectorsModal);
+document.getElementById('share-btn')?.addEventListener('click', handleShare);
+
+// Connectors stat card
+document.getElementById('connectors-stat-card')?.addEventListener('click', showConnectorsModal);
+
 // Close connectors modal
-document.getElementById('close-modal-btn').addEventListener('click', () => {
+document.getElementById('close-modal-btn')?.addEventListener('click', () => {
 document.getElementById('connectors-modal').classList.remove('active');
 });
-// Close connectors modal on background click
-document.getElementById('connectors-modal').addEventListener('click', (e) => {
+document.getElementById('connectors-modal').addEventListener('click', e => {
 if (e.target === document.getElementById('connectors-modal')) {
 document.getElementById('connectors-modal').classList.remove('active');
 }
 });
-// Notifications button
-const notificationsBtn = document.getElementById('notifications-btn');
-if (notificationsBtn) {
-notificationsBtn.addEventListener('click', () => {
+
+// Notifications
+document.getElementById('notifications-btn')?.addEventListener('click', () => {
 document.getElementById('notifications-panel').classList.add('active');
 renderNotifications();
 });
-}
-// Close notifications panel
-const closeNotifications = document.getElementById('close-notifications');
-if (closeNotifications) {
-closeNotifications.addEventListener('click', () => {
+document.getElementById('close-notifications')?.addEventListener('click', () => {
 document.getElementById('notifications-panel').classList.remove('active');
 });
-}
-// Close notifications panel on background click
-document.getElementById('notifications-panel').addEventListener('click', (e) => {
+document.getElementById('notifications-panel').addEventListener('click', e => {
 if (e.target === document.getElementById('notifications-panel')) {
 document.getElementById('notifications-panel').classList.remove('active');
 }
 });
-// Mark all notifications as read
-const markAllRead = document.getElementById('mark-all-read');
-if (markAllRead) {
-markAllRead.addEventListener('click', async () => {
+document.getElementById('mark-all-read')?.addEventListener('click', async () => {
 if (!window.currentUser) return;
 try {
-const { error } = await supabaseAuth
-.from('notifications')
-.update({ is_read: true })
-.eq('user_id', window.currentUser.id)
-.eq('is_read', false);
+const { error } = await supabaseAuth.from('notifications').update({is_read:true}).eq('user_id',window.currentUser.id).eq('is_read',false);
 if (error) throw error;
-window.notifications = window.notifications.map(n => ({ ...n, is_read: true }));
+window.notifications = window.notifications.map(n => ({...n, is_read:true}));
 renderNotifications();
 updateNotificationBadge(0);
 showToast('All notifications marked as read', 'success');
@@ -2374,108 +2303,78 @@ console.error('Error marking all as read:', error);
 showToast('Failed to mark notifications as read', 'error');
 }
 });
-}
+
 // Theme toggle
 const themeToggle = document.getElementById('nav-theme-toggle');
 const themeSelector = document.getElementById('theme-selector');
 if (themeToggle && themeSelector) {
-themeToggle.addEventListener('click', (e) => {
-e.stopPropagation();
-themeSelector.style.display = themeSelector.style.display === 'flex' ? 'none' : 'flex';
-});
-document.addEventListener('click', (e) => {
-if (themeSelector.style.display === 'flex' &&
-!themeSelector.contains(e.target) &&
-!themeToggle.contains(e.target)) {
+themeToggle.addEventListener('click', e => { e.stopPropagation(); themeSelector.style.display = themeSelector.style.display === 'flex' ? 'none' : 'flex'; });
+document.addEventListener('click', e => {
+if (themeSelector.style.display === 'flex' && !themeSelector.contains(e.target) && !themeToggle.contains(e.target)) {
 themeSelector.style.display = 'none';
 }
 });
 document.querySelectorAll('.theme-option').forEach(option => {
 option.addEventListener('click', () => {
-if (typeof window.applyTheme === 'function') {
-window.applyTheme(option.dataset.theme);
-}
+if (typeof window.applyTheme === 'function') window.applyTheme(option.dataset.theme);
 themeSelector.style.display = 'none';
 });
 });
 }
+
 // Navigation buttons
-document.getElementById('nav-home-btn')?.addEventListener('click', () => {
-window.location.href = 'index.html';
-});
+document.getElementById('nav-home-btn')?.addEventListener('click', () => window.location.href='index.html');
 document.getElementById('nav-create-btn')?.addEventListener('click', async () => {
 const { data: { session } } = await supabaseAuth.auth.getSession();
-if (session) {
-window.location.href = 'creator-upload.html';
-} else {
-showToast('Please sign in to upload content', 'warning');
-window.location.href = `login.html?redirect=creator-upload.html`;
-}
+session ? window.location.href='creator-upload.html' : (showToast('Please sign in to upload content', 'warning'), window.location.href='login.html?redirect=creator-upload.html');
 });
 document.getElementById('nav-dashboard-btn')?.addEventListener('click', async () => {
 const { data: { session } } = await supabaseAuth.auth.getSession();
-if (session) {
-window.location.href = 'creator-dashboard.html';
-} else {
-showToast('Please sign in to access dashboard', 'warning');
-window.location.href = `login.html?redirect=creator-dashboard.html`;
-}
+session ? window.location.href='creator-dashboard.html' : (showToast('Please sign in to access dashboard', 'warning'), window.location.href='login.html?redirect=creator-dashboard.html');
 });
 document.getElementById('nav-notifications-btn')?.addEventListener('click', () => {
 document.getElementById('notifications-panel').classList.add('active');
 renderNotifications();
 });
-// Back to top button
+
+// Back to top
 const backToTopBtn = document.getElementById('backToTopBtn');
 if (backToTopBtn) {
-backToTopBtn.addEventListener('click', () => {
-window.scrollTo({ top: 0, behavior: 'smooth' });
-});
+backToTopBtn.addEventListener('click', () => window.scrollTo({top:0,behavior:'smooth'}));
 window.addEventListener('scroll', () => {
 backToTopBtn.style.display = window.pageYOffset > 300 ? 'flex' : 'none';
 });
 }
 }
-// Initialize creator channel
+
+// INITIALIZE
 async function initializeCreatorChannel() {
 try {
-// Show loading screen
 document.getElementById('loading').style.display = 'flex';
 document.getElementById('app').style.display = 'none';
-// Initialize theme
-if (typeof window.initTheme === 'function') {
-window.initTheme();
-}
-// Check authentication
+
+if (typeof window.initTheme === 'function') window.initTheme();
 await checkAuth();
-// Load creator data
 await loadCreatorData();
-// Setup event listeners
 setupEventListeners();
-// Hide loading with smooth transition
+
 setTimeout(() => {
 document.getElementById('loading').style.display = 'none';
 document.getElementById('app').style.display = 'block';
-// Trigger animations
-document.querySelectorAll('.content-card').forEach((card, index) => {
-setTimeout(() => {
-card.style.opacity = '1';
-card.style.transform = 'translateY(0)';
-}, 300 + (index * 50));
+document.querySelectorAll('.content-card').forEach((card, i) => {
+setTimeout(() => { card.style.opacity='1'; card.style.transform='translateY(0)'; }, 300 + (i * 50));
 });
 }, 500);
 console.log('✅ Creator channel initialized successfully');
 } catch (error) {
 console.error('❌ Error initializing creator channel:', error);
 showToast('Failed to initialize creator channel', 'error');
-setTimeout(() => {
-document.getElementById('loading').style.display = 'none';
-document.getElementById('app').style.display = 'block';
-}, 1000);
+setTimeout(() => { document.getElementById('loading').style.display='none'; document.getElementById('app').style.display='block'; }, 1000);
 }
 }
-// Initialize the app
+
 await initializeCreatorChannel();
+
 // Auth state change listener
 supabaseAuth.auth.onAuthStateChange((event, session) => {
 console.log('Auth state changed:', event);
@@ -2484,19 +2383,9 @@ window.currentUser = session.user;
 loadUserProfile();
 loadNotifications();
 showToast('Welcome back!', 'success');
-// Re-check connection status
 if (window.creatorId) {
-supabaseAuth
-.from('connectors') // FIXED: Changed from 'user_connections' to 'connectors'
-.select('*')
-.eq('connector_id', session.user.id)
-.eq('connected_id', window.creatorId)
-.eq('connection_type', 'creator')
-.limit(1)
-.then(({ data }) => {
-window.isConnected = data && data.length > 0;
-updateConnectButton();
-});
+supabaseAuth.from('connectors').select('*').eq('connector_id',session.user.id).eq('connected_id',window.creatorId).eq('connection_type','creator').limit(1)
+.then(({data}) => { window.isConnected = data && data.length > 0; updateConnectButton(); });
 }
 } else if (event === 'SIGNED_OUT') {
 window.currentUser = null;
