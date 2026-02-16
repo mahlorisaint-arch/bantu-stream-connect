@@ -1,3 +1,21 @@
+.loading-screen[hidden],
+.auth-modal[hidden],
+.search-modal[hidden] {
+  display: none !important;
+}
+
+#app[hidden] {
+  display: none !important;
+}
+
+/* Fallback if JS fails */
+.no-js #loading {
+  display: none;
+}
+
+.no-js #app {
+  display: block;
+}
 /* =========================================
    1. VARIABLES & THEME
    ========================================= */
