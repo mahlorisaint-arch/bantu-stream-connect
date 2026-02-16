@@ -903,6 +903,52 @@ body {
   transition: width 0.3s ease;
 }
 
+/* Creator Summary Card */
+.creator-summary {
+  background: linear-gradient(135deg, rgba(29, 78, 216, 0.1), rgba(245, 158, 11, 0.1));
+  border: 1px solid var(--card-border);
+  border-radius: 20px;
+  padding: 24px;
+  margin-bottom: 30px;
+  backdrop-filter: blur(10px);
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+}
+
+.summary-item {
+  text-align: center;
+}
+
+.summary-label {
+  font-size: 12px;
+  color: var(--slate-grey);
+  margin-bottom: 4px;
+}
+
+.summary-value {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--soft-white);
+  margin-bottom: 4px;
+}
+
+.summary-sub {
+  font-size: 11px;
+  color: var(--warm-gold);
+}
+
+.monetization-badge {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 10px;
+  font-weight: 600;
+  background: rgba(16, 185, 129, 0.2);
+  color: var(--success-color);
+}
+
 /* Edit Modal Specific */
 .edit-form {
   display: flex;
@@ -1100,6 +1146,10 @@ body {
   .modal-actions {
     flex-direction: column;
   }
+
+  .creator-summary {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
 @media (max-width: 480px) {
@@ -1115,6 +1165,10 @@ body {
   .stats-row {
     flex-wrap: wrap;
     gap: 12px;
+  }
+
+  .creator-summary {
+    grid-template-columns: 1fr;
   }
 }
 </style>
@@ -1181,6 +1235,30 @@ body {
       <button id="refreshBtn" class="refresh-btn" title="Refresh">
         <i class="fas fa-sync-alt"></i>
       </button>
+    </div>
+
+    <!-- Creator Summary Section -->
+    <div id="creatorSummary" class="creator-summary" style="display: none;">
+      <div class="summary-item">
+        <div class="summary-label">Total Views</div>
+        <div class="summary-value" id="totalViews">0</div>
+        <div class="summary-sub">lifetime</div>
+      </div>
+      <div class="summary-item">
+        <div class="summary-label">Total Likes</div>
+        <div class="summary-value" id="totalLikes">0</div>
+        <div class="summary-sub">all time</div>
+      </div>
+      <div class="summary-item">
+        <div class="summary-label">Total Comments</div>
+        <div class="summary-value" id="totalComments">0</div>
+        <div class="summary-sub">all time</div>
+      </div>
+      <div class="summary-item">
+        <div class="summary-label">Total Earnings</div>
+        <div class="summary-value" id="totalEarnings">R0.00</div>
+        <div class="summary-sub" id="monetizationStatus">not monetized</div>
+      </div>
     </div>
 
     <!-- Search and Filter Section -->
@@ -1326,11 +1404,8 @@ body {
         </div>
 
         <div class="performance-label">
-          <span>Retention Rate</span>
-          <span id="retentionRate">0%</span>
-        </div>
-        <div class="performance-progress">
-          <div class="progress-fill" id="retentionProgress" style="width: 0%"></div>
+          <span>Engagement (Likes+Comments)/Views</span>
+          <span id="engagementDetail">0/0</span>
         </div>
       </div>
 
@@ -1501,6 +1576,14 @@ document.addEventListener('DOMContentLoaded', async () => {
   const contentStats = document.getElementById('contentStats');
   const retryBtn = document.getElementById('retryBtn');
   const backToDashboardBtn = document.getElementById('backToDashboardBtn');
+  const creatorSummary = document.getElementById('creatorSummary');
+  
+  // Creator Summary Elements
+  const totalViews = document.getElementById('totalViews');
+  const totalLikes = document.getElementById('totalLikes');
+  const totalComments = document.getElementById('totalComments');
+  const totalEarnings = document.getElementById('totalEarnings');
+  const monetizationStatus = document.getElementById('monetizationStatus');
   
   // Modal Elements
   const deleteModal = document.getElementById('deleteModal');
@@ -1537,6 +1620,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   let currentEditContent = null;
   let isLoading = true;
   let notifications = [];
+  let creatorAnalytics = null;
   
   // Filter options matching Flutter app
   const filterOptions = [
@@ -1586,7 +1670,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     return num.toString();
   }
   
-  // ✅ CONVERT USD TO ZAR
+  // ✅ CONVERT USD TO ZAR (if needed)
   function convertToZAR(usdAmount) {
     const usdToZarRate = 18.5;
     return formatCurrency(usdAmount * usdToZarRate);
@@ -1910,6 +1994,84 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
   
+  // ✅ LOAD CREATOR ANALYTICS SUMMARY
+  async function loadCreatorAnalytics() {
+    try {
+      if (!currentUser) return null;
+      
+      // Query the materialized view for creator analytics
+      const { data, error } = await window.supabaseClient
+        .from('creator_analytics_summary')
+        .select('*')
+        .eq('creator_id', currentUser.id)
+        .maybeSingle();
+      
+      if (error) throw error;
+      
+      creatorAnalytics = data || null;
+      
+      // Update creator summary section
+      if (creatorAnalytics) {
+        creatorSummary.style.display = 'grid';
+        
+        totalViews.textContent = formatNumber(creatorAnalytics.total_views || 0);
+        totalLikes.textContent = formatNumber(creatorAnalytics.total_likes || 0);
+        totalComments.textContent = formatNumber(creatorAnalytics.total_comments || 0);
+        totalEarnings.textContent = formatCurrency(creatorAnalytics.total_earnings || 0);
+        
+        monetizationStatus.innerHTML = creatorAnalytics.is_eligible_for_monetization 
+          ? '<span class="monetization-badge"><i class="fas fa-check-circle"></i> Monetization Eligible</span>'
+          : '<span class="monetization-badge" style="background: rgba(239, 68, 68, 0.2); color: var(--error-color);"><i class="fas fa-info-circle"></i> Not Eligible</span>';
+      } else {
+        creatorSummary.style.display = 'none';
+      }
+      
+      return creatorAnalytics;
+    } catch (error) {
+      console.error('Error loading creator analytics:', error);
+      creatorSummary.style.display = 'none';
+      return null;
+    }
+  }
+  
+  // ✅ GET REAL CONTENT COUNTS (using content-detail.js approach)
+  async function getContentRealCounts(contentId) {
+    try {
+      // Get real view count from content_views table
+      const { count: viewsCount, error: viewsError } = await window.supabaseClient
+        .from('content_views')
+        .select('*', { count: 'exact', head: true })
+        .eq('content_id', contentId);
+      
+      if (viewsError) console.error('Views count error:', viewsError);
+      
+      // Get real likes count from likes table
+      const { count: likesCount, error: likesError } = await window.supabaseClient
+        .from('likes')
+        .select('*', { count: 'exact', head: true })
+        .eq('content_id', contentId);
+      
+      if (likesError) console.error('Likes count error:', likesError);
+      
+      // Get real comments count from comments table
+      const { count: commentsCount, error: commentsError } = await window.supabaseClient
+        .from('comments')
+        .select('*', { count: 'exact', head: true })
+        .eq('content_id', contentId);
+      
+      if (commentsError) console.error('Comments count error:', commentsError);
+      
+      return {
+        views: viewsCount || 0,
+        likes: likesCount || 0,
+        comments: commentsCount || 0
+      };
+    } catch (error) {
+      console.error('Error getting real counts for content', contentId, error);
+      return { views: 0, likes: 0, comments: 0 };
+    }
+  }
+  
   // ✅ LOAD USER CONTENT
   async function loadUserContent() {
     try {
@@ -1919,6 +2081,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         throw new Error('No authenticated user');
       }
       
+      // First load creator analytics
+      await loadCreatorAnalytics();
+      
       const { data: content, error: contentError } = await window.supabaseClient
         .from('Content')
         .select('*, user_profiles!user_id(*)')
@@ -1927,32 +2092,19 @@ document.addEventListener('DOMContentLoaded', async () => {
       
       if (contentError) throw contentError;
       
-      // Enrich content with real counts from source tables
+      // Enrich content with real counts from source tables using content-detail.js approach
       const enrichedContent = await Promise.all(
         (content || []).map(async (item) => {
-          // Get real view count from content_views table
-          const { count: viewsCount, error: viewsError } = await window.supabaseClient
-            .from('content_views')
-            .select('*', { count: 'exact', head: true })
-            .eq('content_id', item.id);
-          
-          // Get real likes count from likes table
-          const { count: likesCount, error: likesError } = await window.supabaseClient
-            .from('likes')
-            .select('*', { count: 'exact', head: true })
-            .eq('content_id', item.id);
-          
-          // Get real comments count from comments table
-          const { count: commentsCount, error: commentsError } = await window.supabaseClient
-            .from('comments')
-            .select('*', { count: 'exact', head: true })
-            .eq('content_id', item.id);
+          const realCounts = await getContentRealCounts(item.id);
           
           return {
             ...item,
-            real_views: viewsCount || 0,
-            real_likes: likesCount || 0,
-            real_comments: commentsCount || 0,
+            views_count: realCounts.views, // Override with real count
+            likes_count: realCounts.likes, // Override with real count
+            comments_count: realCounts.comments, // Override with real count
+            real_views: realCounts.views,
+            real_likes: realCounts.likes,
+            real_comments: realCounts.comments,
             media_type: item.media_type || 'video',
             status: item.status || 'draft',
             genre: item.genre || ''
@@ -1963,7 +2115,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       allContent = enrichedContent;
       filteredContent = [...allContent];
       
-      console.log(`✅ Loaded ${allContent.length} content items`);
+      console.log(`✅ Loaded ${allContent.length} content items with real counts`);
       
       // Render UI
       renderFilterChips();
@@ -2183,12 +2335,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             : `No ${filterName.toLowerCase()} found. Try a different filter or upload new content.`
           }
         </p>
-        ${selectedFilter !== 'all' ? `
-          <button class="upload-now-btn" onclick="window.location.href='creator-upload.html'">
-            <i class="fas fa-cloud-upload-alt"></i>
-            Upload Content
-          </button>
-        ` : ''}
+        <button class="upload-now-btn" onclick="window.location.href='creator-upload.html'">
+          <i class="fas fa-cloud-upload-alt"></i>
+          Upload Content
+        </button>
       </div>
     `;
   }
@@ -2199,7 +2349,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     const totalItems = allContent.length;
     const shownItems = filteredContent.length;
-    contentStats.textContent = `${totalItems} items • ${shownItems} shown`;
+    
+    if (creatorAnalytics) {
+      contentStats.textContent = `${totalItems} items • ${shownItems} shown • ${formatNumber(creatorAnalytics.total_views || 0)} total views`;
+    } else {
+      contentStats.textContent = `${totalItems} items • ${shownItems} shown`;
+    }
   }
   
   // ✅ SHOW CONTENT INSIGHTS
@@ -2212,23 +2367,21 @@ document.addEventListener('DOMContentLoaded', async () => {
     const views = content.real_views || 0;
     const likes = content.real_likes || 0;
     const comments = content.real_comments || 0;
+    
+    // Calculate earnings based on views (simplified model)
     const earnings = views * 0.01; // R0.01 per view
     
     // Update insight values
     document.getElementById('insightViews').textContent = formatNumber(views);
     document.getElementById('insightLikes').textContent = formatNumber(likes);
     document.getElementById('insightComments').textContent = formatNumber(comments);
-    document.getElementById('insightEarnings').textContent = convertToZAR(earnings);
+    document.getElementById('insightEarnings').textContent = formatCurrency(earnings);
     
     // Calculate engagement rate (likes + comments) / views * 100
     const engagementRate = views > 0 ? ((likes + comments) / views * 100).toFixed(1) : 0;
     document.getElementById('engagementRate').textContent = `${engagementRate}%`;
     document.getElementById('engagementProgress').style.width = `${Math.min(engagementRate, 100)}%`;
-    
-    // Calculate retention rate (simulated based on views)
-    const retentionRate = views > 100 ? Math.min(85, 50 + (views / 1000)).toFixed(1) : 50;
-    document.getElementById('retentionRate').textContent = `${retentionRate}%`;
-    document.getElementById('retentionProgress').style.width = `${retentionRate}%`;
+    document.getElementById('engagementDetail').textContent = `${likes + comments}/${views}`;
     
     // Generate performance summary
     let summary = '';
@@ -2345,6 +2498,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       allContent = allContent.filter(c => c.id !== currentDeleteId);
       filterContent(selectedFilter);
       
+      // Reload analytics after deletion
+      await loadCreatorAnalytics();
+      
       deleteModal.style.display = 'none';
       currentDeleteId = null;
       
@@ -2442,17 +2598,14 @@ document.addEventListener('DOMContentLoaded', async () => {
       
       if (error) throw error;
       
-      // Enrich with real counts
+      // Enrich with real counts using content-detail.js approach
       const enriched = await Promise.all(
         (data || []).map(async (item) => {
-          const { count } = await window.supabaseClient
-            .from('content_views')
-            .select('*', { count: 'exact', head: true })
-            .eq('content_id', item.id);
-          
+          const realCounts = await getContentRealCounts(item.id);
           return {
             ...item,
-            real_views: count || 0
+            real_views: realCounts.views,
+            likes_count: realCounts.likes
           };
         })
       );
@@ -2724,6 +2877,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       updateNotificationBadge(0);
       allContent = [];
       filteredContent = [];
+      creatorSummary.style.display = 'none';
       renderContent();
       showToast('Signed out successfully', 'info');
     }
