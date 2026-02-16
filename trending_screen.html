@@ -13,7 +13,7 @@
 <!-- Supabase JS SDK -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
-/* Color Theme (from Flutter app) */
+/* Color Theme */
 :root {
 --deep-black: #0A0E12;
 --deep-navy: #0F172A;
@@ -29,11 +29,7 @@
 --glow-pink: #EC4899;
 }
 /* Reset & Base */
-* {
-margin: 0;
-padding: 0;
-box-sizing: border-box;
-}
+* { margin: 0; padding: 0; box-sizing: border-box; }
 body {
 font-family: 'Inter', sans-serif;
 background: linear-gradient(135deg, #001F54 0%, #0A0E3F 50%, #000000 100%);
@@ -64,25 +60,15 @@ border-top-color: var(--warm-gold);
 animation: spin 1s linear infinite;
 margin-bottom: 20px;
 }
-@keyframes spin {
-to { transform: rotate(360deg); }
-}
-/* Glassmorphism Effects */
+@keyframes spin { to { transform: rotate(360deg); } }
+/* Glassmorphism */
 .glassmorphism {
 background: rgba(255, 255, 255, 0.05);
 backdrop-filter: blur(10px);
--webkit-backdrop-filter: blur(10px);
 border: 1px solid rgba(255, 255, 255, 0.1);
 border-radius: 16px;
-box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
 }
-.glassmorphism-light {
-background: rgba(255, 255, 255, 0.1);
-backdrop-filter: blur(15px);
--webkit-backdrop-filter: blur(15px);
-border: 1px solid rgba(255, 255, 255, 0.2);
-}
-/* Header with Background Animation */
+/* Header */
 .header-container {
 position: relative;
 min-height: 30vh;
@@ -108,7 +94,6 @@ background-image: linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px
 linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
 background-size: 30px 30px;
 }
-/* Main Header */
 .main-header {
 position: relative;
 padding: 20px;
@@ -144,7 +129,6 @@ background: linear-gradient(135deg, var(--soft-white) 0%, var(--warm-gold) 100%)
 -webkit-text-fill-color: transparent;
 background-clip: text;
 letter-spacing: 2px;
-text-shadow: 0 0 30px rgba(245, 158, 11, 0.3);
 }
 .header-actions {
 display: flex;
@@ -167,20 +151,14 @@ font-size: 1.2rem;
 .icon-btn:hover {
 background: rgba(255, 255, 255, 0.2);
 transform: translateY(-2px);
-box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
 }
 .refresh-btn {
 color: var(--bantu-blue);
 animation: rotate 20s linear infinite;
 animation-play-state: paused;
 }
-.refresh-btn:hover {
-animation-play-state: running;
-}
-@keyframes rotate {
-0% { transform: rotate(0deg); }
-100% { transform: rotate(360deg); }
-}
+.refresh-btn:hover { animation-play-state: running; }
+@keyframes rotate { to { transform: rotate(360deg); } }
 /* Filter Chips */
 .filter-section {
 position: relative;
@@ -195,17 +173,6 @@ overflow-x: auto;
 padding-bottom: 10px;
 scrollbar-width: thin;
 scrollbar-color: var(--bantu-blue) transparent;
-}
-.filter-container::-webkit-scrollbar {
-height: 6px;
-}
-.filter-container::-webkit-scrollbar-track {
-background: rgba(255, 255, 255, 0.1);
-border-radius: 3px;
-}
-.filter-container::-webkit-scrollbar-thumb {
-background: var(--bantu-blue);
-border-radius: 3px;
 }
 .filter-chip {
 padding: 10px 20px;
@@ -229,7 +196,6 @@ background: var(--warm-gold);
 border-color: transparent;
 color: var(--deep-black);
 font-weight: 600;
-box-shadow: 0 4px 15px rgba(245, 158, 11, 0.4);
 }
 /* Main Content */
 .main-content {
@@ -237,10 +203,7 @@ max-width: 1200px;
 margin: 0 auto;
 padding: 20px;
 }
-/* Sections */
-.section {
-margin-bottom: 40px;
-}
+.section { margin-bottom: 40px; }
 .section-header {
 display: flex;
 justify-content: space-between;
@@ -276,7 +239,7 @@ transition: all 0.3s ease;
 background: rgba(255, 255, 255, 0.2);
 transform: translateX(5px);
 }
-/* Featured Trend Card */
+/* Featured Card */
 .featured-trend-card {
 position: relative;
 border-radius: 20px;
@@ -294,9 +257,7 @@ background-size: cover;
 background-position: center;
 transition: transform 0.5s ease;
 }
-.featured-trend-card:hover .featured-bg {
-transform: scale(1.05);
-}
+.featured-trend-card:hover .featured-bg { transform: scale(1.05); }
 .featured-overlay {
 position: absolute;
 top: 0;
@@ -356,7 +317,7 @@ align-self: flex-start;
 transform: translateY(-3px);
 box-shadow: 0 10px 25px rgba(245, 158, 11, 0.4);
 }
-/* Content Grids */
+/* Content Cards */
 .content-horizontal-scroll {
 display: flex;
 gap: 20px;
@@ -364,17 +325,6 @@ overflow-x: auto;
 padding-bottom: 20px;
 scrollbar-width: thin;
 scrollbar-color: var(--bantu-blue) transparent;
-}
-.content-horizontal-scroll::-webkit-scrollbar {
-height: 6px;
-}
-.content-horizontal-scroll::-webkit-scrollbar-track {
-background: rgba(255, 255, 255, 0.1);
-border-radius: 3px;
-}
-.content-horizontal-scroll::-webkit-scrollbar-thumb {
-background: var(--bantu-blue);
-border-radius: 3px;
 }
 .content-card {
 flex: 0 0 300px;
@@ -388,12 +338,12 @@ cursor: pointer;
 .content-card:hover {
 transform: translateY(-10px);
 box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
-border-color: rgba(255, 255, 255, 0.3);
 }
 .card-thumbnail {
 position: relative;
 height: 180px;
 overflow: hidden;
+background: linear-gradient(135deg, #1D4ED8, #8B5CF6);
 }
 .card-thumbnail img {
 width: 100%;
@@ -401,9 +351,7 @@ height: 100%;
 object-fit: cover;
 transition: transform 0.3s ease;
 }
-.content-card:hover .card-thumbnail img {
-transform: scale(1.1);
-}
+.content-card:hover .card-thumbnail img { transform: scale(1.1); }
 .thumbnail-overlay {
 position: absolute;
 top: 0;
@@ -425,21 +373,10 @@ border-radius: 15px;
 font-size: 0.8rem;
 font-weight: 600;
 }
-.badge.live {
-background: rgba(239, 68, 68, 0.9);
-color: white;
-}
-.badge.upcoming {
-background: rgba(29, 78, 216, 0.9);
-color: white;
-}
-.badge.viewers {
-background: rgba(0, 0, 0, 0.7);
-color: white;
-}
-.card-content {
-padding: 20px;
-}
+.badge.live { background: rgba(239, 68, 68, 0.9); color: white; }
+.badge.upcoming { background: rgba(29, 78, 216, 0.9); color: white; }
+.badge.viewers { background: rgba(0, 0, 0, 0.7); color: white; }
+.card-content { padding: 20px; }
 .card-title {
 font-size: 1.1rem;
 font-weight: 600;
@@ -474,9 +411,7 @@ cursor: pointer;
 transition: all 0.3s ease;
 margin-top: 10px;
 }
-.reminder-btn:hover {
-background: rgba(255, 255, 255, 0.2);
-}
+.reminder-btn:hover { background: rgba(255, 255, 255, 0.2); }
 /* Hashtags */
 .hashtags-container {
 display: flex;
@@ -498,7 +433,7 @@ transition: all 0.3s ease;
 background: rgba(245, 158, 11, 0.1);
 transform: translateY(-2px);
 }
-/* Community Gems Grid */
+/* Community Gems */
 .community-grid {
 display: grid;
 grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -519,6 +454,7 @@ box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3);
 .gem-thumbnail {
 height: 160px;
 overflow: hidden;
+background: linear-gradient(135deg, #1D4ED8, #8B5CF6);
 }
 .gem-thumbnail img {
 width: 100%;
@@ -526,13 +462,9 @@ height: 100%;
 object-fit: cover;
 transition: transform 0.3s ease;
 }
-.gem-card:hover .gem-thumbnail img {
-transform: scale(1.1);
-}
-.gem-content {
-padding: 15px;
-}
-/* Explore All Section */
+.gem-card:hover .gem-thumbnail img { transform: scale(1.1); }
+.gem-content { padding: 15px; }
+/* Explore All */
 .explore-all-section {
 text-align: center;
 padding: 40px 20px;
@@ -569,21 +501,12 @@ z-index: 1000;
 animation: slideIn 0.3s ease;
 max-width: 300px;
 }
-.toast.success {
-background: linear-gradient(135deg, #51cf66 0%, #2b8a3e 100%);
-}
-.toast.info {
-background: linear-gradient(135deg, #4dabf7 0%, #748ffc 100%);
-}
+.toast.success { background: linear-gradient(135deg, #51cf66 0%, #2b8a3e 100%); }
+.toast.info { background: linear-gradient(135deg, #4dabf7 0%, #748ffc 100%); }
+.toast.error { background: linear-gradient(135deg, #ff6b6b 0%, #c92a2a 100%); }
 @keyframes slideIn {
-from {
-transform: translateX(100%);
-opacity: 0;
-}
-to {
-transform: translateX(0);
-opacity: 1;
-}
+from { transform: translateX(100%); opacity: 0; }
+to { transform: translateX(0); opacity: 1; }
 }
 /* Navigation */
 .global-nav {
@@ -608,17 +531,10 @@ text-decoration: none;
 font-size: 0.8rem;
 transition: all 0.3s ease;
 }
-.nav-item i {
-font-size: 1.2rem;
-margin-bottom: 5px;
-}
-.nav-item:hover {
-color: var(--soft-white);
-}
-.nav-item.active {
-color: var(--warm-gold);
-}
-/* Auth Modal - FIXED: Hidden by default */
+.nav-item i { font-size: 1.2rem; margin-bottom: 5px; }
+.nav-item:hover { color: var(--soft-white); }
+.nav-item.active { color: var(--warm-gold); }
+/* Auth Modal */
 .auth-modal {
 position: fixed;
 top: 0;
@@ -626,15 +542,13 @@ left: 0;
 width: 100%;
 height: 100%;
 background: rgba(0, 0, 0, 0.8);
-display: none !important; /* FIXED: Force hidden */
+display: none;
 align-items: center;
 justify-content: center;
 z-index: 2000;
 backdrop-filter: blur(5px);
 }
-.auth-modal.active {
-display: flex !important;
-}
+.auth-modal.active { display: flex; }
 .auth-content {
 background: rgba(15, 23, 42, 0.9);
 border-radius: 20px;
@@ -643,28 +557,11 @@ max-width: 400px;
 width: 90%;
 text-align: center;
 border: 1px solid rgba(255, 255, 255, 0.1);
-backdrop-filter: blur(20px);
 }
-.auth-icon {
-font-size: 64px;
-color: var(--warm-gold);
-margin-bottom: 20px;
-}
-.auth-title {
-font-family: 'Orbitron', sans-serif;
-font-size: 24px;
-margin-bottom: 15px;
-color: var(--soft-white);
-}
-.auth-message {
-color: var(--slate-grey);
-margin-bottom: 30px;
-line-height: 1.6;
-}
-.auth-buttons {
-display: flex;
-gap: 15px;
-}
+.auth-icon { font-size: 64px; color: var(--warm-gold); margin-bottom: 20px; }
+.auth-title { font-family: 'Orbitron', sans-serif; font-size: 24px; margin-bottom: 15px; }
+.auth-message { color: var(--slate-grey); margin-bottom: 30px; line-height: 1.6; }
+.auth-buttons { display: flex; gap: 15px; }
 .auth-btn {
 flex: 1;
 padding: 15px;
@@ -678,7 +575,6 @@ border: none;
 .auth-btn.login {
 background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
 color: var(--soft-white);
-border: 1px solid rgba(255, 255, 255, 0.1);
 }
 .auth-btn.login:hover {
 transform: translateY(-2px);
@@ -686,13 +582,10 @@ box-shadow: 0 4px 15px rgba(29, 78, 216, 0.4);
 }
 .auth-btn.cancel {
 background: rgba(255, 255, 255, 0.05);
-border: 1px solid var(--card-border);
+border: 1px solid rgba(255, 255, 255, 0.1);
 color: var(--soft-white);
 }
-.auth-btn.cancel:hover {
-background: rgba(255, 255, 255, 0.1);
-}
-/* Search Modal - FIXED: Hidden by default */
+/* Search Modal */
 .search-modal {
 position: fixed;
 top: 0;
@@ -700,15 +593,13 @@ left: 0;
 width: 100%;
 height: 100%;
 background: rgba(0, 0, 0, 0.9);
-display: none !important; /* FIXED: Force hidden */
+display: none;
 align-items: center;
 justify-content: center;
 z-index: 2000;
 backdrop-filter: blur(5px);
 }
-.search-modal.active {
-display: flex !important;
-}
+.search-modal.active { display: flex; }
 .search-modal-header {
 display: flex;
 justify-content: space-between;
@@ -718,11 +609,7 @@ padding-bottom: 15px;
 border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 width: 100%;
 }
-.search-input-container {
-position: relative;
-width: 100%;
-max-width: 600px;
-}
+.search-input-container { position: relative; width: 100%; max-width: 600px; }
 .search-icon {
 position: absolute;
 left: 15px;
@@ -739,10 +626,6 @@ border: 1px solid rgba(255, 255, 255, 0.1);
 background: rgba(15, 23, 42, 0.7);
 color: var(--soft-white);
 font-size: 16px;
-backdrop-filter: blur(10px);
-}
-.search-input::placeholder {
-color: var(--slate-grey);
 }
 .search-input:focus {
 outline: none;
@@ -774,15 +657,8 @@ margin-bottom: 20px;
 width: 100%;
 max-width: 600px;
 }
-.filter-group {
-flex: 1;
-}
-.filter-label {
-display: block;
-margin-bottom: 8px;
-font-size: 14px;
-color: var(--slate-grey);
-}
+.filter-group { flex: 1; }
+.filter-label { display: block; margin-bottom: 8px; font-size: 14px; color: var(--slate-grey); }
 .filter-select {
 width: 100%;
 padding: 12px;
@@ -791,20 +667,14 @@ border: 1px solid rgba(255, 255, 255, 0.1);
 background: rgba(15, 23, 42, 0.7);
 color: var(--soft-white);
 font-size: 14px;
-backdrop-filter: blur(10px);
 }
-.search-results {
-width: 100%;
-max-width: 800px;
-max-height: 70vh;
-overflow-y: auto;
-}
+.search-results { width: 100%; max-width: 800px; max-height: 70vh; overflow-y: auto; }
 .search-results-grid {
 display: grid;
 grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
 gap: 15px;
 }
-/* Notifications Panel - FIXED: Hidden by default */
+/* Notifications Panel */
 .notifications-panel {
 position: fixed;
 top: 0;
@@ -817,12 +687,8 @@ box-shadow: -5px 0 25px rgba(0, 0, 0, 0.3);
 z-index: 1000;
 transition: right 0.3s ease;
 backdrop-filter: blur(10px);
-display: none !important; /* FIXED */
 }
-.notifications-panel.active {
-right: 0;
-display: block !important;
-}
+.notifications-panel.active { right: 0; }
 .notifications-header {
 padding: 20px;
 border-bottom: 1px solid rgba(255, 255, 255, 0.1);
@@ -830,20 +696,14 @@ display: flex;
 justify-content: space-between;
 align-items: center;
 }
-.notifications-list {
-max-height: calc(100vh - 150px);
-overflow-y: auto;
-padding: 20px;
-}
+.notifications-list { max-height: calc(100vh - 150px); overflow-y: auto; padding: 20px; }
 .notification-item {
 padding: 15px;
 border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 display: flex;
 gap: 12px;
 }
-.notification-item.read {
-opacity: 0.7;
-}
+.notification-item.read { opacity: 0.7; }
 .notification-icon {
 width: 40px;
 height: 40px;
@@ -854,23 +714,10 @@ align-items: center;
 justify-content: center;
 flex-shrink: 0;
 }
-.notification-content {
-flex: 1;
-}
-.notification-content h4 {
-font-weight: 600;
-margin-bottom: 5px;
-color: var(--soft-white);
-}
-.notification-content p {
-font-size: 14px;
-color: var(--slate-grey);
-margin-bottom: 8px;
-}
-.notification-time {
-font-size: 12px;
-color: var(--warm-gold);
-}
+.notification-content { flex: 1; }
+.notification-content h4 { font-weight: 600; margin-bottom: 5px; }
+.notification-content p { font-size: 14px; color: var(--slate-grey); margin-bottom: 8px; }
+.notification-time { font-size: 12px; color: var(--warm-gold); }
 .notification-dot {
 width: 10px;
 height: 10px;
@@ -902,7 +749,7 @@ transition: all 0.3s ease;
 background: rgba(245, 158, 11, 0.1);
 border-color: var(--warm-gold);
 }
-/* Profile Button Styles */
+/* Profile Button */
 .profile-btn {
 width: 50px;
 height: 50px;
@@ -923,11 +770,7 @@ font-size: 18px;
 transform: translateY(-2px);
 box-shadow: 0 8px 20px rgba(29, 78, 216, 0.3);
 }
-.profile-img {
-width: 100%;
-height: 100%;
-object-fit: cover;
-}
+.profile-img { width: 100%; height: 100%; object-fit: cover; }
 .profile-placeholder {
 width: 100%;
 height: 100%;
@@ -939,50 +782,21 @@ color: white;
 font-size: 20px;
 font-weight: bold;
 }
-/* App Container - FIXED: Visible after load */
-#app {
-display: none;
-}
-#app.visible {
-display: block !important;
-}
 /* Responsive */
 @media (max-width: 768px) {
-.title-text {
-font-size: 1.8rem;
-}
-.fire-icon {
-font-size: 2rem;
-}
-.featured-trend-card {
-height: 300px;
-}
-.featured-title {
-font-size: 1.8rem;
-}
-.content-card {
-flex: 0 0 250px;
-}
-.community-grid {
-grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-}
+.title-text { font-size: 1.8rem; }
+.fire-icon { font-size: 2rem; }
+.featured-trend-card { height: 300px; }
+.featured-title { font-size: 1.8rem; }
+.content-card { flex: 0 0 250px; }
+.community-grid { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
 }
 @media (max-width: 480px) {
-.title-text {
-font-size: 1.5rem;
-}
-.featured-trend-card {
-height: 250px;
-}
-.featured-title {
-font-size: 1.5rem;
-}
-.content-card {
-flex: 0 0 200px;
-}
-.community-grid {
-grid-template-columns: 1fr;
-}
+.title-text { font-size: 1.5rem; }
+.featured-trend-card { height: 250px; }
+.featured-title { font-size: 1.5rem; }
+.content-card { flex: 0 0 200px; }
+.community-grid { grid-template-columns: 1fr; }
 }
 </style>
 </head>
@@ -993,14 +807,12 @@ grid-template-columns: 1fr;
 <div id="loading-text">Loading Trending Content...</div>
 </div>
 
-<!-- Auth Modal - NO active class by default -->
+<!-- Auth Modal -->
 <div id="auth-modal" class="auth-modal">
 <div class="auth-content">
-<div class="auth-icon">
-<i class="fas fa-lock"></i>
-</div>
+<div class="auth-icon"><i class="fas fa-lock"></i></div>
 <h2 class="auth-title">Authentication Required</h2>
-<p class="auth-message">You need to be logged in to view trending content and interact with the platform. Please sign in to continue.</p>
+<p class="auth-message">You need to be logged in to view trending content.</p>
 <div class="auth-buttons">
 <button id="auth-login-btn" class="auth-btn login">Log In</button>
 <button id="auth-cancel-btn" class="auth-btn cancel">Cancel</button>
@@ -1008,17 +820,15 @@ grid-template-columns: 1fr;
 </div>
 </div>
 
-<!-- Search Modal - NO active class by default -->
+<!-- Search Modal -->
 <div id="search-modal" class="search-modal">
-<div style="width: 90%; max-width: 800px; background: rgba(15, 23, 42, 0.9); border-radius: 20px; padding: 30px; backdrop-filter: blur(10px);">
+<div style="width: 90%; max-width: 800px; background: rgba(15, 23, 42, 0.9); border-radius: 20px; padding: 30px;">
 <div class="search-modal-header">
 <div class="search-input-container">
 <i class="search-icon fas fa-search"></i>
-<input type="text" id="search-input" class="search-input" placeholder="Search content, creators, or categories..." autocomplete="off">
+<input type="text" id="search-input" class="search-input" placeholder="Search content..." autocomplete="off">
 </div>
-<button id="close-search-btn" class="close-search-btn">
-<i class="fas fa-times"></i>
-</button>
+<button id="close-search-btn" class="close-search-btn"><i class="fas fa-times"></i></button>
 </div>
 <div class="search-filters">
 <div class="filter-group">
@@ -1045,37 +855,29 @@ grid-template-columns: 1fr;
 </div>
 </div>
 <div class="search-results">
-<div id="search-results-grid" class="search-results-grid">
-<!-- Results loaded here -->
-</div>
+<div id="search-results-grid" class="search-results-grid"></div>
 </div>
 </div>
 </div>
 
-<!-- Notifications Panel - NO active class by default -->
+<!-- Notifications Panel -->
 <div id="notifications-panel" class="notifications-panel">
 <div class="notifications-header">
-<h2 style="font-family: 'Orbitron', sans-serif; font-size: 20px; margin: 0; color: var(--soft-white);">Notifications</h2>
-<button id="close-notifications" class="close-search-btn">
-<i class="fas fa-times"></i>
-</button>
+<h2 style="font-family: 'Orbitron', sans-serif; font-size: 20px; margin: 0;">Notifications</h2>
+<button id="close-notifications" class="close-search-btn"><i class="fas fa-times"></i></button>
 </div>
-<div class="notifications-list" id="notifications-list">
-<!-- Notifications loaded here -->
-</div>
+<div class="notifications-list" id="notifications-list"></div>
 <div class="notifications-footer">
 <button id="mark-all-read" class="text-btn">Mark all as read</button>
 <button id="notification-settings" class="text-btn">Settings</button>
 </div>
 </div>
 
-<!-- Main App - Will be shown after loading -->
-<div id="app">
-<!-- Animated Header Background -->
+<!-- Main App -->
+<div id="app" style="display: none;">
 <div class="header-container">
 <div class="header-bg"></div>
 <div class="grid-pattern"></div>
-<!-- Main Header -->
 <header class="main-header">
 <div class="header-content">
 <div class="trending-title">
@@ -1083,38 +885,25 @@ grid-template-columns: 1fr;
 <h1 class="title-text">TRENDING NOW</h1>
 </div>
 <div class="header-actions">
-<button id="search-btn" class="icon-btn" title="Search">
-<i class="fas fa-search"></i>
-</button>
-<button id="refresh-btn" class="icon-btn refresh-btn" title="Refresh">
-<i class="fas fa-sync-alt"></i>
-</button>
+<button id="search-btn" class="icon-btn" title="Search"><i class="fas fa-search"></i></button>
+<button id="refresh-btn" class="icon-btn refresh-btn" title="Refresh"><i class="fas fa-sync-alt"></i></button>
 <button id="notifications-btn" class="icon-btn" title="Notifications">
 <i class="fas fa-bell"></i>
 <span class="notification-badge" id="notification-count" style="display: none; position: absolute; top: -5px; right: -5px; background: var(--error-color); color: white; font-size: 10px; font-weight: bold; width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid var(--deep-black);">0</span>
 </button>
 <button id="profile-btn" class="profile-btn" title="Profile">
-<div class="profile-placeholder" id="userProfilePlaceholder">
-<i class="fas fa-user"></i>
-</div>
+<div class="profile-placeholder" id="userProfilePlaceholder"><i class="fas fa-user"></i></div>
 </button>
 </div>
 </div>
 </header>
-<!-- Filter Chips -->
 <div class="filter-section">
-<div id="filter-container" class="filter-container">
-<!-- Filter chips will be loaded here -->
+<div id="filter-container" class="filter-container"></div>
 </div>
 </div>
-</div>
-<!-- Main Content -->
+
 <main class="main-content">
-<!-- Trending Sections will be loaded here -->
-<div id="trending-sections">
-<!-- Content will be loaded dynamically -->
-</div>
-<!-- Explore All Section -->
+<div id="trending-sections"></div>
 <div class="explore-all-section">
 <button id="explore-all-btn" class="explore-btn">
 EXPLORE ALL TRENDING CONTENT
@@ -1122,42 +911,30 @@ EXPLORE ALL TRENDING CONTENT
 </button>
 </div>
 </main>
-<!-- Global Navigation -->
+
 <nav class="global-nav">
-<a href="index.html" class="nav-item">
-<i class="fas fa-home"></i>
-Home
-</a>
-<a href="trending_screen.html" class="nav-item active">
-<i class="fas fa-fire"></i>
-Trending
-</a>
-<a href="content-library.html" class="nav-item">
-<i class="fas fa-th-large"></i>
-Library
-</a>
-<a href="creator-dashboard.html" class="nav-item">
-<i class="fas fa-user"></i>
-Creator
-</a>
+<a href="index.html" class="nav-item"><i class="fas fa-home"></i>Home</a>
+<a href="trending_screen.html" class="nav-item active"><i class="fas fa-fire"></i>Trending</a>
+<a href="content-library.html" class="nav-item"><i class="fas fa-th-large"></i>Library</a>
+<a href="creator-dashboard.html" class="nav-item"><i class="fas fa-user"></i>Creator</a>
 </nav>
 </div>
 
 <!-- Toast Container -->
 <div id="toast-container"></div>
 
-<!-- Initialize shared Supabase client -->
+<!-- Initialize Supabase -->
 <script>
 if (!window.supabaseClient) {
 window.supabaseClient = supabase.createClient(
 'https://ydnxqnbjoshvxteevemc.supabase.co',
 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U'
 );
-console.log('✅ Global Supabase client initialized');
+console.log('✅ Supabase client initialized');
 }
 </script>
 
-<!-- TRENDING SCREEN JAVASCRIPT -->
+<!-- Main JavaScript -->
 <script>
 document.addEventListener('DOMContentLoaded', async () => {
 console.log('🔥 Trending Screen Initializing...');
@@ -1167,8 +944,6 @@ const loadingScreen = document.getElementById('loading');
 const loadingText = document.getElementById('loading-text');
 const app = document.getElementById('app');
 const authModal = document.getElementById('auth-modal');
-const searchModal = document.getElementById('search-modal');
-const notificationsPanel = document.getElementById('notifications-panel');
 const filterContainer = document.getElementById('filter-container');
 const trendingSections = document.getElementById('trending-sections');
 const searchBtn = document.getElementById('search-btn');
@@ -1179,7 +954,7 @@ const exploreAllBtn = document.getElementById('explore-all-btn');
 const authLoginBtn = document.getElementById('auth-login-btn');
 const authCancelBtn = document.getElementById('auth-cancel-btn');
 
-// State variables
+// State
 let currentUser = null;
 let allContentData = [];
 let featuredTrend = [];
@@ -1189,33 +964,23 @@ let trendingHashtags = [];
 let selectedFilter = 'All';
 let notifications = [];
 
-const filters = [
-'All', 'Music', 'Film & Series', 'Podcasts',
-'Gaming', 'Comedy', 'Live', 'Top 24 Hrs', 'Rising Creators'
-];
+const filters = ['All', 'Music', 'Film & Series', 'Podcasts', 'Gaming', 'Comedy', 'Live', 'Top 24 Hrs', 'Rising Creators'];
 
-// ✅ SHOW/HIDE LOADING - FIXED
+// ✅ LOADING STATE
 function setLoading(loading, text = '') {
 if (text && loadingText) loadingText.textContent = text;
 if (loading) {
 if (loadingScreen) loadingScreen.style.display = 'flex';
-if (app) {
-app.style.display = 'none';
-app.classList.remove('visible');
-}
+if (app) app.style.display = 'none';
 } else {
 setTimeout(() => {
 if (loadingScreen) loadingScreen.style.display = 'none';
-if (app) {
-app.style.display = 'block';
-app.classList.add('visible');
-}
-console.log('✅ Loading complete, app visible');
+if (app) app.style.display = 'block';
 }, 500);
 }
 }
 
-// ✅ SHOW TOAST MESSAGE
+// ✅ TOAST
 function showToast(message, type = 'info') {
 const toast = document.createElement('div');
 toast.className = `toast ${type}`;
@@ -1238,24 +1003,89 @@ if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
 return num.toString();
 }
 
-// ✅ GET INITIALS FROM EMAIL
+// ✅ GET INITIALS
 function getInitials(email) {
 if (!email) return 'U';
-const parts = email.split('@')[0];
-return parts.substring(0, 2).toUpperCase();
+return email.split('@')[0].substring(0, 2).toUpperCase();
 }
 
-// ✅ GET INITIALS FROM FULL NAME
 function getInitialsFromName(fullName) {
 if (!fullName) return 'U';
 const names = fullName.split(' ');
-if (names.length >= 2) {
-return (names[0].charAt(0) + names[names.length - 1].charAt(0)).toUpperCase();
-}
-return fullName.charAt(0).toUpperCase();
+return names.length >= 2 
+? (names[0].charAt(0) + names[names.length - 1].charAt(0)).toUpperCase()
+: fullName.charAt(0).toUpperCase();
 }
 
-// 🔑 Load profile picture
+// ✅ FIXED: BUILD THUMBNAIL URL WITH MULTIPLE FALLBACKS
+function buildThumbnailUrl(thumbnailPath, fallbackIndex = 0) {
+// Professional fallback images from Unsplash
+const fallbackImages = [
+'https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=800&h=450&fit=crop',
+'https://images.unsplash.com/photo-1574375927938-d5a98e8ffe85?w=800&h=450&fit=crop',
+'https://images.unsplash.com/photo-1585829365295-ab7cd400c167?w=800&h=450&fit=crop',
+'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=800&h=450&fit=crop'
+];
+
+// If no thumbnail path, return fallback
+if (!thumbnailPath || thumbnailPath.trim() === '') {
+console.log('🖼️ No thumbnail path, using fallback');
+return fallbackImages[fallbackIndex % fallbackImages.length];
+}
+
+// Clean the path
+const cleanPath = thumbnailPath.replace(/^\/+/, '');
+
+// Try different URL constructions
+const possibleUrls = [
+// Direct path (if already full URL)
+thumbnailPath.startsWith('http') ? thumbnailPath : null,
+// Public bucket with clean path
+`https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/${cleanPath}`,
+// Content bucket
+`https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/content/${cleanPath}`,
+// Thumbnails bucket
+`https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/thumbnails/${cleanPath}`,
+// Media bucket
+`https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/media/${cleanPath}`
+];
+
+const validUrl = possibleUrls.find(url => url !== null);
+console.log('🖼️ Building thumbnail URL:', validUrl);
+return validUrl || fallbackImages[fallbackIndex % fallbackImages.length];
+}
+
+// ✅ FIXED: CREATE IMAGE WITH ERROR FALLBACK
+function createImageElement(src, alt, fallbackIndex = 0) {
+const img = document.createElement('img');
+img.src = src;
+img.alt = alt || 'Content thumbnail';
+img.loading = 'lazy';
+img.style.cssText = 'width: 100%; height: 100%; object-fit: cover; transition: transform 0.3s ease;';
+
+img.onerror = () => {
+console.log('🖼️ Image failed to load, trying fallback:', fallbackIndex);
+const fallbackImages = [
+'https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=800&h=450&fit=crop',
+'https://images.unsplash.com/photo-1574375927938-d5a98e8ffe85?w=800&h=450&fit=crop',
+'https://images.unsplash.com/photo-1585829365295-ab7cd400c167?w=800&h=450&fit=crop',
+'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=800&h=450&fit=crop'
+];
+if (fallbackIndex < fallbackImages.length - 1) {
+img.src = fallbackImages[fallbackIndex + 1];
+img.dataset.fallbackIndex = fallbackIndex + 1;
+} else {
+// Final fallback - gradient background
+img.style.display = 'none';
+img.parentElement.style.background = 'linear-gradient(135deg, #1D4ED8, #8B5CF6)';
+img.parentElement.innerHTML = `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:white;font-size:48px;"><i class="fas fa-image"></i></div>`;
+}
+};
+
+return img;
+}
+
+// ✅ LOAD PROFILE PICTURE
 async function loadUserProfilePicture(user) {
 try {
 if (!user || !profileBtn) return;
@@ -1287,19 +1117,10 @@ return;
 }
 
 const displayName = profile.full_name || profile.username || user.email || 'User';
-const initial = getInitials(displayName);
+const initial = getInitialsFromName(displayName);
 
 if (profile.avatar_url) {
-let avatarUrl = profile.avatar_url;
-try {
-if (!avatarUrl.startsWith('http')) {
-if (avatarUrl.startsWith('avatars/')) {
-avatarUrl = `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/${avatarUrl}`;
-} else {
-avatarUrl = `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/avatars/${avatarUrl}`;
-}
-}
-
+const avatarUrl = buildThumbnailUrl(profile.avatar_url);
 const img = document.createElement('img');
 img.className = 'profile-img';
 img.alt = displayName;
@@ -1307,51 +1128,31 @@ img.style.cssText = 'width: 100%; height: 100%; border-radius: 50%; object-fit: 
 img.src = avatarUrl;
 
 img.onerror = () => {
-const fallbackInitials = profile.full_name ? getInitialsFromName(profile.full_name) : userInitials;
 const fallback = document.createElement('div');
 fallback.className = 'profile-placeholder';
 fallback.style.cssText = 'width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,#1D4ED8,#F59E0B);display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:20px';
-fallback.textContent = fallbackInitials;
+fallback.textContent = initial;
 placeholder.innerHTML = '';
 placeholder.appendChild(fallback);
 };
 
 placeholder.appendChild(img);
-} catch (e) {
+} else {
 const fallback = document.createElement('div');
 fallback.className = 'profile-placeholder';
 fallback.style.cssText = 'width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,#1D4ED8,#F59E0B);display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:20px';
 fallback.textContent = initial;
 placeholder.appendChild(fallback);
 }
-} else {
-const nameInitials = profile.full_name ? getInitialsFromName(profile.full_name) : userInitials;
-const fallback = document.createElement('div');
-fallback.className = 'profile-placeholder';
-fallback.style.cssText = 'width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,#1D4ED8,#F59E0B);display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:20px';
-fallback.textContent = nameInitials;
-placeholder.appendChild(fallback);
-}
 } catch (error) {
-console.error('Error loading user profile picture:', error);
-const placeholder = document.getElementById('userProfilePlaceholder');
-if (placeholder) {
-const userInitials = getInitials(user.email);
-const fallback = document.createElement('div');
-fallback.className = 'profile-placeholder';
-fallback.style.cssText = 'width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,#1D4ED8,#F59E0B);display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:20px';
-fallback.textContent = userInitials;
-placeholder.innerHTML = '';
-placeholder.appendChild(fallback);
-}
+console.error('Error loading profile:', error);
 }
 }
 
-// 🔑 Check authentication
+// ✅ CHECK AUTHENTICATION
 async function checkAuthentication() {
 try {
 setLoading(true, 'Checking authentication...');
-
 const sessionResponse = await window.supabaseClient.auth.getSession();
 const session = sessionResponse.data?.session;
 const error = sessionResponse.error;
@@ -1377,7 +1178,7 @@ return false;
 }
 }
 
-// 🔑 Load notifications
+// ✅ LOAD NOTIFICATIONS
 async function loadNotifications() {
 try {
 if (!currentUser) {
@@ -1407,7 +1208,7 @@ updateNotificationBadge(0);
 }
 }
 
-// 🔑 Update notification badge
+// ✅ UPDATE NOTIFICATION BADGE
 function updateNotificationBadge(count = null) {
 if (count === null) {
 count = notifications.filter(n => !n.is_read).length;
@@ -1419,7 +1220,7 @@ badge.style.display = count > 0 ? 'flex' : 'none';
 }
 }
 
-// 🔑 Render notifications
+// ✅ RENDER NOTIFICATIONS
 function renderNotifications() {
 const notificationsList = document.getElementById('notifications-list');
 if (!notificationsList) return;
@@ -1450,15 +1251,11 @@ notificationsList.querySelectorAll('.notification-item').forEach(item => {
 item.addEventListener('click', async () => {
 const id = item.dataset.id;
 await markNotificationAsRead(id);
-if (item.dataset.contentId) {
-window.location.href = `content-detail.html?id=${item.dataset.contentId}`;
-}
 if (notificationsPanel) notificationsPanel.classList.remove('active');
 });
 });
 }
 
-// 🔑 Get notification icon
 function getNotificationIcon(type) {
 switch(type) {
 case 'like': return 'fas fa-heart';
@@ -1470,7 +1267,6 @@ default: return 'fas fa-bell';
 }
 }
 
-// 🔑 Format notification time
 function formatNotificationTime(timestamp) {
 if (!timestamp) return 'Just now';
 const diffMs = Date.now() - new Date(timestamp).getTime();
@@ -1484,7 +1280,6 @@ if (diffDays < 7) return `${diffDays}d ago`;
 return new Date(timestamp).toLocaleDateString();
 }
 
-// 🔑 Escape HTML
 function escapeHtml(text) {
 if (!text) return '';
 const div = document.createElement('div');
@@ -1492,57 +1287,38 @@ div.textContent = text;
 return div.innerHTML;
 }
 
-// 🔑 Mark notification as read
 async function markNotificationAsRead(notificationId) {
 try {
-const { error } = await window.supabaseClient
+await window.supabaseClient
 .from('notifications')
 .update({ is_read: true })
 .eq('id', notificationId);
-if (error) throw error;
-
-const item = document.querySelector(`.notification-item[data-id="${notificationId}"]`);
-if (item) {
-item.classList.remove('unread');
-item.classList.add('read');
-const dot = item.querySelector('.notification-dot');
-if (dot) dot.remove();
-}
 await loadNotifications();
 } catch (error) {
 console.error('Error marking notification as read:', error);
 }
 }
 
-// 🔑 Mark all notifications as read
 async function markAllNotificationsAsRead() {
 try {
 if (!currentUser) return;
-const { error } = await window.supabaseClient
+await window.supabaseClient
 .from('notifications')
 .update({ is_read: true })
 .eq('user_id', currentUser.id)
 .eq('is_read', false);
-if (error) throw error;
-
-document.querySelectorAll('.notification-item.unread').forEach(item => {
-item.classList.remove('unread');
-item.classList.add('read');
-const dot = item.querySelector('.notification-dot');
-if (dot) dot.remove();
-});
-updateNotificationBadge(0);
+await loadNotifications();
 showToast('All notifications marked as read', 'success');
 } catch (error) {
-console.error('Error marking all notifications as read:', error);
-showToast('Failed to mark notifications as read', 'error');
+console.error('Error marking all as read:', error);
 }
 }
 
-// 🔑 Fetch content
+// ✅ FETCH CONTENT
 async function fetchContent() {
 try {
-console.log('🔄 Fetching trending content from Supabase...');
+console.log('🔄 Fetching trending content...');
+setLoading(true, 'Loading trending content...');
 
 let contentData = [];
 try {
@@ -1556,8 +1332,7 @@ if (contentResponse.error) throw contentResponse.error;
 contentData = contentResponse.data;
 console.log('✅ Fetched from Content table:', contentData.length, 'items');
 } catch (error) {
-console.log('⚠️ Content table failed, trying content table (lowercase)...');
-try {
+console.log('⚠️ Trying lowercase content table...');
 const contentResponse = await window.supabaseClient
 .from('content')
 .select('*, user_profiles!user_id(*)')
@@ -1567,11 +1342,6 @@ const contentResponse = await window.supabaseClient
 if (contentResponse.error) throw contentResponse.error;
 contentData = contentResponse.data;
 console.log('✅ Fetched from content table:', contentData.length, 'items');
-} catch (error2) {
-console.error('❌ Both table names failed:', error2);
-showToast('Failed to load content. Please refresh.', 'error');
-return [];
-}
 }
 
 const enrichedContent = await Promise.all(
@@ -1595,35 +1365,31 @@ console.log('✅ Processed content:', enrichedContent.length, 'items');
 return enrichedContent;
 } catch (error) {
 console.error('❌ Error fetching content:', error);
-showToast('Failed to load trending content. Please refresh.', 'error');
+showToast('Failed to load content. Please refresh.', 'error');
 return [];
+} finally {
+setLoading(false);
 }
 }
 
-// ✅ CHECK IF CONTENT IS NEW
 function isContentNew(createdAt) {
 if (!createdAt) return false;
-try {
-const createdDate = new Date(createdAt);
-const daysAgo = (Date.now() - createdDate.getTime()) / (1000 * 60 * 60 * 24);
+const daysAgo = (Date.now() - new Date(createdAt).getTime()) / (1000 * 60 * 60 * 24);
 return daysAgo < 7;
-} catch {
-return false;
-}
 }
 
-// ✅ PROCESS TRENDING SECTIONS
+// ✅ PROCESS SECTIONS
 function processTrendingSections(contentData) {
 allContentData = contentData;
-featuredTrend = [...contentData].sort((a, b) => (b.real_views || b.views_count || 0) - (a.real_views || a.views_count || 0)).slice(0, 1);
+featuredTrend = [...contentData].sort((a, b) => (b.real_views || 0) - (a.real_views || 0)).slice(0, 1);
 liveStreams = contentData.filter(item => item.is_live).slice(0, 10);
 communityGems = [...contentData].sort((a, b) => {
-const aScore = (a.real_views || a.views_count || 0) + ((a.likes_count || a.likes || 0) * 2) + ((a.comments_count || 0) * 3);
-const bScore = (b.real_views || b.views_count || 0) + ((b.likes_count || b.likes || 0) * 2) + ((b.comments_count || 0) * 3);
+const aScore = (a.real_views || 0) + ((a.likes_count || 0) * 2);
+const bScore = (b.real_views || 0) + ((b.likes_count || 0) * 2);
 return bScore - aScore;
 }).slice(0, 20);
 trendingHashtags = ['#OwnYourStage', '#BantuFuture', '#1MinComedy', '#SofaTalks', '#JoburgVibes', '#AfricanTalent', '#StreamConnect', '#RisingStars'];
-console.log('✅ Processed sections:', { featured: featuredTrend.length, live: liveStreams.length, gems: communityGems.length, hashtags: trendingHashtags.length });
+console.log('✅ Processed sections:', { featured: featuredTrend.length, live: liveStreams.length, gems: communityGems.length });
 }
 
 // ✅ RENDER FILTER CHIPS
@@ -1637,7 +1403,7 @@ button.addEventListener('click', () => onFilterSelected(button.dataset.filter));
 });
 }
 
-// ✅ RENDER TRENDING SECTIONS
+// ✅ RENDER SECTIONS
 function renderTrendingSections() {
 if (!trendingSections) return;
 trendingSections.innerHTML = `
@@ -1679,24 +1445,20 @@ ${communityGems.length > 0 ? `
 setupContentCardListeners();
 }
 
-// ✅ RENDER FEATURED TREND
+// ✅ RENDER FEATURED (WITH FIXED IMAGES)
 function renderFeaturedTrend() {
 if (featuredTrend.length === 0) return '';
 const content = featuredTrend[0];
-const thumbnailUrl = content.thumbnail_url ?
-`https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/${content.thumbnail_url.replace(/^\/+/, '')}` :
-'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=1200&h=675&fit=crop';
+const thumbnailUrl = buildThumbnailUrl(content.thumbnail_url);
 return `
 <div class="featured-trend-card" data-content-id="${content.id}">
 <div class="featured-bg" style="background-image: url('${thumbnailUrl}')"></div>
 <div class="featured-overlay">
 ${content.is_live ? '<div class="live-badge">LIVE NOW</div>' : ''}
 <h2 class="featured-title">${escapeHtml(content.title)}</h2>
-<div class="featured-creator">@${escapeHtml(content.user_profiles?.username || content.creator || 'Creator')}</div>
+<div class="featured-creator">@${escapeHtml(content.user_profiles?.username || 'Creator')}</div>
 <div class="featured-stats">
-<span><i class="fas fa-eye"></i> ${formatNumber(content.real_views || content.views_count || 0)} views</span>
-<span><i class="fas fa-heart"></i> ${formatNumber(content.likes_count || content.likes || 0)} likes</span>
-<span><i class="fas fa-comment"></i> ${formatNumber(content.comments_count || 0)} comments</span>
+<span><i class="fas fa-eye"></i> ${formatNumber(content.real_views || 0)} views</span>
 </div>
 <button class="watch-now-btn" onclick="playContent('${content.id}')">${content.is_live ? 'WATCH LIVE' : 'WATCH NOW'}</button>
 </div>
@@ -1704,30 +1466,27 @@ ${content.is_live ? '<div class="live-badge">LIVE NOW</div>' : ''}
 `;
 }
 
-// ✅ RENDER LIVE STREAMS
+// ✅ RENDER LIVE STREAMS (WITH FIXED IMAGES)
 function renderLiveStreams() {
 return liveStreams.map(content => {
-const thumbnailUrl = content.thumbnail_url ?
-`https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/${content.thumbnail_url.replace(/^\/+/, '')}` :
-'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop';
+const thumbnailUrl = buildThumbnailUrl(content.thumbnail_url);
 const isUpcoming = content.scheduled_time && new Date(content.scheduled_time) > new Date();
-const creatorName = content.user_profiles?.username || content.creator || 'Creator';
+const creatorName = content.user_profiles?.username || 'Creator';
 return `
 <div class="content-card" data-content-id="${content.id}">
 <div class="card-thumbnail">
-<img src="${thumbnailUrl}" alt="${escapeHtml(content.title)}" loading="lazy">
+${createImageElementHTML(thumbnailUrl, escapeHtml(content.title))}
 <div class="thumbnail-overlay"></div>
 <div class="card-badges">
 ${isUpcoming ? '<div class="badge upcoming">UPCOMING</div>' : '<div class="badge live">LIVE</div>'}
-<div class="badge viewers"><i class="fas fa-eye"></i> ${formatNumber(content.viewer_count || content.real_views || content.views_count || 0)}</div>
+<div class="badge viewers"><i class="fas fa-eye"></i> ${formatNumber(content.viewer_count || 0)}</div>
 </div>
 </div>
 <div class="card-content">
 <h3 class="card-title">${escapeHtml(content.title)}</h3>
 <div class="card-creator">@${escapeHtml(creatorName)}</div>
 <div class="card-stats">
-<span><i class="fas fa-heart"></i> ${formatNumber(content.likes_count || content.likes || 0)}</span>
-<span><i class="fas fa-comment"></i> ${formatNumber(content.comments_count || 0)}</span>
+<span><i class="fas fa-heart"></i> ${formatNumber(content.likes_count || 0)}</span>
 </div>
 ${isUpcoming ? `<button class="reminder-btn" onclick="setReminder('${content.id}')"><i class="fas fa-bell"></i> REMIND ME</button>` : ''}
 </div>
@@ -1736,29 +1495,37 @@ ${isUpcoming ? `<button class="reminder-btn" onclick="setReminder('${content.id}
 }).join('');
 }
 
-// ✅ RENDER TRENDING HASHTAGS
+// ✅ HELPER: CREATE IMAGE ELEMENT HTML
+function createImageElementHTML(src, alt) {
+const fallbackImages = [
+'https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=800&h=450&fit=crop',
+'https://images.unsplash.com/photo-1574375927938-d5a98e8ffe85?w=800&h=450&fit=crop',
+'https://images.unsplash.com/photo-1585829365295-ab7cd400c167?w=800&h=450&fit=crop'
+];
+return `<img src="${src}" alt="${alt}" loading="lazy" onerror="this.onerror=null;this.src='${fallbackImages[0]}';this.parentElement.style.background='linear-gradient(135deg, #1D4ED8, #8B5CF6)';">`;
+}
+
+// ✅ RENDER HASHTAGS
 function renderTrendingHashtags() {
 return trendingHashtags.map(hashtag => `<div class="hashtag" data-hashtag="${hashtag}">${hashtag}</div>`).join('');
 }
 
-// ✅ RENDER COMMUNITY GEMS
+// ✅ RENDER COMMUNITY GEMS (WITH FIXED IMAGES)
 function renderCommunityGems() {
 return communityGems.map(content => {
-const thumbnailUrl = content.thumbnail_url ?
-`https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/${content.thumbnail_url.replace(/^\/+/, '')}` :
-'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop';
-const creatorName = content.user_profiles?.username || content.creator || 'Creator';
+const thumbnailUrl = buildThumbnailUrl(content.thumbnail_url);
+const creatorName = content.user_profiles?.username || 'Creator';
 return `
 <div class="gem-card" data-content-id="${content.id}">
 <div class="gem-thumbnail">
-<img src="${thumbnailUrl}" alt="${escapeHtml(content.title)}" loading="lazy">
+${createImageElementHTML(thumbnailUrl, escapeHtml(content.title))}
 </div>
 <div class="gem-content">
 <h3 class="card-title">${escapeHtml(content.title)}</h3>
 <div class="card-creator">@${escapeHtml(creatorName)}</div>
 <div class="card-stats">
-<span><i class="fas fa-eye"></i> ${formatNumber(content.real_views || content.views_count || 0)}</span>
-<span><i class="fas fa-heart"></i> ${formatNumber(content.likes_count || content.likes || 0)}</span>
+<span><i class="fas fa-eye"></i> ${formatNumber(content.real_views || 0)}</span>
+<span><i class="fas fa-heart"></i> ${formatNumber(content.likes_count || 0)}</span>
 </div>
 </div>
 </div>
@@ -1766,101 +1533,67 @@ return `
 }).join('');
 }
 
-// ✅ SETUP CONTENT CARD LISTENERS
+// ✅ SETUP LISTENERS
 function setupContentCardListeners() {
 document.querySelectorAll('[data-content-id]').forEach(card => {
 card.addEventListener('click', (e) => {
 if (e.target.closest('button')) return;
-const contentId = card.dataset.contentId;
-playContent(contentId);
+playContent(card.dataset.contentId);
 });
 });
 document.querySelectorAll('[data-hashtag]').forEach(hashtag => {
 hashtag.addEventListener('click', () => {
-const tag = hashtag.dataset.hashtag;
-window.location.href = `content-library.html?search=${encodeURIComponent(tag)}`;
+window.location.href = `content-library.html?search=${encodeURIComponent(hashtag.dataset.hashtag)}`;
 });
 });
 }
 
-// ✅ FILTER SELECTION HANDLER
 function onFilterSelected(filter) {
 selectedFilter = filter;
 document.querySelectorAll('.filter-chip').forEach(button => {
 button.classList.toggle('active', button.dataset.filter === filter);
 });
 if (filter !== 'All') {
-const genreMap = {
-'Music': 'Music',
-'Film & Series': 'Films',
-'Podcasts': 'Podcasts',
-'Gaming': 'Gaming',
-'Comedy': 'Comedy',
-'Live': 'Live',
-'Top 24 Hrs': 'Recent',
-'Rising Creators': 'Rising'
-};
-const genre = genreMap[filter] || filter;
-window.location.href = `content-library.html?genre=${encodeURIComponent(genre)}`;
+window.location.href = `content-library.html?genre=${encodeURIComponent(filter)}`;
 }
 }
 
-// ✅ PLAY CONTENT FUNCTION
+// ✅ PLAY CONTENT
 async function playContent(contentId) {
 try {
-let viewerId = null;
-if (currentUser) viewerId = currentUser.id;
-const { error } = await window.supabaseClient
+await window.supabaseClient
 .from('content_views')
 .insert({
 content_id: contentId,
-viewer_id: viewerId,
+viewer_id: currentUser?.id || null,
 view_duration: 0,
-device_type: /Mobile|Android|iP(hone|od)|IEMobile|Windows Phone|BlackBerry/i.test(navigator.userAgent) ? 'mobile' : 'desktop',
+device_type: /Mobile|Android|iPhone/i.test(navigator.userAgent) ? 'mobile' : 'desktop',
 created_at: new Date().toISOString()
 });
-if (error) console.error('❌ View recording failed:', error);
-else console.log('✅ View recorded successfully');
 } catch (error) {
-console.error('❌ View recording error:', error);
+console.warn('View recording failed:', error);
 }
 window.location.href = `content-detail.html?id=${contentId}`;
 }
 
-// ✅ SET REMINDER FUNCTION
 function setReminder(contentId) {
-const content = liveStreams.find(item => item.id == contentId);
-if (content) showToast(`Reminder set for "${content.title}"`, 'success');
+showToast('Reminder set successfully', 'success');
 }
 
-// ✅ VIEW ALL TRENDING
-window.viewAllTrending = function() {
-window.location.href = 'content-library.html?sort=trending';
-};
+window.viewAllTrending = () => window.location.href = 'content-library.html?sort=trending';
+window.viewAllLiveStreams = () => window.location.href = 'content-library.html?genre=Live';
 
-// ✅ VIEW ALL LIVE STREAMS
-window.viewAllLiveStreams = function() {
-window.location.href = 'content-library.html?genre=Live';
-};
-
-// ✅ REFRESH CONTENT
-async function refreshContent() {
-setLoading(true, 'Refreshing trending content...');
-await loadContent();
-showToast('Trending content refreshed!', 'success');
-setLoading(false);
-}
-
-// ✅ LOAD ALL CONTENT AND RENDER
+// ✅ LOAD CONTENT
 async function loadContent() {
 try {
+setLoading(true, 'Loading trending content...');
 const contentData = await fetchContent();
 processTrendingSections(contentData);
 renderFilterChips();
 renderTrendingSections();
 } catch (error) {
 console.error('❌ Error loading content:', error);
-showToast('Failed to load trending content', 'error');
+showToast('Failed to load content', 'error');
 } finally {
 setLoading(false);
 }
@@ -1870,45 +1603,28 @@ setLoading(false);
 function setupEventListeners() {
 if (searchBtn) {
 searchBtn.addEventListener('click', () => {
-if (searchModal) searchModal.classList.add('active');
+document.getElementById('search-modal').classList.add('active');
 setTimeout(() => document.getElementById('search-input')?.focus(), 300);
 });
 }
 document.getElementById('close-search-btn')?.addEventListener('click', () => {
-if (searchModal) searchModal.classList.remove('active');
-document.getElementById('search-input').value = '';
-document.getElementById('search-results-grid').innerHTML = '';
+document.getElementById('search-modal').classList.remove('active');
 });
-document.getElementById('search-modal')?.addEventListener('click', (e) => {
-if (e.target === searchModal) {
-searchModal.classList.remove('active');
-document.getElementById('search-input').value = '';
-document.getElementById('search-results-grid').innerHTML = '';
-}
-});
-if (refreshBtn) refreshBtn.addEventListener('click', refreshContent);
+if (refreshBtn) refreshBtn.addEventListener('click', loadContent);
 if (notificationsBtn) {
 notificationsBtn.addEventListener('click', () => {
-if (notificationsPanel) {
-notificationsPanel.classList.add('active');
+document.getElementById('notifications-panel').classList.add('active');
 renderNotifications();
-}
 });
 }
 document.getElementById('close-notifications')?.addEventListener('click', () => {
-if (notificationsPanel) notificationsPanel.classList.remove('active');
-});
-document.getElementById('notifications-panel')?.addEventListener('click', (e) => {
-if (e.target === notificationsPanel) {
-if (notificationsPanel) notificationsPanel.classList.remove('active');
-}
+document.getElementById('notifications-panel').classList.remove('active');
 });
 document.getElementById('mark-all-read')?.addEventListener('click', markAllNotificationsAsRead);
 if (profileBtn) {
 profileBtn.addEventListener('click', async () => {
-const { data: { session } } = await window.supabaseClient.auth.getSession();
-if (session) window.location.href = 'profile.html';
-else window.location.href = `login.html?redirect=${encodeURIComponent(window.location.href)}`;
+const {  { session } } = await window.supabaseClient.auth.getSession();
+window.location.href = session ? 'profile.html' : 'login.html';
 });
 }
 if (exploreAllBtn) {
@@ -1918,58 +1634,43 @@ window.location.href = 'content-library.html?sort=trending';
 }
 if (authLoginBtn) {
 authLoginBtn.addEventListener('click', () => {
-localStorage.setItem('redirectAfterLogin', 'trending_screen.html');
 window.location.href = 'login.html?redirect=trending_screen.html';
 });
 }
 if (authCancelBtn) {
 authCancelBtn.addEventListener('click', () => {
-if (authModal) authModal.classList.remove('active');
-window.history.back();
+authModal.classList.remove('active');
 });
 }
 }
 
-// ✅ INITIALIZE TRENDING SCREEN
+// ✅ INITIALIZE
 async function initializeTrendingScreen() {
 console.log('🔥 Initializing Trending Screen...');
-
-// Ensure modals are hidden on load
 if (searchModal) searchModal.classList.remove('active');
 if (notificationsPanel) notificationsPanel.classList.remove('active');
 if (authModal) authModal.classList.remove('active');
 
 const isAuthenticated = await checkAuthentication();
-if (!isAuthenticated) {
-return;
-}
+if (!isAuthenticated) return;
 
 setupEventListeners();
 await loadContent();
-console.log('✅ Trending Screen initialized successfully');
+console.log('✅ Trending Screen initialized');
 }
 
-// Start initialization
 initializeTrendingScreen();
 
-// Auth state change listener
 window.supabaseClient.auth.onAuthStateChange((event, session) => {
-console.log('Auth state changed:', event);
 if (event === 'SIGNED_IN' && session?.user) {
 currentUser = session.user;
 loadUserProfilePicture(currentUser);
 loadNotifications();
-showToast('Welcome back!', 'success');
 } else if (event === 'SIGNED_OUT') {
 currentUser = null;
 const placeholder = document.getElementById('userProfilePlaceholder');
-if (placeholder) {
-placeholder.innerHTML = `<div class="profile-placeholder"><i class="fas fa-user"></i></div>`;
-}
+if (placeholder) placeholder.innerHTML = '<div class="profile-placeholder"><i class="fas fa-user"></i></div>';
 updateNotificationBadge(0);
-notifications = [];
-renderNotifications();
-showToast('Signed out successfully', 'info');
 if (authModal) authModal.classList.add('active');
 }
 });
