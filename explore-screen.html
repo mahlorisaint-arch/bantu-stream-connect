@@ -52,24 +52,49 @@
                 <div class="logo-text">BANTU STREAM CONNECT</div>
             </div>
             <div class="header-actions">
+                <!-- Profile Switcher (Multi-profile support) -->
+                <div class="profile-switcher" id="profile-switcher">
+                    <button class="profile-btn" id="current-profile-btn">
+                        <div class="profile-placeholder" id="userProfilePlaceholder">
+                            <i class="fas fa-user"></i>
+                        </div>
+                        <span class="profile-name" id="current-profile-name">Profile</span>
+                        <i class="fas fa-chevron-down"></i>
+                    </button>
+                    <div class="profile-dropdown" id="profile-dropdown">
+                        <div class="profile-dropdown-header">
+                            <h4>Switch Profile</h4>
+                        </div>
+                        <div class="profile-list" id="profile-list">
+                            <!-- Profiles loaded here -->
+                        </div>
+                        <div class="profile-dropdown-footer">
+                            <button id="manage-profiles-btn" class="text-btn">
+                                <i class="fas fa-cog"></i> Manage Profiles
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
                 <!-- Analytics Button -->
                 <button id="analytics-btn" class="icon-btn" title="Analytics">
                     <i class="fas fa-chart-line"></i>
                 </button>
+                
                 <!-- Search Button -->
                 <button id="search-btn" class="icon-btn search-btn" title="Search">
                     <i class="fas fa-search"></i>
                 </button>
+                
+                <!-- Voice Search Button (NEW) -->
+                <button id="voice-search-btn" class="icon-btn" title="Voice Search">
+                    <i class="fas fa-microphone"></i>
+                </button>
+                
                 <!-- Notifications Button -->
                 <button id="notifications-btn" class="icon-btn" title="Notifications">
                     <i class="fas fa-bell"></i>
                     <span class="notification-badge" id="notification-count" style="display: none;">0</span>
-                </button>
-                <!-- Profile Button -->
-                <button id="profile-btn" class="profile-btn" title="Profile">
-                    <div class="profile-placeholder" id="userProfilePlaceholder">
-                        <i class="fas fa-user"></i>
-                    </div>
                 </button>
             </div>
         </header>
@@ -83,11 +108,61 @@
 
         <!-- Main Content -->
         <main class="container">
-            <!-- Hero Section -->
-            <section class="hero-section">
-                <h1 class="hero-title">DISCOVER & CONNECT</h1>
-                <p class="hero-subtitle">Explore amazing content, connect with creators, and join live streams from across Africa</p>
-                <button id="browse-all-btn" class="hero-btn">Explore All Content</button>
+            <!-- Video Hero Section (NEW - Dynamic with auto-playing video) -->
+            <section class="video-hero-section" id="video-hero">
+                <video class="hero-video" id="hero-video" muted loop playsinline>
+                    <source src="" type="video/mp4">
+                </video>
+                <div class="hero-overlay"></div>
+                <div class="hero-content">
+                    <h1 class="hero-title" id="hero-title">DISCOVER & CONNECT</h1>
+                    <p class="hero-subtitle" id="hero-subtitle">Explore amazing content, connect with creators, and join live streams from across Africa</p>
+                    <div class="hero-buttons">
+                        <button id="browse-all-btn" class="hero-btn">Explore All Content</button>
+                        <button id="hero-play-btn" class="hero-btn secondary">
+                            <i class="fas fa-play"></i> Watch Trailer
+                        </button>
+                    </div>
+                </div>
+                <div class="hero-controls">
+                    <button class="hero-mute-btn" id="hero-mute-btn">
+                        <i class="fas fa-volume-mute"></i>
+                    </button>
+                </div>
+            </section>
+
+            <!-- Continue Watching Row (NEW) -->
+            <section class="section" id="continue-watching-section" style="display: none;">
+                <div class="section-header">
+                    <h2 class="section-title">
+                        <i class="fas fa-play-circle" style="color: var(--warm-gold);"></i>
+                        CONTINUE WATCHING
+                    </h2>
+                    <a href="#" class="see-all-btn" id="see-all-continue">
+                        See All
+                        <i class="fas fa-arrow-right"></i>
+                    </a>
+                </div>
+                <div class="content-grid" id="continue-watching-grid">
+                    <!-- Continue watching content will be loaded here -->
+                </div>
+            </section>
+
+            <!-- Because You Watched (NEW - Personalized Recommendations) -->
+            <section class="section" id="recommendations-section" style="display: none;">
+                <div class="section-header">
+                    <h2 class="section-title">
+                        <i class="fas fa-magic" style="color: var(--bantu-blue);"></i>
+                        BECAUSE YOU WATCHED...
+                    </h2>
+                    <a href="#" class="see-all-btn" id="see-all-recommendations">
+                        See All
+                        <i class="fas fa-arrow-right"></i>
+                    </a>
+                </div>
+                <div class="content-grid" id="recommendations-grid">
+                    <!-- Recommendations will be loaded here -->
+                </div>
             </section>
 
             <!-- Featured Creators -->
@@ -112,11 +187,11 @@
                 </div>
             </section>
 
-            <!-- Live Streams -->
+            <!-- Live Streams with Interactive Badges (Updated) -->
             <section class="section">
                 <div class="section-header">
                     <h2 class="section-title">
-                        <i class="fas fa-circle" style="color: #EF4444; font-size: 20px;"></i>
+                        <i class="fas fa-circle" style="color: #EF4444; font-size: 20px; animation: pulse 1.5s infinite;"></i>
                         LIVE NOW
                     </h2>
                     <button class="see-all-btn" id="see-all-live">
@@ -154,7 +229,7 @@
                 </div>
             </section>
 
-            <!-- New Content -->
+            <!-- New Content with Download Indicators (Updated) -->
             <section class="section">
                 <div class="section-header">
                     <h2 class="section-title">
@@ -168,6 +243,23 @@
                 </div>
                 <div class="content-grid" id="new-content-grid">
                     <!-- New content will be loaded here -->
+                </div>
+            </section>
+
+            <!-- Shorts Section (NEW) -->
+            <section class="section">
+                <div class="section-header">
+                    <h2 class="section-title">
+                        <i class="fas fa-bolt" style="color: var(--warm-gold);"></i>
+                        QUICK BITS
+                    </h2>
+                    <a href="#" class="see-all-btn" id="see-all-shorts">
+                        See All
+                        <i class="fas fa-arrow-right"></i>
+                    </a>
+                </div>
+                <div class="shorts-container" id="shorts-container">
+                    <!-- Shorts will be loaded here -->
                 </div>
             </section>
 
@@ -233,6 +325,10 @@
                     <i class="fas fa-bell"></i>
                     <span class="nav-notification-badge" id="nav-notification-count" style="display: none;">0</span>
                 </div>
+                <!-- Watch Party Button (NEW) -->
+                <div class="nav-icon" id="nav-watch-party-btn" title="Watch Party">
+                    <i class="fas fa-users"></i>
+                </div>
             </div>
         </div>
 
@@ -288,12 +384,15 @@
         </div>
     </div>
 
-    <!-- Search Modal -->
+    <!-- Search Modal (with Voice Search) -->
     <div id="search-modal" class="search-modal">
         <div class="search-modal-header">
             <div class="search-input-container">
                 <i class="search-icon fas fa-search"></i>
                 <input type="text" id="search-input" class="search-input" placeholder="Search content, creators, or categories..." autocomplete="off">
+                <button id="voice-search-modal-btn" class="voice-search-btn" title="Voice Search">
+                    <i class="fas fa-microphone"></i>
+                </button>
             </div>
             <button id="close-search-btn" class="close-search-btn">
                 <i class="fas fa-times"></i>
@@ -320,6 +419,17 @@
                     <option value="newest">Newest First</option>
                     <option value="popular">Most Popular</option>
                     <option value="trending">Trending</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label class="filter-label">Language</label>
+                <select id="language-filter" class="filter-select">
+                    <option value="">All Languages</option>
+                    <option value="en">English</option>
+                    <option value="zu">Zulu</option>
+                    <option value="xh">Xhosa</option>
+                    <option value="sw">Swahili</option>
+                    <option value="af">Afrikaans</option>
                 </select>
             </div>
         </div>
@@ -358,6 +468,109 @@
         <button class="theme-option" data-theme="high-contrast">
             <i class="fas fa-eye"></i> High Contrast
         </button>
+    </div>
+
+    <!-- Watch Party Modal (NEW) -->
+    <div id="watch-party-modal" class="watch-party-modal">
+        <div class="watch-party-content">
+            <div class="watch-party-header">
+                <h2><i class="fas fa-users"></i> Start a Watch Party</h2>
+                <button id="close-watch-party" class="close-btn">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="watch-party-body">
+                <div class="watch-party-content-selector">
+                    <h3>Select Content</h3>
+                    <div class="watch-party-search">
+                        <input type="text" id="watch-party-search" placeholder="Search content...">
+                    </div>
+                    <div class="watch-party-content-list" id="watch-party-content-list">
+                        <!-- Content list loaded here -->
+                    </div>
+                </div>
+                <div class="watch-party-settings">
+                    <h3>Party Settings</h3>
+                    <div class="setting-item">
+                        <label>
+                            <input type="checkbox" id="party-sync-playback" checked>
+                            Sync playback for everyone
+                        </label>
+                    </div>
+                    <div class="setting-item">
+                        <label>
+                            <input type="checkbox" id="party-chat-enabled" checked>
+                            Enable party chat
+                        </label>
+                    </div>
+                    <div class="setting-item">
+                        <label>Invite Friends</label>
+                        <div class="invite-friends">
+                            <input type="text" id="party-invite-email" placeholder="Enter email">
+                            <button id="party-invite-btn" class="btn-small">Invite</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="watch-party-footer">
+                <button id="start-watch-party" class="primary-btn">
+                    <i class="fas fa-play"></i> Start Party
+                </button>
+                <button id="copy-party-link" class="secondary-btn">
+                    <i class="fas fa-link"></i> Copy Invite Link
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tip Creator Modal (NEW) -->
+    <div id="tip-modal" class="tip-modal">
+        <div class="tip-content">
+            <div class="tip-header">
+                <h2><i class="fas fa-gift"></i> Support Creator</h2>
+                <button id="close-tip" class="close-btn">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="tip-body">
+                <div class="creator-info-tip" id="tip-creator-info">
+                    <!-- Creator info loaded here -->
+                </div>
+                <div class="tip-amounts">
+                    <h3>Select Amount</h3>
+                    <div class="tip-options">
+                        <button class="tip-option" data-amount="5">R5</button>
+                        <button class="tip-option" data-amount="10">R10</button>
+                        <button class="tip-option" data-amount="25">R25</button>
+                        <button class="tip-option" data-amount="50">R50</button>
+                        <button class="tip-option" data-amount="100">R100</button>
+                        <button class="tip-option custom" data-amount="custom">
+                            <i class="fas fa-pen"></i> Custom
+                        </button>
+                    </div>
+                    <div class="custom-amount" id="custom-amount" style="display: none;">
+                        <input type="number" id="custom-tip-amount" placeholder="Enter amount (R)">
+                    </div>
+                </div>
+                <div class="tip-message">
+                    <h3>Message (Optional)</h3>
+                    <textarea id="tip-message" placeholder="Say something nice..."></textarea>
+                </div>
+            </div>
+            <div class="tip-footer">
+                <button id="send-tip" class="primary-btn">
+                    <i class="fas fa-gift"></i> Send Tip
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Voice Search Status (NEW) -->
+    <div id="voice-search-status" class="voice-search-status">
+        <div class="voice-status-content">
+            <i class="fas fa-microphone"></i>
+            <span id="voice-status-text">Listening...</span>
+        </div>
     </div>
 
     <!-- JavaScript Files (load in correct order) -->
