@@ -1642,7 +1642,7 @@ const contentSupabase = new ContentSupabaseClient(
 );
 console.log('✅ Content Supabase client initialized');
 </script>
-<!-- Explore Screen JavaScript with all features -->
+<!-- CRITICAL FIX: Explore Screen JavaScript with CORRECT DESTRUCTURING -->
 <script>
 // Supabase Configuration
 const SUPABASE_URL = 'https://ydnxqnbjoshvxteevemc.supabase.co';
@@ -1687,7 +1687,7 @@ let newContent = [];
 let allContentData = [];
 let isLoading = true;
 // ============================================
-// UTILITY FUNCTIONS
+// UTILITY FUNCTIONS (IDENTICAL)
 // ============================================
 // Show toast message
 function showToast(message, type = 'info') {
@@ -1791,13 +1791,15 @@ return (names[0][0] + names[names.length - 1][0]).toUpperCase();
 return name[0].toUpperCase();
 }
 // ============================================
-// AUTHENTICATION FUNCTIONS
+// AUTHENTICATION FUNCTIONS - FIXED DESTRUCTURING
 // ============================================
 // Check authentication status
 async function checkAuth() {
 try {
-const {  { session }, error } = await supabaseAuth.auth.getSession();
+// FIXED: Correct destructuring of getSession response
+const { data, error } = await supabaseAuth.auth.getSession();
 if (error) throw error;
+const session = data?.session;
 window.currentUser = session?.user || null;
 if (window.currentUser) {
 console.log('✅ User authenticated:', window.currentUser.email);
@@ -1817,7 +1819,8 @@ return null;
 async function loadUserProfile() {
 try {
 if (!window.currentUser) return;
-const {  profile, error } = await supabaseAuth
+// FIXED: Correct destructuring with data: profile
+const { data: profile, error } = await supabaseAuth
 .from('user_profiles')
 .select('*')
 .eq('id', window.currentUser.id)
@@ -2327,7 +2330,8 @@ async function getTopCreators() {
 try {
 loadingText.textContent = 'Finding top creators...';
 // Step 1: Get content counts per creator (published content only)
-const {  contentData, error: contentError } = await supabaseAuth
+// FIXED: Correct destructuring with data: contentData
+const { data: contentData, error: contentError } = await supabaseAuth
 .from('Content')
 .select('user_id')
 .eq('status', 'published')
@@ -2341,7 +2345,8 @@ contentCountMap.set(item.user_id, (contentCountMap.get(item.user_id) || 0) + 1);
 }
 });
 // Step 2: Get connector counts per creator
-const {  connectorData, error: connectorError } = await supabaseAuth
+// FIXED: Correct destructuring with data: connectorData
+const { data: connectorData, error: connectorError } = await supabaseAuth
 .from('connectors')
 .select('connected_id')
 .eq('connection_type', 'creator')
@@ -2374,7 +2379,8 @@ console.warn('No creators found with published content');
 return [];
 }
 // Step 4: Fetch user profiles for top creators
-const {  profiles, error: profilesError } = await supabaseAuth
+// FIXED: Correct destructuring with data: profiles
+const { data: profiles, error: profilesError } = await supabaseAuth
 .from('user_profiles')
 .select('*')
 .in('id', sortedCreators);
@@ -3020,7 +3026,10 @@ const closeAnalytics = document.getElementById('close-analytics');
 if (!analyticsBtn || !analyticsModal) return;
 // Open analytics modal
 analyticsBtn.addEventListener('click', async () => {
-const {  { session } } = await supabaseAuth.auth.getSession();
+// FIXED: Correct destructuring with data
+const { data, error } = await supabaseAuth.auth.getSession();
+if (error) console.warn('Session error:', error);
+const session = data?.session;
 if (!session) {
 showToast('Please sign in to view analytics', 'warning');
 return;
@@ -3080,7 +3089,10 @@ function setupCoreListeners() {
 const profileBtn = document.getElementById('profile-btn');
 if (profileBtn) {
 profileBtn.addEventListener('click', async () => {
-const {  { session } } = await supabaseAuth.auth.getSession();
+// FIXED: Correct destructuring with data
+const { data, error } = await supabaseAuth.auth.getSession();
+if (error) console.warn('Session error:', error);
+const session = data?.session;
 if (session) {
 window.location.href = 'profile.html';
 } else {
@@ -3106,7 +3118,9 @@ window.location.href = 'index.html';
 const createBtn = document.getElementById('nav-create-btn');
 if (createBtn) {
 createBtn.addEventListener('click', async () => {
-const { data: { session } } = await supabaseAuth.auth.getSession();
+const { data, error } = await supabaseAuth.auth.getSession();
+if (error) console.warn('Session error:', error);
+const session = data?.session;
 if (session) {
 window.location.href = 'creator-upload.html';
 } else {
@@ -3119,7 +3133,9 @@ window.location.href = `login.html?redirect=creator-upload.html`;
 const dashboardBtn = document.getElementById('nav-dashboard-btn');
 if (dashboardBtn) {
 dashboardBtn.addEventListener('click', async () => {
-const {  { session } } = await supabaseAuth.auth.getSession();
+const { data, error } = await supabaseAuth.auth.getSession();
+if (error) console.warn('Session error:', error);
+const session = data?.session;
 if (session) {
 window.location.href = 'creator-dashboard.html';
 } else {
@@ -3235,7 +3251,7 @@ app.style.display = 'block';
 }
 // Initialize the app
 await initializeExploreScreen();
-// Auth state change listener
+// Auth state change listener - FIXED: onAuthStateChange provides event and session
 supabaseAuth.auth.onAuthStateChange((event, session) => {
 console.log('Auth state changed:', event);
 if (event === 'SIGNED_IN') {
@@ -3262,7 +3278,7 @@ console.log('- env.js loaded:', !!window.ENV);
 console.log('- rate-limiter.js loaded:', !!(window.rateLimiter || window.authRateLimiter));
 console.log('- themes.js loaded:', typeof window.initTheme === 'function');
 console.log('- features.js loaded:', typeof window.initFeatures === 'function');
-console.log('✅ Explore screen ready');
+console.log('✅ Explore screen ready - NO SYNTAX ERRORS!');
 </script>
 </body>
 </html>
