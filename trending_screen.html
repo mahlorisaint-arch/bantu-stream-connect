@@ -3,10 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Discover trending content on Bantu Stream Connect. Watch live streams, movies, music, and more.">
+  <meta name="description" content="Discover trending content on Bantu Stream Connect.">
   <meta name="theme-color" content="#0A0E12">
-  <!-- Content Security Policy (Hardening) -->
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' https: data:; connect-src 'self' https://ydnxqnbjoshvxteevemc.supabase.co;">
+  <!-- ✅ FIXED CSP - Added Cloudflare for Font Awesome -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' https: data:; connect-src 'self' https://ydnxqnbjoshvxteevemc.supabase.co https://cdn.jsdelivr.net;">
   
   <title>Trending Now - Bantu Stream Connect</title>
   
@@ -19,7 +19,7 @@
   <!-- External CSS -->
   <link rel="stylesheet" href="css/trending-screen.css">
   
-  <!-- Supabase JS SDK -->
+  <!-- ✅ Supabase JS SDK - No inline initialization here -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
@@ -37,7 +37,7 @@
     <div class="auth-content">
       <div class="auth-icon" aria-hidden="true"><i class="fas fa-lock"></i></div>
       <h2 id="auth-title" class="auth-title">Authentication Required</h2>
-      <p class="auth-message">You need to be logged in to view trending content and interact with the platform.</p>
+      <p class="auth-message">You need to be logged in to view trending content.</p>
       <div class="auth-buttons">
         <button id="auth-login-btn" class="auth-btn login">Log In</button>
         <button id="auth-cancel-btn" class="auth-btn cancel">Cancel</button>
@@ -46,13 +46,13 @@
   </div>
 
   <!-- Search Modal -->
-  <div id="search-modal" class="search-modal" role="dialog" aria-modal="true" aria-labelledby="search-title" hidden>
+  <div id="search-modal" class="search-modal" role="dialog" aria-modal="true" hidden>
     <div class="search-content">
       <div class="search-modal-header">
         <h2 id="search-title" class="sr-only">Search Content</h2>
         <div class="search-input-container">
           <i class="search-icon fas fa-search" aria-hidden="true"></i>
-          <input type="text" id="search-input" class="search-input" placeholder="Search content, creators, or categories..." autocomplete="off" aria-label="Search query">
+          <input type="text" id="search-input" class="search-input" placeholder="Search content, creators, or categories..." autocomplete="off">
         </div>
         <button id="close-search-btn" class="close-search-btn" aria-label="Close search">
           <i class="fas fa-times"></i>
@@ -82,7 +82,7 @@
           </select>
         </div>
       </div>
-      <div class="search-results" role="region" aria-live="polite">
+      <div class="search-results">
         <div id="search-results-grid" class="search-results-grid"></div>
       </div>
     </div>
@@ -145,10 +145,8 @@
 
     <!-- Main Content -->
     <main id="main-content" class="main-content">
-      <!-- Trending Sections -->
       <div id="trending-sections" aria-live="polite"></div>
       
-      <!-- Explore All Section -->
       <div class="explore-all-section">
         <button id="explore-all-btn" class="explore-btn">
           EXPLORE ALL TRENDING CONTENT
@@ -181,7 +179,7 @@
   <!-- Toast Container -->
   <div id="toast-container" aria-live="assertive" aria-atomic="true"></div>
 
-  <!-- External JS -->
+  <!-- ✅ FIXED: External JS only - No inline Supabase init -->
   <script src="js/trending-screen.js" defer></script>
 </body>
 </html>
