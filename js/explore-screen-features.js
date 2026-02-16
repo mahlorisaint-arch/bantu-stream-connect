@@ -14,6 +14,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     let newContent = [];
     let allContentData = [];
     let isLoading = true;
+    let currentProfile = null;
+    let userProfiles = [];
+    let continueWatching = [];
+    let recommendations = [];
+    let shorts = [];
+    let activeWatchParty = null;
+    let viewerCounts = new Map(); // For live viewer counts
+    let viewerCountSubscriptions = []; // For real-time subscriptions
 
     // ============================================
     // UTILITY FUNCTIONS
@@ -127,6 +135,924 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // ============================================
+    // NEW FEATURE 1: AUTO-PLAY TRAILERS ON HOVER
+    // ============================================
+    
+    function setupVideoPreviews() {
+        document.querySelectorAll('.content-card[data-preview-url]').forEach(card => {
+            let video = null;
+            let hoverTimeout = null;
+            
+            card.addEventListener('mouseenter', () => {
+                hoverTimeout = setTimeout(() => {
+                    const previewUrl = card.dataset.previewUrl;
+                    if (!previewUrl) return;
+                    
+                    // Create video element if not exists
+                    if (!video) {
+                        video = document.createElement('video');
+                        video.className = 'card-preview-video';
+                        video.muted = true;
+                        video.loop = true;
+                        video.playsInline = true;
+                        video.style.cssText = `
+                            position: absolute;
+                            top: 0;
+                            left: 0;
+                            width: 100%;
+                            height: 100%;
+                            object-fit: cover;
+                            z-index: 2;
+                        `;
+                        
+                        const thumbnail = card.querySelector('.card-thumbnail');
+                        if (thumbnail) {
+                            thumbnail.appendChild(video);
+                        }
+                    }
+                    
+                    video.src = contentSupabase.fixMediaUrl(previewUrl);
+                    video.play().catch(() => {
+                        // Autoplay failed - remove video
+                        video.remove();
+                        video = null;
+                    });
+                }, 300); // Delay to avoid accidental hovers
+            });
+            
+            card.addEventListener('mouseleave', () => {
+                clearTimeout(hoverTimeout);
+                if (video) {
+                    video.pause();
+                    video.remove();
+                    video = null;
+                }
+            });
+        });
+    }
+
+    // ============================================
+    // NEW FEATURE 2: VIDEO HERO SECTION
+    // ============================================
+    
+    async function initVideoHero() {
+        const heroVideo = document.getElementById('hero-video');
+        const heroMuteBtn = document.getElementById('hero-mute-btn');
+        const heroPlayBtn = document.getElementById('hero-play-btn');
+        const heroTitle = document.getElementById('hero-title');
+        const heroSubtitle = document.getElementById('hero-subtitle');
+        
+        if (!heroVideo) return;
+        
+        // Load trending content for hero
+        try {
+            const trending = await contentSupabase.getTrendingContent();
+            if (trending && trending.length > 0) {
+                const featured = trending[0];
+                const videoUrl = featured.preview_url || featured.video_url;
+                
+                if (videoUrl) {
+                    heroVideo.src = contentSupabase.fixMediaUrl(videoUrl);
+                    heroTitle.textContent = featured.title || 'DISCOVER & CONNECT';
+                    heroSubtitle.textContent = featured.description || 'Explore amazing content, connect with creators, and join live streams from across Africa';
+                    
+                    // Try to play
+                    heroVideo.play().catch(() => {
+                        // Autoplay failed - show mute button
+                        heroMuteBtn.style.display = 'flex';
+                    });
+                }
+            }
+        } catch (error) {
+            console.error('Error loading hero video:', error);
+        }
+        
+        // Mute toggle
+        if (heroMuteBtn) {
+            heroMuteBtn.addEventListener('click', () => {
+                heroVideo.muted = !heroVideo.muted;
+                heroMuteBtn.innerHTML = heroVideo.muted ? 
+                    '<i class="fas fa-volume-mute"></i>' : 
+                    '<i class="fas fa-volume-up"></i>';
+            });
+        }
+        
+        // Play button
+        if (heroPlayBtn) {
+            heroPlayBtn.addEventListener('click', () => {
+                if (heroVideo.paused) {
+                    heroVideo.play();
+                    heroPlayBtn.innerHTML = '<i class="fas fa-pause"></i> Pause Trailer';
+                } else {
+                    heroVideo.pause();
+                    heroPlayBtn.innerHTML = '<i class="fas fa-play"></i> Watch Trailer';
+                }
+            });
+        }
+    }
+
+    // ============================================
+    // NEW FEATURE 3: CONTINUE WATCHING
+    // ============================================
+    
+    async function loadContinueWatching() {
+        if (!window.currentUser || !currentProfile) return;
+        
+        try {
+            const { data, error } = await supabaseAuth
+                .from('content_views')
+                .select(`
+                    *,
+                    content:content_id (*, user_profiles!user_id(*))
+                `)
+                .eq('profile_id', currentProfile.id)
+                .is('completed_at', null)
+                .order('updated_at', { ascending: false })
+                .limit(20);
+            
+            if (error) throw error;
+            
+            continueWatching = data || [];
+            
+            const section = document.getElementById('continue-watching-section');
+            const grid = document.getElementById('continue-watching-grid');
+            
+            if (continueWatching.length > 0) {
+                section.style.display = 'block';
+                
+                grid.innerHTML = continueWatching.map(item => {
+                    const content = item.content;
+                    if (!content) return '';
+                    
+                    const progress = Math.min(100, Math.floor((item.progress_seconds / content.duration) * 100)) || 0;
+                    const thumbnailUrl = content.thumbnail_url
+                        ? contentSupabase.fixMediaUrl(content.thumbnail_url)
+                        : 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop';
+                    
+                    const creatorProfile = content.user_profiles;
+                    const creatorName = creatorProfile?.full_name || creatorProfile?.username || 'Creator';
+                    const initials = getInitials(creatorName);
+                    
+                    let avatarHtml = '';
+                    if (creatorProfile?.avatar_url) {
+                        const avatarUrl = contentSupabase.fixMediaUrl(creatorProfile.avatar_url);
+                        avatarHtml = `<img src="${avatarUrl}" alt="${escapeHtml(creatorName)}" onerror="this.parentElement.innerHTML='<div class=\\'creator-initials-small\\'>${initials}</div>'">`;
+                    } else {
+                        avatarHtml = `<div class="creator-initials-small">${initials}</div>`;
+                    }
+                    
+                    return `
+                        <a href="content-detail.html?id=${content.id}&resume=true" class="content-card continue-card" data-content-id="${content.id}">
+                            <div class="card-thumbnail">
+                                <img src="${thumbnailUrl}"
+                                     alt="${escapeHtml(content.title)}"
+                                     loading="lazy"
+                                     onerror="this.src='https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop'">
+                                <div class="thumbnail-overlay"></div>
+                                <div class="watch-progress-container">
+                                    <div class="watch-progress-bar" style="width: ${progress}%"></div>
+                                </div>
+                                <div class="play-overlay">
+                                    <div class="play-icon">
+                                        <i class="fas fa-play"></i>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card-content">
+                                <h3 class="card-title" title="${escapeHtml(content.title)}">
+                                    ${truncateText(escapeHtml(content.title), 50)}
+                                </h3>
+                                <div class="creator-info">
+                                    <div class="creator-avatar-small">
+                                        ${avatarHtml}
+                                    </div>
+                                    <div class="creator-name-small">${escapeHtml(creatorName)}</div>
+                                </div>
+                                <div class="card-meta">
+                                    <span><i class="fas fa-clock"></i> ${Math.floor(item.progress_seconds / 60)}:${('0' + (item.progress_seconds % 60)).slice(-2)} / ${Math.floor(content.duration / 60)}:${('0' + (content.duration % 60)).slice(-2)}</span>
+                                    <span>${progress}%</span>
+                                </div>
+                            </div>
+                        </a>
+                    `;
+                }).join('');
+            } else {
+                section.style.display = 'none';
+            }
+        } catch (error) {
+            console.error('Error loading continue watching:', error);
+        }
+    }
+
+    // ============================================
+    // NEW FEATURE 4: WATCH PARTY
+    // ============================================
+    
+    function setupWatchParty() {
+        const watchPartyBtn = document.getElementById('nav-watch-party-btn');
+        const watchPartyModal = document.getElementById('watch-party-modal');
+        const closeWatchParty = document.getElementById('close-watch-party');
+        const startWatchParty = document.getElementById('start-watch-party');
+        const copyPartyLink = document.getElementById('copy-party-link');
+        
+        if (!watchPartyBtn || !watchPartyModal) return;
+        
+        watchPartyBtn.addEventListener('click', () => {
+            if (!window.currentUser) {
+                showToast('Please sign in to start a watch party', 'warning');
+                return;
+            }
+            watchPartyModal.classList.add('active');
+            loadWatchPartyContent();
+        });
+        
+        if (closeWatchParty) {
+            closeWatchParty.addEventListener('click', () => {
+                watchPartyModal.classList.remove('active');
+            });
+        }
+        
+        if (startWatchParty) {
+            startWatchParty.addEventListener('click', async () => {
+                const selectedContent = document.querySelector('.watch-party-content-item.selected');
+                if (!selectedContent) {
+                    showToast('Please select content to watch', 'warning');
+                    return;
+                }
+                
+                const contentId = selectedContent.dataset.contentId;
+                const syncPlayback = document.getElementById('party-sync-playback').checked;
+                const chatEnabled = document.getElementById('party-chat-enabled').checked;
+                
+                try {
+                    // Create watch party in Supabase
+                    const { data, error } = await supabaseAuth
+                        .from('watch_parties')
+                        .insert({
+                            host_id: window.currentUser.id,
+                            profile_id: currentProfile?.id,
+                            content_id: contentId,
+                            sync_playback: syncPlayback,
+                            chat_enabled: chatEnabled,
+                            invite_code: generateInviteCode()
+                        })
+                        .select()
+                        .single();
+                    
+                    if (error) throw error;
+                    
+                    activeWatchParty = data;
+                    watchPartyModal.classList.remove('active');
+                    
+                    // Copy invite link
+                    const inviteLink = `${window.location.origin}/watch-party.html?code=${data.invite_code}`;
+                    navigator.clipboard.writeText(inviteLink);
+                    
+                    showToast('Watch party created! Invite link copied to clipboard', 'success');
+                    
+                    // Navigate to watch party
+                    setTimeout(() => {
+                        window.location.href = `watch-party.html?id=${data.id}`;
+                    }, 1500);
+                } catch (error) {
+                    console.error('Error creating watch party:', error);
+                    showToast('Failed to create watch party', 'error');
+                }
+            });
+        }
+        
+        if (copyPartyLink) {
+            copyPartyLink.addEventListener('click', () => {
+                if (!activeWatchParty) {
+                    showToast('Start a watch party first', 'warning');
+                    return;
+                }
+                
+                const inviteLink = `${window.location.origin}/watch-party.html?code=${activeWatchParty.invite_code}`;
+                navigator.clipboard.writeText(inviteLink);
+                showToast('Invite link copied!', 'success');
+            });
+        }
+        
+        // Search in watch party content
+        const searchInput = document.getElementById('watch-party-search');
+        if (searchInput) {
+            searchInput.addEventListener('input', debounce(async (e) => {
+                const query = e.target.value.trim();
+                if (query.length < 2) {
+                    loadWatchPartyContent();
+                    return;
+                }
+                
+                const results = await searchContent(query);
+                renderWatchPartyContentList(results);
+            }, 300));
+        }
+    }
+    
+    async function loadWatchPartyContent() {
+        try {
+            const { data, error } = await supabaseAuth
+                .from('Content')
+                .select('*, user_profiles!user_id(*)')
+                .eq('status', 'published')
+                .order('created_at', { ascending: false })
+                .limit(20);
+            
+            if (error) throw error;
+            
+            renderWatchPartyContentList(data || []);
+        } catch (error) {
+            console.error('Error loading watch party content:', error);
+        }
+    }
+    
+    function renderWatchPartyContentList(contents) {
+        const list = document.getElementById('watch-party-content-list');
+        if (!list) return;
+        
+        list.innerHTML = contents.map(content => {
+            const thumbnailUrl = content.thumbnail_url
+                ? contentSupabase.fixMediaUrl(content.thumbnail_url)
+                : 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop';
+            
+            return `
+                <div class="watch-party-content-item" data-content-id="${content.id}">
+                    <img src="${thumbnailUrl}" alt="${escapeHtml(content.title)}">
+                    <div class="watch-party-content-info">
+                        <h4>${truncateText(escapeHtml(content.title), 40)}</h4>
+                        <p>${content.media_type || 'video'}</p>
+                    </div>
+                </div>
+            `;
+        }).join('');
+        
+        list.querySelectorAll('.watch-party-content-item').forEach(item => {
+            item.addEventListener('click', () => {
+                list.querySelectorAll('.watch-party-content-item').forEach(i => i.classList.remove('selected'));
+                item.classList.add('selected');
+            });
+        });
+    }
+    
+    function generateInviteCode() {
+        return Math.random().toString(36).substring(2, 10).toUpperCase();
+    }
+
+    // ============================================
+    // NEW FEATURE 5: CREATOR TIPS
+    // ============================================
+    
+    function setupTipSystem() {
+        const tipModal = document.getElementById('tip-modal');
+        const closeTip = document.getElementById('close-tip');
+        const sendTip = document.getElementById('send-tip');
+        
+        if (!tipModal) return;
+        
+        // Add tip buttons to creator cards
+        document.addEventListener('click', (e) => {
+            if (e.target.closest('.tip-creator-btn')) {
+                const btn = e.target.closest('.tip-creator-btn');
+                const creatorId = btn.dataset.creatorId;
+                const creatorName = btn.dataset.creatorName;
+                
+                openTipModal(creatorId, creatorName);
+            }
+        });
+        
+        if (closeTip) {
+            closeTip.addEventListener('click', () => {
+                tipModal.classList.remove('active');
+            });
+        }
+        
+        // Tip amount selection
+        document.querySelectorAll('.tip-option').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.tip-option').forEach(b => b.classList.remove('selected'));
+                btn.classList.add('selected');
+                
+                const customAmount = document.getElementById('custom-amount');
+                if (btn.dataset.amount === 'custom') {
+                    customAmount.style.display = 'block';
+                } else {
+                    customAmount.style.display = 'none';
+                }
+            });
+        });
+        
+        if (sendTip) {
+            sendTip.addEventListener('click', async () => {
+                const selectedOption = document.querySelector('.tip-option.selected');
+                if (!selectedOption) {
+                    showToast('Please select an amount', 'warning');
+                    return;
+                }
+                
+                let amount = selectedOption.dataset.amount;
+                if (amount === 'custom') {
+                    amount = document.getElementById('custom-tip-amount').value;
+                    if (!amount || amount < 1) {
+                        showToast('Please enter a valid amount', 'warning');
+                        return;
+                    }
+                }
+                
+                const message = document.getElementById('tip-message').value;
+                const creatorId = tipModal.dataset.creatorId;
+                
+                if (!window.currentUser) {
+                    showToast('Please sign in to send tips', 'warning');
+                    return;
+                }
+                
+                try {
+                    // Record tip in database
+                    const { error } = await supabaseAuth
+                        .from('tips')
+                        .insert({
+                            sender_id: window.currentUser.id,
+                            recipient_id: creatorId,
+                            amount: parseFloat(amount),
+                            message: message,
+                            status: 'completed'
+                        });
+                    
+                    if (error) throw error;
+                    
+                    showToast(`Thank you for supporting this creator!`, 'success');
+                    tipModal.classList.remove('active');
+                    
+                    // Reset form
+                    document.getElementById('tip-message').value = '';
+                    document.querySelectorAll('.tip-option').forEach(b => b.classList.remove('selected'));
+                    document.getElementById('custom-amount').style.display = 'none';
+                } catch (error) {
+                    console.error('Error sending tip:', error);
+                    showToast('Failed to send tip', 'error');
+                }
+            });
+        }
+    }
+    
+    function openTipModal(creatorId, creatorName) {
+        const tipModal = document.getElementById('tip-modal');
+        const creatorInfo = document.getElementById('tip-creator-info');
+        
+        tipModal.dataset.creatorId = creatorId;
+        
+        creatorInfo.innerHTML = `
+            <h3>${escapeHtml(creatorName)}</h3>
+            <p>Show your appreciation with a tip</p>
+        `;
+        
+        tipModal.classList.add('active');
+    }
+
+    // ============================================
+    // NEW FEATURE 6: INTERACTIVE LIVE BADGES
+    // ============================================
+    
+    async function setupLiveBadges() {
+        // Clean up old subscriptions
+        viewerCountSubscriptions.forEach(sub => sub.unsubscribe());
+        viewerCountSubscriptions = [];
+        
+        const liveCards = document.querySelectorAll('.content-card[data-live="true"]');
+        
+        liveCards.forEach(card => {
+            const contentId = card.dataset.contentId;
+            const viewerCountEl = card.querySelector('.live-viewer-count');
+            
+            if (!contentId || !viewerCountEl) return;
+            
+            // Initial viewer count
+            updateViewerCount(contentId, viewerCountEl);
+            
+            // Subscribe to real-time updates
+            const subscription = supabaseAuth
+                .channel(`content-views-${contentId}`)
+                .on('postgres_changes', 
+                    { 
+                        event: '*', 
+                        schema: 'public', 
+                        table: 'content_views',
+                        filter: `content_id=eq.${contentId}`
+                    }, 
+                    () => {
+                        updateViewerCount(contentId, viewerCountEl);
+                    }
+                )
+                .subscribe();
+            
+            viewerCountSubscriptions.push(subscription);
+        });
+    }
+    
+    async function updateViewerCount(contentId, element) {
+        try {
+            const { count, error } = await supabaseAuth
+                .from('content_views')
+                .select('*', { count: 'exact', head: true })
+                .eq('content_id', contentId)
+                .eq('is_live_viewing', true);
+            
+            if (error) throw error;
+            
+            viewerCounts.set(contentId, count || 0);
+            element.textContent = formatNumber(count || 0);
+            
+            // Add pulse animation if viewers > 0
+            if (count > 0) {
+                element.classList.add('has-viewers');
+            } else {
+                element.classList.remove('has-viewers');
+            }
+        } catch (error) {
+            console.error('Error updating viewer count:', error);
+        }
+    }
+
+    // ============================================
+    // NEW FEATURE 7: PERSONALIZED RECOMMENDATIONS
+    // ============================================
+    
+    async function loadRecommendations() {
+        if (!window.currentUser || !currentProfile) return;
+        
+        try {
+            // Get user's viewing history
+            const { data: history, error: historyError } = await supabaseAuth
+                .from('content_views')
+                .select('content_id, content:content_id(genre, tags)')
+                .eq('profile_id', currentProfile.id)
+                .order('updated_at', { ascending: false })
+                .limit(20);
+            
+            if (historyError) throw historyError;
+            
+            if (!history || history.length === 0) {
+                document.getElementById('recommendations-section').style.display = 'none';
+                return;
+            }
+            
+            // Extract genres and tags from history
+            const genres = new Set();
+            const tags = new Set();
+            
+            history.forEach(item => {
+                if (item.content?.genre) genres.add(item.content.genre);
+                if (item.content?.tags) {
+                    item.content.tags.split(',').forEach(tag => tags.add(tag.trim()));
+                }
+            });
+            
+            // Build recommendation query
+            let query = supabaseAuth
+                .from('Content')
+                .select('*, user_profiles!user_id(*)')
+                .eq('status', 'published')
+                .neq('id', history[0]?.content_id) // Exclude most recent
+                .limit(10);
+            
+            if (genres.size > 0) {
+                query = query.in('genre', Array.from(genres));
+            }
+            
+            const { data, error } = await query;
+            
+            if (error) throw error;
+            
+            recommendations = data || [];
+            
+            const section = document.getElementById('recommendations-section');
+            const grid = document.getElementById('recommendations-grid');
+            
+            if (recommendations.length > 0) {
+                section.style.display = 'block';
+                grid.innerHTML = renderContentCards(recommendations);
+            } else {
+                section.style.display = 'none';
+            }
+        } catch (error) {
+            console.error('Error loading recommendations:', error);
+            document.getElementById('recommendations-section').style.display = 'none';
+        }
+    }
+
+    // ============================================
+    // NEW FEATURE 8: VOICE SEARCH
+    // ============================================
+    
+    function setupVoiceSearch() {
+        const voiceSearchBtn = document.getElementById('voice-search-btn');
+        const voiceSearchModalBtn = document.getElementById('voice-search-modal-btn');
+        const voiceStatus = document.getElementById('voice-search-status');
+        const voiceStatusText = document.getElementById('voice-status-text');
+        
+        if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+            // Voice search not supported
+            if (voiceSearchBtn) voiceSearchBtn.style.display = 'none';
+            if (voiceSearchModalBtn) voiceSearchModalBtn.style.display = 'none';
+            return;
+        }
+        
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        const recognition = new SpeechRecognition();
+        recognition.continuous = false;
+        recognition.interimResults = false;
+        recognition.lang = 'en-US';
+        
+        const startVoiceSearch = () => {
+            if (!window.currentUser) {
+                showToast('Please sign in to use voice search', 'warning');
+                return;
+            }
+            
+            recognition.start();
+            
+            if (voiceStatus) {
+                voiceStatus.classList.add('active');
+                voiceStatusText.textContent = 'Listening...';
+            }
+        };
+        
+        recognition.onresult = (event) => {
+            const transcript = event.results[0][0].transcript;
+            const searchInput = document.getElementById('search-input');
+            
+            if (searchInput) {
+                searchInput.value = transcript;
+                
+                // Trigger search
+                const event = new Event('input', { bubbles: true });
+                searchInput.dispatchEvent(event);
+            }
+            
+            if (voiceStatus) {
+                voiceStatus.classList.remove('active');
+            }
+            
+            showToast(`Searching: "${transcript}"`, 'info');
+        };
+        
+        recognition.onerror = (event) => {
+            console.error('Voice search error:', event.error);
+            
+            if (voiceStatus) {
+                voiceStatus.classList.remove('active');
+                voiceStatusText.textContent = 'Error';
+            }
+            
+            if (event.error === 'not-allowed') {
+                showToast('Microphone access denied', 'error');
+            }
+        };
+        
+        recognition.onend = () => {
+            if (voiceStatus) {
+                voiceStatus.classList.remove('active');
+            }
+        };
+        
+        if (voiceSearchBtn) {
+            voiceSearchBtn.addEventListener('click', startVoiceSearch);
+        }
+        
+        if (voiceSearchModalBtn) {
+            voiceSearchModalBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                startVoiceSearch();
+            });
+        }
+    }
+
+    // ============================================
+    // NEW FEATURE 9: OFFLINE DOWNLOAD INDICATOR
+    // ============================================
+    
+    function addDownloadIndicators() {
+        document.querySelectorAll('.content-card[data-downloadable="true"]').forEach(card => {
+            const badgeContainer = card.querySelector('.card-badges') || createBadgeContainer(card);
+            
+            const downloadBadge = document.createElement('div');
+            downloadBadge.className = 'card-badge download-badge';
+            downloadBadge.innerHTML = '<i class="fas fa-download"></i> OFFLINE';
+            
+            badgeContainer.appendChild(downloadBadge);
+        });
+    }
+    
+    function createBadgeContainer(card) {
+        const container = document.createElement('div');
+        container.className = 'card-badges';
+        
+        const thumbnail = card.querySelector('.card-thumbnail');
+        if (thumbnail) {
+            thumbnail.appendChild(container);
+        }
+        
+        return container;
+    }
+
+    // ============================================
+    // NEW FEATURE 10: SHORTS SECTION
+    // ============================================
+    
+    async function loadShorts() {
+        try {
+            const { data, error } = await supabaseAuth
+                .from('Content')
+                .select('*, user_profiles!user_id(*)')
+                .eq('status', 'published')
+                .eq('media_type', 'short')
+                .or('media_type.eq.short,duration.lte.60') // Under 60 seconds
+                .order('views_count', { ascending: false })
+                .limit(10);
+            
+            if (error) throw error;
+            
+            shorts = data || [];
+            
+            const container = document.getElementById('shorts-container');
+            if (!container) return;
+            
+            if (shorts.length === 0) {
+                container.style.display = 'none';
+                return;
+            }
+            
+            container.style.display = 'flex';
+            container.innerHTML = shorts.map(short => {
+                const thumbnailUrl = short.thumbnail_url
+                    ? contentSupabase.fixMediaUrl(short.thumbnail_url)
+                    : 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=600&fit=crop';
+                
+                const creatorProfile = short.user_profiles;
+                const creatorName = creatorProfile?.full_name || creatorProfile?.username || 'Creator';
+                
+                return `
+                    <a href="content-detail.html?id=${short.id}" class="short-card">
+                        <div class="short-thumbnail">
+                            <img src="${thumbnailUrl}" alt="${escapeHtml(short.title)}" loading="lazy">
+                            <div class="short-overlay">
+                                <i class="fas fa-play"></i>
+                            </div>
+                        </div>
+                        <div class="short-info">
+                            <h4>${truncateText(escapeHtml(short.title), 30)}</h4>
+                            <p>${escapeHtml(creatorName)}</p>
+                        </div>
+                    </a>
+                `;
+            }).join('');
+        } catch (error) {
+            console.error('Error loading shorts:', error);
+        }
+    }
+
+    // ============================================
+    // NEW FEATURE: MULTI-PROFILE SUPPORT
+    // ============================================
+    
+    async function loadUserProfiles() {
+        if (!window.currentUser) return;
+        
+        try {
+            const { data, error } = await supabaseAuth
+                .from('profiles')
+                .select('*')
+                .eq('user_id', window.currentUser.id)
+                .order('created_at', { ascending: true });
+            
+            if (error) throw error;
+            
+            userProfiles = data || [];
+            
+            // If no profiles exist, create default
+            if (userProfiles.length === 0) {
+                const { data: newProfile, error: createError } = await supabaseAuth
+                    .from('profiles')
+                    .insert({
+                        user_id: window.currentUser.id,
+                        name: 'Default',
+                        avatar_url: null,
+                        is_kid: false
+                    })
+                    .select()
+                    .single();
+                
+                if (createError) throw createError;
+                
+                userProfiles = [newProfile];
+            }
+            
+            // Set current profile
+            const savedProfileId = localStorage.getItem('currentProfileId');
+            currentProfile = userProfiles.find(p => p.id === savedProfileId) || userProfiles[0];
+            
+            updateProfileSwitcher();
+            
+            // Reload profile-specific data
+            await loadContinueWatching();
+            await loadRecommendations();
+        } catch (error) {
+            console.error('Error loading profiles:', error);
+        }
+    }
+    
+    function updateProfileSwitcher() {
+        const profileList = document.getElementById('profile-list');
+        const currentProfileName = document.getElementById('current-profile-name');
+        const profilePlaceholder = document.getElementById('userProfilePlaceholder');
+        
+        if (!profileList || !currentProfileName) return;
+        
+        if (currentProfile) {
+            currentProfileName.textContent = currentProfile.name || 'Profile';
+            
+            // Update avatar
+            while (profilePlaceholder.firstChild) {
+                profilePlaceholder.removeChild(profilePlaceholder.firstChild);
+            }
+            
+            if (currentProfile.avatar_url) {
+                const img = document.createElement('img');
+                img.className = 'profile-img';
+                img.src = contentSupabase.fixMediaUrl(currentProfile.avatar_url);
+                img.alt = currentProfile.name;
+                img.style.cssText = 'width: 100%; height: 100%; border-radius: 50%; object-fit: cover;';
+                profilePlaceholder.appendChild(img);
+            } else {
+                const initials = getInitials(currentProfile.name);
+                const div = document.createElement('div');
+                div.className = 'profile-placeholder';
+                div.style.cssText = 'width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,#1D4ED8,#F59E0B);display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:16px';
+                div.textContent = initials;
+                profilePlaceholder.appendChild(div);
+            }
+        }
+        
+        // Render profile list
+        profileList.innerHTML = userProfiles.map(profile => {
+            const initials = getInitials(profile.name);
+            const isActive = currentProfile?.id === profile.id;
+            
+            return `
+                <div class="profile-item ${isActive ? 'active' : ''}" data-profile-id="${profile.id}">
+                    <div class="profile-avatar-small">
+                        ${profile.avatar_url 
+                            ? `<img src="${contentSupabase.fixMediaUrl(profile.avatar_url)}" alt="${escapeHtml(profile.name)}">`
+                            : `<div class="profile-initials">${initials}</div>`
+                        }
+                    </div>
+                    <span class="profile-name">${escapeHtml(profile.name)}</span>
+                    ${isActive ? '<i class="fas fa-check"></i>' : ''}
+                </div>
+            `;
+        }).join('');
+        
+        // Add profile switcher listeners
+        document.querySelectorAll('.profile-item').forEach(item => {
+            item.addEventListener('click', async () => {
+                const profileId = item.dataset.profileId;
+                const profile = userProfiles.find(p => p.id === profileId);
+                
+                if (profile) {
+                    currentProfile = profile;
+                    localStorage.setItem('currentProfileId', profileId);
+                    
+                    updateProfileSwitcher();
+                    
+                    // Reload profile-specific data
+                    await loadContinueWatching();
+                    await loadRecommendations();
+                    
+                    showToast(`Switched to ${profile.name}`, 'success');
+                }
+            });
+        });
+        
+        // Profile dropdown toggle
+        const profileBtn = document.getElementById('current-profile-btn');
+        const dropdown = document.getElementById('profile-dropdown');
+        
+        if (profileBtn && dropdown) {
+            profileBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                dropdown.classList.toggle('active');
+            });
+            
+            document.addEventListener('click', (e) => {
+                if (!profileBtn.contains(e.target) && !dropdown.contains(e.target)) {
+                    dropdown.classList.remove('active');
+                }
+            });
+        }
+    }
+
+    // ============================================
     // AUTHENTICATION FUNCTIONS
     // ============================================
     
@@ -141,6 +1067,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (window.currentUser) {
                 console.log('✅ User authenticated:', window.currentUser.email);
                 await loadUserProfile();
+                await loadUserProfiles(); // Load multi-profiles
             } else {
                 console.log('⚠️ User not authenticated');
                 updateProfileUI(null);
@@ -179,66 +1106,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     function updateProfileUI(profile) {
-        const userProfilePlaceholder = document.getElementById('userProfilePlaceholder');
-        if (!userProfilePlaceholder) return;
-        
-        while (userProfilePlaceholder.firstChild) {
-            userProfilePlaceholder.removeChild(userProfilePlaceholder.firstChild);
-        }
-        
-        if (profile) {
-            const displayName = profile.full_name || 
-                               profile.username || 
-                               window.currentUser?.email || 
-                               'User';
-            const initial = getInitials(displayName);
-            const avatarUrl = profile.avatar_url;
-            
-            if (avatarUrl) {
-                const img = document.createElement('img');
-                img.className = 'profile-img';
-                img.alt = displayName;
-                img.style.cssText = 'width: 100%; height: 100%; border-radius: 50%; object-fit: cover;';
-                
-                try {
-                    if (avatarUrl.startsWith('http')) {
-                        img.src = avatarUrl;
-                    } else if (avatarUrl.startsWith('avatars/')) {
-                        img.src = `${SUPABASE_URL}/storage/v1/object/public/${avatarUrl}`;
-                    } else {
-                        img.src = `${SUPABASE_URL}/storage/v1/object/public/avatars/${avatarUrl}`;
-                    }
-                    
-                    img.onerror = () => {
-                        const fallback = document.createElement('div');
-                        fallback.className = 'profile-placeholder';
-                        fallback.style.cssText = 'width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,#1D4ED8,#F59E0B);display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:16px';
-                        fallback.textContent = initial;
-                        userProfilePlaceholder.innerHTML = '';
-                        userProfilePlaceholder.appendChild(fallback);
-                    };
-                    
-                    userProfilePlaceholder.appendChild(img);
-                } catch (e) {
-                    console.error('Invalid avatar URL:', e);
-                    const fallback = document.createElement('div');
-                    fallback.className = 'profile-placeholder';
-                    fallback.style.cssText = 'width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,#1D4ED8,#F59E0B);display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:16px';
-                    fallback.textContent = initial;
-                    userProfilePlaceholder.appendChild(fallback);
-                }
-            } else {
-                const fallback = document.createElement('div');
-                fallback.className = 'profile-placeholder';
-                fallback.style.cssText = 'width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,#1D4ED8,#F59E0B);display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:16px';
-                fallback.textContent = initial;
-                userProfilePlaceholder.appendChild(fallback);
-            }
-        } else {
-            const icon = document.createElement('i');
-            icon.className = 'fas fa-user';
-            userProfilePlaceholder.appendChild(icon);
-        }
+        // This is now handled by profile switcher
     }
 
     // ============================================
@@ -326,6 +1194,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             case 'like': return 'fas fa-heart';
             case 'comment': return 'fas fa-comment';
             case 'follow': return 'fas fa-user-plus';
+            case 'tip': return 'fas fa-gift';
+            case 'party': return 'fas fa-users';
             default: return 'fas fa-bell';
         }
     }
@@ -334,7 +1204,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // SEARCH FUNCTIONALITY
     // ============================================
     
-    async function searchContent(query, category = '', sortBy = 'newest') {
+    async function searchContent(query, category = '', sortBy = 'newest', language = '') {
         try {
             let queryBuilder = supabaseAuth
                 .from('Content')
@@ -344,6 +1214,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             
             if (category) {
                 queryBuilder = queryBuilder.eq('genre', category);
+            }
+            
+            if (language) {
+                queryBuilder = queryBuilder.eq('language', language);
             }
             
             if (sortBy === 'newest') {
@@ -407,12 +1281,15 @@ document.addEventListener('DOMContentLoaded', async () => {
             const creatorId = item.user_profiles?.id || item.user_id;
             
             return `
-                <div class="content-card" data-content-id="${item.id}">
+                <div class="content-card" data-content-id="${item.id}" data-preview-url="${item.preview_url || ''}" data-downloadable="${item.is_downloadable || false}">
                     <div class="card-thumbnail">
                         <img src="${contentSupabase.fixMediaUrl(item.thumbnail_url) || 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop'}"
                              alt="${escapeHtml(item.title)}"
                              loading="lazy"
                              onerror="this.src='https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop'">
+                        <div class="card-badges">
+                            ${item.is_downloadable ? '<div class="card-badge download-badge"><i class="fas fa-download"></i></div>' : ''}
+                        </div>
                         <div class="thumbnail-overlay"></div>
                         <div class="play-overlay">
                             <div class="play-icon">
@@ -422,11 +1299,16 @@ document.addEventListener('DOMContentLoaded', async () => {
                     </div>
                     <div class="card-content">
                         <h3 class="card-title">${truncateText(escapeHtml(item.title), 45)}</h3>
-                        <button class="creator-btn"
-                                onclick="event.stopPropagation(); window.location.href='creator-channel.html?id=${creatorId}&name=${encodeURIComponent(creator)}'">
-                            <i class="fas fa-user"></i>
-                            ${truncateText(escapeHtml(creator), 15)}
-                        </button>
+                        <div class="creator-row">
+                            <button class="creator-btn"
+                                    onclick="event.stopPropagation(); window.location.href='creator-channel.html?id=${creatorId}&name=${encodeURIComponent(creator)}'">
+                                <i class="fas fa-user"></i>
+                                ${truncateText(escapeHtml(creator), 15)}
+                            </button>
+                            <button class="tip-creator-btn" data-creator-id="${creatorId}" data-creator-name="${creator}">
+                                <i class="fas fa-gift"></i>
+                            </button>
+                        </div>
                         <div class="card-stats">
                             <div class="card-stat">
                                 <i class="fas fa-eye"></i>
@@ -445,10 +1327,75 @@ document.addEventListener('DOMContentLoaded', async () => {
         grid.querySelectorAll('.content-card').forEach(card => {
             card.addEventListener('click', (e) => {
                 if (e.target.closest('.creator-btn')) return;
+                if (e.target.closest('.tip-creator-btn')) return;
                 const id = card.dataset.contentId;
                 if (id) window.location.href = `content-detail.html?id=${id}`;
             });
         });
+        
+        // Setup video previews for search results
+        setupVideoPreviews();
+    }
+
+    // Helper to render content cards
+    function renderContentCards(contents) {
+        return contents.map(content => {
+            const thumbnailUrl = content.thumbnail_url
+                ? contentSupabase.fixMediaUrl(content.thumbnail_url)
+                : 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=225&fit=crop';
+            
+            const creatorProfile = content.user_profiles;
+            const creatorName = creatorProfile?.full_name || creatorProfile?.username || content.creator || 'Creator';
+            const displayName = creatorProfile?.full_name || creatorProfile?.username || 'User';
+            const initials = getInitials(displayName);
+            const username = creatorProfile?.username || 'creator';
+            const isNew = (new Date() - new Date(content.created_at)) < 7 * 24 * 60 * 60 * 1000;
+            const views = content.real_views || content.views_count || 0;
+            
+            let avatarHtml = '';
+            if (creatorProfile?.avatar_url) {
+                const avatarUrl = contentSupabase.fixMediaUrl(creatorProfile.avatar_url);
+                avatarHtml = `<img src="${avatarUrl}" alt="${escapeHtml(displayName)}" onerror="this.parentElement.innerHTML='<div class=\\'creator-initials-small\\'>${initials}</div>'">`;
+            } else {
+                avatarHtml = `<div class="creator-initials-small">${initials}</div>`;
+            }
+            
+            return `
+                <a href="content-detail.html?id=${content.id}" class="content-card" data-content-id="${content.id}" data-preview-url="${content.preview_url || ''}" data-downloadable="${content.is_downloadable || false}">
+                    <div class="card-thumbnail">
+                        <img src="${thumbnailUrl}"
+                             alt="${escapeHtml(content.title)}"
+                             loading="lazy"
+                             onerror="this.src='https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=225&fit=crop'">
+                        <div class="card-badges">
+                            ${isNew ? '<div class="card-badge badge-new"><i class="fas fa-gem"></i> NEW</div>' : ''}
+                            ${content.is_downloadable ? '<div class="card-badge download-badge"><i class="fas fa-download"></i></div>' : ''}
+                        </div>
+                        <div class="thumbnail-overlay"></div>
+                        <div class="play-overlay">
+                            <div class="play-icon">
+                                <i class="fas fa-play"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-content">
+                        <h3 class="card-title" title="${escapeHtml(content.title)}">
+                            ${truncateText(escapeHtml(content.title), 50)}
+                        </h3>
+                        <div class="creator-info">
+                            <div class="creator-avatar-small">
+                                ${avatarHtml}
+                            </div>
+                            <div class="creator-name-small">@${escapeHtml(username)}</div>
+                        </div>
+                        <div class="card-meta">
+                            <span><i class="fas fa-eye"></i> ${formatNumber(views)}</span>
+                            <span>${content.media_type || 'video'}</span>
+                        </div>
+                    </div>
+                </a>
+            `;
+        }).join('');
     }
 
     // ============================================
@@ -549,14 +1496,17 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
             
             return `
-                <a href="content-detail.html?id=${content.id}" class="content-card">
+                <a href="content-detail.html?id=${content.id}" class="content-card" data-content-id="${content.id}" data-preview-url="${content.preview_url || ''}" data-downloadable="${content.is_downloadable || false}">
                     <div class="card-thumbnail">
                         <img src="${thumbnailUrl}"
                              alt="${escapeHtml(content.title)}"
                              loading="lazy"
                              onerror="this.src='https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=225&fit=crop'">
+                        <div class="card-badges">
+                            ${isNew ? '<div class="card-badge badge-new"><i class="fas fa-gem"></i> NEW</div>' : ''}
+                            ${content.is_downloadable ? '<div class="card-badge download-badge"><i class="fas fa-download"></i></div>' : ''}
+                        </div>
                         <div class="thumbnail-overlay"></div>
-                        ${isNew ? '<div class="badge-new card-badge"><i class="fas fa-gem"></i> NEW</div>' : ''}
                         <div class="play-overlay">
                             <div class="play-icon">
                                 <i class="fas fa-play"></i>
@@ -587,6 +1537,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         while (tempDiv.firstChild) {
             newContentGrid.appendChild(tempDiv.firstChild);
         }
+        
+        // Setup video previews for new cards
+        setupVideoPreviews();
     }
 
     // ============================================
@@ -609,6 +1562,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                     if (e.altKey) {
                         e.preventDefault();
                         toggleNotificationsPanel();
+                    }
+                    break;
+                case 'v':
+                case 'V':
+                    if (e.altKey) {
+                        e.preventDefault();
+                        document.getElementById('voice-search-btn')?.click();
                     }
                     break;
                 case 'Escape':
@@ -635,7 +1595,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     function closeAllModals() {
-        document.querySelectorAll('.modal.active, .search-modal.active, .analytics-modal.active, .notifications-panel.active')
+        document.querySelectorAll('.modal.active, .search-modal.active, .analytics-modal.active, .notifications-panel.active, .watch-party-modal.active, .tip-modal.active')
             .forEach(el => el.classList.remove('active'));
     }
 
@@ -664,6 +1624,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         const categoryTabs = document.getElementById('category-tabs');
         if (!categoryTabs) return;
         
+        const categories = ['All', 'Music', 'STEM', 'Culture', 'News', 'Sports', 'Movies', 'Documentaries', 'Podcasts', 'Shorts'];
+        
         categoryTabs.innerHTML = categories.map((category, index) => `
             <button class="category-tab ${index === 0 ? 'active' : ''}"
                     data-category="${category}">
@@ -684,7 +1646,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             btn.classList.toggle('active', btn.dataset.category === category);
         });
         
-        window.currentCategory = category;
+        window.currentCategory = category === 'All' ? null : category;
         showToast(`Filtering by: ${category}`, 'info');
         
         await reloadContentByCategory(category);
@@ -694,8 +1656,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         setLoading(true, `Loading ${category === 'All' ? 'all' : category} content...`);
         
         try {
-            trendingContent = await contentSupabase.getTrendingContent(category);
-            newContent = await contentSupabase.getNewContent(category);
+            trendingContent = await contentSupabase.getTrendingContent(category === 'All' ? null : category);
+            newContent = await contentSupabase.getNewContent(category === 'All' ? null : category);
             
             updateTrendingContent();
             updateNewContent();
@@ -815,7 +1777,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             
             return `
                 <div class="swiper-slide">
-                    <a href="creator-channel.html?id=${creator.id}" class="creator-card">
+                    <div class="creator-card">
                         ${isTopCreator ? '<div class="founder-badge">TOP CREATOR</div>' : ''}
                         <div class="creator-avatar">
                             ${avatarUrl ? `
@@ -838,8 +1800,15 @@ document.addEventListener('DOMContentLoaded', async () => {
                                 <div class="stat-label">Connectors</div>
                             </div>
                         </div>
-                        <button class="view-channel-btn">View Channel</button>
-                    </a>
+                        <div class="creator-actions">
+                            <button class="view-channel-btn" onclick="window.location.href='creator-channel.html?id=${creator.id}'">
+                                View Channel
+                            </button>
+                            <button class="tip-creator-btn" data-creator-id="${creator.id}" data-creator-name="${fullName}">
+                                <i class="fas fa-gift"></i> Tip
+                            </button>
+                        </div>
+                    </div>
                 </div>
             `;
         }).join('');
@@ -883,7 +1852,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const displayName = creatorProfile?.full_name || creatorProfile?.username || 'User';
             const initials = getInitials(displayName);
             const username = creatorProfile?.username || 'creator';
-            const viewers = Math.floor(Math.random() * 10000) + 1000;
+            const viewerCount = viewerCounts.get(stream.id) || Math.floor(Math.random() * 500) + 100;
             
             let avatarHtml = '';
             if (creatorProfile?.avatar_url) {
@@ -894,15 +1863,17 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
             
             return `
-                <a href="content-detail.html?id=${stream.id}" class="content-card">
+                <a href="content-detail.html?id=${stream.id}" class="content-card" data-live="true" data-content-id="${stream.id}">
                     <div class="card-thumbnail">
                         <img src="${thumbnailUrl}"
                              alt="${escapeHtml(stream.title)}"
                              onerror="this.src='https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop'">
-                        <div class="thumbnail-overlay"></div>
-                        <div class="badge-live card-badge">
-                            <i class="fas fa-circle"></i> LIVE
+                        <div class="card-badges">
+                            <div class="card-badge badge-live pulse">
+                                <i class="fas fa-circle"></i> LIVE
+                            </div>
                         </div>
+                        <div class="thumbnail-overlay"></div>
                         <div class="play-overlay">
                             <div class="play-icon">
                                 <i class="fas fa-play"></i>
@@ -920,13 +1891,18 @@ document.addEventListener('DOMContentLoaded', async () => {
                             <div class="creator-name-small">@${escapeHtml(username)}</div>
                         </div>
                         <div class="card-meta">
-                            <span><i class="fas fa-eye"></i> ${formatNumber(viewers)} watching</span>
+                            <span class="live-viewer-count ${viewerCount > 0 ? 'has-viewers' : ''}">
+                                <i class="fas fa-eye"></i> ${formatNumber(viewerCount)} watching
+                            </span>
                             <span>Live Now</span>
                         </div>
                     </div>
                 </a>
             `;
         }).join('');
+        
+        // Setup live badges with real-time updates
+        setupLiveBadges();
     }
 
     function updateTrendingContent() {
@@ -945,60 +1921,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
         
-        trendingGrid.innerHTML = trendingContent.slice(0, 8).map(content => {
-            const thumbnailUrl = content.thumbnail_url
-                ? contentSupabase.fixMediaUrl(content.thumbnail_url)
-                : 'https://images.unsplash.com/photo-1574717024653-61fd2cf4d44d?w=400&h=225&fit=crop';
-            
-            const creatorProfile = content.user_profiles;
-            const creatorName = creatorProfile?.full_name || creatorProfile?.username || content.creator || 'Creator';
-            const displayName = creatorProfile?.full_name || creatorProfile?.username || 'User';
-            const initials = getInitials(displayName);
-            const username = creatorProfile?.username || 'creator';
-            const views = content.real_views || content.views_count || Math.floor(Math.random() * 100000) + 1000;
-            
-            let avatarHtml = '';
-            if (creatorProfile?.avatar_url) {
-                const avatarUrl = contentSupabase.fixMediaUrl(creatorProfile.avatar_url);
-                avatarHtml = `<img src="${avatarUrl}" alt="${escapeHtml(displayName)}" onerror="this.parentElement.innerHTML='<div class=\\'creator-initials-small\\'>${initials}</div>'">`;
-            } else {
-                avatarHtml = `<div class="creator-initials-small">${initials}</div>`;
-            }
-            
-            return `
-                <a href="content-detail.html?id=${content.id}" class="content-card">
-                    <div class="card-thumbnail">
-                        <img src="${thumbnailUrl}"
-                             alt="${escapeHtml(content.title)}"
-                             onerror="this.src='https://images.unsplash.com/photo-1574717024653-61fd2cf4d44d?w=400&h=225&fit=crop'">
-                        <div class="thumbnail-overlay"></div>
-                        <div class="badge-trending card-badge">
-                            <i class="fas fa-fire"></i> TRENDING
-                        </div>
-                        <div class="play-overlay">
-                            <div class="play-icon">
-                                <i class="fas fa-play"></i>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="card-content">
-                        <h3 class="card-title" title="${escapeHtml(content.title)}">
-                            ${truncateText(escapeHtml(content.title), 50)}
-                        </h3>
-                        <div class="creator-info">
-                            <div class="creator-avatar-small">
-                                ${avatarHtml}
-                            </div>
-                            <div class="creator-name-small">@${escapeHtml(username)}</div>
-                        </div>
-                        <div class="card-meta">
-                            <span><i class="fas fa-eye"></i> ${formatNumber(views)}</span>
-                            <span>${formatDate(content.created_at)}</span>
-                        </div>
-                    </div>
-                </a>
-            `;
-        }).join('');
+        trendingGrid.innerHTML = renderContentCards(trendingContent.slice(0, 8));
+        
+        // Setup video previews
+        setupVideoPreviews();
     }
 
     function updateNewContent() {
@@ -1017,60 +1943,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
         
-        newContentGrid.innerHTML = newContent.slice(0, 8).map(content => {
-            const thumbnailUrl = content.thumbnail_url
-                ? contentSupabase.fixMediaUrl(content.thumbnail_url)
-                : 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=225&fit=crop';
-            
-            const creatorProfile = content.user_profiles;
-            const creatorName = creatorProfile?.full_name || creatorProfile?.username || content.creator || 'Creator';
-            const displayName = creatorProfile?.full_name || creatorProfile?.username || 'User';
-            const initials = getInitials(displayName);
-            const username = creatorProfile?.username || 'creator';
-            const isNew = (new Date() - new Date(content.created_at)) < 7 * 24 * 60 * 60 * 1000;
-            const views = content.real_views || content.views_count || 0;
-            
-            let avatarHtml = '';
-            if (creatorProfile?.avatar_url) {
-                const avatarUrl = contentSupabase.fixMediaUrl(creatorProfile.avatar_url);
-                avatarHtml = `<img src="${avatarUrl}" alt="${escapeHtml(displayName)}" onerror="this.parentElement.innerHTML='<div class=\\'creator-initials-small\\'>${initials}</div>'">`;
-            } else {
-                avatarHtml = `<div class="creator-initials-small">${initials}</div>`;
-            }
-            
-            return `
-                <a href="content-detail.html?id=${content.id}" class="content-card">
-                    <div class="card-thumbnail">
-                        <img src="${thumbnailUrl}"
-                             alt="${escapeHtml(content.title)}"
-                             loading="lazy"
-                             onerror="this.src='https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=225&fit=crop'">
-                        <div class="thumbnail-overlay"></div>
-                        ${isNew ? '<div class="badge-new card-badge"><i class="fas fa-gem"></i> NEW</div>' : ''}
-                        <div class="play-overlay">
-                            <div class="play-icon">
-                                <i class="fas fa-play"></i>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="card-content">
-                        <h3 class="card-title" title="${escapeHtml(content.title)}">
-                            ${truncateText(escapeHtml(content.title), 50)}
-                        </h3>
-                        <div class="creator-info">
-                            <div class="creator-avatar-small">
-                                ${avatarHtml}
-                            </div>
-                            <div class="creator-name-small">@${escapeHtml(username)}</div>
-                        </div>
-                        <div class="card-meta">
-                            <span><i class="fas fa-eye"></i> ${formatNumber(views)}</span>
-                            <span>${content.media_type || 'video'}</span>
-                        </div>
-                    </div>
-                </a>
-            `;
-        }).join('');
+        newContentGrid.innerHTML = renderContentCards(newContent.slice(0, 8));
+        
+        // Setup video previews
+        setupVideoPreviews();
     }
 
     function updateEvents() {
@@ -1165,6 +2041,17 @@ document.addEventListener('DOMContentLoaded', async () => {
             updateTrendingContent();
             updateNewContent();
             updateEvents();
+            
+            // Load new features
+            await loadShorts();
+            await loadContinueWatching();
+            await loadRecommendations();
+            
+            // Setup video previews
+            setupVideoPreviews();
+            
+            // Add download indicators
+            addDownloadIndicators();
         } catch (error) {
             console.error('❌ Error loading explore data:', error);
             showToast('Failed to load explore content. Showing sample data.', 'error');
@@ -1264,7 +2151,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                     avatar_url: 'https://images.unsplash.com/photo-1516280440614-37939bbacd81?w=400&h=400&fit=crop'
                 },
                 views_count: 12500,
-                created_at: new Date().toISOString()
+                created_at: new Date().toISOString(),
+                is_downloadable: true,
+                preview_url: 'https://example.com/preview1.mp4'
             },
             {
                 id: 2,
@@ -1276,7 +2165,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                     avatar_url: null
                 },
                 views_count: 8900,
-                created_at: new Date().toISOString()
+                created_at: new Date().toISOString(),
+                is_downloadable: false
             },
             {
                 id: 3,
@@ -1288,17 +2178,88 @@ document.addEventListener('DOMContentLoaded', async () => {
                     avatar_url: 'https://images.unsplash.com/photo-1547153760-18fc86324498?w=400&h=400&fit=crop'
                 },
                 views_count: 15600,
-                created_at: new Date().toISOString()
+                created_at: new Date().toISOString(),
+                is_downloadable: true
             }
         ];
         
         newContent = trendingContent;
+        
+        // Mock shorts
+        shorts = [
+            {
+                id: 101,
+                title: 'Quick Dance Tutorial',
+                thumbnail_url: 'https://images.unsplash.com/photo-1547153760-18fc86324498?w=400&h=600&fit=crop',
+                user_profiles: {
+                    full_name: 'Cultural Hub',
+                    username: 'culturalhub'
+                }
+            },
+            {
+                id: 102,
+                title: 'Tech Tip: Shortcut Keys',
+                thumbnail_url: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=400&h=600&fit=crop',
+                user_profiles: {
+                    full_name: 'Tech Innovators',
+                    username: 'techinnovators'
+                }
+            }
+        ];
+        
+        // Mock continue watching
+        continueWatching = [
+            {
+                content: trendingContent[0],
+                progress_seconds: 245,
+                content: {
+                    ...trendingContent[0],
+                    duration: 600
+                }
+            }
+        ];
         
         updateFeaturedCreators();
         updateLiveStreams();
         updateTrendingContent();
         updateNewContent();
         updateEvents();
+        
+        // Render new sections
+        const shortsContainer = document.getElementById('shorts-container');
+        if (shortsContainer && shorts.length > 0) {
+            shortsContainer.innerHTML = shorts.map(short => {
+                const thumbnailUrl = short.thumbnail_url
+                    ? contentSupabase.fixMediaUrl(short.thumbnail_url)
+                    : 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=600&fit=crop';
+                
+                const creatorName = short.user_profiles?.full_name || 'Creator';
+                
+                return `
+                    <a href="content-detail.html?id=${short.id}" class="short-card">
+                        <div class="short-thumbnail">
+                            <img src="${thumbnailUrl}" alt="${escapeHtml(short.title)}" loading="lazy">
+                            <div class="short-overlay">
+                                <i class="fas fa-play"></i>
+                            </div>
+                        </div>
+                        <div class="short-info">
+                            <h4>${truncateText(escapeHtml(short.title), 30)}</h4>
+                            <p>${escapeHtml(creatorName)}</p>
+                        </div>
+                    </a>
+                `;
+            }).join('');
+        }
+        
+        if (continueWatching.length > 0) {
+            document.getElementById('continue-watching-section').style.display = 'block';
+            const grid = document.getElementById('continue-watching-grid');
+            grid.innerHTML = renderContentCards(continueWatching.map(c => c.content));
+        }
+        
+        // Setup video previews
+        setupVideoPreviews();
     }
 
     // ============================================
@@ -1339,6 +2300,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const query = e.target.value.trim();
                 const category = document.getElementById('category-filter')?.value;
                 const sortBy = document.getElementById('sort-filter')?.value;
+                const language = document.getElementById('language-filter')?.value;
                 const resultsGrid = document.getElementById('search-results-grid');
                 
                 if (!resultsGrid) return;
@@ -1355,7 +2317,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     </div>
                 `;
                 
-                const results = await searchContent(query, category, sortBy);
+                const results = await searchContent(query, category, sortBy, language);
                 renderSearchResults(results);
             }, 300));
         }
@@ -1367,6 +2329,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
         
         document.getElementById('sort-filter')?.addEventListener('change', () => {
+            if (searchInput && searchInput.value.trim().length >= 2) {
+                searchInput.dispatchEvent(new Event('input'));
+            }
+        });
+        
+        document.getElementById('language-filter')?.addEventListener('change', () => {
             if (searchInput && searchInput.value.trim().length >= 2) {
                 searchInput.dispatchEvent(new Event('input'));
             }
@@ -1434,6 +2402,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
             });
         }
+        
+        document.getElementById('notification-settings')?.addEventListener('click', () => {
+            window.location.href = 'notification-settings.html';
+        });
     }
 
     function setupAnalytics() {
@@ -1504,21 +2476,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     function setupCoreListeners() {
-        const profileBtn = document.getElementById('profile-btn');
-        if (profileBtn) {
-            profileBtn.addEventListener('click', async () => {
-                const { data, error } = await supabaseAuth.auth.getSession();
-                if (error) console.warn('Session error:', error);
-                
-                const session = data?.session;
-                if (session) {
-                    window.location.href = 'profile.html';
-                } else {
-                    window.location.href = `login.html?redirect=${encodeURIComponent(window.location.href)}`;
-                }
-            });
-        }
-        
         const browseAllBtn = document.getElementById('browse-all-btn');
         if (browseAllBtn) {
             browseAllBtn.addEventListener('click', () => {
@@ -1578,6 +2535,20 @@ document.addEventListener('DOMContentLoaded', async () => {
                 window.location.href = 'https://bantustreamconnect.com/live-streams';
             });
         }
+        
+        const seeAllShorts = document.getElementById('see-all-shorts');
+        if (seeAllShorts) {
+            seeAllShorts.addEventListener('click', () => {
+                window.location.href = 'https://bantustreamconnect.com/shorts';
+            });
+        }
+        
+        const manageProfilesBtn = document.getElementById('manage-profiles-btn');
+        if (manageProfilesBtn) {
+            manageProfilesBtn.addEventListener('click', () => {
+                window.location.href = 'manage-profiles.html';
+            });
+        }
     }
 
     // ============================================
@@ -1594,6 +2565,18 @@ document.addEventListener('DOMContentLoaded', async () => {
             
             loadingText.textContent = 'Checking authentication...';
             await checkAuth();
+            
+            // Initialize video hero
+            await initVideoHero();
+            
+            // Setup voice search
+            setupVoiceSearch();
+            
+            // Setup watch party
+            setupWatchParty();
+            
+            // Setup tip system
+            setupTipSystem();
             
             const trendingGrid = document.getElementById('trending-grid');
             const newContentGrid = document.getElementById('new-content-grid');
@@ -1684,15 +2667,22 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (event === 'SIGNED_IN') {
             window.currentUser = session.user;
             loadUserProfile();
+            loadUserProfiles();
             loadNotifications();
             showToast('Welcome back!', 'success');
         } else if (event === 'SIGNED_OUT') {
             window.currentUser = null;
+            currentProfile = null;
+            userProfiles = [];
             updateProfileUI(null);
             updateNotificationBadge(0);
             window.notifications = [];
             renderNotifications();
             showToast('You have been signed out', 'info');
+            
+            // Hide profile-specific sections
+            document.getElementById('continue-watching-section').style.display = 'none';
+            document.getElementById('recommendations-section').style.display = 'none';
         }
     });
 });
