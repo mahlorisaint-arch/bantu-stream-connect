@@ -23,10 +23,6 @@
 --warm-gold: #F59E0B;
 --error-color: #EF4444;
 --success-color: #10B981;
---glow-blue-1: #00A3FF;
---glow-blue-2: #0066FF;
---glow-purple: #8B5CF6;
---glow-pink: #EC4899;
 }
 /* Reset & Base */
 * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -81,7 +77,7 @@ left: 0;
 width: 100%;
 height: 100%;
 background: radial-gradient(circle at 20% 80%, var(--bantu-blue) 0%, transparent 50%),
-radial-gradient(circle at 80% 20%, var(--glow-purple) 0%, transparent 50%);
+radial-gradient(circle at 80% 20%, #8B5CF6 0%, transparent 50%);
 opacity: 0.3;
 }
 .grid-pattern {
@@ -936,44 +932,44 @@ console.log('✅ Supabase client initialized');
 
 <!-- Main JavaScript -->
 <script>
-document.addEventListener('DOMContentLoaded', async () => {
+document.addEventListener('DOMContentLoaded', function() {
 console.log('🔥 Trending Screen Initializing...');
 
 // DOM Elements
-const loadingScreen = document.getElementById('loading');
-const loadingText = document.getElementById('loading-text');
-const app = document.getElementById('app');
-const authModal = document.getElementById('auth-modal');
-const filterContainer = document.getElementById('filter-container');
-const trendingSections = document.getElementById('trending-sections');
-const searchBtn = document.getElementById('search-btn');
-const refreshBtn = document.getElementById('refresh-btn');
-const notificationsBtn = document.getElementById('notifications-btn');
-const profileBtn = document.getElementById('profile-btn');
-const exploreAllBtn = document.getElementById('explore-all-btn');
-const authLoginBtn = document.getElementById('auth-login-btn');
-const authCancelBtn = document.getElementById('auth-cancel-btn');
+var loadingScreen = document.getElementById('loading');
+var loadingText = document.getElementById('loading-text');
+var app = document.getElementById('app');
+var authModal = document.getElementById('auth-modal');
+var filterContainer = document.getElementById('filter-container');
+var trendingSections = document.getElementById('trending-sections');
+var searchBtn = document.getElementById('search-btn');
+var refreshBtn = document.getElementById('refresh-btn');
+var notificationsBtn = document.getElementById('notifications-btn');
+var profileBtn = document.getElementById('profile-btn');
+var exploreAllBtn = document.getElementById('explore-all-btn');
+var authLoginBtn = document.getElementById('auth-login-btn');
+var authCancelBtn = document.getElementById('auth-cancel-btn');
 
 // State
-let currentUser = null;
-let allContentData = [];
-let featuredTrend = [];
-let liveStreams = [];
-let communityGems = [];
-let trendingHashtags = [];
-let selectedFilter = 'All';
-let notifications = [];
+var currentUser = null;
+var allContentData = [];
+var featuredTrend = [];
+var liveStreams = [];
+var communityGems = [];
+var trendingHashtags = [];
+var selectedFilter = 'All';
+var notifications = [];
 
-const filters = ['All', 'Music', 'Film & Series', 'Podcasts', 'Gaming', 'Comedy', 'Live', 'Top 24 Hrs', 'Rising Creators'];
+var filters = ['All', 'Music', 'Film & Series', 'Podcasts', 'Gaming', 'Comedy', 'Live', 'Top 24 Hrs', 'Rising Creators'];
 
 // ✅ LOADING STATE
-function setLoading(loading, text = '') {
+function setLoading(loading, text) {
 if (text && loadingText) loadingText.textContent = text;
 if (loading) {
 if (loadingScreen) loadingScreen.style.display = 'flex';
 if (app) app.style.display = 'none';
 } else {
-setTimeout(() => {
+setTimeout(function() {
 if (loadingScreen) loadingScreen.style.display = 'none';
 if (app) app.style.display = 'block';
 }, 500);
@@ -981,17 +977,18 @@ if (app) app.style.display = 'block';
 }
 
 // ✅ TOAST
-function showToast(message, type = 'info') {
-const toast = document.createElement('div');
-toast.className = `toast ${type}`;
+function showToast(message, type) {
+type = type || 'info';
+var toast = document.createElement('div');
+toast.className = 'toast ' + type;
 toast.textContent = message;
-const container = document.getElementById('toast-container');
+var container = document.getElementById('toast-container');
 if (container) {
 container.appendChild(toast);
-setTimeout(() => {
+setTimeout(function() {
 toast.style.opacity = '0';
 toast.style.transform = 'translateX(100%)';
-setTimeout(() => toast.remove(), 300);
+setTimeout(function() { toast.remove(); }, 300);
 }, 3000);
 }
 }
@@ -1011,104 +1008,55 @@ return email.split('@')[0].substring(0, 2).toUpperCase();
 
 function getInitialsFromName(fullName) {
 if (!fullName) return 'U';
-const names = fullName.split(' ');
+var names = fullName.split(' ');
 return names.length >= 2 
 ? (names[0].charAt(0) + names[names.length - 1].charAt(0)).toUpperCase()
 : fullName.charAt(0).toUpperCase();
 }
 
-// ✅ FIXED: BUILD THUMBNAIL URL WITH MULTIPLE FALLBACKS
-function buildThumbnailUrl(thumbnailPath, fallbackIndex = 0) {
-// Professional fallback images from Unsplash
-const fallbackImages = [
+// ✅ BUILD THUMBNAIL URL WITH FALLBACKS
+function buildThumbnailUrl(thumbnailPath) {
+var fallbackImages = [
 'https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=800&h=450&fit=crop',
 'https://images.unsplash.com/photo-1574375927938-d5a98e8ffe85?w=800&h=450&fit=crop',
 'https://images.unsplash.com/photo-1585829365295-ab7cd400c167?w=800&h=450&fit=crop',
 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=800&h=450&fit=crop'
 ];
 
-// If no thumbnail path, return fallback
 if (!thumbnailPath || thumbnailPath.trim() === '') {
-console.log('🖼️ No thumbnail path, using fallback');
-return fallbackImages[fallbackIndex % fallbackImages.length];
+return fallbackImages[0];
 }
 
-// Clean the path
-const cleanPath = thumbnailPath.replace(/^\/+/, '');
+var cleanPath = thumbnailPath.replace(/^\/+/, '');
 
-// Try different URL constructions
-const possibleUrls = [
-// Direct path (if already full URL)
-thumbnailPath.startsWith('http') ? thumbnailPath : null,
-// Public bucket with clean path
-`https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/${cleanPath}`,
-// Content bucket
-`https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/content/${cleanPath}`,
-// Thumbnails bucket
-`https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/thumbnails/${cleanPath}`,
-// Media bucket
-`https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/media/${cleanPath}`
-];
-
-const validUrl = possibleUrls.find(url => url !== null);
-console.log('🖼️ Building thumbnail URL:', validUrl);
-return validUrl || fallbackImages[fallbackIndex % fallbackImages.length];
+if (thumbnailPath.startsWith('http')) {
+return thumbnailPath;
 }
 
-// ✅ FIXED: CREATE IMAGE WITH ERROR FALLBACK
-function createImageElement(src, alt, fallbackIndex = 0) {
-const img = document.createElement('img');
-img.src = src;
-img.alt = alt || 'Content thumbnail';
-img.loading = 'lazy';
-img.style.cssText = 'width: 100%; height: 100%; object-fit: cover; transition: transform 0.3s ease;';
-
-img.onerror = () => {
-console.log('🖼️ Image failed to load, trying fallback:', fallbackIndex);
-const fallbackImages = [
-'https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=800&h=450&fit=crop',
-'https://images.unsplash.com/photo-1574375927938-d5a98e8ffe85?w=800&h=450&fit=crop',
-'https://images.unsplash.com/photo-1585829365295-ab7cd400c167?w=800&h=450&fit=crop',
-'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=800&h=450&fit=crop'
-];
-if (fallbackIndex < fallbackImages.length - 1) {
-img.src = fallbackImages[fallbackIndex + 1];
-img.dataset.fallbackIndex = fallbackIndex + 1;
-} else {
-// Final fallback - gradient background
-img.style.display = 'none';
-img.parentElement.style.background = 'linear-gradient(135deg, #1D4ED8, #8B5CF6)';
-img.parentElement.innerHTML = `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:white;font-size:48px;"><i class="fas fa-image"></i></div>`;
-}
-};
-
-return img;
+return 'https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/' + cleanPath;
 }
 
 // ✅ LOAD PROFILE PICTURE
-async function loadUserProfilePicture(user) {
-try {
-if (!user || !profileBtn) return;
-const placeholder = document.getElementById('userProfilePlaceholder');
+function loadUserProfilePicture(user) {
+return window.supabaseClient
+.from('user_profiles')
+.select('*')
+.eq('id', user.id)
+.maybeSingle()
+.then(function(response) {
+var profile = response.data;
+var profileError = response.error;
+var placeholder = document.getElementById('userProfilePlaceholder');
 if (!placeholder) return;
 
 while (placeholder.firstChild) {
 placeholder.removeChild(placeholder.firstChild);
 }
 
-const userInitials = getInitials(user.email);
-
-const profileResponse = await window.supabaseClient
-.from('user_profiles')
-.select('*')
-.eq('id', user.id)
-.maybeSingle();
-
-const profile = profileResponse.data;
-const profileError = profileResponse.error;
+var userInitials = getInitials(user.email);
 
 if (profileError || !profile) {
-const fallback = document.createElement('div');
+var fallback = document.createElement('div');
 fallback.className = 'profile-placeholder';
 fallback.style.cssText = 'width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,#1D4ED8,#F59E0B);display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:20px';
 fallback.textContent = userInitials;
@@ -1116,19 +1064,19 @@ placeholder.appendChild(fallback);
 return;
 }
 
-const displayName = profile.full_name || profile.username || user.email || 'User';
-const initial = getInitialsFromName(displayName);
+var displayName = profile.full_name || profile.username || user.email || 'User';
+var initial = getInitialsFromName(displayName);
 
 if (profile.avatar_url) {
-const avatarUrl = buildThumbnailUrl(profile.avatar_url);
-const img = document.createElement('img');
+var avatarUrl = buildThumbnailUrl(profile.avatar_url);
+var img = document.createElement('img');
 img.className = 'profile-img';
 img.alt = displayName;
 img.style.cssText = 'width: 100%; height: 100%; border-radius: 50%; object-fit: cover;';
 img.src = avatarUrl;
 
-img.onerror = () => {
-const fallback = document.createElement('div');
+img.onerror = function() {
+var fallback = document.createElement('div');
 fallback.className = 'profile-placeholder';
 fallback.style.cssText = 'width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,#1D4ED8,#F59E0B);display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:20px';
 fallback.textContent = initial;
@@ -1138,26 +1086,27 @@ placeholder.appendChild(fallback);
 
 placeholder.appendChild(img);
 } else {
-const fallback = document.createElement('div');
+var fallback = document.createElement('div');
 fallback.className = 'profile-placeholder';
 fallback.style.cssText = 'width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,#1D4ED8,#F59E0B);display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:20px';
 fallback.textContent = initial;
 placeholder.appendChild(fallback);
 }
-} catch (error) {
+})
+.catch(function(error) {
 console.error('Error loading profile:', error);
-}
+});
 }
 
 // ✅ CHECK AUTHENTICATION
-async function checkAuthentication() {
-try {
+function checkAuthentication() {
 setLoading(true, 'Checking authentication...');
-const sessionResponse = await window.supabaseClient.auth.getSession();
-const session = sessionResponse.data?.session;
-const error = sessionResponse.error;
+return window.supabaseClient.auth.getSession()
+.then(function(sessionResponse) {
+var session = sessionResponse.data.session;
+var error = sessionResponse.error;
 
-if (error || !session?.user) {
+if (error || !session || !session.user) {
 console.log('⚠️ User not authenticated');
 showToast('Please sign in to access trending content', 'error');
 if (authModal) authModal.classList.add('active');
@@ -1168,52 +1117,57 @@ return false;
 currentUser = session.user;
 console.log('✅ User authenticated:', currentUser.email);
 
-await loadUserProfilePicture(currentUser);
-await loadNotifications();
+return loadUserProfilePicture(currentUser)
+.then(function() {
+return loadNotifications();
+})
+.then(function() {
 return true;
-} catch (error) {
+});
+})
+.catch(function(error) {
 console.error('❌ Authentication error:', error);
 setLoading(false);
 return false;
-}
+});
 }
 
 // ✅ LOAD NOTIFICATIONS
-async function loadNotifications() {
-try {
+function loadNotifications() {
 if (!currentUser) {
 updateNotificationBadge(0);
-return;
+return Promise.resolve();
 }
 
-const notificationsResponse = await window.supabaseClient
+return window.supabaseClient
 .from('notifications')
 .select('*')
 .eq('user_id', currentUser.id)
 .order('created_at', { ascending: false })
-.limit(20);
-
-const data = notificationsResponse.data;
-const error = notificationsResponse.error;
+.limit(20)
+.then(function(response) {
+var data = response.data;
+var error = response.error;
 
 if (error) throw error;
 
 notifications = data || [];
-const unreadCount = notifications.filter(n => !n.is_read).length;
+var unreadCount = notifications.filter(function(n) { return !n.is_read; }).length;
 updateNotificationBadge(unreadCount);
 renderNotifications();
-} catch (error) {
+})
+.catch(function(error) {
 console.error('Error loading notifications:', error);
 updateNotificationBadge(0);
-}
+});
 }
 
 // ✅ UPDATE NOTIFICATION BADGE
-function updateNotificationBadge(count = null) {
-if (count === null) {
-count = notifications.filter(n => !n.is_read).length;
+function updateNotificationBadge(count) {
+if (count === null || count === undefined) {
+count = notifications.filter(function(n) { return !n.is_read; }).length;
 }
-const badge = document.getElementById('notification-count');
+var badge = document.getElementById('notification-count');
 if (badge) {
 badge.textContent = count > 99 ? '99+' : count;
 badge.style.display = count > 0 ? 'flex' : 'none';
@@ -1222,36 +1176,42 @@ badge.style.display = count > 0 ? 'flex' : 'none';
 
 // ✅ RENDER NOTIFICATIONS
 function renderNotifications() {
-const notificationsList = document.getElementById('notifications-list');
+var notificationsList = document.getElementById('notifications-list');
 if (!notificationsList) return;
 
 if (!currentUser) {
-notificationsList.innerHTML = `<div style="text-align:center;padding:40px 20px;color:var(--slate-grey)"><i class="fas fa-bell-slash" style="font-size:48px;margin-bottom:15px;opacity:0.5"></i><p>Sign in to see notifications</p></div>`;
+notificationsList.innerHTML = '<div style="text-align:center;padding:40px 20px;color:var(--slate-grey)"><i class="fas fa-bell-slash" style="font-size:48px;margin-bottom:15px;opacity:0.5"></i><p>Sign in to see notifications</p></div>';
 return;
 }
 
 if (!notifications || notifications.length === 0) {
-notificationsList.innerHTML = `<div style="text-align:center;padding:40px 20px;color:var(--slate-grey)"><i class="fas fa-bell" style="font-size:48px;margin-bottom:15px;opacity:0.3"></i><p>No notifications yet</p></div>`;
+notificationsList.innerHTML = '<div style="text-align:center;padding:40px 20px;color:var(--slate-grey)"><i class="fas fa-bell" style="font-size:48px;margin-bottom:15px;opacity:0.3"></i><p>No notifications yet</p></div>';
 return;
 }
 
-notificationsList.innerHTML = notifications.map(notification => `
-<div class="notification-item ${notification.is_read ? 'read' : 'unread'}" data-id="${notification.id}">
-<div class="notification-icon"><i class="${getNotificationIcon(notification.type)}" style="color:white"></i></div>
-<div class="notification-content">
-<h4>${escapeHtml(notification.title)}</h4>
-<p>${escapeHtml(notification.message)}</p>
-<span class="notification-time">${formatNotificationTime(notification.created_at)}</span>
-</div>
-${!notification.is_read ? '<div class="notification-dot"></div>' : ''}
-</div>
-`).join('');
+var html = notifications.map(function(notification) {
+return '<div class="notification-item ' + (notification.is_read ? 'read' : 'unread') + '" data-id="' + notification.id + '">' +
+'<div class="notification-icon"><i class="' + getNotificationIcon(notification.type) + '" style="color:white"></i></div>' +
+'<div class="notification-content">' +
+'<h4>' + escapeHtml(notification.title) + '</h4>' +
+'<p>' + escapeHtml(notification.message) + '</p>' +
+'<span class="notification-time">' + formatNotificationTime(notification.created_at) + '</span>' +
+'</div>' +
+(!notification.is_read ? '<div class="notification-dot"></div>' : '') +
+'</div>';
+}).join('');
 
-notificationsList.querySelectorAll('.notification-item').forEach(item => {
-item.addEventListener('click', async () => {
-const id = item.dataset.id;
-await markNotificationAsRead(id);
-if (notificationsPanel) notificationsPanel.classList.remove('active');
+notificationsList.innerHTML = html;
+
+var items = notificationsList.querySelectorAll('.notification-item');
+items.forEach(function(item) {
+item.addEventListener('click', function() {
+var id = item.dataset.id;
+markNotificationAsRead(id)
+.then(function() {
+var panel = document.getElementById('notifications-panel');
+if (panel) panel.classList.remove('active');
+});
 });
 });
 }
@@ -1269,88 +1229,106 @@ default: return 'fas fa-bell';
 
 function formatNotificationTime(timestamp) {
 if (!timestamp) return 'Just now';
-const diffMs = Date.now() - new Date(timestamp).getTime();
-const diffMins = Math.floor(diffMs / 60000);
-const diffHours = Math.floor(diffMs / 3600000);
-const diffDays = Math.floor(diffMs / 86400000);
+var diffMs = Date.now() - new Date(timestamp).getTime();
+var diffMins = Math.floor(diffMs / 60000);
+var diffHours = Math.floor(diffMs / 3600000);
+var diffDays = Math.floor(diffMs / 86400000);
 if (diffMins < 1) return 'Just now';
-if (diffMins < 60) return `${diffMins}m ago`;
-if (diffHours < 24) return `${diffHours}h ago`;
-if (diffDays < 7) return `${diffDays}d ago`;
+if (diffMins < 60) return diffMins + 'm ago';
+if (diffHours < 24) return diffHours + 'h ago';
+if (diffDays < 7) return diffDays + 'd ago';
 return new Date(timestamp).toLocaleDateString();
 }
 
 function escapeHtml(text) {
 if (!text) return '';
-const div = document.createElement('div');
+var div = document.createElement('div');
 div.textContent = text;
 return div.innerHTML;
 }
 
-async function markNotificationAsRead(notificationId) {
-try {
-await window.supabaseClient
+function markNotificationAsRead(notificationId) {
+return window.supabaseClient
 .from('notifications')
 .update({ is_read: true })
-.eq('id', notificationId);
-await loadNotifications();
-} catch (error) {
-console.error('Error marking notification as read:', error);
+.eq('id', notificationId)
+.then(function() {
+var item = document.querySelector('.notification-item[data-id="' + notificationId + '"]');
+if (item) {
+item.classList.remove('unread');
+item.classList.add('read');
+var dot = item.querySelector('.notification-dot');
+if (dot) dot.remove();
 }
+return loadNotifications();
+})
+.catch(function(error) {
+console.error('Error marking notification as read:', error);
+});
 }
 
-async function markAllNotificationsAsRead() {
-try {
-if (!currentUser) return;
-await window.supabaseClient
+function markAllNotificationsAsRead() {
+if (!currentUser) return Promise.resolve();
+return window.supabaseClient
 .from('notifications')
 .update({ is_read: true })
 .eq('user_id', currentUser.id)
-.eq('is_read', false);
-await loadNotifications();
+.eq('is_read', false)
+.then(function() {
+var items = document.querySelectorAll('.notification-item.unread');
+items.forEach(function(item) {
+item.classList.remove('unread');
+item.classList.add('read');
+var dot = item.querySelector('.notification-dot');
+if (dot) dot.remove();
+});
+updateNotificationBadge(0);
 showToast('All notifications marked as read', 'success');
-} catch (error) {
+})
+.catch(function(error) {
 console.error('Error marking all as read:', error);
-}
+});
 }
 
 // ✅ FETCH CONTENT
-async function fetchContent() {
-try {
+function fetchContent() {
 console.log('🔄 Fetching trending content...');
 setLoading(true, 'Loading trending content...');
 
-let contentData = [];
-try {
-const contentResponse = await window.supabaseClient
+return window.supabaseClient
 .from('Content')
 .select('*, user_profiles!user_id(*)')
 .eq('status', 'published')
 .order('created_at', { ascending: false })
-.limit(100);
-if (contentResponse.error) throw contentResponse.error;
-contentData = contentResponse.data;
-console.log('✅ Fetched from Content table:', contentData.length, 'items');
-} catch (error) {
+.limit(100)
+.then(function(response) {
+var contentData = response.data;
+var error = response.error;
+
+if (error) {
 console.log('⚠️ Trying lowercase content table...');
-const contentResponse = await window.supabaseClient
+return window.supabaseClient
 .from('content')
 .select('*, user_profiles!user_id(*)')
 .eq('status', 'published')
 .order('created_at', { ascending: false })
 .limit(100);
-if (contentResponse.error) throw contentResponse.error;
-contentData = contentResponse.data;
-console.log('✅ Fetched from content table:', contentData.length, 'items');
 }
 
-const enrichedContent = await Promise.all(
-(contentData || []).map(async (item) => {
-const viewsResponse = await window.supabaseClient
+return response;
+})
+.then(function(response) {
+var contentData = response.data || [];
+console.log('✅ Fetched content:', contentData.length, 'items');
+
+// Enrich with view counts
+var enrichPromises = contentData.map(function(item) {
+return window.supabaseClient
 .from('content_views')
 .select('*', { count: 'exact', head: true })
-.eq('content_id', item.id);
-const viewsCount = viewsResponse.count || 0;
+.eq('content_id', item.id)
+.then(function(viewsResponse) {
+var viewsCount = viewsResponse.count || 0;
 return {
 ...item,
 real_views: viewsCount,
@@ -1358,36 +1336,50 @@ is_live: item.is_live || false,
 viewer_count: item.viewer_count || viewsCount,
 is_new: isContentNew(item.created_at)
 };
-})
-);
+});
+});
 
+return Promise.all(enrichPromises);
+})
+.then(function(enrichedContent) {
 console.log('✅ Processed content:', enrichedContent.length, 'items');
+setLoading(false);
 return enrichedContent;
-} catch (error) {
+})
+.catch(function(error) {
 console.error('❌ Error fetching content:', error);
 showToast('Failed to load content. Please refresh.', 'error');
-return [];
-} finally {
 setLoading(false);
-}
+return [];
+});
 }
 
 function isContentNew(createdAt) {
 if (!createdAt) return false;
-const daysAgo = (Date.now() - new Date(createdAt).getTime()) / (1000 * 60 * 60 * 24);
+try {
+var createdDate = new Date(createdAt);
+var daysAgo = (Date.now() - createdDate.getTime()) / (1000 * 60 * 60 * 24);
 return daysAgo < 7;
+} catch (e) {
+return false;
+}
 }
 
 // ✅ PROCESS SECTIONS
 function processTrendingSections(contentData) {
 allContentData = contentData;
-featuredTrend = [...contentData].sort((a, b) => (b.real_views || 0) - (a.real_views || 0)).slice(0, 1);
-liveStreams = contentData.filter(item => item.is_live).slice(0, 10);
-communityGems = [...contentData].sort((a, b) => {
-const aScore = (a.real_views || 0) + ((a.likes_count || 0) * 2);
-const bScore = (b.real_views || 0) + ((b.likes_count || 0) * 2);
+featuredTrend = contentData.slice().sort(function(a, b) {
+return (b.real_views || 0) - (a.real_views || 0);
+}).slice(0, 1);
+
+liveStreams = contentData.filter(function(item) { return item.is_live; }).slice(0, 10);
+
+communityGems = contentData.slice().sort(function(a, b) {
+var aScore = (a.real_views || 0) + ((a.likes_count || 0) * 2);
+var bScore = (b.real_views || 0) + ((b.likes_count || 0) * 2);
 return bScore - aScore;
 }).slice(0, 20);
+
 trendingHashtags = ['#OwnYourStage', '#BantuFuture', '#1MinComedy', '#SofaTalks', '#JoburgVibes', '#AfricanTalent', '#StreamConnect', '#RisingStars'];
 console.log('✅ Processed sections:', { featured: featuredTrend.length, live: liveStreams.length, gems: communityGems.length });
 }
@@ -1395,282 +1387,392 @@ console.log('✅ Processed sections:', { featured: featuredTrend.length, live: l
 // ✅ RENDER FILTER CHIPS
 function renderFilterChips() {
 if (!filterContainer) return;
-filterContainer.innerHTML = filters.map(filter => `
-<button class="filter-chip ${filter === selectedFilter ? 'active' : ''}" data-filter="${filter}">${filter.toUpperCase()}</button>
-`).join('');
-document.querySelectorAll('.filter-chip').forEach(button => {
-button.addEventListener('click', () => onFilterSelected(button.dataset.filter));
+var html = filters.map(function(filter) {
+return '<button class="filter-chip ' + (filter === selectedFilter ? 'active' : '') + '" data-filter="' + filter + '">' + filter.toUpperCase() + '</button>';
+}).join('');
+filterContainer.innerHTML = html;
+
+var buttons = filterContainer.querySelectorAll('.filter-chip');
+buttons.forEach(function(button) {
+button.addEventListener('click', function() {
+var filter = button.dataset.filter;
+onFilterSelected(filter);
+});
 });
 }
 
 // ✅ RENDER SECTIONS
 function renderTrendingSections() {
 if (!trendingSections) return;
-trendingSections.innerHTML = `
-${featuredTrend.length > 0 ? `
-<section class="section">
-<div class="section-header">
-<h2 class="section-title"><i class="fas fa-rocket section-icon"></i>THE PULSE</h2>
-<button class="see-all-btn" onclick="viewAllTrending()">SEE ALL</button>
-</div>
-${renderFeaturedTrend()}
-</section>
-` : ''}
-${liveStreams.length > 0 ? `
-<section class="section">
-<div class="section-header">
-<h2 class="section-title"><i class="fas fa-tv section-icon"></i>LIVE STREAMS</h2>
-<button class="see-all-btn" onclick="viewAllLiveStreams()">SEE ALL</button>
-</div>
-<div class="content-horizontal-scroll">${renderLiveStreams()}</div>
-</section>
-` : ''}
-${trendingHashtags.length > 0 ? `
-<section class="section">
-<div class="section-header">
-<h2 class="section-title"><i class="fas fa-fire section-icon"></i>TRENDING TOPICS</h2>
-</div>
-<div class="hashtags-container">${renderTrendingHashtags()}</div>
-</section>
-` : ''}
-${communityGems.length > 0 ? `
-<section class="section">
-<div class="section-header">
-<h2 class="section-title"><i class="fas fa-gem section-icon"></i>COMMUNITY GEMS</h2>
-</div>
-<div class="community-grid">${renderCommunityGems()}</div>
-</section>
-` : ''}
-`;
+
+var html = '';
+
+if (featuredTrend.length > 0) {
+html += '<section class="section">' +
+'<div class="section-header">' +
+'<h2 class="section-title"><i class="fas fa-rocket section-icon"></i>THE PULSE</h2>' +
+'<button class="see-all-btn" onclick="viewAllTrending()">SEE ALL</button>' +
+'</div>' +
+renderFeaturedTrend() +
+'</section>';
+}
+
+if (liveStreams.length > 0) {
+html += '<section class="section">' +
+'<div class="section-header">' +
+'<h2 class="section-title"><i class="fas fa-tv section-icon"></i>LIVE STREAMS</h2>' +
+'<button class="see-all-btn" onclick="viewAllLiveStreams()">SEE ALL</button>' +
+'</div>' +
+'<div class="content-horizontal-scroll">' + renderLiveStreams() + '</div>' +
+'</section>';
+}
+
+if (trendingHashtags.length > 0) {
+html += '<section class="section">' +
+'<div class="section-header">' +
+'<h2 class="section-title"><i class="fas fa-fire section-icon"></i>TRENDING TOPICS</h2>' +
+'</div>' +
+'<div class="hashtags-container">' + renderTrendingHashtags() + '</div>' +
+'</section>';
+}
+
+if (communityGems.length > 0) {
+html += '<section class="section">' +
+'<div class="section-header">' +
+'<h2 class="section-title"><i class="fas fa-gem section-icon"></i>COMMUNITY GEMS</h2>' +
+'</div>' +
+'<div class="community-grid">' + renderCommunityGems() + '</div>' +
+'</section>';
+}
+
+trendingSections.innerHTML = html;
 setupContentCardListeners();
 }
 
 // ✅ RENDER FEATURED (WITH FIXED IMAGES)
 function renderFeaturedTrend() {
 if (featuredTrend.length === 0) return '';
-const content = featuredTrend[0];
-const thumbnailUrl = buildThumbnailUrl(content.thumbnail_url);
-return `
-<div class="featured-trend-card" data-content-id="${content.id}">
-<div class="featured-bg" style="background-image: url('${thumbnailUrl}')"></div>
-<div class="featured-overlay">
-${content.is_live ? '<div class="live-badge">LIVE NOW</div>' : ''}
-<h2 class="featured-title">${escapeHtml(content.title)}</h2>
-<div class="featured-creator">@${escapeHtml(content.user_profiles?.username || 'Creator')}</div>
-<div class="featured-stats">
-<span><i class="fas fa-eye"></i> ${formatNumber(content.real_views || 0)} views</span>
-</div>
-<button class="watch-now-btn" onclick="playContent('${content.id}')">${content.is_live ? 'WATCH LIVE' : 'WATCH NOW'}</button>
-</div>
-</div>
-`;
+var content = featuredTrend[0];
+var thumbnailUrl = buildThumbnailUrl(content.thumbnail_url);
+return '<div class="featured-trend-card" data-content-id="' + content.id + '">' +
+'<div class="featured-bg" style="background-image: url(\'' + thumbnailUrl + '\')"></div>' +
+'<div class="featured-overlay">' +
+(content.is_live ? '<div class="live-badge">LIVE NOW</div>' : '') +
+'<h2 class="featured-title">' + escapeHtml(content.title) + '</h2>' +
+'<div class="featured-creator">@' + escapeHtml(content.user_profiles ? content.user_profiles.username : 'Creator') + '</div>' +
+'<div class="featured-stats">' +
+'<span><i class="fas fa-eye"></i> ' + formatNumber(content.real_views || 0) + ' views</span>' +
+'</div>' +
+'<button class="watch-now-btn" onclick="playContent(\'' + content.id + '\')">' + (content.is_live ? 'WATCH LIVE' : 'WATCH NOW') + '</button>' +
+'</div>' +
+'</div>';
 }
 
 // ✅ RENDER LIVE STREAMS (WITH FIXED IMAGES)
 function renderLiveStreams() {
-return liveStreams.map(content => {
-const thumbnailUrl = buildThumbnailUrl(content.thumbnail_url);
-const isUpcoming = content.scheduled_time && new Date(content.scheduled_time) > new Date();
-const creatorName = content.user_profiles?.username || 'Creator';
-return `
-<div class="content-card" data-content-id="${content.id}">
-<div class="card-thumbnail">
-${createImageElementHTML(thumbnailUrl, escapeHtml(content.title))}
-<div class="thumbnail-overlay"></div>
-<div class="card-badges">
-${isUpcoming ? '<div class="badge upcoming">UPCOMING</div>' : '<div class="badge live">LIVE</div>'}
-<div class="badge viewers"><i class="fas fa-eye"></i> ${formatNumber(content.viewer_count || 0)}</div>
-</div>
-</div>
-<div class="card-content">
-<h3 class="card-title">${escapeHtml(content.title)}</h3>
-<div class="card-creator">@${escapeHtml(creatorName)}</div>
-<div class="card-stats">
-<span><i class="fas fa-heart"></i> ${formatNumber(content.likes_count || 0)}</span>
-</div>
-${isUpcoming ? `<button class="reminder-btn" onclick="setReminder('${content.id}')"><i class="fas fa-bell"></i> REMIND ME</button>` : ''}
-</div>
-</div>
-`;
+return liveStreams.map(function(content) {
+var thumbnailUrl = buildThumbnailUrl(content.thumbnail_url);
+var isUpcoming = content.scheduled_time && new Date(content.scheduled_time) > new Date();
+var creatorName = content.user_profiles ? content.user_profiles.username : 'Creator';
+var fallbackImg = 'https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=800&h=450&fit=crop';
+return '<div class="content-card" data-content-id="' + content.id + '">' +
+'<div class="card-thumbnail">' +
+'<img src="' + thumbnailUrl + '" alt="' + escapeHtml(content.title) + '" loading="lazy" onerror="this.src=\'' + fallbackImg + '\'">' +
+'<div class="thumbnail-overlay"></div>' +
+'<div class="card-badges">' +
+(isUpcoming ? '<div class="badge upcoming">UPCOMING</div>' : '<div class="badge live">LIVE</div>') +
+'<div class="badge viewers"><i class="fas fa-eye"></i> ' + formatNumber(content.viewer_count || 0) + '</div>' +
+'</div>' +
+'</div>' +
+'<div class="card-content">' +
+'<h3 class="card-title">' + escapeHtml(content.title) + '</h3>' +
+'<div class="card-creator">@' + escapeHtml(creatorName) + '</div>' +
+'<div class="card-stats">' +
+'<span><i class="fas fa-heart"></i> ' + formatNumber(content.likes_count || 0) + '</span>' +
+'</div>' +
+(isUpcoming ? '<button class="reminder-btn" onclick="setReminder(\'' + content.id + '\')"><i class="fas fa-bell"></i> REMIND ME</button>' : '') +
+'</div>' +
+'</div>';
 }).join('');
-}
-
-// ✅ HELPER: CREATE IMAGE ELEMENT HTML
-function createImageElementHTML(src, alt) {
-const fallbackImages = [
-'https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=800&h=450&fit=crop',
-'https://images.unsplash.com/photo-1574375927938-d5a98e8ffe85?w=800&h=450&fit=crop',
-'https://images.unsplash.com/photo-1585829365295-ab7cd400c167?w=800&h=450&fit=crop'
-];
-return `<img src="${src}" alt="${alt}" loading="lazy" onerror="this.onerror=null;this.src='${fallbackImages[0]}';this.parentElement.style.background='linear-gradient(135deg, #1D4ED8, #8B5CF6)';">`;
 }
 
 // ✅ RENDER HASHTAGS
 function renderTrendingHashtags() {
-return trendingHashtags.map(hashtag => `<div class="hashtag" data-hashtag="${hashtag}">${hashtag}</div>`).join('');
+return trendingHashtags.map(function(hashtag) {
+return '<div class="hashtag" data-hashtag="' + hashtag + '">' + hashtag + '</div>';
+}).join('');
 }
 
 // ✅ RENDER COMMUNITY GEMS (WITH FIXED IMAGES)
 function renderCommunityGems() {
-return communityGems.map(content => {
-const thumbnailUrl = buildThumbnailUrl(content.thumbnail_url);
-const creatorName = content.user_profiles?.username || 'Creator';
-return `
-<div class="gem-card" data-content-id="${content.id}">
-<div class="gem-thumbnail">
-${createImageElementHTML(thumbnailUrl, escapeHtml(content.title))}
-</div>
-<div class="gem-content">
-<h3 class="card-title">${escapeHtml(content.title)}</h3>
-<div class="card-creator">@${escapeHtml(creatorName)}</div>
-<div class="card-stats">
-<span><i class="fas fa-eye"></i> ${formatNumber(content.real_views || 0)}</span>
-<span><i class="fas fa-heart"></i> ${formatNumber(content.likes_count || 0)}</span>
-</div>
-</div>
-</div>
-`;
+return communityGems.map(function(content) {
+var thumbnailUrl = buildThumbnailUrl(content.thumbnail_url);
+var creatorName = content.user_profiles ? content.user_profiles.username : 'Creator';
+var fallbackImg = 'https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=800&h=450&fit=crop';
+return '<div class="gem-card" data-content-id="' + content.id + '">' +
+'<div class="gem-thumbnail">' +
+'<img src="' + thumbnailUrl + '" alt="' + escapeHtml(content.title) + '" loading="lazy" onerror="this.src=\'' + fallbackImg + '\'">' +
+'</div>' +
+'<div class="gem-content">' +
+'<h3 class="card-title">' + escapeHtml(content.title) + '</h3>' +
+'<div class="card-creator">@' + escapeHtml(creatorName) + '</div>' +
+'<div class="card-stats">' +
+'<span><i class="fas fa-eye"></i> ' + formatNumber(content.real_views || 0) + '</span>' +
+'<span><i class="fas fa-heart"></i> ' + formatNumber(content.likes_count || 0) + '</span>' +
+'</div>' +
+'</div>' +
+'</div>';
 }).join('');
 }
 
 // ✅ SETUP LISTENERS
 function setupContentCardListeners() {
-document.querySelectorAll('[data-content-id]').forEach(card => {
-card.addEventListener('click', (e) => {
+var cards = document.querySelectorAll('[data-content-id]');
+cards.forEach(function(card) {
+card.addEventListener('click', function(e) {
 if (e.target.closest('button')) return;
 playContent(card.dataset.contentId);
 });
 });
-document.querySelectorAll('[data-hashtag]').forEach(hashtag => {
-hashtag.addEventListener('click', () => {
-window.location.href = `content-library.html?search=${encodeURIComponent(hashtag.dataset.hashtag)}`;
+
+var hashtags = document.querySelectorAll('[data-hashtag]');
+hashtags.forEach(function(hashtag) {
+hashtag.addEventListener('click', function() {
+window.location.href = 'content-library.html?search=' + encodeURIComponent(hashtag.dataset.hashtag);
 });
 });
 }
 
 function onFilterSelected(filter) {
 selectedFilter = filter;
-document.querySelectorAll('.filter-chip').forEach(button => {
+var buttons = document.querySelectorAll('.filter-chip');
+buttons.forEach(function(button) {
 button.classList.toggle('active', button.dataset.filter === filter);
 });
 if (filter !== 'All') {
-window.location.href = `content-library.html?genre=${encodeURIComponent(filter)}`;
+window.location.href = 'content-library.html?genre=' + encodeURIComponent(filter);
 }
 }
 
 // ✅ PLAY CONTENT
-async function playContent(contentId) {
-try {
-await window.supabaseClient
+function playContent(contentId) {
+if (!contentId) {
+console.error('No content ID provided');
+return;
+}
+
+var viewerId = currentUser ? currentUser.id : null;
+
+window.supabaseClient
 .from('content_views')
 .insert({
 content_id: contentId,
-viewer_id: currentUser?.id || null,
+viewer_id: viewerId,
 view_duration: 0,
 device_type: /Mobile|Android|iPhone/i.test(navigator.userAgent) ? 'mobile' : 'desktop',
 created_at: new Date().toISOString()
-});
-} catch (error) {
+})
+.then(function() {
+console.log('✅ View recorded');
+window.location.href = 'content-detail.html?id=' + contentId;
+})
+.catch(function(error) {
 console.warn('View recording failed:', error);
-}
-window.location.href = `content-detail.html?id=${contentId}`;
+window.location.href = 'content-detail.html?id=' + contentId;
+});
 }
 
 function setReminder(contentId) {
 showToast('Reminder set successfully', 'success');
 }
 
-window.viewAllTrending = () => window.location.href = 'content-library.html?sort=trending';
-window.viewAllLiveStreams = () => window.location.href = 'content-library.html?genre=Live';
+// ✅ GLOBAL FUNCTIONS FOR HTML ONCLICK
+window.viewAllTrending = function() {
+window.location.href = 'content-library.html?sort=trending';
+};
+
+window.viewAllLiveStreams = function() {
+window.location.href = 'content-library.html?genre=Live';
+};
+
+window.playContent = playContent;
+window.setReminder = setReminder;
 
 // ✅ LOAD CONTENT
-async function loadContent() {
-try {
+function loadContent() {
 setLoading(true, 'Loading trending content...');
-const contentData = await fetchContent();
+return fetchContent()
+.then(function(contentData) {
 processTrendingSections(contentData);
 renderFilterChips();
 renderTrendingSections();
-} catch (error) {
+})
+.catch(function(error) {
 console.error('❌ Error loading content:', error);
 showToast('Failed to load content', 'error');
-} finally {
+})
+.finally(function() {
 setLoading(false);
-}
+});
 }
 
 // ✅ SETUP EVENT LISTENERS
 function setupEventListeners() {
 if (searchBtn) {
-searchBtn.addEventListener('click', () => {
+searchBtn.addEventListener('click', function() {
 document.getElementById('search-modal').classList.add('active');
-setTimeout(() => document.getElementById('search-input')?.focus(), 300);
+setTimeout(function() {
+var input = document.getElementById('search-input');
+if (input) input.focus();
+}, 300);
 });
 }
-document.getElementById('close-search-btn')?.addEventListener('click', () => {
+
+var closeSearchBtn = document.getElementById('close-search-btn');
+if (closeSearchBtn) {
+closeSearchBtn.addEventListener('click', function() {
 document.getElementById('search-modal').classList.remove('active');
-});
-if (refreshBtn) refreshBtn.addEventListener('click', loadContent);
-if (notificationsBtn) {
-notificationsBtn.addEventListener('click', () => {
-document.getElementById('notifications-panel').classList.add('active');
-renderNotifications();
+var input = document.getElementById('search-input');
+if (input) input.value = '';
+var grid = document.getElementById('search-results-grid');
+if (grid) grid.innerHTML = '';
 });
 }
-document.getElementById('close-notifications')?.addEventListener('click', () => {
+
+var searchModal = document.getElementById('search-modal');
+if (searchModal) {
+searchModal.addEventListener('click', function(e) {
+if (e.target === searchModal) {
+searchModal.classList.remove('active');
+var input = document.getElementById('search-input');
+if (input) input.value = '';
+var grid = document.getElementById('search-results-grid');
+if (grid) grid.innerHTML = '';
+}
+});
+}
+
+if (refreshBtn) {
+refreshBtn.addEventListener('click', function() {
+setLoading(true, 'Refreshing...');
+loadContent();
+showToast('Content refreshed', 'success');
+});
+}
+
+if (notificationsBtn) {
+notificationsBtn.addEventListener('click', function() {
+var panel = document.getElementById('notifications-panel');
+if (panel) {
+panel.classList.add('active');
+renderNotifications();
+}
+});
+}
+
+var closeNotif = document.getElementById('close-notifications');
+if (closeNotif) {
+closeNotif.addEventListener('click', function() {
 document.getElementById('notifications-panel').classList.remove('active');
 });
-document.getElementById('mark-all-read')?.addEventListener('click', markAllNotificationsAsRead);
-if (profileBtn) {
-profileBtn.addEventListener('click', async () => {
-const {  { session } } = await window.supabaseClient.auth.getSession();
-window.location.href = session ? 'profile.html' : 'login.html';
+}
+
+var notifPanel = document.getElementById('notifications-panel');
+if (notifPanel) {
+notifPanel.addEventListener('click', function(e) {
+if (e.target === notifPanel) {
+notifPanel.classList.remove('active');
+}
 });
 }
+
+var markAllBtn = document.getElementById('mark-all-read');
+if (markAllBtn) {
+markAllBtn.addEventListener('click', markAllNotificationsAsRead);
+}
+
+if (profileBtn) {
+profileBtn.addEventListener('click', function() {
+window.supabaseClient.auth.getSession()
+.then(function(response) {
+var session = response.data.session;
+window.location.href = session ? 'profile.html' : 'login.html';
+});
+});
+}
+
 if (exploreAllBtn) {
-exploreAllBtn.addEventListener('click', () => {
+exploreAllBtn.addEventListener('click', function() {
 window.location.href = 'content-library.html?sort=trending';
 });
 }
+
 if (authLoginBtn) {
-authLoginBtn.addEventListener('click', () => {
+authLoginBtn.addEventListener('click', function() {
+localStorage.setItem('redirectAfterLogin', 'trending_screen.html');
 window.location.href = 'login.html?redirect=trending_screen.html';
 });
 }
+
 if (authCancelBtn) {
-authCancelBtn.addEventListener('click', () => {
+authCancelBtn.addEventListener('click', function() {
 authModal.classList.remove('active');
 });
 }
 }
 
 // ✅ INITIALIZE
-async function initializeTrendingScreen() {
+function initializeTrendingScreen() {
 console.log('🔥 Initializing Trending Screen...');
+
+var searchModal = document.getElementById('search-modal');
+var notificationsPanel = document.getElementById('notifications-panel');
+var authModalEl = document.getElementById('auth-modal');
+
 if (searchModal) searchModal.classList.remove('active');
 if (notificationsPanel) notificationsPanel.classList.remove('active');
-if (authModal) authModal.classList.remove('active');
+if (authModalEl) authModalEl.classList.remove('active');
 
-const isAuthenticated = await checkAuthentication();
-if (!isAuthenticated) return;
-
-setupEventListeners();
-await loadContent();
-console.log('✅ Trending Screen initialized');
+return checkAuthentication()
+.then(function(isAuthenticated) {
+if (!isAuthenticated) {
+setLoading(false);
+return;
 }
 
+setupEventListeners();
+return loadContent();
+})
+.then(function() {
+console.log('✅ Trending Screen initialized');
+})
+.catch(function(error) {
+console.error('❌ Initialization error:', error);
+setLoading(false);
+});
+}
+
+// Start initialization
 initializeTrendingScreen();
 
-window.supabaseClient.auth.onAuthStateChange((event, session) => {
-if (event === 'SIGNED_IN' && session?.user) {
+// Auth state change listener
+window.supabaseClient.auth.onAuthStateChange(function(event, session) {
+console.log('Auth state changed:', event);
+if (event === 'SIGNED_IN' && session && session.user) {
 currentUser = session.user;
 loadUserProfilePicture(currentUser);
 loadNotifications();
+showToast('Welcome back!', 'success');
 } else if (event === 'SIGNED_OUT') {
 currentUser = null;
-const placeholder = document.getElementById('userProfilePlaceholder');
-if (placeholder) placeholder.innerHTML = '<div class="profile-placeholder"><i class="fas fa-user"></i></div>';
+var placeholder = document.getElementById('userProfilePlaceholder');
+if (placeholder) {
+placeholder.innerHTML = '<div class="profile-placeholder"><i class="fas fa-user"></i></div>';
+}
 updateNotificationBadge(0);
+notifications = [];
+renderNotifications();
+showToast('Signed out successfully', 'info');
 if (authModal) authModal.classList.add('active');
 }
 });
