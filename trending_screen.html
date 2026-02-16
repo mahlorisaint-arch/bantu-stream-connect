@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="Discover trending content on Bantu Stream Connect.">
   <meta name="theme-color" content="#0A0E12">
-  <!-- ✅ FIXED CSP - Added Cloudflare for Font Awesome -->
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' https: data:; connect-src 'self' https://ydnxqnbjoshvxteevemc.supabase.co https://cdn.jsdelivr.net;">
+  <!-- ✅ FIXED CSP - Added Cloudflare domains -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' https: data:; connect-src 'self' https://ydnxqnbjoshvxteevemc.supabase.co https://cdn.jsdelivr.net https://cloudflareinsights.com https://static.cloudflareinsights.com;">
   
   <title>Trending Now - Bantu Stream Connect</title>
   
@@ -19,24 +19,21 @@
   <!-- External CSS -->
   <link rel="stylesheet" href="css/trending-screen.css">
   
-  <!-- ✅ Supabase JS SDK - No inline initialization here -->
+  <!-- Supabase JS SDK -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
-  <!-- Skip Link for Accessibility -->
-  <a href="#main-content" class="skip-link">Skip to main content</a>
-
   <!-- Loading Screen -->
-  <div id="loading" class="loading-screen" aria-live="polite" aria-busy="true">
-    <div class="spinner" role="status"></div>
+  <div id="loading" class="loading-screen">
+    <div class="spinner"></div>
     <div id="loading-text">Loading Trending Content...</div>
   </div>
 
   <!-- Auth Modal -->
-  <div id="auth-modal" class="auth-modal" role="dialog" aria-modal="true" aria-labelledby="auth-title" hidden>
+  <div id="auth-modal" class="auth-modal">
     <div class="auth-content">
-      <div class="auth-icon" aria-hidden="true"><i class="fas fa-lock"></i></div>
-      <h2 id="auth-title" class="auth-title">Authentication Required</h2>
+      <div class="auth-icon"><i class="fas fa-lock"></i></div>
+      <h2 class="auth-title">Authentication Required</h2>
       <p class="auth-message">You need to be logged in to view trending content.</p>
       <div class="auth-buttons">
         <button id="auth-login-btn" class="auth-btn login">Log In</button>
@@ -46,21 +43,18 @@
   </div>
 
   <!-- Search Modal -->
-  <div id="search-modal" class="search-modal" role="dialog" aria-modal="true" hidden>
-    <div class="search-content">
+  <div id="search-modal" class="search-modal">
+    <div style="width: 90%; max-width: 800px; background: rgba(15, 23, 42, 0.9); border-radius: 20px; padding: 30px; backdrop-filter: blur(10px);">
       <div class="search-modal-header">
-        <h2 id="search-title" class="sr-only">Search Content</h2>
         <div class="search-input-container">
-          <i class="search-icon fas fa-search" aria-hidden="true"></i>
+          <i class="search-icon fas fa-search"></i>
           <input type="text" id="search-input" class="search-input" placeholder="Search content, creators, or categories..." autocomplete="off">
         </div>
-        <button id="close-search-btn" class="close-search-btn" aria-label="Close search">
-          <i class="fas fa-times"></i>
-        </button>
+        <button id="close-search-btn" class="close-search-btn"><i class="fas fa-times"></i></button>
       </div>
       <div class="search-filters">
         <div class="filter-group">
-          <label for="category-filter" class="filter-label">Category</label>
+          <label class="filter-label">Category</label>
           <select id="category-filter" class="filter-select">
             <option value="">All Categories</option>
             <option value="Music">Music</option>
@@ -74,7 +68,7 @@
           </select>
         </div>
         <div class="filter-group">
-          <label for="sort-filter" class="filter-label">Sort By</label>
+          <label class="filter-label">Sort By</label>
           <select id="sort-filter" class="filter-select">
             <option value="newest">Newest First</option>
             <option value="popular">Most Popular</option>
@@ -89,49 +83,41 @@
   </div>
 
   <!-- Notifications Panel -->
-  <div id="notifications-panel" class="notifications-panel" role="region" aria-label="Notifications" hidden>
+  <div id="notifications-panel" class="notifications-panel">
     <div class="notifications-header">
       <h2 style="font-family: 'Orbitron', sans-serif; font-size: 20px; margin: 0; color: var(--soft-white);">Notifications</h2>
-      <button id="close-notifications" class="close-search-btn" aria-label="Close notifications">
-        <i class="fas fa-times"></i>
-      </button>
+      <button id="close-notifications" class="close-search-btn"><i class="fas fa-times"></i></button>
     </div>
-    <div class="notifications-list" id="notifications-list" role="list"></div>
+    <div class="notifications-list" id="notifications-list"></div>
     <div class="notifications-footer">
       <button id="mark-all-read" class="text-btn">Mark all as read</button>
       <button id="notification-settings" class="text-btn">Settings</button>
     </div>
   </div>
 
-  <!-- Main App -->
-  <div id="app" class="app-container" hidden>
+  <!-- Main App (hidden until loaded) -->
+  <div id="app" style="display: none;">
     <!-- Animated Header Background -->
     <div class="header-container">
-      <div class="header-bg" aria-hidden="true"></div>
-      <div class="grid-pattern" aria-hidden="true"></div>
+      <div class="header-bg"></div>
+      <div class="grid-pattern"></div>
       
       <!-- Main Header -->
       <header class="main-header">
         <div class="header-content">
           <div class="trending-title">
-            <div class="fire-icon" aria-hidden="true">🔥</div>
+            <div class="fire-icon">🔥</div>
             <h1 class="title-text">TRENDING NOW</h1>
           </div>
           <div class="header-actions">
-            <button id="search-btn" class="icon-btn" title="Search" aria-label="Search content">
-              <i class="fas fa-search"></i>
-            </button>
-            <button id="refresh-btn" class="icon-btn refresh-btn" title="Refresh" aria-label="Refresh content">
-              <i class="fas fa-sync-alt"></i>
-            </button>
-            <button id="notifications-btn" class="icon-btn" title="Notifications" aria-label="View notifications">
+            <button id="search-btn" class="icon-btn" title="Search"><i class="fas fa-search"></i></button>
+            <button id="refresh-btn" class="icon-btn refresh-btn" title="Refresh"><i class="fas fa-sync-alt"></i></button>
+            <button id="notifications-btn" class="icon-btn" title="Notifications">
               <i class="fas fa-bell"></i>
-              <span class="notification-badge" id="notification-count" hidden>0</span>
+              <span class="notification-badge" id="notification-count" style="display: none; position: absolute; top: -5px; right: -5px; background: var(--error-color); color: white; font-size: 10px; font-weight: bold; width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid var(--deep-black);">0</span>
             </button>
-            <button id="profile-btn" class="profile-btn" title="Profile" aria-label="User profile">
-              <div class="profile-placeholder" id="userProfilePlaceholder">
-                <i class="fas fa-user"></i>
-              </div>
+            <button id="profile-btn" class="profile-btn" title="Profile">
+              <div class="profile-placeholder" id="userProfilePlaceholder"><i class="fas fa-user"></i></div>
             </button>
           </div>
         </div>
@@ -139,47 +125,46 @@
 
       <!-- Filter Chips -->
       <div class="filter-section">
-        <div id="filter-container" class="filter-container" role="tablist" aria-label="Content filters"></div>
+        <div id="filter-container" class="filter-container"></div>
       </div>
     </div>
 
     <!-- Main Content -->
-    <main id="main-content" class="main-content">
-      <div id="trending-sections" aria-live="polite"></div>
+    <main class="main-content">
+      <div id="trending-sections"></div>
       
       <div class="explore-all-section">
         <button id="explore-all-btn" class="explore-btn">
           EXPLORE ALL TRENDING CONTENT
-          <i class="fas fa-arrow-right" aria-hidden="true"></i>
+          <i class="fas fa-arrow-right"></i>
         </button>
       </div>
     </main>
 
     <!-- Global Navigation -->
-    <nav class="global-nav" aria-label="Main navigation">
-      <a href="index.html" class="nav-item">
-        <i class="fas fa-home" aria-hidden="true"></i>
-        <span>Home</span>
-      </a>
-      <a href="trending_screen.html" class="nav-item active" aria-current="page">
-        <i class="fas fa-fire" aria-hidden="true"></i>
-        <span>Trending</span>
-      </a>
-      <a href="content-library.html" class="nav-item">
-        <i class="fas fa-th-large" aria-hidden="true"></i>
-        <span>Library</span>
-      </a>
-      <a href="creator-dashboard.html" class="nav-item">
-        <i class="fas fa-user" aria-hidden="true"></i>
-        <span>Creator</span>
-      </a>
+    <nav class="global-nav">
+      <a href="index.html" class="nav-item"><i class="fas fa-home"></i>Home</a>
+      <a href="trending_screen.html" class="nav-item active"><i class="fas fa-fire"></i>Trending</a>
+      <a href="content-library.html" class="nav-item"><i class="fas fa-th-large"></i>Library</a>
+      <a href="creator-dashboard.html" class="nav-item"><i class="fas fa-user"></i>Creator</a>
     </nav>
   </div>
 
   <!-- Toast Container -->
-  <div id="toast-container" aria-live="assertive" aria-atomic="true"></div>
+  <div id="toast-container"></div>
 
-  <!-- ✅ FIXED: External JS only - No inline Supabase init -->
+  <!-- ✅ FIXED: Initialize Supabase client ONCE (global) -->
+  <script>
+    if (!window.supabaseClient) {
+      window.supabaseClient = supabase.createClient(
+        'https://ydnxqnbjoshvxteevemc.supabase.co',
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U'
+      );
+      console.log('✅ Global Supabase client initialized');
+    }
+  </script>
+
+  <!-- ✅ FIXED: External JS - Uses window.supabaseClient (no redeclaration) -->
   <script src="js/trending-screen.js" defer></script>
 </body>
 </html>
