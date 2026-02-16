@@ -1,0 +1,1698 @@
+// Wait for DOM to be ready
+document.addEventListener('DOMContentLoaded', async () => {
+    console.log('🔍 Explore Screen Initializing with all features...');
+    
+    // DOM Elements
+    const loadingScreen = document.getElementById('loading');
+    const loadingText = document.getElementById('loading-text');
+    const app = document.getElementById('app');
+    
+    // State variables
+    let featuredCreators = [];
+    let liveStreams = [];
+    let trendingContent = [];
+    let newContent = [];
+    let allContentData = [];
+    let isLoading = true;
+
+    // ============================================
+    // UTILITY FUNCTIONS
+    // ============================================
+    
+    function showToast(message, type = 'info') {
+        const container = document.getElementById('toast-container');
+        if (!container) return;
+        
+        const toast = document.createElement('div');
+        toast.className = `toast ${type}`;
+        
+        const icons = {
+            error: 'fa-exclamation-triangle',
+            success: 'fa-check-circle',
+            warning: 'fa-exclamation-circle',
+            info: 'fa-info-circle'
+        };
+        
+        toast.innerHTML = `
+            <i class="fas ${icons[type] || 'fa-info-circle'}"></i>
+            <span>${escapeHtml(message)}</span>
+        `;
+        
+        container.appendChild(toast);
+        
+        setTimeout(() => {
+            toast.style.opacity = '0';
+            toast.style.transform = 'translateX(100%)';
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
+    }
+
+    function formatNumber(num) {
+        if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+        if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+        return num.toString();
+    }
+
+    function truncateText(text, maxLength) {
+        if (!text) return '';
+        if (text.length <= maxLength) return text;
+        return text.substring(0, maxLength) + '...';
+    }
+
+    function escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    function formatDate(dateString) {
+        if (!dateString) return '';
+        try {
+            const date = new Date(dateString);
+            const now = new Date();
+            const diffTime = Math.abs(now - date);
+            const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+            
+            if (diffDays === 0) {
+                return 'Today';
+            } else if (diffDays === 1) {
+                return 'Yesterday';
+            } else if (diffDays < 7) {
+                return `${diffDays} days ago`;
+            } else if (diffDays < 30) {
+                const weeks = Math.floor(diffDays / 7);
+                return `${weeks} week${weeks > 1 ? 's' : ''} ago`;
+            } else {
+                return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            }
+        } catch (error) {
+            return '';
+        }
+    }
+
+    function debounce(func, wait) {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
+                clearTimeout(timeout);
+                func(...args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        };
+    }
+
+    function formatNotificationTime(timestamp) {
+        if (!timestamp) return 'Just now';
+        const diffMs = Date.now() - new Date(timestamp).getTime();
+        const diffMins = Math.floor(diffMs / 60000);
+        const diffHours = Math.floor(diffMs / 3600000);
+        const diffDays = Math.floor(diffMs / 86400000);
+        
+        if (diffMins < 1) return 'Just now';
+        if (diffMins < 60) return `${diffMins}m ago`;
+        if (diffHours < 24) return `${diffHours}h ago`;
+        if (diffDays < 7) return `${diffDays}d ago`;
+        return new Date(timestamp).toLocaleDateString();
+    }
+
+    function getInitials(name) {
+        if (!name || name.trim() === '') return '?';
+        const names = name.trim().split(' ');
+        if (names.length >= 2) {
+            return (names[0][0] + names[names.length - 1][0]).toUpperCase();
+        }
+        return name[0].toUpperCase();
+    }
+
+    // ============================================
+    // AUTHENTICATION FUNCTIONS
+    // ============================================
+    
+    async function checkAuth() {
+        try {
+            const { data, error } = await supabaseAuth.auth.getSession();
+            if (error) throw error;
+            
+            const session = data?.session;
+            window.currentUser = session?.user || null;
+            
+            if (window.currentUser) {
+                console.log('✅ User authenticated:', window.currentUser.email);
+                await loadUserProfile();
+            } else {
+                console.log('⚠️ User not authenticated');
+                updateProfileUI(null);
+                showToast('Welcome! Sign in to access personalized features.', 'info');
+            }
+            
+            return window.currentUser;
+        } catch (error) {
+            console.error('Auth check error:', error);
+            return null;
+        }
+    }
+
+    async function loadUserProfile() {
+        try {
+            if (!window.currentUser) return;
+            
+            const { data: profile, error } = await supabaseAuth
+                .from('user_profiles')
+                .select('*')
+                .eq('id', window.currentUser.id)
+                .maybeSingle();
+            
+            if (error) {
+                console.warn('Profile fetch error:', error);
+                updateProfileUI(null);
+                return;
+            }
+            
+            updateProfileUI(profile);
+            await loadNotifications();
+        } catch (error) {
+            console.error('Error loading profile:', error);
+            updateProfileUI(null);
+        }
+    }
+
+    function updateProfileUI(profile) {
+        const userProfilePlaceholder = document.getElementById('userProfilePlaceholder');
+        if (!userProfilePlaceholder) return;
+        
+        while (userProfilePlaceholder.firstChild) {
+            userProfilePlaceholder.removeChild(userProfilePlaceholder.firstChild);
+        }
+        
+        if (profile) {
+            const displayName = profile.full_name || 
+                               profile.username || 
+                               window.currentUser?.email || 
+                               'User';
+            const initial = getInitials(displayName);
+            const avatarUrl = profile.avatar_url;
+            
+            if (avatarUrl) {
+                const img = document.createElement('img');
+                img.className = 'profile-img';
+                img.alt = displayName;
+                img.style.cssText = 'width: 100%; height: 100%; border-radius: 50%; object-fit: cover;';
+                
+                try {
+                    if (avatarUrl.startsWith('http')) {
+                        img.src = avatarUrl;
+                    } else if (avatarUrl.startsWith('avatars/')) {
+                        img.src = `${SUPABASE_URL}/storage/v1/object/public/${avatarUrl}`;
+                    } else {
+                        img.src = `${SUPABASE_URL}/storage/v1/object/public/avatars/${avatarUrl}`;
+                    }
+                    
+                    img.onerror = () => {
+                        const fallback = document.createElement('div');
+                        fallback.className = 'profile-placeholder';
+                        fallback.style.cssText = 'width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,#1D4ED8,#F59E0B);display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:16px';
+                        fallback.textContent = initial;
+                        userProfilePlaceholder.innerHTML = '';
+                        userProfilePlaceholder.appendChild(fallback);
+                    };
+                    
+                    userProfilePlaceholder.appendChild(img);
+                } catch (e) {
+                    console.error('Invalid avatar URL:', e);
+                    const fallback = document.createElement('div');
+                    fallback.className = 'profile-placeholder';
+                    fallback.style.cssText = 'width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,#1D4ED8,#F59E0B);display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:16px';
+                    fallback.textContent = initial;
+                    userProfilePlaceholder.appendChild(fallback);
+                }
+            } else {
+                const fallback = document.createElement('div');
+                fallback.className = 'profile-placeholder';
+                fallback.style.cssText = 'width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,#1D4ED8,#F59E0B);display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:16px';
+                fallback.textContent = initial;
+                userProfilePlaceholder.appendChild(fallback);
+            }
+        } else {
+            const icon = document.createElement('i');
+            icon.className = 'fas fa-user';
+            userProfilePlaceholder.appendChild(icon);
+        }
+    }
+
+    // ============================================
+    // NOTIFICATIONS FUNCTIONS
+    // ============================================
+    
+    async function loadNotifications() {
+        try {
+            if (!window.currentUser) {
+                updateNotificationBadge(0);
+                return;
+            }
+            
+            const { data, error } = await supabaseAuth
+                .from('notifications')
+                .select('*')
+                .eq('user_id', window.currentUser.id)
+                .order('created_at', { ascending: false })
+                .limit(20);
+            
+            if (error) throw error;
+            
+            window.notifications = data || [];
+            const unreadCount = window.notifications.filter(n => !n.is_read).length;
+            updateNotificationBadge(unreadCount);
+        } catch (error) {
+            console.error('Error loading notifications:', error);
+            updateNotificationBadge(0);
+        }
+    }
+
+    function updateNotificationBadge(count) {
+        const mainBadge = document.getElementById('notification-count');
+        const navBadge = document.getElementById('nav-notification-count');
+        
+        [mainBadge, navBadge].forEach(badge => {
+            if (badge) {
+                badge.textContent = count > 99 ? '99+' : count;
+                badge.style.display = count > 0 ? 'flex' : 'none';
+            }
+        });
+    }
+
+    function renderNotifications() {
+        const notificationsList = document.getElementById('notifications-list');
+        if (!notificationsList) return;
+        
+        if (!window.currentUser) {
+            notificationsList.innerHTML = `
+                <div class="empty-notifications">
+                    <i class="fas fa-bell-slash"></i>
+                    <p>Sign in to see notifications</p>
+                </div>
+            `;
+            return;
+        }
+        
+        if (!window.notifications || window.notifications.length === 0) {
+            notificationsList.innerHTML = `
+                <div class="empty-notifications">
+                    <i class="fas fa-bell-slash"></i>
+                    <p>No notifications yet</p>
+                </div>
+            `;
+            return;
+        }
+        
+        notificationsList.innerHTML = window.notifications.map(notification => `
+            <div class="notification-item ${notification.is_read ? 'read' : 'unread'}" data-id="${notification.id}">
+                <div class="notification-icon">
+                    <i class="${getNotificationIcon(notification.type)}"></i>
+                </div>
+                <div class="notification-content">
+                    <h4>${escapeHtml(notification.title)}</h4>
+                    <p>${escapeHtml(notification.message)}</p>
+                    <span class="notification-time">${formatNotificationTime(notification.created_at)}</span>
+                </div>
+                ${!notification.is_read ? '<div class="notification-dot"></div>' : ''}
+            </div>
+        `).join('');
+    }
+
+    function getNotificationIcon(type) {
+        switch(type) {
+            case 'like': return 'fas fa-heart';
+            case 'comment': return 'fas fa-comment';
+            case 'follow': return 'fas fa-user-plus';
+            default: return 'fas fa-bell';
+        }
+    }
+
+    // ============================================
+    // SEARCH FUNCTIONALITY
+    // ============================================
+    
+    async function searchContent(query, category = '', sortBy = 'newest') {
+        try {
+            let queryBuilder = supabaseAuth
+                .from('Content')
+                .select('*, user_profiles!user_id(*)')
+                .ilike('title', `%${query}%`)
+                .eq('status', 'published');
+            
+            if (category) {
+                queryBuilder = queryBuilder.eq('genre', category);
+            }
+            
+            if (sortBy === 'newest') {
+                queryBuilder = queryBuilder.order('created_at', { ascending: false });
+            }
+            
+            const { data, error } = await queryBuilder.limit(50);
+            if (error) throw error;
+            
+            const enriched = await Promise.all(
+                (data || []).map(async (item) => {
+                    const { count: viewsCount } = await supabaseAuth
+                        .from('content_views')
+                        .select('*', { count: 'exact', head: true })
+                        .eq('content_id', item.id);
+                    
+                    const { count: likesCount } = await supabaseAuth
+                        .from('content_likes')
+                        .select('*', { count: 'exact', head: true })
+                        .eq('content_id', item.id);
+                    
+                    return {
+                        ...item,
+                        real_views: viewsCount || 0,
+                        real_likes: likesCount || 0
+                    };
+                })
+            );
+            
+            if (sortBy === 'popular') {
+                enriched.sort((a, b) => (b.real_views || 0) - (a.real_views || 0));
+            } else if (sortBy === 'trending') {
+                enriched.sort((a, b) => {
+                    const aScore = (a.real_views || 0) + ((a.real_likes || 0) * 2);
+                    const bScore = (b.real_views || 0) + ((b.real_likes || 0) * 2);
+                    return bScore - aScore;
+                });
+            }
+            
+            return enriched;
+        } catch (error) {
+            console.error('Search error:', error);
+            return [];
+        }
+    }
+
+    function renderSearchResults(results) {
+        const grid = document.getElementById('search-results-grid');
+        if (!grid) return;
+        
+        if (!results || results.length === 0) {
+            grid.innerHTML = '<div class="no-results">No results found. Try different keywords.</div>';
+            return;
+        }
+        
+        grid.innerHTML = results.map(item => {
+            const creator = item.user_profiles?.full_name || 
+                           item.user_profiles?.username || 
+                           item.creator || 
+                           'Creator';
+            const creatorId = item.user_profiles?.id || item.user_id;
+            
+            return `
+                <div class="content-card" data-content-id="${item.id}">
+                    <div class="card-thumbnail">
+                        <img src="${contentSupabase.fixMediaUrl(item.thumbnail_url) || 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop'}"
+                             alt="${escapeHtml(item.title)}"
+                             loading="lazy"
+                             onerror="this.src='https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop'">
+                        <div class="thumbnail-overlay"></div>
+                        <div class="play-overlay">
+                            <div class="play-icon">
+                                <i class="fas fa-play"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-content">
+                        <h3 class="card-title">${truncateText(escapeHtml(item.title), 45)}</h3>
+                        <button class="creator-btn"
+                                onclick="event.stopPropagation(); window.location.href='creator-channel.html?id=${creatorId}&name=${encodeURIComponent(creator)}'">
+                            <i class="fas fa-user"></i>
+                            ${truncateText(escapeHtml(creator), 15)}
+                        </button>
+                        <div class="card-stats">
+                            <div class="card-stat">
+                                <i class="fas fa-eye"></i>
+                                ${formatNumber(item.real_views || item.views_count || 0)}
+                            </div>
+                            <div class="card-stat">
+                                <i class="fas fa-heart"></i>
+                                ${formatNumber(item.real_likes || 0)}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+        
+        grid.querySelectorAll('.content-card').forEach(card => {
+            card.addEventListener('click', (e) => {
+                if (e.target.closest('.creator-btn')) return;
+                const id = card.dataset.contentId;
+                if (id) window.location.href = `content-detail.html?id=${id}`;
+            });
+        });
+    }
+
+    // ============================================
+    // INFINITE SCROLL / PAGINATION
+    // ============================================
+    
+    function setupInfiniteScroll() {
+        const sentinel = document.getElementById('infinite-scroll-sentinel');
+        
+        const observer = new IntersectionObserver(async (entries) => {
+            const entry = entries[0];
+            if (entry.isIntersecting && window.hasMoreContent && !window.isLoadingMore) {
+                await loadMoreContent();
+            }
+        }, {
+            root: null,
+            rootMargin: '100px',
+            threshold: 0.1
+        });
+        
+        observer.observe(sentinel);
+    }
+
+    async function loadMoreContent() {
+        if (window.isLoadingMore || !window.hasMoreContent) return;
+        
+        window.isLoadingMore = true;
+        window.currentPage++;
+        
+        const loadingIndicator = document.createElement('div');
+        loadingIndicator.className = 'infinite-scroll-loading';
+        loadingIndicator.id = 'infinite-scroll-loading';
+        loadingIndicator.innerHTML = `
+            <div class="infinite-scroll-spinner"></div>
+            <div>Loading more content...</div>
+        `;
+        document.querySelector('.container').appendChild(loadingIndicator);
+        
+        try {
+            const from = window.currentPage * window.PAGE_SIZE;
+            const to = (window.currentPage + 1) * window.PAGE_SIZE - 1;
+            
+            const { data, error } = await supabaseAuth
+                .from('Content')
+                .select('*, user_profiles!user_id(*)')
+                .eq('status', 'published')
+                .order('created_at', { ascending: false })
+                .range(from, to);
+            
+            if (error) throw error;
+            
+            document.getElementById('infinite-scroll-loading')?.remove();
+            
+            if (data && data.length > 0) {
+                appendMoreContent(data);
+                window.hasMoreContent = data.length === window.PAGE_SIZE;
+            } else {
+                window.hasMoreContent = false;
+                
+                const endMessage = document.createElement('div');
+                endMessage.className = 'infinite-scroll-end';
+                endMessage.innerHTML = 'You\'ve reached the end of content';
+                document.querySelector('.container').appendChild(endMessage);
+                setTimeout(() => endMessage.remove(), 3000);
+            }
+        } catch (error) {
+            console.error('Error loading more content:', error);
+            document.getElementById('infinite-scroll-loading')?.remove();
+            window.hasMoreContent = false;
+        } finally {
+            window.isLoadingMore = false;
+        }
+    }
+
+    function appendMoreContent(newItems) {
+        const newContentGrid = document.getElementById('new-content-grid');
+        if (!newContentGrid) return;
+        
+        const moreHTML = newItems.map(content => {
+            const thumbnailUrl = content.thumbnail_url
+                ? contentSupabase.fixMediaUrl(content.thumbnail_url)
+                : 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=225&fit=crop';
+            
+            const creatorProfile = content.user_profiles;
+            const creatorName = creatorProfile?.full_name || creatorProfile?.username || content.creator || 'Creator';
+            const displayName = creatorProfile?.full_name || creatorProfile?.username || 'User';
+            const initials = getInitials(displayName);
+            
+            const isNew = (new Date() - new Date(content.created_at)) < 7 * 24 * 60 * 60 * 1000;
+            const views = content.real_views || content.views_count || 0;
+            
+            let avatarHtml = '';
+            if (creatorProfile?.avatar_url) {
+                const avatarUrl = contentSupabase.fixMediaUrl(creatorProfile.avatar_url);
+                avatarHtml = `<img src="${avatarUrl}" alt="${escapeHtml(displayName)}" onerror="this.parentElement.innerHTML='<div class=\\'creator-initials-small\\'>${initials}</div>'">`;
+            } else {
+                avatarHtml = `<div class="creator-initials-small">${initials}</div>`;
+            }
+            
+            return `
+                <a href="content-detail.html?id=${content.id}" class="content-card">
+                    <div class="card-thumbnail">
+                        <img src="${thumbnailUrl}"
+                             alt="${escapeHtml(content.title)}"
+                             loading="lazy"
+                             onerror="this.src='https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=225&fit=crop'">
+                        <div class="thumbnail-overlay"></div>
+                        ${isNew ? '<div class="badge-new card-badge"><i class="fas fa-gem"></i> NEW</div>' : ''}
+                        <div class="play-overlay">
+                            <div class="play-icon">
+                                <i class="fas fa-play"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-content">
+                        <h3 class="card-title" title="${escapeHtml(content.title)}">
+                            ${truncateText(escapeHtml(content.title), 50)}
+                        </h3>
+                        <div class="creator-info">
+                            <div class="creator-avatar-small">
+                                ${avatarHtml}
+                            </div>
+                            <div class="creator-name-small">@${escapeHtml(creatorProfile?.username || creatorName)}</div>
+                        </div>
+                        <div class="card-meta">
+                            <span><i class="fas fa-eye"></i> ${formatNumber(views)}</span>
+                            <span>${content.media_type || 'video'}</span>
+                        </div>
+                    </div>
+                </a>
+            `;
+        }).join('');
+        
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = moreHTML;
+        while (tempDiv.firstChild) {
+            newContentGrid.appendChild(tempDiv.firstChild);
+        }
+    }
+
+    // ============================================
+    // KEYBOARD NAVIGATION
+    // ============================================
+    
+    function setupKeyboardNavigation() {
+        document.addEventListener('keydown', (e) => {
+            if (e.target.matches('input, textarea, select')) return;
+            
+            switch(e.key) {
+                case '/':
+                    if (e.ctrlKey || e.metaKey) {
+                        e.preventDefault();
+                        openSearchModal();
+                    }
+                    break;
+                case 'n':
+                case 'N':
+                    if (e.altKey) {
+                        e.preventDefault();
+                        toggleNotificationsPanel();
+                    }
+                    break;
+                case 'Escape':
+                    e.preventDefault();
+                    closeAllModals();
+                    break;
+            }
+        });
+    }
+
+    function openSearchModal() {
+        const searchModal = document.getElementById('search-modal');
+        if (searchModal) {
+            searchModal.classList.add('active');
+            setTimeout(() => document.getElementById('search-input')?.focus(), 300);
+        }
+    }
+
+    function toggleNotificationsPanel() {
+        const panel = document.getElementById('notifications-panel');
+        if (panel) {
+            panel.classList.toggle('active');
+        }
+    }
+
+    function closeAllModals() {
+        document.querySelectorAll('.modal.active, .search-modal.active, .analytics-modal.active, .notifications-panel.active')
+            .forEach(el => el.classList.remove('active'));
+    }
+
+    // ============================================
+    // BACK TO TOP FUNCTIONALITY
+    // ============================================
+    
+    function setupBackToTop() {
+        const backToTopBtn = document.getElementById('backToTopBtn');
+        if (!backToTopBtn) return;
+        
+        backToTopBtn.addEventListener('click', () => {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+        
+        window.addEventListener('scroll', () => {
+            backToTopBtn.style.display = window.pageYOffset > 300 ? 'flex' : 'none';
+        });
+    }
+
+    // ============================================
+    // RENDER FUNCTIONS
+    // ============================================
+    
+    function renderCategoryTabs() {
+        const categoryTabs = document.getElementById('category-tabs');
+        if (!categoryTabs) return;
+        
+        categoryTabs.innerHTML = categories.map((category, index) => `
+            <button class="category-tab ${index === 0 ? 'active' : ''}"
+                    data-category="${category}">
+                ${escapeHtml(category)}
+            </button>
+        `).join('');
+        
+        document.querySelectorAll('.category-tab').forEach(button => {
+            button.addEventListener('click', () => {
+                const category = button.dataset.category;
+                onCategoryChanged(category);
+            });
+        });
+    }
+
+    async function onCategoryChanged(category) {
+        document.querySelectorAll('.category-tab').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.category === category);
+        });
+        
+        window.currentCategory = category;
+        showToast(`Filtering by: ${category}`, 'info');
+        
+        await reloadContentByCategory(category);
+    }
+
+    async function reloadContentByCategory(category) {
+        setLoading(true, `Loading ${category === 'All' ? 'all' : category} content...`);
+        
+        try {
+            trendingContent = await contentSupabase.getTrendingContent(category);
+            newContent = await contentSupabase.getNewContent(category);
+            
+            updateTrendingContent();
+            updateNewContent();
+        } catch (error) {
+            console.error('Error reloading content by category:', error);
+            showToast('Failed to filter content', 'error');
+        } finally {
+            setLoading(false);
+        }
+    }
+
+    async function getTopCreators() {
+        try {
+            loadingText.textContent = 'Finding top creators...';
+            
+            const { data: contentData, error: contentError } = await supabaseAuth
+                .from('Content')
+                .select('user_id')
+                .eq('status', 'published')
+                .not('user_id', 'is', null);
+            
+            if (contentError) throw contentError;
+            
+            const contentCountMap = new Map();
+            contentData.forEach(item => {
+                if (item.user_id) {
+                    contentCountMap.set(item.user_id, (contentCountMap.get(item.user_id) || 0) + 1);
+                }
+            });
+            
+            const { data: connectorData, error: connectorError } = await supabaseAuth
+                .from('connectors')
+                .select('connected_id')
+                .eq('connection_type', 'creator')
+                .not('connected_id', 'is', null);
+            
+            if (connectorError) throw connectorError;
+            
+            const connectorCountMap = new Map();
+            connectorData.forEach(item => {
+                if (item.connected_id) {
+                    connectorCountMap.set(item.connected_id, (connectorCountMap.get(item.connected_id) || 0) + 1);
+                }
+            });
+            
+            const creatorScores = new Map();
+            
+            contentCountMap.forEach((count, userId) => {
+                creatorScores.set(userId, (creatorScores.get(userId) || 0) + count * 2);
+            });
+            
+            connectorCountMap.forEach((count, userId) => {
+                creatorScores.set(userId, (creatorScores.get(userId) || 0) + count);
+            });
+            
+            const sortedCreators = Array.from(creatorScores.entries())
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 6)
+                .map(([userId, score]) => userId);
+            
+            if (sortedCreators.length === 0) {
+                console.warn('No creators found with published content');
+                return [];
+            }
+            
+            const { data: profiles, error: profilesError } = await supabaseAuth
+                .from('user_profiles')
+                .select('*')
+                .in('id', sortedCreators);
+            
+            if (profilesError) throw profilesError;
+            
+            return profiles.map(profile => ({
+                ...profile,
+                video_count: contentCountMap.get(profile.id) || 0,
+                follower_count: connectorCountMap.get(profile.id) || 0
+            }));
+        } catch (error) {
+            console.error('Error getting top creators:', error);
+            showToast('Failed to load top creators', 'error');
+            return [];
+        }
+    }
+
+    function updateFeaturedCreators() {
+        const creatorsList = document.getElementById('creators-list');
+        
+        if (featuredCreators.length === 0) {
+            creatorsList.innerHTML = `
+                <div class="swiper-slide">
+                    <div class="creator-card">
+                        <div class="empty-icon">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <h3>No Featured Creators</h3>
+                        <p>Top creators will appear here</p>
+                    </div>
+                </div>
+            `;
+            return;
+        }
+        
+        creatorsList.innerHTML = featuredCreators.map(creator => {
+            const avatarUrl = creator.avatar_url
+                ? contentSupabase.fixMediaUrl(creator.avatar_url)
+                : null;
+            
+            const bio = creator.bio || 'Passionate content creator sharing authentic stories and experiences.';
+            const truncatedBio = bio.length > 100 ? bio.substring(0, 100) + '...' : bio;
+            const fullName = creator.full_name || creator.username || 'Creator';
+            const username = creator.username || 'creator';
+            const displayName = fullName || username;
+            const initials = getInitials(displayName);
+            const videoCount = creator.video_count || 0;
+            const followerCount = creator.follower_count || 0;
+            const isTopCreator = videoCount > 5 || followerCount > 100;
+            
+            return `
+                <div class="swiper-slide">
+                    <a href="creator-channel.html?id=${creator.id}" class="creator-card">
+                        ${isTopCreator ? '<div class="founder-badge">TOP CREATOR</div>' : ''}
+                        <div class="creator-avatar">
+                            ${avatarUrl ? `
+                                <img src="${avatarUrl}" alt="${fullName}"
+                                     onerror="this.parentElement.innerHTML='<div class=\\'creator-initials\\'>${initials}</div>'">
+                            ` : `
+                                <div class="creator-initials">${initials}</div>
+                            `}
+                        </div>
+                        <div class="creator-name">${fullName}</div>
+                        <div class="creator-username">@${username}</div>
+                        <div class="creator-bio">${escapeHtml(truncatedBio)}</div>
+                        <div class="creator-stats">
+                            <div class="stat">
+                                <div class="stat-number">${videoCount}</div>
+                                <div class="stat-label">Videos</div>
+                            </div>
+                            <div class="stat">
+                                <div class="stat-number">${formatNumber(followerCount)}</div>
+                                <div class="stat-label">Connectors</div>
+                            </div>
+                        </div>
+                        <button class="view-channel-btn">View Channel</button>
+                    </a>
+                </div>
+            `;
+        }).join('');
+        
+        setTimeout(() => {
+            new Swiper('#creators-swiper', {
+                slidesPerView: 1,
+                spaceBetween: 20,
+                pagination: {
+                    el: '.swiper-pagination',
+                    clickable: true,
+                },
+                breakpoints: {
+                    640: { slidesPerView: 2 },
+                    1024: { slidesPerView: 3 }
+                }
+            });
+        }, 100);
+    }
+
+    function updateLiveStreams() {
+        const liveStreamsGrid = document.getElementById('live-streams-grid');
+        const noLiveStreams = document.getElementById('no-live-streams');
+        
+        if (liveStreams.length === 0) {
+            liveStreamsGrid.style.display = 'none';
+            noLiveStreams.style.display = 'block';
+            return;
+        }
+        
+        liveStreamsGrid.style.display = 'grid';
+        noLiveStreams.style.display = 'none';
+        
+        liveStreamsGrid.innerHTML = liveStreams.slice(0, 6).map(stream => {
+            const thumbnailUrl = stream.thumbnail_url
+                ? contentSupabase.fixMediaUrl(stream.thumbnail_url)
+                : 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop';
+            
+            const creatorProfile = stream.user_profiles;
+            const creatorName = creatorProfile?.full_name || creatorProfile?.username || stream.creator || 'Creator';
+            const displayName = creatorProfile?.full_name || creatorProfile?.username || 'User';
+            const initials = getInitials(displayName);
+            const username = creatorProfile?.username || 'creator';
+            const viewers = Math.floor(Math.random() * 10000) + 1000;
+            
+            let avatarHtml = '';
+            if (creatorProfile?.avatar_url) {
+                const avatarUrl = contentSupabase.fixMediaUrl(creatorProfile.avatar_url);
+                avatarHtml = `<img src="${avatarUrl}" alt="${escapeHtml(displayName)}" onerror="this.parentElement.innerHTML='<div class=\\'creator-initials-small\\'>${initials}</div>'">`;
+            } else {
+                avatarHtml = `<div class="creator-initials-small">${initials}</div>`;
+            }
+            
+            return `
+                <a href="content-detail.html?id=${stream.id}" class="content-card">
+                    <div class="card-thumbnail">
+                        <img src="${thumbnailUrl}"
+                             alt="${escapeHtml(stream.title)}"
+                             onerror="this.src='https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop'">
+                        <div class="thumbnail-overlay"></div>
+                        <div class="badge-live card-badge">
+                            <i class="fas fa-circle"></i> LIVE
+                        </div>
+                        <div class="play-overlay">
+                            <div class="play-icon">
+                                <i class="fas fa-play"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-content">
+                        <h3 class="card-title" title="${escapeHtml(stream.title)}">
+                            ${truncateText(escapeHtml(stream.title), 50)}
+                        </h3>
+                        <div class="creator-info">
+                            <div class="creator-avatar-small">
+                                ${avatarHtml}
+                            </div>
+                            <div class="creator-name-small">@${escapeHtml(username)}</div>
+                        </div>
+                        <div class="card-meta">
+                            <span><i class="fas fa-eye"></i> ${formatNumber(viewers)} watching</span>
+                            <span>Live Now</span>
+                        </div>
+                    </div>
+                </a>
+            `;
+        }).join('');
+    }
+
+    function updateTrendingContent() {
+        const trendingGrid = document.getElementById('trending-grid');
+        
+        if (trendingContent.length === 0) {
+            trendingGrid.innerHTML = `
+                <div class="empty-state" style="grid-column: 1 / -1;">
+                    <div class="empty-icon">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <h3>No Trending Content</h3>
+                    <p>Popular content will appear here</p>
+                </div>
+            `;
+            return;
+        }
+        
+        trendingGrid.innerHTML = trendingContent.slice(0, 8).map(content => {
+            const thumbnailUrl = content.thumbnail_url
+                ? contentSupabase.fixMediaUrl(content.thumbnail_url)
+                : 'https://images.unsplash.com/photo-1574717024653-61fd2cf4d44d?w=400&h=225&fit=crop';
+            
+            const creatorProfile = content.user_profiles;
+            const creatorName = creatorProfile?.full_name || creatorProfile?.username || content.creator || 'Creator';
+            const displayName = creatorProfile?.full_name || creatorProfile?.username || 'User';
+            const initials = getInitials(displayName);
+            const username = creatorProfile?.username || 'creator';
+            const views = content.real_views || content.views_count || Math.floor(Math.random() * 100000) + 1000;
+            
+            let avatarHtml = '';
+            if (creatorProfile?.avatar_url) {
+                const avatarUrl = contentSupabase.fixMediaUrl(creatorProfile.avatar_url);
+                avatarHtml = `<img src="${avatarUrl}" alt="${escapeHtml(displayName)}" onerror="this.parentElement.innerHTML='<div class=\\'creator-initials-small\\'>${initials}</div>'">`;
+            } else {
+                avatarHtml = `<div class="creator-initials-small">${initials}</div>`;
+            }
+            
+            return `
+                <a href="content-detail.html?id=${content.id}" class="content-card">
+                    <div class="card-thumbnail">
+                        <img src="${thumbnailUrl}"
+                             alt="${escapeHtml(content.title)}"
+                             onerror="this.src='https://images.unsplash.com/photo-1574717024653-61fd2cf4d44d?w=400&h=225&fit=crop'">
+                        <div class="thumbnail-overlay"></div>
+                        <div class="badge-trending card-badge">
+                            <i class="fas fa-fire"></i> TRENDING
+                        </div>
+                        <div class="play-overlay">
+                            <div class="play-icon">
+                                <i class="fas fa-play"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-content">
+                        <h3 class="card-title" title="${escapeHtml(content.title)}">
+                            ${truncateText(escapeHtml(content.title), 50)}
+                        </h3>
+                        <div class="creator-info">
+                            <div class="creator-avatar-small">
+                                ${avatarHtml}
+                            </div>
+                            <div class="creator-name-small">@${escapeHtml(username)}</div>
+                        </div>
+                        <div class="card-meta">
+                            <span><i class="fas fa-eye"></i> ${formatNumber(views)}</span>
+                            <span>${formatDate(content.created_at)}</span>
+                        </div>
+                    </div>
+                </a>
+            `;
+        }).join('');
+    }
+
+    function updateNewContent() {
+        const newContentGrid = document.getElementById('new-content-grid');
+        
+        if (newContent.length === 0) {
+            newContentGrid.innerHTML = `
+                <div class="empty-state" style="grid-column: 1 / -1;">
+                    <div class="empty-icon">
+                        <i class="fas fa-gem"></i>
+                    </div>
+                    <h3>No New Content</h3>
+                    <p>Fresh content will appear here</p>
+                </div>
+            `;
+            return;
+        }
+        
+        newContentGrid.innerHTML = newContent.slice(0, 8).map(content => {
+            const thumbnailUrl = content.thumbnail_url
+                ? contentSupabase.fixMediaUrl(content.thumbnail_url)
+                : 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=225&fit=crop';
+            
+            const creatorProfile = content.user_profiles;
+            const creatorName = creatorProfile?.full_name || creatorProfile?.username || content.creator || 'Creator';
+            const displayName = creatorProfile?.full_name || creatorProfile?.username || 'User';
+            const initials = getInitials(displayName);
+            const username = creatorProfile?.username || 'creator';
+            const isNew = (new Date() - new Date(content.created_at)) < 7 * 24 * 60 * 60 * 1000;
+            const views = content.real_views || content.views_count || 0;
+            
+            let avatarHtml = '';
+            if (creatorProfile?.avatar_url) {
+                const avatarUrl = contentSupabase.fixMediaUrl(creatorProfile.avatar_url);
+                avatarHtml = `<img src="${avatarUrl}" alt="${escapeHtml(displayName)}" onerror="this.parentElement.innerHTML='<div class=\\'creator-initials-small\\'>${initials}</div>'">`;
+            } else {
+                avatarHtml = `<div class="creator-initials-small">${initials}</div>`;
+            }
+            
+            return `
+                <a href="content-detail.html?id=${content.id}" class="content-card">
+                    <div class="card-thumbnail">
+                        <img src="${thumbnailUrl}"
+                             alt="${escapeHtml(content.title)}"
+                             loading="lazy"
+                             onerror="this.src='https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=225&fit=crop'">
+                        <div class="thumbnail-overlay"></div>
+                        ${isNew ? '<div class="badge-new card-badge"><i class="fas fa-gem"></i> NEW</div>' : ''}
+                        <div class="play-overlay">
+                            <div class="play-icon">
+                                <i class="fas fa-play"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-content">
+                        <h3 class="card-title" title="${escapeHtml(content.title)}">
+                            ${truncateText(escapeHtml(content.title), 50)}
+                        </h3>
+                        <div class="creator-info">
+                            <div class="creator-avatar-small">
+                                ${avatarHtml}
+                            </div>
+                            <div class="creator-name-small">@${escapeHtml(username)}</div>
+                        </div>
+                        <div class="card-meta">
+                            <span><i class="fas fa-eye"></i> ${formatNumber(views)}</span>
+                            <span>${content.media_type || 'video'}</span>
+                        </div>
+                    </div>
+                </a>
+            `;
+        }).join('');
+    }
+
+    function updateEvents() {
+        const eventsList = document.getElementById('events-list');
+        const noEvents = document.getElementById('no-events');
+        
+        const mockEvents = [
+            {
+                id: 1,
+                title: 'African Music Festival Live Stream',
+                description: 'Join us for the biggest African music festival with live performances from top artists across the continent.',
+                time: 'Tomorrow 7:00 PM SAST',
+                tags: ['Music', 'Live', 'Festival']
+            },
+            {
+                id: 2,
+                title: 'Tech Startup Pitch Competition',
+                description: 'Watch innovative African startups pitch their ideas to a panel of investors. Live Q&A session included.',
+                time: 'Friday 3:00 PM WAT',
+                tags: ['Technology', 'Startups', 'Business']
+            },
+            {
+                id: 3,
+                title: 'Cooking Masterclass: Traditional Dishes',
+                description: 'Learn to cook authentic African dishes with master chefs. Interactive cooking session with live chat.',
+                time: 'Saturday 2:00 PM EAT',
+                tags: ['Food', 'Cooking', 'Education']
+            }
+        ];
+        
+        if (mockEvents.length === 0) {
+            eventsList.style.display = 'none';
+            noEvents.style.display = 'block';
+            return;
+        }
+        
+        eventsList.style.display = 'block';
+        noEvents.style.display = 'none';
+        
+        eventsList.innerHTML = mockEvents.map(event => `
+            <div class="event-card">
+                <div class="event-header">
+                    <div>
+                        <div class="event-title">${event.title}</div>
+                        <div class="event-time">${event.time}</div>
+                    </div>
+                </div>
+                <div class="event-description">${event.description}</div>
+                <div class="event-actions">
+                    <button class="reminder-btn" onclick="window.setReminder(${event.id})">
+                        <i class="fas fa-bell"></i> Set Reminder
+                    </button>
+                    <div class="event-tags">
+                        ${event.tags.map(tag => `<span class="event-tag">${tag}</span>`).join('')}
+                    </div>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    window.setReminder = function(eventId) {
+        showToast('Reminder set for this event!', 'success');
+    };
+
+    // ============================================
+    // LOAD DATA FUNCTIONS
+    // ============================================
+    
+    async function loadExploreData() {
+        try {
+            loadingText.textContent = 'Loading top creators...';
+            featuredCreators = await getTopCreators();
+            
+            loadingText.textContent = 'Loading live streams...';
+            liveStreams = await contentSupabase.getLiveStreams();
+            
+            loadingText.textContent = 'Loading trending content...';
+            trendingContent = await contentSupabase.getTrendingContent(window.currentCategory);
+            
+            loadingText.textContent = 'Loading new content...';
+            newContent = await contentSupabase.getNewContent(window.currentCategory);
+            
+            console.log('✅ Explore data loaded:', {
+                featuredCreators: featuredCreators.length,
+                liveStreams: liveStreams.length,
+                trendingContent: trendingContent.length,
+                newContent: newContent.length
+            });
+            
+            updateFeaturedCreators();
+            updateLiveStreams();
+            updateTrendingContent();
+            updateNewContent();
+            updateEvents();
+        } catch (error) {
+            console.error('❌ Error loading explore data:', error);
+            showToast('Failed to load explore content. Showing sample data.', 'error');
+            showTestData();
+        }
+    }
+
+    function showTestData() {
+        featuredCreators = [
+            {
+                id: '1',
+                full_name: 'Music Africa',
+                username: 'musicafrica',
+                avatar_url: 'https://images.unsplash.com/photo-1516280440614-37939bbacd81?w=400&h=400&fit=crop',
+                bio: 'Bringing authentic African music to the world. Sharing rhythms, stories, and culture through sound.',
+                video_count: 42,
+                follower_count: 15200
+            },
+            {
+                id: '2',
+                full_name: 'Tech Innovators',
+                username: 'techinnovators',
+                avatar_url: null,
+                bio: 'Showcasing Africa\'s brightest tech minds and innovative startups shaping the future.',
+                video_count: 28,
+                follower_count: 8750
+            },
+            {
+                id: '3',
+                full_name: 'Chef Amina',
+                username: 'chefamina',
+                avatar_url: 'https://images.unsplash.com/photo-1565958011703-44f9829ba187?w=400&h=400&fit=crop',
+                bio: 'Celebrating African cuisine with traditional recipes and modern twists. Food is culture!',
+                video_count: 35,
+                follower_count: 12400
+            },
+            {
+                id: '4',
+                full_name: 'Cultural Hub',
+                username: 'culturalhub',
+                avatar_url: null,
+                bio: 'Preserving and sharing African heritage, traditions, and cultural stories.',
+                video_count: 56,
+                follower_count: 22800
+            },
+            {
+                id: '5',
+                full_name: 'Sports Africa',
+                username: 'sportsafrica',
+                avatar_url: 'https://images.unsplash.com/photo-1547153760-18fc86324498?w=400&h=400&fit=crop',
+                bio: 'Covering the best of African sports, athletes, and sporting events.',
+                video_count: 63,
+                follower_count: 18500
+            },
+            {
+                id: '6',
+                full_name: 'News Network',
+                username: 'newsnetwork',
+                avatar_url: null,
+                bio: 'Your trusted source for African news, current affairs, and in-depth reporting.',
+                video_count: 120,
+                follower_count: 35000
+            }
+        ];
+        
+        liveStreams = [
+            {
+                id: 1,
+                title: 'Live Music Festival 2025',
+                thumbnail_url: 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop',
+                user_profiles: {
+                    full_name: 'Music Africa',
+                    username: 'musicafrica',
+                    avatar_url: 'https://images.unsplash.com/photo-1516280440614-37939bbacd81?w=400&h=400&fit=crop'
+                }
+            },
+            {
+                id: 2,
+                title: 'Tech Talk: AI in Africa',
+                thumbnail_url: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=400&h=225&fit=crop',
+                user_profiles: {
+                    full_name: 'Tech Innovators',
+                    username: 'techinnovators',
+                    avatar_url: null
+                }
+            }
+        ];
+        
+        trendingContent = [
+            {
+                id: 1,
+                title: 'African Music Festival Highlights',
+                thumbnail_url: 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop',
+                user_profiles: {
+                    full_name: 'Music Africa',
+                    username: 'musicafrica',
+                    avatar_url: 'https://images.unsplash.com/photo-1516280440614-37939bbacd81?w=400&h=400&fit=crop'
+                },
+                views_count: 12500,
+                created_at: new Date().toISOString()
+            },
+            {
+                id: 2,
+                title: 'Tech Innovation in Africa',
+                thumbnail_url: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=400&h=225&fit=crop',
+                user_profiles: {
+                    full_name: 'Tech Innovators',
+                    username: 'techinnovators',
+                    avatar_url: null
+                },
+                views_count: 8900,
+                created_at: new Date().toISOString()
+            },
+            {
+                id: 3,
+                title: 'Traditional Dance Performance',
+                thumbnail_url: 'https://images.unsplash.com/photo-1547153760-18fc86324498?w=400&h=225&fit=crop',
+                user_profiles: {
+                    full_name: 'Cultural Hub',
+                    username: 'culturalhub',
+                    avatar_url: 'https://images.unsplash.com/photo-1547153760-18fc86324498?w=400&h=400&fit=crop'
+                },
+                views_count: 15600,
+                created_at: new Date().toISOString()
+            }
+        ];
+        
+        newContent = trendingContent;
+        
+        updateFeaturedCreators();
+        updateLiveStreams();
+        updateTrendingContent();
+        updateNewContent();
+        updateEvents();
+    }
+
+    // ============================================
+    // SETUP EVENT LISTENERS
+    // ============================================
+    
+    function setupSearch() {
+        const searchBtn = document.getElementById('search-btn');
+        const searchModal = document.getElementById('search-modal');
+        const closeSearchBtn = document.getElementById('close-search-btn');
+        const searchInput = document.getElementById('search-input');
+        
+        if (!searchBtn || !searchModal) return;
+        
+        searchBtn.addEventListener('click', () => {
+            searchModal.classList.add('active');
+            setTimeout(() => searchInput?.focus(), 300);
+        });
+        
+        if (closeSearchBtn) {
+            closeSearchBtn.addEventListener('click', () => {
+                searchModal.classList.remove('active');
+                if (searchInput) searchInput.value = '';
+                document.getElementById('search-results-grid').innerHTML = '';
+            });
+        }
+        
+        searchModal.addEventListener('click', (e) => {
+            if (e.target === searchModal) {
+                searchModal.classList.remove('active');
+                if (searchInput) searchInput.value = '';
+                document.getElementById('search-results-grid').innerHTML = '';
+            }
+        });
+        
+        if (searchInput) {
+            searchInput.addEventListener('input', debounce(async (e) => {
+                const query = e.target.value.trim();
+                const category = document.getElementById('category-filter')?.value;
+                const sortBy = document.getElementById('sort-filter')?.value;
+                const resultsGrid = document.getElementById('search-results-grid');
+                
+                if (!resultsGrid) return;
+                
+                if (query.length < 2) {
+                    resultsGrid.innerHTML = '<div class="no-results">Start typing to search...</div>';
+                    return;
+                }
+                
+                resultsGrid.innerHTML = `
+                    <div class="infinite-scroll-loading">
+                        <div class="infinite-scroll-spinner"></div>
+                        <div>Searching...</div>
+                    </div>
+                `;
+                
+                const results = await searchContent(query, category, sortBy);
+                renderSearchResults(results);
+            }, 300));
+        }
+        
+        document.getElementById('category-filter')?.addEventListener('change', () => {
+            if (searchInput && searchInput.value.trim().length >= 2) {
+                searchInput.dispatchEvent(new Event('input'));
+            }
+        });
+        
+        document.getElementById('sort-filter')?.addEventListener('change', () => {
+            if (searchInput && searchInput.value.trim().length >= 2) {
+                searchInput.dispatchEvent(new Event('input'));
+            }
+        });
+    }
+
+    function setupNotifications() {
+        const notificationsBtn = document.getElementById('notifications-btn');
+        const navNotificationsBtn = document.getElementById('nav-notifications-btn');
+        const notificationsPanel = document.getElementById('notifications-panel');
+        const closeNotifications = document.getElementById('close-notifications');
+        const markAllRead = document.getElementById('mark-all-read');
+        
+        if (!notificationsBtn || !notificationsPanel) return;
+        
+        const openNotifications = () => {
+            notificationsPanel.classList.add('active');
+            renderNotifications();
+        };
+        
+        notificationsBtn.addEventListener('click', openNotifications);
+        
+        if (navNotificationsBtn) {
+            navNotificationsBtn.addEventListener('click', openNotifications);
+        }
+        
+        if (closeNotifications) {
+            closeNotifications.addEventListener('click', () => {
+                notificationsPanel.classList.remove('active');
+            });
+        }
+        
+        document.addEventListener('click', (e) => {
+            if (notificationsPanel.classList.contains('active') &&
+                !notificationsPanel.contains(e.target) &&
+                !notificationsBtn.contains(e.target) &&
+                (!navNotificationsBtn || !navNotificationsBtn.contains(e.target))) {
+                notificationsPanel.classList.remove('active');
+            }
+        });
+        
+        if (markAllRead) {
+            markAllRead.addEventListener('click', async () => {
+                if (!window.currentUser) return;
+                
+                try {
+                    const { error } = await supabaseAuth
+                        .from('notifications')
+                        .update({ is_read: true })
+                        .eq('user_id', window.currentUser.id)
+                        .eq('is_read', false);
+                    
+                    if (error) throw error;
+                    
+                    if (window.notifications) {
+                        window.notifications = window.notifications.map(n => ({ ...n, is_read: true }));
+                    }
+                    
+                    renderNotifications();
+                    updateNotificationBadge(0);
+                    showToast('All notifications marked as read', 'success');
+                } catch (error) {
+                    console.error('Error marking all as read:', error);
+                    showToast('Failed to mark notifications as read', 'error');
+                }
+            });
+        }
+    }
+
+    function setupAnalytics() {
+        const analyticsBtn = document.getElementById('analytics-btn');
+        const analyticsModal = document.getElementById('analytics-modal');
+        const closeAnalytics = document.getElementById('close-analytics');
+        
+        if (!analyticsBtn || !analyticsModal) return;
+        
+        analyticsBtn.addEventListener('click', async () => {
+            const { data, error } = await supabaseAuth.auth.getSession();
+            if (error) console.warn('Session error:', error);
+            
+            const session = data?.session;
+            if (!session) {
+                showToast('Please sign in to view analytics', 'warning');
+                return;
+            }
+            
+            analyticsModal.classList.add('active');
+            
+            document.getElementById('total-views').textContent = formatNumber(1250000);
+            document.getElementById('total-content').textContent = '125';
+            document.getElementById('active-creators').textContent = '45';
+            document.getElementById('engagement-rate').textContent = '78%';
+        });
+        
+        if (closeAnalytics) {
+            closeAnalytics.addEventListener('click', () => {
+                analyticsModal.classList.remove('active');
+            });
+        }
+        
+        analyticsModal.addEventListener('click', (e) => {
+            if (e.target === analyticsModal) {
+                analyticsModal.classList.remove('active');
+            }
+        });
+    }
+
+    function setupThemeListener() {
+        const themeToggle = document.getElementById('nav-theme-toggle');
+        const themeSelector = document.getElementById('theme-selector');
+        
+        if (themeToggle && themeSelector) {
+            themeToggle.addEventListener('click', (e) => {
+                e.stopPropagation();
+                themeSelector.classList.toggle('active');
+            });
+            
+            document.addEventListener('click', (e) => {
+                if (themeSelector.classList.contains('active') &&
+                    !themeSelector.contains(e.target) &&
+                    !themeToggle.contains(e.target)) {
+                    themeSelector.classList.remove('active');
+                }
+            });
+            
+            document.querySelectorAll('.theme-option').forEach(option => {
+                option.addEventListener('click', () => {
+                    if (typeof window.applyTheme === 'function') {
+                        window.applyTheme(option.dataset.theme);
+                    }
+                    themeSelector.classList.remove('active');
+                });
+            });
+        }
+    }
+
+    function setupCoreListeners() {
+        const profileBtn = document.getElementById('profile-btn');
+        if (profileBtn) {
+            profileBtn.addEventListener('click', async () => {
+                const { data, error } = await supabaseAuth.auth.getSession();
+                if (error) console.warn('Session error:', error);
+                
+                const session = data?.session;
+                if (session) {
+                    window.location.href = 'profile.html';
+                } else {
+                    window.location.href = `login.html?redirect=${encodeURIComponent(window.location.href)}`;
+                }
+            });
+        }
+        
+        const browseAllBtn = document.getElementById('browse-all-btn');
+        if (browseAllBtn) {
+            browseAllBtn.addEventListener('click', () => {
+                window.location.href = 'https://bantustreamconnect.com/content-library';
+            });
+        }
+        
+        const homeBtn = document.getElementById('nav-home-btn');
+        if (homeBtn) {
+            homeBtn.addEventListener('click', () => {
+                window.location.href = 'index.html';
+            });
+        }
+        
+        const createBtn = document.getElementById('nav-create-btn');
+        if (createBtn) {
+            createBtn.addEventListener('click', async () => {
+                const { data, error } = await supabaseAuth.auth.getSession();
+                if (error) console.warn('Session error:', error);
+                
+                const session = data?.session;
+                if (session) {
+                    window.location.href = 'creator-upload.html';
+                } else {
+                    showToast('Please sign in to upload content', 'warning');
+                    window.location.href = `login.html?redirect=creator-upload.html`;
+                }
+            });
+        }
+        
+        const dashboardBtn = document.getElementById('nav-dashboard-btn');
+        if (dashboardBtn) {
+            dashboardBtn.addEventListener('click', async () => {
+                const { data, error } = await supabaseAuth.auth.getSession();
+                if (error) console.warn('Session error:', error);
+                
+                const session = data?.session;
+                if (session) {
+                    window.location.href = 'creator-dashboard.html';
+                } else {
+                    showToast('Please sign in to access dashboard', 'warning');
+                    window.location.href = `login.html?redirect=creator-dashboard.html`;
+                }
+            });
+        }
+        
+        const exploreAllBtn = document.getElementById('explore-all-btn');
+        if (exploreAllBtn) {
+            exploreAllBtn.addEventListener('click', () => {
+                window.location.href = 'https://bantustreamconnect.com/content-library';
+            });
+        }
+        
+        const seeAllLive = document.getElementById('see-all-live');
+        if (seeAllLive) {
+            seeAllLive.addEventListener('click', () => {
+                window.location.href = 'https://bantustreamconnect.com/live-streams';
+            });
+        }
+    }
+
+    // ============================================
+    // INITIALIZATION
+    // ============================================
+    
+    async function initializeExploreScreen() {
+        try {
+            setLoading(true, 'Loading Top Creators...');
+            
+            if (typeof window.initTheme === 'function') {
+                window.initTheme();
+            }
+            
+            loadingText.textContent = 'Checking authentication...';
+            await checkAuth();
+            
+            const trendingGrid = document.getElementById('trending-grid');
+            const newContentGrid = document.getElementById('new-content-grid');
+            
+            if (trendingGrid) {
+                trendingGrid.innerHTML = `
+                    ${Array(4).fill().map(() => `
+                        <div class="skeleton-card">
+                            <div class="skeleton-thumbnail"></div>
+                            <div class="skeleton-title"></div>
+                            <div class="skeleton-creator"></div>
+                            <div class="skeleton-stats"></div>
+                        </div>
+                    `).join('')}
+                `;
+            }
+            
+            if (newContentGrid) {
+                newContentGrid.innerHTML = `
+                    ${Array(4).fill().map(() => `
+                        <div class="skeleton-card">
+                            <div class="skeleton-thumbnail"></div>
+                            <div class="skeleton-title"></div>
+                            <div class="skeleton-creator"></div>
+                            <div class="skeleton-stats"></div>
+                        </div>
+                    `).join('')}
+                `;
+            }
+            
+            await loadExploreData();
+            
+            renderCategoryTabs();
+            
+            setupSearch();
+            setupNotifications();
+            setupAnalytics();
+            setupThemeListener();
+            setupBackToTop();
+            setupInfiniteScroll();
+            setupKeyboardNavigation();
+            setupCoreListeners();
+            
+            setTimeout(() => {
+                loadingScreen.style.display = 'none';
+                app.style.display = 'block';
+                
+                document.querySelectorAll('.content-card').forEach((card, index) => {
+                    setTimeout(() => {
+                        card.style.opacity = '1';
+                        card.style.transform = 'translateY(0)';
+                    }, 300 + (index * 50));
+                });
+            }, 500);
+            
+            console.log('✅ Explore screen initialized successfully');
+        } catch (error) {
+            console.error('❌ Error initializing explore screen:', error);
+            showToast('Failed to initialize explore screen', 'error');
+            
+            setTimeout(() => {
+                loadingScreen.style.display = 'none';
+                app.style.display = 'block';
+            }, 1000);
+        }
+    }
+
+    function setLoading(loading, text = '') {
+        isLoading = loading;
+        if (text) loadingText.textContent = text;
+        
+        if (loading) {
+            loadingScreen.style.display = 'flex';
+            app.style.display = 'none';
+        } else {
+            setTimeout(() => {
+                loadingScreen.style.display = 'none';
+                app.style.display = 'block';
+            }, 500);
+        }
+    }
+
+    await initializeExploreScreen();
+    
+    supabaseAuth.auth.onAuthStateChange((event, session) => {
+        console.log('Auth state changed:', event);
+        
+        if (event === 'SIGNED_IN') {
+            window.currentUser = session.user;
+            loadUserProfile();
+            loadNotifications();
+            showToast('Welcome back!', 'success');
+        } else if (event === 'SIGNED_OUT') {
+            window.currentUser = null;
+            updateProfileUI(null);
+            updateNotificationBadge(0);
+            window.notifications = [];
+            renderNotifications();
+            showToast('You have been signed out', 'info');
+        }
+    });
+});
