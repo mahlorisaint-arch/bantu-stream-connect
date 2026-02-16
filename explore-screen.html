@@ -503,7 +503,6 @@
             display: flex;
             align-items: center;
             gap: 8px;
-            text-decoration: none;
         }
         
         .see-all-btn:hover {
@@ -752,13 +751,12 @@
             cursor: pointer;
             text-decoration: none;
             color: inherit;
-            height: 380px;
+            height: 350px;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             backdrop-filter: blur(10px);
-            position: relative;
         }
         
         .creator-card:hover {
@@ -772,7 +770,7 @@
             height: 100px;
             border-radius: 50%;
             overflow: hidden;
-            margin-bottom: 15px;
+            margin-bottom: 20px;
             border: 3px solid var(--warm-gold);
             box-shadow: 0 0 20px rgba(245, 158, 11, 0.3);
         }
@@ -791,38 +789,33 @@
             font-size: 12px;
             font-weight: bold;
             display: inline-block;
-            margin-bottom: 5px;
+            margin-bottom: 10px;
         }
         
         .creator-name {
             font-family: 'Orbitron', sans-serif;
-            font-size: 18px;
+            font-size: 20px;
             font-weight: 600;
-            margin-bottom: 4px;
+            margin-bottom: 10px;
             color: var(--soft-white);
         }
         
         .creator-username {
             color: var(--slate-grey);
-            font-size: 13px;
-            margin-bottom: 8px;
+            margin-bottom: 15px;
         }
         
         .creator-bio {
             color: var(--slate-grey);
-            font-size: 13px;
-            margin-bottom: 15px;
+            font-size: 14px;
+            margin-bottom: 20px;
             line-height: 1.4;
-            max-height: 50px;
-            overflow: hidden;
-            padding: 0 5px;
         }
         
         .creator-stats {
             display: flex;
             gap: 15px;
-            margin-bottom: 15px;
-            justify-content: center;
+            margin-bottom: 20px;
         }
         
         .stat {
@@ -830,13 +823,13 @@
         }
         
         .stat-number {
-            font-size: 16px;
+            font-size: 18px;
             font-weight: 600;
             color: var(--warm-gold);
         }
         
         .stat-label {
-            font-size: 11px;
+            font-size: 12px;
             color: var(--slate-grey);
         }
         
@@ -844,10 +837,9 @@
             background: linear-gradient(135deg, var(--warm-gold), #f97316);
             color: var(--deep-black);
             border: none;
-            padding: 8px 16px;
+            padding: 10px 20px;
             border-radius: 10px;
             font-weight: 600;
-            font-size: 13px;
             cursor: pointer;
             transition: all 0.3s ease;
         }
@@ -1248,7 +1240,7 @@
             }
             
             .creator-card {
-                height: 350px;
+                height: 320px;
                 padding: 20px;
             }
             
@@ -1286,7 +1278,7 @@
             }
             
             .creator-card {
-                height: 330px;
+                height: 300px;
             }
             
             .event-actions {
@@ -1423,7 +1415,7 @@
                     <div class="quick-link-desc">Browse all videos and audio content</div>
                 </a>
                 
-                <a href="https://bantustreamconnect.com/trending_screen" class="quick-link-card">
+                <a href="trending_screen.html" class="quick-link-card">
                     <div class="quick-link-icon">
                         <i class="fas fa-fire"></i>
                     </div>
@@ -1448,7 +1440,7 @@
                 </a>
             </div>
 
-            <!-- Featured Creators (Founders) from user_profiles -->
+            <!-- Featured Creators -->
             <section class="section">
                 <div class="section-header">
                     <h2 class="section-title">
@@ -1464,7 +1456,7 @@
                 <div class="featured-creators">
                     <div class="swiper" id="creators-swiper">
                         <div class="swiper-wrapper" id="creators-list">
-                            <!-- Creators will be loaded here from user_profiles -->
+                            <!-- Creators will be loaded here -->
                         </div>
                         <div class="swiper-pagination"></div>
                     </div>
@@ -1505,7 +1497,7 @@
                         <i class="fas fa-fire" style="color: var(--warm-gold);"></i>
                         TRENDING NOW
                     </h2>
-                    <a href="https://bantustreamconnect.com/trending_screen" class="see-all-btn">
+                    <a href="trending_screen.html" class="see-all-btn">
                         See All
                         <i class="fas fa-arrow-right"></i>
                     </a>
@@ -1523,10 +1515,10 @@
                         <i class="fas fa-gem" style="color: var(--bantu-blue);"></i>
                         LATEST GEMS
                     </h2>
-                    <a href="https://bantustreamconnect.com/content-library" class="see-all-btn">
+                    <button class="see-all-btn" id="see-all-new">
                         See All
                         <i class="fas fa-arrow-right"></i>
-                    </a>
+                    </button>
                 </div>
                 
                 <div class="content-grid" id="new-content-grid">
@@ -1794,27 +1786,15 @@
                 return `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/${url.replace(/^\/+/, '')}`;
             }
             
-            // Get featured creators (founders) from user_profiles
-            // Updated to use role = 'founder' if available, else fallback to any user with is_founder flag
+            // Get featured creators (founders)
             async getFeaturedCreators() {
                 try {
-                    // Attempt to get users where role = 'founder' or custom column is_founder = true
-                    // Since the schema doesn't have is_founder, we'll get all and filter later or use role
-                    const { data, error } = await supabaseAuth
-                        .from('user_profiles')
-                        .select('*')
-                        .limit(10);
+                    const creators = await this.query('user_profiles', {
+                        where: { is_founder: true },
+                        limit: 10
+                    });
                     
-                    if (error) throw error;
-                    
-                    // For demo purposes, return all profiles, but in production you'd filter by role = 'founder'
-                    // Here we'll just return all and let the UI handle it, but for now we'll mark first three as founders for demo
-                    const founders = data.map((profile, index) => ({
-                        ...profile,
-                        is_founder: index < 3 // Simulate founder status for first three
-                    }));
-                    
-                    return founders;
+                    return creators;
                 } catch (error) {
                     console.error('Error getting featured creators:', error);
                     return [];
@@ -1844,7 +1824,7 @@
                 }
             }
             
-            // Get trending content (sorted by views)
+            // Get trending content
             async getTrendingContent() {
                 try {
                     let content = [];
@@ -2517,7 +2497,7 @@
                                      loading="lazy"
                                      onerror="this.src='https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=225&fit=crop'">
                                 <div class="thumbnail-overlay"></div>
-                                ${isNew ? '<div class="badge-new card-badge"><i class="fas fa-gem"></i> NEW</div>' : ''}
+                                ${isNew ? '<div class="new-badge"><i class="fas fa-gem"></i> NEW</div>' : ''}
                                 <div class="play-overlay">
                                     <div class="play-icon">
                                         <i class="fas fa-play"></i>
@@ -2661,7 +2641,7 @@
                 // In a real implementation, you would filter content here
             }
             
-            // Update featured creators from user_profiles table
+            // Update featured creators
             function updateFeaturedCreators() {
                 const creatorsList = document.getElementById('creators-list');
                 
@@ -2685,12 +2665,12 @@
                         ? contentSupabase.fixMediaUrl(creator.avatar_url)
                         : 'https://images.unsplash.com/photo-1633332755192-727a05c4013d?w=400&h=400&fit=crop';
                     
-                    const bio = creator.bio || 'Passionate content creator sharing authentic stories and culture.';
+                    const bio = creator.bio || 'Passionate content creator';
                     const truncatedBio = bio.length > 80 ? bio.substring(0, 80) + '...' : bio;
                     
                     return `
                         <div class="swiper-slide">
-                            <div class="creator-card" onclick="window.location.href='creator-channel.html?id=${creator.id}'">
+                            <div class="creator-card" onclick="window.location.href='creator-channel.html?id=${creator.user_id || creator.id}'">
                                 ${creator.is_founder ? '<div class="founder-badge">FOUNDER</div>' : ''}
                                 <div class="creator-avatar">
                                     <img src="${avatarUrl}" alt="${creator.full_name || creator.username}" 
@@ -2799,7 +2779,7 @@
                 }).join('');
             }
             
-            // Update trending content (with correct views and username)
+            // Update trending content
             function updateTrendingContent() {
                 const trendingGrid = document.getElementById('trending-grid');
                 
@@ -2869,7 +2849,7 @@
                 }).join('');
             }
             
-            // Update new content (with correct username)
+            // Update new content
             function updateNewContent() {
                 const newContentGrid = document.getElementById('new-content-grid');
                 
@@ -3010,7 +2990,7 @@
             // Load explore data
             async function loadExploreData() {
                 try {
-                    // Load featured creators from user_profiles
+                    // Load featured creators
                     loadingText.textContent = 'Loading featured creators...';
                     featuredCreators = await contentSupabase.getFeaturedCreators();
                     
@@ -3018,7 +2998,7 @@
                     loadingText.textContent = 'Loading live streams...';
                     liveStreams = await contentSupabase.getLiveStreams();
                     
-                    // Load trending content (with views)
+                    // Load trending content
                     loadingText.textContent = 'Loading trending content...';
                     trendingContent = await contentSupabase.getTrendingContent();
                     
@@ -3051,30 +3031,30 @@
             
             // Show test data (for development)
             function showTestData() {
-                // Create mock data for testing from user_profiles structure
+                // Create mock data for testing
                 featuredCreators = [
                     {
-                        id: '1',
+                        user_id: '1',
                         full_name: 'Music Africa',
                         username: 'musicafrica',
                         avatar_url: 'https://images.unsplash.com/photo-1516280440614-37939bbacd81?w=400&h=400&fit=crop',
-                        bio: 'Bringing African music to the world, one beat at a time. Founder and music curator.',
+                        bio: 'Bringing African music to the world',
                         is_founder: true
                     },
                     {
-                        id: '2',
+                        user_id: '2',
                         full_name: 'Tech Innovators',
                         username: 'techinnovators',
                         avatar_url: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=400&h=400&fit=crop',
-                        bio: 'Showcasing African tech innovation and startups. We highlight the brightest minds.',
+                        bio: 'Showcasing African tech innovation',
                         is_founder: true
                     },
                     {
-                        id: '3',
+                        user_id: '3',
                         full_name: 'Chef Amina',
                         username: 'chefamina',
                         avatar_url: 'https://images.unsplash.com/photo-1565958011703-44f9829ba187?w=400&h=400&fit=crop',
-                        bio: 'African cuisine expert sharing traditional and modern recipes. Join my cooking sessions.',
+                        bio: 'African cuisine expert',
                         is_founder: true
                     }
                 ];
@@ -3086,7 +3066,6 @@
                         thumbnail_url: 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop',
                         user_profiles: {
                             full_name: 'Music Africa',
-                            username: 'musicafrica',
                             avatar_url: 'https://images.unsplash.com/photo-1516280440614-37939bbacd81?w=400&h=400&fit=crop'
                         }
                     },
@@ -3096,7 +3075,6 @@
                         thumbnail_url: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=400&h=225&fit=crop',
                         user_profiles: {
                             full_name: 'Tech Innovators',
-                            username: 'techinnovators',
                             avatar_url: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=400&h=400&fit=crop'
                         }
                     }
@@ -3109,7 +3087,6 @@
                         thumbnail_url: 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop',
                         user_profiles: {
                             full_name: 'Music Africa',
-                            username: 'musicafrica',
                             avatar_url: 'https://images.unsplash.com/photo-1516280440614-37939bbacd81?w=400&h=400&fit=crop'
                         },
                         views_count: 12500,
@@ -3121,7 +3098,6 @@
                         thumbnail_url: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=400&h=225&fit=crop',
                         user_profiles: {
                             full_name: 'Tech Innovators',
-                            username: 'techinnovators',
                             avatar_url: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=400&h=400&fit=crop'
                         },
                         views_count: 8900,
@@ -3133,7 +3109,6 @@
                         thumbnail_url: 'https://images.unsplash.com/photo-1547153760-18fc86324498?w=400&h=225&fit=crop',
                         user_profiles: {
                             full_name: 'Cultural Hub',
-                            username: 'culturalhub',
                             avatar_url: 'https://images.unsplash.com/photo-1547153760-18fc86324498?w=400&h=400&fit=crop'
                         },
                         views_count: 15600,
@@ -3436,23 +3411,28 @@
                     });
                 }
                 
-                // See all buttons - updated with correct links
+                // See all buttons
                 const seeAllCreators = document.getElementById('see-all-creators');
                 const seeAllLive = document.getElementById('see-all-live');
+                const seeAllNew = document.getElementById('see-all-new');
                 
                 if (seeAllCreators) {
                     seeAllCreators.addEventListener('click', () => {
-                        window.location.href = 'creators.html'; // or appropriate link
+                        showToast('All creators page coming soon!', 'info');
                     });
                 }
                 
                 if (seeAllLive) {
                     seeAllLive.addEventListener('click', () => {
-                        window.location.href = 'live.html'; // or appropriate link
+                        showToast('All live streams page coming soon!', 'info');
                     });
                 }
                 
-                // Note: see-all-new button is now an anchor to content-library, so no listener needed
+                if (seeAllNew) {
+                    seeAllNew.addEventListener('click', () => {
+                        showToast('All new content page coming soon!', 'info');
+                    });
+                }
             }
             
             // ============================================
