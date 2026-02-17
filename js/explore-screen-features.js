@@ -164,7 +164,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // ============================================
-    // 🔥 FIX 1: REAL PLATFORM ANALYTICS
+    // 🔥 FIX 1: REAL PLATFORM ANALYTICS WITH NULL CHECKS
     // ============================================
     
     async function loadPlatformAnalytics() {
@@ -205,24 +205,43 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (connError) throw connError;
             platformAnalytics.totalConnectors = connectorsCount || 0;
 
-            // Update UI with REAL data
-            document.getElementById('total-views').textContent = formatNumber(platformAnalytics.totalViews);
-            document.getElementById('total-content').textContent = formatNumber(platformAnalytics.totalContent);
-            document.getElementById('active-creators').textContent = formatNumber(platformAnalytics.activeCreators);
-            document.getElementById('total-connectors-analytics').textContent = formatNumber(platformAnalytics.totalConnectors);
+            // FIXED: Check if elements exist before setting textContent
+            const totalViewsEl = document.getElementById('total-views');
+            const totalContentEl = document.getElementById('total-content');
+            const activeCreatorsEl = document.getElementById('active-creators');
+            const totalConnectorsAnalyticsEl = document.getElementById('total-connectors-analytics');
+            
+            // Also get community stats elements
+            const totalConnectorsEl = document.getElementById('total-connectors');
+            const totalContentStatsEl = document.getElementById('total-content-stats');
+
+            if (totalViewsEl) totalViewsEl.textContent = formatNumber(platformAnalytics.totalViews);
+            if (totalContentEl) totalContentEl.textContent = formatNumber(platformAnalytics.totalContent);
+            if (activeCreatorsEl) activeCreatorsEl.textContent = formatNumber(platformAnalytics.activeCreators);
+            if (totalConnectorsAnalyticsEl) totalConnectorsAnalyticsEl.textContent = formatNumber(platformAnalytics.totalConnectors);
 
             // Also update community stats bar
-            document.getElementById('total-connectors').textContent = formatNumber(platformAnalytics.totalConnectors);
-            document.getElementById('total-content-stats').textContent = formatNumber(platformAnalytics.totalContent);
+            if (totalConnectorsEl) totalConnectorsEl.textContent = formatNumber(platformAnalytics.totalConnectors);
+            if (totalContentStatsEl) totalContentStatsEl.textContent = formatNumber(platformAnalytics.totalContent);
 
             console.log('✅ Platform Analytics Loaded:', platformAnalytics);
         } catch (error) {
             console.error('❌ Error loading platform analytics:', error);
-            // Show zeros instead of fake data
-            document.getElementById('total-views').textContent = '0';
-            document.getElementById('total-content').textContent = '0';
-            document.getElementById('active-creators').textContent = '0';
-            document.getElementById('total-connectors-analytics').textContent = '0';
+            
+            // Show zeros instead of fake data - with null checks
+            const totalViewsEl = document.getElementById('total-views');
+            const totalContentEl = document.getElementById('total-content');
+            const activeCreatorsEl = document.getElementById('active-creators');
+            const totalConnectorsAnalyticsEl = document.getElementById('total-connectors-analytics');
+            const totalConnectorsEl = document.getElementById('total-connectors');
+            const totalContentStatsEl = document.getElementById('total-content-stats');
+
+            if (totalViewsEl) totalViewsEl.textContent = '0';
+            if (totalContentEl) totalContentEl.textContent = '0';
+            if (activeCreatorsEl) activeCreatorsEl.textContent = '0';
+            if (totalConnectorsAnalyticsEl) totalConnectorsAnalyticsEl.textContent = '0';
+            if (totalConnectorsEl) totalConnectorsEl.textContent = '0';
+            if (totalContentStatsEl) totalContentStatsEl.textContent = '0';
         }
     }
 
@@ -298,7 +317,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // ============================================
-    // 🔥 FIX 3: REAL COMMUNITY STATS
+    // 🔥 FIX 3: REAL COMMUNITY STATS WITH NULL CHECKS
     // ============================================
     
     async function loadCommunityStats() {
@@ -328,18 +347,27 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             if (newError) throw newError;
 
-            // Update UI with REAL data
-            document.getElementById('total-connectors').textContent = formatNumber(connectorsCount || 0);
-            document.getElementById('total-content-stats').textContent = formatNumber(contentCount || 0);
-            document.getElementById('new-connectors').textContent = `+${formatNumber(newConnectors || 0)}`;
+            // FIXED: Check if elements exist before setting textContent
+            const totalConnectorsEl = document.getElementById('total-connectors');
+            const totalContentStatsEl = document.getElementById('total-content-stats');
+            const newConnectorsEl = document.getElementById('new-connectors');
+
+            if (totalConnectorsEl) totalConnectorsEl.textContent = formatNumber(connectorsCount || 0);
+            if (totalContentStatsEl) totalContentStatsEl.textContent = formatNumber(contentCount || 0);
+            if (newConnectorsEl) newConnectorsEl.textContent = `+${formatNumber(newConnectors || 0)}`;
 
             console.log('✅ Community Stats Loaded');
         } catch (error) {
             console.error('Error loading community stats:', error);
-            // Show zeros instead of fake data
-            document.getElementById('total-connectors').textContent = '0';
-            document.getElementById('total-content-stats').textContent = '0';
-            document.getElementById('new-connectors').textContent = '+0';
+            
+            // Show zeros instead of fake data - with null checks
+            const totalConnectorsEl = document.getElementById('total-connectors');
+            const totalContentStatsEl = document.getElementById('total-content-stats');
+            const newConnectorsEl = document.getElementById('new-connectors');
+
+            if (totalConnectorsEl) totalConnectorsEl.textContent = '0';
+            if (totalContentStatsEl) totalContentStatsEl.textContent = '0';
+            if (newConnectorsEl) newConnectorsEl.textContent = '+0';
         }
     }
 
@@ -458,15 +486,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     // ============================================
     
     async function initBadgesSystem() {
-        // Badges feature temporarily disabled until user_badges table is created
-        console.log('Badges system disabled - create user_badges table to enable');
+        // DISABLED: Badges feature temporarily disabled until user_badges table is created
+        console.log('⚠️ Badges system disabled - create user_badges table to enable');
         
-        // Hide badges button or keep it disabled
+        // Hide badges button
         const badgesBtn = document.getElementById('nav-badges-btn');
         if (badgesBtn) {
-            badgesBtn.style.opacity = '0.5';
-            badgesBtn.style.pointerEvents = 'none';
-            badgesBtn.title = 'Badges coming soon';
+            badgesBtn.style.display = 'none';
         }
     }
 
@@ -894,7 +920,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         try {
             const { data, error } = await supabaseAuth
-                .from('user_profiles')  // FIXED: Changed from 'profiles' to 'user_profiles'
+                .from('user_profiles')
                 .select('*')
                 .eq('user_id', window.currentUser.id)
                 .order('created_at', { ascending: true });
@@ -905,7 +931,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             if (userProfiles.length === 0) {
                 const { data: newProfile, error: createError } = await supabaseAuth
-                    .from('user_profiles')  // FIXED: Changed from 'profiles' to 'user_profiles'
+                    .from('user_profiles')
                     .insert({
                         user_id: window.currentUser.id,
                         name: 'Default',
@@ -926,7 +952,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             await loadContinueWatching();
             await loadRecommendations();
-            // Badges disabled - await loadUserBadges();
         } catch (error) {
             console.error('Error loading profiles:', error);
         }
@@ -937,11 +962,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         const currentProfileName = document.getElementById('current-profile-name');
         const profilePlaceholder = document.getElementById('userProfilePlaceholder');
 
-        if (!profileList || !currentProfileName) return;
+        if (!profileList || !currentProfileName || !profilePlaceholder) return;
 
         if (currentProfile) {
             currentProfileName.textContent = currentProfile.name || 'Profile';
 
+            // Clear existing content
             while (profilePlaceholder.firstChild) {
                 profilePlaceholder.removeChild(profilePlaceholder.firstChild);
             }
@@ -949,9 +975,18 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (currentProfile.avatar_url && currentProfile.avatar_url.trim() !== '') {
                 const img = document.createElement('img');
                 img.className = 'profile-img';
-                img.src = fixAvatarUrl(currentProfile.avatar_url);
                 img.alt = currentProfile.name;
                 img.style.cssText = 'width: 100%; height: 100%; border-radius: 50%; object-fit: cover;';
+                
+                // Fix URL construction
+                if (currentProfile.avatar_url.startsWith('http')) {
+                    img.src = currentProfile.avatar_url;
+                } else if (currentProfile.avatar_url.includes('supabase.co')) {
+                    img.src = currentProfile.avatar_url;
+                } else {
+                    // Construct proper storage URL
+                    img.src = `https://tjbpspchjjrrhogexfjy.supabase.co/storage/v1/object/public/avatars/${currentProfile.avatar_url.replace(/^\/+/, '')}`;
+                }
                 
                 img.onerror = () => {
                     // Fallback to initials on error
@@ -1045,7 +1080,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 await loadUserProfiles();
             } else {
                 console.log('⚠️ User not authenticated');
-                updateProfileUI(null);
                 showToast('Welcome! Sign in to access personalized features.', 'info');
             }
 
@@ -1056,32 +1090,27 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
+    // 🔥 FIXED: loadUserProfile() uses id not user_id
     async function loadUserProfile() {
         try {
             if (!window.currentUser) return;
 
+            // FIXED: user_profiles uses 'id' not 'user_id'
             const { data: profile, error } = await supabaseAuth
-                .from('user_profiles')  // FIXED: Changed from 'profiles' to 'user_profiles'
+                .from('user_profiles')
                 .select('*')
-                .eq('id', window.currentUser.id)
+                .eq('id', window.currentUser.id)  // ✅ CORRECT
                 .maybeSingle();
 
             if (error) {
                 console.warn('Profile fetch error:', error);
-                updateProfileUI(null);
                 return;
             }
 
-            updateProfileUI(profile);
-            await loadNotifications();
+            // Profile UI is handled by profile switcher
         } catch (error) {
             console.error('Error loading profile:', error);
-            updateProfileUI(null);
         }
-    }
-
-    function updateProfileUI(profile) {
-        // Handled by profile switcher
     }
 
     // ============================================
@@ -2211,10 +2240,15 @@ document.addEventListener('DOMContentLoaded', async () => {
             await loadPlatformAnalytics();
 
             // Update trend indicators (calculated from actual data if available)
-            document.getElementById('views-trend').textContent = '+12%';
-            document.getElementById('content-trend').textContent = '+8%';
-            document.getElementById('creators-trend').textContent = '+15%';
-            document.getElementById('connectors-trend').textContent = '+22%';
+            const viewsTrendEl = document.getElementById('views-trend');
+            const contentTrendEl = document.getElementById('content-trend');
+            const creatorsTrendEl = document.getElementById('creators-trend');
+            const connectorsTrendEl = document.getElementById('connectors-trend');
+
+            if (viewsTrendEl) viewsTrendEl.textContent = '+12%';
+            if (contentTrendEl) contentTrendEl.textContent = '+8%';
+            if (creatorsTrendEl) creatorsTrendEl.textContent = '+15%';
+            if (connectorsTrendEl) connectorsTrendEl.textContent = '+22%';
         });
 
         if (closeAnalytics) {
@@ -2525,7 +2559,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             loadUserProfile();
             loadUserProfiles();
             loadNotifications();
-            // Badges disabled - loadUserBadges();
             loadPlatformAnalytics();
             showToast('Welcome back!', 'success');
         } else if (event === 'SIGNED_OUT') {
@@ -2533,7 +2566,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             currentProfile = null;
             userProfiles = [];
             userBadges = [];
-            updateProfileUI(null);
             updateNotificationBadge(0);
             window.notifications = [];
             renderNotifications();
