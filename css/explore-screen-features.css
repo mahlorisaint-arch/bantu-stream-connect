@@ -102,6 +102,8 @@
     display: flex;
     gap: 0.5rem;
     z-index: 4;
+    flex-wrap: wrap;
+    max-width: calc(100% - 20px);
 }
 
 .card-badge {
@@ -115,6 +117,7 @@
     align-items: center;
     gap: 4px;
     backdrop-filter: blur(4px);
+    white-space: nowrap;
 }
 
 .badge-trending {
@@ -130,8 +133,28 @@
     animation: pulse 1.5s infinite;
 }
 
-.download-badge {
-    background: rgba(16, 185, 129, 0.9);
+.continue-badge {
+    background: rgba(245, 158, 11, 0.9);
+}
+
+/* NEW: Connector Badge */
+.connector-badge {
+    padding: 4px 12px;
+    background: linear-gradient(135deg, #1D4ED8, #F59E0B);
+    border-radius: 12px;
+    color: white;
+    font-size: 11px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    backdrop-filter: blur(4px);
+    white-space: nowrap;
+    box-shadow: 0 2px 8px rgba(29, 78, 216, 0.3);
+}
+
+.connector-badge i {
+    font-size: 10px;
 }
 
 @keyframes pulse {
@@ -244,6 +267,7 @@
     margin-top: 8px;
     font-size: 12px;
     color: var(--slate-grey);
+    flex-wrap: wrap;
 }
 
 .card-stat {
@@ -540,6 +564,153 @@
 
 .hero-mute-btn:hover {
     background: rgba(245, 158, 11, 0.8);
+}
+
+/* NEW: Language Filter Bar */
+.language-filter-bar {
+    background: rgba(10, 14, 18, 0.6);
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--card-border);
+    border-radius: 40px;
+    margin: 20px 40px 10px;
+    padding: 10px 20px;
+}
+
+.language-filter-container {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    overflow-x: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--warm-gold) var(--card-bg);
+    white-space: nowrap;
+}
+
+.language-filter-container::-webkit-scrollbar {
+    height: 4px;
+}
+
+.language-filter-container::-webkit-scrollbar-track {
+    background: var(--card-bg);
+    border-radius: 10px;
+}
+
+.language-filter-container::-webkit-scrollbar-thumb {
+    background: var(--warm-gold);
+    border-radius: 10px;
+}
+
+.language-filter-container i {
+    color: var(--warm-gold);
+    font-size: 18px;
+}
+
+.language-filter-label {
+    color: var(--soft-white);
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.language-chips {
+    display: flex;
+    gap: 8px;
+    flex-wrap: nowrap;
+}
+
+.language-chip {
+    padding: 6px 16px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid var(--card-border);
+    border-radius: 30px;
+    color: var(--slate-grey);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+}
+
+.language-chip:hover {
+    background: rgba(245, 158, 11, 0.2);
+    border-color: var(--warm-gold);
+    color: var(--soft-white);
+}
+
+.language-chip.active {
+    background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+    color: white;
+    border-color: transparent;
+}
+
+.language-chip-more {
+    padding: 6px 16px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px dashed var(--card-border);
+    border-radius: 30px;
+    color: var(--slate-grey);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+}
+
+.language-chip-more:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--soft-white);
+}
+
+/* NEW: Community Stats Bar */
+.community-stats-bar {
+    display: flex;
+    justify-content: space-around;
+    background: rgba(10, 14, 18, 0.6);
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--card-border);
+    border-radius: 60px;
+    margin: 20px 40px 30px;
+    padding: 15px 20px;
+}
+
+.community-stat {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.community-stat i {
+    color: var(--warm-gold);
+    font-size: 20px;
+}
+
+.community-stat-value {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--soft-white);
+}
+
+.community-stat-label {
+    font-size: 12px;
+    color: var(--slate-grey);
+}
+
+/* NEW: RSA Badge */
+.rsa-badge {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    background: linear-gradient(135deg, #007A4D, #FFB81C, #E03C31);
+    padding: 6px 12px;
+    border-radius: 30px;
+    color: white;
+    font-size: 12px;
+    font-weight: 600;
+    margin-left: 10px;
+    box-shadow: 0 4px 12px rgba(0, 122, 77, 0.3);
+}
+
+.rsa-badge i {
+    font-size: 12px;
 }
 
 /* Events Section */
@@ -1608,6 +1779,158 @@
     justify-content: flex-end;
 }
 
+/* NEW: Badges Modal (Gamification) */
+.badges-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(10px);
+    z-index: 1001;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+}
+
+.badges-modal.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+.badges-content {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 24px;
+    max-width: 600px;
+    width: 90%;
+    max-height: 80vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+}
+
+.badges-header {
+    padding: 20px;
+    border-bottom: 1px solid var(--card-border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.badges-header h2 {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 20px;
+    color: var(--soft-white);
+}
+
+.badges-header h2 i {
+    color: var(--warm-gold);
+    margin-right: 10px;
+}
+
+.badges-body {
+    padding: 20px;
+}
+
+.badges-stats {
+    display: flex;
+    justify-content: space-around;
+    margin-bottom: 30px;
+    padding: 15px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 16px;
+}
+
+.badge-stat {
+    text-align: center;
+}
+
+.badge-stat-value {
+    display: block;
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--warm-gold);
+}
+
+.badge-stat-label {
+    font-size: 12px;
+    color: var(--slate-grey);
+}
+
+.badges-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 15px;
+}
+
+.badge-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 15px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--card-border);
+    border-radius: 12px;
+    transition: all 0.3s ease;
+}
+
+.badge-item.earned {
+    background: rgba(245, 158, 11, 0.1);
+    border-color: var(--warm-gold);
+}
+
+.badge-item.locked {
+    opacity: 0.6;
+}
+
+.badge-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    color: var(--slate-grey);
+}
+
+.badge-icon.earned {
+    background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+    color: white;
+}
+
+.badge-info {
+    flex: 1;
+}
+
+.badge-info h4 {
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 4px;
+    color: var(--soft-white);
+}
+
+.badge-info p {
+    font-size: 11px;
+    color: var(--slate-grey);
+    margin-bottom: 4px;
+}
+
+.badge-earned-date {
+    font-size: 10px;
+    color: var(--warm-gold);
+}
+
+.badge-requirement {
+    font-size: 10px;
+    color: var(--slate-grey);
+}
+
 /* Voice Search Status */
 .voice-search-status {
     position: fixed;
@@ -1955,6 +2278,11 @@
     margin-bottom: 20px;
 }
 
+.footer p i {
+    color: var(--warm-gold);
+    margin: 0 4px;
+}
+
 .footer-links {
     display: flex;
     gap: 20px;
@@ -2019,7 +2347,27 @@
     }
     
     .profile-switcher {
-        display: none; /* Hide on mobile, use navigation button instead */
+        display: none;
+    }
+    
+    .language-filter-bar {
+        margin: 10px 20px;
+        padding: 8px 15px;
+    }
+    
+    .community-stats-bar {
+        flex-wrap: wrap;
+        gap: 15px;
+        margin: 10px 20px;
+        padding: 15px;
+    }
+    
+    .badges-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .rsa-badge {
+        display: none;
     }
 }
 
@@ -2044,5 +2392,21 @@
     .notifications-panel {
         width: 100%;
         right: -100%;
+    }
+    
+    .language-filter-label {
+        display: none;
+    }
+    
+    .community-stat {
+        flex: 1 1 40%;
+    }
+    
+    .community-stat-value {
+        font-size: 16px;
+    }
+    
+    .community-stat-label {
+        font-size: 10px;
     }
 }
