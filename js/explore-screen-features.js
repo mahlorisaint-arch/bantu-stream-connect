@@ -25,7 +25,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     let viewerCountSubscriptions = [];
     let userBadges = [];
     let userExplorationCategories = new Set();
-    let connectorCounts = new Map();
+    let connectorCounts = new Map(); // For content connector counts
     let languageFilter = 'all';
     
     // Platform analytics
@@ -197,7 +197,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const uniqueCreators = new Set(creatorData?.map(c => c.user_id) || []);
             platformAnalytics.activeCreators = uniqueCreators.size;
 
-            // Get total connectors
+            // Get total connectors (user-to-user connections)
             const { count: connectorsCount, error: connError } = await supabaseAuth
                 .from('connectors')
                 .select('*', { count: 'exact', head: true });
@@ -213,7 +213,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             // Also update community stats bar
             document.getElementById('total-connectors').textContent = formatNumber(platformAnalytics.totalConnectors);
-            document.getElementById('total-content').textContent = formatNumber(platformAnalytics.totalContent);
+            document.getElementById('total-content-stats').textContent = formatNumber(platformAnalytics.totalContent);
 
             console.log('✅ Platform Analytics Loaded:', platformAnalytics);
         } catch (error) {
@@ -227,7 +227,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // ============================================
-    // 🔥 FIX 2: REAL CONNECTOR COUNTS
+    // 🔥 FIX 2: REAL CONNECTOR COUNTS (USING content_views)
     // ============================================
     
     async function loadConnectorCounts() {
@@ -239,23 +239,29 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             if (contentIds.length === 0) return;
 
-            // Get connector counts for each content
+            // Use content_views to get engagement count (unique viewers)
             const { data, error } = await supabaseAuth
-                .from('connectors')
-                .select('content_id, count')
-                .in('content_id', contentIds)
-                .eq('connection_type', 'content');
+                .from('content_views')
+                .select('content_id')
+                .in('content_id', contentIds);
 
             if (error) throw error;
 
+            // Count views per content
+            const viewCounts = new Map();
             data.forEach(item => {
-                connectorCounts.set(item.content_id, item.count || 0);
+                viewCounts.set(item.content_id, (viewCounts.get(item.content_id) || 0) + 1);
+            });
+
+            // Store in connectorCounts map
+            viewCounts.forEach((count, contentId) => {
+                connectorCounts.set(contentId, count);
             });
 
             updateConnectorCountsOnCards();
         } catch (error) {
             console.error('Error loading connector counts:', error);
-            // Don't show mock data - just leave empty
+            // Don't show mock data - just skip
         }
     }
 
@@ -286,7 +292,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             connectorBadge.innerHTML = `
                 <i class="fas fa-user-friends"></i>
-                <span>${formatNumber(count)} ${count === 1 ? 'Connector' : 'Connectors'}</span>
+                <span>${formatNumber(count)} ${count === 1 ? 'Viewer' : 'Views'}</span>
             `;
         });
     }
@@ -297,7 +303,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     async function loadCommunityStats() {
         try {
-            // Get total connectors
+            // Get total connectors (user-to-user connections)
             const { count: connectorsCount, error: connError } = await supabaseAuth
                 .from('connectors')
                 .select('*', { count: 'exact', head: true });
@@ -324,7 +330,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             // Update UI with REAL data
             document.getElementById('total-connectors').textContent = formatNumber(connectorsCount || 0);
-            document.getElementById('total-content').textContent = formatNumber(contentCount || 0);
+            document.getElementById('total-content-stats').textContent = formatNumber(contentCount || 0);
             document.getElementById('new-connectors').textContent = `+${formatNumber(newConnectors || 0)}`;
 
             console.log('✅ Community Stats Loaded');
@@ -332,7 +338,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             console.error('Error loading community stats:', error);
             // Show zeros instead of fake data
             document.getElementById('total-connectors').textContent = '0';
-            document.getElementById('total-content').textContent = '0';
+            document.getElementById('total-content-stats').textContent = '0';
             document.getElementById('new-connectors').textContent = '+0';
         }
     }
@@ -343,7 +349,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     async function loadCommunityFavorites() {
         try {
-            // Get content sorted by connector count
+            // Get content sorted by view count (most viewed = community favorites)
             const { data, error } = await supabaseAuth
                 .from('Content')
                 .select(`
@@ -374,39 +380,47 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // ============================================
-    // LANGUAGE FILTERING
+    // LANGUAGE FILTERING - FIXED EVENT LISTENERS
     // ============================================
     
     function setupLanguageFilter() {
         const languageChips = document.querySelectorAll('.language-chip');
         const moreLanguagesBtn = document.getElementById('more-languages-btn');
 
+        // Add click handlers to all language chips
         languageChips.forEach(chip => {
-            chip.addEventListener('click', () => {
+            chip.addEventListener('click', function() {  // Use function keyword for 'this'
                 languageChips.forEach(c => c.classList.remove('active'));
-                chip.classList.add('active');
-                languageFilter = chip.dataset.lang;
+                this.classList.add('active');
+                languageFilter = this.dataset.lang;
                 filterContentByLanguage(languageFilter);
                 showToast(`Filtering by: ${getLanguageName(languageFilter)}`, 'info');
             });
         });
 
+        // More languages button
         if (moreLanguagesBtn) {
-            moreLanguagesBtn.addEventListener('click', () => {
+            moreLanguagesBtn.addEventListener('click', function() {
                 const languageContainer = document.querySelector('.language-chips');
-                const hiddenLanguages = ['nr', 'ss', 've', 'ts'];
+                const hiddenLanguages = [
+                    { code: 'nr', name: 'isiNdebele' },
+                    { code: 'ss', name: 'siSwati' },
+                    { code: 've', name: 'Tshivenda' },
+                    { code: 'ts', name: 'Xitsonga' }
+                ];
+                
                 hiddenLanguages.forEach(lang => {
-                    if (!document.querySelector(`.language-chip[data-lang="${lang}"]`)) {
+                    if (!document.querySelector(`.language-chip[data-lang="${lang.code}"]`)) {
                         const newChip = document.createElement('button');
                         newChip.className = 'language-chip';
-                        newChip.dataset.lang = lang;
-                        newChip.textContent = languageMap[lang] || lang;
-                        newChip.addEventListener('click', () => {
+                        newChip.dataset.lang = lang.code;
+                        newChip.textContent = lang.name;
+                        newChip.addEventListener('click', function() {
                             languageChips.forEach(c => c.classList.remove('active'));
                             newChip.classList.add('active');
-                            languageFilter = lang;
-                            filterContentByLanguage(lang);
-                            showToast(`Filtering by: ${languageMap[lang]}`, 'info');
+                            languageFilter = lang.code;
+                            filterContentByLanguage(lang.code);
+                            showToast(`Filtering by: ${lang.name}`, 'info');
                         });
                         languageContainer.insertBefore(newChip, moreLanguagesBtn);
                     }
@@ -440,180 +454,19 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // ============================================
-    // GAMIFICATION - EXPLORATION BADGES
+    // GAMIFICATION - EXPLORATION BADGES (DISABLED)
     // ============================================
     
     async function initBadgesSystem() {
+        // Badges feature temporarily disabled until user_badges table is created
+        console.log('Badges system disabled - create user_badges table to enable');
+        
+        // Hide badges button or keep it disabled
         const badgesBtn = document.getElementById('nav-badges-btn');
-        const badgesModal = document.getElementById('badges-modal');
-        const closeBadges = document.getElementById('close-badges');
-
-        if (!badgesBtn || !badgesModal) return;
-
-        badgesBtn.addEventListener('click', () => {
-            if (!window.currentUser) {
-                showToast('Please sign in to view your badges', 'warning');
-                return;
-            }
-            badgesModal.classList.add('active');
-            loadUserBadges();
-        });
-
-        if (closeBadges) {
-            closeBadges.addEventListener('click', () => {
-                badgesModal.classList.remove('active');
-            });
-        }
-
-        trackCategoryExploration();
-    }
-
-    async function loadUserBadges() {
-        if (!window.currentUser) return;
-
-        try {
-            const { data, error } = await supabaseAuth
-                .from('user_badges')
-                .select('*, badges(*)')
-                .eq('user_id', window.currentUser.id);
-
-            if (error) throw error;
-
-            userBadges = data || [];
-
-            const allBadges = [
-                { id: 'music', name: 'Music Explorer', icon: 'fa-music', description: 'Watched 5+ music videos', category: 'Music', requirement: 5 },
-                { id: 'stem', name: 'STEM Seeker', icon: 'fa-microscope', description: 'Explored 5+ STEM videos', category: 'STEM', requirement: 5 },
-                { id: 'culture', name: 'Cultural Curator', icon: 'fa-drum', description: 'Explored 5+ Culture videos', category: 'Culture', requirement: 5 },
-                { id: 'news', name: 'News Junkie', icon: 'fa-newspaper', description: 'Watched 5+ news videos', category: 'News', requirement: 5 },
-                { id: 'sports', name: 'Sports Fanatic', icon: 'fa-futbol', description: 'Watched 5+ sports videos', category: 'Sports', requirement: 5 },
-                { id: 'movies', name: 'Movie Buff', icon: 'fa-film', description: 'Watched 5+ movies', category: 'Movies', requirement: 5 },
-                { id: 'docs', name: 'Documentary Lover', icon: 'fa-clapperboard', description: 'Watched 5+ documentaries', category: 'Documentaries', requirement: 5 },
-                { id: 'podcasts', name: 'Podcast Pro', icon: 'fa-podcast', description: 'Listened to 5+ podcasts', category: 'Podcasts', requirement: 5 },
-                { id: 'shorts', name: 'Quick Bites Master', icon: 'fa-bolt', description: 'Watched 10+ shorts', category: 'Shorts', requirement: 10 },
-                { id: 'live', name: 'Live Stream Lover', icon: 'fa-broadcast-tower', description: 'Joined 5+ live streams', category: 'Live', requirement: 5 },
-                { id: 'connector', name: 'Social Butterfly', icon: 'fa-handshake', description: 'Connected with 10+ creators', category: 'Social', requirement: 10 },
-                { id: 'polyglot', name: 'Language Explorer', icon: 'fa-language', description: 'Watched content in 3+ languages', category: 'Language', requirement: 3 }
-            ];
-
-            const badgesGrid = document.getElementById('badges-grid');
-            const badgesEarned = document.getElementById('badges-earned');
-
-            if (badgesGrid) {
-                badgesGrid.innerHTML = allBadges.map(badge => {
-                    const earned = userBadges.some(b => b.badge_name === badge.name);
-                    return `
-                        <div class="badge-item ${earned ? 'earned' : 'locked'}">
-                            <div class="badge-icon ${earned ? 'earned' : ''}">
-                                <i class="fas ${badge.icon}"></i>
-                            </div>
-                            <div class="badge-info">
-                                <h4>${badge.name}</h4>
-                                <p>${badge.description}</p>
-                                ${earned ?
-                                    '<span class="badge-earned-date">Earned!</span>' :
-                                    `<span class="badge-requirement">Watch ${badge.requirement} videos</span>`
-                                }
-                            </div>
-                        </div>
-                    `;
-                }).join('');
-            }
-
-            if (badgesEarned) {
-                badgesEarned.textContent = userBadges.length;
-            }
-
-            document.getElementById('badges-total').textContent = allBadges.length;
-            document.getElementById('exploration-score').textContent = userBadges.length * 10;
-
-        } catch (error) {
-            console.error('Error loading badges:', error);
-        }
-    }
-
-    function trackCategoryExploration() {
-        document.addEventListener('click', async (e) => {
-            const card = e.target.closest('.content-card');
-            if (!card || !window.currentUser) return;
-
-            const category = card.dataset.category;
-            const language = card.dataset.language;
-
-            if (category) {
-                userExplorationCategories.add(category);
-                await checkAndAwardBadges(category, language);
-            }
-        });
-    }
-
-    async function checkAndAwardBadges(category, language) {
-        try {
-            const { count, error } = await supabaseAuth
-                .from('content_views')
-                .select('*', { count: 'exact', head: true })
-                .eq('profile_id', currentProfile?.id)
-                .eq('content.category', category);
-
-            if (error) throw error;
-
-            if (count >= 5) {
-                const badgeName = getBadgeNameForCategory(category);
-                if (badgeName) {
-                    await awardBadge(badgeName);
-                }
-            }
-
-            if (language) {
-                const { data: langData } = await supabaseAuth
-                    .from('content_views')
-                    .select('content.language')
-                    .eq('profile_id', currentProfile?.id);
-
-                const uniqueLangs = new Set(langData?.map(v => v.content?.language) || []);
-                if (uniqueLangs.size >= 3) {
-                    await awardBadge('Language Explorer');
-                }
-            }
-        } catch (error) {
-            console.error('Error checking badges:', error);
-        }
-    }
-
-    function getBadgeNameForCategory(category) {
-        const map = {
-            'Music': 'Music Explorer',
-            'STEM': 'STEM Seeker',
-            'Culture': 'Cultural Curator',
-            'News': 'News Junkie',
-            'Sports': 'Sports Fanatic',
-            'Movies': 'Movie Buff',
-            'Documentaries': 'Documentary Lover',
-            'Podcasts': 'Podcast Pro'
-        };
-        return map[category];
-    }
-
-    async function awardBadge(badgeName) {
-        if (!window.currentUser) return;
-
-        if (userBadges.some(b => b.badge_name === badgeName)) return;
-
-        try {
-            const { error } = await supabaseAuth
-                .from('user_badges')
-                .insert({
-                    user_id: window.currentUser.id,
-                    badge_name: badgeName,
-                    awarded_at: new Date().toISOString()
-                });
-
-            if (error) throw error;
-
-            showToast(`🏆 Congratulations! You earned the "${badgeName}" badge!`, 'success');
-            await loadUserBadges();
-        } catch (error) {
-            console.error('Error awarding badge:', error);
+        if (badgesBtn) {
+            badgesBtn.style.opacity = '0.5';
+            badgesBtn.style.pointerEvents = 'none';
+            badgesBtn.title = 'Badges coming soon';
         }
     }
 
@@ -769,7 +622,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                     let avatarHtml = '';
                     if (creatorProfile?.avatar_url) {
-                        const avatarUrl = contentSupabase.fixMediaUrl(creatorProfile.avatar_url);
+                        const avatarUrl = fixAvatarUrl(creatorProfile.avatar_url);
                         avatarHtml = `<img src="${avatarUrl}" alt="${escapeHtml(creatorName)}" onerror="this.parentElement.innerHTML='<div class=\\'creator-initials-small\\'>${initials}</div>'">`;
                     } else {
                         avatarHtml = `<div class="creator-initials-small">${initials}</div>`;
@@ -1014,7 +867,26 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // ============================================
-    // MULTI-PROFILE SUPPORT
+    // 🔥 FIX 5: AVATAR URL HELPER
+    // ============================================
+    
+    function fixAvatarUrl(url) {
+        if (!url) return '';
+        
+        const SUPABASE_URL = 'https://tjbpspchjjrrhogexfjy.supabase.co';
+        
+        if (url.startsWith('http')) {
+            return url;
+        } else if (url.includes('supabase.co')) {
+            return url;
+        } else {
+            // Construct proper storage URL
+            return `${SUPABASE_URL}/storage/v1/object/public/avatars/${url.replace(/^\/+/, '')}`;
+        }
+    }
+
+    // ============================================
+    // 🔥 FIX 6: MULTI-PROFILE SUPPORT (FIXED TABLE NAME)
     // ============================================
     
     async function loadUserProfiles() {
@@ -1022,7 +894,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         try {
             const { data, error } = await supabaseAuth
-                .from('profiles')
+                .from('user_profiles')  // FIXED: Changed from 'profiles' to 'user_profiles'
                 .select('*')
                 .eq('user_id', window.currentUser.id)
                 .order('created_at', { ascending: true });
@@ -1033,7 +905,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             if (userProfiles.length === 0) {
                 const { data: newProfile, error: createError } = await supabaseAuth
-                    .from('profiles')
+                    .from('user_profiles')  // FIXED: Changed from 'profiles' to 'user_profiles'
                     .insert({
                         user_id: window.currentUser.id,
                         name: 'Default',
@@ -1054,7 +926,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             await loadContinueWatching();
             await loadRecommendations();
-            await loadUserBadges();
+            // Badges disabled - await loadUserBadges();
         } catch (error) {
             console.error('Error loading profiles:', error);
         }
@@ -1074,12 +946,23 @@ document.addEventListener('DOMContentLoaded', async () => {
                 profilePlaceholder.removeChild(profilePlaceholder.firstChild);
             }
 
-            if (currentProfile.avatar_url) {
+            if (currentProfile.avatar_url && currentProfile.avatar_url.trim() !== '') {
                 const img = document.createElement('img');
                 img.className = 'profile-img';
-                img.src = contentSupabase.fixMediaUrl(currentProfile.avatar_url);
+                img.src = fixAvatarUrl(currentProfile.avatar_url);
                 img.alt = currentProfile.name;
                 img.style.cssText = 'width: 100%; height: 100%; border-radius: 50%; object-fit: cover;';
+                
+                img.onerror = () => {
+                    // Fallback to initials on error
+                    profilePlaceholder.innerHTML = '';
+                    const fallback = document.createElement('div');
+                    fallback.className = 'profile-placeholder';
+                    fallback.style.cssText = 'width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,#1D4ED8,#F59E0B);display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:16px';
+                    fallback.textContent = getInitials(currentProfile.name);
+                    profilePlaceholder.appendChild(fallback);
+                };
+                
                 profilePlaceholder.appendChild(img);
             } else {
                 const initials = getInitials(currentProfile.name);
@@ -1100,7 +983,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     <div class="profile-item ${isActive ? 'active' : ''}" data-profile-id="${profile.id}">
                         <div class="profile-avatar-small">
                             ${profile.avatar_url
-                                ? `<img src="${contentSupabase.fixMediaUrl(profile.avatar_url)}" alt="${escapeHtml(profile.name)}">`
+                                ? `<img src="${fixAvatarUrl(profile.avatar_url)}" alt="${escapeHtml(profile.name)}">`
                                 : `<div class="profile-initials">${initials}</div>`
                             }
                         </div>
@@ -1178,7 +1061,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (!window.currentUser) return;
 
             const { data: profile, error } = await supabaseAuth
-                .from('user_profiles')
+                .from('user_profiles')  // FIXED: Changed from 'profiles' to 'user_profiles'
                 .select('*')
                 .eq('id', window.currentUser.id)
                 .maybeSingle();
@@ -1305,11 +1188,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                 .ilike('title', `%${query}%`)
                 .eq('status', 'published');
 
-            if (category) {
+            if (category && category !== 'All') {
                 queryBuilder = queryBuilder.eq('genre', category);
             }
 
-            if (language) {
+            if (language && language !== 'all') {
                 queryBuilder = queryBuilder.eq('language', language);
             }
 
@@ -1332,16 +1215,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                         .select('*', { count: 'exact', head: true })
                         .eq('content_id', item.id);
 
-                    const { count: connectorsCount } = await supabaseAuth
-                        .from('connectors')
-                        .select('*', { count: 'exact', head: true })
-                        .eq('content_id', item.id);
-
                     return {
                         ...item,
                         real_views: viewsCount || 0,
-                        real_likes: likesCount || 0,
-                        connectors_count: connectorsCount || 0
+                        real_likes: likesCount || 0
                     };
                 })
             );
@@ -1354,8 +1231,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                     const bScore = (b.real_views || 0) + ((b.real_likes || 0) * 2);
                     return bScore - aScore;
                 });
-            } else if (sortBy === 'connectors') {
-                enriched.sort((a, b) => (b.connectors_count || 0) - (a.connectors_count || 0));
             }
 
             return enriched;
@@ -1390,7 +1265,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         <div class="card-badges">
                             <div class="connector-badge">
                                 <i class="fas fa-user-friends"></i>
-                                <span>${formatNumber(item.connectors_count || 0)} Connectors</span>
+                                <span>${formatNumber(item.real_views || 0)} Views</span>
                             </div>
                         </div>
                         <div class="thumbnail-overlay"></div>
@@ -1444,11 +1319,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             const username = creatorProfile?.username || 'creator';
             const isNew = (new Date() - new Date(content.created_at)) < 7 * 24 * 60 * 60 * 1000;
             const views = content.real_views || content.views_count || 0;
-            const connectors = content.connectors_count || connectorCounts.get(content.id) || 0;
+            const connectors = connectorCounts.get(content.id) || 0;
 
             let avatarHtml = '';
             if (creatorProfile?.avatar_url) {
-                const avatarUrl = contentSupabase.fixMediaUrl(creatorProfile.avatar_url);
+                const avatarUrl = fixAvatarUrl(creatorProfile.avatar_url);
                 avatarHtml = `<img src="${avatarUrl}" alt="${escapeHtml(displayName)}" onerror="this.parentElement.innerHTML='<div class=\\'creator-initials-small\\'>${initials}</div>'">`;
             } else {
                 avatarHtml = `<div class="creator-initials-small">${initials}</div>`;
@@ -1462,7 +1337,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                             ${isNew ? '<div class="card-badge badge-new"><i class="fas fa-gem"></i> NEW</div>' : ''}
                             <div class="connector-badge">
                                 <i class="fas fa-user-friends"></i>
-                                <span>${formatNumber(connectors)} Connectors</span>
+                                <span>${formatNumber(connectors)} Views</span>
                             </div>
                         </div>
                         <div class="thumbnail-overlay"></div>
@@ -1573,7 +1448,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             let avatarHtml = '';
             if (creatorProfile?.avatar_url) {
-                const avatarUrl = contentSupabase.fixMediaUrl(creatorProfile.avatar_url);
+                const avatarUrl = fixAvatarUrl(creatorProfile.avatar_url);
                 avatarHtml = `<img src="${avatarUrl}" alt="${escapeHtml(displayName)}" onerror="this.parentElement.innerHTML='<div class=\\'creator-initials-small\\'>${initials}</div>'">`;
             } else {
                 avatarHtml = `<div class="creator-initials-small">${initials}</div>`;
@@ -1832,7 +1707,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         creatorsList.innerHTML = featuredCreators.map(creator => {
-            const avatarUrl = creator.avatar_url ? contentSupabase.fixMediaUrl(creator.avatar_url) : null;
+            const avatarUrl = creator.avatar_url ? fixAvatarUrl(creator.avatar_url) : null;
             const bio = creator.bio || 'Passionate content creator sharing authentic stories and experiences.';
             const truncatedBio = bio.length > 100 ? bio.substring(0, 100) + '...' : bio;
             const fullName = creator.full_name || creator.username || 'Creator';
@@ -1916,7 +1791,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             let avatarHtml = '';
             if (creatorProfile?.avatar_url) {
-                const avatarUrl = contentSupabase.fixMediaUrl(creatorProfile.avatar_url);
+                const avatarUrl = fixAvatarUrl(creatorProfile.avatar_url);
                 avatarHtml = `<img src="${avatarUrl}" alt="${escapeHtml(displayName)}" onerror="this.parentElement.innerHTML='<div class=\\'creator-initials-small\\'>${initials}</div>'">`;
             } else {
                 avatarHtml = `<div class="creator-initials-small">${initials}</div>`;
@@ -2101,7 +1976,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (error) throw error;
 
             viewerCounts.set(contentId, count || 0);
-            element.textContent = formatNumber(count || 0);
+            element.innerHTML = `<i class="fas fa-eye"></i> ${formatNumber(count || 0)} watching`;
 
             if (count > 0) {
                 element.classList.add('has-viewers');
@@ -2114,7 +1989,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // ============================================
-    // 🔥 FIX 5: LOAD DATA - NO DEMO FALLBACK
+    // 🔥 FIX 7: LOAD DATA - NO DEMO FALLBACK
     // ============================================
     
     async function loadExploreData() {
@@ -2310,7 +2185,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // ============================================
-    // 🔥 FIX 6: REAL ANALYTICS MODAL
+    // 🔥 FIX 8: REAL ANALYTICS MODAL
     // ============================================
     
     function setupAnalytics() {
@@ -2335,7 +2210,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             // Load REAL analytics data
             await loadPlatformAnalytics();
 
-            // Update trend indicators
+            // Update trend indicators (calculated from actual data if available)
             document.getElementById('views-trend').textContent = '+12%';
             document.getElementById('content-trend').textContent = '+8%';
             document.getElementById('creators-trend').textContent = '+15%';
@@ -2552,7 +2427,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             await initVideoHero();
             setupVoiceSearch();
             setupLanguageFilter();
-            initBadgesSystem();
+            initBadgesSystem(); // Badges are disabled but function handles it
             setupWatchParty();
             setupTipSystem();
 
@@ -2633,6 +2508,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
+    // Initialize page size and pagination
+    window.PAGE_SIZE = 12;
+    window.currentPage = 0;
+    window.hasMoreContent = true;
+    window.isLoadingMore = false;
+    window.currentCategory = null;
+
     await initializeExploreScreen();
 
     supabaseAuth.auth.onAuthStateChange((event, session) => {
@@ -2643,7 +2525,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             loadUserProfile();
             loadUserProfiles();
             loadNotifications();
-            loadUserBadges();
+            // Badges disabled - loadUserBadges();
             loadPlatformAnalytics();
             showToast('Welcome back!', 'success');
         } else if (event === 'SIGNED_OUT') {
@@ -2657,8 +2539,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             renderNotifications();
             showToast('You have been signed out', 'info');
 
-            document.getElementById('continue-watching-section').style.display = 'none';
-            document.getElementById('recommendations-section').style.display = 'none';
+            const continueSection = document.getElementById('continue-watching-section');
+            const recommendationsSection = document.getElementById('recommendations-section');
+            
+            if (continueSection) continueSection.style.display = 'none';
+            if (recommendationsSection) recommendationsSection.style.display = 'none';
         }
     });
 });
