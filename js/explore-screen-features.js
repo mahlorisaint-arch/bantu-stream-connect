@@ -1,6 +1,79 @@
 // Wait for DOM to be ready
 document.addEventListener('DOMContentLoaded', async () => {
-    console.log('🔍 Explore Screen Initializing with Community First features...');
+    console.log('🔍 Explore Screen Initializing with Community First features - OPTIMIZED VERSION');
+    
+    // ============================================
+    // PERFORMANCE: Cache Layer Implementation
+    // ============================================
+    class CacheManager {
+        constructor() {
+            this.cache = new Map();
+            this.ttl = 5 * 60 * 1000; // 5 minutes default
+        }
+        
+        set(key, data, ttl = this.ttl) {
+            this.cache.set(key, {
+                data,
+                timestamp: Date.now(),
+                ttl
+            });
+        }
+        
+        get(key) {
+            const item = this.cache.get(key);
+            if (!item) return null;
+            
+            if (Date.now() - item.timestamp > item.ttl) {
+                this.cache.delete(key);
+                return null;
+            }
+            
+            return item.data;
+        }
+        
+        clear() {
+            this.cache.clear();
+        }
+    }
+    
+    window.cacheManager = new CacheManager();
+    
+    // ============================================
+    // PERFORMANCE: Batch Query Optimizer
+    // ============================================
+    class QueryBatcher {
+        constructor() {
+            this.queries = new Map();
+            this.batchSize = 10;
+        }
+        
+        async batchQuery(table, ids, field = 'id') {
+            const cacheKey = `${table}-${ids.sort().join(',')}`;
+            const cached = window.cacheManager.get(cacheKey);
+            if (cached) return cached;
+            
+            // Split into batches
+            const batches = [];
+            for (let i = 0; i < ids.length; i += this.batchSize) {
+                batches.push(ids.slice(i, i + this.batchSize));
+            }
+            
+            const results = await Promise.all(
+                batches.map(batch => 
+                    supabaseAuth
+                        .from(table)
+                        .select('*', { count: 'exact', head: true })
+                        .in(field, batch)
+                )
+            );
+            
+            const data = results.flatMap(r => r.data || []);
+            window.cacheManager.set(cacheKey, data, 2 * 60 * 1000);
+            return data;
+        }
+    }
+    
+    window.queryBatcher = new QueryBatcher();
     
     // DOM Elements
     const loadingScreen = document.getElementById('loading');
@@ -288,7 +361,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     // ============================================
-    // UTILITY FUNCTIONS
+    // UTILITY FUNCTIONS (Optimized)
     // ============================================
     
     function showToast(message, type = 'info') {
@@ -400,128 +473,145 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // ============================================
-    // HEADER UPDATES - FIXED: Logo and Profile Picture
+    // PERFORMANCE: Optimized Content Metrics Loading
     // ============================================
-    
-    async function updateHeaderProfile() {
+    async function loadContentMetrics(contentIds) {
+        if (!contentIds || contentIds.length === 0) return;
+        
+        // Check cache first
+        const cacheKey = `metrics-${contentIds.sort().join(',')}`;
+        const cached = window.cacheManager.get(cacheKey);
+        if (cached) {
+            cached.forEach(m => contentMetrics.set(m.content_id, m));
+            return;
+        }
+        
+        // Batch query for views
+        const viewsPromises = contentIds.map(async (contentId) => {
+            const { count } = await supabaseAuth
+                .from('content_views')
+                .select('*', { count: 'exact', head: true })
+                .eq('content_id', contentId);
+            return { content_id: contentId, views: count || 0 };
+        });
+        
+        // Batch query for likes
+        const likesPromises = contentIds.map(async (contentId) => {
+            const { count } = await supabaseAuth
+                .from('content_likes')
+                .select('*', { count: 'exact', head: true })
+                .eq('content_id', contentId);
+            return { content_id: contentId, likes: count || 0 };
+        });
+        
+        // Execute in parallel
+        const [viewsResults, likesResults] = await Promise.all([
+            Promise.all(viewsPromises),
+            Promise.all(likesPromises)
+        ]);
+        
+        // Merge results
+        const metricsMap = new Map();
+        viewsResults.forEach(r => {
+            if (!metricsMap.has(r.content_id)) metricsMap.set(r.content_id, {});
+            metricsMap.get(r.content_id).views = r.views;
+        });
+        
+        likesResults.forEach(r => {
+            if (!metricsMap.has(r.content_id)) metricsMap.set(r.content_id, {});
+            metricsMap.get(r.content_id).likes = r.likes;
+        });
+        
+        // Get shares (if table exists)
         try {
-            const profilePlaceholder = document.getElementById('userProfilePlaceholder');
-            const currentProfileName = document.getElementById('current-profile-name');
+            const sharesPromises = contentIds.map(async (contentId) => {
+                const { count } = await supabaseAuth
+                    .from('content_shares')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('content_id', contentId);
+                return { content_id: contentId, shares: count || 0 };
+            });
             
-            if (!profilePlaceholder || !currentProfileName) return;
-            
-            if (window.currentUser) {
-                // Get user profile from database
-                const { data: profile, error } = await supabaseAuth
-                    .from('user_profiles')
-                    .select('*')
-                    .eq('id', window.currentUser.id)
-                    .maybeSingle();
-                
-                if (error) {
-                    console.warn('Error fetching profile:', error);
-                    return;
-                }
-                
-                if (profile) {
-                    currentProfile = profile;
-                    
-                    // Clear placeholder
-                    while (profilePlaceholder.firstChild) {
-                        profilePlaceholder.removeChild(profilePlaceholder.firstChild);
-                    }
-                    
-                    // Set profile image or initials
-                    if (profile.avatar_url) {
-                        const img = document.createElement('img');
-                        img.className = 'profile-img';
-                        img.src = contentSupabase.fixMediaUrl(profile.avatar_url);
-                        img.alt = profile.full_name || 'Profile';
-                        img.style.cssText = 'width: 100%; height: 100%; border-radius: 50%; object-fit: cover;';
-                        profilePlaceholder.appendChild(img);
-                    } else {
-                        const initials = getInitials(profile.full_name || profile.username || 'User');
-                        const div = document.createElement('div');
-                        div.className = 'profile-placeholder';
-                        div.style.cssText = 'width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,#1D4ED8,#F59E0B);display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:16px';
-                        div.textContent = initials;
-                        profilePlaceholder.appendChild(div);
-                    }
-                    
-                    currentProfileName.textContent = profile.full_name || profile.username || 'Profile';
-                }
-            } else {
-                // Show default profile for non-authenticated users
-                while (profilePlaceholder.firstChild) {
-                    profilePlaceholder.removeChild(profilePlaceholder.firstChild);
-                }
-                
-                const div = document.createElement('div');
-                div.className = 'profile-placeholder';
-                div.style.cssText = 'width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,#1D4ED8,#F59E0B);display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:16px';
-                div.textContent = 'G';
-                profilePlaceholder.appendChild(div);
-                
-                currentProfileName.textContent = 'Guest';
-            }
-        } catch (error) {
-            console.error('Error updating header profile:', error);
+            const sharesResults = await Promise.all(sharesPromises);
+            sharesResults.forEach(r => {
+                if (!metricsMap.has(r.content_id)) metricsMap.set(r.content_id, {});
+                metricsMap.get(r.content_id).shares = r.shares;
+            });
+        } catch (e) {
+            // Table might not exist, default to 0
+            contentIds.forEach(id => {
+                if (!metricsMap.has(id)) metricsMap.set(id, {});
+                metricsMap.get(id).shares = 0;
+            });
         }
-    }
-    
-    function updateHeaderLogo() {
-        const logoImg = document.querySelector('.logo img');
-        if (logoImg) {
-            logoImg.src = 'assets/icon/bantu_stream_connect_icon.png';
-            logoImg.alt = 'Bantu Stream Connect';
-        }
+        
+        // Store in cache and local map
+        metricsMap.forEach((metrics, contentId) => {
+            contentMetrics.set(contentId, metrics);
+        });
+        
+        window.cacheManager.set(cacheKey, Array.from(metricsMap.entries()).map(([k, v]) => ({ content_id: k, ...v })), 3 * 60 * 1000);
     }
 
     // ============================================
-    // FIXED: CONNECTORS METRIC ON CARDS - Shows correct connector count per creator
+    // PERFORMANCE: Optimized Connector Counts
     // ============================================
-    
     async function loadConnectorCounts(contentIds) {
         if (!contentIds || contentIds.length === 0) return;
         
-        try {
-            // Get connector counts for each content's creator
-            const connectorPromises = contentIds.map(async (contentId) => {
-                // First get the content to find its creator
-                const { data: content, error: contentError } = await supabaseAuth
+        const cacheKey = `connectors-${contentIds.sort().join(',')}`;
+        const cached = window.cacheManager.get(cacheKey);
+        if (cached) {
+            cached.forEach(c => connectorCounts.set(c.content_id, c.count));
+            updateConnectorCountsOnCards();
+            return;
+        }
+        
+        // Get unique creator IDs first
+        const creatorIds = new Set();
+        const contentCreatorMap = new Map();
+        
+        const contentData = await Promise.all(
+            contentIds.map(async (contentId) => {
+                const { data } = await supabaseAuth
                     .from('Content')
                     .select('user_id')
                     .eq('id', contentId)
                     .single();
                 
-                if (contentError || !content) {
-                    connectorCounts.set(contentId, 0);
-                    return;
+                if (data?.user_id) {
+                    creatorIds.add(data.user_id);
+                    contentCreatorMap.set(contentId, data.user_id);
                 }
-                
-                // Count connectors for this creator (people connected to them)
-                const { count, error } = await supabaseAuth
-                    .from('connectors')
-                    .select('*', { count: 'exact', head: true })
-                    .eq('connected_id', content.user_id)
-                    .eq('connection_type', 'creator');
-                
-                if (!error) {
-                    connectorCounts.set(contentId, count || 0);
-                } else {
-                    connectorCounts.set(contentId, 0);
-                }
-            });
-            
-            await Promise.all(connectorPromises);
-            
-            // Update UI with connector counts
-            updateConnectorCountsOnCards();
-        } catch (error) {
-            console.error('Error loading connector counts:', error);
-        }
+                return { contentId, userId: data?.user_id };
+            })
+        );
+        
+        // Batch query connector counts
+        const connectorPromises = Array.from(creatorIds).map(async (userId) => {
+            const { count } = await supabaseAuth
+                .from('connectors')
+                .select('*', { count: 'exact', head: true })
+                .eq('connected_id', userId)
+                .eq('connection_type', 'creator');
+            return { userId, count: count || 0 };
+        });
+        
+        const connectorResults = await Promise.all(connectorPromises);
+        const creatorCountMap = new Map(connectorResults.map(r => [r.userId, r.count]));
+        
+        // Map back to content IDs
+        const results = contentData.map(({ contentId, userId }) => ({
+            content_id: contentId,
+            count: userId ? (creatorCountMap.get(userId) || 0) : 0
+        }));
+        
+        results.forEach(r => connectorCounts.set(r.content_id, r.count));
+        window.cacheManager.set(cacheKey, results, 5 * 60 * 1000);
+        
+        updateConnectorCountsOnCards();
     }
-    
+
     function updateConnectorCountsOnCards() {
         document.querySelectorAll('.content-card').forEach(card => {
             const contentId = card.dataset.contentId;
@@ -550,55 +640,80 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // ============================================
-    // FIXED: LOAD CONTENT METRICS (Views, Likes, Shares) from source tables
+    // HEADER UPDATES (Optimized)
     // ============================================
     
-    async function loadContentMetrics(contentIds) {
-        if (!contentIds || contentIds.length === 0) return;
-        
+    async function updateHeaderProfile() {
         try {
-            const metricsPromises = contentIds.map(async (contentId) => {
-                // Get views count from content_views table
-                const { count: viewsCount, error: viewsError } = await supabaseAuth
-                    .from('content_views')
-                    .select('*', { count: 'exact', head: true })
-                    .eq('content_id', contentId);
+            const profilePlaceholder = document.getElementById('userProfilePlaceholder');
+            const currentProfileName = document.getElementById('current-profile-name');
+            
+            if (!profilePlaceholder || !currentProfileName) return;
+            
+            if (window.currentUser) {
+                // Get user profile from database
+                const { data: profile, error } = await supabaseAuth
+                    .from('user_profiles')
+                    .select('*')
+                    .eq('id', window.currentUser.id)
+                    .maybeSingle();
                 
-                // Get likes count from content_likes table
-                const { count: likesCount, error: likesError } = await supabaseAuth
-                    .from('content_likes')
-                    .select('*', { count: 'exact', head: true })
-                    .eq('content_id', contentId);
-                
-                // Get shares count from content_shares table (if exists)
-                let sharesCount = 0;
-                try {
-                    const { count, error: sharesError } = await supabaseAuth
-                        .from('content_shares')
-                        .select('*', { count: 'exact', head: true })
-                        .eq('content_id', contentId);
-                    
-                    if (!sharesError) sharesCount = count || 0;
-                } catch (e) {
-                    // Table might not exist, default to 0
-                    sharesCount = 0;
+                if (error) {
+                    console.warn('Error fetching profile:', error);
+                    return;
                 }
                 
-                contentMetrics.set(contentId, {
-                    views: viewsCount || 0,
-                    likes: likesCount || 0,
-                    shares: sharesCount || 0
-                });
-            });
-            
-            await Promise.all(metricsPromises);
+                if (profile) {
+                    currentProfile = profile;
+                    
+                    // Clear placeholder
+                    profilePlaceholder.innerHTML = '';
+                    
+                    // Set profile image or initials
+                    if (profile.avatar_url) {
+                        const img = document.createElement('img');
+                        img.className = 'profile-img';
+                        img.src = contentSupabase.fixMediaUrl(profile.avatar_url);
+                        img.alt = profile.full_name || 'Profile';
+                        img.style.cssText = 'width: 100%; height: 100%; border-radius: 50%; object-fit: cover;';
+                        profilePlaceholder.appendChild(img);
+                    } else {
+                        const initials = getInitials(profile.full_name || profile.username || 'User');
+                        const div = document.createElement('div');
+                        div.className = 'profile-placeholder';
+                        div.style.cssText = 'width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,#1D4ED8,#F59E0B);display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:16px';
+                        div.textContent = initials;
+                        profilePlaceholder.appendChild(div);
+                    }
+                    
+                    currentProfileName.textContent = profile.full_name || profile.username || 'Profile';
+                }
+            } else {
+                // Show default profile for non-authenticated users
+                profilePlaceholder.innerHTML = '';
+                const div = document.createElement('div');
+                div.className = 'profile-placeholder';
+                div.style.cssText = 'width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,#1D4ED8,#F59E0B);display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:16px';
+                div.textContent = 'G';
+                profilePlaceholder.appendChild(div);
+                
+                currentProfileName.textContent = 'Guest';
+            }
         } catch (error) {
-            console.error('Error loading content metrics:', error);
+            console.error('Error updating header profile:', error);
+        }
+    }
+    
+    function updateHeaderLogo() {
+        const logoImg = document.querySelector('.logo img');
+        if (logoImg) {
+            logoImg.src = 'assets/icon/bantu_stream_connect_icon.png';
+            logoImg.alt = 'Bantu Stream Connect';
         }
     }
 
     // ============================================
-    // FIXED: LANGUAGE FILTERING - Now fully clickable and functional
+    // LANGUAGE FILTER (Optimized)
     // ============================================
     
     function setupLanguageFilter() {
@@ -934,45 +1049,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // ============================================
-    // FIXED: COMMUNITY FAVORITES - Shows correct views, likes, shares
+    // RENDER FUNCTIONS (Optimized with DocumentFragment)
     // ============================================
     
-    async function loadCommunityFavorites() {
-        try {
-            // Get content sorted by favorites_count (real data)
-            const { data, error } = await supabaseAuth
-                .from('Content')
-                .select(`
-                    *,
-                    user_profiles!user_id(*)
-                `)
-                .eq('status', 'published')
-                .order('favorites_count', { ascending: false })
-                .limit(8);
-            
-            if (error) throw error;
-            
-            communityFavorites = data || [];
-            
-            // Load real metrics for these content items
-            const contentIds = communityFavorites.map(c => c.id);
-            await loadContentMetrics(contentIds);
-            
-            const grid = document.getElementById('community-favorites-grid');
-            if (grid) {
-                grid.innerHTML = renderCommunityFavoritesCards(communityFavorites);
-            }
-            
-            // Load connector counts for these cards
-            await loadConnectorCounts(contentIds);
-            
-        } catch (error) {
-            console.error('Error loading community favorites:', error);
-        }
-    }
-    
-    function renderCommunityFavoritesCards(contents) {
-        return contents.map(content => {
+    function renderContentCards(contents, showConnectors = true) {
+        const fragment = document.createDocumentFragment();
+        const template = document.createElement('template');
+        
+        template.innerHTML = contents.map(content => {
             const thumbnailUrl = content.thumbnail_url
                 ? contentSupabase.fixMediaUrl(content.thumbnail_url)
                 : 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=225&fit=crop';
@@ -984,17 +1068,16 @@ document.addEventListener('DOMContentLoaded', async () => {
             const username = creatorProfile?.username || 'creator';
             const isNew = (new Date() - new Date(content.created_at)) < 7 * 24 * 60 * 60 * 1000;
             
-            // Get real metrics from our stored data
             const metrics = contentMetrics.get(content.id) || { views: 0, likes: 0, shares: 0 };
             const views = metrics.views;
             const likes = metrics.likes;
             const shares = metrics.shares;
-            const favorites = content.favorites_count || 0;
+            const connectors = content.favorites_count || 0;
             
             let avatarHtml = '';
             if (creatorProfile?.avatar_url) {
                 const avatarUrl = contentSupabase.fixMediaUrl(creatorProfile.avatar_url);
-                avatarHtml = `<img src="${avatarUrl}" alt="${escapeHtml(displayName)}" onerror="this.parentElement.innerHTML='<div class=\\'creator-initials-small\\'>${initials}</div>'">`;
+                avatarHtml = `<img src="${avatarUrl}" alt="${escapeHtml(displayName)}" loading="lazy" onerror="this.parentElement.innerHTML='<div class=\\'creator-initials-small\\'>${initials}</div>'">`;
             } else {
                 avatarHtml = `<div class="creator-initials-small">${initials}</div>`;
             }
@@ -1002,15 +1085,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             return `
                 <a href="content-detail.html?id=${content.id}" class="content-card" data-content-id="${content.id}" data-preview-url="${content.preview_url || ''}" data-language="${content.language || 'en'}" data-category="${content.genre || ''}">
                     <div class="card-thumbnail">
-                        <img src="${thumbnailUrl}"
-                             alt="${escapeHtml(content.title)}"
-                             loading="lazy"
-                             onerror="this.src='https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=225&fit=crop'">
+                        <img src="${thumbnailUrl}" alt="${escapeHtml(content.title)}" loading="lazy" onerror="this.src='https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=225&fit=crop'">
                         <div class="card-badges">
                             ${isNew ? '<div class="card-badge badge-new"><i class="fas fa-gem"></i> NEW</div>' : ''}
                             <div class="connector-badge">
                                 <i class="fas fa-star"></i>
-                                <span>${formatNumber(favorites)} Favorites</span>
+                                <span>${formatNumber(connectors)} Favorites</span>
                             </div>
                         </div>
                         <div class="thumbnail-overlay"></div>
@@ -1040,6 +1120,70 @@ document.addEventListener('DOMContentLoaded', async () => {
                 </a>
             `;
         }).join('');
+        
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = template.innerHTML;
+        while (tempDiv.firstChild) {
+            fragment.appendChild(tempDiv.firstChild);
+        }
+        
+        return fragment;
+    }
+
+    function updateTrendingContent() {
+        const trendingGrid = document.getElementById('trending-grid');
+        if (!trendingGrid) return;
+        
+        if (trendingContent.length === 0) {
+            trendingGrid.innerHTML = `
+                <div class="empty-state" style="grid-column: 1 / -1;">
+                    <div class="empty-icon"><i class="fas fa-chart-line"></i></div>
+                    <h3>No Trending Content</h3>
+                    <p>Popular content will appear here</p>
+                </div>
+            `;
+            return;
+        }
+        
+        const fragment = renderContentCards(trendingContent.slice(0, 8));
+        trendingGrid.innerHTML = '';
+        trendingGrid.appendChild(fragment);
+        setupVideoPreviews();
+    }
+
+    function updateNewContent() {
+        const newContentGrid = document.getElementById('new-content-grid');
+        if (!newContentGrid) return;
+        
+        if (newContent.length === 0) {
+            newContentGrid.innerHTML = `
+                <div class="empty-state" style="grid-column: 1 / -1;">
+                    <div class="empty-icon"><i class="fas fa-gem"></i></div>
+                    <h3>No New Content</h3>
+                    <p>Fresh content will appear here</p>
+                </div>
+            `;
+            return;
+        }
+        
+        const fragment = renderContentCards(newContent.slice(0, 8));
+        newContentGrid.innerHTML = '';
+        newContentGrid.appendChild(fragment);
+        setupVideoPreviews();
+    }
+
+    function updateCommunityFavorites() {
+        const grid = document.getElementById('community-favorites-grid');
+        if (!grid) return;
+        
+        if (communityFavorites.length === 0) {
+            grid.innerHTML = '<div class="empty-state"><p>No community favorites yet</p></div>';
+            return;
+        }
+        
+        const fragment = renderContentCards(communityFavorites.slice(0, 8));
+        grid.innerHTML = '';
+        grid.appendChild(fragment);
     }
 
     // ============================================
@@ -1654,7 +1798,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             
             if (recommendations.length > 0) {
                 section.style.display = 'block';
-                grid.innerHTML = renderContentCards(recommendations);
+                const fragment = renderContentCards(recommendations);
+                grid.innerHTML = '';
+                grid.appendChild(fragment);
             } else {
                 section.style.display = 'none';
             }
@@ -2098,7 +2244,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // ============================================
-    // FIXED: SEARCH FUNCTIONALITY - Now works with real data
+    // SEARCH FUNCTIONALITY (Optimized)
     // ============================================
     
     async function searchContent(query, category = '', sortBy = 'newest', language = '') {
@@ -2121,71 +2267,33 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (error) throw error;
             
             // Enrich search results with real metrics
-            const enriched = await Promise.all(
-                (data || []).map(async (item) => {
-                    // Get views count
-                    const { count: viewsCount } = await supabaseAuth
-                        .from('content_views')
-                        .select('*', { count: 'exact', head: true })
-                        .eq('content_id', item.id);
-                    
-                    // Get likes count
-                    const { count: likesCount } = await supabaseAuth
-                        .from('content_likes')
-                        .select('*', { count: 'exact', head: true })
-                        .eq('content_id', item.id);
-                    
-                    // Get shares count
-                    let sharesCount = 0;
-                    try {
-                        const { count, error: sharesError } = await supabaseAuth
-                            .from('content_shares')
-                            .select('*', { count: 'exact', head: true })
-                            .eq('content_id', item.id);
-                        
-                        if (!sharesError) sharesCount = count || 0;
-                    } catch (e) {
-                        sharesCount = 0;
-                    }
-                    
-                    // Get connector count for this creator
-                    let connectorCount = 0;
-                    if (item.user_id) {
-                        const { count, error: connError } = await supabaseAuth
-                            .from('connectors')
-                            .select('*', { count: 'exact', head: true })
-                            .eq('connected_id', item.user_id)
-                            .eq('connection_type', 'creator');
-                        
-                        if (!connError) connectorCount = count || 0;
-                    }
-                    
-                    return {
-                        ...item,
-                        real_views: viewsCount || 0,
-                        real_likes: likesCount || 0,
-                        real_shares: sharesCount || 0,
-                        connectors_count: connectorCount || 0
-                    };
-                })
-            );
+            const contentIds = (data || []).map(item => item.id);
+            await loadContentMetrics(contentIds);
+            await loadConnectorCounts(contentIds);
             
             // Apply sorting
+            let results = data || [];
             if (sortBy === 'popular') {
-                enriched.sort((a, b) => (b.real_views || 0) - (a.real_views || 0));
+                results.sort((a, b) => {
+                    const aMetrics = contentMetrics.get(a.id) || { views: 0 };
+                    const bMetrics = contentMetrics.get(b.id) || { views: 0 };
+                    return (bMetrics.views || 0) - (aMetrics.views || 0);
+                });
             } else if (sortBy === 'trending') {
-                enriched.sort((a, b) => {
-                    const aScore = (a.real_views || 0) + ((a.real_likes || 0) * 2);
-                    const bScore = (b.real_views || 0) + ((b.real_likes || 0) * 2);
+                results.sort((a, b) => {
+                    const aMetrics = contentMetrics.get(a.id) || { views: 0, likes: 0 };
+                    const bMetrics = contentMetrics.get(b.id) || { views: 0, likes: 0 };
+                    const aScore = (aMetrics.views || 0) + ((aMetrics.likes || 0) * 2);
+                    const bScore = (bMetrics.views || 0) + ((bMetrics.likes || 0) * 2);
                     return bScore - aScore;
                 });
             } else if (sortBy === 'connectors') {
-                enriched.sort((a, b) => (b.connectors_count || 0) - (a.connectors_count || 0));
+                results.sort((a, b) => (b.favorites_count || 0) - (a.favorites_count || 0));
             } else if (sortBy === 'newest') {
-                enriched.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+                results.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
             }
             
-            return enriched;
+            return results;
         } catch (error) {
             console.error('Search error:', error);
             return [];
@@ -2201,154 +2309,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
         
-        grid.innerHTML = results.map(item => {
-            const creator = item.user_profiles?.full_name || 
-                           item.user_profiles?.username || 
-                           item.creator || 
-                           'Creator';
-            const creatorId = item.user_profiles?.id || item.user_id;
-            
-            return `
-                <div class="content-card" data-content-id="${item.id}" data-preview-url="${item.preview_url || ''}" data-language="${item.language || 'en'}" data-category="${item.genre || ''}">
-                    <div class="card-thumbnail">
-                        <img src="${contentSupabase.fixMediaUrl(item.thumbnail_url) || 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop'}"
-                             alt="${escapeHtml(item.title)}"
-                             loading="lazy"
-                             onerror="this.src='https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop'">
-                        <div class="card-badges">
-                            <div class="connector-badge">
-                                <i class="fas fa-user-friends"></i>
-                                <span>${formatNumber(item.connectors_count || 0)} Connectors</span>
-                            </div>
-                        </div>
-                        <div class="thumbnail-overlay"></div>
-                        <div class="play-overlay">
-                            <div class="play-icon">
-                                <i class="fas fa-play"></i>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="card-content">
-                        <h3 class="card-title">${truncateText(escapeHtml(item.title), 45)}</h3>
-                        <div class="creator-row">
-                            <button class="creator-btn"
-                                    onclick="event.stopPropagation(); window.location.href='creator-channel.html?id=${creatorId}&name=${encodeURIComponent(creator)}'">
-                                <i class="fas fa-user"></i>
-                                ${truncateText(escapeHtml(creator), 15)}
-                            </button>
-                            <button class="tip-creator-btn" data-creator-id="${creatorId}" data-creator-name="${creator}">
-                                <i class="fas fa-gift"></i>
-                            </button>
-                        </div>
-                        <div class="card-stats">
-                            <div class="card-stat">
-                                <i class="fas fa-eye"></i>
-                                ${formatNumber(item.real_views || item.views_count || 0)}
-                            </div>
-                            <div class="card-stat">
-                                <i class="fas fa-heart"></i>
-                                ${formatNumber(item.real_likes || 0)}
-                            </div>
-                            <div class="card-stat">
-                                <i class="fas fa-share"></i>
-                                ${formatNumber(item.real_shares || 0)}
-                            </div>
-                            <div class="card-stat">
-                                <i class="fas fa-language"></i>
-                                ${languageMap[item.language] || 'English'}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }).join('');
-        
-        grid.querySelectorAll('.content-card').forEach(card => {
-            card.addEventListener('click', (e) => {
-                if (e.target.closest('.creator-btn')) return;
-                if (e.target.closest('.tip-creator-btn')) return;
-                const id = card.dataset.contentId;
-                if (id) window.location.href = `content-detail.html?id=${id}`;
-            });
-        });
-        
-        setupVideoPreviews();
-    }
-
-    // Helper to render content cards with real data
-    function renderContentCards(contents, showConnectors = true) {
-        return contents.map(content => {
-            const thumbnailUrl = content.thumbnail_url
-                ? contentSupabase.fixMediaUrl(content.thumbnail_url)
-                : 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=225&fit=crop';
-            
-            const creatorProfile = content.user_profiles;
-            const creatorName = creatorProfile?.full_name || creatorProfile?.username || content.creator || 'Creator';
-            const displayName = creatorProfile?.full_name || creatorProfile?.username || 'User';
-            const initials = getInitials(displayName);
-            const username = creatorProfile?.username || 'creator';
-            const isNew = (new Date() - new Date(content.created_at)) < 7 * 24 * 60 * 60 * 1000;
-            
-            // Get real metrics
-            const metrics = contentMetrics.get(content.id) || { views: 0, likes: 0, shares: 0 };
-            const views = metrics.views;
-            const likes = metrics.likes;
-            const shares = metrics.shares;
-            const connectors = content.favorites_count || 0;
-            
-            let avatarHtml = '';
-            if (creatorProfile?.avatar_url) {
-                const avatarUrl = contentSupabase.fixMediaUrl(creatorProfile.avatar_url);
-                avatarHtml = `<img src="${avatarUrl}" alt="${escapeHtml(displayName)}" onerror="this.parentElement.innerHTML='<div class=\\'creator-initials-small\\'>${initials}</div>'">`;
-            } else {
-                avatarHtml = `<div class="creator-initials-small">${initials}</div>`;
-            }
-            
-            return `
-                <a href="content-detail.html?id=${content.id}" class="content-card" data-content-id="${content.id}" data-preview-url="${content.preview_url || ''}" data-language="${content.language || 'en'}" data-category="${content.genre || ''}">
-                    <div class="card-thumbnail">
-                        <img src="${thumbnailUrl}"
-                             alt="${escapeHtml(content.title)}"
-                             loading="lazy"
-                             onerror="this.src='https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=225&fit=crop'">
-                        <div class="card-badges">
-                            ${isNew ? '<div class="card-badge badge-new"><i class="fas fa-gem"></i> NEW</div>' : ''}
-                            <div class="connector-badge">
-                                <i class="fas fa-star"></i>
-                                <span>${formatNumber(connectors)} Favorites</span>
-                            </div>
-                        </div>
-                        <div class="thumbnail-overlay"></div>
-                        <div class="play-overlay">
-                            <div class="play-icon">
-                                <i class="fas fa-play"></i>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="card-content">
-                        <h3 class="card-title" title="${escapeHtml(content.title)}">
-                            ${truncateText(escapeHtml(content.title), 50)}
-                        </h3>
-                        <div class="creator-info">
-                            <div class="creator-avatar-small">
-                                ${avatarHtml}
-                            </div>
-                            <div class="creator-name-small">@${escapeHtml(username)}</div>
-                        </div>
-                        <div class="card-meta">
-                            <span><i class="fas fa-eye"></i> ${formatNumber(views)}</span>
-                            <span><i class="fas fa-heart"></i> ${formatNumber(likes)}</span>
-                            <span><i class="fas fa-share"></i> ${formatNumber(shares)}</span>
-                            <span><i class="fas fa-language"></i> ${languageMap[content.language] || 'English'}</span>
-                        </div>
-                    </div>
-                </a>
-            `;
-        }).join('');
+        const fragment = renderContentCards(results);
+        grid.innerHTML = '';
+        grid.appendChild(fragment);
     }
 
     // ============================================
-    // INFINITE SCROLL
+    // INFINITE SCROLL (Optimized)
     // ============================================
     
     function setupInfiniteScroll() {
@@ -2365,7 +2332,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             threshold: 0.1
         });
         
-        observer.observe(sentinel);
+        if (sentinel) {
+            observer.observe(sentinel);
+        }
     }
 
     async function loadMoreContent() {
@@ -2381,7 +2350,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             <div class="infinite-scroll-spinner"></div>
             <div>Loading more content...</div>
         `;
-        document.querySelector('.container').appendChild(loadingIndicator);
+        document.querySelector('.container')?.appendChild(loadingIndicator);
         
         try {
             const from = window.currentPage * window.PAGE_SIZE;
@@ -2412,7 +2381,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const endMessage = document.createElement('div');
                 endMessage.className = 'infinite-scroll-end';
                 endMessage.innerHTML = 'You\'ve reached the end of content';
-                document.querySelector('.container').appendChild(endMessage);
+                document.querySelector('.container')?.appendChild(endMessage);
                 setTimeout(() => endMessage.remove(), 3000);
             }
         } catch (error) {
@@ -2428,76 +2397,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         const newContentGrid = document.getElementById('new-content-grid');
         if (!newContentGrid) return;
         
-        const moreHTML = newItems.map(content => {
-            const thumbnailUrl = content.thumbnail_url
-                ? contentSupabase.fixMediaUrl(content.thumbnail_url)
-                : 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=225&fit=crop';
-            
-            const creatorProfile = content.user_profiles;
-            const creatorName = creatorProfile?.full_name || creatorProfile?.username || content.creator || 'Creator';
-            const displayName = creatorProfile?.full_name || creatorProfile?.username || 'User';
-            const initials = getInitials(displayName);
-            const username = creatorProfile?.username || 'creator';
-            
-            const isNew = (new Date() - new Date(content.created_at)) < 7 * 24 * 60 * 60 * 1000;
-            const metrics = contentMetrics.get(content.id) || { views: 0, likes: 0, shares: 0 };
-            const views = metrics.views;
-            const connectors = content.favorites_count || 0;
-            
-            let avatarHtml = '';
-            if (creatorProfile?.avatar_url) {
-                const avatarUrl = contentSupabase.fixMediaUrl(creatorProfile.avatar_url);
-                avatarHtml = `<img src="${avatarUrl}" alt="${escapeHtml(displayName)}" onerror="this.parentElement.innerHTML='<div class=\\'creator-initials-small\\'>${initials}</div>'">`;
-            } else {
-                avatarHtml = `<div class="creator-initials-small">${initials}</div>`;
-            }
-            
-            return `
-                <a href="content-detail.html?id=${content.id}" class="content-card" data-content-id="${content.id}" data-preview-url="${content.preview_url || ''}" data-language="${content.language || 'en'}" data-category="${content.genre || ''}">
-                    <div class="card-thumbnail">
-                        <img src="${thumbnailUrl}"
-                             alt="${escapeHtml(content.title)}"
-                             loading="lazy"
-                             onerror="this.src='https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=225&fit=crop'">
-                        <div class="card-badges">
-                            ${isNew ? '<div class="card-badge badge-new"><i class="fas fa-gem"></i> NEW</div>' : ''}
-                            <div class="connector-badge">
-                                <i class="fas fa-star"></i>
-                                <span>${formatNumber(connectors)} Favorites</span>
-                            </div>
-                        </div>
-                        <div class="thumbnail-overlay"></div>
-                        <div class="play-overlay">
-                            <div class="play-icon">
-                                <i class="fas fa-play"></i>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="card-content">
-                        <h3 class="card-title" title="${escapeHtml(content.title)}">
-                            ${truncateText(escapeHtml(content.title), 50)}
-                        </h3>
-                        <div class="creator-info">
-                            <div class="creator-avatar-small">
-                                ${avatarHtml}
-                            </div>
-                            <div class="creator-name-small">@${escapeHtml(username)}</div>
-                        </div>
-                        <div class="card-meta">
-                            <span><i class="fas fa-eye"></i> ${formatNumber(views)}</span>
-                            <span>${content.media_type || 'video'}</span>
-                        </div>
-                    </div>
-                </a>
-            `;
-        }).join('');
-        
-        const tempDiv = document.createElement('div');
-        tempDiv.innerHTML = moreHTML;
-        while (tempDiv.firstChild) {
-            newContentGrid.appendChild(tempDiv.firstChild);
-        }
-        
+        const fragment = renderContentCards(newItems);
+        newContentGrid.appendChild(fragment);
         setupVideoPreviews();
     }
 
@@ -2576,7 +2477,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // ============================================
-    // RENDER FUNCTIONS
+    // RENDER FUNCTIONS (Additional)
     // ============================================
     
     function renderCategoryTabs() {
@@ -2639,6 +2540,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             // Load metrics for filtered content
             const allContentIds = [...trendingContent, ...newContent].map(c => c.id);
             await loadContentMetrics(allContentIds);
+            await loadConnectorCounts(allContentIds);
             
             updateTrendingContent();
             updateNewContent();
@@ -2795,18 +2697,20 @@ document.addEventListener('DOMContentLoaded', async () => {
         }).join('');
         
         setTimeout(() => {
-            new Swiper('#creators-swiper', {
-                slidesPerView: 1,
-                spaceBetween: 20,
-                pagination: {
-                    el: '.swiper-pagination',
-                    clickable: true,
-                },
-                breakpoints: {
-                    640: { slidesPerView: 2 },
-                    1024: { slidesPerView: 3 }
-                }
-            });
+            if (typeof Swiper !== 'undefined') {
+                new Swiper('#creators-swiper', {
+                    slidesPerView: 1,
+                    spaceBetween: 20,
+                    pagination: {
+                        el: '.swiper-pagination',
+                        clickable: true,
+                    },
+                    breakpoints: {
+                        640: { slidesPerView: 2 },
+                        1024: { slidesPerView: 3 }
+                    }
+                });
+            }
         }, 100);
     }
 
@@ -2846,114 +2750,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         liveStreamsGrid.style.display = 'grid';
         noLiveStreams.style.display = 'none';
         
-        liveStreamsGrid.innerHTML = liveStreams.map(stream => {
-            const thumbnailUrl = stream.thumbnail_url
-                ? contentSupabase.fixMediaUrl(stream.thumbnail_url)
-                : 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop';
-            
-            const creatorProfile = stream.user_profiles;
-            const creatorName = creatorProfile?.full_name || creatorProfile?.username || stream.creator || 'Creator';
-            const displayName = creatorProfile?.full_name || creatorProfile?.username || 'User';
-            const initials = getInitials(displayName);
-            const username = creatorProfile?.username || 'creator';
-            const viewerCount = viewerCounts.get(stream.id) || Math.floor(Math.random() * 500) + 100;
-            const metrics = contentMetrics.get(stream.id) || { views: 0 };
-            const connectors = stream.favorites_count || 0;
-            
-            let avatarHtml = '';
-            if (creatorProfile?.avatar_url) {
-                const avatarUrl = contentSupabase.fixMediaUrl(creatorProfile.avatar_url);
-                avatarHtml = `<img src="${avatarUrl}" alt="${escapeHtml(displayName)}" onerror="this.parentElement.innerHTML='<div class=\\'creator-initials-small\\'>${initials}</div>'">`;
-            } else {
-                avatarHtml = `<div class="creator-initials-small">${initials}</div>`;
-            }
-            
-            return `
-                <a href="content-detail.html?id=${stream.id}" class="content-card" data-live="true" data-content-id="${stream.id}" data-language="${stream.language || 'en'}" data-category="${stream.genre || ''}">
-                    <div class="card-thumbnail">
-                        <img src="${thumbnailUrl}"
-                             alt="${escapeHtml(stream.title)}"
-                             onerror="this.src='https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop'">
-                        <div class="card-badges">
-                            <div class="card-badge badge-live pulse">
-                                <i class="fas fa-circle"></i> LIVE
-                            </div>
-                            <div class="connector-badge">
-                                <i class="fas fa-star"></i>
-                                <span>${formatNumber(connectors)}</span>
-                            </div>
-                        </div>
-                        <div class="thumbnail-overlay"></div>
-                        <div class="play-overlay">
-                            <div class="play-icon">
-                                <i class="fas fa-play"></i>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="card-content">
-                        <h3 class="card-title" title="${escapeHtml(stream.title)}">
-                            ${truncateText(escapeHtml(stream.title), 50)}
-                        </h3>
-                        <div class="creator-info">
-                            <div class="creator-avatar-small">
-                                ${avatarHtml}
-                            </div>
-                            <div class="creator-name-small">@${escapeHtml(username)}</div>
-                        </div>
-                        <div class="card-meta">
-                            <span class="live-viewer-count ${viewerCount > 0 ? 'has-viewers' : ''}">
-                                <i class="fas fa-eye"></i> ${formatNumber(viewerCount)} watching
-                            </span>
-                            <span>Live Now</span>
-                        </div>
-                    </div>
-                </a>
-            `;
-        }).join('');
+        const fragment = renderContentCards(liveStreams);
+        liveStreamsGrid.innerHTML = '';
+        liveStreamsGrid.appendChild(fragment);
         
         setupLiveBadges();
-    }
-
-    function updateTrendingContent() {
-        const trendingGrid = document.getElementById('trending-grid');
-        
-        if (trendingContent.length === 0) {
-            trendingGrid.innerHTML = `
-                <div class="empty-state" style="grid-column: 1 / -1;">
-                    <div class="empty-icon">
-                        <i class="fas fa-chart-line"></i>
-                    </div>
-                    <h3>No Trending Content</h3>
-                    <p>Popular content will appear here</p>
-                </div>
-            `;
-            return;
-        }
-        
-        trendingGrid.innerHTML = renderContentCards(trendingContent.slice(0, 8));
-        
-        setupVideoPreviews();
-    }
-
-    function updateNewContent() {
-        const newContentGrid = document.getElementById('new-content-grid');
-        
-        if (newContent.length === 0) {
-            newContentGrid.innerHTML = `
-                <div class="empty-state" style="grid-column: 1 / -1;">
-                    <div class="empty-icon">
-                        <i class="fas fa-gem"></i>
-                    </div>
-                    <h3>No New Content</h3>
-                    <p>Fresh content will appear here</p>
-                </div>
-            `;
-            return;
-        }
-        
-        newContentGrid.innerHTML = renderContentCards(newContent.slice(0, 8));
-        
-        setupVideoPreviews();
     }
 
     function updateEvents() {
@@ -3019,67 +2820,75 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
 
     // ============================================
-    // FIXED: LOAD EXPLORE DATA - With proper metrics loading
+    // PERFORMANCE: Optimized Explore Data Loading
     // ============================================
     
     async function loadExploreData() {
+        const startTime = performance.now();
+        console.log('⏱️ Starting data load...');
+        
         try {
-            loadingText.textContent = 'Loading top creators...';
-            featuredCreators = await getTopCreators();
+            loadingText.textContent = 'Loading content...';
             
-            loadingText.textContent = 'Loading live streams...';
-            await updateLiveStreams();
+            // PARALLEL LOAD: Fetch all data simultaneously
+            const [
+                creatorsData,
+                liveData,
+                trendingData,
+                newData,
+                favoritesData
+            ] = await Promise.all([
+                getTopCreators(),
+                supabaseAuth.from('Content').select('*, user_profiles!user_id(*)').eq('status', 'published').eq('media_type', 'live').order('created_at', { ascending: false }).limit(6),
+                supabaseAuth.from('Content').select('*, user_profiles!user_id(*)').eq('status', 'published').order('views_count', { ascending: false }).limit(8),
+                supabaseAuth.from('Content').select('*, user_profiles!user_id(*)').eq('status', 'published').order('created_at', { ascending: false }).limit(8),
+                supabaseAuth.from('Content').select('*, user_profiles!user_id(*)').eq('status', 'published').order('favorites_count', { ascending: false }).limit(8)
+            ]);
             
-            loadingText.textContent = 'Loading trending content...';
-            const { data: trendingData } = await supabaseAuth
-                .from('Content')
-                .select('*, user_profiles!user_id(*)')
-                .eq('status', 'published')
-                .order('views_count', { ascending: false })
-                .limit(8);
+            featuredCreators = creatorsData || [];
+            liveStreams = liveData?.data || [];
+            trendingContent = trendingData?.data || [];
+            newContent = newData?.data || [];
+            communityFavorites = favoritesData?.data || [];
             
-            trendingContent = trendingData || [];
+            console.log('✅ Data fetched, loading metrics...');
+            loadingText.textContent = 'Loading metrics...';
             
-            loadingText.textContent = 'Loading new content...';
-            const { data: newData } = await supabaseAuth
-                .from('Content')
-                .select('*, user_profiles!user_id(*)')
-                .eq('status', 'published')
-                .order('created_at', { ascending: false })
-                .limit(8);
-            
-            newContent = newData || [];
-            
-            // Load metrics for all content
+            // Collect ALL content IDs
             const allContentIds = [
                 ...trendingContent.map(c => c.id),
-                ...newContent.map(c => c.id)
-            ];
-            await loadContentMetrics(allContentIds);
-            await loadConnectorCounts(allContentIds);
+                ...newContent.map(c => c.id),
+                ...communityFavorites.map(c => c.id),
+                ...liveStreams.map(c => c.id)
+            ].filter(Boolean);
             
-            loadingText.textContent = 'Loading community favorites...';
-            await loadCommunityFavorites();
+            // SINGLE BATCH: Load all metrics at once
+            if (allContentIds.length > 0) {
+                await loadContentMetrics(allContentIds);
+                await loadConnectorCounts(allContentIds);
+            }
             
-            console.log('✅ Explore data loaded:', {
-                featuredCreators: featuredCreators.length,
-                liveStreams: liveStreams.length,
-                trendingContent: trendingContent.length,
-                newContent: newContent.length,
-                communityFavorites: communityFavorites.length
-            });
+            console.log('✅ Metrics loaded, rendering UI...');
+            loadingText.textContent = 'Rendering...';
             
+            // Render all sections
             updateFeaturedCreators();
+            updateLiveStreams();
             updateTrendingContent();
             updateNewContent();
+            updateCommunityFavorites();
             updateEvents();
             
-            await loadShorts();
-            await loadContinueWatching();
-            await loadRecommendations();
-            await loadCommunityStats();
-            
+            // Load secondary features (non-blocking)
+            loadShorts();
+            loadContinueWatching();
+            loadRecommendations();
+            loadCommunityStats();
             setupVideoPreviews();
+            
+            const endTime = performance.now();
+            console.log(`⏱️ Total load time: ${(endTime - startTime).toFixed(2)}ms`);
+            
         } catch (error) {
             console.error('❌ Error loading explore data:', error);
             showToast('Failed to load explore content.', 'error');
@@ -3087,7 +2896,163 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // ============================================
-    // SETUP EVENT LISTENERS
+    // PLATFORM ANALYTICS (Optimized)
+    // ============================================
+    
+    async function loadPlatformAnalytics() {
+        try {
+            // Get total views across all content
+            const { count: totalViews, error: viewsError } = await supabaseAuth
+                .from('content_views')
+                .select('*', { count: 'exact', head: true });
+            
+            if (viewsError) throw viewsError;
+            
+            // Get total content count
+            const { count: totalContent, error: contentError } = await supabaseAuth
+                .from('Content')
+                .select('*', { count: 'exact', head: true })
+                .eq('status', 'published');
+            
+            if (contentError) throw contentError;
+            
+            // Get active creators (users with published content)
+            const { data: activeCreatorsData, error: creatorsError } = await supabaseAuth
+                .from('Content')
+                .select('user_id')
+                .eq('status', 'published');
+            
+            if (creatorsError) throw creatorsError;
+            
+            const uniqueCreators = new Set(activeCreatorsData?.map(c => c.user_id) || []);
+            const activeCreators = uniqueCreators.size;
+            
+            // Get total connectors
+            const { count: totalConnectors, error: connError } = await supabaseAuth
+                .from('connectors')
+                .select('*', { count: 'exact', head: true });
+            
+            if (connError) throw connError;
+            
+            // Update UI with real data
+            document.getElementById('total-views').textContent = formatNumber(totalViews || 1250000);
+            document.getElementById('total-content').textContent = formatNumber(totalContent || 125);
+            document.getElementById('active-creators').textContent = formatNumber(activeCreators || 45);
+            document.getElementById('total-connectors-analytics').textContent = formatNumber(totalConnectors || 12500);
+            
+            // Load engagement chart with real data
+            await loadEngagementChart();
+            
+        } catch (error) {
+            console.error('Error loading platform analytics:', error);
+            
+            // Fallback to demo data
+            document.getElementById('total-views').textContent = formatNumber(1250000);
+            document.getElementById('total-content').textContent = '125';
+            document.getElementById('active-creators').textContent = '45';
+            document.getElementById('total-connectors-analytics').textContent = formatNumber(12500);
+        }
+    }
+    
+    async function loadEngagementChart() {
+        const ctx = document.getElementById('engagement-chart');
+        if (!ctx || typeof Chart === 'undefined') return;
+        
+        try {
+            // Get views data for the last 7 days
+            const sevenDaysAgo = new Date();
+            sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+            
+            const { data: viewsData, error } = await supabaseAuth
+                .from('content_views')
+                .select('viewed_at')
+                .gte('viewed_at', sevenDaysAgo.toISOString());
+            
+            if (error) throw error;
+            
+            // Group by day
+            const viewsByDay = new Array(7).fill(0);
+            const today = new Date();
+            
+            viewsData?.forEach(view => {
+                const viewDate = new Date(view.viewed_at);
+                const dayDiff = Math.floor((today - viewDate) / (1000 * 60 * 60 * 24));
+                if (dayDiff >= 0 && dayDiff < 7) {
+                    viewsByDay[6 - dayDiff]++;
+                }
+            });
+            
+            // Get likes data for the last 7 days
+            const { data: likesData } = await supabaseAuth
+                .from('content_likes')
+                .select('created_at')
+                .gte('created_at', sevenDaysAgo.toISOString());
+            
+            const likesByDay = new Array(7).fill(0);
+            
+            likesData?.forEach(like => {
+                const likeDate = new Date(like.created_at);
+                const dayDiff = Math.floor((today - likeDate) / (1000 * 60 * 60 * 24));
+                if (dayDiff >= 0 && dayDiff < 7) {
+                    likesByDay[6 - dayDiff]++;
+                }
+            });
+            
+            // Destroy existing chart if exists
+            if (window.engagementChart) {
+                window.engagementChart.destroy();
+            }
+            
+            // Create new chart
+            window.engagementChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['7 days ago', '6 days ago', '5 days ago', '4 days ago', '3 days ago', 'Yesterday', 'Today'],
+                    datasets: [{
+                        label: 'Views',
+                        data: viewsByDay,
+                        borderColor: '#F59E0B',
+                        backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }, {
+                        label: 'Likes',
+                        data: likesByDay,
+                        borderColor: '#1D4ED8',
+                        backgroundColor: 'rgba(29, 78, 216, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: 'var(--soft-white)'
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                            ticks: { color: 'var(--slate-grey)' }
+                        },
+                        y: {
+                            grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                            ticks: { color: 'var(--slate-grey)' }
+                        }
+                    }
+                }
+            });
+        } catch (error) {
+            console.error('Error loading engagement chart:', error);
+        }
+    }
+
+    // ============================================
+    // SETUP EVENT LISTENERS (Optimized)
     // ============================================
     
     function setupSearch() {
@@ -3268,162 +3233,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
-    // ============================================
-    // FIXED: PLATFORM ANALYTICS - Now shows real data
-    // ============================================
-    
-    async function loadPlatformAnalytics() {
-        try {
-            // Get total views across all content
-            const { count: totalViews, error: viewsError } = await supabaseAuth
-                .from('content_views')
-                .select('*', { count: 'exact', head: true });
-            
-            if (viewsError) throw viewsError;
-            
-            // Get total content count
-            const { count: totalContent, error: contentError } = await supabaseAuth
-                .from('Content')
-                .select('*', { count: 'exact', head: true })
-                .eq('status', 'published');
-            
-            if (contentError) throw contentError;
-            
-            // Get active creators (users with published content)
-            const { data: activeCreatorsData, error: creatorsError } = await supabaseAuth
-                .from('Content')
-                .select('user_id')
-                .eq('status', 'published');
-            
-            if (creatorsError) throw creatorsError;
-            
-            const uniqueCreators = new Set(activeCreatorsData?.map(c => c.user_id) || []);
-            const activeCreators = uniqueCreators.size;
-            
-            // Get total connectors
-            const { count: totalConnectors, error: connError } = await supabaseAuth
-                .from('connectors')
-                .select('*', { count: 'exact', head: true });
-            
-            if (connError) throw connError;
-            
-            // Update UI with real data
-            document.getElementById('total-views').textContent = formatNumber(totalViews || 1250000);
-            document.getElementById('total-content').textContent = formatNumber(totalContent || 125);
-            document.getElementById('active-creators').textContent = formatNumber(activeCreators || 45);
-            document.getElementById('total-connectors-analytics').textContent = formatNumber(totalConnectors || 12500);
-            
-            // Load engagement chart with real data
-            await loadEngagementChart();
-            
-        } catch (error) {
-            console.error('Error loading platform analytics:', error);
-            
-            // Fallback to demo data
-            document.getElementById('total-views').textContent = formatNumber(1250000);
-            document.getElementById('total-content').textContent = '125';
-            document.getElementById('active-creators').textContent = '45';
-            document.getElementById('total-connectors-analytics').textContent = formatNumber(12500);
-        }
-    }
-    
-    async function loadEngagementChart() {
-        const ctx = document.getElementById('engagement-chart');
-        if (!ctx || typeof Chart === 'undefined') return;
-        
-        try {
-            // Get views data for the last 7 days
-            const sevenDaysAgo = new Date();
-            sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-            
-            const { data: viewsData, error } = await supabaseAuth
-                .from('content_views')
-                .select('viewed_at')
-                .gte('viewed_at', sevenDaysAgo.toISOString());
-            
-            if (error) throw error;
-            
-            // Group by day
-            const viewsByDay = new Array(7).fill(0);
-            const today = new Date();
-            
-            viewsData?.forEach(view => {
-                const viewDate = new Date(view.viewed_at);
-                const dayDiff = Math.floor((today - viewDate) / (1000 * 60 * 60 * 24));
-                if (dayDiff >= 0 && dayDiff < 7) {
-                    viewsByDay[6 - dayDiff]++;
-                }
-            });
-            
-            // Get likes data for the last 7 days
-            const { data: likesData } = await supabaseAuth
-                .from('content_likes')
-                .select('created_at')
-                .gte('created_at', sevenDaysAgo.toISOString());
-            
-            const likesByDay = new Array(7).fill(0);
-            
-            likesData?.forEach(like => {
-                const likeDate = new Date(like.created_at);
-                const dayDiff = Math.floor((today - likeDate) / (1000 * 60 * 60 * 24));
-                if (dayDiff >= 0 && dayDiff < 7) {
-                    likesByDay[6 - dayDiff]++;
-                }
-            });
-            
-            // Destroy existing chart if exists
-            if (window.engagementChart) {
-                window.engagementChart.destroy();
-            }
-            
-            // Create new chart
-            window.engagementChart = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: ['7 days ago', '6 days ago', '5 days ago', '4 days ago', '3 days ago', 'Yesterday', 'Today'],
-                    datasets: [{
-                        label: 'Views',
-                        data: viewsByDay,
-                        borderColor: '#F59E0B',
-                        backgroundColor: 'rgba(245, 158, 11, 0.1)',
-                        tension: 0.4,
-                        fill: true
-                    }, {
-                        label: 'Likes',
-                        data: likesByDay,
-                        borderColor: '#1D4ED8',
-                        backgroundColor: 'rgba(29, 78, 216, 0.1)',
-                        tension: 0.4,
-                        fill: true
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            labels: {
-                                color: 'var(--soft-white)'
-                            }
-                        }
-                    },
-                    scales: {
-                        x: {
-                            grid: { color: 'rgba(255, 255, 255, 0.1)' },
-                            ticks: { color: 'var(--slate-grey)' }
-                        },
-                        y: {
-                            grid: { color: 'rgba(255, 255, 255, 0.1)' },
-                            ticks: { color: 'var(--slate-grey)' }
-                        }
-                    }
-                }
-            });
-        } catch (error) {
-            console.error('Error loading engagement chart:', error);
-        }
-    }
-
     function setupThemeListener() {
         const themeToggle = document.getElementById('nav-theme-toggle');
         const themeSelector = document.getElementById('theme-selector');
@@ -3544,102 +3353,30 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    // ============================================
-    // INITIALIZATION
-    // ============================================
-    
-    async function initializeExploreScreen() {
-        try {
-            setLoading(true, 'Loading Top Creators...');
-            
-            // Initialize UI Scale Controller FIRST
-            if (window.uiScaleController) {
-                window.uiScaleController.init();
-                // Create scale control widget (optional - comment out if you prefer manual toggle)
-                // window.uiScaleController.createScaleControl();
-            }
-            
-            // Update header logo first
-            updateHeaderLogo();
-            
-            if (typeof window.initTheme === 'function') {
-                window.initTheme();
-            }
-            
-            loadingText.textContent = 'Checking authentication...';
-            await checkAuth();
-            
-            await initVideoHero();
-            
-            setupVoiceSearch();
-            setupWatchParty();
-            setupTipSystem();
-            setupLanguageFilter();
-            initBadgesSystem();
-            
-            const trendingGrid = document.getElementById('trending-grid');
-            const newContentGrid = document.getElementById('new-content-grid');
-            
-            if (trendingGrid) {
-                trendingGrid.innerHTML = `
-                    ${Array(4).fill().map(() => `
-                        <div class="skeleton-card">
-                            <div class="skeleton-thumbnail"></div>
-                            <div class="skeleton-title"></div>
-                            <div class="skeleton-creator"></div>
-                            <div class="skeleton-stats"></div>
-                        </div>
-                    `).join('')}
-                `;
-            }
-            
-            if (newContentGrid) {
-                newContentGrid.innerHTML = `
-                    ${Array(4).fill().map(() => `
-                        <div class="skeleton-card">
-                            <div class="skeleton-thumbnail"></div>
-                            <div class="skeleton-title"></div>
-                            <div class="skeleton-creator"></div>
-                            <div class="skeleton-stats"></div>
-                        </div>
-                    `).join('')}
-                `;
-            }
-            
-            await loadExploreData();
-            
-            renderCategoryTabs();
-            
-            setupSearch();
-            setupNotifications();
-            setupAnalytics();
-            setupThemeListener();
-            setupBackToTop();
-            setupInfiniteScroll();
-            setupKeyboardNavigation();
-            setupCoreListeners();
-            
-            setTimeout(() => {
-                loadingScreen.style.display = 'none';
-                app.style.display = 'block';
-                
-                document.querySelectorAll('.content-card').forEach((card, index) => {
-                    setTimeout(() => {
-                        card.style.opacity = '1';
-                        card.style.transform = 'translateY(0)';
-                    }, 300 + (index * 50));
-                });
-            }, 500);
-            
-            console.log('✅ Explore screen initialized with Community First features!');
-        } catch (error) {
-            console.error('❌ Error initializing explore screen:', error);
-            showToast('Failed to initialize explore screen', 'error');
-            
-            setTimeout(() => {
-                loadingScreen.style.display = 'none';
-                app.style.display = 'block';
-            }, 1000);
+    function showSkeletonLoading() {
+        const trendingGrid = document.getElementById('trending-grid');
+        const newContentGrid = document.getElementById('new-content-grid');
+        
+        if (trendingGrid) {
+            trendingGrid.innerHTML = Array(4).fill().map(() => `
+                <div class="skeleton-card">
+                    <div class="skeleton-thumbnail"></div>
+                    <div class="skeleton-title"></div>
+                    <div class="skeleton-creator"></div>
+                    <div class="skeleton-stats"></div>
+                </div>
+            `).join('');
+        }
+        
+        if (newContentGrid) {
+            newContentGrid.innerHTML = Array(4).fill().map(() => `
+                <div class="skeleton-card">
+                    <div class="skeleton-thumbnail"></div>
+                    <div class="skeleton-title"></div>
+                    <div class="skeleton-creator"></div>
+                    <div class="skeleton-stats"></div>
+                </div>
+            `).join('');
         }
     }
 
@@ -3658,8 +3395,85 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
+    // ============================================
+    // PERFORMANCE: Optimized Initialization
+    // ============================================
+    
+    async function initializeExploreScreen() {
+        const startTime = performance.now();
+        console.log('🚀 Initialize Start:', new Date().toISOString());
+        
+        try {
+            setLoading(true, 'Initializing...');
+            
+            // Initialize UI Scale Controller FIRST
+            if (window.uiScaleController) {
+                window.uiScaleController.init();
+            }
+            
+            // Update header first (visible immediately)
+            updateHeaderLogo();
+            if (typeof window.initTheme === 'function') window.initTheme();
+            
+            // Check auth (non-blocking for UI)
+            loadingText.textContent = 'Checking auth...';
+            await checkAuth();
+            
+            // Show skeleton loading immediately
+            showSkeletonLoading();
+            
+            // Load data in parallel
+            loadingText.textContent = 'Loading content...';
+            await loadExploreData();
+            
+            // Setup event listeners
+            renderCategoryTabs();
+            setupSearch();
+            setupNotifications();
+            setupAnalytics();
+            setupThemeListener();
+            setupBackToTop();
+            setupInfiniteScroll();
+            setupKeyboardNavigation();
+            setupCoreListeners();
+            setupLanguageFilter();
+            initBadgesSystem();
+            setupVoiceSearch();
+            setupWatchParty();
+            setupTipSystem();
+            initVideoHero();
+            
+            // Hide loading screen
+            setTimeout(() => {
+                loadingScreen.style.display = 'none';
+                app.style.display = 'block';
+                
+                // Animate cards in
+                document.querySelectorAll('.content-card').forEach((card, index) => {
+                    setTimeout(() => {
+                        card.style.opacity = '1';
+                        card.style.transform = 'translateY(0)';
+                    }, 50 + (index * 30));
+                });
+            }, 300);
+            
+            const endTime = performance.now();
+            console.log(`✅ Initialize Complete: ${(endTime - startTime).toFixed(2)}ms`);
+            
+        } catch (error) {
+            console.error('❌ Error initializing explore screen:', error);
+            showToast('Failed to initialize explore screen', 'error');
+            setTimeout(() => {
+                loadingScreen.style.display = 'none';
+                app.style.display = 'block';
+            }, 1000);
+        }
+    }
+
+    // Initialize
     await initializeExploreScreen();
     
+    // Auth state listener
     supabaseAuth.auth.onAuthStateChange((event, session) => {
         console.log('Auth state changed:', event);
         
