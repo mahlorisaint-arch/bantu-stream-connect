@@ -13,6 +13,9 @@
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
+    <!-- Chart.js for analytics -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    
     <!-- Supabase JS SDK -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
@@ -387,6 +390,9 @@
                 <div class="nav-icon" id="nav-theme-toggle" title="Change Theme">
                     <i class="fas fa-palette"></i>
                 </div>
+                <div class="nav-icon" id="nav-scale-toggle" title="Adjust UI Size">
+                    <i class="fas fa-text-height"></i>
+                </div>
                 <div class="nav-icon" id="nav-create-btn" title="Create Content">
                     <i class="fas fa-plus-circle"></i>
                 </div>
@@ -454,7 +460,7 @@
                     </div>
                 </div>
                 <div class="charts-container">
-                    <!-- Charts would be rendered here dynamically -->
+                    <canvas id="engagement-chart"></canvas>
                 </div>
             </div>
         </div>
@@ -687,6 +693,22 @@
         </div>
     </div>
 
+    <!-- UI Scale Control Widget (initially hidden) -->
+    <div class="ui-scale-control" id="ui-scale-control" style="display: none;">
+        <div class="scale-control-bar">
+            <button class="scale-btn" id="scale-decrease" title="Make Smaller (Ctrl+-)">
+                <i class="fas fa-minus"></i>
+            </button>
+            <span class="scale-value" id="scale-value">100%</span>
+            <button class="scale-btn" id="scale-increase" title="Make Larger (Ctrl++)">
+                <i class="fas fa-plus"></i>
+            </button>
+            <button class="scale-btn" id="scale-reset" title="Reset (Ctrl+0)">
+                <i class="fas fa-undo"></i>
+            </button>
+        </div>
+    </div>
+
     <!-- JavaScript Files -->
     <script src="env.js"></script>
     <script src="js/rate-limiter.js"></script>
@@ -703,6 +725,14 @@
         console.log('- themes.js loaded:', typeof window.initTheme === 'function');
         console.log('- features.js loaded:', typeof window.initFeatures === 'function');
         console.log('✅ Explore screen ready with Community First features!');
+        
+        // Update scale display on scale change
+        document.addEventListener('scaleChanged', function() {
+            const scaleValue = document.getElementById('scale-value');
+            if (scaleValue && window.uiScaleController) {
+                scaleValue.textContent = Math.round(window.uiScaleController.getScale() * 100) + '%';
+            }
+        });
     </script>
 </body>
 </html>
