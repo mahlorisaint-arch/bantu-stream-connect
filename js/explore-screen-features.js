@@ -161,6 +161,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             // Update scale display if it exists
             this.updateScaleDisplay();
             
+            // Dispatch event for sidebar to listen
+            document.dispatchEvent(new CustomEvent('scaleChanged', { detail: { scale } }));
+            
             console.log(`📏 UI Scale set to: ${scale}x`);
         }
 
@@ -169,6 +172,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             const scaleValue = document.getElementById('scale-value');
             if (scaleValue) {
                 scaleValue.textContent = Math.round(this.getScale() * 100) + '%';
+            }
+            
+            // Update sidebar scale value if exists
+            const sidebarScaleValue = document.getElementById('sidebar-scale-value');
+            if (sidebarScaleValue) {
+                sidebarScaleValue.textContent = Math.round(this.getScale() * 100) + '%';
             }
         }
 
@@ -227,110 +236,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 console.log('📱 System may have large text enabled');
             }
         }
-
-        // Create scale control UI
-        createScaleControl() {
-            const container = document.createElement('div');
-            container.className = 'ui-scale-control';
-            container.innerHTML = `
-                <div class="scale-control-bar">
-                    <button class="scale-btn" id="scale-decrease" title="Make Smaller (Ctrl+-)">
-                        <i class="fas fa-minus"></i>
-                    </button>
-                    <span class="scale-value" id="scale-value">${Math.round(this.getScale() * 100)}%</span>
-                    <button class="scale-btn" id="scale-increase" title="Make Larger (Ctrl++)">
-                        <i class="fas fa-plus"></i>
-                    </button>
-                    <button class="scale-btn" id="scale-reset" title="Reset (Ctrl+0)">
-                        <i class="fas fa-undo"></i>
-                    </button>
-                </div>
-            `;
-            
-            // Add styles if not already present
-            if (!document.getElementById('ui-scale-styles')) {
-                const style = document.createElement('style');
-                style.id = 'ui-scale-styles';
-                style.textContent = `
-                    .ui-scale-control {
-                        position: fixed;
-                        bottom: calc(10rem * var(--ui-scale));
-                        left: 50%;
-                        transform: translateX(-50%);
-                        background: rgba(10, 14, 18, 0.9);
-                        backdrop-filter: blur(20px);
-                        border: 1px solid var(--card-border);
-                        border-radius: calc(2.5rem * var(--ui-scale));
-                        padding: calc(0.5rem * var(--ui-scale)) calc(1rem * var(--ui-scale));
-                        z-index: 999;
-                        display: flex;
-                        align-items: center;
-                        gap: var(--spacing-sm);
-                        transition: all 0.3s ease;
-                    }
-                    
-                    .scale-control-bar {
-                        display: flex;
-                        align-items: center;
-                        gap: var(--spacing-sm);
-                    }
-                    
-                    .scale-btn {
-                        width: calc(2rem * var(--ui-scale));
-                        height: calc(2rem * var(--ui-scale));
-                        border-radius: 50%;
-                        background: rgba(255, 255, 255, 0.1);
-                        border: 1px solid var(--card-border);
-                        color: var(--soft-white);
-                        cursor: pointer;
-                        display: flex;
-                        align-items: center;
-                        justify-content: center;
-                        transition: all 0.3s ease;
-                        font-size: var(--font-sm);
-                    }
-                    
-                    .scale-btn:hover {
-                        background: var(--warm-gold);
-                        color: var(--deep-black);
-                        transform: scale(1.1);
-                    }
-                    
-                    .scale-value {
-                        font-size: var(--font-sm);
-                        color: var(--soft-white);
-                        min-width: calc(3rem * var(--ui-scale));
-                        text-align: center;
-                        font-weight: 600;
-                    }
-                    
-                    @media (max-width: 768px) {
-                        .ui-scale-control {
-                            bottom: calc(12rem * var(--ui-scale));
-                        }
-                    }
-                `;
-                document.head.appendChild(style);
-            }
-            
-            // Add to DOM
-            document.body.appendChild(container);
-            
-            // Add event listeners
-            document.getElementById('scale-decrease').addEventListener('click', () => this.decrease());
-            document.getElementById('scale-increase').addEventListener('click', () => this.increase());
-            document.getElementById('scale-reset').addEventListener('click', () => this.reset());
-            
-            console.log('🎛️ Scale control UI created');
-        }
-
-        // Toggle scale control visibility
-        toggleScaleControl() {
-            const control = document.getElementById('ui-scale-control');
-            if (control) {
-                control.style.display = control.style.display === 'none' ? 'flex' : 'none';
-            }
-        }
     }
 
     // Initialize global controller
@@ -354,6 +259,265 @@ document.addEventListener('DOMContentLoaded', async () => {
             window.uiScaleController?.reset();
         }
     });
+
+    // ============================================
+    // SIDEBAR MENU FUNCTIONS
+    // ============================================
+    function setupSidebar() {
+        const menuToggle = document.getElementById('menu-toggle');
+        const sidebarClose = document.getElementById('sidebar-close');
+        const sidebarOverlay = document.getElementById('sidebar-overlay');
+        const sidebarMenu = document.getElementById('sidebar-menu');
+        
+        // Open sidebar
+        const openSidebar = () => {
+            if (sidebarMenu) sidebarMenu.classList.add('active');
+            if (sidebarOverlay) sidebarOverlay.classList.add('active');
+            document.body.style.overflow = 'hidden'; // Prevent scrolling
+        };
+        
+        // Close sidebar
+        const closeSidebar = () => {
+            if (sidebarMenu) sidebarMenu.classList.remove('active');
+            if (sidebarOverlay) sidebarOverlay.classList.remove('active');
+            document.body.style.overflow = '';
+        };
+        
+        // Event listeners
+        if (menuToggle) {
+            menuToggle.addEventListener('click', (e) => {
+                e.stopPropagation();
+                openSidebar();
+            });
+        }
+        
+        if (sidebarClose) {
+            sidebarClose.addEventListener('click', closeSidebar);
+        }
+        
+        if (sidebarOverlay) {
+            sidebarOverlay.addEventListener('click', closeSidebar);
+        }
+        
+        // Close on Escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && sidebarMenu?.classList.contains('active')) {
+                closeSidebar();
+            }
+        });
+        
+        // Update sidebar profile
+        updateSidebarProfile();
+        
+        // Setup sidebar navigation clicks
+        setupSidebarNavigation();
+        
+        // Setup theme toggle in sidebar
+        setupSidebarThemeToggle();
+        
+        // Setup scale controls in sidebar
+        setupSidebarScaleControls();
+        
+        console.log('✅ Sidebar initialized');
+    }
+
+    function updateSidebarProfile() {
+        const avatar = document.getElementById('sidebar-profile-avatar');
+        const name = document.getElementById('sidebar-profile-name');
+        const email = document.getElementById('sidebar-profile-email');
+        const profileSection = document.getElementById('sidebar-profile');
+        
+        if (!avatar || !name || !email) return;
+        
+        if (window.currentUser) {
+            // Load user profile
+            supabaseAuth.from('user_profiles')
+                .select('*')
+                .eq('id', window.currentUser.id)
+                .maybeSingle()
+                .then(({ data: profile, error }) => {
+                    if (error || !profile) return;
+                    
+                    name.textContent = profile.full_name || profile.username || 'User';
+                    email.textContent = window.currentUser.email;
+                    
+                    if (profile.avatar_url) {
+                        avatar.innerHTML = `<img src="${contentSupabase.fixMediaUrl(profile.avatar_url)}" alt="Profile">`;
+                    } else {
+                        const initials = getInitials(profile.full_name || profile.username);
+                        avatar.innerHTML = `<span>${initials}</span>`;
+                    }
+                });
+            
+            // Make profile clickable to manage profiles
+            if (profileSection) {
+                profileSection.addEventListener('click', () => {
+                    closeSidebar();
+                    window.location.href = 'manage-profiles.html';
+                });
+            }
+        } else {
+            name.textContent = 'Guest';
+            email.textContent = 'Sign in to continue';
+            avatar.innerHTML = '<i class="fas fa-user"></i>';
+            
+            if (profileSection) {
+                profileSection.addEventListener('click', () => {
+                    closeSidebar();
+                    window.location.href = `login.html?redirect=${encodeURIComponent(window.location.pathname)}`;
+                });
+            }
+        }
+    }
+
+    function closeSidebar() {
+        const sidebarMenu = document.getElementById('sidebar-menu');
+        const sidebarOverlay = document.getElementById('sidebar-overlay');
+        if (sidebarMenu) sidebarMenu.classList.remove('active');
+        if (sidebarOverlay) sidebarOverlay.classList.remove('active');
+        document.body.style.overflow = '';
+    }
+
+    function setupSidebarNavigation() {
+        // Analytics
+        document.getElementById('sidebar-analytics')?.addEventListener('click', (e) => {
+            e.preventDefault();
+            closeSidebar();
+            if (!window.currentUser) {
+                showToast('Please sign in to view analytics', 'warning');
+                return;
+            }
+            // Open analytics modal
+            const analyticsModal = document.getElementById('analytics-modal');
+            if (analyticsModal) {
+                analyticsModal.classList.add('active');
+                loadPlatformAnalytics();
+            }
+        });
+        
+        // Notifications
+        document.getElementById('sidebar-notifications')?.addEventListener('click', (e) => {
+            e.preventDefault();
+            closeSidebar();
+            const notificationsPanel = document.getElementById('notifications-panel');
+            if (notificationsPanel) {
+                notificationsPanel.classList.add('active');
+                renderNotifications();
+            }
+        });
+        
+        // Badges
+        document.getElementById('sidebar-badges')?.addEventListener('click', (e) => {
+            e.preventDefault();
+            closeSidebar();
+            if (!window.currentUser) {
+                showToast('Please sign in to view badges', 'warning');
+                return;
+            }
+            const badgesModal = document.getElementById('badges-modal');
+            if (badgesModal) {
+                badgesModal.classList.add('active');
+                loadUserBadges();
+            }
+        });
+        
+        // Watch Party
+        document.getElementById('sidebar-watch-party')?.addEventListener('click', (e) => {
+            e.preventDefault();
+            closeSidebar();
+            if (!window.currentUser) {
+                showToast('Please sign in to start a watch party', 'warning');
+                return;
+            }
+            const watchPartyModal = document.getElementById('watch-party-modal');
+            if (watchPartyModal) {
+                watchPartyModal.classList.add('active');
+                loadWatchPartyContent();
+            }
+        });
+        
+        // Create (check auth)
+        document.getElementById('sidebar-create')?.addEventListener('click', async (e) => {
+            e.preventDefault();
+            closeSidebar();
+            const { data } = await supabaseAuth.auth.getSession();
+            if (!data?.session) {
+                showToast('Please sign in to upload content', 'warning');
+                window.location.href = `login.html?redirect=creator-upload.html`;
+            } else {
+                window.location.href = 'creator-upload.html';
+            }
+        });
+        
+        // Dashboard (check auth)
+        document.getElementById('sidebar-dashboard')?.addEventListener('click', async (e) => {
+            e.preventDefault();
+            closeSidebar();
+            const { data } = await supabaseAuth.auth.getSession();
+            if (!data?.session) {
+                showToast('Please sign in to access dashboard', 'warning');
+                window.location.href = `login.html?redirect=creator-dashboard.html`;
+            } else {
+                window.location.href = 'creator-dashboard.html';
+            }
+        });
+    }
+
+    function setupSidebarThemeToggle() {
+        const themeToggle = document.getElementById('sidebar-theme-toggle');
+        if (!themeToggle) return;
+        
+        themeToggle.addEventListener('click', () => {
+            closeSidebar();
+            // Show theme selector
+            const themeSelector = document.getElementById('theme-selector');
+            if (themeSelector) {
+                themeSelector.classList.toggle('active');
+            }
+        });
+    }
+
+    function setupSidebarScaleControls() {
+        if (!window.uiScaleController) return;
+        
+        const decreaseBtn = document.getElementById('sidebar-scale-decrease');
+        const increaseBtn = document.getElementById('sidebar-scale-increase');
+        const resetBtn = document.getElementById('sidebar-scale-reset');
+        const scaleValue = document.getElementById('sidebar-scale-value');
+        
+        const updateDisplay = () => {
+            if (scaleValue) {
+                scaleValue.textContent = Math.round(window.uiScaleController.getScale() * 100) + '%';
+            }
+        };
+        
+        if (decreaseBtn) {
+            decreaseBtn.addEventListener('click', () => {
+                window.uiScaleController.decrease();
+                updateDisplay();
+            });
+        }
+        
+        if (increaseBtn) {
+            increaseBtn.addEventListener('click', () => {
+                window.uiScaleController.increase();
+                updateDisplay();
+            });
+        }
+        
+        if (resetBtn) {
+            resetBtn.addEventListener('click', () => {
+                window.uiScaleController.reset();
+                updateDisplay();
+            });
+        }
+        
+        // Initial display
+        updateDisplay();
+        
+        // Listen for scale changes
+        document.addEventListener('scaleChanged', updateDisplay);
+    }
 
     // ============================================
     // UTILITY FUNCTIONS (Optimized)
@@ -682,15 +846,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // ============================================
-    // LANGUAGE FILTER (Optimized)
+    // FIXED: LANGUAGE FILTERING - Fully Functional
     // ============================================
     
     function setupLanguageFilter() {
         const languageChips = document.querySelectorAll('.language-chip');
         const moreLanguagesBtn = document.getElementById('more-languages-btn');
         
+        // Handle chip clicks
         languageChips.forEach(chip => {
-            // Remove any existing listeners
+            // Remove old listeners by cloning
             const newChip = chip.cloneNode(true);
             chip.parentNode.replaceChild(newChip, chip);
             
@@ -703,15 +868,27 @@ document.addEventListener('DOMContentLoaded', async () => {
                 newChip.classList.add('active');
                 
                 // Get selected language
-                languageFilter = newChip.dataset.lang;
+                const selectedLang = newChip.dataset.lang;
+                languageFilter = selectedLang;
                 
-                // Filter content by language
-                filterContentByLanguage(languageFilter);
+                // Filter content
+                filterContentByLanguage(selectedLang);
                 
-                showToast(`Filtering by: ${getLanguageName(languageFilter)}`, 'info');
+                // Show feedback
+                const langName = getLanguageName(selectedLang);
+                showToast(`Showing: ${langName}`, 'info');
+                
+                // Close sidebar if open
+                const sidebarMenu = document.getElementById('sidebar-menu');
+                if (sidebarMenu?.classList.contains('active')) {
+                    sidebarMenu.classList.remove('active');
+                    document.getElementById('sidebar-overlay')?.classList.remove('active');
+                    document.body.style.overflow = '';
+                }
             });
         });
         
+        // Handle "More" button
         if (moreLanguagesBtn) {
             const newMoreBtn = moreLanguagesBtn.cloneNode(true);
             moreLanguagesBtn.parentNode.replaceChild(newMoreBtn, moreLanguagesBtn);
@@ -720,11 +897,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 e.preventDefault();
                 e.stopPropagation();
                 
-                // Show all language options
                 const languageContainer = document.querySelector('.language-chips');
-                const hiddenLanguages = [
-                    'nr', 'ss', 've', 'ts'
-                ];
+                const hiddenLanguages = ['nr', 'ss', 've', 'ts'];
                 
                 hiddenLanguages.forEach(lang => {
                     if (!document.querySelector(`.language-chip[data-lang="${lang}"]`)) {
@@ -736,12 +910,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                         newChip.addEventListener('click', (e) => {
                             e.preventDefault();
                             e.stopPropagation();
-                            
                             document.querySelectorAll('.language-chip').forEach(c => c.classList.remove('active'));
                             newChip.classList.add('active');
                             languageFilter = lang;
                             filterContentByLanguage(lang);
-                            showToast(`Filtering by: ${languageMap[lang]}`, 'info');
+                            showToast(`Showing: ${languageMap[lang]}`, 'info');
                         });
                         
                         languageContainer.insertBefore(newChip, newMoreBtn);
@@ -749,7 +922,14 @@ document.addEventListener('DOMContentLoaded', async () => {
                 });
                 
                 newMoreBtn.style.display = 'none';
+                showToast('All languages shown', 'info');
             });
+        }
+        
+        // Initialize with 'all' active
+        const defaultChip = document.querySelector('.language-chip[data-lang="all"]');
+        if (defaultChip) {
+            defaultChip.classList.add('active');
         }
     }
     
@@ -761,26 +941,53 @@ document.addEventListener('DOMContentLoaded', async () => {
         const contentCards = document.querySelectorAll('.content-card');
         let visibleCount = 0;
         
-        if (lang === 'all') {
-            contentCards.forEach(card => {
+        contentCards.forEach(card => {
+            const contentLang = card.dataset.language || 'en';
+            
+            if (lang === 'all' || contentLang === lang) {
                 card.style.display = 'block';
+                // Add fade-in animation
+                card.style.opacity = '0';
+                card.style.transform = 'translateY(10px)';
+                setTimeout(() => {
+                    card.style.opacity = '1';
+                    card.style.transform = 'translateY(0)';
+                }, 50);
                 visibleCount++;
-            });
-        } else {
-            contentCards.forEach(card => {
-                const contentLang = card.dataset.language || 'en';
-                if (contentLang === lang) {
-                    card.style.display = 'block';
-                    visibleCount++;
-                } else {
-                    card.style.display = 'none';
-                }
-            });
-        }
+            } else {
+                card.style.display = 'none';
+            }
+        });
         
-        // Check if any content visible
+        // Update section headers if no content
+        const sections = ['trending-grid', 'new-content-grid', 'community-favorites-grid'];
+        sections.forEach(gridId => {
+            const grid = document.getElementById(gridId);
+            if (grid) {
+                const visibleCards = grid.querySelectorAll('.content-card[style="display: block;"]');
+                if (visibleCards.length === 0 && lang !== 'all') {
+                    // Show empty state
+                    if (!grid.querySelector('.empty-state')) {
+                        grid.innerHTML = `
+                            <div class="empty-state" style="grid-column: 1 / -1;">
+                                <div class="empty-icon"><i class="fas fa-language"></i></div>
+                                <h3>No Content in ${getLanguageName(lang)}</h3>
+                                <p>Try selecting a different language</p>
+                            </div>
+                        `;
+                    }
+                } else if (grid.querySelector('.empty-state')) {
+                    // Reload content if switching back to 'all'
+                    if (lang === 'all') {
+                        // Could reload here if needed
+                    }
+                }
+            }
+        });
+        
+        // Feedback if no results
         if (visibleCount === 0 && lang !== 'all') {
-            showToast(`No content available in ${languageMap[lang] || lang} yet`, 'warning');
+            showToast(`No content in ${getLanguageName(lang)} yet`, 'warning');
         }
     }
 
@@ -2065,9 +2272,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                 await loadUserProfile();
                 await loadUserProfiles();
                 await updateHeaderProfile();
+                updateSidebarProfile();
             } else {
                 console.log('⚠️ User not authenticated');
                 updateHeaderProfile();
+                updateSidebarProfile();
                 showToast('Welcome! Sign in to access personalized features.', 'info');
             }
             
@@ -2097,6 +2306,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (profile) {
                 currentProfile = profile;
                 await updateHeaderProfile();
+                updateSidebarProfile();
             }
             
             await loadNotifications();
@@ -2138,8 +2348,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     function updateNotificationBadge(count) {
         const mainBadge = document.getElementById('notification-count');
         const navBadge = document.getElementById('nav-notification-count');
+        const sidebarBadge = document.getElementById('sidebar-notification-count');
         
-        [mainBadge, navBadge].forEach(badge => {
+        [mainBadge, navBadge, sidebarBadge].forEach(badge => {
             if (badge) {
                 badge.textContent = count > 99 ? '99+' : count;
                 badge.style.display = count > 0 ? 'flex' : 'none';
@@ -2389,6 +2600,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 case 'Escape':
                     e.preventDefault();
                     closeAllModals();
+                    closeSidebar();
                     break;
             }
         });
@@ -3309,6 +3521,20 @@ document.addEventListener('DOMContentLoaded', async () => {
                 window.uiScaleController.toggleScaleControl();
             });
         }
+        
+        // Bottom navigation menu button
+        const menuBtn = document.getElementById('nav-menu-btn');
+        if (menuBtn) {
+            menuBtn.addEventListener('click', () => {
+                const sidebarMenu = document.getElementById('sidebar-menu');
+                const overlay = document.getElementById('sidebar-overlay');
+                if (sidebarMenu && overlay) {
+                    sidebarMenu.classList.add('active');
+                    overlay.classList.add('active');
+                    document.body.style.overflow = 'hidden';
+                }
+            });
+        }
     }
 
     function showSkeletonLoading() {
@@ -3395,6 +3621,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             setupKeyboardNavigation();
             setupCoreListeners();
             setupLanguageFilter();
+            setupSidebar(); // Initialize sidebar
             initBadgesSystem();
             setupVoiceSearch();
             setupWatchParty();
@@ -3441,6 +3668,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             loadUserProfiles();
             loadNotifications();
             loadUserBadges();
+            updateSidebarProfile();
             showToast('Welcome back!', 'success');
         } else if (event === 'SIGNED_OUT') {
             window.currentUser = null;
@@ -3448,6 +3676,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             userProfiles = [];
             userBadges = [];
             updateHeaderProfile();
+            updateSidebarProfile();
             updateNotificationBadge(0);
             window.notifications = [];
             renderNotifications();
