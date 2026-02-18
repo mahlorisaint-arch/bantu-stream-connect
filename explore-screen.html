@@ -5,29 +5,97 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
     <title>Explore - Bantu Stream Connect</title>
     
-    <!-- Google Fonts -->
+    <!-- PERFORMANCE: Preload Critical Resources -->
+    <link rel="preload" href="css/explore-screen.css" as="style">
+    <link rel="preload" href="css/explore-screen-features.css" as="style">
+    <link rel="preload" href="js/explore-screen.js" as="script">
+    <link rel="preload" href="js/explore-screen-features.js" as="script">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://ydnxqnbjoshvxteevemc.supabase.co">
+    <link rel="dns-prefetch" href="https://ydnxqnbjoshvxteevemc.supabase.co">
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+    <link rel="dns-prefetch" href="https://cdnjs.cloudflare.com">
+    
+    <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Orbitron:wght@400;500;600;700&display=swap" rel="stylesheet">
     
     <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" media="print" onload="this.media='all'">
+    <noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"></noscript>
     
-    <!-- Chart.js for analytics -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <!-- Chart.js for analytics - Loaded async -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" async></script>
     
     <!-- Supabase JS SDK -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
     <!-- Swiper JS for carousels -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" media="print" onload="this.media='all'">
+    <noscript><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css"></noscript>
+    <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js" defer></script>
     
     <!-- CSS Files -->
     <link rel="stylesheet" href="css/explore-screen.css">
     <link rel="stylesheet" href="css/explore-screen-features.css">
     <link rel="stylesheet" href="css/content-library-themes.css">
     <link rel="stylesheet" href="css/content-library-features.css">
+    
+    <!-- Inline critical CSS for skeleton loading -->
+    <style>
+        /* Critical skeleton loading styles */
+        .skeleton-card {
+            background: rgba(30, 30, 40, 0.5);
+            border-radius: 12px;
+            overflow: hidden;
+            animation: skeleton-pulse 1.5s ease-in-out infinite;
+        }
+        
+        .skeleton-thumbnail {
+            width: 100%;
+            aspect-ratio: 16/9;
+            background: rgba(255, 255, 255, 0.05);
+        }
+        
+        .skeleton-title {
+            height: 20px;
+            width: 80%;
+            margin: 15px 10px 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 4px;
+        }
+        
+        .skeleton-creator {
+            height: 16px;
+            width: 60%;
+            margin: 0 10px 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 4px;
+        }
+        
+        .skeleton-stats {
+            height: 14px;
+            width: 90%;
+            margin: 0 10px 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 4px;
+        }
+        
+        @keyframes skeleton-pulse {
+            0%, 100% { opacity: 0.6; }
+            50% { opacity: 0.3; }
+        }
+        
+        /* Ensure main content is hidden until loaded */
+        #app {
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        #app[style*="display: block"] {
+            opacity: 1;
+        }
+    </style>
 </head>
 <body>
     <!-- Loading Screen -->
@@ -168,7 +236,7 @@
 
             <!-- Video Hero Section -->
             <section class="video-hero-section" id="video-hero">
-                <video class="hero-video" id="hero-video" muted loop playsinline>
+                <video class="hero-video" id="hero-video" muted loop playsinline preload="metadata">
                     <source src="" type="video/mp4">
                 </video>
                 <div class="hero-overlay"></div>
@@ -300,7 +368,7 @@
                     </a>
                 </div>
                 <div class="content-grid" id="trending-grid">
-                    <!-- Trending content will be loaded here -->
+                    <!-- Trending content skeleton will be replaced -->
                 </div>
             </section>
 
@@ -317,7 +385,7 @@
                     </a>
                 </div>
                 <div class="content-grid" id="new-content-grid">
-                    <!-- New content will be loaded here -->
+                    <!-- New content skeleton will be replaced -->
                 </div>
             </section>
 
@@ -709,22 +777,46 @@
         </div>
     </div>
 
-    <!-- JavaScript Files -->
-    <script src="env.js"></script>
-    <script src="js/rate-limiter.js"></script>
-    <script src="js/explore-screen.js"></script>
-    <script src="js/explore-screen-features.js"></script>
-    <script src="js/content-library-themes.js"></script>
-    <script src="js/content-library-features.js"></script>
+    <!-- JavaScript Files - Defer non-critical scripts -->
+    <script src="env.js" defer></script>
+    <script src="js/rate-limiter.js" defer></script>
+    <script src="js/explore-screen.js" defer></script>
+    <script src="js/explore-screen-features.js" defer></script>
+    <script src="js/content-library-themes.js" defer></script>
+    <script src="js/content-library-features.js" defer></script>
     
-    <!-- Debug Script -->
+    <!-- Performance monitoring and service worker registration -->
     <script>
+        // Service Worker Registration for caching
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js').catch(error => {
+                    console.log('ServiceWorker registration failed:', error);
+                });
+            });
+        }
+
+        // Performance monitoring
+        window.addEventListener('load', () => {
+            if (window.performance) {
+                const perfData = performance.timing;
+                const pageLoadTime = perfData.loadEventEnd - perfData.navigationStart;
+                console.log(`📊 Page load time: ${pageLoadTime}ms`);
+                
+                // Send to analytics if needed
+                if (pageLoadTime > 3000) {
+                    console.warn('⚠️ Page load time exceeded 3 seconds');
+                }
+            }
+        });
+
+        // Debug logging
         console.log('🔍 Debug: Script loading order check');
         console.log('- env.js loaded:', !!window.ENV);
         console.log('- rate-limiter.js loaded:', !!(window.rateLimiter || window.authRateLimiter));
         console.log('- themes.js loaded:', typeof window.initTheme === 'function');
         console.log('- features.js loaded:', typeof window.initFeatures === 'function');
-        console.log('✅ Explore screen ready with Community First features!');
+        console.log('✅ Explore screen optimized with performance improvements!');
         
         // Update scale display on scale change
         document.addEventListener('scaleChanged', function() {
