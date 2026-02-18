@@ -1,47 +1,74 @@
 // Bantu Stream Connect Service Worker
-// Version: 2.0.0
+// Version: 3.0.0 - Optimized for Explore Screen Performance
 
-const CACHE_NAME = 'bantu-stream-connect-v2';
-const STATIC_CACHE = 'bantu-static-v2';
-const DYNAMIC_CACHE = 'bantu-dynamic-v2';
+const CACHE_NAME = 'bantu-stream-connect-v3';
+const STATIC_CACHE = 'bantu-static-v3';
+const DYNAMIC_CACHE = 'bantu-dynamic-v3';
+const IMAGE_CACHE = 'bantu-images-v3';
+const API_CACHE = 'bantu-api-v3';
 
 // Assets to cache on install
 const STATIC_ASSETS = [
     '/',
     '/index.html',
-    '/css/home-feed.css',
-    '/css/home-feed-themes.css',
-    '/css/home-feed-components.css',
-    '/css/home-feed-utilities.css',
-    '/js/home-feed-core.js',
-    '/js/home-feed-features.js',
-    '/js/home-feed-ui.js',
-    '/js/home-feed-utils.js',
-    '/js/home-feed.js',
+    '/explore-screen.html',
+    '/css/explore-screen.css',
+    '/css/explore-screen-features.css',
+    '/css/content-library-themes.css',
+    '/css/content-library-features.css',
+    '/js/explore-screen.js',
+    '/js/explore-screen-features.js',
+    '/js/rate-limiter.js',
+    '/js/content-library-themes.js',
+    '/js/content-library-features.js',
     '/manifest.json',
     '/assets/icon/bantu_stream_connect_icon_192x192.png',
     '/assets/icon/bantu_stream_connect_icon_512x512.png',
+    '/offline.html',
     'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Orbitron:wght@400;500;600;700&display=swap',
     'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css'
 ];
 
+// API endpoints to cache
+const API_ENDPOINTS = [
+    '/api/content/trending',
+    '/api/content/new',
+    '/api/content/community-favorites',
+    '/api/content/live',
+    '/api/creators/featured',
+    '/api/stats/community'
+];
+
 // Install event - cache static assets
 self.addEventListener('install', event => {
-    console.log('Service Worker: Installing...');
+    console.log('Service Worker: Installing v3...');
     
     event.waitUntil(
-        caches.open(STATIC_CACHE)
-            .then(cache => {
+        Promise.all([
+            caches.open(STATIC_CACHE).then(cache => {
                 console.log('Service Worker: Caching static assets');
-                return cache.addAll(STATIC_ASSETS);
+                return cache.addAll(STATIC_ASSETS).catch(error => {
+                    console.error('Failed to cache static assets:', error);
+                    // Continue even if some assets fail
+                });
+            }),
+            caches.open(API_CACHE).then(cache => {
+                console.log('Service Worker: Pre-caching API endpoints');
+                // Don't block install on API pre-cache
+                return Promise.allSettled(
+                    API_ENDPOINTS.map(endpoint => 
+                        fetch(endpoint).then(response => {
+                            if (response.ok) {
+                                cache.put(endpoint, response);
+                            }
+                        }).catch(() => {})
+                    )
+                );
             })
-            .then(() => {
-                console.log('Service Worker: Install completed');
-                return self.skipWaiting();
-            })
-            .catch(error => {
-                console.error('Service Worker: Cache installation failed:', error);
-            })
+        ]).then(() => {
+            console.log('Service Worker: Install completed');
+            return self.skipWaiting();
+        })
     );
 });
 
@@ -53,135 +80,162 @@ self.addEventListener('activate', event => {
         caches.keys().then(cacheNames => {
             return Promise.all(
                 cacheNames.map(cacheName => {
-                    if (cacheName !== STATIC_CACHE && cacheName !== DYNAMIC_CACHE) {
+                    // Delete old version caches
+                    if (cacheName !== STATIC_CACHE && 
+                        cacheName !== DYNAMIC_CACHE && 
+                        cacheName !== IMAGE_CACHE && 
+                        cacheName !== API_CACHE) {
                         console.log('Service Worker: Deleting old cache:', cacheName);
                         return caches.delete(cacheName);
                     }
                 })
             );
-        })
-        .then(() => {
+        }).then(() => {
             console.log('Service Worker: Activation completed');
             return self.clients.claim();
         })
     );
 });
 
-// Fetch event - serve from cache, fallback to network
+// Fetch event - optimized caching strategies
 self.addEventListener('fetch', event => {
+    const requestUrl = new URL(event.request.url);
+    
     // Skip non-GET requests and browser extensions
     if (event.request.method !== 'GET' || 
-        event.request.url.startsWith('chrome-extension://') ||
-        event.request.url.includes('extension')) {
+        requestUrl.protocol === 'chrome-extension:' ||
+        requestUrl.hostname.includes('extension')) {
         return;
     }
     
     // Skip Supabase realtime connections
-    if (event.request.url.includes('realtime')) {
+    if (requestUrl.pathname.includes('realtime')) {
         return;
     }
     
-    const requestUrl = new URL(event.request.url);
-    
-    // Strategy: Cache First, then Network for static assets
-    if (STATIC_ASSETS.some(asset => requestUrl.pathname.includes(asset)) ||
-        requestUrl.pathname.endsWith('.css') ||
-        requestUrl.pathname.endsWith('.js') ||
-        requestUrl.pathname.endsWith('.json')) {
+    // Strategy 1: Cache First for static assets (CSS, JS, fonts)
+    if (requestUrl.pathname.match(/\.(css|js|json|woff2?|ttf|eot)$/) ||
+        requestUrl.hostname.includes('fonts.googleapis.com') ||
+        requestUrl.hostname.includes('cdnjs.cloudflare.com')) {
         
         event.respondWith(
-            caches.match(event.request)
-                .then(cachedResponse => {
-                    if (cachedResponse) {
-                        // Return cached response
-                        return cachedResponse;
-                    }
-                    
-                    // Fetch from network
-                    return fetch(event.request)
+            caches.match(event.request).then(cachedResponse => {
+                if (cachedResponse) {
+                    // Return cached response and update in background
+                    fetch(event.request)
                         .then(networkResponse => {
-                            // Don't cache if not successful
-                            if (!networkResponse || networkResponse.status !== 200) {
-                                return networkResponse;
-                            }
-                            
-                            // Clone response for caching
-                            const responseToCache = networkResponse.clone();
-                            
-                            caches.open(DYNAMIC_CACHE)
-                                .then(cache => {
-                                    cache.put(event.request, responseToCache);
+                            if (networkResponse && networkResponse.ok) {
+                                caches.open(STATIC_CACHE).then(cache => {
+                                    cache.put(event.request, networkResponse);
                                 });
-                            
-                            return networkResponse;
-                        })
-                        .catch(error => {
-                            console.log('Fetch failed:', error);
-                            // Return offline page or fallback
-                            if (event.request.destination === 'document') {
-                                return caches.match('/');
                             }
-                            return new Response('Network error', {
-                                status: 408,
-                                headers: { 'Content-Type': 'text/plain' }
-                            });
+                        })
+                        .catch(() => {});
+                    
+                    return cachedResponse;
+                }
+                
+                return fetch(event.request).then(networkResponse => {
+                    if (networkResponse && networkResponse.ok) {
+                        const responseToCache = networkResponse.clone();
+                        caches.open(STATIC_CACHE).then(cache => {
+                            cache.put(event.request, responseToCache);
                         });
-                })
+                    }
+                    return networkResponse;
+                });
+            })
         );
+        return;
     }
-    // Strategy: Network First, then Cache for API calls
-    else if (requestUrl.pathname.includes('/api/') || 
-             requestUrl.hostname.includes('supabase.co')) {
+    
+    // Strategy 2: Network First for HTML documents
+    if (event.request.destination === 'document' || 
+        requestUrl.pathname === '/' || 
+        requestUrl.pathname.endsWith('.html')) {
         
         event.respondWith(
             fetch(event.request)
                 .then(networkResponse => {
-                    // Cache successful API responses
-                    if (networkResponse && networkResponse.status === 200) {
+                    if (networkResponse && networkResponse.ok) {
                         const responseToCache = networkResponse.clone();
-                        
-                        caches.open(DYNAMIC_CACHE)
-                            .then(cache => {
-                                cache.put(event.request, responseToCache);
-                            });
+                        caches.open(DYNAMIC_CACHE).then(cache => {
+                            cache.put(event.request, responseToCache);
+                        });
                     }
-                    
                     return networkResponse;
                 })
-                .catch(error => {
-                    console.log('API fetch failed, trying cache:', error);
-                    return caches.match(event.request);
+                .catch(() => {
+                    return caches.match(event.request).then(cachedResponse => {
+                        if (cachedResponse) {
+                            return cachedResponse;
+                        }
+                        // Return offline page
+                        return caches.match('/offline.html');
+                    });
                 })
         );
+        return;
     }
-    // Strategy: Cache with Network Update for images
-    else if (event.request.destination === 'image') {
+    
+    // Strategy 3: Stale-While-Revalidate for API calls
+    if (requestUrl.pathname.includes('/api/') || 
+        requestUrl.hostname.includes('supabase.co')) {
+        
         event.respondWith(
-            caches.match(event.request)
-                .then(cachedResponse => {
-                    // Return cached image immediately
+            caches.open(API_CACHE).then(cache => {
+                return cache.match(event.request).then(cachedResponse => {
                     const fetchPromise = fetch(event.request)
                         .then(networkResponse => {
-                            // Update cache with fresh image
-                            if (networkResponse && networkResponse.status === 200) {
-                                const responseToCache = networkResponse.clone();
-                                
-                                caches.open(DYNAMIC_CACHE)
-                                    .then(cache => {
-                                        cache.put(event.request, responseToCache);
-                                    });
+                            if (networkResponse && networkResponse.ok) {
+                                cache.put(event.request, networkResponse.clone());
                             }
-                            
                             return networkResponse;
                         })
                         .catch(() => {
-                            // Ignore fetch errors for images
+                            return cachedResponse;
                         });
                     
+                    // Return cached response immediately if available
                     return cachedResponse || fetchPromise;
-                })
+                });
+            })
         );
+        return;
     }
+    
+    // Strategy 4: Cache with Network Fallback for images
+    if (event.request.destination === 'image') {
+        event.respondWith(
+            caches.open(IMAGE_CACHE).then(cache => {
+                return cache.match(event.request).then(cachedResponse => {
+                    if (cachedResponse) {
+                        // Return cached image and update in background
+                        fetch(event.request)
+                            .then(networkResponse => {
+                                if (networkResponse && networkResponse.ok) {
+                                    cache.put(event.request, networkResponse);
+                                }
+                            })
+                            .catch(() => {});
+                        
+                        return cachedResponse;
+                    }
+                    
+                    return fetch(event.request).then(networkResponse => {
+                        if (networkResponse && networkResponse.ok) {
+                            cache.put(event.request, networkResponse.clone());
+                        }
+                        return networkResponse;
+                    });
+                });
+            })
+        );
+        return;
+    }
+    
+    // Strategy 5: Network Only for everything else
+    event.respondWith(fetch(event.request));
 });
 
 // Background sync for offline actions
@@ -194,6 +248,10 @@ self.addEventListener('sync', event => {
     
     if (event.tag === 'sync-analytics') {
         event.waitUntil(syncAnalytics());
+    }
+    
+    if (event.tag === 'sync-connectors') {
+        event.waitUntil(syncConnectors());
     }
 });
 
@@ -209,7 +267,17 @@ self.addEventListener('push', event => {
         vibrate: [100, 50, 100],
         data: {
             url: '/'
-        }
+        },
+        actions: [
+            {
+                action: 'view',
+                title: 'View'
+            },
+            {
+                action: 'dismiss',
+                title: 'Dismiss'
+            }
+        ]
     };
     
     if (event.data) {
@@ -226,16 +294,12 @@ self.addEventListener('push', event => {
         badge: data.badge,
         vibrate: data.vibrate,
         data: data.data,
-        actions: [
-            {
-                action: 'view',
-                title: 'View'
-            },
-            {
-                action: 'dismiss',
-                title: 'Dismiss'
-            }
-        ]
+        actions: data.actions,
+        tag: data.tag || 'notification',
+        renotify: data.renotify || false,
+        silent: data.silent || false,
+        requireInteraction: data.requireInteraction || false,
+        timestamp: Date.now()
     };
     
     event.waitUntil(
@@ -250,22 +314,63 @@ self.addEventListener('notificationclick', event => {
     event.notification.close();
     
     if (event.action === 'view' || !event.action) {
+        const urlToOpen = event.notification.data?.url || '/';
+        
         event.waitUntil(
             clients.matchAll({ type: 'window', includeUncontrolled: true })
                 .then(clientList => {
-                    // Focus existing window if available
+                    // Try to focus existing window
                     for (const client of clientList) {
-                        if (client.url === '/' && 'focus' in client) {
+                        if (client.url.includes(urlToOpen) && 'focus' in client) {
                             return client.focus();
                         }
                     }
                     
                     // Open new window
                     if (clients.openWindow) {
-                        return clients.openWindow(event.notification.data.url || '/');
+                        return clients.openWindow(urlToOpen);
                     }
                 })
         );
+    }
+});
+
+// Periodic sync for background updates
+self.addEventListener('periodicsync', event => {
+    if (event.tag === 'update-content') {
+        event.waitUntil(updateCachedContent());
+    }
+    
+    if (event.tag === 'update-community-stats') {
+        event.waitUntil(updateCommunityStats());
+    }
+});
+
+// Message handler for communication with client
+self.addEventListener('message', event => {
+    console.log('Service Worker: Message received', event.data);
+    
+    if (event.data.type === 'SKIP_WAITING') {
+        self.skipWaiting();
+    }
+    
+    if (event.data.type === 'CLEAR_CACHE') {
+        Promise.all([
+            caches.delete(STATIC_CACHE),
+            caches.delete(DYNAMIC_CACHE),
+            caches.delete(IMAGE_CACHE),
+            caches.delete(API_CACHE)
+        ]).then(() => {
+            console.log('All caches cleared');
+        });
+    }
+    
+    if (event.data.type === 'UPDATE_CONTENT') {
+        updateCachedContent();
+    }
+    
+    if (event.data.type === 'PREFETCH_CONTENT') {
+        prefetchContent(event.data.contentIds);
     }
 });
 
@@ -287,7 +392,8 @@ async function syncContentViews() {
                     event: 'content_view',
                     properties: {
                         content_id: view.content_id,
-                        duration: view.duration
+                        duration: view.duration,
+                        timestamp: view.timestamp
                     },
                     userId: view.user_id
                 })
@@ -296,11 +402,14 @@ async function syncContentViews() {
                     return deleteFromStore(db, 'pending_views', view.id);
                 }
                 throw new Error('Sync failed');
+            }).catch(error => {
+                console.error('View sync failed:', error);
+                // Keep in store for retry
             })
         );
         
-        await Promise.all(syncPromises);
-        console.log('Content views synced successfully');
+        await Promise.allSettled(syncPromises);
+        console.log('Content views sync completed');
         
     } catch (error) {
         console.error('Content views sync failed:', error);
@@ -327,11 +436,13 @@ async function syncAnalytics() {
                     return deleteFromStore(db, 'pending_analytics', event.id);
                 }
                 throw new Error('Sync failed');
+            }).catch(error => {
+                console.error('Analytics sync failed:', error);
             })
         );
         
-        await Promise.all(syncPromises);
-        console.log('Analytics synced successfully');
+        await Promise.allSettled(syncPromises);
+        console.log('Analytics sync completed');
         
     } catch (error) {
         console.error('Analytics sync failed:', error);
@@ -339,10 +450,159 @@ async function syncAnalytics() {
     }
 }
 
+async function syncConnectors() {
+    try {
+        const db = await openDatabase();
+        const connectors = await getAllFromStore(db, 'pending_connectors');
+        
+        if (connectors.length === 0) return;
+        
+        const syncPromises = connectors.map(connector =>
+            fetch('/api/connectors/sync', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    action: connector.action,
+                    creator_id: connector.creator_id,
+                    user_id: connector.user_id,
+                    timestamp: connector.timestamp
+                })
+            }).then(response => {
+                if (response.ok) {
+                    return deleteFromStore(db, 'pending_connectors', connector.id);
+                }
+                throw new Error('Sync failed');
+            }).catch(error => {
+                console.error('Connector sync failed:', error);
+            })
+        );
+        
+        await Promise.allSettled(syncPromises);
+        console.log('Connectors sync completed');
+        
+    } catch (error) {
+        console.error('Connectors sync failed:', error);
+        throw error;
+    }
+}
+
+// Content update functions
+async function updateCachedContent() {
+    try {
+        const endpoints = [
+            '/api/content/trending',
+            '/api/content/new',
+            '/api/content/community-favorites',
+            '/api/content/live'
+        ];
+        
+        const cache = await caches.open(API_CACHE);
+        
+        const updatePromises = endpoints.map(async endpoint => {
+            try {
+                const response = await fetch(endpoint);
+                if (response.ok) {
+                    await cache.put(endpoint, response.clone());
+                    
+                    // Store in IndexedDB for offline access
+                    const data = await response.json();
+                    await storeContentInDB(endpoint, data);
+                }
+            } catch (error) {
+                console.error(`Failed to update ${endpoint}:`, error);
+            }
+        });
+        
+        await Promise.allSettled(updatePromises);
+        console.log('Cached content updated');
+        
+        // Notify clients
+        const clients = await self.clients.matchAll();
+        clients.forEach(client => {
+            client.postMessage({
+                type: 'CONTENT_UPDATED',
+                timestamp: Date.now()
+            });
+        });
+        
+    } catch (error) {
+        console.error('Content update failed:', error);
+    }
+}
+
+async function updateCommunityStats() {
+    try {
+        const response = await fetch('/api/stats/community');
+        if (response.ok) {
+            const cache = await caches.open(API_CACHE);
+            await cache.put('/api/stats/community', response.clone());
+            
+            const stats = await response.json();
+            
+            // Notify clients
+            const clients = await self.clients.matchAll();
+            clients.forEach(client => {
+                client.postMessage({
+                    type: 'STATS_UPDATED',
+                    stats: stats
+                });
+            });
+        }
+    } catch (error) {
+        console.error('Stats update failed:', error);
+    }
+}
+
+async function prefetchContent(contentIds) {
+    if (!contentIds || contentIds.length === 0) return;
+    
+    try {
+        const cache = await caches.open(DYNAMIC_CACHE);
+        
+        const prefetchPromises = contentIds.map(async id => {
+            const url = `/api/content/${id}`;
+            try {
+                const response = await fetch(url);
+                if (response.ok) {
+                    await cache.put(url, response);
+                }
+            } catch (error) {
+                console.error(`Failed to prefetch content ${id}:`, error);
+            }
+        });
+        
+        await Promise.allSettled(prefetchPromises);
+        console.log(`Prefetched ${contentIds.length} content items`);
+        
+    } catch (error) {
+        console.error('Prefetch failed:', error);
+    }
+}
+
+async function storeContentInDB(endpoint, data) {
+    try {
+        const db = await openDatabase();
+        const transaction = db.transaction(['cached_content'], 'readwrite');
+        const store = transaction.objectStore('cached_content');
+        
+        store.put({
+            id: endpoint,
+            data: data,
+            timestamp: Date.now(),
+            expires: Date.now() + (30 * 60 * 1000) // 30 minutes
+        });
+        
+    } catch (error) {
+        console.error('Failed to store content in DB:', error);
+    }
+}
+
 // IndexedDB helper functions
 function openDatabase() {
     return new Promise((resolve, reject) => {
-        const request = indexedDB.open('BantuOfflineDB', 1);
+        const request = indexedDB.open('BantuOfflineDB', 2);
         
         request.onerror = () => reject(request.error);
         request.onsuccess = () => resolve(request.result);
@@ -352,15 +612,28 @@ function openDatabase() {
             
             // Create object stores if they don't exist
             if (!db.objectStoreNames.contains('pending_views')) {
-                db.createObjectStore('pending_views', { keyPath: 'id', autoIncrement: true });
+                const viewStore = db.createObjectStore('pending_views', { keyPath: 'id', autoIncrement: true });
+                viewStore.createIndex('timestamp', 'timestamp', { unique: false });
             }
             
             if (!db.objectStoreNames.contains('pending_analytics')) {
-                db.createObjectStore('pending_analytics', { keyPath: 'id', autoIncrement: true });
+                const analyticsStore = db.createObjectStore('pending_analytics', { keyPath: 'id', autoIncrement: true });
+                analyticsStore.createIndex('timestamp', 'timestamp', { unique: false });
+            }
+            
+            if (!db.objectStoreNames.contains('pending_connectors')) {
+                const connectorStore = db.createObjectStore('pending_connectors', { keyPath: 'id', autoIncrement: true });
+                connectorStore.createIndex('timestamp', 'timestamp', { unique: false });
             }
             
             if (!db.objectStoreNames.contains('cached_content')) {
-                db.createObjectStore('cached_content', { keyPath: 'id' });
+                const contentStore = db.createObjectStore('cached_content', { keyPath: 'id' });
+                contentStore.createIndex('expires', 'expires', { unique: false });
+                contentStore.createIndex('timestamp', 'timestamp', { unique: false });
+            }
+            
+            if (!db.objectStoreNames.contains('user_preferences')) {
+                db.createObjectStore('user_preferences', { keyPath: 'key' });
             }
         };
     });
@@ -388,67 +661,31 @@ function deleteFromStore(db, storeName, id) {
     });
 }
 
-// Periodic sync for background updates
-self.addEventListener('periodicsync', event => {
-    if (event.tag === 'update-content') {
-        event.waitUntil(updateCachedContent());
-    }
-});
-
-async function updateCachedContent() {
+// Clean up expired cache entries periodically
+async function cleanupExpiredCache() {
     try {
-        const response = await fetch('/api/content?limit=20');
-        if (!response.ok) throw new Error('Update failed');
-        
-        const content = await response.json();
-        
-        // Store updated content in IndexedDB
         const db = await openDatabase();
         const transaction = db.transaction(['cached_content'], 'readwrite');
         const store = transaction.objectStore('cached_content');
+        const index = store.index('expires');
+        const now = Date.now();
         
-        const updatePromises = content.data.map(item => 
-            store.put({
-                id: item.id,
-                data: item,
-                timestamp: Date.now()
-            })
-        );
+        const request = index.openCursor(IDBKeyRange.upperBound(now));
         
-        await Promise.all(updatePromises);
-        console.log('Cached content updated');
-        
-        // Send notification if new content is available
-        if (content.data.length > 0) {
-            self.registration.showNotification('New Content Available', {
-                body: `There are ${content.data.length} new items to watch`,
-                icon: '/assets/icon/bantu_stream_connect_icon_192x192.png',
-                badge: '/assets/icon/badge_72x72.png',
-                tag: 'content-update'
-            });
-        }
+        request.onsuccess = event => {
+            const cursor = event.target.result;
+            if (cursor) {
+                store.delete(cursor.primaryKey);
+                cursor.continue();
+            }
+        };
         
     } catch (error) {
-        console.error('Content update failed:', error);
+        console.error('Cache cleanup failed:', error);
     }
 }
 
-// Message handler for communication with client
-self.addEventListener('message', event => {
-    console.log('Service Worker: Message received', event.data);
-    
-    if (event.data.type === 'SKIP_WAITING') {
-        self.skipWaiting();
-    }
-    
-    if (event.data.type === 'CLEAR_CACHE') {
-        caches.delete(STATIC_CACHE);
-        caches.delete(DYNAMIC_CACHE);
-    }
-    
-    if (event.data.type === 'UPDATE_CONTENT') {
-        updateCachedContent();
-    }
-});
+// Run cleanup every hour
+setInterval(cleanupExpiredCache, 60 * 60 * 1000);
 
-console.log('Service Worker loaded successfully');
+console.log('Service Worker v3 loaded successfully - Optimized for Explore Screen');
