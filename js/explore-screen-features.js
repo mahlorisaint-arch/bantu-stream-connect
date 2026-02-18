@@ -56,6 +56,238 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
 
     // ============================================
+    // DYNAMIC UI SCALING SYSTEM
+    // ============================================
+
+    class UIScaleController {
+        constructor() {
+            this.scaleKey = 'bantu_ui_scale';
+            this.scales = [0.75, 0.85, 1.0, 1.15, 1.25, 1.5];
+            this.currentIndex = 2; // Default to 1.0
+            this.init();
+        }
+
+        init() {
+            // Load saved preference
+            const savedScale = localStorage.getItem(this.scaleKey);
+            if (savedScale) {
+                this.currentIndex = this.scales.indexOf(parseFloat(savedScale));
+                if (this.currentIndex === -1) this.currentIndex = 2;
+            }
+            
+            // Apply scale
+            this.applyScale();
+            
+            // Respect system font size settings
+            this.respectSystemSettings();
+            
+            console.log('🎨 UI Scale Controller initialized');
+        }
+
+        // Apply scale to CSS variable
+        applyScale() {
+            const scale = this.scales[this.currentIndex];
+            document.documentElement.style.setProperty('--ui-scale', scale);
+            localStorage.setItem(this.scaleKey, scale);
+            
+            // Update scale display if it exists
+            this.updateScaleDisplay();
+            
+            console.log(`📏 UI Scale set to: ${scale}x`);
+        }
+
+        // Update scale value display
+        updateScaleDisplay() {
+            const scaleValue = document.getElementById('scale-value');
+            if (scaleValue) {
+                scaleValue.textContent = Math.round(this.getScale() * 100) + '%';
+            }
+        }
+
+        // Get current scale
+        getScale() {
+            return this.scales[this.currentIndex];
+        }
+
+        // Increase scale
+        increase() {
+            if (this.currentIndex < this.scales.length - 1) {
+                this.currentIndex++;
+                this.applyScale();
+                this.showScaleToast();
+            }
+        }
+
+        // Decrease scale
+        decrease() {
+            if (this.currentIndex > 0) {
+                this.currentIndex--;
+                this.applyScale();
+                this.showScaleToast();
+            }
+        }
+
+        // Reset to default
+        reset() {
+            this.currentIndex = 2;
+            this.applyScale();
+            this.showScaleToast();
+        }
+
+        // Show toast notification
+        showScaleToast() {
+            const scale = this.getScale();
+            const percentage = Math.round(scale * 100);
+            if (typeof showToast === 'function') {
+                showToast(`UI Size: ${percentage}%`, 'info');
+            }
+        }
+
+        // Respect system accessibility settings
+        respectSystemSettings() {
+            // Check if user has large text enabled
+            const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+            
+            // Listen for system font size changes
+            if (window.CSS && CSS.supports('font-size', 'clamp(1rem, 2vw, 1.5rem)')) {
+                console.log('✅ System font size settings will be respected');
+            }
+            
+            // Optional: Detect if system has large text enabled
+            const largeTextQuery = window.matchMedia('(min-resolution: 120dpi)');
+            if (largeTextQuery.matches) {
+                console.log('📱 System may have large text enabled');
+            }
+        }
+
+        // Create scale control UI
+        createScaleControl() {
+            const container = document.createElement('div');
+            container.className = 'ui-scale-control';
+            container.innerHTML = `
+                <div class="scale-control-bar">
+                    <button class="scale-btn" id="scale-decrease" title="Make Smaller (Ctrl+-)">
+                        <i class="fas fa-minus"></i>
+                    </button>
+                    <span class="scale-value" id="scale-value">${Math.round(this.getScale() * 100)}%</span>
+                    <button class="scale-btn" id="scale-increase" title="Make Larger (Ctrl++)">
+                        <i class="fas fa-plus"></i>
+                    </button>
+                    <button class="scale-btn" id="scale-reset" title="Reset (Ctrl+0)">
+                        <i class="fas fa-undo"></i>
+                    </button>
+                </div>
+            `;
+            
+            // Add styles if not already present
+            if (!document.getElementById('ui-scale-styles')) {
+                const style = document.createElement('style');
+                style.id = 'ui-scale-styles';
+                style.textContent = `
+                    .ui-scale-control {
+                        position: fixed;
+                        bottom: calc(10rem * var(--ui-scale));
+                        left: 50%;
+                        transform: translateX(-50%);
+                        background: rgba(10, 14, 18, 0.9);
+                        backdrop-filter: blur(20px);
+                        border: 1px solid var(--card-border);
+                        border-radius: calc(2.5rem * var(--ui-scale));
+                        padding: calc(0.5rem * var(--ui-scale)) calc(1rem * var(--ui-scale));
+                        z-index: 999;
+                        display: flex;
+                        align-items: center;
+                        gap: var(--spacing-sm);
+                        transition: all 0.3s ease;
+                    }
+                    
+                    .scale-control-bar {
+                        display: flex;
+                        align-items: center;
+                        gap: var(--spacing-sm);
+                    }
+                    
+                    .scale-btn {
+                        width: calc(2rem * var(--ui-scale));
+                        height: calc(2rem * var(--ui-scale));
+                        border-radius: 50%;
+                        background: rgba(255, 255, 255, 0.1);
+                        border: 1px solid var(--card-border);
+                        color: var(--soft-white);
+                        cursor: pointer;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        transition: all 0.3s ease;
+                        font-size: var(--font-sm);
+                    }
+                    
+                    .scale-btn:hover {
+                        background: var(--warm-gold);
+                        color: var(--deep-black);
+                        transform: scale(1.1);
+                    }
+                    
+                    .scale-value {
+                        font-size: var(--font-sm);
+                        color: var(--soft-white);
+                        min-width: calc(3rem * var(--ui-scale));
+                        text-align: center;
+                        font-weight: 600;
+                    }
+                    
+                    @media (max-width: 768px) {
+                        .ui-scale-control {
+                            bottom: calc(12rem * var(--ui-scale));
+                        }
+                    }
+                `;
+                document.head.appendChild(style);
+            }
+            
+            // Add to DOM
+            document.body.appendChild(container);
+            
+            // Add event listeners
+            document.getElementById('scale-decrease').addEventListener('click', () => this.decrease());
+            document.getElementById('scale-increase').addEventListener('click', () => this.increase());
+            document.getElementById('scale-reset').addEventListener('click', () => this.reset());
+            
+            console.log('🎛️ Scale control UI created');
+        }
+
+        // Toggle scale control visibility
+        toggleScaleControl() {
+            const control = document.getElementById('ui-scale-control');
+            if (control) {
+                control.style.display = control.style.display === 'none' ? 'flex' : 'none';
+            }
+        }
+    }
+
+    // Initialize global controller
+    window.uiScaleController = new UIScaleController();
+
+    // Add keyboard shortcuts for quick scaling
+    document.addEventListener('keydown', (e) => {
+        // Ctrl/Cmd + Plus to increase
+        if ((e.ctrlKey || e.metaKey) && (e.key === '+' || e.key === '=')) {
+            e.preventDefault();
+            window.uiScaleController?.increase();
+        }
+        // Ctrl/Cmd + Minus to decrease
+        if ((e.ctrlKey || e.metaKey) && e.key === '-') {
+            e.preventDefault();
+            window.uiScaleController?.decrease();
+        }
+        // Ctrl/Cmd + 0 to reset
+        if ((e.ctrlKey || e.metaKey) && e.key === '0') {
+            e.preventDefault();
+            window.uiScaleController?.reset();
+        }
+    });
+
+    // ============================================
     // UTILITY FUNCTIONS
     // ============================================
     
@@ -3302,6 +3534,14 @@ document.addEventListener('DOMContentLoaded', async () => {
                 window.location.href = 'https://bantustreamconnect.com/community-favorites';
             });
         }
+
+        // Add scale toggle button listener
+        const navScaleToggle = document.getElementById('nav-scale-toggle');
+        if (navScaleToggle && window.uiScaleController) {
+            navScaleToggle.addEventListener('click', () => {
+                window.uiScaleController.toggleScaleControl();
+            });
+        }
     }
 
     // ============================================
@@ -3311,6 +3551,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     async function initializeExploreScreen() {
         try {
             setLoading(true, 'Loading Top Creators...');
+            
+            // Initialize UI Scale Controller FIRST
+            if (window.uiScaleController) {
+                window.uiScaleController.init();
+                // Create scale control widget (optional - comment out if you prefer manual toggle)
+                // window.uiScaleController.createScaleControl();
+            }
             
             // Update header logo first
             updateHeaderLogo();
