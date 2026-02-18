@@ -1,6 +1,6 @@
 // Wait for DOM to be ready
 document.addEventListener('DOMContentLoaded', async () => {
-    console.log('🔍 Explore Screen Initializing with Community First features - OPTIMIZED VERSION');
+    console.log('🚀 Explore Screen Initializing with Community First features - OPTIMIZED v2.0');
     
     // ============================================
     // PERFORMANCE: Cache Layer Implementation
@@ -39,12 +39,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     window.cacheManager = new CacheManager();
     
     // ============================================
-    // PERFORMANCE: Batch Query Optimizer
+    // PERFORMANCE: Query Batcher (NEW)
     // ============================================
     class QueryBatcher {
         constructor() {
-            this.queries = new Map();
-            this.batchSize = 10;
+            this.batchSize = 20;
         }
         
         async batchQuery(table, ids, field = 'id') {
@@ -52,7 +51,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             const cached = window.cacheManager.get(cacheKey);
             if (cached) return cached;
             
-            // Split into batches
             const batches = [];
             for (let i = 0; i < ids.length; i += this.batchSize) {
                 batches.push(ids.slice(i, i + this.batchSize));
@@ -60,10 +58,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             
             const results = await Promise.all(
                 batches.map(batch => 
-                    supabaseAuth
-                        .from(table)
-                        .select('*', { count: 'exact', head: true })
-                        .in(field, batch)
+                    supabaseAuth.from(table).select('*').in(field, batch)
                 )
             );
             
@@ -473,7 +468,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // ============================================
-    // PERFORMANCE: Optimized Content Metrics Loading
+    // PERFORMANCE: BATCHED Metrics Loading (FIXED)
     // ============================================
     async function loadContentMetrics(contentIds) {
         if (!contentIds || contentIds.length === 0) return;
@@ -486,56 +481,43 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
         
-        // Batch query for views
-        const viewsPromises = contentIds.map(async (contentId) => {
-            const { count } = await supabaseAuth
-                .from('content_views')
-                .select('*', { count: 'exact', head: true })
-                .eq('content_id', contentId);
-            return { content_id: contentId, views: count || 0 };
-        });
+        // SINGLE BATCH QUERY for all content IDs
+        const viewsPromises = contentIds.map(id => 
+            supabaseAuth.from('content_views').select('*', { count: 'exact', head: true }).eq('content_id', id)
+        );
         
-        // Batch query for likes
-        const likesPromises = contentIds.map(async (contentId) => {
-            const { count } = await supabaseAuth
-                .from('content_likes')
-                .select('*', { count: 'exact', head: true })
-                .eq('content_id', contentId);
-            return { content_id: contentId, likes: count || 0 };
-        });
+        const likesPromises = contentIds.map(id => 
+            supabaseAuth.from('content_likes').select('*', { count: 'exact', head: true }).eq('content_id', id)
+        );
         
-        // Execute in parallel
         const [viewsResults, likesResults] = await Promise.all([
             Promise.all(viewsPromises),
             Promise.all(likesPromises)
         ]);
         
-        // Merge results
         const metricsMap = new Map();
-        viewsResults.forEach(r => {
-            if (!metricsMap.has(r.content_id)) metricsMap.set(r.content_id, {});
-            metricsMap.get(r.content_id).views = r.views;
+        viewsResults.forEach((r, i) => {
+            const id = contentIds[i];
+            if (!metricsMap.has(id)) metricsMap.set(id, {});
+            metricsMap.get(id).views = r.count || 0;
         });
         
-        likesResults.forEach(r => {
-            if (!metricsMap.has(r.content_id)) metricsMap.set(r.content_id, {});
-            metricsMap.get(r.content_id).likes = r.likes;
+        likesResults.forEach((r, i) => {
+            const id = contentIds[i];
+            if (!metricsMap.has(id)) metricsMap.set(id, {});
+            metricsMap.get(id).likes = r.count || 0;
         });
         
         // Get shares (if table exists)
         try {
-            const sharesPromises = contentIds.map(async (contentId) => {
-                const { count } = await supabaseAuth
-                    .from('content_shares')
-                    .select('*', { count: 'exact', head: true })
-                    .eq('content_id', contentId);
-                return { content_id: contentId, shares: count || 0 };
-            });
-            
+            const sharesPromises = contentIds.map(id => 
+                supabaseAuth.from('content_shares').select('*', { count: 'exact', head: true }).eq('content_id', id)
+            );
             const sharesResults = await Promise.all(sharesPromises);
-            sharesResults.forEach(r => {
-                if (!metricsMap.has(r.content_id)) metricsMap.set(r.content_id, {});
-                metricsMap.get(r.content_id).shares = r.shares;
+            sharesResults.forEach((r, i) => {
+                const id = contentIds[i];
+                if (!metricsMap.has(id)) metricsMap.set(id, {});
+                metricsMap.get(id).shares = r.count || 0;
             });
         } catch (e) {
             // Table might not exist, default to 0
@@ -545,16 +527,18 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
         }
         
-        // Store in cache and local map
-        metricsMap.forEach((metrics, contentId) => {
-            contentMetrics.set(contentId, metrics);
+        metricsMap.forEach((metrics, id) => {
+            contentMetrics.set(id, metrics);
         });
         
-        window.cacheManager.set(cacheKey, Array.from(metricsMap.entries()).map(([k, v]) => ({ content_id: k, ...v })), 3 * 60 * 1000);
+        window.cacheManager.set(cacheKey, 
+            Array.from(metricsMap.entries()).map(([k, v]) => ({ content_id: k, ...v })), 
+            3 * 60 * 1000
+        );
     }
 
     // ============================================
-    // PERFORMANCE: Optimized Connector Counts
+    // PERFORMANCE: BATCHED Connector Counts (FIXED)
     // ============================================
     async function loadConnectorCounts(contentIds) {
         if (!contentIds || contentIds.length === 0) return;
@@ -567,48 +551,33 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
         
-        // Get unique creator IDs first
-        const creatorIds = new Set();
-        const contentCreatorMap = new Map();
+        // Get creator IDs in ONE query
+        const { data: contentData } = await supabaseAuth
+            .from('Content')
+            .select('id, user_id')
+            .in('id', contentIds);
         
-        const contentData = await Promise.all(
-            contentIds.map(async (contentId) => {
-                const { data } = await supabaseAuth
-                    .from('Content')
-                    .select('user_id')
-                    .eq('id', contentId)
-                    .single();
-                
-                if (data?.user_id) {
-                    creatorIds.add(data.user_id);
-                    contentCreatorMap.set(contentId, data.user_id);
-                }
-                return { contentId, userId: data?.user_id };
-            })
-        );
+        const creatorIds = [...new Set(contentData?.map(c => c.user_id).filter(Boolean))];
+        const contentCreatorMap = new Map(contentData?.map(c => [c.id, c.user_id]));
         
         // Batch query connector counts
-        const connectorPromises = Array.from(creatorIds).map(async (userId) => {
-            const { count } = await supabaseAuth
-                .from('connectors')
+        const connectorPromises = creatorIds.map(userId => 
+            supabaseAuth.from('connectors')
                 .select('*', { count: 'exact', head: true })
                 .eq('connected_id', userId)
-                .eq('connection_type', 'creator');
-            return { userId, count: count || 0 };
-        });
+                .eq('connection_type', 'creator')
+        );
         
         const connectorResults = await Promise.all(connectorPromises);
-        const creatorCountMap = new Map(connectorResults.map(r => [r.userId, r.count]));
+        const creatorCountMap = new Map(creatorIds.map((id, i) => [id, connectorResults[i].count || 0]));
         
-        // Map back to content IDs
-        const results = contentData.map(({ contentId, userId }) => ({
-            content_id: contentId,
-            count: userId ? (creatorCountMap.get(userId) || 0) : 0
+        const results = contentIds.map(id => ({
+            content_id: id,
+            count: contentCreatorMap.get(id) ? (creatorCountMap.get(contentCreatorMap.get(id)) || 0) : 0
         }));
         
         results.forEach(r => connectorCounts.set(r.content_id, r.count));
         window.cacheManager.set(cacheKey, results, 5 * 60 * 1000);
-        
         updateConnectorCountsOnCards();
     }
 
@@ -1049,83 +1018,69 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // ============================================
-    // RENDER FUNCTIONS (Optimized with DocumentFragment)
+    // PERFORMANCE: DocumentFragment Rendering (FIXED)
     // ============================================
     
-    function renderContentCards(contents, showConnectors = true) {
+    function renderContentCards(contents) {
         const fragment = document.createDocumentFragment();
-        const template = document.createElement('template');
         
-        template.innerHTML = contents.map(content => {
+        contents.forEach(content => {
+            const card = document.createElement('a');
+            card.className = 'content-card';
+            card.href = `content-detail.html?id=${content.id}`;
+            card.dataset.contentId = content.id;
+            card.dataset.previewUrl = content.preview_url || '';
+            card.dataset.language = content.language || 'en';
+            card.dataset.category = content.genre || '';
+            
             const thumbnailUrl = content.thumbnail_url
                 ? contentSupabase.fixMediaUrl(content.thumbnail_url)
                 : 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=225&fit=crop';
             
             const creatorProfile = content.user_profiles;
-            const creatorName = creatorProfile?.full_name || creatorProfile?.username || content.creator || 'Creator';
             const displayName = creatorProfile?.full_name || creatorProfile?.username || 'User';
             const initials = getInitials(displayName);
             const username = creatorProfile?.username || 'creator';
             const isNew = (new Date() - new Date(content.created_at)) < 7 * 24 * 60 * 60 * 1000;
             
             const metrics = contentMetrics.get(content.id) || { views: 0, likes: 0, shares: 0 };
-            const views = metrics.views;
-            const likes = metrics.likes;
-            const shares = metrics.shares;
-            const connectors = content.favorites_count || 0;
+            const favorites = content.favorites_count || 0;
             
             let avatarHtml = '';
             if (creatorProfile?.avatar_url) {
                 const avatarUrl = contentSupabase.fixMediaUrl(creatorProfile.avatar_url);
-                avatarHtml = `<img src="${avatarUrl}" alt="${escapeHtml(displayName)}" loading="lazy" onerror="this.parentElement.innerHTML='<div class=\\'creator-initials-small\\'>${initials}</div>'">`;
+                avatarHtml = `<img src="${avatarUrl}" alt="${escapeHtml(displayName)}" loading="lazy">`;
             } else {
                 avatarHtml = `<div class="creator-initials-small">${initials}</div>`;
             }
             
-            return `
-                <a href="content-detail.html?id=${content.id}" class="content-card" data-content-id="${content.id}" data-preview-url="${content.preview_url || ''}" data-language="${content.language || 'en'}" data-category="${content.genre || ''}">
-                    <div class="card-thumbnail">
-                        <img src="${thumbnailUrl}" alt="${escapeHtml(content.title)}" loading="lazy" onerror="this.src='https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=225&fit=crop'">
-                        <div class="card-badges">
-                            ${isNew ? '<div class="card-badge badge-new"><i class="fas fa-gem"></i> NEW</div>' : ''}
-                            <div class="connector-badge">
-                                <i class="fas fa-star"></i>
-                                <span>${formatNumber(connectors)} Favorites</span>
-                            </div>
-                        </div>
-                        <div class="thumbnail-overlay"></div>
-                        <div class="play-overlay">
-                            <div class="play-icon">
-                                <i class="fas fa-play"></i>
-                            </div>
-                        </div>
+            card.innerHTML = `
+                <div class="card-thumbnail">
+                    <img src="${thumbnailUrl}" alt="${escapeHtml(content.title)}" loading="lazy">
+                    <div class="card-badges">
+                        ${isNew ? '<div class="card-badge badge-new"><i class="fas fa-gem"></i> NEW</div>' : ''}
+                        <div class="connector-badge"><i class="fas fa-star"></i><span>${formatNumber(favorites)} Favorites</span></div>
                     </div>
-                    <div class="card-content">
-                        <h3 class="card-title" title="${escapeHtml(content.title)}">
-                            ${truncateText(escapeHtml(content.title), 50)}
-                        </h3>
-                        <div class="creator-info">
-                            <div class="creator-avatar-small">
-                                ${avatarHtml}
-                            </div>
-                            <div class="creator-name-small">@${escapeHtml(username)}</div>
-                        </div>
-                        <div class="card-meta">
-                            <span><i class="fas fa-eye"></i> ${formatNumber(views)}</span>
-                            <span><i class="fas fa-heart"></i> ${formatNumber(likes)}</span>
-                            <span><i class="fas fa-share"></i> ${formatNumber(shares)}</span>
-                            <span><i class="fas fa-language"></i> ${languageMap[content.language] || 'English'}</span>
-                        </div>
+                    <div class="thumbnail-overlay"></div>
+                    <div class="play-overlay"><div class="play-icon"><i class="fas fa-play"></i></div></div>
+                </div>
+                <div class="card-content">
+                    <h3 class="card-title" title="${escapeHtml(content.title)}">${truncateText(escapeHtml(content.title), 50)}</h3>
+                    <div class="creator-info">
+                        <div class="creator-avatar-small">${avatarHtml}</div>
+                        <div class="creator-name-small">@${escapeHtml(username)}</div>
                     </div>
-                </a>
+                    <div class="card-meta">
+                        <span><i class="fas fa-eye"></i> ${formatNumber(metrics.views)}</span>
+                        <span><i class="fas fa-heart"></i> ${formatNumber(metrics.likes)}</span>
+                        <span><i class="fas fa-share"></i> ${formatNumber(metrics.shares)}</span>
+                        <span><i class="fas fa-language"></i> ${languageMap[content.language] || 'English'}</span>
+                    </div>
+                </div>
             `;
-        }).join('');
-        
-        const tempDiv = document.createElement('div');
-        tempDiv.innerHTML = template.innerHTML;
-        while (tempDiv.firstChild) {
-            fragment.appendChild(tempDiv.firstChild);
-        }
+            
+            fragment.appendChild(card);
+        });
         
         return fragment;
     }
@@ -1356,7 +1311,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     let avatarHtml = '';
                     if (creatorProfile?.avatar_url) {
                         const avatarUrl = contentSupabase.fixMediaUrl(creatorProfile.avatar_url);
-                        avatarHtml = `<img src="${avatarUrl}" alt="${escapeHtml(creatorName)}" onerror="this.parentElement.innerHTML='<div class=\\'creator-initials-small\\'>${initials}</div>'">`;
+                        avatarHtml = `<img src="${avatarUrl}" alt="${escapeHtml(creatorName)}" loading="lazy" onerror="this.parentElement.innerHTML='<div class=\\'creator-initials-small\\'>${initials}</div>'">`;
                     } else {
                         avatarHtml = `<div class="creator-initials-small">${initials}</div>`;
                     }
@@ -2665,6 +2620,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         <div class="creator-avatar">
                             ${avatarUrl ? `
                                 <img src="${avatarUrl}" alt="${fullName}"
+                                     loading="lazy"
                                      onerror="this.parentElement.innerHTML='<div class=\\'creator-initials\\'>${initials}</div>'">
                             ` : `
                                 <div class="creator-initials">${initials}</div>
@@ -2820,7 +2776,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
 
     // ============================================
-    // PERFORMANCE: Optimized Explore Data Loading
+    // PERFORMANCE: PARALLEL Data Loading (FIXED)
     // ============================================
     
     async function loadExploreData() {
@@ -2830,7 +2786,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         try {
             loadingText.textContent = 'Loading content...';
             
-            // PARALLEL LOAD: Fetch all data simultaneously
+            // PARALLEL LOAD - All queries at once
             const [
                 creatorsData,
                 liveData,
@@ -2864,8 +2820,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             
             // SINGLE BATCH: Load all metrics at once
             if (allContentIds.length > 0) {
-                await loadContentMetrics(allContentIds);
-                await loadConnectorCounts(allContentIds);
+                await Promise.all([
+                    loadContentMetrics(allContentIds),
+                    loadConnectorCounts(allContentIds)
+                ]);
             }
             
             console.log('✅ Metrics loaded, rendering UI...');
