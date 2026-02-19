@@ -5,10 +5,10 @@ class ContentSupabaseClient {
         this.key = key;
         this.cache = new Map();
         this.cacheTTL = 5 * 60 * 1000; // 5 minutes cache TTL
-        this.requestTimeout = 8000; // 8 second timeout (under Supabase's 10s limit)
+        this.requestTimeout = 15000; // 15 second timeout (increased from 8000ms)
     }
     
-    async query(table, options = {}) {
+    async query(table, options = {}, retryCount = 0) {
         const {
             select = '*',
             where = {},
@@ -103,9 +103,14 @@ class ContentSupabaseClient {
         } catch (error) {
             console.error('Supabase query error:', error);
 
-            // Retry once on timeout errors with exponential backoff
-            if (error.name === 'AbortError' || error.message.includes('timeout')) {
-                console.log('⚠️ Retrying query with simplified parameters...');
+            // Retry on abort/timeout errors (max 2 retries)
+            if ((error.name === 'AbortError' || error.message?.includes('timeout')) && retryCount < 2) {
+                console.log(`⚠️ Retry ${retryCount + 1}/2 for query`);
+                
+                // Exponential backoff
+                const backoffTime = Math.pow(2, retryCount) * 1000;
+                await new Promise(resolve => setTimeout(resolve, backoffTime));
+                
                 // Simplify query on retry (remove complex filters)
                 const simplifiedWhere = {};
                 Object.keys(where).forEach(key => {
@@ -119,22 +124,22 @@ class ContentSupabaseClient {
                         ...options,
                         where: simplifiedWhere,
                         timeout: timeout * 1.5 // Increase timeout for retry
-                    });
+                    }, retryCount + 1);
                 }
             }
 
-            // Try to get from localStorage cache as fallback
+            // Fallback to localStorage cache
             try {
                 const offlineCache = localStorage.getItem(`cache_${cacheKey}`);
                 if (offlineCache) {
                     const parsed = JSON.parse(offlineCache);
                     if (Date.now() - parsed.timestamp < this.cacheTTL * 2) {
-                        console.log('⚠️ Using offline cache:', cacheKey);
+                        console.log('⚠️ Using offline cache fallback');
                         return parsed.data;
                     }
                 }
             } catch (e) {
-                console.log('Could not read from localStorage cache:', e);
+                console.log('Could not read localStorage cache:', e);
             }
             
             throw error;
@@ -175,9 +180,9 @@ class ContentSupabaseClient {
 // Cache Manager
 class CacheManager {
     constructor() {
-        this.cacheName = 'bantu-stream-connect-v2';
+        this.cacheName = 'bantu-stream-connect-v4'; // Incremented version to force fresh cache
         this.cacheTTL = 60 * 60 * 1000; // 1 hour
-        this.currentVersion = 'v2'; // Track current version
+        this.currentVersion = 'v4'; // Updated to match cache name
     }
     
     async init() {
@@ -231,12 +236,8 @@ class CacheManager {
             
             for (const registration of registrations) {
                 // Check if this is an old version
-                // We consider any service worker with 'v3' in the URL as old (since we're on v2)
+                // We consider any service worker with 'v3' in the URL as old (since we're on v4)
                 if (registration.active && registration.active.scriptURL.includes('sw.js')) {
-                    // Optional: You could implement a more sophisticated version check
-                    // by fetching the SW and checking its version comment
-                    
-                    // For now, we'll log it and optionally unregister if it's causing issues
                     console.log('📱 Found service worker registration:', registration.active.scriptURL);
                     
                     // Check if this is likely an old version (you can customize this logic)
@@ -328,8 +329,26 @@ class CacheManager {
         if ('caches' in window) {
             try {
                 const cache = await caches.open(this.cacheName);
-                await cache.addAll(criticalAssets);
-                console.log('✅ Precached critical assets');
+                
+                // Filter out non-existent URLs before caching
+                const validAssets = [];
+                for (const url of criticalAssets) {
+                    try {
+                        // Use HEAD request to check if asset exists
+                        const response = await fetch(url, { method: 'HEAD' });
+                        if (response.ok) {
+                            validAssets.push(url);
+                        } else {
+                            console.log(`Skipping non-existent: ${url}`);
+                        }
+                    } catch (e) {
+                        console.log(`Skipping non-existent: ${url} (error: ${e.message})`);
+                    }
+                }
+                
+                // Cache only valid assets
+                await cache.addAll(validAssets);
+                console.log('✅ Precached critical assets:', validAssets.length);
             } catch (error) {
                 console.log('⚠️ Precaching failed:', error);
             }
@@ -398,6 +417,48 @@ class CacheManager {
             });
         } else {
             window.location.reload();
+        }
+    }
+    
+    // Safe get method for external use
+    get(key) {
+        try {
+            const cached = localStorage.getItem(`cache_${key}`);
+            if (cached) {
+                const parsed = JSON.parse(cached);
+                if (Date.now() - parsed.timestamp < this.cacheTTL) {
+                    return parsed.data;
+                }
+            }
+        } catch (error) {
+            console.error('Error reading from cache:', error);
+        }
+        return null;
+    }
+    
+    // Safe set method for external use
+    set(key, data, ttl = this.cacheTTL) {
+        try {
+            localStorage.setItem(`cache_${key}`, JSON.stringify({
+                data: data,
+                timestamp: Date.now()
+            }));
+        } catch (error) {
+            console.error('Error writing to cache:', error);
+        }
+    }
+    
+    // Clear cache method
+    clear() {
+        try {
+            // Clear only our cache keys
+            Object.keys(localStorage).forEach(key => {
+                if (key.startsWith('cache_')) {
+                    localStorage.removeItem(key);
+                }
+            });
+        } catch (error) {
+            console.error('Error clearing cache:', error);
         }
     }
 }
@@ -637,14 +698,29 @@ const SUPABASE_URL = 'https://ydnxqnbjoshvxteevemc.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U';
 const supabaseAuth = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-// Export to window for global access
+// ============================================
+// GLOBAL EXPORTS (MUST BE LAST)
+// ============================================
+
+// Export instances to window for other scripts
 window.contentSupabase = contentSupabase;
-window.cacheManager = cacheManager;
+window.cacheManager = cacheManager;  // ← THIS IS THE KEY FIX
 window.errorHandler = errorHandler;
 window.performanceMonitor = performanceMonitor;
 window.stateManager = stateManager;
 window.supabaseAuth = supabaseAuth;
 
-console.log('✅ Home Feed Core initialized');
+// Export Supabase config for reuse
+window.SUPABASE_URL = SUPABASE_URL;
+window.SUPABASE_ANON_KEY = SUPABASE_ANON_KEY;
+
+// Also export individual methods for backward compatibility
+window.CacheManager = CacheManager;
+window.ContentSupabaseClient = ContentSupabaseClient;
+window.ErrorHandler = ErrorHandler;
+window.PerformanceMonitor = PerformanceMonitor;
+window.StateManager = StateManager;
+
+console.log('✅ Home Feed Core exported to window');
 console.log('📦 Cache Manager version:', cacheManager.currentVersion);
 console.log('🔧 Service Worker cleanup enabled');
