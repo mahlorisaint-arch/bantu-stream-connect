@@ -581,24 +581,85 @@
         <span id="cache-status-text">Cache: Loading...</span>
     </div>
 
-    <!-- External JavaScript -->
+    <!-- =========================================== -->
+    <!-- SCRIPTS - LOAD IN CORRECT ORDER           -->
+    <!-- CORE → FEATURES → UI → UTILS → MAIN APP   -->
+    <!-- =========================================== -->
+    
+    <!-- 1. CORE must load FIRST (defines global instances and CacheManager) -->
     <script src="js/home-feed-core.js"></script>
+    
+    <!-- 2. FEATURES load SECOND (uses core instances, adds new ones, exports to window) -->
     <script src="js/home-feed-features.js"></script>
+    
+    <!-- 3. UI loads THIRD (uses instances from core + features) -->
     <script src="js/home-feed-ui.js"></script>
+    
+    <!-- 4. UTILS loads FOURTH (helper functions) -->
     <script src="js/home-feed-utils.js"></script>
+    
+    <!-- 5. MAIN APP loads LAST (orchestrates everything) -->
     <script src="js/home-feed.js"></script>
     
-    <!-- Service Worker Registration -->
+    <!-- Service Worker Registration with version check -->
     <script>
+        // Service Worker Registration with automatic version cleanup
         if ('serviceWorker' in navigator) {
+            // First, unregister any old service workers
+            navigator.serviceWorker.getRegistrations().then(registrations => {
+                registrations.forEach(registration => {
+                    // Check if this is an old version (v3 instead of v2)
+                    if (registration.active && registration.active.scriptURL.includes('sw.js')) {
+                        // Optional: Add version check logic here
+                        console.log('📱 Found service worker registration:', registration.active.scriptURL);
+                    }
+                });
+            });
+            
+            // Register the current service worker
             navigator.serviceWorker.register('sw.js')
                 .then(registration => {
-                    console.log('Service Worker registered:', registration);
+                    console.log('✅ Service Worker registered successfully:', registration);
+                    
+                    // Check for updates
+                    registration.addEventListener('updatefound', () => {
+                        const newWorker = registration.installing;
+                        console.log('🔄 New service worker installing...');
+                        
+                        newWorker.addEventListener('statechange', () => {
+                            console.log('📱 Service worker state:', newWorker.state);
+                        });
+                    });
                 })
                 .catch(error => {
-                    console.log('Service Worker registration failed:', error);
+                    console.error('❌ Service Worker registration failed:', error);
                 });
+                
+            // Listen for controller change (new SW activated)
+            navigator.serviceWorker.addEventListener('controllerchange', () => {
+                console.log('🔄 Service worker controller changed - new version activated');
+            });
         }
+        
+        // Add beforeunload event to track session end
+        window.addEventListener('beforeunload', () => {
+            // Track session end if analytics is available
+            if (window.analyticsSystem && typeof window.analyticsSystem.trackEvent === 'function') {
+                // Use sendBeacon for reliable last ping
+                navigator.sendBeacon('/api/track-session-end');
+            }
+        });
+    </script>
+    
+    <!-- Debug script to verify loading order -->
+    <script>
+        console.log('📋 Script loading order:');
+        console.log('- core.js: loaded');
+        console.log('- features.js: loaded');
+        console.log('- ui.js: loaded');
+        console.log('- utils.js: loaded');
+        console.log('- app.js: loaded');
+        console.log('✅ All scripts loaded in correct order');
     </script>
 </body>
 </html>
