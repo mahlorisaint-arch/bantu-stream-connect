@@ -1,4 +1,6 @@
-// Main Home Feed Application
+// ============================================
+// MAIN HOME FEED APPLICATION
+// ============================================
 class HomeFeedApp {
     constructor() {
         this.allContentData = [];
@@ -16,7 +18,7 @@ class HomeFeedApp {
         // Initialize UI systems
         this.initializeUISystems();
         
-        // Initialize feature systems
+        // Initialize feature systems (including Explore features)
         this.initializeFeatureSystems();
         
         // Initialize utilities
@@ -79,32 +81,91 @@ class HomeFeedApp {
         console.log('🔄 Initializing feature systems...');
         
         // Initialize video preview system
-        videoPreviewSystem.init();
+        if (typeof videoPreviewSystem !== 'undefined') {
+            videoPreviewSystem.init();
+        }
         
         // Initialize recommendation engine
-        recommendationEngine.init();
+        if (typeof recommendationEngine !== 'undefined') {
+            recommendationEngine.init();
+        }
         
         // Initialize notification system
-        notificationSystem.init();
+        if (typeof notificationSystem !== 'undefined') {
+            notificationSystem.init();
+        }
         
         // Initialize analytics system
-        analyticsSystem.init();
+        if (typeof analyticsSystem !== 'undefined') {
+            analyticsSystem.init();
+        }
         
         // Initialize search system
-        searchSystem.init();
+        if (typeof searchSystem !== 'undefined') {
+            searchSystem.init();
+        }
         
         // Initialize continue watching system
-        continueWatchingSystem.init();
+        if (typeof continueWatchingSystem !== 'undefined') {
+            continueWatchingSystem.init();
+        }
+        
+        // ===== NEW: Explore-Screen Features =====
+        console.log('🔄 Initializing Explore-Screen features...');
+        
+        // Initialize language filter
+        if (typeof setupLanguageFilter === 'function') {
+            setupLanguageFilter();
+        }
+        
+        // Initialize community stats
+        if (typeof loadCommunityStats === 'function') {
+            loadCommunityStats();
+        }
+        
+        // Initialize video hero
+        if (typeof initVideoHero === 'function') {
+            initVideoHero();
+        }
+        
+        // Initialize shorts
+        if (typeof loadShorts === 'function') {
+            loadShorts();
+        }
+        
+        // Initialize badges system
+        if (typeof initBadgesSystem === 'function') {
+            initBadgesSystem();
+        }
+        
+        // Initialize tip system
+        if (typeof setupTipSystem === 'function') {
+            setupTipSystem();
+        }
+        
+        // Initialize voice search
+        if (typeof setupVoiceSearch === 'function') {
+            setupVoiceSearch();
+        }
+        
+        // Initialize UI scale controller
+        if (typeof UIScaleController !== 'undefined') {
+            window.uiScaleController = new UIScaleController();
+        }
     }
     
     initializeUtilities() {
         console.log('🔄 Initializing utilities...');
         
         // Initialize accessibility
-        accessibility.init();
+        if (typeof accessibility !== 'undefined') {
+            accessibility.init();
+        }
         
         // Initialize animations
-        animations.init();
+        if (typeof animations !== 'undefined') {
+            animations.init();
+        }
         
         // Setup keyboard shortcuts
         this.setupKeyboardShortcuts();
@@ -118,9 +179,12 @@ class HomeFeedApp {
         
         // Update user state
         stateManager.setState({ user: session?.user || null });
+        window.currentUser = session?.user || null; // Set global for other systems
         
         // Update recommendation engine status
-        recommendationEngine.isUserLoggedIn = isAuthenticated;
+        if (typeof recommendationEngine !== 'undefined') {
+            recommendationEngine.isUserLoggedIn = isAuthenticated;
+        }
         
         // Load user profile picture if authenticated
         if (isAuthenticated) {
@@ -217,17 +281,25 @@ class HomeFeedApp {
     handleAuthStateChange(event, session) {
         if (event === 'SIGNED_IN') {
             console.log('User signed in');
-            recommendationEngine.isUserLoggedIn = true;
+            if (typeof recommendationEngine !== 'undefined') {
+                recommendationEngine.isUserLoggedIn = true;
+            }
             stateManager.setState({ user: session.user });
+            window.currentUser = session.user;
             
             if (session?.user) {
                 this.loadUserProfilePicture(session.user);
-                toast.success(`Welcome back, ${session.user.email}!`);
+                if (typeof toast !== 'undefined') {
+                    toast.success(`Welcome back, ${session.user.email}!`);
+                }
             }
         } else if (event === 'SIGNED_OUT') {
             console.log('User signed out');
-            recommendationEngine.isUserLoggedIn = false;
+            if (typeof recommendationEngine !== 'undefined') {
+                recommendationEngine.isUserLoggedIn = false;
+            }
             stateManager.setState({ user: null });
+            window.currentUser = null;
             
             const profileBtn = document.getElementById('profile-btn');
             if (profileBtn) {
@@ -238,7 +310,9 @@ class HomeFeedApp {
                 `;
             }
             
-            toast.info('Signed out successfully');
+            if (typeof toast !== 'undefined') {
+                toast.info('Signed out successfully');
+            }
         }
         
         // Re-render sections that depend on auth state
@@ -284,7 +358,7 @@ class HomeFeedApp {
                     this.renderContentSections();
                     
                     // Show toast if we updated from cache
-                    if (this.allContentData.length > 0) {
+                    if (this.allContentData.length > 0 && typeof toast !== 'undefined') {
                         toast.success('Content updated');
                     }
                 }
@@ -295,7 +369,9 @@ class HomeFeedApp {
                     this.allContentData = this.getTestContent();
                     this.filteredContentData = this.allContentData;
                     this.renderContentSections();
-                    toast.error('Using sample data. Check your connection.');
+                    if (typeof toast !== 'undefined') {
+                        toast.error('Using sample data. Check your connection.');
+                    }
                 }
             }
         }, 90);
@@ -308,6 +384,21 @@ class HomeFeedApp {
                 
                 // Preload more content
                 this.preloadAdditionalContent();
+                
+                // Reload community stats with fresh data
+                if (typeof loadCommunityStats === 'function') {
+                    loadCommunityStats();
+                }
+                
+                // Reload shorts with fresh data
+                if (typeof loadShorts === 'function') {
+                    loadShorts();
+                }
+                
+                // Update hero video
+                if (typeof initVideoHero === 'function') {
+                    initVideoHero();
+                }
             }, 1000);
         }, 50);
         
@@ -376,6 +467,8 @@ class HomeFeedApp {
             // Process the data
             const processedData = contentData.map(item => {
                 let creatorName = 'Content Creator';
+                let creatorId = item.creator_id || item.user_id;
+                let language = item.language || 'en';
                 
                 if (item.user_profiles) {
                     creatorName = item.user_profiles.full_name || 
@@ -391,15 +484,19 @@ class HomeFeedApp {
                     description: item.description || '',
                     thumbnail_url: item.thumbnail_url,
                     file_url: item.file_url,
+                    preview_url: item.preview_url,
                     media_type: item.media_type || 'video',
                     genre: item.genre,
                     created_at: item.created_at,
                     creator: creatorName,
                     creator_display_name: creatorName,
-                    creator_id: item.creator_id || item.user_id,
+                    creator_id: creatorId,
                     user_id: item.user_id,
+                    user_profiles: item.user_profiles,
                     views: item.views_count || item.views || 0,
-                    likes: item.likes_count || item.likes || 0
+                    likes: item.likes_count || item.likes || 0,
+                    language: language,
+                    duration: item.duration || 0
                 };
             });
             
@@ -428,7 +525,9 @@ class HomeFeedApp {
                 creator_id: '1',
                 user_id: '1',
                 views: 12500,
-                likes: 890
+                likes: 890,
+                language: 'en',
+                duration: 120
             },
             {
                 id: 2,
@@ -444,7 +543,9 @@ class HomeFeedApp {
                 creator_id: '2',
                 user_id: '2',
                 views: 8900,
-                likes: 650
+                likes: 650,
+                language: 'en',
+                duration: 180
             },
             {
                 id: 3,
@@ -460,7 +561,9 @@ class HomeFeedApp {
                 creator_id: '3',
                 user_id: '3',
                 views: 15600,
-                likes: 1200
+                likes: 1200,
+                language: 'zu',
+                duration: 240
             }
         ];
     }
@@ -507,15 +610,24 @@ class HomeFeedApp {
         }
         
         // Get recommendations
-        const personalizedRecommendations = recommendationEngine.getPersonalizedRecommendations(this.filteredContentData);
-        const trendingFallback = recommendationEngine.getTrendingFallback(this.filteredContentData);
+        let personalizedRecommendations = [];
+        let trendingFallback = [];
+        
+        if (typeof recommendationEngine !== 'undefined') {
+            personalizedRecommendations = recommendationEngine.getPersonalizedRecommendations(this.filteredContentData);
+            trendingFallback = recommendationEngine.getTrendingFallback(this.filteredContentData);
+        }
         
         // Determine what to show in Recommended For You section
-        const showRecommendedSection = recommendationEngine.isUserLoggedIn || trendingFallback.length > 0;
+        const isUserLoggedIn = !!(stateManager?.state?.user || window.currentUser);
+        const showRecommendedSection = isUserLoggedIn || trendingFallback.length > 0;
         const recommendedContent = personalizedRecommendations.length > 0 ? personalizedRecommendations : trendingFallback;
         
         // Get continue watching
-        const continueWatching = continueWatchingSystem.getContinueWatchingContent(this.filteredContentData);
+        let continueWatching = [];
+        if (typeof continueWatchingSystem !== 'undefined') {
+            continueWatching = continueWatchingSystem.getContinueWatchingContent(this.filteredContentData);
+        }
         
         // Get trending content
         const trendingContent = this.getTrendingContent(this.filteredContentData);
@@ -533,7 +645,9 @@ class HomeFeedApp {
                     </div>
                     <div class="content-grid">
                         ${continueWatching.slice(0, 5).map(item => 
-                            contentCardSystem.createContentCard(item, { showContinueWatching: true })
+                            contentCardSystem?.createContentCard ? 
+                            contentCardSystem.createContentCard(item, { showContinueWatching: true }) :
+                            this.createFallbackCard(item)
                         ).join('')}
                     </div>
                 </section>
@@ -542,7 +656,7 @@ class HomeFeedApp {
         
         // Recommended For You Section
         if (showRecommendedSection && recommendedContent.length > 0) {
-            const description = !recommendationEngine.isUserLoggedIn 
+            const description = !isUserLoggedIn 
                 ? 'Trending content for new users. <span class="highlight">Sign in for personalized recommendations!</span>'
                 : (personalizedRecommendations.length > 0 
                     ? 'Based on your preferences'
@@ -558,7 +672,9 @@ class HomeFeedApp {
                     </div>
                     <div class="content-grid">
                         ${recommendedContent.slice(0, 5).map(item => 
-                            contentCardSystem.createRecommendedCard(item)
+                            contentCardSystem?.createRecommendedCard ? 
+                            contentCardSystem.createRecommendedCard(item) :
+                            this.createFallbackCard(item)
                         ).join('')}
                     </div>
                 </section>
@@ -574,7 +690,9 @@ class HomeFeedApp {
                 </div>
                 <div class="content-grid">
                     ${this.filteredContentData.slice(0, 10).map(item => 
-                        contentCardSystem.createContentCard(item)
+                        contentCardSystem?.createContentCard ? 
+                        contentCardSystem.createContentCard(item) :
+                        this.createFallbackCard(item)
                     ).join('')}
                 </div>
             </section>
@@ -590,7 +708,9 @@ class HomeFeedApp {
                     </div>
                     <div class="content-grid">
                         ${trendingContent.slice(0, 5).map(item => 
-                            contentCardSystem.createTrendingCard(item)
+                            contentCardSystem?.createTrendingCard ? 
+                            contentCardSystem.createTrendingCard(item) :
+                            this.createFallbackCard(item)
                         ).join('')}
                     </div>
                 </section>
@@ -608,7 +728,9 @@ class HomeFeedApp {
                     </div>
                     <div class="content-grid">
                         ${mostViewed.slice(0, 5).map(item => 
-                            contentCardSystem.createContentCard(item)
+                            contentCardSystem?.createContentCard ? 
+                            contentCardSystem.createContentCard(item) :
+                            this.createFallbackCard(item)
                         ).join('')}
                     </div>
                 </section>
@@ -619,6 +741,58 @@ class HomeFeedApp {
         
         // Setup event listeners for the new content
         this.setupContentCardListeners();
+        
+        // Apply language filter if active
+        const activeLang = document.querySelector('.language-chip.active')?.dataset.lang;
+        if (activeLang && activeLang !== 'all') {
+            filterContentByLanguage(activeLang);
+        }
+    }
+    
+    createFallbackCard(item) {
+        const creatorName = item.creator || item.creator_display_name || 'Creator';
+        return `
+            <div class="content-card" data-content-id="${item.id}" data-language="${item.language || 'en'}">
+                <div class="card-thumbnail">
+                    <img src="${item.thumbnail_url || 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop'}" 
+                         alt="${item.title}"
+                         loading="lazy"
+                         onerror="this.src='https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop'">
+                    <div class="thumbnail-overlay"></div>
+                    <video class="video-preview" muted preload="metadata">
+                        <source src="${item.file_url || ''}" type="video/mp4">
+                    </video>
+                    <button class="share-btn" title="Share" data-content-id="${item.id}">
+                        <i class="fas fa-share"></i>
+                    </button>
+                </div>
+                <div class="card-content">
+                    <h3 class="card-title" title="${item.title}">
+                        ${item.title.length > 50 ? item.title.substring(0, 50) + '...' : item.title}
+                    </h3>
+                    <div class="card-stats">
+                        <span class="stat">
+                            <i class="fas fa-eye"></i> ${item.views || 0}
+                        </span>
+                        <span class="stat">
+                            <i class="fas fa-heart"></i> ${item.likes || 0}
+                        </span>
+                    </div>
+                    <button class="creator-btn" 
+                            data-creator-id="${item.creator_id}"
+                            data-creator-name="${creatorName}">
+                        <i class="fas fa-user"></i>
+                        ${creatorName.length > 15 ? creatorName.substring(0, 15) + '...' : creatorName}
+                    </button>
+                    <button class="tip-creator-btn"
+                            data-creator-id="${item.creator_id}"
+                            data-creator-name="${creatorName}"
+                            title="Tip Creator">
+                        <i class="fas fa-gift"></i>
+                    </button>
+                </div>
+            </div>
+        `;
     }
     
     getMostViewedContent(contentData) {
@@ -658,7 +832,9 @@ class HomeFeedApp {
             const grid = trendingSection.querySelector('.content-grid');
             if (grid) {
                 grid.innerHTML = trendingContent.slice(0, 5).map(item => 
-                    contentCardSystem.createTrendingCard(item)
+                    contentCardSystem?.createTrendingCard ? 
+                    contentCardSystem.createTrendingCard(item) :
+                    this.createFallbackCard(item)
                 ).join('');
                 
                 // Re-setup listeners
@@ -672,26 +848,47 @@ class HomeFeedApp {
         document.querySelectorAll('.content-card:not(.click-initialized)').forEach(card => {
             card.classList.add('click-initialized');
             
-            unifiedTap(card, (e) => {
-                // Check if clicking on interactive elements
-                if (e.target.closest('.share-btn') || 
-                    e.target.closest('.creator-btn') ||
-                    e.target.tagName === 'BUTTON' ||
-                    e.target.tagName === 'A') {
-                    return;
-                }
-                
-                const contentId = card.dataset.contentId;
-                if (contentId) {
-                    // Track view
-                    analyticsSystem.trackContentInteraction(contentId, 'view');
+            if (typeof unifiedTap !== 'undefined') {
+                unifiedTap(card, (e) => {
+                    // Check if clicking on interactive elements
+                    if (e.target.closest('.share-btn') || 
+                        e.target.closest('.creator-btn') ||
+                        e.target.closest('.tip-creator-btn') ||
+                        e.target.tagName === 'BUTTON' ||
+                        e.target.tagName === 'A') {
+                        return;
+                    }
                     
-                    // Navigate to content detail
-                    setTimeout(() => {
+                    const contentId = card.dataset.contentId;
+                    if (contentId) {
+                        // Track view
+                        if (typeof analyticsSystem !== 'undefined') {
+                            analyticsSystem.trackContentInteraction(contentId, 'view');
+                        }
+                        
+                        // Navigate to content detail
+                        setTimeout(() => {
+                            window.location.href = `content-detail.html?id=${contentId}`;
+                        }, 100);
+                    }
+                }, 50);
+            } else {
+                // Fallback click handler
+                card.addEventListener('click', (e) => {
+                    if (e.target.closest('.share-btn') || 
+                        e.target.closest('.creator-btn') ||
+                        e.target.closest('.tip-creator-btn') ||
+                        e.target.tagName === 'BUTTON' ||
+                        e.target.tagName === 'A') {
+                        return;
+                    }
+                    
+                    const contentId = card.dataset.contentId;
+                    if (contentId) {
                         window.location.href = `content-detail.html?id=${contentId}`;
-                    }, 100);
-                }
-            }, 50);
+                    }
+                });
+            }
         });
         
         // Share buttons
@@ -717,7 +914,9 @@ class HomeFeedApp {
                 if (creatorId) {
                     window.location.href = `creator-channel.html?id=${creatorId}&name=${encodeURIComponent(creatorName)}`;
                 } else {
-                    toast.error(`Cannot view ${creatorName}'s channel - missing creator information`);
+                    if (typeof toast !== 'undefined') {
+                        toast.error(`Cannot view ${creatorName}'s channel - missing creator information`);
+                    }
                 }
             });
         });
@@ -727,23 +926,28 @@ class HomeFeedApp {
         section.querySelectorAll('.content-card:not(.click-initialized)').forEach(card => {
             card.classList.add('click-initialized');
             
-            unifiedTap(card, (e) => {
-                if (e.target.closest('.share-btn') || 
-                    e.target.closest('.creator-btn') ||
-                    e.target.tagName === 'BUTTON' ||
-                    e.target.tagName === 'A') {
-                    return;
-                }
-                
-                const contentId = card.dataset.contentId;
-                if (contentId) {
-                    analyticsSystem.trackContentInteraction(contentId, 'view');
+            if (typeof unifiedTap !== 'undefined') {
+                unifiedTap(card, (e) => {
+                    if (e.target.closest('.share-btn') || 
+                        e.target.closest('.creator-btn') ||
+                        e.target.closest('.tip-creator-btn') ||
+                        e.target.tagName === 'BUTTON' ||
+                        e.target.tagName === 'A') {
+                        return;
+                    }
                     
-                    setTimeout(() => {
-                        window.location.href = `content-detail.html?id=${contentId}`;
-                    }, 100);
-                }
-            }, 50);
+                    const contentId = card.dataset.contentId;
+                    if (contentId) {
+                        if (typeof analyticsSystem !== 'undefined') {
+                            analyticsSystem.trackContentInteraction(contentId, 'view');
+                        }
+                        
+                        setTimeout(() => {
+                            window.location.href = `content-detail.html?id=${contentId}`;
+                        }, 100);
+                    }
+                }, 50);
+            }
         });
     }
     
@@ -769,7 +973,9 @@ class HomeFeedApp {
     
     copyToClipboard(text) {
         navigator.clipboard.writeText(text).then(() => {
-            toast.success('Link copied to clipboard!');
+            if (typeof toast !== 'undefined') {
+                toast.success('Link copied to clipboard!');
+            }
         }).catch(() => {
             const textarea = document.createElement('textarea');
             textarea.value = text;
@@ -777,14 +983,16 @@ class HomeFeedApp {
             textarea.select();
             document.execCommand('copy');
             document.body.removeChild(textarea);
-            toast.success('Link copied to clipboard!');
+            if (typeof toast !== 'undefined') {
+                toast.success('Link copied to clipboard!');
+            }
         });
     }
     
     setupEventListeners() {
         // Search button
         const searchBtn = document.getElementById('search-btn');
-        if (searchBtn) {
+        if (searchBtn && typeof searchSystem !== 'undefined') {
             searchBtn.addEventListener('click', () => {
                 searchSystem.openSearch();
             });
@@ -804,6 +1012,12 @@ class HomeFeedApp {
             browseAllCta.addEventListener('click', () => {
                 window.location.href = 'content-library.html';
             });
+        }
+        
+        // Hero mute button (handled in initVideoHero, but ensure it exists)
+        const heroMuteBtn = document.getElementById('hero-mute-btn');
+        if (heroMuteBtn) {
+            // Already handled in initVideoHero, but ensure it's clickable
         }
         
         // See all buttons (delegated)
@@ -842,13 +1056,17 @@ class HomeFeedApp {
             continueBtn.addEventListener('click', () => {
                 if (errorModal) errorModal.style.display = 'none';
                 // Continue with cached content
-                toast.info('Continuing with cached content');
+                if (typeof toast !== 'undefined') {
+                    toast.info('Continuing with cached content');
+                }
             });
         }
         
         if (reportBtn) {
             reportBtn.addEventListener('click', () => {
-                toast.success('Issue reported. Thank you!');
+                if (typeof toast !== 'undefined') {
+                    toast.success('Issue reported. Thank you!');
+                }
                 if (errorModal) errorModal.style.display = 'none';
             });
         }
@@ -871,6 +1089,28 @@ class HomeFeedApp {
                 }
             });
         }
+        
+        // Badges modal close
+        const closeBadges = document.getElementById('close-badges');
+        if (closeBadges) {
+            closeBadges.addEventListener('click', () => {
+                const badgesModal = document.getElementById('badges-modal');
+                if (badgesModal) {
+                    badgesModal.classList.remove('active');
+                }
+            });
+        }
+        
+        // Tip modal close
+        const closeTip = document.getElementById('close-tip');
+        if (closeTip) {
+            closeTip.addEventListener('click', () => {
+                const tipModal = document.getElementById('tip-modal');
+                if (tipModal) {
+                    tipModal.classList.remove('active');
+                }
+            });
+        }
     }
     
     setupKeyboardShortcuts() {
@@ -884,7 +1124,9 @@ class HomeFeedApp {
             // Ctrl+K or Cmd+K for search
             if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
                 e.preventDefault();
-                searchSystem.openSearch();
+                if (typeof searchSystem !== 'undefined') {
+                    searchSystem.openSearch();
+                }
             }
             
             // Ctrl+R for refresh
@@ -902,12 +1144,14 @@ class HomeFeedApp {
     }
     
     handleSpaceKey() {
-        const currentPreview = videoPreviewSystem.currentPreview;
-        if (currentPreview) {
-            if (currentPreview.paused) {
-                currentPreview.play().catch(e => console.log('Play failed:', e));
-            } else {
-                currentPreview.pause();
+        if (typeof videoPreviewSystem !== 'undefined') {
+            const currentPreview = videoPreviewSystem.currentPreview;
+            if (currentPreview) {
+                if (currentPreview.paused) {
+                    currentPreview.play().catch(e => console.log('Play failed:', e));
+                } else {
+                    currentPreview.pause();
+                }
             }
         }
     }
@@ -932,7 +1176,9 @@ class HomeFeedApp {
         if (this.isLoading) return;
         
         this.isLoading = true;
-        toast.info('Refreshing content...');
+        if (typeof toast !== 'undefined') {
+            toast.info('Refreshing content...');
+        }
         
         try {
             const freshContent = await this.fetchHomeFeedContent();
@@ -944,11 +1190,26 @@ class HomeFeedApp {
                 await cacheManager.cacheContent(freshContent);
                 this.renderContentSections();
                 
-                toast.success('Content refreshed!');
+                // Refresh explore features
+                if (typeof loadCommunityStats === 'function') {
+                    loadCommunityStats();
+                }
+                if (typeof loadShorts === 'function') {
+                    loadShorts();
+                }
+                if (typeof initVideoHero === 'function') {
+                    initVideoHero();
+                }
+                
+                if (typeof toast !== 'undefined') {
+                    toast.success('Content refreshed!');
+                }
             }
         } catch (error) {
             console.error('Error refreshing content:', error);
-            toast.error('Failed to refresh content');
+            if (typeof toast !== 'undefined') {
+                toast.error('Failed to refresh content');
+            }
         } finally {
             this.isLoading = false;
         }
@@ -976,11 +1237,13 @@ class HomeFeedApp {
         }
         
         // Send analytics event
-        analyticsSystem.trackEvent('app_initialized', {
-            load_time: Date.now() - performanceMonitor.sessionStart,
-            content_count: this.allContentData.length,
-            has_cache: cacheManager.getCachedContent() !== null
-        });
+        if (typeof analyticsSystem !== 'undefined') {
+            analyticsSystem.trackEvent('app_initialized', {
+                load_time: Date.now() - (performanceMonitor?.sessionStart || Date.now()),
+                content_count: this.allContentData.length,
+                has_cache: cacheManager.getCachedContent() !== null
+            });
+        }
         
         console.log('🎉 Home Feed ready!');
     }
@@ -1038,7 +1301,9 @@ class HomeFeedApp {
     }
 }
 
-// Initialize the app when DOM is loaded
+// ============================================
+// INITIALIZE THE APP
+// ============================================
 document.addEventListener('DOMContentLoaded', async () => {
     const app = new HomeFeedApp();
     
