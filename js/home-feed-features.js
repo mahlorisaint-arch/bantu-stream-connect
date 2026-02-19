@@ -1616,18 +1616,24 @@ async function initVideoHero() {
 }
 
 // ============================================
-// CONTENT METRICS LOADING (NEW)
+// CONTENT METRICS LOADING (FIXED with cache safety)
 // ============================================
 async function loadContentMetrics(contentIds) {
     if (!contentIds || contentIds.length === 0) return;
     
-    // Check cache first
-    const cacheKey = `metrics-${contentIds.sort().join(',')}`;
-    const cached = window.cacheManager?.get(cacheKey);
-    if (cached) {
-        cached.forEach(m => window.contentMetrics?.set(m.content_id, m));
-        updateMetricsOnCards(contentIds);
-        return;
+    // Safety check: ensure cacheManager exists and has get method
+    if (!window.cacheManager || typeof window.cacheManager.get !== 'function') {
+        console.warn('⚠️ cacheManager not ready, skipping cache check');
+        // Proceed without cache
+    } else {
+        // Check cache first
+        const cacheKey = `metrics-${contentIds.sort().join(',')}`;
+        const cached = window.cacheManager.get(cacheKey);
+        if (cached) {
+            cached.forEach(m => window.contentMetrics?.set(m.content_id, m));
+            updateMetricsOnCards(contentIds);
+            return;
+        }
     }
     
     try {
@@ -1683,8 +1689,9 @@ async function loadContentMetrics(contentIds) {
             window.contentMetrics.set(id, metrics);
         });
         
-        // Cache results
-        if (window.cacheManager) {
+        // Cache results if cacheManager is available
+        if (window.cacheManager && typeof window.cacheManager.set === 'function') {
+            const cacheKey = `metrics-${contentIds.sort().join(',')}`;
             window.cacheManager.set(cacheKey, 
                 Array.from(metricsMap.entries()).map(([k, v]) => ({ content_id: k, ...v })),
                 3 * 60 * 1000 // 3 minute cache
@@ -1730,6 +1737,26 @@ function updateMetricsOnCards(contentIds) {
                 <span><i class="fas fa-heart"></i> ${formatNumber(metrics.likes)} likes</span>
             `;
         }
+    });
+}
+
+// ============================================
+// Wait for core to be ready before using cacheManager
+// ============================================
+function waitForCacheManager(timeout = 5000) {
+    return new Promise((resolve, reject) => {
+        const start = Date.now();
+        const check = () => {
+            if (window.cacheManager && typeof window.cacheManager.get === 'function') {
+                resolve(window.cacheManager);
+            } else if (Date.now() - start > timeout) {
+                console.warn('⚠️ cacheManager not ready after timeout');
+                resolve(null); // Return null instead of rejecting to avoid crash
+            } else {
+                setTimeout(check, 100);
+            }
+        };
+        check();
     });
 }
 
@@ -2361,6 +2388,19 @@ function setupVoiceSearch() {
 }
 
 // ============================================
+// Guard: Wait for core to initialize before proceeding
+// ============================================
+(function waitForCore() {
+    if (typeof window.cacheManager === 'undefined' || typeof window.cacheManager.get !== 'function') {
+        console.log('⏳ Waiting for core.js to initialize cacheManager...');
+        setTimeout(waitForCore, 100);
+        return;
+    }
+    console.log('✅ Core ready, initializing features...');
+    // The rest of initialization happens in initializeAllFeatures()
+})();
+
+// ============================================
 // UTILITY FUNCTIONS
 // ============================================
 function formatNumber(num) {
@@ -2546,6 +2586,7 @@ window.setupSidebar = typeof setupSidebar === 'function' ? setupSidebar : null;
 window.initVideoHero = typeof initVideoHero === 'function' ? initVideoHero : null;
 window.loadContentMetrics = typeof loadContentMetrics === 'function' ? loadContentMetrics : null;
 window.createContentCardWithMetrics = typeof createContentCardWithMetrics === 'function' ? createContentCardWithMetrics : null;
+window.waitForCacheManager = typeof waitForCacheManager === 'function' ? waitForCacheManager : null;
 
 // Create global cache manager and content metrics
 window.cacheManager = new CacheManager();
