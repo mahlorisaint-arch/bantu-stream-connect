@@ -177,6 +177,7 @@ class CacheManager {
     constructor() {
         this.cacheName = 'bantu-stream-connect-v2';
         this.cacheTTL = 60 * 60 * 1000; // 1 hour
+        this.currentVersion = 'v2'; // Track current version
     }
     
     async init() {
@@ -188,11 +189,97 @@ class CacheManager {
     async setupServiceWorker() {
         if ('serviceWorker' in navigator) {
             try {
+                // First, clear any old service workers (version mismatch)
+                await this.clearOldServiceWorkers();
+                
+                // Register the current service worker
                 const registration = await navigator.serviceWorker.register('/sw.js');
-                console.log('ServiceWorker registered:', registration);
+                console.log('✅ ServiceWorker registered:', registration);
+                
+                // Check for updates
+                registration.addEventListener('updatefound', () => {
+                    const newWorker = registration.installing;
+                    console.log('🔄 New service worker installing...');
+                    
+                    newWorker.addEventListener('statechange', () => {
+                        console.log('📱 Service worker state:', newWorker.state);
+                        
+                        // If new worker is activated, reload to ensure fresh content
+                        if (newWorker.state === 'activated') {
+                            console.log('🔄 New service worker activated - reloading for fresh content');
+                            window.location.reload();
+                        }
+                    });
+                });
+                
+                // Listen for controller change (new SW activated)
+                navigator.serviceWorker.addEventListener('controllerchange', () => {
+                    console.log('🔄 Service worker controller changed - new version activated');
+                });
+                
             } catch (error) {
-                console.log('ServiceWorker registration failed:', error);
+                console.log('❌ ServiceWorker registration failed:', error);
             }
+        }
+    }
+    
+    async clearOldServiceWorkers() {
+        if (!('serviceWorker' in navigator)) return;
+        
+        try {
+            const registrations = await navigator.serviceWorker.getRegistrations();
+            
+            for (const registration of registrations) {
+                // Check if this is an old version
+                // We consider any service worker with 'v3' in the URL as old (since we're on v2)
+                if (registration.active && registration.active.scriptURL.includes('sw.js')) {
+                    // Optional: You could implement a more sophisticated version check
+                    // by fetching the SW and checking its version comment
+                    
+                    // For now, we'll log it and optionally unregister if it's causing issues
+                    console.log('📱 Found service worker registration:', registration.active.scriptURL);
+                    
+                    // Check if this is likely an old version (you can customize this logic)
+                    // For example, if the registration scope includes 'bantustreamconnect' but version mismatches
+                    if (registration.scope.includes('bantustreamconnect')) {
+                        // Unregister old service workers on version mismatch
+                        // This ensures we're always running the latest version
+                        const unregistered = await registration.unregister();
+                        if (unregistered) {
+                            console.log('🔄 Unregistered old service worker');
+                            
+                            // Clear all caches associated with this registration
+                            await this.clearOldCaches();
+                        }
+                    }
+                }
+            }
+        } catch (error) {
+            console.error('Error clearing old service workers:', error);
+        }
+    }
+    
+    async clearOldCaches() {
+        if (!('caches' in window)) return;
+        
+        try {
+            const cacheNames = await caches.keys();
+            const oldCacheNames = cacheNames.filter(name => 
+                name !== this.cacheName && name.startsWith('bantu-stream-connect')
+            );
+            
+            await Promise.all(
+                oldCacheNames.map(name => {
+                    console.log('🗑️ Deleting old cache:', name);
+                    return caches.delete(name);
+                })
+            );
+            
+            if (oldCacheNames.length > 0) {
+                console.log('✅ Cleared old caches:', oldCacheNames);
+            }
+        } catch (error) {
+            console.error('Error clearing old caches:', error);
         }
     }
     
@@ -200,6 +287,13 @@ class CacheManager {
         window.addEventListener('online', () => {
             this.updateCacheStatus('online');
             this.showToast('Back online', 'success');
+            
+            // When coming back online, check for service worker updates
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.ready.then(registration => {
+                    registration.update();
+                });
+            }
         });
         
         window.addEventListener('offline', () => {
@@ -223,6 +317,7 @@ class CacheManager {
             '/css/home-feed-themes.css',
             '/css/home-feed-components.css',
             '/css/home-feed-utilities.css',
+            '/css/home-feed-features.css',
             '/js/home-feed-core.js',
             '/js/home-feed-features.js',
             '/js/home-feed-ui.js',
@@ -234,8 +329,9 @@ class CacheManager {
             try {
                 const cache = await caches.open(this.cacheName);
                 await cache.addAll(criticalAssets);
+                console.log('✅ Precached critical assets');
             } catch (error) {
-                console.log('Precaching failed:', error);
+                console.log('⚠️ Precaching failed:', error);
             }
         }
     }
@@ -268,6 +364,41 @@ class CacheManager {
     
     showToast(message, type) {
         // Implementation in utils
+        if (typeof window.showToast === 'function') {
+            window.showToast(message, type);
+        } else {
+            console.log(`Toast (${type}):`, message);
+        }
+    }
+    
+    // New method to handle version mismatches
+    handleVersionMismatch() {
+        console.log('🔄 Version mismatch detected - clearing caches and reloading');
+        
+        // Clear all caches
+        if ('caches' in window) {
+            caches.keys().then(keys => {
+                keys.forEach(key => {
+                    if (key.startsWith('bantu-stream-connect')) {
+                        caches.delete(key);
+                    }
+                });
+            });
+        }
+        
+        // Clear service worker registrations
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.getRegistrations().then(registrations => {
+                registrations.forEach(registration => {
+                    registration.unregister();
+                });
+            }).then(() => {
+                // Reload the page after cleaning up
+                window.location.reload();
+            });
+        } else {
+            window.location.reload();
+        }
     }
 }
 
@@ -319,7 +450,8 @@ class ErrorHandler {
         const criticalErrors = ['NetworkError', 'TypeError', 'SyntaxError', 'ReferenceError'];
         return criticalErrors.includes(error.name) || 
                error.message.includes('network') ||
-               error.message.includes('connection');
+               error.message.includes('connection') ||
+               error.message.includes('timeout');
     }
     
     showErrorModal(error) {
@@ -337,6 +469,9 @@ class ErrorHandler {
     getUserFriendlyMessage(error) {
         if (error.message.includes('network') || error.message.includes('connection')) {
             return 'We\'re having trouble connecting to the server. You can continue using cached content.';
+        }
+        if (error.message.includes('timeout')) {
+            return 'The request is taking too long. Please check your connection and try again.';
         }
         return 'Something went wrong. Please try again.';
     }
@@ -392,7 +527,9 @@ class PerformanceMonitor {
             try {
                 const clsObserver = new PerformanceObserver((entryList) => {
                     for (const entry of entryList.getEntries()) {
-                        this.metrics.cls += entry.value;
+                        if (!entry.hadRecentInput) {
+                            this.metrics.cls += entry.value;
+                        }
                     }
                     this.updateMetricDisplay('cls', this.metrics.cls);
                 });
@@ -500,4 +637,14 @@ const SUPABASE_URL = 'https://ydnxqnbjoshvxteevemc.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U';
 const supabaseAuth = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+// Export to window for global access
+window.contentSupabase = contentSupabase;
+window.cacheManager = cacheManager;
+window.errorHandler = errorHandler;
+window.performanceMonitor = performanceMonitor;
+window.stateManager = stateManager;
+window.supabaseAuth = supabaseAuth;
+
 console.log('✅ Home Feed Core initialized');
+console.log('📦 Cache Manager version:', cacheManager.currentVersion);
+console.log('🔧 Service Worker cleanup enabled');
