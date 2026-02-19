@@ -18,7 +18,7 @@ class HomeFeedApp {
         // Initialize UI systems
         this.initializeUISystems();
         
-        // Initialize feature systems (including Explore features)
+        // Initialize feature systems (including all new features)
         this.initializeFeatureSystems();
         
         // Initialize utilities
@@ -33,6 +33,9 @@ class HomeFeedApp {
         // Load content with phased loading
         await this.loadContentWithPhasedLoading();
         
+        // Load metrics for initial content cards
+        this.loadInitialContentMetrics();
+        
         // Final initialization
         this.finalizeInitialization();
         
@@ -43,17 +46,27 @@ class HomeFeedApp {
         console.log('🔄 Initializing core systems...');
         
         // Initialize cache manager
-        await cacheManager.init();
+        if (typeof cacheManager !== 'undefined') {
+            await cacheManager.init();
+        } else {
+            // Create global cache manager if not exists
+            window.cacheManager = new CacheManager();
+        }
         
         // Initialize performance monitor
-        performanceMonitor.reportMetrics();
+        if (typeof performanceMonitor !== 'undefined') {
+            performanceMonitor.reportMetrics();
+        }
         
-        // Load initial state
-        const cachedContent = cacheManager.getCachedContent();
-        if (cachedContent) {
-            this.allContentData = cachedContent;
-            this.filteredContentData = cachedContent;
-            stateManager.setState({ content: cachedContent, filtered: cachedContent });
+        // Initialize state manager
+        if (typeof stateManager !== 'undefined') {
+            // Load initial state
+            const cachedContent = cacheManager?.getCachedContent ? cacheManager.getCachedContent() : null;
+            if (cachedContent) {
+                this.allContentData = cachedContent;
+                this.filteredContentData = cachedContent;
+                stateManager.setState({ content: cachedContent, filtered: cachedContent });
+            }
         }
     }
     
@@ -61,24 +74,37 @@ class HomeFeedApp {
         console.log('🔄 Initializing UI systems...');
         
         // Initialize development window (always visible)
-        developmentWindow.init();
+        if (typeof developmentWindow !== 'undefined') {
+            developmentWindow.init();
+        }
         
         // Initialize navigation
-        navigationSystem.init();
+        if (typeof navigationSystem !== 'undefined') {
+            navigationSystem.init();
+        }
         
         // Initialize theme system
-        themeSystem.init();
+        if (typeof themeSystem !== 'undefined') {
+            themeSystem.init();
+        }
         
         // Initialize content card system
-        contentCardSystem.init();
+        if (typeof contentCardSystem !== 'undefined') {
+            contentCardSystem.init();
+        }
         
         // Initialize modals
-        searchModal.init();
-        analyticsModal.init();
+        if (typeof searchModal !== 'undefined') {
+            searchModal.init();
+        }
+        
+        if (typeof analyticsModal !== 'undefined') {
+            analyticsModal.init();
+        }
     }
     
     initializeFeatureSystems() {
-        console.log('🔄 Initializing feature systems...');
+        console.log('🔄 Initializing all feature systems...');
         
         // Initialize video preview system
         if (typeof videoPreviewSystem !== 'undefined') {
@@ -110,47 +136,58 @@ class HomeFeedApp {
             continueWatchingSystem.init();
         }
         
-        // ===== NEW: Explore-Screen Features =====
-        console.log('🔄 Initializing Explore-Screen features...');
+        // ===== NEW: Sidebar & UI Scaling =====
+        console.log('🔄 Initializing Sidebar & UI Scaling...');
         
-        // Initialize language filter
-        if (typeof setupLanguageFilter === 'function') {
-            setupLanguageFilter();
-        }
-        
-        // Initialize community stats
-        if (typeof loadCommunityStats === 'function') {
-            loadCommunityStats();
-        }
-        
-        // Initialize video hero
-        if (typeof initVideoHero === 'function') {
-            initVideoHero();
-        }
-        
-        // Initialize shorts
-        if (typeof loadShorts === 'function') {
-            loadShorts();
-        }
-        
-        // Initialize badges system
-        if (typeof initBadgesSystem === 'function') {
-            initBadgesSystem();
-        }
-        
-        // Initialize tip system
-        if (typeof setupTipSystem === 'function') {
-            setupTipSystem();
-        }
-        
-        // Initialize voice search
-        if (typeof setupVoiceSearch === 'function') {
-            setupVoiceSearch();
+        // Initialize sidebar
+        if (typeof setupSidebar === 'function') {
+            setupSidebar();
         }
         
         // Initialize UI scale controller
         if (typeof UIScaleController !== 'undefined') {
             window.uiScaleController = new UIScaleController();
+            window.uiScaleController.init();
+        }
+        
+        // ===== NEW: Video Hero =====
+        console.log('🔄 Initializing Video Hero...');
+        if (typeof initVideoHero === 'function') {
+            initVideoHero();
+        }
+        
+        // ===== NEW: Content Metrics System =====
+        console.log('🔄 Initializing Content Metrics System...');
+        window.contentMetrics = window.contentMetrics || new Map();
+        
+        // ===== NEW: Language Filter =====
+        if (typeof setupLanguageFilter === 'function') {
+            setupLanguageFilter();
+        }
+        
+        // ===== NEW: Community Stats =====
+        if (typeof loadCommunityStats === 'function') {
+            loadCommunityStats();
+        }
+        
+        // ===== NEW: Shorts Section =====
+        if (typeof loadShorts === 'function') {
+            loadShorts();
+        }
+        
+        // ===== NEW: Badges System =====
+        if (typeof initBadgesSystem === 'function') {
+            initBadgesSystem();
+        }
+        
+        // ===== NEW: Tip System =====
+        if (typeof setupTipSystem === 'function') {
+            setupTipSystem();
+        }
+        
+        // ===== NEW: Voice Search =====
+        if (typeof setupVoiceSearch === 'function') {
+            setupVoiceSearch();
         }
     }
     
@@ -178,7 +215,9 @@ class HomeFeedApp {
         console.log(`🔐 User ${isAuthenticated ? 'authenticated' : 'not authenticated'}`);
         
         // Update user state
-        stateManager.setState({ user: session?.user || null });
+        if (typeof stateManager !== 'undefined') {
+            stateManager.setState({ user: session?.user || null });
+        }
         window.currentUser = session?.user || null; // Set global for other systems
         
         // Update recommendation engine status
@@ -194,6 +233,11 @@ class HomeFeedApp {
         // Setup profile button
         this.setupProfileButton(isAuthenticated, session?.user);
         
+        // Update sidebar profile if function exists
+        if (isAuthenticated && typeof updateSidebarProfile === 'function') {
+            updateSidebarProfile();
+        }
+        
         // Listen for auth state changes
         supabaseAuth.auth.onAuthStateChange((event, session) => {
             console.log('Auth state changed:', event);
@@ -204,6 +248,8 @@ class HomeFeedApp {
     async loadUserProfilePicture(user) {
         try {
             const profileBtn = document.getElementById('profile-btn');
+            const sidebarAvatar = document.getElementById('sidebar-profile-avatar');
+            
             if (!user || !profileBtn) return;
             
             const userInitials = this.getInitials(user.email);
@@ -245,6 +291,11 @@ class HomeFeedApp {
                     
                     profileBtn.innerHTML = '';
                     profileBtn.appendChild(profileImg);
+                    
+                    // Update sidebar avatar if it exists
+                    if (sidebarAvatar) {
+                        sidebarAvatar.innerHTML = `<img src="${avatarUrl}" alt="Profile">`;
+                    }
                 }
             } catch (error) {
                 console.log('No user profile found:', error);
@@ -284,11 +335,16 @@ class HomeFeedApp {
             if (typeof recommendationEngine !== 'undefined') {
                 recommendationEngine.isUserLoggedIn = true;
             }
-            stateManager.setState({ user: session.user });
+            if (typeof stateManager !== 'undefined') {
+                stateManager.setState({ user: session.user });
+            }
             window.currentUser = session.user;
             
             if (session?.user) {
                 this.loadUserProfilePicture(session.user);
+                if (typeof updateSidebarProfile === 'function') {
+                    updateSidebarProfile();
+                }
                 if (typeof toast !== 'undefined') {
                     toast.success(`Welcome back, ${session.user.email}!`);
                 }
@@ -298,7 +354,9 @@ class HomeFeedApp {
             if (typeof recommendationEngine !== 'undefined') {
                 recommendationEngine.isUserLoggedIn = false;
             }
-            stateManager.setState({ user: null });
+            if (typeof stateManager !== 'undefined') {
+                stateManager.setState({ user: null });
+            }
             window.currentUser = null;
             
             const profileBtn = document.getElementById('profile-btn');
@@ -308,6 +366,11 @@ class HomeFeedApp {
                         <i class="fas fa-user"></i>
                     </div>
                 `;
+            }
+            
+            // Update sidebar profile
+            if (typeof updateSidebarProfile === 'function') {
+                updateSidebarProfile();
             }
             
             if (typeof toast !== 'undefined') {
@@ -349,13 +412,20 @@ class HomeFeedApp {
                 if (freshContent.length > 0) {
                     this.allContentData = freshContent;
                     this.filteredContentData = freshContent;
-                    stateManager.setState({ content: freshContent, filtered: freshContent });
+                    if (typeof stateManager !== 'undefined') {
+                        stateManager.setState({ content: freshContent, filtered: freshContent });
+                    }
                     
                     // Cache the content
-                    await cacheManager.cacheContent(freshContent);
+                    if (typeof cacheManager?.cacheContent === 'function') {
+                        await cacheManager.cacheContent(freshContent);
+                    }
                     
                     // Render with fresh content
                     this.renderContentSections();
+                    
+                    // Load metrics for the new content
+                    this.loadInitialContentMetrics();
                     
                     // Show toast if we updated from cache
                     if (this.allContentData.length > 0 && typeof toast !== 'undefined') {
@@ -369,6 +439,7 @@ class HomeFeedApp {
                     this.allContentData = this.getTestContent();
                     this.filteredContentData = this.allContentData;
                     this.renderContentSections();
+                    this.loadInitialContentMetrics();
                     if (typeof toast !== 'undefined') {
                         toast.error('Using sample data. Check your connection.');
                     }
@@ -399,10 +470,27 @@ class HomeFeedApp {
                 if (typeof initVideoHero === 'function') {
                     initVideoHero();
                 }
+                
+                // Update sidebar profile if user is logged in
+                if (window.currentUser && typeof updateSidebarProfile === 'function') {
+                    updateSidebarProfile();
+                }
             }, 1000);
         }, 50);
         
         await this.phasedLoader.execute();
+    }
+    
+    loadInitialContentMetrics() {
+        // Get all content card IDs
+        const cards = document.querySelectorAll('.content-card');
+        const contentIds = Array.from(cards)
+            .map(card => card.dataset.contentId)
+            .filter(Boolean);
+        
+        if (contentIds.length > 0 && typeof loadContentMetrics === 'function') {
+            loadContentMetrics(contentIds);
+        }
     }
     
     showSkeletonUI() {
@@ -496,7 +584,9 @@ class HomeFeedApp {
                     views: item.views_count || item.views || 0,
                     likes: item.likes_count || item.likes || 0,
                     language: language,
-                    duration: item.duration || 0
+                    duration: item.duration || 0,
+                    is_new: this.isNewContent(item.created_at),
+                    is_trending: this.isTrendingContent(item)
                 };
             });
             
@@ -509,12 +599,30 @@ class HomeFeedApp {
         }
     }
     
+    isNewContent(createdAt) {
+        if (!createdAt) return false;
+        try {
+            const created = new Date(createdAt);
+            const now = new Date();
+            const diffHours = (now - created) / (1000 * 60 * 60);
+            return diffHours < 24; // Less than 24 hours old
+        } catch {
+            return false;
+        }
+    }
+    
+    isTrendingContent(item) {
+        // Simple trending detection - high views in last 7 days
+        if (!item.views || item.views < 100) return false;
+        return item.views > 500; // Simplified for demo
+    }
+    
     getTestContent() {
         return [
             {
-                id: 1,
+                id: '1',
                 title: 'African Music Festival Highlights',
-                description: 'Highlights from the biggest African music festival',
+                description: 'Highlights from the biggest African music festival featuring top artists from across the continent.',
                 thumbnail_url: 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop',
                 file_url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
                 media_type: 'video',
@@ -526,44 +634,116 @@ class HomeFeedApp {
                 user_id: '1',
                 views: 12500,
                 likes: 890,
+                shares: 234,
                 language: 'en',
-                duration: 120
+                duration: 120,
+                is_new: true,
+                is_trending: true
             },
             {
-                id: 2,
-                title: 'Tech Innovation in Africa',
-                description: 'How technology is transforming African economies',
+                id: '2',
+                title: 'Tech Innovation in Africa: The Future is Now',
+                description: 'How technology is transforming African economies and creating new opportunities.',
                 thumbnail_url: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=400&h=225&fit=crop',
                 file_url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
                 media_type: 'video',
                 genre: 'STEM',
-                created_at: new Date().toISOString(),
+                created_at: new Date(Date.now() - 86400000 * 2).toISOString(), // 2 days old
                 creator: '@tech_africa',
                 creator_display_name: 'Tech Africa',
                 creator_id: '2',
                 user_id: '2',
                 views: 8900,
                 likes: 650,
+                shares: 123,
                 language: 'en',
-                duration: 180
+                duration: 180,
+                is_new: false,
+                is_trending: true
             },
             {
-                id: 3,
-                title: 'Traditional Dance Performance',
-                description: 'Beautiful traditional dance from West Africa',
+                id: '3',
+                title: 'Traditional Dance Performance: Zulu Heritage',
+                description: 'Beautiful traditional dance from South Africa showcasing Zulu culture and heritage.',
                 thumbnail_url: 'https://images.unsplash.com/photo-1547153760-18fc86324498?w=400&h=225&fit=crop',
                 file_url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
                 media_type: 'video',
                 genre: 'Culture',
-                created_at: new Date().toISOString(),
+                created_at: new Date(Date.now() - 86400000 * 5).toISOString(), // 5 days old
                 creator: '@cultural_hub',
                 creator_display_name: 'Cultural Hub',
                 creator_id: '3',
                 user_id: '3',
                 views: 15600,
                 likes: 1200,
+                shares: 456,
                 language: 'zu',
-                duration: 240
+                duration: 240,
+                is_new: false,
+                is_trending: true
+            },
+            {
+                id: '4',
+                title: 'Cooking with Mama: Authentic Jollof Rice',
+                description: 'Learn how to make the perfect Jollof Rice with this step-by-step tutorial.',
+                thumbnail_url: 'https://images.unsplash.com/photo-1604329760661-e71dc83f8f26?w=400&h=225&fit=crop',
+                file_url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4',
+                media_type: 'video',
+                genre: 'Cooking',
+                created_at: new Date().toISOString(),
+                creator: '@mama_cooks',
+                creator_display_name: 'Mama Cooks',
+                creator_id: '4',
+                user_id: '4',
+                views: 5300,
+                likes: 420,
+                shares: 89,
+                language: 'en',
+                duration: 900,
+                is_new: true,
+                is_trending: false
+            },
+            {
+                id: '5',
+                title: 'African Wildlife Safari: Big Five Adventure',
+                description: 'Experience the thrill of spotting the Big Five on a safari in Kenya.',
+                thumbnail_url: 'https://images.unsplash.com/photo-1516426122078-c23e76319801?w=400&h=225&fit=crop',
+                file_url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4',
+                media_type: 'video',
+                genre: 'Travel',
+                created_at: new Date(Date.now() - 86400000).toISOString(), // 1 day old
+                creator: '@wild_africa',
+                creator_display_name: 'Wild Africa',
+                creator_id: '5',
+                user_id: '5',
+                views: 7200,
+                likes: 580,
+                shares: 167,
+                language: 'en',
+                duration: 600,
+                is_new: true,
+                is_trending: false
+            },
+            {
+                id: '6',
+                title: 'Language Lesson: Learn Xhosa Click Sounds',
+                description: 'Master the distinctive click sounds of the Xhosa language.',
+                thumbnail_url: 'https://images.unsplash.com/photo-1544717305-2782549b5136?w=400&h=225&fit=crop',
+                file_url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4',
+                media_type: 'video',
+                genre: 'Education',
+                created_at: new Date(Date.now() - 86400000 * 10).toISOString(), // 10 days old
+                creator: '@language_hub',
+                creator_display_name: 'Language Hub',
+                creator_id: '6',
+                user_id: '6',
+                views: 3200,
+                likes: 280,
+                shares: 95,
+                language: 'xh',
+                duration: 450,
+                is_new: false,
+                is_trending: false
             }
         ];
     }
@@ -579,7 +759,9 @@ class HomeFeedApp {
         const imagesToPreload = [
             'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop',
             'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=400&h=225&fit=crop',
-            'https://images.unsplash.com/photo-1547153760-18fc86324498?w=400&h=225&fit=crop'
+            'https://images.unsplash.com/photo-1547153760-18fc86324498?w=400&h=225&fit=crop',
+            'https://images.unsplash.com/photo-1604329760661-e71dc83f8f26?w=400&h=225&fit=crop',
+            'https://images.unsplash.com/photo-1516426122078-c23e76319801?w=400&h=225&fit=crop'
         ];
         
         imagesToPreload.forEach(src => {
@@ -632,6 +814,9 @@ class HomeFeedApp {
         // Get trending content
         const trendingContent = this.getTrendingContent(this.filteredContentData);
         
+        // Get most viewed content
+        const mostViewed = this.getMostViewedContent(this.filteredContentData);
+        
         // Build sections HTML
         let sectionsHTML = '';
         
@@ -647,7 +832,7 @@ class HomeFeedApp {
                         ${continueWatching.slice(0, 5).map(item => 
                             contentCardSystem?.createContentCard ? 
                             contentCardSystem.createContentCard(item, { showContinueWatching: true }) :
-                            this.createFallbackCard(item)
+                            this.createContentCardWithMetrics(item)
                         ).join('')}
                     </div>
                 </section>
@@ -674,7 +859,7 @@ class HomeFeedApp {
                         ${recommendedContent.slice(0, 5).map(item => 
                             contentCardSystem?.createRecommendedCard ? 
                             contentCardSystem.createRecommendedCard(item) :
-                            this.createFallbackCard(item)
+                            this.createContentCardWithMetrics(item)
                         ).join('')}
                     </div>
                 </section>
@@ -692,7 +877,7 @@ class HomeFeedApp {
                     ${this.filteredContentData.slice(0, 10).map(item => 
                         contentCardSystem?.createContentCard ? 
                         contentCardSystem.createContentCard(item) :
-                        this.createFallbackCard(item)
+                        this.createContentCardWithMetrics(item)
                     ).join('')}
                 </div>
             </section>
@@ -710,7 +895,7 @@ class HomeFeedApp {
                         ${trendingContent.slice(0, 5).map(item => 
                             contentCardSystem?.createTrendingCard ? 
                             contentCardSystem.createTrendingCard(item) :
-                            this.createFallbackCard(item)
+                            this.createContentCardWithMetrics(item)
                         ).join('')}
                     </div>
                 </section>
@@ -718,7 +903,6 @@ class HomeFeedApp {
         }
         
         // Most Viewed
-        const mostViewed = this.getMostViewedContent(this.filteredContentData);
         if (mostViewed.length > 0) {
             sectionsHTML += `
                 <section class="section">
@@ -730,7 +914,7 @@ class HomeFeedApp {
                         ${mostViewed.slice(0, 5).map(item => 
                             contentCardSystem?.createContentCard ? 
                             contentCardSystem.createContentCard(item) :
-                            this.createFallbackCard(item)
+                            this.createContentCardWithMetrics(item)
                         ).join('')}
                     </div>
                 </section>
@@ -744,60 +928,135 @@ class HomeFeedApp {
         
         // Apply language filter if active
         const activeLang = document.querySelector('.language-chip.active')?.dataset.lang;
-        if (activeLang && activeLang !== 'all') {
+        if (activeLang && activeLang !== 'all' && typeof filterContentByLanguage === 'function') {
             filterContentByLanguage(activeLang);
         }
+        
+        // Load metrics for the newly rendered cards
+        this.loadInitialContentMetrics();
     }
     
-    createFallbackCard(item) {
+    createContentCardWithMetrics(item) {
+        // Use the global function if available
+        if (typeof createContentCardWithMetrics === 'function') {
+            return createContentCardWithMetrics(item);
+        }
+        
+        // Fallback implementation
+        const metrics = window.contentMetrics?.get(item.id) || { 
+            views: item.views || 0, 
+            likes: item.likes || 0, 
+            shares: item.shares || 0 
+        };
+        
+        const thumbnailUrl = item.thumbnail_url || 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop';
         const creatorName = item.creator || item.creator_display_name || 'Creator';
+        const initials = this.getInitials(creatorName);
+        
         return `
-            <div class="content-card" data-content-id="${item.id}" data-language="${item.language || 'en'}">
+            <a href="content-detail.html?id=${item.id}" class="content-card" 
+               data-content-id="${item.id}" 
+               data-language="${item.language || 'en'}"
+               data-category="${item.genre || ''}">
                 <div class="card-thumbnail">
-                    <img src="${item.thumbnail_url || 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop'}" 
-                         alt="${item.title}"
+                    <img src="${thumbnailUrl}" 
+                         alt="${item.title}" 
                          loading="lazy"
                          onerror="this.src='https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop'">
+                    <div class="card-badges">
+                        ${item.is_new ? '<div class="card-badge badge-new"><i class="fas fa-gem"></i> NEW</div>' : ''}
+                        ${item.is_trending ? '<div class="card-badge badge-trending"><i class="fas fa-fire"></i> TRENDING</div>' : ''}
+                    </div>
                     <div class="thumbnail-overlay"></div>
-                    <video class="video-preview" muted preload="metadata">
-                        <source src="${item.file_url || ''}" type="video/mp4">
-                    </video>
-                    <button class="share-btn" title="Share" data-content-id="${item.id}">
-                        <i class="fas fa-share"></i>
-                    </button>
+                    <div class="play-overlay">
+                        <div class="play-icon"><i class="fas fa-play"></i></div>
+                    </div>
                 </div>
                 <div class="card-content">
                     <h3 class="card-title" title="${item.title}">
                         ${item.title.length > 50 ? item.title.substring(0, 50) + '...' : item.title}
                     </h3>
+                    <div class="creator-info">
+                        <div class="creator-avatar-small">${initials}</div>
+                        <div class="creator-name-small">@${creatorName.split(' ')[0].toLowerCase()}</div>
+                    </div>
                     <div class="card-stats">
-                        <span class="stat">
-                            <i class="fas fa-eye"></i> ${item.views || 0}
+                        <span class="card-stat" title="Views">
+                            <i class="fas fa-eye"></i> ${this.formatNumber(metrics.views)}
                         </span>
-                        <span class="stat">
-                            <i class="fas fa-heart"></i> ${item.likes || 0}
+                        <span class="card-stat" title="Likes">
+                            <i class="fas fa-heart"></i> ${this.formatNumber(metrics.likes)}
+                        </span>
+                        <span class="card-stat" title="Shares">
+                            <i class="fas fa-share"></i> ${this.formatNumber(metrics.shares)}
                         </span>
                     </div>
-                    <button class="creator-btn" 
-                            data-creator-id="${item.creator_id}"
-                            data-creator-name="${creatorName}">
-                        <i class="fas fa-user"></i>
-                        ${creatorName.length > 15 ? creatorName.substring(0, 15) + '...' : creatorName}
-                    </button>
-                    <button class="tip-creator-btn"
-                            data-creator-id="${item.creator_id}"
-                            data-creator-name="${creatorName}"
-                            title="Tip Creator">
-                        <i class="fas fa-gift"></i>
-                    </button>
+                    <div class="card-meta">
+                        <span><i class="fas fa-language"></i> ${this.getLanguageName(item.language)}</span>
+                        <span><i class="fas fa-clock"></i> ${this.formatDate(item.created_at)}</span>
+                    </div>
                 </div>
-            </div>
+            </a>
         `;
+    }
+    
+    formatNumber(num) {
+        if (!num && num !== 0) return '0';
+        if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+        if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+        return num?.toString() || '0';
+    }
+    
+    getLanguageName(code) {
+        const languages = {
+            'en': 'English',
+            'zu': 'IsiZulu',
+            'xh': 'IsiXhosa',
+            'af': 'Afrikaans',
+            'nso': 'Sepedi',
+            'st': 'Sesotho',
+            'tn': 'Setswana',
+            'ss': 'siSwati',
+            've': 'Tshivenda',
+            'ts': 'Xitsonga',
+            'nr': 'isiNdebele'
+        };
+        return languages[code] || code || 'English';
+    }
+    
+    formatDate(dateString) {
+        if (!dateString) return '';
+        try {
+            const date = new Date(dateString);
+            const now = new Date();
+            const diffTime = Math.abs(now - date);
+            const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+            
+            if (diffDays === 0) return 'Today';
+            if (diffDays === 1) return 'Yesterday';
+            if (diffDays < 7) return `${diffDays} days ago`;
+            if (diffDays < 30) {
+                const weeks = Math.floor(diffDays / 7);
+                return `${weeks} week${weeks > 1 ? 's' : ''} ago`;
+            }
+            return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        } catch (error) {
+            return '';
+        }
+    }
+    
+    getInitials(name) {
+        if (!name || name.trim() === '') return '?';
+        const names = name.trim().split(' ');
+        if (names.length >= 2) {
+            return (names[0][0] + names[names.length - 1][0]).toUpperCase();
+        }
+        return name[0].toUpperCase();
     }
     
     getMostViewedContent(contentData) {
         if (!contentData || contentData.length === 0) return [];
-        return [...contentData].sort((a, b) => b.views - a.views).slice(0, 5);
+        return [...contentData].sort((a, b) => (b.views || 0) - (a.views || 0)).slice(0, 5);
     }
     
     getTrendingContent(contentData) {
@@ -834,11 +1093,17 @@ class HomeFeedApp {
                 grid.innerHTML = trendingContent.slice(0, 5).map(item => 
                     contentCardSystem?.createTrendingCard ? 
                     contentCardSystem.createTrendingCard(item) :
-                    this.createFallbackCard(item)
+                    this.createContentCardWithMetrics(item)
                 ).join('');
                 
                 // Re-setup listeners
                 this.setupContentCardListenersForSection(trendingSection);
+                
+                // Load metrics for these cards
+                const contentIds = trendingContent.slice(0, 5).map(item => item.id);
+                if (contentIds.length > 0 && typeof loadContentMetrics === 'function') {
+                    loadContentMetrics(contentIds);
+                }
             }
         }
     }
@@ -1014,12 +1279,6 @@ class HomeFeedApp {
             });
         }
         
-        // Hero mute button (handled in initVideoHero, but ensure it exists)
-        const heroMuteBtn = document.getElementById('hero-mute-btn');
-        if (heroMuteBtn) {
-            // Already handled in initVideoHero, but ensure it's clickable
-        }
-        
         // See all buttons (delegated)
         document.addEventListener('click', (e) => {
             const seeAllBtn = e.target.closest('[data-action="see-all"]');
@@ -1111,6 +1370,12 @@ class HomeFeedApp {
                 }
             });
         }
+        
+        // Listen for scale changes to update UI
+        document.addEventListener('scaleChanged', (e) => {
+            console.log('Scale changed to:', e.detail.scale);
+            // Update any UI elements that need to adjust to scale
+        });
     }
     
     setupKeyboardShortcuts() {
@@ -1133,6 +1398,30 @@ class HomeFeedApp {
             if ((e.ctrlKey || e.metaKey) && e.key === 'r') {
                 e.preventDefault();
                 this.refreshContent();
+            }
+            
+            // Ctrl+Plus for increase scale
+            if ((e.ctrlKey || e.metaKey) && (e.key === '+' || e.key === '=')) {
+                e.preventDefault();
+                if (window.uiScaleController) {
+                    window.uiScaleController.increase();
+                }
+            }
+            
+            // Ctrl+Minus for decrease scale
+            if ((e.ctrlKey || e.metaKey) && e.key === '-') {
+                e.preventDefault();
+                if (window.uiScaleController) {
+                    window.uiScaleController.decrease();
+                }
+            }
+            
+            // Ctrl+0 for reset scale
+            if ((e.ctrlKey || e.metaKey) && e.key === '0') {
+                e.preventDefault();
+                if (window.uiScaleController) {
+                    window.uiScaleController.reset();
+                }
             }
             
             // Space to play/pause video preview
@@ -1159,7 +1448,7 @@ class HomeFeedApp {
     handleSeeAllClick(target) {
         switch(target) {
             case 'trending':
-                window.location.href = 'trending_screen.html';
+                window.location.href = 'trending-screen.html';
                 break;
             case 'continue-watching':
                 window.location.href = 'continue-watching.html';
@@ -1185,9 +1474,13 @@ class HomeFeedApp {
             if (freshContent.length > 0) {
                 this.allContentData = freshContent;
                 this.filteredContentData = freshContent;
-                stateManager.setState({ content: freshContent, filtered: freshContent });
+                if (typeof stateManager !== 'undefined') {
+                    stateManager.setState({ content: freshContent, filtered: freshContent });
+                }
                 
-                await cacheManager.cacheContent(freshContent);
+                if (typeof cacheManager?.cacheContent === 'function') {
+                    await cacheManager.cacheContent(freshContent);
+                }
                 this.renderContentSections();
                 
                 // Refresh explore features
@@ -1241,7 +1534,7 @@ class HomeFeedApp {
             analyticsSystem.trackEvent('app_initialized', {
                 load_time: Date.now() - (performanceMonitor?.sessionStart || Date.now()),
                 content_count: this.allContentData.length,
-                has_cache: cacheManager.getCachedContent() !== null
+                has_cache: cacheManager?.getCachedContent ? cacheManager.getCachedContent() !== null : false
             });
         }
         
