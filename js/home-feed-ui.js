@@ -45,7 +45,8 @@ class ContentCardSystem {
             continueWatchingProgress = 0
         } = options;
         
-        const progress = continueWatchingProgress || continueWatchingSystem.getWatchProgress(item.id);
+        // Safety check for continueWatchingSystem
+        const progress = continueWatchingProgress || (typeof continueWatchingSystem !== 'undefined' && continueWatchingSystem ? continueWatchingSystem.getWatchProgress(item.id) : 0);
         
         return `
             <div class="content-card ${showTrendingBadge ? 'trending-card' : ''}" 
@@ -211,7 +212,8 @@ class NavigationSystem {
         if (navThemeToggle) {
             navThemeToggle.addEventListener('click', (e) => {
                 e.stopPropagation();
-                document.getElementById('theme-selector').classList.toggle('active');
+                const themeSelector = document.getElementById('theme-selector');
+                if (themeSelector) themeSelector.classList.toggle('active');
             });
         }
         
@@ -219,9 +221,14 @@ class NavigationSystem {
             navNotificationsBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 const notificationsPanel = document.getElementById('notifications-panel');
-                notificationsPanel.classList.toggle('active');
-                if (notificationsPanel.classList.contains('active')) {
-                    notificationSystem.markAllAsRead();
+                if (notificationsPanel) {
+                    notificationsPanel.classList.toggle('active');
+                    if (notificationsPanel.classList.contains('active')) {
+                        // Safety check for notificationSystem
+                        if (typeof notificationSystem !== 'undefined' && notificationSystem && typeof notificationSystem.markAllAsRead === 'function') {
+                            notificationSystem.markAllAsRead();
+                        }
+                    }
                 }
             });
         }
@@ -229,7 +236,8 @@ class NavigationSystem {
         // Close theme selector when clicking outside
         document.addEventListener('click', (e) => {
             const themeSelector = document.getElementById('theme-selector');
-            if (themeSelector && !navThemeToggle?.contains(e.target) && !themeSelector.contains(e.target)) {
+            const navThemeToggle = document.getElementById('nav-theme-toggle');
+            if (themeSelector && navThemeToggle && !navThemeToggle.contains(e.target) && !themeSelector.contains(e.target)) {
                 themeSelector.classList.remove('active');
             }
         });
@@ -246,7 +254,7 @@ class NavigationSystem {
                 e.stopPropagation();
                 const theme = option.dataset.theme;
                 this.setTheme(theme);
-                this.themeSelector.classList.remove('active');
+                if (this.themeSelector) this.themeSelector.classList.remove('active');
             });
         });
     }
@@ -265,7 +273,11 @@ class NavigationSystem {
     
     updateNavigationBadge() {
         const badge = document.getElementById('nav-notification-count');
-        const unreadCount = notificationSystem.unreadCount;
+        
+        // SAFETY CHECK: Ensure notificationSystem exists before accessing unreadCount
+        const unreadCount = typeof notificationSystem !== 'undefined' && notificationSystem 
+            ? notificationSystem.unreadCount 
+            : 0;
         
         if (badge) {
             badge.textContent = unreadCount > 99 ? '99+' : unreadCount;
@@ -352,20 +364,23 @@ class SearchModal {
         
         // Close modal on escape key
         document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && this.modal.classList.contains('active')) {
+            if (e.key === 'Escape' && this.modal && this.modal.classList.contains('active')) {
                 this.close();
             }
         });
         
         // Close modal on outside click
-        this.modal.addEventListener('click', (e) => {
-            if (e.target === this.modal) {
-                this.close();
-            }
-        });
+        if (this.modal) {
+            this.modal.addEventListener('click', (e) => {
+                if (e.target === this.modal) {
+                    this.close();
+                }
+            });
+        }
     }
     
     open() {
+        if (!this.modal || !this.searchInput) return;
         this.modal.classList.add('active');
         // Delay focus for mobile compatibility
         setTimeout(() => {
@@ -374,6 +389,7 @@ class SearchModal {
     }
     
     close() {
+        if (!this.modal || !this.searchInput) return;
         this.modal.classList.remove('active');
         this.searchInput.value = '';
     }
@@ -396,20 +412,28 @@ class AnalyticsModal {
             closeBtn.addEventListener('click', () => this.close());
         }
         
-        this.modal.addEventListener('click', (e) => {
-            if (e.target === this.modal) {
-                this.close();
-            }
-        });
+        if (this.modal) {
+            this.modal.addEventListener('click', (e) => {
+                if (e.target === this.modal) {
+                    this.close();
+                }
+            });
+        }
     }
     
     open() {
+        if (!this.modal) return;
         this.modal.classList.add('active');
-        analyticsSystem.updateAnalyticsDisplay();
+        // Safety check for analyticsSystem
+        if (typeof analyticsSystem !== 'undefined' && analyticsSystem && typeof analyticsSystem.updateAnalyticsDisplay === 'function') {
+            analyticsSystem.updateAnalyticsDisplay();
+        }
     }
     
     close() {
-        this.modal.classList.remove('active');
+        if (this.modal) {
+            this.modal.classList.remove('active');
+        }
     }
 }
 
@@ -436,7 +460,7 @@ class DevelopmentWindow {
             // Show again after 24 hours
             if (hoursSinceDismissal < 24) {
                 this.dismissed = true;
-                this.card.style.display = 'none';
+                if (this.card) this.card.style.display = 'none';
                 return;
             }
         }
@@ -498,7 +522,7 @@ class DevelopmentWindow {
     }
     
     dismissCard() {
-        this.card.style.display = 'none';
+        if (this.card) this.card.style.display = 'none';
         this.dismissed = true;
         localStorage.setItem('development_card_dismissed', Date.now().toString());
     }
@@ -516,6 +540,38 @@ class DevelopmentWindow {
     }
 }
 
+// Initialize all UI components
+function initializeUI() {
+    console.log('🎨 Initializing Home Feed UI...');
+    
+    // Initialize all systems
+    if (typeof contentCardSystem !== 'undefined') {
+        contentCardSystem.init();
+    }
+    
+    if (typeof navigationSystem !== 'undefined') {
+        navigationSystem.init();
+    }
+    
+    if (typeof themeSystem !== 'undefined') {
+        themeSystem.init();
+    }
+    
+    if (typeof searchModal !== 'undefined') {
+        searchModal.init();
+    }
+    
+    if (typeof analyticsModal !== 'undefined') {
+        analyticsModal.init();
+    }
+    
+    if (typeof developmentWindow !== 'undefined') {
+        developmentWindow.init();
+    }
+    
+    console.log('✅ Home Feed UI initialized');
+}
+
 // Export instances
 const contentCardSystem = new ContentCardSystem();
 const navigationSystem = new NavigationSystem();
@@ -524,4 +580,19 @@ const searchModal = new SearchModal();
 const analyticsModal = new AnalyticsModal();
 const developmentWindow = new DevelopmentWindow();
 
-console.log('✅ Home Feed UI initialized');
+// Export to window for global access
+window.contentCardSystem = contentCardSystem;
+window.navigationSystem = navigationSystem;
+window.themeSystem = themeSystem;
+window.searchModal = searchModal;
+window.analyticsModal = analyticsModal;
+window.developmentWindow = developmentWindow;
+
+console.log('✅ Home Feed UI components created');
+
+// Auto-initialize when DOM is ready
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeUI);
+} else {
+    initializeUI();
+}
