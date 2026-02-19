@@ -1,4 +1,6 @@
-// Video Preview System
+// ============================================
+// VIDEO PREVIEW SYSTEM
+// ============================================
 class VideoPreviewSystem {
     constructor() {
         this.hoverTimeout = null;
@@ -142,7 +144,9 @@ class VideoPreviewSystem {
     }
 }
 
-// Recommendation Engine
+// ============================================
+// RECOMMENDATION ENGINE
+// ============================================
 class RecommendationEngine {
     constructor() {
         this.userPreferences = {
@@ -261,7 +265,9 @@ class RecommendationEngine {
     }
 }
 
-// Notification System
+// ============================================
+// NOTIFICATION SYSTEM
+// ============================================
 class NotificationSystem {
     constructor() {
         this.notifications = [];
@@ -498,7 +504,9 @@ class NotificationSystem {
     }
 }
 
-// Analytics System
+// ============================================
+// ANALYTICS SYSTEM
+// ============================================
 class AnalyticsSystem {
     constructor() {
         this.userId = null;
@@ -726,7 +734,9 @@ class AnalyticsSystem {
     }
 }
 
-// Search System - FIXED VERSION (works with your ContentSupabaseClient wrapper)
+// ============================================
+// SEARCH SYSTEM
+// ============================================
 class SearchSystem {
     constructor() {
         this.modal = null;
@@ -791,7 +801,7 @@ class SearchSystem {
                 const mediaType = document.getElementById('media-type-filter')?.value;
                 const sortBy = document.getElementById('sort-filter')?.value;
                 
-                // Build SAFE where clause (only eq. compatible filters)
+                // Build SAFE where clause
                 let whereClause = { status: 'published' };
                 if (category) whereClause.genre = category;
                 if (mediaType) whereClause.media_type = mediaType;
@@ -815,7 +825,7 @@ class SearchSystem {
                     limit: 100
                 });
                 
-                // CLIENT-SIDE SEARCH (no broken in. operator)
+                // CLIENT-SIDE SEARCH
                 const filteredResults = results.filter(item => {
                     const searchText = query.toLowerCase();
                     return (
@@ -856,6 +866,12 @@ class SearchSystem {
                              loading="lazy"
                              onerror="this.src='https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop'">
                         <div class="thumbnail-overlay"></div>
+                        <video class="video-preview" muted preload="metadata">
+                            <source src="${item.file_url || ''}" type="video/mp4">
+                        </video>
+                        <button class="share-btn" title="Share" data-content-id="${item.id}">
+                            <i class="fas fa-share"></i>
+                        </button>
                     </div>
                     <div class="card-content">
                         <h3 class="card-title" title="${item.title}">
@@ -875,6 +891,12 @@ class SearchSystem {
                             <i class="fas fa-user"></i>
                             ${creatorName.length > 15 ? creatorName.substring(0, 15) + '...' : creatorName}
                         </button>
+                        <button class="tip-creator-btn"
+                                data-creator-id="${item.creator_id || item.user_id}"
+                                data-creator-name="${creatorName}"
+                                title="Tip Creator">
+                            <i class="fas fa-gift"></i>
+                        </button>
                     </div>
                 </div>
             `;
@@ -888,6 +910,7 @@ class SearchSystem {
             card.addEventListener('click', (e) => {
                 if (e.target.closest('.creator-btn') ||
                     e.target.closest('.share-btn') ||
+                    e.target.closest('.tip-creator-btn') ||
                     e.target.tagName === 'BUTTON' ||
                     e.target.tagName === 'A') {
                     return;
@@ -901,7 +924,9 @@ class SearchSystem {
     }
 }
 
-// Continue Watching System
+// ============================================
+// CONTINUE WATCHING SYSTEM
+// ============================================
 class ContinueWatchingSystem {
     constructor() {
         this.watchHistory = {};
@@ -982,7 +1007,7 @@ class ContinueWatchingSystem {
     }
     
     updateContinueWatchingSection() {
-        const allContent = stateManager.state.content;
+        const allContent = stateManager?.state?.content || [];
         const continueWatching = this.getContinueWatchingContent(allContent);
         
         let continueWatchingSection = document.querySelector('.section[data-type="continue-watching"]');
@@ -1024,6 +1049,12 @@ class ContinueWatchingSystem {
     }
     
     createContinueWatchingCard(item) {
+        const creatorName = item.creator || 
+                          item.creator_display_name || 
+                          item.user_profiles?.username || 
+                          item.user_profiles?.full_name || 
+                          'Creator';
+        
         return `
             <div class="content-card" data-content-id="${item.id}">
                 <div class="card-thumbnail">
@@ -1061,10 +1092,16 @@ class ContinueWatchingSystem {
                         </span>
                     </div>
                     <button class="creator-btn" 
-                            data-creator-id="${item.creator_id}"
-                            data-creator-name="${item.creator}">
+                            data-creator-id="${item.creator_id || item.user_id}"
+                            data-creator-name="${creatorName}">
                         <i class="fas fa-user"></i>
-                        ${item.creator.length > 15 ? item.creator.substring(0, 15) + '...' : item.creator}
+                        ${creatorName.length > 15 ? creatorName.substring(0, 15) + '...' : creatorName}
+                    </button>
+                    <button class="tip-creator-btn"
+                            data-creator-id="${item.creator_id || item.user_id}"
+                            data-creator-name="${creatorName}"
+                            title="Tip Creator">
+                        <i class="fas fa-gift"></i>
                     </button>
                 </div>
             </div>
@@ -1074,7 +1111,9 @@ class ContinueWatchingSystem {
     setupContinueWatchingCardListeners(grid) {
         grid.querySelectorAll('.content-card').forEach(card => {
             card.addEventListener('click', (e) => {
-                if (e.target.closest('.share-btn') || e.target.closest('.creator-btn')) {
+                if (e.target.closest('.share-btn') || 
+                    e.target.closest('.creator-btn') ||
+                    e.target.closest('.tip-creator-btn')) {
                     return;
                 }
                 
@@ -1093,7 +1132,9 @@ class ContinueWatchingSystem {
     }
 }
 
-// Progress Tracker (for continue watching)
+// ============================================
+// PROGRESS TRACKER
+// ============================================
 class ProgressTracker {
     constructor() {
         this.trackedVideos = new Map();
@@ -1149,7 +1190,811 @@ class ProgressTracker {
     }
 }
 
-// Export instances
+// ============================================
+// UI SCALE CONTROLLER (NEW)
+// ============================================
+class UIScaleController {
+    constructor() {
+        this.scaleKey = 'bantu_ui_scale';
+        this.scales = [0.75, 0.85, 1.0, 1.15, 1.25, 1.5];
+        this.currentIndex = 2; // Default to 1.0
+        this.init();
+    }
+
+    init() {
+        const savedScale = localStorage.getItem(this.scaleKey);
+        if (savedScale) {
+            this.currentIndex = this.scales.indexOf(parseFloat(savedScale));
+            if (this.currentIndex === -1) this.currentIndex = 2;
+        }
+        this.applyScale();
+        this.setupEventListeners();
+        console.log('🎨 UI Scale Controller initialized');
+    }
+
+    setupEventListeners() {
+        const decreaseBtn = document.getElementById('scale-decrease');
+        const increaseBtn = document.getElementById('scale-increase');
+        const resetBtn = document.getElementById('scale-reset');
+
+        if (decreaseBtn) {
+            decreaseBtn.addEventListener('click', () => this.decrease());
+        }
+
+        if (increaseBtn) {
+            increaseBtn.addEventListener('click', () => this.increase());
+        }
+
+        if (resetBtn) {
+            resetBtn.addEventListener('click', () => this.reset());
+        }
+    }
+
+    applyScale() {
+        const scale = this.scales[this.currentIndex];
+        document.documentElement.style.setProperty('--ui-scale', scale);
+        localStorage.setItem(this.scaleKey, scale);
+        this.updateScaleDisplay();
+        console.log(`📏 UI Scale set to: ${scale}x`);
+    }
+
+    updateScaleDisplay() {
+        const scaleValue = document.getElementById('scale-value');
+        if (scaleValue) {
+            scaleValue.textContent = Math.round(this.getScale() * 100) + '%';
+        }
+    }
+
+    getScale() {
+        return this.scales[this.currentIndex];
+    }
+
+    increase() {
+        if (this.currentIndex < this.scales.length - 1) {
+            this.currentIndex++;
+            this.applyScale();
+            this.showScaleToast();
+        }
+    }
+
+    decrease() {
+        if (this.currentIndex > 0) {
+            this.currentIndex--;
+            this.applyScale();
+            this.showScaleToast();
+        }
+    }
+
+    reset() {
+        this.currentIndex = 2;
+        this.applyScale();
+        this.showScaleToast();
+    }
+
+    showScaleToast() {
+        const scale = this.getScale();
+        const percentage = Math.round(scale * 100);
+        if (typeof toast !== 'undefined') {
+            toast.info(`UI Size: ${percentage}%`);
+        }
+    }
+}
+
+// ============================================
+// LANGUAGE FILTER SYSTEM (NEW)
+// ============================================
+const languageMap = {
+    'en': 'English',
+    'zu': 'IsiZulu',
+    'xh': 'IsiXhosa',
+    'af': 'Afrikaans',
+    'nso': 'Sepedi',
+    'st': 'Sesotho',
+    'tn': 'Setswana',
+    'ss': 'siSwati',
+    've': 'Tshivenda',
+    'ts': 'Xitsonga',
+    'nr': 'isiNdebele'
+};
+
+function setupLanguageFilter() {
+    const languageChips = document.querySelectorAll('.language-chip');
+    const moreLanguagesBtn = document.getElementById('more-languages-btn');
+    let languageFilter = 'all';
+
+    languageChips.forEach(chip => {
+        chip.addEventListener('click', (e) => {
+            e.preventDefault();
+            document.querySelectorAll('.language-chip').forEach(c => c.classList.remove('active'));
+            chip.classList.add('active');
+            languageFilter = chip.dataset.lang;
+            filterContentByLanguage(languageFilter);
+            const langName = getLanguageName(languageFilter);
+            if (typeof toast !== 'undefined') {
+                toast.info(`Showing: ${langName}`);
+            }
+        });
+    });
+
+    if (moreLanguagesBtn) {
+        moreLanguagesBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            const languageContainer = document.querySelector('.language-chips');
+            const hiddenLanguages = ['nr', 'ss', 've', 'ts'];
+            hiddenLanguages.forEach(lang => {
+                if (!document.querySelector(`.language-chip[data-lang="${lang}"]`)) {
+                    const newChip = document.createElement('button');
+                    newChip.className = 'language-chip';
+                    newChip.dataset.lang = lang;
+                    newChip.textContent = languageMap[lang] || lang;
+                    newChip.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        document.querySelectorAll('.language-chip').forEach(c => c.classList.remove('active'));
+                        newChip.classList.add('active');
+                        languageFilter = lang;
+                        filterContentByLanguage(lang);
+                        if (typeof toast !== 'undefined') {
+                            toast.info(`Showing: ${languageMap[lang]}`);
+                        }
+                    });
+                    languageContainer.insertBefore(newChip, moreLanguagesBtn);
+                }
+            });
+            moreLanguagesBtn.style.display = 'none';
+            if (typeof toast !== 'undefined') {
+                toast.info('All languages shown');
+            }
+        });
+    }
+
+    const defaultChip = document.querySelector('.language-chip[data-lang="all"]');
+    if (defaultChip) {
+        defaultChip.classList.add('active');
+    }
+}
+
+function getLanguageName(code) {
+    return languageMap[code] || code || 'All Languages';
+}
+
+function filterContentByLanguage(lang) {
+    const contentCards = document.querySelectorAll('.content-card');
+    let visibleCount = 0;
+
+    contentCards.forEach(card => {
+        const contentLang = card.dataset.language || 'en';
+        if (lang === 'all' || contentLang === lang) {
+            card.style.display = 'block';
+            card.style.opacity = '0';
+            card.style.transform = 'translateY(10px)';
+            setTimeout(() => {
+                card.style.opacity = '1';
+                card.style.transform = 'translateY(0)';
+            }, 50);
+            visibleCount++;
+        } else {
+            card.style.display = 'none';
+        }
+    });
+
+    if (visibleCount === 0 && lang !== 'all') {
+        if (typeof toast !== 'undefined') {
+            toast.warning(`No content in ${getLanguageName(lang)} yet`);
+        }
+    }
+}
+
+// ============================================
+// COMMUNITY STATS (NEW)
+// ============================================
+async function loadCommunityStats() {
+    try {
+        // Use global supabaseAuth if available
+        const supabase = window.supabaseAuth || window.supabase;
+        if (!supabase) {
+            console.warn('Supabase not available, using mock stats');
+            updateMockStats();
+            return;
+        }
+
+        // Get total connectors
+        const { count: connectorsCount, error: connError } = await supabase
+            .from('connectors')
+            .select('*', { count: 'exact', head: true });
+        if (connError) throw connError;
+
+        // Get total content
+        const { count: contentCount, error: contentError } = await supabase
+            .from('Content')
+            .select('*', { count: 'exact', head: true })
+            .eq('status', 'published');
+        if (contentError) throw contentError;
+
+        // Get new connectors today
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const { count: newConnectors, error: newError } = await supabase
+            .from('connectors')
+            .select('*', { count: 'exact', head: true })
+            .gte('created_at', today.toISOString());
+        if (newError) throw newError;
+
+        // Update UI
+        document.getElementById('total-connectors').textContent = formatNumber(connectorsCount || 12500);
+        document.getElementById('total-content').textContent = formatNumber(contentCount || 2300);
+        document.getElementById('new-connectors').textContent = `+${formatNumber(newConnectors || 342)}`;
+    } catch (error) {
+        console.error('Error loading community stats:', error);
+        updateMockStats();
+    }
+}
+
+function updateMockStats() {
+    document.getElementById('total-connectors').textContent = '12.5K';
+    document.getElementById('total-content').textContent = '2.3K';
+    document.getElementById('new-connectors').textContent = '+342';
+}
+
+// ============================================
+// VIDEO HERO (NEW)
+// ============================================
+async function initVideoHero() {
+    const heroVideo = document.getElementById('hero-video');
+    const heroMuteBtn = document.getElementById('hero-mute-btn');
+    const heroTitle = document.getElementById('hero-title');
+    const heroSubtitle = document.getElementById('hero-subtitle');
+
+    if (!heroVideo) return;
+
+    try {
+        const supabase = window.supabaseAuth || window.supabase;
+        if (supabase) {
+            const { data, error } = await supabase
+                .from('Content')
+                .select('*')
+                .eq('status', 'published')
+                .order('views_count', { ascending: false })
+                .limit(1);
+
+            if (error) throw error;
+
+            const trending = data || [];
+            if (trending && trending.length > 0) {
+                const featured = trending[0];
+                const videoUrl = featured.preview_url || featured.file_url;
+                if (videoUrl) {
+                    heroVideo.src = fixMediaUrl(videoUrl);
+                    heroTitle.textContent = featured.title || 'DISCOVER & CONNECT';
+                    heroSubtitle.textContent = featured.description || 'Explore amazing content from across Africa';
+
+                    heroVideo.play().catch(() => {
+                        if (heroMuteBtn) heroMuteBtn.style.display = 'flex';
+                    });
+                }
+            }
+        }
+    } catch (error) {
+        console.error('Error loading hero video:', error);
+    }
+
+    if (heroMuteBtn) {
+        heroMuteBtn.addEventListener('click', () => {
+            heroVideo.muted = !heroVideo.muted;
+            heroMuteBtn.innerHTML = heroVideo.muted ?
+                '<i class="fas fa-volume-mute"></i>' :
+                '<i class="fas fa-volume-up"></i>';
+        });
+    }
+}
+
+// ============================================
+// SHORTS SECTION (NEW)
+// ============================================
+async function loadShorts() {
+    try {
+        const container = document.getElementById('shorts-container');
+        if (!container) return;
+
+        const supabase = window.supabaseAuth || window.supabase;
+        let shorts = [];
+
+        if (supabase) {
+            const { data, error } = await supabase
+                .from('Content')
+                .select('*, user_profiles!user_id(*)')
+                .eq('status', 'published')
+                .eq('media_type', 'short')
+                .or('media_type.eq.short,duration.lte.60')
+                .order('views_count', { ascending: false })
+                .limit(10);
+
+            if (error) throw error;
+            shorts = data || [];
+        }
+
+        // Fallback mock shorts if no data
+        if (shorts.length === 0) {
+            shorts = getMockShorts();
+        }
+
+        if (shorts.length === 0) {
+            container.style.display = 'none';
+            return;
+        }
+
+        container.style.display = 'flex';
+        container.innerHTML = shorts.map(short => {
+            const thumbnailUrl = short.thumbnail_url ? fixMediaUrl(short.thumbnail_url) :
+                'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=600&fit=crop';
+            const creatorProfile = short.user_profiles;
+            const creatorName = creatorProfile?.full_name || creatorProfile?.username || short.creator || 'Creator';
+
+            return `
+                <a href="content-detail.html?id=${short.id}" class="short-card">
+                    <div class="short-thumbnail">
+                        <img src="${thumbnailUrl}" alt="${escapeHtml(short.title)}" loading="lazy">
+                        <div class="short-overlay">
+                            <i class="fas fa-play"></i>
+                        </div>
+                    </div>
+                    <div class="short-info">
+                        <h4>${truncateText(escapeHtml(short.title), 30)}</h4>
+                        <p>${escapeHtml(creatorName)}</p>
+                    </div>
+                </a>
+            `;
+        }).join('');
+    } catch (error) {
+        console.error('Error loading shorts:', error);
+    }
+}
+
+function getMockShorts() {
+    return [
+        {
+            id: 'short1',
+            title: 'Quick African Dance Tutorial',
+            thumbnail_url: 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=600&fit=crop',
+            creator: 'Dance Africa'
+        },
+        {
+            id: 'short2',
+            title: '1-Minute Recipe: Jollof Rice',
+            thumbnail_url: 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=600&fit=crop',
+            creator: 'Tasty Africa'
+        },
+        {
+            id: 'short3',
+            title: 'African Wildlife in 60 Seconds',
+            thumbnail_url: 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=600&fit=crop',
+            creator: 'Wild Africa'
+        },
+        {
+            id: 'short4',
+            title: 'Learn Zulu Greetings',
+            thumbnail_url: 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=600&fit=crop',
+            creator: 'Language Lessons'
+        }
+    ];
+}
+
+// ============================================
+// BADGES SYSTEM (NEW)
+// ============================================
+async function initBadgesSystem() {
+    const badgesModal = document.getElementById('badges-modal');
+    const closeBadges = document.getElementById('close-badges');
+
+    if (!badgesModal) return;
+
+    if (closeBadges) {
+        closeBadges.addEventListener('click', () => {
+            badgesModal.classList.remove('active');
+        });
+    }
+
+    // Add badges button to navigation if not exists
+    let badgesBtn = document.getElementById('nav-badges-btn');
+    if (!badgesBtn) {
+        const navContainer = document.querySelector('.navigation-button');
+        if (navContainer) {
+            badgesBtn = document.createElement('div');
+            badgesBtn.className = 'nav-icon';
+            badgesBtn.id = 'nav-badges-btn';
+            badgesBtn.innerHTML = '<i class="fas fa-medal"></i>';
+            badgesBtn.title = 'My Badges';
+            navContainer.appendChild(badgesBtn);
+        }
+    }
+
+    if (badgesBtn) {
+        badgesBtn.addEventListener('click', () => {
+            if (!window.currentUser) {
+                if (typeof toast !== 'undefined') {
+                    toast.warning('Please sign in to view your badges');
+                }
+                return;
+            }
+            badgesModal.classList.add('active');
+            loadUserBadges();
+        });
+    }
+
+    // Click outside to close
+    badgesModal.addEventListener('click', (e) => {
+        if (e.target === badgesModal) {
+            badgesModal.classList.remove('active');
+        }
+    });
+}
+
+async function loadUserBadges() {
+    if (!window.currentUser) return;
+
+    try {
+        const supabase = window.supabaseAuth || window.supabase;
+        let userBadges = [];
+
+        if (supabase) {
+            const { data, error } = await supabase
+                .from('user_badges')
+                .select('*')
+                .eq('user_id', window.currentUser.id);
+
+            if (error) throw error;
+            userBadges = data || [];
+        }
+
+        const allBadges = [
+            { id: 'music', name: 'Music Explorer', icon: 'fa-music', description: 'Watched 5+ music videos', requirement: 5 },
+            { id: 'stem', name: 'STEM Seeker', icon: 'fa-microscope', description: 'Explored 5+ STEM videos', requirement: 5 },
+            { id: 'culture', name: 'Cultural Curator', icon: 'fa-drum', description: 'Explored 5+ Culture videos', requirement: 5 },
+            { id: 'news', name: 'News Junkie', icon: 'fa-newspaper', description: 'Watched 5+ news videos', requirement: 5 },
+            { id: 'sports', name: 'Sports Fanatic', icon: 'fa-futbol', description: 'Watched 5+ sports videos', requirement: 5 },
+            { id: 'movies', name: 'Movie Buff', icon: 'fa-film', description: 'Watched 5+ movies', requirement: 5 },
+            { id: 'docs', name: 'Documentary Lover', icon: 'fa-clapperboard', description: 'Watched 5+ documentaries', requirement: 5 },
+            { id: 'podcasts', name: 'Podcast Pro', icon: 'fa-podcast', description: 'Listened to 5+ podcasts', requirement: 5 },
+            { id: 'shorts', name: 'Quick Bites Master', icon: 'fa-bolt', description: 'Watched 10+ shorts', requirement: 10 },
+            { id: 'connector', name: 'Social Butterfly', icon: 'fa-handshake', description: 'Connected with 10+ creators', requirement: 10 },
+            { id: 'polyglot', name: 'Language Explorer', icon: 'fa-language', description: 'Watched content in 3+ languages', requirement: 3 }
+        ];
+
+        const badgesGrid = document.getElementById('badges-grid');
+        const badgesEarned = document.getElementById('badges-earned');
+
+        badgesGrid.innerHTML = allBadges.map(badge => {
+            const earned = userBadges.some(b => b.badge_name === badge.name);
+            return `
+                <div class="badge-item ${earned ? 'earned' : 'locked'}">
+                    <div class="badge-icon ${earned ? 'earned' : ''}">
+                        <i class="fas ${badge.icon}"></i>
+                    </div>
+                    <div class="badge-info">
+                        <h4>${badge.name}</h4>
+                        <p>${badge.description}</p>
+                        ${earned ?
+                            `<span class="badge-earned-date">Earned!</span>` :
+                            `<span class="badge-requirement">Watch ${badge.requirement} videos</span>`
+                        }
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        if (badgesEarned) {
+            badgesEarned.textContent = userBadges.length;
+        }
+    } catch (error) {
+        console.error('Error loading badges:', error);
+    }
+}
+
+// ============================================
+// TIP SYSTEM (NEW)
+// ============================================
+function setupTipSystem() {
+    const tipModal = document.getElementById('tip-modal');
+    const closeTip = document.getElementById('close-tip');
+    const sendTip = document.getElementById('send-tip');
+
+    if (!tipModal) return;
+
+    // Add tip buttons to creator cards
+    document.addEventListener('click', (e) => {
+        if (e.target.closest('.tip-creator-btn')) {
+            const btn = e.target.closest('.tip-creator-btn');
+            const creatorId = btn.dataset.creatorId;
+            const creatorName = btn.dataset.creatorName;
+            openTipModal(creatorId, creatorName);
+        }
+    });
+
+    if (closeTip) {
+        closeTip.addEventListener('click', () => {
+            tipModal.classList.remove('active');
+        });
+    }
+
+    // Tip amount selection
+    document.querySelectorAll('.tip-option').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.tip-option').forEach(b => b.classList.remove('selected'));
+            btn.classList.add('selected');
+            const customAmount = document.getElementById('custom-amount');
+            if (btn.dataset.amount === 'custom') {
+                customAmount.style.display = 'block';
+            } else {
+                customAmount.style.display = 'none';
+            }
+        });
+    });
+
+    if (sendTip) {
+        sendTip.addEventListener('click', async () => {
+            const selectedOption = document.querySelector('.tip-option.selected');
+            if (!selectedOption) {
+                if (typeof toast !== 'undefined') {
+                    toast.warning('Please select an amount');
+                }
+                return;
+            }
+
+            let amount = selectedOption.dataset.amount;
+            if (amount === 'custom') {
+                amount = document.getElementById('custom-tip-amount').value;
+                if (!amount || amount < 1) {
+                    if (typeof toast !== 'undefined') {
+                        toast.warning('Please enter a valid amount');
+                    }
+                    return;
+                }
+            }
+
+            const message = document.getElementById('tip-message').value;
+            const creatorId = tipModal.dataset.creatorId;
+
+            if (!window.currentUser) {
+                if (typeof toast !== 'undefined') {
+                    toast.warning('Please sign in to send tips');
+                }
+                return;
+            }
+
+            try {
+                const supabase = window.supabaseAuth || window.supabase;
+                if (supabase) {
+                    const { error } = await supabase
+                        .from('tips')
+                        .insert({
+                            sender_id: window.currentUser.id,
+                            recipient_id: creatorId,
+                            amount: parseFloat(amount),
+                            message: message,
+                            status: 'completed'
+                        });
+
+                    if (error) throw error;
+                }
+
+                if (typeof toast !== 'undefined') {
+                    toast.success('Thank you for supporting this creator!');
+                }
+                tipModal.classList.remove('active');
+
+                // Reset form
+                document.getElementById('tip-message').value = '';
+                document.querySelectorAll('.tip-option').forEach(b => b.classList.remove('selected'));
+                document.getElementById('custom-amount').style.display = 'none';
+            } catch (error) {
+                console.error('Error sending tip:', error);
+                if (typeof toast !== 'undefined') {
+                    toast.error('Failed to send tip');
+                }
+            }
+        });
+    }
+
+    // Click outside to close
+    tipModal.addEventListener('click', (e) => {
+        if (e.target === tipModal) {
+            tipModal.classList.remove('active');
+        }
+    });
+}
+
+function openTipModal(creatorId, creatorName) {
+    const tipModal = document.getElementById('tip-modal');
+    const creatorInfo = document.getElementById('tip-creator-info');
+
+    tipModal.dataset.creatorId = creatorId;
+    creatorInfo.innerHTML = `
+        <h3>${escapeHtml(creatorName)}</h3>
+        <p>Show your appreciation with a tip</p>
+    `;
+
+    tipModal.classList.add('active');
+}
+
+// ============================================
+// VOICE SEARCH (NEW)
+// ============================================
+function setupVoiceSearch() {
+    const voiceSearchBtn = document.getElementById('voice-search-btn');
+    const voiceStatus = document.getElementById('voice-search-status');
+    const voiceStatusText = document.getElementById('voice-status-text');
+
+    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+        if (voiceSearchBtn) voiceSearchBtn.style.display = 'none';
+        return;
+    }
+
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const recognition = new SpeechRecognition();
+    recognition.continuous = false;
+    recognition.interimResults = false;
+    recognition.lang = 'en-ZA';
+
+    const startVoiceSearch = () => {
+        if (!window.currentUser) {
+            if (typeof toast !== 'undefined') {
+                toast.warning('Please sign in to use voice search');
+            }
+            return;
+        }
+        recognition.start();
+        if (voiceStatus) {
+            voiceStatus.classList.add('active');
+            voiceStatusText.textContent = 'Listening...';
+        }
+    };
+
+    recognition.onresult = (event) => {
+        const transcript = event.results[0][0].transcript;
+        const searchInput = document.getElementById('search-input');
+        if (searchInput) {
+            searchInput.value = transcript;
+            const event = new Event('input', { bubbles: true });
+            searchInput.dispatchEvent(event);
+        }
+        if (voiceStatus) {
+            voiceStatus.classList.remove('active');
+        }
+        if (typeof toast !== 'undefined') {
+            toast.info(`Searching: "${transcript}"`);
+        }
+    };
+
+    recognition.onerror = (event) => {
+        console.error('Voice search error:', event.error);
+        if (voiceStatus) {
+            voiceStatus.classList.remove('active');
+        }
+        if (event.error === 'not-allowed') {
+            if (typeof toast !== 'undefined') {
+                toast.error('Microphone access denied');
+            }
+        }
+    };
+
+    recognition.onend = () => {
+        if (voiceStatus) {
+            voiceStatus.classList.remove('active');
+        }
+    };
+
+    if (voiceSearchBtn) {
+        voiceSearchBtn.addEventListener('click', startVoiceSearch);
+    }
+}
+
+// ============================================
+// UTILITY FUNCTIONS
+// ============================================
+function formatNumber(num) {
+    if (!num && num !== 0) return '0';
+    if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+    if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+    return num?.toString() || '0';
+}
+
+function truncateText(text, maxLength) {
+    if (!text) return '';
+    if (text.length <= maxLength) return text;
+    return text.substring(0, maxLength) + '...';
+}
+
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+function fixMediaUrl(url) {
+    if (!url) return '';
+    if (url.startsWith('http')) return url;
+    if (url.includes('supabase.co')) return url;
+    return `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/${url.replace(/^\/+/, '')}`;
+}
+
+// ============================================
+// INITIALIZE ALL FEATURES
+// ============================================
+function initializeAllFeatures() {
+    console.log('🚀 Initializing all Home Feed features...');
+    
+    // Initialize existing systems
+    if (typeof videoPreviewSystem !== 'undefined') {
+        videoPreviewSystem.init();
+    }
+    
+    if (typeof recommendationEngine !== 'undefined') {
+        recommendationEngine.init();
+    }
+    
+    if (typeof notificationSystem !== 'undefined') {
+        notificationSystem.init();
+    }
+    
+    if (typeof analyticsSystem !== 'undefined') {
+        analyticsSystem.init();
+    }
+    
+    if (typeof searchSystem !== 'undefined') {
+        searchSystem.init();
+    }
+    
+    if (typeof continueWatchingSystem !== 'undefined') {
+        continueWatchingSystem.init();
+    }
+    
+    // Initialize NEW features
+    if (typeof setupLanguageFilter === 'function') {
+        setupLanguageFilter();
+    }
+    
+    if (typeof loadCommunityStats === 'function') {
+        loadCommunityStats();
+    }
+    
+    if (typeof initVideoHero === 'function') {
+        initVideoHero();
+    }
+    
+    if (typeof loadShorts === 'function') {
+        loadShorts();
+    }
+    
+    if (typeof initBadgesSystem === 'function') {
+        initBadgesSystem();
+    }
+    
+    if (typeof setupTipSystem === 'function') {
+        setupTipSystem();
+    }
+    
+    if (typeof setupVoiceSearch === 'function') {
+        setupVoiceSearch();
+    }
+    
+    // Initialize UI Scale Controller
+    if (typeof UIScaleController !== 'undefined') {
+        window.uiScaleController = new UIScaleController();
+    }
+    
+    console.log('✅ All features initialized');
+}
+
+// Auto-initialize when DOM is ready
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeAllFeatures);
+} else {
+    initializeAllFeatures();
+}
+
+// ============================================
+// EXPORT INSTANCES
+// ============================================
 const videoPreviewSystem = new VideoPreviewSystem();
 const recommendationEngine = new RecommendationEngine();
 const notificationSystem = new NotificationSystem();
