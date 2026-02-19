@@ -2361,38 +2361,6 @@ function setupVoiceSearch() {
 }
 
 // ============================================
-// CACHE MANAGER
-// ============================================
-class CacheManager {
-    constructor() {
-        this.cache = new Map();
-        this.ttl = 5 * 60 * 1000; // 5 minutes default
-    }
-    
-    set(key, data, ttl = this.ttl) {
-        this.cache.set(key, {
-            data,
-            timestamp: Date.now(),
-            ttl
-        });
-    }
-    
-    get(key) {
-        const item = this.cache.get(key);
-        if (!item) return null;
-        if (Date.now() - item.timestamp > item.ttl) {
-            this.cache.delete(key);
-            return null;
-        }
-        return item.data;
-    }
-    
-    clear() {
-        this.cache.clear();
-    }
-}
-
-// ============================================
 // UTILITY FUNCTIONS
 // ============================================
 function formatNumber(num) {
@@ -2546,23 +2514,13 @@ function initializeAllFeatures() {
         window.uiScaleController.init();
     }
     
-    // Initialize Cache Manager and Content Metrics
-    window.cacheManager = new CacheManager();
-    window.contentMetrics = new Map();
-    
     console.log('✅ All features initialized');
 }
 
-// Auto-initialize when DOM is ready
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initializeAllFeatures);
-} else {
-    initializeAllFeatures();
-}
-
 // ============================================
-// EXPORT INSTANCES
+// CREATE AND EXPORT INSTANCES
 // ============================================
+// Create all instances
 const videoPreviewSystem = new VideoPreviewSystem();
 const recommendationEngine = new RecommendationEngine();
 const notificationSystem = new NotificationSystem();
@@ -2571,4 +2529,33 @@ const searchSystem = new SearchSystem();
 const continueWatchingSystem = new ContinueWatchingSystem();
 const progressTracker = new ProgressTracker();
 
-console.log('✅ Home Feed Features initialized');
+// ============================================
+// GLOBAL EXPORTS (Required for UI systems)
+// ============================================
+// Ensure these instances are available globally
+window.notificationSystem = notificationSystem;
+window.analyticsSystem = analyticsSystem;
+window.searchSystem = searchSystem;
+window.continueWatchingSystem = continueWatchingSystem;
+window.videoPreviewSystem = videoPreviewSystem;
+window.recommendationEngine = recommendationEngine;
+
+// Export new features
+window.uiScaleController = window.uiScaleController || new UIScaleController();
+window.setupSidebar = typeof setupSidebar === 'function' ? setupSidebar : null;
+window.initVideoHero = typeof initVideoHero === 'function' ? initVideoHero : null;
+window.loadContentMetrics = typeof loadContentMetrics === 'function' ? loadContentMetrics : null;
+window.createContentCardWithMetrics = typeof createContentCardWithMetrics === 'function' ? createContentCardWithMetrics : null;
+
+// Create global cache manager and content metrics
+window.cacheManager = new CacheManager();
+window.contentMetrics = new Map();
+
+console.log('✅ Home Feed Features exported globally');
+
+// Auto-initialize when DOM is ready
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeAllFeatures);
+} else {
+    initializeAllFeatures();
+}
