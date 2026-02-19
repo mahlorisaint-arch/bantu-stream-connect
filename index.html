@@ -30,6 +30,8 @@
     <link rel="stylesheet" href="css/home-feed-themes.css">
     <link rel="stylesheet" href="css/home-feed-components.css">
     <link rel="stylesheet" href="css/home-feed-utilities.css">
+    <!-- NEW: Home Feed Features CSS -->
+    <link rel="stylesheet" href="css/home-feed-features.css">
 </head>
 <body>
     <!-- Loading Screen -->
@@ -251,6 +253,11 @@
                     <i class="fas fa-chart-line"></i>
                 </button>
                 
+                <!-- Voice Search Button (NEW) -->
+                <button id="voice-search-btn" class="icon-btn" title="Voice Search">
+                    <i class="fas fa-microphone"></i>
+                </button>
+                
                 <!-- Search Button -->
                 <button id="search-btn" class="icon-btn search-btn" title="Search (Ctrl+K)">
                     <i class="fas fa-search"></i>
@@ -289,6 +296,10 @@
                 <div class="nav-icon" id="nav-notifications-btn" title="Notifications">
                     <i class="fas fa-bell"></i>
                     <span class="nav-notification-badge" id="nav-notification-count" style="display: none;">0</span>
+                </div>
+                <!-- Badges Button (NEW) -->
+                <div class="nav-icon" id="nav-badges-btn" title="My Badges">
+                    <i class="fas fa-medal"></i>
                 </div>
             </div>
         </div>
@@ -332,11 +343,83 @@
                 </div>
             </div>
 
-            <!-- Hero Section -->
-            <section class="hero">
-                <h1>Welcome to Bantu Stream Connect</h1>
-                <p>Discover amazing content from creators across Africa</p>
-                <button id="browse-all-btn" class="hero-btn" data-target="explore">Browse All Content</button>
+            <!-- ===== NEW: VIDEO HERO SECTION (REPLACES OLD HERO) ===== -->
+            <section class="video-hero-section" id="video-hero">
+                <video class="hero-video" id="hero-video" muted loop playsinline preload="metadata">
+                    <source src="" type="video/mp4">
+                </video>
+                <div class="hero-overlay"></div>
+                <div class="hero-content">
+                    <h1 class="hero-title" id="hero-title">DISCOVER & CONNECT</h1>
+                    <p class="hero-subtitle" id="hero-subtitle">Explore amazing content from creators across Africa</p>
+                    <div class="hero-buttons">
+                        <button id="browse-all-btn" class="hero-btn">Explore All Content</button>
+                        <button id="hero-mute-btn" class="hero-btn secondary">
+                            <i class="fas fa-volume-mute"></i>
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ===== NEW: LANGUAGE FILTER BAR ===== -->
+            <div class="language-filter-bar">
+                <div class="language-filter-container">
+                    <i class="fas fa-language"></i>
+                    <span class="language-filter-label">Filter by Language:</span>
+                    <div class="language-chips" id="language-chips">
+                        <button class="language-chip active" data-lang="all">All</button>
+                        <button class="language-chip" data-lang="en">English</button>
+                        <button class="language-chip" data-lang="zu">IsiZulu</button>
+                        <button class="language-chip" data-lang="xh">IsiXhosa</button>
+                        <button class="language-chip" data-lang="af">Afrikaans</button>
+                        <button class="language-chip" data-lang="nso">Sepedi</button>
+                        <button class="language-chip" data-lang="st">Sesotho</button>
+                        <button class="language-chip" data-lang="tn">Setswana</button>
+                        <button class="language-chip-more" id="more-languages-btn">
+                            More <i class="fas fa-chevron-down"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===== NEW: COMMUNITY STATS BAR ===== -->
+            <div class="community-stats-bar">
+                <div class="community-stat">
+                    <i class="fas fa-users"></i>
+                    <span class="community-stat-value" id="total-connectors">12.5K</span>
+                    <span class="community-stat-label">Active Connectors</span>
+                </div>
+                <div class="community-stat">
+                    <i class="fas fa-video"></i>
+                    <span class="community-stat-value" id="total-content">2.3K</span>
+                    <span class="community-stat-label">Pieces of Content</span>
+                </div>
+                <div class="community-stat">
+                    <i class="fas fa-user-plus"></i>
+                    <span class="community-stat-value" id="new-connectors">+342</span>
+                    <span class="community-stat-label">Joined Today</span>
+                </div>
+                <div class="community-stat">
+                    <i class="fas fa-map-pin"></i>
+                    <span class="community-stat-value">9</span>
+                    <span class="community-stat-label">South African Languages</span>
+                </div>
+            </div>
+
+            <!-- ===== NEW: SHORTS SECTION ===== -->
+            <section class="section">
+                <div class="section-header">
+                    <h2 class="section-title">
+                        <i class="fas fa-bolt" style="color: var(--warm-gold);"></i>
+                        QUICK BITS
+                    </h2>
+                    <a href="#" class="see-all-btn" id="see-all-shorts">
+                        See All <i class="fas fa-arrow-right"></i>
+                    </a>
+                </div>
+                <div class="shorts-container" id="shorts-container">
+                    <!-- Shorts will be loaded here -->
+                </div>
             </section>
 
             <!-- Content Sections -->
@@ -396,6 +479,98 @@
                 </button>
             </div>
         </footer>
+    </div>
+
+    <!-- ===== NEW: BADGES MODAL ===== -->
+    <div id="badges-modal" class="badges-modal">
+        <div class="badges-content">
+            <div class="badges-header">
+                <h2><i class="fas fa-medal"></i> Your Exploration Badges</h2>
+                <button id="close-badges" class="close-search-btn">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="badges-body">
+                <div class="badges-stats">
+                    <div class="badge-stat">
+                        <span class="badge-stat-value" id="badges-earned">0</span>
+                        <span class="badge-stat-label">Badges Earned</span>
+                    </div>
+                    <div class="badge-stat">
+                        <span class="badge-stat-value" id="badges-total">12</span>
+                        <span class="badge-stat-label">Total Available</span>
+                    </div>
+                </div>
+                <div class="badges-grid" id="badges-grid">
+                    <!-- Badges will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== NEW: TIP MODAL ===== -->
+    <div id="tip-modal" class="tip-modal">
+        <div class="tip-content">
+            <div class="tip-header">
+                <h2><i class="fas fa-gift"></i> Support Creator</h2>
+                <button id="close-tip" class="close-search-btn">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="tip-body">
+                <div class="creator-info-tip" id="tip-creator-info">
+                    <!-- Creator info loaded here -->
+                </div>
+                <div class="tip-amounts">
+                    <h3>Select Amount</h3>
+                    <div class="tip-options">
+                        <button class="tip-option" data-amount="5">R5</button>
+                        <button class="tip-option" data-amount="10">R10</button>
+                        <button class="tip-option" data-amount="25">R25</button>
+                        <button class="tip-option" data-amount="50">R50</button>
+                        <button class="tip-option custom" data-amount="custom">
+                            <i class="fas fa-pen"></i> Custom
+                        </button>
+                    </div>
+                    <div class="custom-amount" id="custom-amount" style="display: none;">
+                        <input type="number" id="custom-tip-amount" placeholder="Enter amount (R)">
+                    </div>
+                </div>
+                <div class="tip-message">
+                    <h3>Message (Optional)</h3>
+                    <textarea id="tip-message" placeholder="Say something nice..."></textarea>
+                </div>
+            </div>
+            <div class="tip-footer">
+                <button id="send-tip" class="btn-primary">
+                    <i class="fas fa-gift"></i> Send Tip
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== NEW: UI SCALE CONTROL WIDGET ===== -->
+    <div class="ui-scale-control" id="ui-scale-control">
+        <div class="scale-control-bar">
+            <button class="scale-btn" id="scale-decrease" title="Make Smaller">
+                <i class="fas fa-minus"></i>
+            </button>
+            <span class="scale-value" id="scale-value">100%</span>
+            <button class="scale-btn" id="scale-increase" title="Make Larger">
+                <i class="fas fa-plus"></i>
+            </button>
+            <button class="scale-btn" id="scale-reset" title="Reset">
+                <i class="fas fa-undo"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- ===== NEW: VOICE SEARCH STATUS ===== -->
+    <div id="voice-search-status" class="voice-search-status">
+        <div class="voice-status-content">
+            <i class="fas fa-microphone"></i>
+            <span id="voice-status-text">Listening...</span>
+        </div>
     </div>
 
     <!-- Toast Container -->
