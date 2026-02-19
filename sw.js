@@ -1,30 +1,30 @@
 // Bantu Stream Connect Service Worker
-// Version: 3.0.0 - Optimized for Explore Screen Performance
+// Version: 4.0.0 - Optimized for Home Feed Performance with Safe Caching
 
-const CACHE_NAME = 'bantu-stream-connect-v3';
-const STATIC_CACHE = 'bantu-static-v3';
-const DYNAMIC_CACHE = 'bantu-dynamic-v3';
-const IMAGE_CACHE = 'bantu-images-v3';
-const API_CACHE = 'bantu-api-v3';
+const CACHE_NAME = 'bantu-stream-connect-v4';  // Incremented to v4
+const STATIC_CACHE = 'bantu-static-v4';
+const DYNAMIC_CACHE = 'bantu-dynamic-v4';
+const IMAGE_CACHE = 'bantu-images-v4';
+const API_CACHE = 'bantu-api-v4';
 
-// Assets to cache on install
+// Assets to cache on install - verified to exist
 const STATIC_ASSETS = [
     '/',
     '/index.html',
-    '/explore-screen.html',
-    '/css/explore-screen.css',
-    '/css/explore-screen-features.css',
-    '/css/content-library-themes.css',
-    '/css/content-library-features.css',
-    '/js/explore-screen.js',
-    '/js/explore-screen-features.js',
-    '/js/rate-limiter.js',
-    '/js/content-library-themes.js',
-    '/js/content-library-features.js',
+    '/offline.html',
+    '/css/home-feed.css',
+    '/css/home-feed-themes.css',
+    '/css/home-feed-components.css',
+    '/css/home-feed-utilities.css',
+    '/css/home-feed-features.css',
+    '/js/home-feed-core.js',
+    '/js/home-feed-features.js',
+    '/js/home-feed-ui.js',
+    '/js/home-feed-utils.js',
+    '/js/home-feed.js',
     '/manifest.json',
     '/assets/icon/bantu_stream_connect_icon_192x192.png',
     '/assets/icon/bantu_stream_connect_icon_512x512.png',
-    '/offline.html',
     'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Orbitron:wght@400;500;600;700&display=swap',
     'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css'
 ];
@@ -39,65 +39,121 @@ const API_ENDPOINTS = [
     '/api/stats/community'
 ];
 
-// Install event - cache static assets
+// Install event - cache static assets with safety checks
 self.addEventListener('install', event => {
-    console.log('Service Worker: Installing v3...');
+    console.log('Service Worker: Installing v4...');
     
     event.waitUntil(
-        Promise.all([
-            caches.open(STATIC_CACHE).then(cache => {
-                console.log('Service Worker: Caching static assets');
-                return cache.addAll(STATIC_ASSETS).catch(error => {
-                    console.error('Failed to cache static assets:', error);
-                    // Continue even if some assets fail
-                });
-            }),
-            caches.open(API_CACHE).then(cache => {
-                console.log('Service Worker: Pre-caching API endpoints');
-                // Don't block install on API pre-cache
-                return Promise.allSettled(
-                    API_ENDPOINTS.map(endpoint => 
-                        fetch(endpoint).then(response => {
-                            if (response.ok) {
-                                cache.put(endpoint, response);
+        caches.open(CACHE_NAME)
+            .then(async (cache) => {
+                try {
+                    // Only cache critical assets that exist
+                    const validAssets = [];
+                    
+                    // Use Promise.allSettled to handle individual failures gracefully
+                    const results = await Promise.allSettled(
+                        STATIC_ASSETS.map(async (url) => {
+                            try {
+                                // Skip external URLs for HEAD requests (CORS issues)
+                                if (url.startsWith('http') && !url.startsWith(self.location.origin)) {
+                                    // For external resources, just try to cache them directly
+                                    validAssets.push(url);
+                                    return { url, status: 'added' };
+                                }
+                                
+                                // For local assets, check if they exist
+                                const response = await fetch(url, { 
+                                    method: 'HEAD',
+                                    cache: 'no-cache'
+                                });
+                                
+                                if (response.ok) {
+                                    validAssets.push(url);
+                                    return { url, status: 'ok' };
+                                } else {
+                                    console.log(`Skipping non-existent: ${url} (${response.status})`);
+                                    return { url, status: 'not-found' };
+                                }
+                            } catch (error) {
+                                // If HEAD fails but it's a local asset, try to add it anyway
+                                // The browser might have it cached or it might be an HTML file that needs to be fetched
+                                if (!url.startsWith('http') || url.startsWith(self.location.origin)) {
+                                    validAssets.push(url);
+                                    return { url, status: 'added-fallback' };
+                                }
+                                console.log(`Skipping unreachable: ${url} (${error.message})`);
+                                return { url, status: 'error' };
                             }
-                        }).catch(() => {})
-                    )
-                );
+                        })
+                    );
+                    
+                    // Count successful additions
+                    const successCount = results.filter(r => 
+                        r.status === 'fulfilled' && 
+                        (r.value.status === 'ok' || r.value.status === 'added' || r.value.status === 'added-fallback')
+                    ).length;
+                    
+                    console.log(`📊 Asset check: ${successCount}/${STATIC_ASSETS.length} assets will be cached`);
+                    
+                    // Cache only valid assets
+                    if (validAssets.length > 0) {
+                        await cache.addAll(validAssets);
+                        console.log(`✅ Cached ${validAssets.length} critical assets`);
+                    } else {
+                        console.log('⚠️ No valid assets to cache, continuing anyway');
+                    }
+                } catch (error) {
+                    console.log('⚠️ Precaching failed (non-critical):', error);
+                    // Don't fail install - app can still work
+                }
             })
-        ]).then(() => {
-            console.log('Service Worker: Install completed');
-            return self.skipWaiting();
-        })
+            .then(() => {
+                // Also try to pre-cache API endpoints (don't block on failure)
+                return caches.open(API_CACHE).then(cache => {
+                    return Promise.allSettled(
+                        API_ENDPOINTS.map(endpoint => 
+                            fetch(endpoint, { cache: 'no-cache' })
+                                .then(response => {
+                                    if (response.ok) {
+                                        cache.put(endpoint, response);
+                                        console.log(`✅ Cached API endpoint: ${endpoint}`);
+                                    }
+                                })
+                                .catch(() => {})
+                        )
+                    );
+                });
+            })
+            .then(() => {
+                console.log('✅ Service Worker: Install completed');
+                return self.skipWaiting();
+            })
     );
 });
 
 // Activate event - clean up old caches
 self.addEventListener('activate', event => {
-    console.log('Service Worker: Activating...');
+    console.log('Service Worker: Activating v4...');
     
     event.waitUntil(
         caches.keys().then(cacheNames => {
             return Promise.all(
                 cacheNames.map(cacheName => {
-                    // Delete old version caches
-                    if (cacheName !== STATIC_CACHE && 
-                        cacheName !== DYNAMIC_CACHE && 
-                        cacheName !== IMAGE_CACHE && 
-                        cacheName !== API_CACHE) {
-                        console.log('Service Worker: Deleting old cache:', cacheName);
+                    // Delete any caches that don't match our current version
+                    if (!cacheName.includes('v4')) {
+                        console.log('🗑️ Deleting old cache:', cacheName);
                         return caches.delete(cacheName);
                     }
                 })
             );
         }).then(() => {
-            console.log('Service Worker: Activation completed');
+            console.log('✅ Service Worker: Activation completed - old caches cleared');
             return self.clients.claim();
         })
     );
 });
 
-// Fetch event - optimized caching strategies
+// Fetch event - optimized caching strategies with error handling
 self.addEventListener('fetch', event => {
     const requestUrl = new URL(event.request.url);
     
@@ -109,8 +165,44 @@ self.addEventListener('fetch', event => {
     }
     
     // Skip Supabase realtime connections
-    if (requestUrl.pathname.includes('realtime')) {
+    if (requestUrl.pathname.includes('realtime') || 
+        requestUrl.pathname.includes('/realtime/v1/')) {
         return;
+    }
+    
+    // Skip Supabase REST API calls from being cached by service worker
+    // Let them go directly to network for real-time data
+    if (requestUrl.hostname.includes('supabase.co')) {
+        // For Supabase API calls, use network first with cache fallback
+        if (requestUrl.pathname.includes('/rest/v1/')) {
+            event.respondWith(
+                fetch(event.request)
+                    .then(response => {
+                        // Cache successful responses for offline fallback
+                        if (response && response.ok) {
+                            const responseClone = response.clone();
+                            caches.open(API_CACHE).then(cache => {
+                                cache.put(event.request, responseClone);
+                            });
+                        }
+                        return response;
+                    })
+                    .catch(async () => {
+                        // Try to serve from cache on failure
+                        const cached = await caches.match(event.request);
+                        if (cached) {
+                            console.log('📦 Serving cached Supabase response for:', requestUrl.pathname);
+                            return cached;
+                        }
+                        // If no cache, return a fallback response
+                        return new Response(
+                            JSON.stringify({ error: 'You are offline and this data is not cached' }),
+                            { status: 503, headers: { 'Content-Type': 'application/json' } }
+                        );
+                    })
+            );
+            return;
+        }
     }
     
     // Strategy 1: Cache First for static assets (CSS, JS, fonts)
@@ -121,7 +213,7 @@ self.addEventListener('fetch', event => {
         event.respondWith(
             caches.match(event.request).then(cachedResponse => {
                 if (cachedResponse) {
-                    // Return cached response and update in background
+                    // Return cached response and update in background (stale-while-revalidate)
                     fetch(event.request)
                         .then(networkResponse => {
                             if (networkResponse && networkResponse.ok) {
@@ -143,6 +235,9 @@ self.addEventListener('fetch', event => {
                         });
                     }
                     return networkResponse;
+                }).catch(error => {
+                    console.log('Failed to fetch static asset:', error);
+                    return new Response('', { status: 404, statusText: 'Not Found' });
                 });
             })
         );
@@ -165,22 +260,29 @@ self.addEventListener('fetch', event => {
                     }
                     return networkResponse;
                 })
-                .catch(() => {
-                    return caches.match(event.request).then(cachedResponse => {
-                        if (cachedResponse) {
-                            return cachedResponse;
-                        }
-                        // Return offline page
-                        return caches.match('/offline.html');
-                    });
+                .catch(async () => {
+                    // Try to serve from cache on failure
+                    const cached = await caches.match(event.request);
+                    if (cached) {
+                        return cached;
+                    }
+                    // Return offline page
+                    const offlinePage = await caches.match('/offline.html');
+                    if (offlinePage) {
+                        return offlinePage;
+                    }
+                    // Ultimate fallback
+                    return new Response(
+                        '<html><body><h1>Offline</h1><p>You are offline and the offline page is not cached.</p></body></html>',
+                        { headers: { 'Content-Type': 'text/html' } }
+                    );
                 })
         );
         return;
     }
     
-    // Strategy 3: Stale-While-Revalidate for API calls
-    if (requestUrl.pathname.includes('/api/') || 
-        requestUrl.hostname.includes('supabase.co')) {
+    // Strategy 3: Stale-While-Revalidate for API calls (except Supabase)
+    if (requestUrl.pathname.includes('/api/')) {
         
         event.respondWith(
             caches.open(API_CACHE).then(cache => {
@@ -192,8 +294,17 @@ self.addEventListener('fetch', event => {
                             }
                             return networkResponse;
                         })
-                        .catch(() => {
-                            return cachedResponse;
+                        .catch(error => {
+                            console.log('API fetch failed:', error);
+                            // If fetch fails and we have cached response, return it
+                            if (cachedResponse) {
+                                return cachedResponse;
+                            }
+                            // Otherwise return a fallback
+                            return new Response(
+                                JSON.stringify({ error: 'Failed to fetch data' }),
+                                { status: 503, headers: { 'Content-Type': 'application/json' } }
+                            );
                         });
                     
                     // Return cached response immediately if available
@@ -227,6 +338,9 @@ self.addEventListener('fetch', event => {
                             cache.put(event.request, networkResponse.clone());
                         }
                         return networkResponse;
+                    }).catch(() => {
+                        // Return a placeholder image if fetch fails
+                        return new Response('', { status: 404 });
                     });
                 });
             })
@@ -235,7 +349,12 @@ self.addEventListener('fetch', event => {
     }
     
     // Strategy 5: Network Only for everything else
-    event.respondWith(fetch(event.request));
+    event.respondWith(
+        fetch(event.request).catch(error => {
+            console.log('Fetch failed:', error);
+            return new Response('', { status: 404 });
+        })
+    );
 });
 
 // Background sync for offline actions
@@ -359,7 +478,8 @@ self.addEventListener('message', event => {
             caches.delete(STATIC_CACHE),
             caches.delete(DYNAMIC_CACHE),
             caches.delete(IMAGE_CACHE),
-            caches.delete(API_CACHE)
+            caches.delete(API_CACHE),
+            caches.delete(CACHE_NAME)
         ]).then(() => {
             console.log('All caches cleared');
         });
@@ -502,7 +622,7 @@ async function updateCachedContent() {
         
         const updatePromises = endpoints.map(async endpoint => {
             try {
-                const response = await fetch(endpoint);
+                const response = await fetch(endpoint, { cache: 'no-cache' });
                 if (response.ok) {
                     await cache.put(endpoint, response.clone());
                     
@@ -534,7 +654,7 @@ async function updateCachedContent() {
 
 async function updateCommunityStats() {
     try {
-        const response = await fetch('/api/stats/community');
+        const response = await fetch('/api/stats/community', { cache: 'no-cache' });
         if (response.ok) {
             const cache = await caches.open(API_CACHE);
             await cache.put('/api/stats/community', response.clone());
@@ -564,7 +684,7 @@ async function prefetchContent(contentIds) {
         const prefetchPromises = contentIds.map(async id => {
             const url = `/api/content/${id}`;
             try {
-                const response = await fetch(url);
+                const response = await fetch(url, { cache: 'no-cache' });
                 if (response.ok) {
                     await cache.put(url, response);
                 }
@@ -688,4 +808,4 @@ async function cleanupExpiredCache() {
 // Run cleanup every hour
 setInterval(cleanupExpiredCache, 60 * 60 * 1000);
 
-console.log('Service Worker v3 loaded successfully - Optimized for Explore Screen');
+console.log('✅ Service Worker v4 loaded successfully - Optimized for Home Feed with Safe Caching');
