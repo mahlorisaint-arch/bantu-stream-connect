@@ -1203,6 +1203,241 @@ class ProgressTracker {
 }
 
 // ============================================
+// SIDEBAR MENU FUNCTIONS (NEW)
+// ============================================
+function setupSidebar() {
+    const menuToggle = document.getElementById('menu-toggle');
+    const sidebarClose = document.getElementById('sidebar-close');
+    const sidebarOverlay = document.getElementById('sidebar-overlay');
+    const sidebarMenu = document.getElementById('sidebar-menu');
+    
+    // Open sidebar
+    const openSidebar = () => {
+        if (sidebarMenu) sidebarMenu.classList.add('active');
+        if (sidebarOverlay) sidebarOverlay.classList.add('active');
+        document.body.style.overflow = 'hidden'; // Prevent background scrolling
+    };
+    
+    // Close sidebar
+    const closeSidebar = () => {
+        if (sidebarMenu) sidebarMenu.classList.remove('active');
+        if (sidebarOverlay) sidebarOverlay.classList.remove('active');
+        document.body.style.overflow = '';
+    };
+    
+    // Event listeners
+    if (menuToggle) {
+        menuToggle.addEventListener('click', (e) => {
+            e.stopPropagation();
+            openSidebar();
+        });
+    }
+    
+    if (sidebarClose) {
+        sidebarClose.addEventListener('click', closeSidebar);
+    }
+    
+    if (sidebarOverlay) {
+        sidebarOverlay.addEventListener('click', closeSidebar);
+    }
+    
+    // Close on Escape key
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && sidebarMenu?.classList.contains('active')) {
+            closeSidebar();
+        }
+    });
+    
+    // Update sidebar profile
+    updateSidebarProfile();
+    
+    // Setup sidebar navigation clicks
+    setupSidebarNavigation();
+    
+    // Setup theme toggle in sidebar
+    setupSidebarThemeToggle();
+    
+    // Setup scale controls in sidebar
+    setupSidebarScaleControls();
+    
+    console.log('✅ Sidebar initialized');
+}
+
+function updateSidebarProfile() {
+    const avatar = document.getElementById('sidebar-profile-avatar');
+    const name = document.getElementById('sidebar-profile-name');
+    const email = document.getElementById('sidebar-profile-email');
+    const profileSection = document.getElementById('sidebar-profile');
+    
+    if (!avatar || !name || !email) return;
+    
+    if (window.currentUser) {
+        name.textContent = window.currentUser.user_metadata?.full_name || window.currentUser.email?.split('@')[0] || 'User';
+        email.textContent = window.currentUser.email || '';
+        
+        if (window.currentUser.user_metadata?.avatar_url) {
+            avatar.innerHTML = `<img src="${fixMediaUrl(window.currentUser.user_metadata.avatar_url)}" alt="Profile">`;
+        } else {
+            const initials = getInitials(name.textContent);
+            avatar.innerHTML = `<span>${initials}</span>`;
+        }
+        
+        // Make profile clickable to manage profiles
+        if (profileSection) {
+            profileSection.addEventListener('click', () => {
+                closeSidebar();
+                window.location.href = 'manage-profiles.html';
+            });
+        }
+    } else {
+        name.textContent = 'Guest';
+        email.textContent = 'Sign in to continue';
+        avatar.innerHTML = '<i class="fas fa-user"></i>';
+        
+        if (profileSection) {
+            profileSection.addEventListener('click', () => {
+                closeSidebar();
+                window.location.href = `login.html?redirect=${encodeURIComponent(window.location.pathname)}`;
+            });
+        }
+    }
+}
+
+function setupSidebarNavigation() {
+    // Analytics
+    document.getElementById('sidebar-analytics')?.addEventListener('click', (e) => {
+        e.preventDefault();
+        closeSidebar();
+        if (!window.currentUser) {
+            if (typeof toast !== 'undefined') toast.warning('Please sign in to view analytics');
+            return;
+        }
+        const analyticsModal = document.getElementById('analytics-modal');
+        if (analyticsModal) {
+            analyticsModal.classList.add('active');
+            if (typeof analyticsSystem?.updateAnalyticsDisplay === 'function') {
+                analyticsSystem.updateAnalyticsDisplay();
+            }
+        }
+    });
+    
+    // Notifications
+    document.getElementById('sidebar-notifications')?.addEventListener('click', (e) => {
+        e.preventDefault();
+        closeSidebar();
+        const notificationsPanel = document.getElementById('notifications-panel');
+        if (notificationsPanel) {
+            notificationsPanel.classList.add('active');
+            if (typeof notificationSystem?.renderNotifications === 'function') {
+                notificationSystem.renderNotifications();
+            }
+        }
+    });
+    
+    // Badges
+    document.getElementById('sidebar-badges')?.addEventListener('click', (e) => {
+        e.preventDefault();
+        closeSidebar();
+        if (!window.currentUser) {
+            if (typeof toast !== 'undefined') toast.warning('Please sign in to view badges');
+            return;
+        }
+        const badgesModal = document.getElementById('badges-modal');
+        if (badgesModal) {
+            badgesModal.classList.add('active');
+            if (typeof loadUserBadges === 'function') loadUserBadges();
+        }
+    });
+    
+    // Watch Party
+    document.getElementById('sidebar-watch-party')?.addEventListener('click', (e) => {
+        e.preventDefault();
+        closeSidebar();
+        if (!window.currentUser) {
+            if (typeof toast !== 'undefined') toast.warning('Please sign in to start a watch party');
+            return;
+        }
+        const watchPartyModal = document.getElementById('watch-party-modal');
+        if (watchPartyModal) {
+            watchPartyModal.classList.add('active');
+            if (typeof loadWatchPartyContent === 'function') loadWatchPartyContent();
+        }
+    });
+    
+    // Create (check auth)
+    document.getElementById('sidebar-create')?.addEventListener('click', async (e) => {
+        e.preventDefault();
+        closeSidebar();
+        const { data } = await supabaseAuth.auth.getSession();
+        if (!data?.session) {
+            if (typeof toast !== 'undefined') toast.warning('Please sign in to upload content');
+            window.location.href = `login.html?redirect=creator-upload.html`;
+        } else {
+            window.location.href = 'creator-upload.html';
+        }
+    });
+    
+    // Dashboard (check auth)
+    document.getElementById('sidebar-dashboard')?.addEventListener('click', async (e) => {
+        e.preventDefault();
+        closeSidebar();
+        const { data } = await supabaseAuth.auth.getSession();
+        if (!data?.session) {
+            if (typeof toast !== 'undefined') toast.warning('Please sign in to access dashboard');
+            window.location.href = `login.html?redirect=creator-dashboard.html`;
+        } else {
+            window.location.href = 'creator-dashboard.html';
+        }
+    });
+}
+
+function setupSidebarThemeToggle() {
+    const themeToggle = document.getElementById('sidebar-theme-toggle');
+    if (!themeToggle) return;
+    
+    themeToggle.addEventListener('click', () => {
+        closeSidebar();
+        const themeSelector = document.getElementById('theme-selector');
+        if (themeSelector) {
+            themeSelector.classList.toggle('active');
+        }
+    });
+}
+
+function setupSidebarScaleControls() {
+    if (!window.uiScaleController) return;
+    
+    const decreaseBtn = document.getElementById('sidebar-scale-decrease');
+    const increaseBtn = document.getElementById('sidebar-scale-increase');
+    const resetBtn = document.getElementById('sidebar-scale-reset');
+    
+    if (decreaseBtn) {
+        decreaseBtn.addEventListener('click', () => {
+            window.uiScaleController.decrease();
+        });
+    }
+    if (increaseBtn) {
+        increaseBtn.addEventListener('click', () => {
+            window.uiScaleController.increase();
+        });
+    }
+    if (resetBtn) {
+        resetBtn.addEventListener('click', () => {
+            window.uiScaleController.reset();
+        });
+    }
+}
+
+// Helper function to close sidebar (for use in navigation)
+function closeSidebar() {
+    const sidebarMenu = document.getElementById('sidebar-menu');
+    const sidebarOverlay = document.getElementById('sidebar-overlay');
+    if (sidebarMenu) sidebarMenu.classList.remove('active');
+    if (sidebarOverlay) sidebarOverlay.classList.remove('active');
+    document.body.style.overflow = '';
+}
+
+// ============================================
 // UI SCALE CONTROLLER (NEW)
 // ============================================
 class UIScaleController {
@@ -1210,7 +1445,6 @@ class UIScaleController {
         this.scaleKey = 'bantu_ui_scale';
         this.scales = [0.75, 0.85, 1.0, 1.15, 1.25, 1.5];
         this.currentIndex = 2; // Default to 1.0
-        this.init();
     }
 
     init() {
@@ -1247,14 +1481,18 @@ class UIScaleController {
         document.documentElement.style.setProperty('--ui-scale', scale);
         localStorage.setItem(this.scaleKey, scale);
         this.updateScaleDisplay();
+        // Dispatch event for other components to listen
+        document.dispatchEvent(new CustomEvent('scaleChanged', { detail: { scale } }));
         console.log(`📏 UI Scale set to: ${scale}x`);
     }
 
     updateScaleDisplay() {
         const scaleValue = document.getElementById('scale-value');
-        if (scaleValue) {
-            scaleValue.textContent = Math.round(this.getScale() * 100) + '%';
-        }
+        const sidebarScaleValue = document.getElementById('sidebar-scale-value');
+        const percentage = Math.round(this.getScale() * 100) + '%';
+        
+        if (scaleValue) scaleValue.textContent = percentage;
+        if (sidebarScaleValue) sidebarScaleValue.textContent = percentage;
     }
 
     getScale() {
@@ -1284,16 +1522,292 @@ class UIScaleController {
     }
 
     showScaleToast() {
-        const scale = this.getScale();
-        const percentage = Math.round(scale * 100);
+        const percentage = Math.round(this.getScale() * 100);
         if (typeof toast !== 'undefined') {
             toast.info(`UI Size: ${percentage}%`);
+        }
+    }
+
+    // Respect system accessibility settings
+    respectSystemSettings() {
+        // Check for prefers-reduced-motion
+        const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        if (reducedMotion) {
+            console.log('♿ Reduced motion preference detected');
+        }
+        
+        // Optional: Detect system font size
+        const largeTextQuery = window.matchMedia('(min-resolution: 120dpi)');
+        if (largeTextQuery.matches) {
+            console.log('📱 System may have large text enabled');
         }
     }
 }
 
 // ============================================
-// LANGUAGE FILTER SYSTEM (NEW)
+// VIDEO HERO (NEW)
+// ============================================
+async function initVideoHero() {
+    const heroVideo = document.getElementById('hero-video');
+    const heroMuteBtn = document.getElementById('hero-mute-btn');
+    const heroMuteBtnMobile = document.getElementById('hero-mute-btn-mobile');
+    const heroTitle = document.getElementById('hero-title');
+    const heroSubtitle = document.getElementById('hero-subtitle');
+    
+    if (!heroVideo) return;
+    
+    try {
+        const client = getSupabaseClient();
+        if (client) {
+            const { data, error } = await client
+                .from('Content')
+                .select('*')
+                .eq('status', 'published')
+                .order('views_count', { ascending: false })
+                .limit(1);
+            
+            if (error) throw error;
+            
+            const trending = data || [];
+            if (trending && trending.length > 0) {
+                const featured = trending[0];
+                const videoUrl = featured.preview_url || featured.file_url;
+                
+                if (videoUrl) {
+                    heroVideo.src = fixMediaUrl(videoUrl);
+                    heroVideo.poster = featured.thumbnail_url ? fixMediaUrl(featured.thumbnail_url) : '';
+                    
+                    // Set title and description (properly truncated)
+                    heroTitle.textContent = featured.title || 'DISCOVER & CONNECT';
+                    heroSubtitle.textContent = truncateText(featured.description || 'Explore amazing content from creators across Africa', 120);
+                    
+                    // Try to play (will fail on mobile without user interaction, that's okay)
+                    heroVideo.play().catch(() => {
+                        // Autoplay prevented - show mute button
+                        if (heroMuteBtn) heroMuteBtn.style.display = 'flex';
+                        if (heroMuteBtnMobile) heroMuteBtnMobile.style.display = 'flex';
+                    });
+                }
+            }
+        }
+    } catch (error) {
+        console.error('Error loading hero video:', error);
+    }
+    
+    // Mute toggle for desktop button
+    if (heroMuteBtn) {
+        heroMuteBtn.addEventListener('click', () => {
+            heroVideo.muted = !heroVideo.muted;
+            const icon = heroVideo.muted ? 'fa-volume-mute' : 'fa-volume-up';
+            heroMuteBtn.innerHTML = `<i class="fas ${icon}"></i>`;
+            if (heroMuteBtnMobile) heroMuteBtnMobile.innerHTML = `<i class="fas ${icon}"></i>`;
+        });
+    }
+    
+    // Mute toggle for mobile button
+    if (heroMuteBtnMobile) {
+        heroMuteBtnMobile.addEventListener('click', () => {
+            heroVideo.muted = !heroVideo.muted;
+            const icon = heroVideo.muted ? 'fa-volume-mute' : 'fa-volume-up';
+            heroMuteBtnMobile.innerHTML = `<i class="fas ${icon}"></i>`;
+            if (heroMuteBtn) heroMuteBtn.innerHTML = `<i class="fas ${icon}"></i>`;
+        });
+    }
+}
+
+// ============================================
+// CONTENT METRICS LOADING (NEW)
+// ============================================
+async function loadContentMetrics(contentIds) {
+    if (!contentIds || contentIds.length === 0) return;
+    
+    // Check cache first
+    const cacheKey = `metrics-${contentIds.sort().join(',')}`;
+    const cached = window.cacheManager?.get(cacheKey);
+    if (cached) {
+        cached.forEach(m => window.contentMetrics?.set(m.content_id, m));
+        updateMetricsOnCards(contentIds);
+        return;
+    }
+    
+    try {
+        const client = getSupabaseClient();
+        if (!client) {
+            console.warn('Supabase not available for metrics');
+            return;
+        }
+        
+        // Batch load views, likes, and shares in parallel
+        const [viewsResults, likesResults, sharesResults] = await Promise.all([
+            Promise.all(contentIds.map(id => 
+                client.from('content_views')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('content_id', id)
+            )),
+            Promise.all(contentIds.map(id => 
+                client.from('content_likes')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('content_id', id)
+            )),
+            Promise.all(contentIds.map(id => 
+                client.from('content_shares')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('content_id', id)
+            ).catch(() => contentIds.map(() => ({ count: 0 })))) // Fallback if table doesn't exist
+        ]);
+        
+        // Build metrics map
+        const metricsMap = new Map();
+        
+        viewsResults.forEach((r, i) => {
+            const id = contentIds[i];
+            if (!metricsMap.has(id)) metricsMap.set(id, {});
+            metricsMap.get(id).views = r.count || 0;
+        });
+        
+        likesResults.forEach((r, i) => {
+            const id = contentIds[i];
+            if (!metricsMap.has(id)) metricsMap.set(id, {});
+            metricsMap.get(id).likes = r.count || 0;
+        });
+        
+        sharesResults.forEach((r, i) => {
+            const id = contentIds[i];
+            if (!metricsMap.has(id)) metricsMap.set(id, {});
+            metricsMap.get(id).shares = r.count || 0;
+        });
+        
+        // Update global metrics cache
+        metricsMap.forEach((metrics, id) => {
+            if (!window.contentMetrics) window.contentMetrics = new Map();
+            window.contentMetrics.set(id, metrics);
+        });
+        
+        // Cache results
+        if (window.cacheManager) {
+            window.cacheManager.set(cacheKey, 
+                Array.from(metricsMap.entries()).map(([k, v]) => ({ content_id: k, ...v })),
+                3 * 60 * 1000 // 3 minute cache
+            );
+        }
+        
+        // Update UI
+        updateMetricsOnCards(contentIds);
+        
+    } catch (error) {
+        console.error('Error loading content metrics:', error);
+    }
+}
+
+function updateMetricsOnCards(contentIds) {
+    contentIds.forEach(id => {
+        const card = document.querySelector(`.content-card[data-content-id="${id}"]`);
+        if (!card) return;
+        
+        const metrics = window.contentMetrics?.get(id) || { views: 0, likes: 0, shares: 0 };
+        
+        // Update stats display
+        const statsEl = card.querySelector('.card-stats');
+        if (statsEl) {
+            statsEl.innerHTML = `
+                <span class="card-stat" title="Views">
+                    <i class="fas fa-eye"></i> ${formatNumber(metrics.views)}
+                </span>
+                <span class="card-stat" title="Likes">
+                    <i class="fas fa-heart"></i> ${formatNumber(metrics.likes)}
+                </span>
+                <span class="card-stat" title="Shares">
+                    <i class="fas fa-share"></i> ${formatNumber(metrics.shares)}
+                </span>
+            `;
+        }
+        
+        // Update meta display if exists
+        const metaEl = card.querySelector('.card-meta');
+        if (metaEl && metrics.views > 0) {
+            metaEl.innerHTML = `
+                <span><i class="fas fa-eye"></i> ${formatNumber(metrics.views)} views</span>
+                <span><i class="fas fa-heart"></i> ${formatNumber(metrics.likes)} likes</span>
+            `;
+        }
+    });
+}
+
+// ============================================
+// CONTENT CARD RENDERING (With Metrics)
+// ============================================
+function createContentCardWithMetrics(item) {
+    const metrics = window.contentMetrics?.get(item.id) || { 
+        views: item.views || item.views_count || 0, 
+        likes: item.likes || item.likes_count || 0, 
+        shares: item.shares_count || 0 
+    };
+    
+    const thumbnailUrl = item.thumbnail_url 
+        ? fixMediaUrl(item.thumbnail_url) 
+        : 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop';
+    
+    const creatorProfile = item.user_profiles;
+    const creatorName = creatorProfile?.full_name || creatorProfile?.username || item.creator || 'Creator';
+    const initials = getInitials(creatorName);
+    
+    let avatarHtml = '';
+    if (creatorProfile?.avatar_url) {
+        const avatarUrl = fixMediaUrl(creatorProfile.avatar_url);
+        avatarHtml = `<img src="${avatarUrl}" alt="${escapeHtml(creatorName)}" loading="lazy" onerror="this.parentElement.innerHTML='<div class=\\'creator-initials-small\\'>${initials}</div>'">`;
+    } else {
+        avatarHtml = `<div class="creator-initials-small">${initials}</div>`;
+    }
+    
+    return `
+        <a href="content-detail.html?id=${item.id}" class="content-card" 
+           data-content-id="${item.id}" 
+           data-language="${item.language || 'en'}"
+           data-category="${item.genre || ''}">
+            <div class="card-thumbnail">
+                <img src="${thumbnailUrl}" 
+                     alt="${escapeHtml(item.title)}" 
+                     loading="lazy"
+                     onerror="this.src='https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop'">
+                <div class="card-badges">
+                    ${item.is_new ? '<div class="card-badge badge-new"><i class="fas fa-gem"></i> NEW</div>' : ''}
+                    ${item.is_trending ? '<div class="card-badge badge-trending"><i class="fas fa-fire"></i> TRENDING</div>' : ''}
+                </div>
+                <div class="thumbnail-overlay"></div>
+                <div class="play-overlay">
+                    <div class="play-icon"><i class="fas fa-play"></i></div>
+                </div>
+            </div>
+            <div class="card-content">
+                <h3 class="card-title" title="${escapeHtml(item.title)}">
+                    ${truncateText(escapeHtml(item.title), 50)}
+                </h3>
+                <div class="creator-info">
+                    <div class="creator-avatar-small">${avatarHtml}</div>
+                    <div class="creator-name-small">@${escapeHtml(creatorName.split(' ')[0].toLowerCase())}</div>
+                </div>
+                <div class="card-stats">
+                    <span class="card-stat" title="Views">
+                        <i class="fas fa-eye"></i> ${formatNumber(metrics.views)}
+                    </span>
+                    <span class="card-stat" title="Likes">
+                        <i class="fas fa-heart"></i> ${formatNumber(metrics.likes)}
+                    </span>
+                    <span class="card-stat" title="Shares">
+                        <i class="fas fa-share"></i> ${formatNumber(metrics.shares)}
+                    </span>
+                </div>
+                <div class="card-meta">
+                    <span><i class="fas fa-language"></i> ${languageMap[item.language] || 'English'}</span>
+                    <span><i class="fas fa-clock"></i> ${formatDate(item.created_at)}</span>
+                </div>
+            </div>
+        </a>
+    `;
+}
+
+// ============================================
+// LANGUAGE FILTER SYSTEM
 // ============================================
 const languageMap = {
     'en': 'English',
@@ -1397,11 +1911,10 @@ function filterContentByLanguage(lang) {
 }
 
 // ============================================
-// COMMUNITY STATS (NEW)
+// COMMUNITY STATS
 // ============================================
 async function loadCommunityStats() {
     try {
-        // Use global supabaseAuth if available
         const client = getSupabaseClient();
         if (!client) {
             console.warn('Supabase not available, using mock stats');
@@ -1448,59 +1961,7 @@ function updateMockStats() {
 }
 
 // ============================================
-// VIDEO HERO (NEW)
-// ============================================
-async function initVideoHero() {
-    const heroVideo = document.getElementById('hero-video');
-    const heroMuteBtn = document.getElementById('hero-mute-btn');
-    const heroTitle = document.getElementById('hero-title');
-    const heroSubtitle = document.getElementById('hero-subtitle');
-
-    if (!heroVideo) return;
-
-    try {
-        const client = getSupabaseClient();
-        if (client) {
-            const { data, error } = await client
-                .from('Content')
-                .select('*')
-                .eq('status', 'published')
-                .order('views_count', { ascending: false })
-                .limit(1);
-
-            if (error) throw error;
-
-            const trending = data || [];
-            if (trending && trending.length > 0) {
-                const featured = trending[0];
-                const videoUrl = featured.preview_url || featured.file_url;
-                if (videoUrl) {
-                    heroVideo.src = fixMediaUrl(videoUrl);
-                    heroTitle.textContent = featured.title || 'DISCOVER & CONNECT';
-                    heroSubtitle.textContent = featured.description || 'Explore amazing content from across Africa';
-
-                    heroVideo.play().catch(() => {
-                        if (heroMuteBtn) heroMuteBtn.style.display = 'flex';
-                    });
-                }
-            }
-        }
-    } catch (error) {
-        console.error('Error loading hero video:', error);
-    }
-
-    if (heroMuteBtn) {
-        heroMuteBtn.addEventListener('click', () => {
-            heroVideo.muted = !heroVideo.muted;
-            heroMuteBtn.innerHTML = heroVideo.muted ?
-                '<i class="fas fa-volume-mute"></i>' :
-                '<i class="fas fa-volume-up"></i>';
-        });
-    }
-}
-
-// ============================================
-// SHORTS SECTION (NEW)
+// SHORTS SECTION
 // ============================================
 async function loadShorts() {
     try {
@@ -1591,7 +2052,7 @@ function getMockShorts() {
 }
 
 // ============================================
-// BADGES SYSTEM (NEW)
+// BADGES SYSTEM
 // ============================================
 async function initBadgesSystem() {
     const badgesModal = document.getElementById('badges-modal');
@@ -1702,7 +2163,7 @@ async function loadUserBadges() {
 }
 
 // ============================================
-// TIP SYSTEM (NEW)
+// TIP SYSTEM
 // ============================================
 function setupTipSystem() {
     const tipModal = document.getElementById('tip-modal');
@@ -1828,7 +2289,7 @@ function openTipModal(creatorId, creatorName) {
 }
 
 // ============================================
-// VOICE SEARCH (NEW)
+// VOICE SEARCH
 // ============================================
 function setupVoiceSearch() {
     const voiceSearchBtn = document.getElementById('voice-search-btn');
@@ -1900,6 +2361,38 @@ function setupVoiceSearch() {
 }
 
 // ============================================
+// CACHE MANAGER
+// ============================================
+class CacheManager {
+    constructor() {
+        this.cache = new Map();
+        this.ttl = 5 * 60 * 1000; // 5 minutes default
+    }
+    
+    set(key, data, ttl = this.ttl) {
+        this.cache.set(key, {
+            data,
+            timestamp: Date.now(),
+            ttl
+        });
+    }
+    
+    get(key) {
+        const item = this.cache.get(key);
+        if (!item) return null;
+        if (Date.now() - item.timestamp > item.ttl) {
+            this.cache.delete(key);
+            return null;
+        }
+        return item.data;
+    }
+    
+    clear() {
+        this.cache.clear();
+    }
+}
+
+// ============================================
 // UTILITY FUNCTIONS
 // ============================================
 function formatNumber(num) {
@@ -1920,6 +2413,36 @@ function escapeHtml(text) {
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
+}
+
+function formatDate(dateString) {
+    if (!dateString) return '';
+    try {
+        const date = new Date(dateString);
+        const now = new Date();
+        const diffTime = Math.abs(now - date);
+        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+        
+        if (diffDays === 0) return 'Today';
+        if (diffDays === 1) return 'Yesterday';
+        if (diffDays < 7) return `${diffDays} days ago`;
+        if (diffDays < 30) {
+            const weeks = Math.floor(diffDays / 7);
+            return `${weeks} week${weeks > 1 ? 's' : ''} ago`;
+        }
+        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    } catch (error) {
+        return '';
+    }
+}
+
+function getInitials(name) {
+    if (!name || name.trim() === '') return '?';
+    const names = name.trim().split(' ');
+    if (names.length >= 2) {
+        return (names[0][0] + names[names.length - 1][0]).toUpperCase();
+    }
+    return name[0].toUpperCase();
 }
 
 function fixMediaUrl(url) {
@@ -2012,10 +2535,20 @@ function initializeAllFeatures() {
         setupVoiceSearch();
     }
     
+    // Initialize Sidebar
+    if (typeof setupSidebar === 'function') {
+        setupSidebar();
+    }
+    
     // Initialize UI Scale Controller
     if (typeof UIScaleController !== 'undefined') {
         window.uiScaleController = new UIScaleController();
+        window.uiScaleController.init();
     }
+    
+    // Initialize Cache Manager and Content Metrics
+    window.cacheManager = new CacheManager();
+    window.contentMetrics = new Map();
     
     console.log('✅ All features initialized');
 }
