@@ -8,8 +8,10 @@
     <!-- PERFORMANCE: Preload Critical Resources -->
     <link rel="preload" href="css/explore-screen.css" as="style">
     <link rel="preload" href="css/explore-screen-features.css" as="style">
+    <link rel="preload" href="css/home-feed-features.css" as="style">
     <link rel="preload" href="js/explore-screen.js" as="script">
     <link rel="preload" href="js/explore-screen-features.js" as="script">
+    <link rel="preload" href="js/home-feed-features.js" as="script">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="preconnect" href="https://ydnxqnbjoshvxteevemc.supabase.co">
@@ -38,6 +40,7 @@
     <!-- CSS Files -->
     <link rel="stylesheet" href="css/explore-screen.css">
     <link rel="stylesheet" href="css/explore-screen-features.css">
+    <link rel="stylesheet" href="css/home-feed-features.css">
     <link rel="stylesheet" href="css/content-library-themes.css">
     <link rel="stylesheet" href="css/content-library-features.css">
     
@@ -95,6 +98,19 @@
         #app[style*="display: block"] {
             opacity: 1;
         }
+
+        /* UI Scale CSS Variables (fallback) */
+        :root {
+            --ui-scale: 1;
+            --font-xs: calc(0.75rem * var(--ui-scale));
+            --font-sm: calc(0.875rem * var(--ui-scale));
+            --font-base: calc(1rem * var(--ui-scale));
+            --font-lg: calc(1.125rem * var(--ui-scale));
+            --font-xl: calc(1.25rem * var(--ui-scale));
+            --font-2xl: calc(1.5rem * var(--ui-scale));
+            --font-3xl: calc(1.875rem * var(--ui-scale));
+            --font-4xl: calc(2.25rem * var(--ui-scale));
+        }
     </style>
 </head>
 <body>
@@ -118,7 +134,7 @@
         <header class="header">
             <div class="logo" onclick="window.location.href='index.html'">
                 <!-- Hamburger Menu Button -->
-                <button class="menu-toggle" id="menu-toggle" title="Open Menu">
+                <button class="menu-toggle" id="menu-toggle" title="Open Menu" aria-label="Open navigation menu">
                     <i class="fas fa-bars"></i>
                 </button>
                 <div class="logo-icon">
@@ -133,9 +149,27 @@
                     <i class="fas fa-microphone"></i>
                 </button>
                 
+                <!-- Analytics Button -->
+                <button id="analytics-btn" class="icon-btn" title="Analytics (Alt+A)">
+                    <i class="fas fa-chart-line"></i>
+                </button>
+                
                 <!-- Search Button (kept in header) -->
-                <button id="search-btn" class="icon-btn search-btn" title="Search">
+                <button id="search-btn" class="icon-btn search-btn" title="Search (Ctrl+K)">
                     <i class="fas fa-search"></i>
+                </button>
+                
+                <!-- Notifications Button -->
+                <button id="notifications-btn" class="icon-btn" title="Notifications (Alt+N)">
+                    <i class="fas fa-bell"></i>
+                    <span class="notification-badge" id="notification-count" style="display: none;">0</span>
+                </button>
+                
+                <!-- Profile Button -->
+                <button id="profile-btn" class="profile-btn" title="Profile (Alt+P)">
+                    <div class="profile-placeholder" id="userProfilePlaceholder">
+                        <i class="fas fa-user"></i>
+                    </div>
                 </button>
                 
                 <!-- "Built in South Africa" Badge -->
@@ -204,10 +238,11 @@
                 </div>
             </div>
 
-            <!-- Video Hero Section -->
+            <!-- Video Hero Section (Fixed Layout) -->
             <section class="video-hero-section" id="video-hero">
-                <video class="hero-video" id="hero-video" muted loop playsinline preload="metadata">
+                <video class="hero-video" id="hero-video" muted loop playsinline preload="metadata" poster="">
                     <source src="" type="video/mp4">
+                    Your browser does not support the video tag.
                 </video>
                 <div class="hero-overlay"></div>
                 <div class="hero-content">
@@ -221,7 +256,7 @@
                     </div>
                 </div>
                 <div class="hero-controls">
-                    <button class="hero-mute-btn" id="hero-mute-btn">
+                    <button class="hero-mute-btn" id="hero-mute-btn" aria-label="Toggle mute">
                         <i class="fas fa-volume-mute"></i>
                     </button>
                 </div>
@@ -444,7 +479,7 @@
     </div>
 
     <!-- =================================================================== -->
-    <!-- SIDEBAR MENU (ADDED)                                                -->
+    <!-- SIDEBAR MENU (Enhanced)                                             -->
     <!-- =================================================================== -->
     <div class="sidebar-overlay" id="sidebar-overlay"></div>
     <div class="sidebar-menu" id="sidebar-menu">
@@ -455,7 +490,7 @@
                 </div>
                 <span class="sidebar-logo-text">BANTU</span>
             </div>
-            <button class="sidebar-close" id="sidebar-close">
+            <button class="sidebar-close" id="sidebar-close" aria-label="Close menu">
                 <i class="fas fa-times"></i>
             </button>
         </div>
@@ -564,7 +599,7 @@
                     </div>
                     <div class="analytics-card">
                         <h3>Total Content</h3>
-                        <div class="analytics-value" id="total-content">0</div>
+                        <div class="analytics-value" id="total-content-analytics">0</div>
                         <div class="analytics-trend" id="content-trend">+0%</div>
                     </div>
                     <div class="analytics-card">
@@ -773,7 +808,7 @@
         </div>
     </div>
 
-    <!-- Badges Modal (NEW - Gamification Feature) -->
+    <!-- Badges Modal (Gamification Feature) -->
     <div id="badges-modal" class="badges-modal">
         <div class="badges-content">
             <div class="badges-header">
@@ -812,7 +847,7 @@
         </div>
     </div>
 
-    <!-- UI Scale Control Widget (initially hidden) -->
+    <!-- UI Scale Control Widget (floating button for quick access) -->
     <div class="ui-scale-control" id="ui-scale-control" style="display: none;">
         <div class="scale-control-bar">
             <button class="scale-btn" id="scale-decrease" title="Make Smaller (Ctrl+-)">
@@ -831,6 +866,7 @@
     <!-- JavaScript Files - Defer non-critical scripts -->
     <script src="env.js" defer></script>
     <script src="js/rate-limiter.js" defer></script>
+    <script src="js/home-feed-features.js" defer></script>
     <script src="js/explore-screen.js" defer></script>
     <script src="js/explore-screen-features.js" defer></script>
     <script src="js/content-library-themes.js" defer></script>
@@ -865,17 +901,53 @@
         console.log('🔍 Debug: Script loading order check');
         console.log('- env.js loaded:', !!window.ENV);
         console.log('- rate-limiter.js loaded:', !!(window.rateLimiter || window.authRateLimiter));
+        console.log('- home-feed-features.js loaded:', typeof window.UIScaleController !== 'undefined');
         console.log('- themes.js loaded:', typeof window.initTheme === 'function');
         console.log('- features.js loaded:', typeof window.initFeatures === 'function');
         console.log('✅ Explore screen optimized with performance improvements!');
         
         // Update scale display on scale change
-        document.addEventListener('scaleChanged', function() {
+        document.addEventListener('scaleChanged', function(e) {
             const scaleValue = document.getElementById('scale-value');
-            if (scaleValue && window.uiScaleController) {
-                scaleValue.textContent = Math.round(window.uiScaleController.getScale() * 100) + '%';
+            const sidebarScaleValue = document.getElementById('sidebar-scale-value');
+            const percentage = Math.round(e.detail.scale * 100) + '%';
+            
+            if (scaleValue) scaleValue.textContent = percentage;
+            if (sidebarScaleValue) sidebarScaleValue.textContent = percentage;
+        });
+
+        // Keyboard shortcuts for scaling (global)
+        document.addEventListener('keydown', function(e) {
+            // Ctrl+Plus for increase
+            if ((e.ctrlKey || e.metaKey) && (e.key === '+' || e.key === '=')) {
+                e.preventDefault();
+                if (window.uiScaleController) {
+                    window.uiScaleController.increase();
+                }
+            }
+            
+            // Ctrl+Minus for decrease
+            if ((e.ctrlKey || e.metaKey) && e.key === '-') {
+                e.preventDefault();
+                if (window.uiScaleController) {
+                    window.uiScaleController.decrease();
+                }
+            }
+            
+            // Ctrl+0 for reset
+            if ((e.ctrlKey || e.metaKey) && e.key === '0') {
+                e.preventDefault();
+                if (window.uiScaleController) {
+                    window.uiScaleController.reset();
+                }
             }
         });
+
+        // Initialize UI Scale Controller if not already initialized
+        if (!window.uiScaleController && typeof UIScaleController !== 'undefined') {
+            window.uiScaleController = new UIScaleController();
+            window.uiScaleController.init();
+        }
     </script>
 </body>
 </html>
