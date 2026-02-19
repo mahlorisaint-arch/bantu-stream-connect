@@ -239,67 +239,46 @@
 
     <!-- Main Content (hidden until loaded) -->
     <div id="app" style="display: none;">
-        <!-- Header -->
+        <!-- Enhanced Header with Sidebar Toggle (EXACTLY like explore-screen) -->
         <header class="header">
             <div class="logo" onclick="window.location.href='index.html'">
+                <!-- Hamburger Menu Button - REQUIRED for sidebar -->
+                <button class="menu-toggle" id="menu-toggle" title="Open Menu" aria-label="Open navigation menu">
+                    <i class="fas fa-bars"></i>
+                </button>
                 <div class="logo-icon">
                     <img src="assets/icon/bantu_stream_connect_icon.png" alt="Bantu Stream Connect Logo">
                 </div>
                 <div class="logo-text">BANTU STREAM CONNECT</div>
             </div>
             <div class="header-actions">
-                <!-- Analytics Button -->
-                <button id="analytics-btn" class="icon-btn" title="Analytics (Alt+A)">
-                    <i class="fas fa-chart-line"></i>
-                </button>
-                
-                <!-- Voice Search Button (NEW) -->
+                <!-- Keep ONLY these 3 actions (like explore-screen) -->
                 <button id="voice-search-btn" class="icon-btn" title="Voice Search">
                     <i class="fas fa-microphone"></i>
                 </button>
-                
-                <!-- Search Button -->
                 <button id="search-btn" class="icon-btn search-btn" title="Search (Ctrl+K)">
                     <i class="fas fa-search"></i>
                 </button>
-                
-                <!-- Notifications Button -->
-                <button id="notifications-btn" class="icon-btn" title="Notifications (Alt+N)">
-                    <i class="fas fa-bell"></i>
-                    <span class="notification-badge" id="notification-count" style="display: none;">0</span>
-                </button>
-                
-                <!-- Profile Button -->
-                <button id="profile-btn" class="profile-btn" title="Profile (Alt+P)">
-                    <div class="profile-placeholder">
-                        <i class="fas fa-user"></i>
-                    </div>
-                </button>
+                <!-- "Built in South Africa" Badge -->
+                <div class="rsa-badge" title="Proudly South African">
+                    <i class="fas fa-map-marker-alt"></i>
+                    <span>RSA</span>
+                </div>
             </div>
         </header>
 
-        <!-- Navigation Button -->
+        <!-- Simplified Bottom Navigation (EXACTLY like explore-screen) -->
         <div class="navigation-button-container">
             <div class="navigation-button">
-                <div class="nav-icon" onclick="window.location.href='index.html'" title="Home (Alt+H)">
+                <div class="nav-icon" id="nav-home-btn" title="Home" onclick="window.location.href='index.html'">
                     <i class="fas fa-home"></i>
                 </div>
-                <div class="nav-icon" id="nav-theme-toggle" title="Change Theme (Alt+T)">
-                    <i class="fas fa-palette"></i>
-                </div>
-                <div class="nav-icon" onclick="window.location.href='creator-upload.html'" title="Create Content">
+                <div class="nav-icon" id="nav-create-btn" title="Create Content">
                     <i class="fas fa-plus-circle"></i>
                 </div>
-                <div class="nav-icon" onclick="window.location.href='creator-dashboard.html'" title="Creator Dashboard">
-                    <i class="fas fa-tachometer-alt"></i>
-                </div>
-                <div class="nav-icon" id="nav-notifications-btn" title="Notifications">
-                    <i class="fas fa-bell"></i>
-                    <span class="nav-notification-badge" id="nav-notification-count" style="display: none;">0</span>
-                </div>
-                <!-- Badges Button (NEW) -->
-                <div class="nav-icon" id="nav-badges-btn" title="My Badges">
-                    <i class="fas fa-medal"></i>
+                <!-- Menu button opens sidebar -->
+                <div class="nav-icon" id="nav-menu-btn" title="Menu">
+                    <i class="fas fa-bars"></i>
                 </div>
             </div>
         </div>
@@ -358,6 +337,11 @@
                             <i class="fas fa-volume-mute"></i>
                         </button>
                     </div>
+                </div>
+                <div class="hero-controls">
+                    <button id="hero-mute-btn-mobile" class="hero-mute-btn">
+                        <i class="fas fa-volume-mute"></i>
+                    </button>
                 </div>
             </section>
 
@@ -481,6 +465,102 @@
         </footer>
     </div>
 
+    <!-- ===== NEW: SIDEBAR MENU (EXACT COPY from explore-screen) ===== -->
+    <div class="sidebar-overlay" id="sidebar-overlay"></div>
+    <div class="sidebar-menu" id="sidebar-menu">
+        <div class="sidebar-header">
+            <div class="sidebar-logo" onclick="window.location.href='index.html'">
+                <div class="logo-icon">
+                    <img src="assets/icon/bantu_stream_connect_icon.png" alt="Bantu Stream Connect">
+                </div>
+                <span class="sidebar-logo-text">BANTU</span>
+            </div>
+            <button class="sidebar-close" id="sidebar-close" aria-label="Close menu">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        
+        <!-- Profile Section -->
+        <div class="sidebar-profile" id="sidebar-profile">
+            <div class="sidebar-profile-avatar" id="sidebar-profile-avatar">
+                <i class="fas fa-user"></i>
+            </div>
+            <div class="sidebar-profile-info">
+                <div class="sidebar-profile-name" id="sidebar-profile-name">Guest</div>
+                <div class="sidebar-profile-email" id="sidebar-profile-email">Sign in to continue</div>
+            </div>
+            <i class="fas fa-chevron-right" style="color: var(--slate-grey);"></i>
+        </div>
+        
+        <!-- Navigation Items -->
+        <nav class="sidebar-nav">
+            <a href="index.html" class="sidebar-nav-item active">
+                <i class="fas fa-home"></i>
+                <span>Home</span>
+            </a>
+            <a href="explore-screen.html" class="sidebar-nav-item">
+                <i class="fas fa-compass"></i>
+                <span>Explore</span>
+            </a>
+            <a href="#" class="sidebar-nav-item" id="sidebar-analytics">
+                <i class="fas fa-chart-line"></i>
+                <span>Analytics</span>
+            </a>
+            <a href="#" class="sidebar-nav-item" id="sidebar-notifications">
+                <i class="fas fa-bell"></i>
+                <span>Notifications</span>
+                <span class="badge" id="sidebar-notification-count" style="display: none;">0</span>
+            </a>
+            <a href="#" class="sidebar-nav-item" id="sidebar-badges">
+                <i class="fas fa-medal"></i>
+                <span>My Badges</span>
+            </a>
+            <a href="#" class="sidebar-nav-item" id="sidebar-watch-party">
+                <i class="fas fa-users"></i>
+                <span>Watch Party</span>
+            </a>
+            <a href="creator-upload.html" class="sidebar-nav-item" id="sidebar-create">
+                <i class="fas fa-plus-circle"></i>
+                <span>Create</span>
+            </a>
+            <a href="creator-dashboard.html" class="sidebar-nav-item" id="sidebar-dashboard">
+                <i class="fas fa-tachometer-alt"></i>
+                <span>Dashboard</span>
+            </a>
+            <a href="manage-profiles.html" class="sidebar-nav-item">
+                <i class="fas fa-user-cog"></i>
+                <span>Manage Profiles</span>
+            </a>
+        </nav>
+        
+        <!-- Footer: Theme & Scale -->
+        <div class="sidebar-footer">
+            <div class="sidebar-theme-toggle" id="sidebar-theme-toggle">
+                <span><i class="fas fa-palette"></i> Theme</span>
+                <i class="fas fa-chevron-right" style="color: var(--slate-grey);"></i>
+            </div>
+            <div class="sidebar-scale-control">
+                <div class="scale-control-row">
+                    <span><i class="fas fa-text-height"></i> UI Size</span>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <button class="scale-btn" id="sidebar-scale-decrease" title="Smaller">
+                            <i class="fas fa-minus"></i>
+                        </button>
+                        <span class="scale-value" id="sidebar-scale-value">100%</span>
+                        <button class="scale-btn" id="sidebar-scale-increase" title="Larger">
+                            <i class="fas fa-plus"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="scale-control-row">
+                    <button class="scale-btn" id="sidebar-scale-reset" title="Reset" style="width: 100%;">
+                        <i class="fas fa-undo"></i> Reset to Default
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- ===== NEW: BADGES MODAL ===== -->
     <div id="badges-modal" class="badges-modal">
         <div class="badges-content">
@@ -528,12 +608,13 @@
                         <button class="tip-option" data-amount="10">R10</button>
                         <button class="tip-option" data-amount="25">R25</button>
                         <button class="tip-option" data-amount="50">R50</button>
+                        <button class="tip-option" data-amount="100">R100</button>
                         <button class="tip-option custom" data-amount="custom">
                             <i class="fas fa-pen"></i> Custom
                         </button>
                     </div>
                     <div class="custom-amount" id="custom-amount" style="display: none;">
-                        <input type="number" id="custom-tip-amount" placeholder="Enter amount (R)">
+                        <input type="number" id="custom-tip-amount" placeholder="Enter amount (R)" min="1" step="1">
                     </div>
                 </div>
                 <div class="tip-message">
@@ -542,7 +623,7 @@
                 </div>
             </div>
             <div class="tip-footer">
-                <button id="send-tip" class="btn-primary">
+                <button id="send-tip" class="send-tip">
                     <i class="fas fa-gift"></i> Send Tip
                 </button>
             </div>
@@ -660,6 +741,15 @@
         console.log('- utils.js: loaded');
         console.log('- app.js: loaded');
         console.log('✅ All scripts loaded in correct order');
+        
+        // Debug: Check if sidebar elements exist
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('🔍 Debug sidebar elements:');
+            console.log('- menu-toggle:', document.getElementById('menu-toggle'));
+            console.log('- sidebar-menu:', document.getElementById('sidebar-menu'));
+            console.log('- sidebar-overlay:', document.getElementById('sidebar-overlay'));
+            console.log('- setupSidebar function:', typeof window.setupSidebar);
+        });
     </script>
 </body>
 </html>
