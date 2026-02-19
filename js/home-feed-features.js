@@ -1203,7 +1203,7 @@ class ProgressTracker {
 }
 
 // ============================================
-// SIDEBAR MENU FUNCTIONS (NEW)
+// SIDEBAR MENU FUNCTIONS
 // ============================================
 function setupSidebar() {
     const menuToggle = document.getElementById('menu-toggle');
@@ -1438,7 +1438,7 @@ function closeSidebar() {
 }
 
 // ============================================
-// UI SCALE CONTROLLER (NEW)
+// UI SCALE CONTROLLER
 // ============================================
 class UIScaleController {
     constructor() {
@@ -1545,7 +1545,7 @@ class UIScaleController {
 }
 
 // ============================================
-// VIDEO HERO (NEW)
+// VIDEO HERO
 // ============================================
 async function initVideoHero() {
     const heroVideo = document.getElementById('hero-video');
