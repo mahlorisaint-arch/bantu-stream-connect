@@ -613,6 +613,15 @@ class AnalyticsSystem {
         const ctx = document.getElementById('engagement-chart');
         if (!ctx) return;
         
+        // Destroy existing chart if it exists
+        if (this.chart) {
+            this.chart.destroy();
+        }
+        // Also check global chart instance
+        if (window.engagementChart) {
+            window.engagementChart.destroy();
+        }
+        
         const data = {
             labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
             datasets: [
@@ -668,6 +677,9 @@ class AnalyticsSystem {
                 }
             }
         });
+        
+        // Store reference globally for cleanup
+        window.engagementChart = this.chart;
     }
     
     setupEventTracking() {
@@ -1390,21 +1402,21 @@ function filterContentByLanguage(lang) {
 async function loadCommunityStats() {
     try {
         // Use global supabaseAuth if available
-        const supabase = window.supabaseAuth || window.supabase;
-        if (!supabase) {
+        const client = getSupabaseClient();
+        if (!client) {
             console.warn('Supabase not available, using mock stats');
             updateMockStats();
             return;
         }
 
         // Get total connectors
-        const { count: connectorsCount, error: connError } = await supabase
+        const { count: connectorsCount, error: connError } = await client
             .from('connectors')
             .select('*', { count: 'exact', head: true });
         if (connError) throw connError;
 
         // Get total content
-        const { count: contentCount, error: contentError } = await supabase
+        const { count: contentCount, error: contentError } = await client
             .from('Content')
             .select('*', { count: 'exact', head: true })
             .eq('status', 'published');
@@ -1413,7 +1425,7 @@ async function loadCommunityStats() {
         // Get new connectors today
         const today = new Date();
         today.setHours(0, 0, 0, 0);
-        const { count: newConnectors, error: newError } = await supabase
+        const { count: newConnectors, error: newError } = await client
             .from('connectors')
             .select('*', { count: 'exact', head: true })
             .gte('created_at', today.toISOString());
@@ -1447,9 +1459,9 @@ async function initVideoHero() {
     if (!heroVideo) return;
 
     try {
-        const supabase = window.supabaseAuth || window.supabase;
-        if (supabase) {
-            const { data, error } = await supabase
+        const client = getSupabaseClient();
+        if (client) {
+            const { data, error } = await client
                 .from('Content')
                 .select('*')
                 .eq('status', 'published')
@@ -1495,11 +1507,11 @@ async function loadShorts() {
         const container = document.getElementById('shorts-container');
         if (!container) return;
 
-        const supabase = window.supabaseAuth || window.supabase;
+        const client = getSupabaseClient();
         let shorts = [];
 
-        if (supabase) {
-            const { data, error } = await supabase
+        if (client) {
+            const { data, error } = await client
                 .from('Content')
                 .select('*, user_profiles!user_id(*)')
                 .eq('status', 'published')
@@ -1632,11 +1644,11 @@ async function loadUserBadges() {
     if (!window.currentUser) return;
 
     try {
-        const supabase = window.supabaseAuth || window.supabase;
+        const client = getSupabaseClient();
         let userBadges = [];
 
-        if (supabase) {
-            const { data, error } = await supabase
+        if (client) {
+            const { data, error } = await client
                 .from('user_badges')
                 .select('*')
                 .eq('user_id', window.currentUser.id);
@@ -1761,9 +1773,9 @@ function setupTipSystem() {
             }
 
             try {
-                const supabase = window.supabaseAuth || window.supabase;
-                if (supabase) {
-                    const { error } = await supabase
+                const client = getSupabaseClient();
+                if (client) {
+                    const { error } = await client
                         .from('tips')
                         .insert({
                             sender_id: window.currentUser.id,
@@ -1916,6 +1928,29 @@ function fixMediaUrl(url) {
     if (url.includes('supabase.co')) return url;
     return `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/${url.replace(/^\/+/, '')}`;
 }
+
+// ============================================
+// SAFETY CHECK & HELPER FUNCTIONS
+// ============================================
+// Wait for supabaseAuth to be available
+if (typeof supabaseAuth === 'undefined') {
+  console.error('❌ supabaseAuth not loaded yet. Check script order in index.html');
+}
+
+// Helper to ensure we use the correct Supabase client
+function getSupabaseClient() {
+  if (typeof supabaseAuth !== 'undefined' && supabaseAuth?.from) {
+    return supabaseAuth;
+  }
+  if (typeof window.supabaseAuth !== 'undefined' && window.supabaseAuth?.from) {
+    return window.supabaseAuth;
+  }
+  console.error('❌ Supabase client not found! Check initialization order.');
+  return null;
+}
+
+// Debug helper
+console.log('🔍 supabaseAuth available:', typeof supabaseAuth, supabaseAuth?.from ? '✓' : '✗');
 
 // ============================================
 // INITIALIZE ALL FEATURES
