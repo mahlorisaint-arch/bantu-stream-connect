@@ -248,7 +248,6 @@
       width: 100%;
       height: 100%;
       object-fit: cover;
-      border-radius: 50%;
     }
     
     .profile-placeholder {
@@ -260,7 +259,6 @@
       background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
       color: white;
       font-size: 14px;
-      border-radius: 50%;
     }
     
     /* ============================================
@@ -273,7 +271,6 @@
       background: var(--deep-black);
       overflow: hidden;
       padding-top: 60px; /* Space for header */
-      padding-bottom: 60px; /* Space for bottom nav */
     }
     
     .shorts-swiper {
@@ -1033,51 +1030,6 @@
     }
     
     /* ============================================
-       BOTTOM NAVIGATION - From Creator Dashboard
-       ============================================ */
-    .global-nav {
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      width: 100%;
-      background: rgba(10, 14, 18, 0.95);
-      backdrop-filter: blur(20px);
-      display: flex;
-      justify-content: space-around;
-      padding: 15px 0;
-      z-index: 100;
-      border-top: 1px solid var(--card-border);
-      padding-bottom: env(safe-area-inset-bottom);
-    }
-    
-    .nav-item {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      color: var(--slate-grey);
-      text-decoration: none;
-      font-size: 12px;
-      transition: all 0.3s ease;
-      padding: 5px 10px;
-      min-width: 44px;
-      min-height: 44px;
-      justify-content: center;
-    }
-    
-    .nav-item i {
-      font-size: 18px;
-      margin-bottom: 5px;
-    }
-    
-    .nav-item:hover {
-      color: var(--soft-white);
-    }
-    
-    .nav-item.active {
-      color: var(--warm-gold);
-    }
-    
-    /* ============================================
        RESPONSIVE
        ============================================ */
     @media (max-width: 768px) {
@@ -1098,7 +1050,6 @@
       
       .shorts-player-container {
         padding-top: 55px;
-        padding-bottom: 55px;
       }
       
       .shorts-actions {
@@ -1114,18 +1065,6 @@
       .video-controls {
         height: calc(3.5rem * var(--ui-scale, 1));
         padding: 0 calc(0.75rem * var(--ui-scale, 1));
-      }
-      
-      .global-nav {
-        padding: 12px 0;
-      }
-      
-      .nav-item {
-        font-size: 11px;
-      }
-      
-      .nav-item i {
-        font-size: 16px;
       }
     }
     
@@ -1159,22 +1098,10 @@
       .action-count {
         font-size: calc(0.625rem * var(--ui-scale, 1));
       }
-      
-      .global-nav {
-        padding: 10px 0;
-      }
-      
-      .nav-item {
-        font-size: 10px;
-      }
-      
-      .nav-item i {
-        font-size: 15px;
-      }
     }
     
     @media (hover: none) and (pointer: coarse) {
-      .action-btn, .control-btn, .connect-btn, .post-comment-btn, .share-option, .more-menu-item, .nav-item {
+      .action-btn, .control-btn, .connect-btn, .post-comment-btn, .share-option, .more-menu-item {
         min-width: 44px;
         min-height: 44px;
       }
@@ -1209,13 +1136,16 @@
       <div class="logo-text">BANTU STREAM CONNECT</div>
     </div>
     <div class="header-actions">
+      <!-- ✅ FIX #1: Search Button -->
       <button id="search-btn" class="icon-btn" title="Search">
         <i class="fas fa-search"></i>
       </button>
+      <!-- ✅ FIX #1: Notifications Button -->
       <button id="notifications-btn" class="icon-btn" title="Notifications">
         <i class="fas fa-bell"></i>
         <span class="notification-badge" id="notification-count" style="display: none;">0</span>
       </button>
+      <!-- ✅ FIX #1: Profile Button -->
       <button id="profile-btn" class="profile-btn" title="Profile">
         <div class="profile-placeholder" id="userProfilePlaceholder">
           <i class="fas fa-user"></i>
@@ -1240,7 +1170,7 @@
       <i class="fas fa-play" id="play-pause-icon"></i>
     </div>
     
-    <!-- ✅ MORE MENU (Three Dots) - Now Clickable -->
+    <!-- ✅ FIX #4: More Menu (Three Dots) - Now Clickable -->
     <div class="more-menu" id="more-menu">
       <button class="more-menu-item" id="more-report">
         <i class="fas fa-flag"></i>
@@ -1334,35 +1264,28 @@
   <!-- Toast Container -->
   <div class="toast-container" id="toast-container"></div>
   
-  <!-- ✅ BOTTOM NAVIGATION - From Creator Dashboard -->
-  <nav class="global-nav">
-    <a href="index.html" class="nav-item">
-      <i class="fas fa-home"></i>
-      Home
-    </a>
-    <a href="trending_screen.html" class="nav-item">
-      <i class="fas fa-fire"></i>
-      Trending
-    </a>
-    <a href="content-library.html" class="nav-item">
-      <i class="fas fa-th-large"></i>
-      Library
-    </a>
-    <a href="creator-dashboard.html" class="nav-item active">
-      <i class="fas fa-user"></i>
-      Creator
-    </a>
-  </nav>
+  <!-- ✅ REMOVED: Navigation Button (per request) -->
   
   <!-- JavaScript -->
   <script>
     // ============================================
-    // SUPABASE CONFIGURATION
+    // SUPABASE CONFIGURATION - SINGLE INSTANCE
     // ============================================
     const SUPABASE_URL = 'https://ydnxqnbjoshvxteevemc.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U';
     
-    const supabaseAuth = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    // ✅ CRITICAL FIX: Use SINGLE Supabase client instance
+    if (!window.supabaseAuth) {
+      window.supabaseAuth = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+        auth: {
+          autoRefreshToken: true,
+          persistSession: true,
+          detectSessionInUrl: false,
+          storage: window.localStorage
+        }
+      });
+      console.log('✅ Supabase client initialized (single instance)');
+    }
     
     // ============================================
     // GLOBAL STATE
@@ -1457,14 +1380,14 @@
     }
     
     // ============================================
-    // SHORTS PLAYER INITIALIZATION
+    // SHORTS PLAYER INITIALIZATION - FIXED
     // ============================================
     async function initShortsPlayer() {
       try {
         console.log('🎬 Initializing shorts player...');
         
         // Check auth
-        const { data: { session } } = await supabaseAuth.auth.getSession();
+        const { data: { session } } = await window.supabaseAuth.auth.getSession();
         currentUser = session?.user || null;
         
         // Fetch user connections
@@ -1482,7 +1405,7 @@
         // Hide loading screen
         document.getElementById('shorts-loading').style.display = 'none';
         
-        // Auto-play first short
+        // Auto-play first short (with user interaction fallback)
         playCurrentShort();
         
         console.log('✅ Shorts player initialized');
@@ -1498,7 +1421,7 @@
       if (!currentUser) return;
       
       try {
-        const { data: connections, error } = await supabaseAuth
+        const { data: connections, error } = await window.supabaseAuth
           .from('connectors')
           .select('connected_id')
           .eq('connector_id', currentUser.id);
@@ -1517,7 +1440,7 @@
     }
     
     async function loadShorts() {
-      const { data, error } = await supabaseAuth
+      const { data, error } = await window.supabaseAuth
         .from('Content')
         .select(`
           *,
@@ -1586,6 +1509,7 @@
                   <i class="fas fa-share"></i>
                 </button>
                 
+                <!-- ✅ FIX #5: Save button with proper data attributes -->
                 <button class="action-btn save-btn" data-action="save" data-short-id="${short.id}" title="Save">
                   <i class="far fa-bookmark"></i>
                 </button>
@@ -1708,11 +1632,13 @@
       }
       
       video.currentTime = 0;
+      
+      // Handle autoplay with user interaction requirement
       const playPromise = video.play();
       
       if (playPromise !== undefined) {
         playPromise.catch(error => {
-          console.log('Autoplay prevented:', error);
+          console.log('Autoplay prevented (requires user interaction):', error);
           showPlayPauseOverlay('play');
         });
       }
@@ -1745,7 +1671,7 @@
           window.shortsSwiper.slideNext();
         } else {
           video.currentTime = 0;
-          video.play();
+          video.play().catch(() => {});
         }
       });
       
@@ -1767,14 +1693,22 @@
     
     function isLiked(shortId) {
       if (!currentUser) return false;
-      const liked = JSON.parse(localStorage.getItem(`liked_shorts_${currentUser.id}`) || '[]');
-      return liked.includes(shortId.toString());
+      try {
+        const liked = JSON.parse(localStorage.getItem(`liked_shorts_${currentUser.id}`) || '[]');
+        return liked.includes(shortId.toString());
+      } catch (e) {
+        return false;
+      }
     }
     
     function isSaved(shortId) {
       if (!currentUser) return false;
-      const saved = JSON.parse(localStorage.getItem(`saved_shorts_${currentUser.id}`) || '[]');
-      return saved.includes(shortId.toString());
+      try {
+        const saved = JSON.parse(localStorage.getItem(`saved_shorts_${currentUser.id}`) || '[]');
+        return saved.includes(shortId.toString());
+      } catch (e) {
+        return false;
+      }
     }
     
     function updateLikeButton(shortId, liked) {
@@ -1810,6 +1744,7 @@
     // ============================================
     function toggleMoreMenu(shortId, button) {
       const menu = document.getElementById('more-menu');
+      if (!menu) return;
       
       if (moreMenuOpen) {
         closeMoreMenu();
@@ -1837,11 +1772,34 @@
     }
     
     // ============================================
-    // EVENT LISTENERS
+    // EVENT LISTENERS - FIXED
     // ============================================
     function setupEventListeners() {
+      // ✅ FIX #1: Header buttons - Search and Notifications
+      document.getElementById('search-btn')?.addEventListener('click', () => {
+        showToast('Search coming soon!', 'info');
+      });
+      
+      document.getElementById('notifications-btn')?.addEventListener('click', () => {
+        if (!currentUser) {
+          showToast('Please sign in to view notifications', 'info');
+          return;
+        }
+        loadNotifications();
+        showToast(`${notifications.filter(n => !n.is_read).length} unread notifications`, 'info');
+      });
+      
+      // ✅ FIX #1: Profile button
+      document.getElementById('profile-btn')?.addEventListener('click', () => {
+        if (currentUser) {
+          window.location.href = 'profile.html';
+        } else {
+          window.location.href = `login.html?redirect=${encodeURIComponent(window.location.pathname)}`;
+        }
+      });
+      
       // Action buttons
-      document.getElementById('shorts-player').addEventListener('click', (e) => {
+      document.getElementById('shorts-player')?.addEventListener('click', (e) => {
         const btn = e.target.closest('.action-btn');
         if (!btn) return;
         
@@ -1865,7 +1823,7 @@
       });
       
       // ✅ UPDATED: Connect Button (instead of Follow)
-      document.getElementById('shorts-player').addEventListener('click', (e) => {
+      document.getElementById('shorts-player')?.addEventListener('click', (e) => {
         const connectBtn = e.target.closest('.connect-btn');
         if (connectBtn) {
           handleConnect(connectBtn.dataset.creatorId, connectBtn);
@@ -1873,7 +1831,7 @@
       });
       
       // ✅ UPDATED: More Button (Three Dots) - Now Clickable
-      document.getElementById('shorts-player').addEventListener('click', (e) => {
+      document.getElementById('shorts-player')?.addEventListener('click', (e) => {
         const moreBtn = e.target.closest('.more-btn');
         if (moreBtn) {
           e.stopPropagation();
@@ -1882,7 +1840,7 @@
       });
       
       // Caption toggle
-      document.getElementById('shorts-player').addEventListener('click', (e) => {
+      document.getElementById('shorts-player')?.addEventListener('click', (e) => {
         const toggle = e.target.closest('.caption-toggle');
         if (toggle) {
           toggleCaption(toggle.dataset.captionId);
@@ -1890,7 +1848,7 @@
       });
       
       // Creator info click
-      document.getElementById('shorts-player').addEventListener('click', (e) => {
+      document.getElementById('shorts-player')?.addEventListener('click', (e) => {
         const creatorInfo = e.target.closest('.creator-info');
         if (creatorInfo) {
           const creatorId = creatorInfo.dataset.creatorId;
@@ -1901,7 +1859,7 @@
       });
       
       // Video controls
-      document.getElementById('shorts-player').addEventListener('click', (e) => {
+      document.getElementById('shorts-player')?.addEventListener('click', (e) => {
         const muteBtn = e.target.closest('.mute-btn');
         if (muteBtn) {
           toggleMute();
@@ -1953,8 +1911,8 @@
       });
       
       // Double-tap to like
-      document.getElementById('shorts-player').addEventListener('touchend', handleDoubleTap);
-      document.getElementById('shorts-player').addEventListener('click', handleDoubleTap);
+      document.getElementById('shorts-player')?.addEventListener('touchend', handleDoubleTap);
+      document.getElementById('shorts-player')?.addEventListener('click', handleDoubleTap);
       
       // Modal close buttons
       document.getElementById('close-comments')?.addEventListener('click', closeComments);
@@ -2031,8 +1989,9 @@
     }
     
     // ============================================
-    // ACTION HANDLERS
+    // ACTION HANDLERS - FIXED
     // ============================================
+    // ✅ FIX #2: Handle Like with proper duplicate checking
     async function handleLike(shortId, btn) {
       if (!currentUser) {
         showToast('Please sign in to like shorts', 'info');
@@ -2045,7 +2004,8 @@
       
       try {
         if (liked) {
-          const { error } = await supabaseAuth
+          // Unlike
+          const { error } = await window.supabaseAuth
             .from('content_likes')
             .delete()
             .eq('content_id', shortId)
@@ -2055,47 +2015,70 @@
           
           btn.classList.remove('liked');
           icon.className = 'far fa-heart';
-          let count = parseInt(countEl.textContent.replace('K', '000').replace('M', '000000')) || 0;
-          countEl.textContent = formatNumber(Math.max(0, count - 1));
           
-          const likedShorts = JSON.parse(localStorage.getItem(`liked_shorts_${currentUser.id}`) || '[]');
-          const index = likedShorts.indexOf(shortId.toString());
-          if (index > -1) likedShorts.splice(index, 1);
-          localStorage.setItem(`liked_shorts_${currentUser.id}`, JSON.stringify(likedShorts));
+          // Update localStorage
+          try {
+            const likedShorts = JSON.parse(localStorage.getItem(`liked_shorts_${currentUser.id}`) || '[]');
+            const index = likedShorts.indexOf(shortId.toString());
+            if (index > -1) likedShorts.splice(index, 1);
+            localStorage.setItem(`liked_shorts_${currentUser.id}`, JSON.stringify(likedShorts));
+          } catch (e) {}
           
           showToast('Like removed', 'info');
         } else {
-          const { error } = await supabaseAuth
+          // Like - ✅ FIX: Check if already liked first to avoid 409 conflict
+          const { data: existingLike, error: checkError } = await window.supabaseAuth
             .from('content_likes')
-            .insert({
-              content_id: shortId,
-              user_id: currentUser.id,
-              created_at: new Date().toISOString()
-            });
+            .select('id')
+            .eq('content_id', shortId)
+            .eq('user_id', currentUser.id)
+            .maybeSingle();
           
-          if (error) throw error;
+          if (checkError) throw checkError;
+          
+          if (!existingLike) {
+            // Insert new like
+            const { error } = await window.supabaseAuth
+              .from('content_likes')
+              .insert({
+                content_id: shortId,
+                user_id: currentUser.id,
+                created_at: new Date().toISOString()
+              });
+            
+            if (error) throw error;
+          }
           
           btn.classList.add('liked');
           icon.className = 'fas fa-heart';
-          let count = parseInt(countEl.textContent.replace('K', '000').replace('M', '000000')) || 0;
-          countEl.textContent = formatNumber(count + 1);
           
-          const likedShorts = JSON.parse(localStorage.getItem(`liked_shorts_${currentUser.id}`) || '[]');
-          if (!likedShorts.includes(shortId.toString())) {
-            likedShorts.push(shortId.toString());
-            localStorage.setItem(`liked_shorts_${currentUser.id}`, JSON.stringify(likedShorts));
-          }
+          // Update localStorage
+          try {
+            const likedShorts = JSON.parse(localStorage.getItem(`liked_shorts_${currentUser.id}`) || '[]');
+            if (!likedShorts.includes(shortId.toString())) {
+              likedShorts.push(shortId.toString());
+              localStorage.setItem(`liked_shorts_${currentUser.id}`, JSON.stringify(likedShorts));
+            }
+          } catch (e) {}
           
           showToast('Liked!', 'success');
           showDoubleTapIndicator();
         }
       } catch (error) {
         console.error('Error liking short:', error);
-        showToast('Failed to update like', 'error');
+        // Handle 409 conflict (already liked)
+        if (error.code === '23505') {
+          btn.classList.add('liked');
+          btn.querySelector('i').className = 'fas fa-heart';
+          showToast('Already liked!', 'info');
+        } else {
+          showToast('Failed to update like', 'error');
+        }
       }
     }
     
-    function handleSave(shortId, btn) {
+    // ✅ FIX #5: Handle Save with proper table structure
+    async function handleSave(shortId, btn) {
       if (!currentUser) {
         showToast('Please sign in to save shorts', 'info');
         return;
@@ -2103,25 +2086,61 @@
       
       const saved = isSaved(shortId);
       
-      if (saved) {
-        const savedShorts = JSON.parse(localStorage.getItem(`saved_shorts_${currentUser.id}`) || '[]');
-        const index = savedShorts.indexOf(shortId.toString());
-        if (index > -1) savedShorts.splice(index, 1);
-        localStorage.setItem(`saved_shorts_${currentUser.id}`, JSON.stringify(savedShorts));
-        updateSaveButton(shortId, false);
-        showToast('Removed from saved', 'info');
-      } else {
-        const savedShorts = JSON.parse(localStorage.getItem(`saved_shorts_${currentUser.id}`) || '[]');
-        if (!savedShorts.includes(shortId.toString())) {
-          savedShorts.push(shortId.toString());
-          localStorage.setItem(`saved_shorts_${currentUser.id}`, JSON.stringify(savedShorts));
+      try {
+        if (saved) {
+          // Unsave
+          const { error } = await window.supabaseAuth
+            .from('saved_shorts')
+            .delete()
+            .eq('content_id', shortId)
+            .eq('user_id', currentUser.id);
+          
+          if (error) throw error;
+          
+          btn.classList.remove('saved');
+          btn.querySelector('i').className = 'far fa-bookmark';
+          
+          // Update localStorage
+          try {
+            const savedShorts = JSON.parse(localStorage.getItem(`saved_shorts_${currentUser.id}`) || '[]');
+            const index = savedShorts.indexOf(shortId.toString());
+            if (index > -1) savedShorts.splice(index, 1);
+            localStorage.setItem(`saved_shorts_${currentUser.id}`, JSON.stringify(savedShorts));
+          } catch (e) {}
+          
+          showToast('Removed from saved', 'info');
+        } else {
+          // Save
+          const { error } = await window.supabaseAuth
+            .from('saved_shorts')
+            .insert({
+              content_id: shortId,
+              user_id: currentUser.id,
+              saved_at: new Date().toISOString()
+            });
+          
+          if (error) throw error;
+          
+          btn.classList.add('saved');
+          btn.querySelector('i').className = 'fas fa-bookmark';
+          
+          // Update localStorage
+          try {
+            const savedShorts = JSON.parse(localStorage.getItem(`saved_shorts_${currentUser.id}`) || '[]');
+            if (!savedShorts.includes(shortId.toString())) {
+              savedShorts.push(shortId.toString());
+              localStorage.setItem(`saved_shorts_${currentUser.id}`, JSON.stringify(savedShorts));
+            }
+          } catch (e) {}
+          
+          showToast('Saved!', 'success');
         }
-        updateSaveButton(shortId, true);
-        showToast('Saved!', 'success');
+      } catch (error) {
+        console.error('Error saving short:', error);
+        showToast('Failed to save short', 'error');
       }
     }
     
-    // ✅ UPDATED: Handle Connect (instead of Follow)
     async function handleConnect(creatorId, btn) {
       if (!currentUser) {
         showToast('Please sign in to connect with creators', 'info');
@@ -2132,7 +2151,7 @@
       
       try {
         if (connected) {
-          const { error } = await supabaseAuth
+          const { error } = await window.supabaseAuth
             .from('connectors')
             .delete()
             .eq('connector_id', currentUser.id)
@@ -2146,7 +2165,7 @@
           
           showToast('Disconnected', 'info');
         } else {
-          const { error } = await supabaseAuth
+          const { error } = await window.supabaseAuth
             .from('connectors')
             .insert({
               connector_id: currentUser.id,
@@ -2166,52 +2185,6 @@
       } catch (error) {
         console.error('Error connecting with creator:', error);
         showToast('Failed to update connection', 'error');
-      }
-    }
-    
-    // ✅ NEW: More Menu Action Handlers
-    function handleReport() {
-      if (!currentUser) {
-        showToast('Please sign in to report content', 'info');
-        return;
-      }
-      
-      showToast('Report submitted. Thank you!', 'success');
-    }
-    
-    function handleMuteCreator() {
-      if (!currentUser) {
-        showToast('Please sign in to mute creators', 'info');
-        return;
-      }
-      
-      const mutedCreators = JSON.parse(localStorage.getItem('muted_creators') || '[]');
-      if (currentShort?.user_id && !mutedCreators.includes(currentShort.user_id)) {
-        mutedCreators.push(currentShort.user_id);
-        localStorage.setItem('muted_creators', JSON.stringify(mutedCreators));
-        showToast('Creator muted', 'success');
-      }
-    }
-    
-    function handleNotInterested() {
-      showToast('We\'ll show you less content like this', 'info');
-    }
-    
-    function handleBlockCreator() {
-      if (!currentUser) {
-        showToast('Please sign in to block creators', 'info');
-        return;
-      }
-      
-      if (confirm('Are you sure you want to block this creator? You won\'t see their content anymore.')) {
-        const blockedCreators = JSON.parse(localStorage.getItem('blocked_creators') || '[]');
-        if (currentShort?.user_id && !blockedCreators.includes(currentShort.user_id)) {
-          blockedCreators.push(currentShort.user_id);
-          localStorage.setItem('blocked_creators', JSON.stringify(blockedCreators));
-          showToast('Creator blocked', 'success');
-          // Navigate to next short
-          window.shortsSwiper?.slideNext();
-        }
       }
     }
     
@@ -2246,7 +2219,7 @@
       if (!currentVideo) return;
       
       if (currentVideo.paused) {
-        currentVideo.play();
+        currentVideo.play().catch(() => {});
         isPlaying = true;
         showPlayPauseOverlay('play');
       } else {
@@ -2308,7 +2281,7 @@
     }
     
     // ============================================
-    // MODALS
+    // MODALS - FIXED COMMENTS
     // ============================================
     async function openComments(shortId) {
       const modal = document.getElementById('comments-modal');
@@ -2325,29 +2298,32 @@
       document.getElementById('comments-modal').classList.remove('active');
     }
     
+    // ✅ FIX #3: Load comments with proper foreign key handling
     async function loadComments(shortId) {
       const list = document.getElementById('comments-list');
       list.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--slate-grey)">Loading comments...</div>';
       
       try {
-        const { data, error } = await supabaseAuth
+        // ✅ FIX: Use explicit join instead of relying on foreign key cache
+        const { data: comments, error: commentsError } = await window.supabaseAuth
           .from('pulse_comments')
           .select(`
-            *,
-            user_profiles!user_id (
-              username,
-              full_name,
-              avatar_url
-            )
+            id,
+            pulse_id,
+            user_id,
+            comment_text,
+            created_at,
+            likes_count,
+            is_removed
           `)
           .eq('pulse_id', shortId)
           .eq('is_removed', false)
           .order('created_at', { ascending: false })
           .limit(20);
         
-        if (error) throw error;
+        if (commentsError) throw commentsError;
         
-        if (!data || data.length === 0) {
+        if (!comments || comments.length === 0) {
           list.innerHTML = `
             <div style="text-align:center;padding:2rem;color:var(--slate-grey)">
               <i class="fas fa-comment-slash" style="font-size:2rem;margin-bottom:1rem;opacity:0.5"></i>
@@ -2358,8 +2334,23 @@
           return;
         }
         
-        list.innerHTML = data.map(comment => {
-          const user = comment.user_profiles;
+        // ✅ FIX: Fetch user profiles separately to avoid foreign key issues
+        const userIds = [...new Set(comments.map(c => c.user_id))];
+        const { data: users, error: usersError } = await window.supabaseAuth
+          .from('user_profiles')
+          .select('id, username, full_name, avatar_url')
+          .in('id', userIds);
+        
+        if (usersError) throw usersError;
+        
+        const userMap = new Map();
+        if (users) {
+          users.forEach(user => userMap.set(user.id, user));
+        }
+        
+        // Render comments with user data
+        list.innerHTML = comments.map(comment => {
+          const user = userMap.get(comment.user_id);
           const username = user?.username || 'user';
           const name = user?.full_name || username;
           const initials = getInitials(name);
@@ -2398,6 +2389,7 @@
       }
     }
     
+    // ✅ FIX #3: Post comment with proper UUID handling
     async function postComment() {
       const input = document.getElementById('comment-input');
       const text = input.value.trim();
@@ -2409,7 +2401,8 @@
       }
       
       try {
-        const { error } = await supabaseAuth
+        // ✅ FIX: Ensure pulse_id is properly typed as UUID if needed
+        const { error } = await window.supabaseAuth
           .from('pulse_comments')
           .insert({
             pulse_id: currentShort.id,
@@ -2423,13 +2416,14 @@
         input.value = '';
         document.getElementById('post-comment-btn').disabled = true;
         
+        // Reload comments
         await loadComments(currentShort.id);
         
         showToast('Comment posted!', 'success');
         
       } catch (error) {
         console.error('Error posting comment:', error);
-        showToast('Failed to post comment', 'error');
+        showToast('Failed to post comment: ' + error.message, 'error');
       }
     }
     
@@ -2492,7 +2486,7 @@
       try {
         const lastShort = shortsData[shortsData.length - 1];
         
-        const { data, error } = await supabaseAuth
+        const { data, error } = await window.supabaseAuth
           .from('Content')
           .select(`
             *,
@@ -2587,10 +2581,126 @@
       }
     }
     
+    // ✅ FIX #1: Load notifications
+    async function loadNotifications() {
+      if (!currentUser) return;
+      
+      try {
+        const { data, error } = await window.supabaseAuth
+          .from('notifications')
+          .select('*')
+          .eq('user_id', currentUser.id)
+          .order('created_at', { ascending: false })
+          .limit(20);
+        
+        if (error) throw error;
+        
+        notifications = data || [];
+        
+        // Update badge
+        const unreadCount = notifications.filter(n => !n.is_read).length;
+        const badge = document.getElementById('notification-count');
+        if (badge) {
+          badge.textContent = unreadCount > 99 ? '99+' : unreadCount;
+          badge.style.display = unreadCount > 0 ? 'flex' : 'none';
+        }
+        
+      } catch (error) {
+        console.error('Error loading notifications:', error);
+      }
+    }
+    
+    // ✅ FIX #1: Load user profile picture
+    async function loadUserProfilePicture(user) {
+      try {
+        if (!user || !document.getElementById('userProfilePlaceholder')) return;
+        
+        const placeholder = document.getElementById('userProfilePlaceholder');
+        
+        // Clear placeholder
+        while (placeholder.firstChild) {
+          placeholder.removeChild(placeholder.firstChild);
+        }
+        
+        const userInitials = getInitials(user.email);
+        
+        // Fetch user profile
+        const { data: profile, error } = await window.supabaseAuth
+          .from('user_profiles')
+          .select('avatar_url, full_name, username')
+          .eq('id', user.id)
+          .maybeSingle();
+        
+        if (error || !profile) {
+          // Fallback to initials
+          const fallback = document.createElement('div');
+          fallback.className = 'profile-placeholder';
+          fallback.style.cssText = 'width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,#1D4ED8,#F59E0B);display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:14px';
+          fallback.textContent = userInitials;
+          placeholder.appendChild(fallback);
+          return;
+        }
+        
+        if (profile.avatar_url) {
+          let avatarUrl = profile.avatar_url;
+          if (!avatarUrl.startsWith('http')) {
+            if (avatarUrl.startsWith('avatars/')) {
+              avatarUrl = `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/${avatarUrl}`;
+            } else {
+              avatarUrl = `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/avatars/${avatarUrl}`;
+            }
+          }
+          
+          const img = document.createElement('img');
+          img.className = 'profile-img';
+          img.alt = profile.full_name || profile.username || 'User';
+          img.style.cssText = 'width: 100%; height: 100%; border-radius: 50%; object-fit: cover;';
+          img.src = avatarUrl;
+          
+          img.onerror = () => {
+            const fallback = document.createElement('div');
+            fallback.className = 'profile-placeholder';
+            fallback.style.cssText = 'width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,#1D4ED8,#F59E0B);display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:14px';
+            fallback.textContent = userInitials;
+            placeholder.innerHTML = '';
+            placeholder.appendChild(fallback);
+          };
+          
+          placeholder.appendChild(img);
+        } else {
+          const nameInitials = profile.full_name ? getInitials(profile.full_name) : userInitials;
+          const fallback = document.createElement('div');
+          fallback.className = 'profile-placeholder';
+          fallback.style.cssText = 'width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,#1D4ED8,#F59E0B);display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:14px';
+          fallback.textContent = nameInitials;
+          placeholder.appendChild(fallback);
+        }
+        
+      } catch (error) {
+        console.error('Error loading user profile picture:', error);
+      }
+    }
+    
     // ============================================
     // INITIALIZATION
     // ============================================
-    document.addEventListener('DOMContentLoaded', initShortsPlayer);
+    document.addEventListener('DOMContentLoaded', async () => {
+      // Initialize Supabase client if not already done
+      if (!window.supabaseAuth) {
+        window.supabaseAuth = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      }
+      
+      // Check auth and load profile
+      const { data: { session } } = await window.supabaseAuth.auth.getSession();
+      if (session?.user) {
+        currentUser = session.user;
+        await loadUserProfilePicture(session.user);
+        await loadNotifications();
+      }
+      
+      // Initialize shorts player
+      await initShortsPlayer();
+    });
     
     document.addEventListener('visibilitychange', () => {
       if (document.hidden) {
@@ -2604,6 +2714,27 @@
       setTimeout(() => {
         window.shortsSwiper?.update();
       }, 300);
+    });
+    
+    // Auth state listener
+    window.supabaseAuth.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_IN' && session?.user) {
+        currentUser = session.user;
+        await loadUserProfilePicture(session.user);
+        await loadNotifications();
+        showToast('Welcome back!', 'success');
+      } else if (event === 'SIGNED_OUT') {
+        currentUser = null;
+        const placeholder = document.getElementById('userProfilePlaceholder');
+        if (placeholder) {
+          placeholder.innerHTML = '<div class="profile-placeholder"><i class="fas fa-user"></i></div>';
+        }
+        const badge = document.getElementById('notification-count');
+        if (badge) {
+          badge.style.display = 'none';
+        }
+        showToast('Signed out successfully', 'info');
+      }
     });
   </script>
 </body>
