@@ -8,6 +8,7 @@
     <!-- PWA Configuration -->
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#0F172A">
+    <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     
@@ -25,13 +26,65 @@
     <!-- Chart.js for Analytics -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
-    <!-- External CSS -->
+    <!-- Swiper for Shorts Carousel -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js" defer></script>
+    
+    <!-- External CSS - Load in order -->
     <link rel="stylesheet" href="css/home-feed.css">
     <link rel="stylesheet" href="css/home-feed-themes.css">
     <link rel="stylesheet" href="css/home-feed-components.css">
     <link rel="stylesheet" href="css/home-feed-utilities.css">
-    <!-- NEW: Home Feed Features CSS -->
     <link rel="stylesheet" href="css/home-feed-features.css">
+    
+    <!-- Inline critical CSS for skeleton loading -->
+    <style>
+        /* Critical skeleton loading styles */
+        .skeleton-card {
+            background: rgba(30, 30, 40, 0.5);
+            border-radius: 12px;
+            overflow: hidden;
+            animation: skeleton-pulse 1.5s ease-in-out infinite;
+        }
+        .skeleton-thumbnail {
+            width: 100%;
+            aspect-ratio: 16/9;
+            background: rgba(255, 255, 255, 0.05);
+        }
+        .skeleton-title {
+            height: 20px;
+            width: 80%;
+            margin: 15px 10px 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 4px;
+        }
+        .skeleton-creator {
+            height: 16px;
+            width: 60%;
+            margin: 0 10px 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 4px;
+        }
+        .skeleton-stats {
+            height: 14px;
+            width: 90%;
+            margin: 0 10px 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 4px;
+        }
+        @keyframes skeleton-pulse {
+            0%, 100% { opacity: 0.6; }
+            50% { opacity: 0.3; }
+        }
+        /* Ensure main content is hidden until loaded */
+        #app {
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        #app[style*="display: block"] {
+            opacity: 1;
+        }
+    </style>
 </head>
 <body>
     <!-- Loading Screen -->
@@ -126,6 +179,9 @@
             <div class="search-input-container">
                 <i class="search-icon fas fa-search"></i>
                 <input type="text" id="search-input" class="search-input" placeholder="Search for content, creators, or categories..." autocomplete="off">
+                <button id="voice-search-btn-modal" class="voice-search-btn" title="Voice Search">
+                    <i class="fas fa-microphone"></i>
+                </button>
             </div>
             <button id="close-search-btn" class="close-search-btn">
                 <i class="fas fa-times"></i>
@@ -162,6 +218,23 @@
                     <option value="oldest">Oldest First</option>
                     <option value="popular">Most Popular</option>
                     <option value="trending">Trending</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label class="filter-label">Language</label>
+                <select id="language-filter-search" class="filter-select">
+                    <option value="">All Languages</option>
+                    <option value="en">English</option>
+                    <option value="zu">IsiZulu</option>
+                    <option value="xh">IsiXhosa</option>
+                    <option value="af">Afrikaans</option>
+                    <option value="nso">Sepedi</option>
+                    <option value="st">Sesotho</option>
+                    <option value="tn">Setswana</option>
+                    <option value="ss">siSwati</option>
+                    <option value="ve">Tshivenda</option>
+                    <option value="ts">Xitsonga</option>
+                    <option value="nr">isiNdebele</option>
                 </select>
             </div>
         </div>
@@ -239,10 +312,10 @@
 
     <!-- Main Content (hidden until loaded) -->
     <div id="app" style="display: none;">
-        <!-- Enhanced Header with Sidebar Toggle (EXACTLY like explore-screen) -->
+        <!-- Enhanced Header with Sidebar Toggle -->
         <header class="header">
             <div class="logo" onclick="window.location.href='index.html'">
-                <!-- Hamburger Menu Button - REQUIRED for sidebar -->
+                <!-- Hamburger Menu Button -->
                 <button class="menu-toggle" id="menu-toggle" title="Open Menu" aria-label="Open navigation menu">
                     <i class="fas fa-bars"></i>
                 </button>
@@ -252,7 +325,7 @@
                 <div class="logo-text">BANTU STREAM CONNECT</div>
             </div>
             <div class="header-actions">
-                <!-- Keep ONLY these 3 actions (like explore-screen) -->
+                <!-- Keep ONLY these 3 actions -->
                 <button id="voice-search-btn" class="icon-btn" title="Voice Search">
                     <i class="fas fa-microphone"></i>
                 </button>
@@ -267,7 +340,7 @@
             </div>
         </header>
 
-        <!-- Simplified Bottom Navigation (EXACTLY like explore-screen) -->
+        <!-- Simplified Bottom Navigation -->
         <div class="navigation-button-container">
             <div class="navigation-button">
                 <div class="nav-icon" id="nav-home-btn" title="Home" onclick="window.location.href='index.html'">
@@ -285,7 +358,7 @@
 
         <!-- Main Content -->
         <main class="container" id="main-content">
-            <!-- Home-Feed Development Window - ALWAYS VISIBLE -->
+            <!-- Home-Feed Development Window -->
             <div id="development-status-card" class="development-card">
                 <div class="development-header">
                     <div class="pulse-icon-container" id="pulse-icon-container" onclick="window.location.href='pulse-feed.html'">
@@ -322,10 +395,11 @@
                 </div>
             </div>
 
-            <!-- ===== NEW: VIDEO HERO SECTION (REPLACES OLD HERO) ===== -->
+            <!-- VIDEO HERO SECTION -->
             <section class="video-hero-section" id="video-hero">
-                <video class="hero-video" id="hero-video" muted loop playsinline preload="metadata">
+                <video class="hero-video" id="hero-video" muted loop playsinline preload="metadata" poster="">
                     <source src="" type="video/mp4">
+                    Your browser does not support the video tag.
                 </video>
                 <div class="hero-overlay"></div>
                 <div class="hero-content">
@@ -333,19 +407,19 @@
                     <p class="hero-subtitle" id="hero-subtitle">Explore amazing content from creators across Africa</p>
                     <div class="hero-buttons">
                         <button id="browse-all-btn" class="hero-btn">Explore All Content</button>
-                        <button id="hero-mute-btn" class="hero-btn secondary">
+                        <button id="hero-mute-btn" class="hero-btn secondary" aria-label="Toggle mute">
                             <i class="fas fa-volume-mute"></i>
                         </button>
                     </div>
                 </div>
                 <div class="hero-controls">
-                    <button id="hero-mute-btn-mobile" class="hero-mute-btn">
+                    <button id="hero-mute-btn-mobile" class="hero-mute-btn" aria-label="Toggle mute">
                         <i class="fas fa-volume-mute"></i>
                     </button>
                 </div>
             </section>
 
-            <!-- ===== NEW: LANGUAGE FILTER BAR ===== -->
+            <!-- LANGUAGE FILTER BAR -->
             <div class="language-filter-bar">
                 <div class="language-filter-container">
                     <i class="fas fa-language"></i>
@@ -366,7 +440,7 @@
                 </div>
             </div>
 
-            <!-- ===== NEW: COMMUNITY STATS BAR ===== -->
+            <!-- COMMUNITY STATS BAR -->
             <div class="community-stats-bar">
                 <div class="community-stat">
                     <i class="fas fa-users"></i>
@@ -390,7 +464,7 @@
                 </div>
             </div>
 
-            <!-- ===== NEW: SHORTS SECTION ===== -->
+            <!-- SHORTS SECTION -->
             <section class="section">
                 <div class="section-header">
                     <h2 class="section-title">
@@ -465,7 +539,7 @@
         </footer>
     </div>
 
-    <!-- ===== NEW: SIDEBAR MENU (EXACT COPY from explore-screen) ===== -->
+    <!-- SIDEBAR MENU -->
     <div class="sidebar-overlay" id="sidebar-overlay"></div>
     <div class="sidebar-menu" id="sidebar-menu">
         <div class="sidebar-header">
@@ -561,7 +635,7 @@
         </div>
     </div>
 
-    <!-- ===== NEW: BADGES MODAL ===== -->
+    <!-- BADGES MODAL -->
     <div id="badges-modal" class="badges-modal">
         <div class="badges-content">
             <div class="badges-header">
@@ -588,7 +662,7 @@
         </div>
     </div>
 
-    <!-- ===== NEW: TIP MODAL ===== -->
+    <!-- TIP MODAL -->
     <div id="tip-modal" class="tip-modal">
         <div class="tip-content">
             <div class="tip-header">
@@ -623,30 +697,30 @@
                 </div>
             </div>
             <div class="tip-footer">
-                <button id="send-tip" class="send-tip">
+                <button id="send-tip" class="btn-primary">
                     <i class="fas fa-gift"></i> Send Tip
                 </button>
             </div>
         </div>
     </div>
 
-    <!-- ===== NEW: UI SCALE CONTROL WIDGET ===== -->
+    <!-- UI SCALE CONTROL WIDGET -->
     <div class="ui-scale-control" id="ui-scale-control">
         <div class="scale-control-bar">
-            <button class="scale-btn" id="scale-decrease" title="Make Smaller">
+            <button class="scale-btn" id="scale-decrease" title="Make Smaller (Ctrl+-)">
                 <i class="fas fa-minus"></i>
             </button>
             <span class="scale-value" id="scale-value">100%</span>
-            <button class="scale-btn" id="scale-increase" title="Make Larger">
+            <button class="scale-btn" id="scale-increase" title="Make Larger (Ctrl++)">
                 <i class="fas fa-plus"></i>
             </button>
-            <button class="scale-btn" id="scale-reset" title="Reset">
+            <button class="scale-btn" id="scale-reset" title="Reset (Ctrl+0)">
                 <i class="fas fa-undo"></i>
             </button>
         </div>
     </div>
 
-    <!-- ===== NEW: VOICE SEARCH STATUS ===== -->
+    <!-- VOICE SEARCH STATUS -->
     <div id="voice-search-status" class="voice-search-status">
         <div class="voice-status-content">
             <i class="fas fa-microphone"></i>
@@ -689,9 +763,8 @@
             // First, unregister any old service workers
             navigator.serviceWorker.getRegistrations().then(registrations => {
                 registrations.forEach(registration => {
-                    // Check if this is an old version (v3 instead of v2)
+                    // Check if this is an old version
                     if (registration.active && registration.active.scriptURL.includes('sw.js')) {
-                        // Optional: Add version check logic here
                         console.log('📱 Found service worker registration:', registration.active.scriptURL);
                     }
                 });
@@ -749,6 +822,10 @@
             console.log('- sidebar-menu:', document.getElementById('sidebar-menu'));
             console.log('- sidebar-overlay:', document.getElementById('sidebar-overlay'));
             console.log('- setupSidebar function:', typeof window.setupSidebar);
+            
+            // Verify cacheManager is available
+            console.log('- cacheManager available:', typeof window.cacheManager !== 'undefined');
+            console.log('- cacheManager.get function:', typeof window.cacheManager?.get === 'function');
         });
     </script>
 </body>
