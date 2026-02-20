@@ -118,6 +118,149 @@
     }
     
     /* ============================================
+       HEADER - From Creator Dashboard
+       ============================================ */
+    .header {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      background: rgba(10, 14, 18, 0.9);
+      backdrop-filter: blur(20px);
+      padding: 16px 20px;
+      z-index: 100;
+      border-bottom: 1px solid var(--card-border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      min-height: 60px;
+    }
+    
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      cursor: pointer;
+      text-decoration: none;
+    }
+    
+    .logo-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 32px rgba(29, 78, 216, 0.3);
+      background: transparent;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    .logo-icon img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+    
+    .logo-text {
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 700;
+      font-size: 18px;
+      background: linear-gradient(to right, var(--soft-white), var(--bantu-blue));
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      letter-spacing: 0.5px;
+    }
+    
+    .header-actions {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+    
+    .icon-btn {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: var(--soft-white);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      position: relative;
+      font-size: 1.25rem;
+      min-width: 44px;
+      min-height: 44px;
+    }
+    
+    .icon-btn:hover {
+      background: rgba(255, 255, 255, 0.2);
+      transform: translateY(-2px);
+    }
+    
+    .notification-badge {
+      position: absolute;
+      top: -5px;
+      right: -5px;
+      background: var(--error-color);
+      color: white;
+      font-size: 10px;
+      font-weight: bold;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 2px solid var(--deep-black);
+    }
+    
+    .profile-btn {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+      border: 2px solid rgba(255, 255, 255, 0.2);
+      cursor: pointer;
+      overflow: hidden;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: 600;
+      font-size: 14px;
+      min-width: 44px;
+      min-height: 44px;
+    }
+    
+    .profile-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(29, 78, 216, 0.3);
+    }
+    
+    .profile-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    
+    .profile-placeholder {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+      color: white;
+      font-size: 16px;
+    }
+    
+    /* ============================================
        SHORTS PLAYER CONTAINER
        ============================================ */
     .shorts-player-container {
@@ -126,6 +269,8 @@
       height: var(--shorts-player-height);
       background: var(--deep-black);
       overflow: hidden;
+      padding-top: 60px; /* Space for header */
+      padding-bottom: 80px; /* Space for bottom nav */
     }
     
     .shorts-swiper {
@@ -330,7 +475,8 @@
       color: var(--slate-grey);
     }
     
-    .follow-btn {
+    /* ✅ UPDATED: Connect Button instead of Follow */
+    .connect-btn {
       background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
       color: var(--deep-black);
       border: none;
@@ -343,12 +489,12 @@
       white-space: nowrap;
     }
     
-    .follow-btn:hover {
+    .connect-btn:hover {
       transform: translateY(-2px);
       box-shadow: 0 4px 12px rgba(29, 78, 216, 0.4);
     }
     
-    .follow-btn.following {
+    .connect-btn.connected {
       background: rgba(255, 255, 255, 0.1);
       color: var(--soft-white);
       border: 1px solid var(--card-border);
@@ -487,6 +633,67 @@
     .play-pause-overlay.active {
       transform: translate(-50%, -50%) scale(1);
       opacity: 1;
+    }
+    
+    /* ============================================
+       MORE MENU (Three Dots) - NEW
+       ============================================ */
+    .more-menu {
+      position: absolute;
+      bottom: calc(4rem * var(--ui-scale, 1));
+      right: calc(1rem * var(--ui-scale, 1));
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: calc(1rem * var(--ui-scale, 1));
+      width: calc(12rem * var(--ui-scale, 1));
+      padding: calc(0.5rem * var(--ui-scale, 1)) 0;
+      z-index: 30;
+      display: none;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+      backdrop-filter: blur(10px);
+    }
+    
+    .more-menu.active {
+      display: block;
+      animation: slideUp 0.2s ease;
+    }
+    
+    @keyframes slideUp {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    
+    .more-menu-item {
+      display: flex;
+      align-items: center;
+      gap: calc(0.75rem * var(--ui-scale, 1));
+      padding: calc(0.75rem * var(--ui-scale, 1)) calc(1rem * var(--ui-scale, 1));
+      color: var(--soft-white);
+      font-size: calc(0.875rem * var(--ui-scale, 1));
+      cursor: pointer;
+      transition: all 0.3s ease;
+      border: none;
+      background: none;
+      width: 100%;
+      text-align: left;
+    }
+    
+    .more-menu-item:hover {
+      background: var(--hover-overlay);
+    }
+    
+    .more-menu-item.danger {
+      color: var(--error-color);
+    }
+    
+    .more-menu-item.danger:hover {
+      background: rgba(239, 68, 68, 0.1);
     }
     
     /* ============================================
@@ -823,6 +1030,50 @@
     }
     
     /* ============================================
+       BOTTOM NAVIGATION - From Creator Dashboard
+       ============================================ */
+    .global-nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      background: rgba(10, 14, 18, 0.95);
+      backdrop-filter: blur(20px);
+      display: flex;
+      justify-content: space-around;
+      padding: 15px 0;
+      z-index: 100;
+      border-top: 1px solid var(--card-border);
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+    
+    .nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      color: var(--slate-grey);
+      text-decoration: none;
+      font-size: 12px;
+      transition: all 0.3s ease;
+      padding: calc(0.5rem * var(--ui-scale, 1));
+      min-width: 44px;
+      min-height: 44px;
+    }
+    
+    .nav-item i {
+      font-size: 18px;
+      margin-bottom: 5px;
+    }
+    
+    .nav-item:hover {
+      color: var(--soft-white);
+    }
+    
+    .nav-item.active {
+      color: var(--warm-gold);
+    }
+    
+    /* ============================================
        RESPONSIVE
        ============================================ */
     @media (max-width: 768px) {
@@ -855,7 +1106,7 @@
     }
     
     @media (hover: none) and (pointer: coarse) {
-      .action-btn, .control-btn, .follow-btn, .post-comment-btn, .share-option {
+      .action-btn, .control-btn, .connect-btn, .post-comment-btn, .share-option, .more-menu-item {
         min-width: 44px;
         min-height: 44px;
       }
@@ -881,6 +1132,40 @@
     <div>Loading Shorts...</div>
   </div>
   
+  <!-- Header - From Creator Dashboard -->
+  <header class="header">
+    <div class="logo" onclick="window.location.href='index.html'">
+      <div class="logo-icon">
+        <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect width="40" height="40" rx="8" fill="#0F172A"/>
+          <path d="M8 20 L12 16 L16 22 L20 18 L24 24 L28 20 L32 26" stroke="url(#pulse-gradient)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="32" cy="26" r="3" fill="#F59E0B"/>
+          <defs>
+            <linearGradient id="pulse-gradient" x1="8" y1="20" x2="32" y2="26" gradientUnits="userSpaceOnUse">
+              <stop stop-color="#1D4ED8"/>
+              <stop offset="1" stop-color="#F59E0B"/>
+            </linearGradient>
+          </defs>
+        </svg>
+      </div>
+      <div class="logo-text">BANTU STREAM CONNECT</div>
+    </div>
+    <div class="header-actions">
+      <button id="search-btn" class="icon-btn" title="Search">
+        <i class="fas fa-search"></i>
+      </button>
+      <button id="notifications-btn" class="icon-btn" title="Notifications">
+        <i class="fas fa-bell"></i>
+        <span class="notification-badge" id="notification-count" style="display: none;">0</span>
+      </button>
+      <button id="profile-btn" class="profile-btn" title="Profile">
+        <div class="profile-placeholder" id="userProfilePlaceholder">
+          <i class="fas fa-user"></i>
+        </div>
+      </button>
+    </div>
+  </header>
+  
   <!-- Main Shorts Player -->
   <div class="shorts-player-container" id="shorts-player">
     <div class="swiper shorts-swiper" id="shorts-swiper">
@@ -896,6 +1181,26 @@
     <div class="play-pause-overlay" id="play-pause-overlay">
       <i class="fas fa-play" id="play-pause-icon"></i>
     </div>
+  </div>
+  
+  <!-- More Menu (Three Dots) - NEW -->
+  <div class="more-menu" id="more-menu">
+    <button class="more-menu-item" id="more-report">
+      <i class="fas fa-flag"></i>
+      <span>Report</span>
+    </button>
+    <button class="more-menu-item" id="more-mute">
+      <i class="fas fa-volume-mute"></i>
+      <span>Mute Creator</span>
+    </button>
+    <button class="more-menu-item" id="more-not-interested">
+      <i class="fas fa-thumbs-down"></i>
+      <span>Not Interested</span>
+    </button>
+    <button class="more-menu-item danger" id="more-block">
+      <i class="fas fa-ban"></i>
+      <span>Block Creator</span>
+    </button>
   </div>
   
   <!-- Comments Drawer Modal -->
@@ -971,6 +1276,26 @@
   <!-- Toast Container -->
   <div class="toast-container" id="toast-container"></div>
   
+  <!-- Bottom Navigation - From Creator Dashboard -->
+  <nav class="global-nav">
+    <a href="index.html" class="nav-item">
+      <i class="fas fa-home"></i>
+      Home
+    </a>
+    <a href="explore-screen.html" class="nav-item">
+      <i class="fas fa-compass"></i>
+      Explore
+    </a>
+    <a href="creator-upload.html" class="nav-item">
+      <i class="fas fa-plus-circle"></i>
+      Create
+    </a>
+    <a href="creator-dashboard.html" class="nav-item active">
+      <i class="fas fa-user"></i>
+      Creator
+    </a>
+  </nav>
+  
   <!-- JavaScript -->
   <script>
     // ============================================
@@ -992,6 +1317,7 @@
     let currentVideo = null;
     let lastTapTime = 0;
     let userConnections = new Set();
+    let moreMenuOpen = false;
     
     // ============================================
     // UTILITY FUNCTIONS
@@ -1165,7 +1491,7 @@
         const thumbnailUrl = short.thumbnail_url ? fixMediaUrl(short.thumbnail_url) : '';
         const creatorName = creator?.full_name || creator?.username || 'Creator';
         const initials = getInitials(creatorName);
-        const isFollowing = userConnections.has(creator?.id);
+        const isConnected = userConnections.has(creator?.id);
         
         return `
           <div class="swiper-slide" data-short-id="${short.id}">
@@ -1215,8 +1541,9 @@
                     <div class="creator-name">${escapeHtml(creatorName)}</div>
                     <div class="creator-username">@${escapeHtml(creator?.username || 'creator')}</div>
                   </div>
-                  <button class="follow-btn ${isFollowing ? 'following' : ''}" data-creator-id="${creator?.id}">
-                    ${isFollowing ? 'Following' : 'Follow'}
+                  <!-- ✅ UPDATED: Connect Button -->
+                  <button class="connect-btn ${isConnected ? 'connected' : ''}" data-creator-id="${creator?.id}">
+                    ${isConnected ? 'Connected' : 'Connect'}
                   </button>
                 </div>
                 
@@ -1246,7 +1573,8 @@
                   <div class="progress-bar" id="progress-bar-${short.id}"></div>
                 </div>
                 
-                <button class="control-btn more-btn" title="More">
+                <!-- ✅ UPDATED: More Button (Three Dots) -->
+                <button class="control-btn more-btn" title="More" data-short-id="${short.id}">
                   <i class="fas fa-ellipsis-h"></i>
                 </button>
               </div>
@@ -1257,7 +1585,7 @@
     }
     
     // ============================================
-    // SWIPER INITIALIZATION
+    // SWIPER INITIALIZATION - With Auto-Play
     // ============================================
     function initSwiper() {
       if (typeof Swiper === 'undefined') {
@@ -1274,11 +1602,18 @@
           enabled: true,
           onlyInViewport: false
         },
+        // ✅ AUTO-PLAY TO NEXT SHORT
+        autoplay: {
+          delay: 2500,
+          disableOnInteraction: false,
+          pauseOnMouseEnter: true
+        },
         on: {
           slideChange: () => {
             pauseAllVideos();
             playCurrentShort();
             updateActiveShort();
+            closeMoreMenu(); // Close more menu when sliding
           },
           reachEnd: () => {
             loadMoreShorts();
@@ -1342,8 +1677,13 @@
       });
       
       video.addEventListener('ended', () => {
-        video.currentTime = 0;
-        video.play();
+        // ✅ AUTO-PLAY NEXT SHORT ON END
+        if (window.shortsSwiper) {
+          window.shortsSwiper.slideNext();
+        } else {
+          video.currentTime = 0;
+          video.play();
+        }
       });
       
       video.addEventListener('error', (e) => {
@@ -1401,6 +1741,35 @@
     }
     
     // ============================================
+    // MORE MENU FUNCTIONS - NEW
+    // ============================================
+    function toggleMoreMenu(shortId, button) {
+      const menu = document.getElementById('more-menu');
+      
+      if (moreMenuOpen) {
+        closeMoreMenu();
+        return;
+      }
+      
+      // Position menu relative to button
+      const rect = button.getBoundingClientRect();
+      menu.style.bottom = `${window.innerHeight - rect.top + 10}px`;
+      menu.style.right = `${window.innerWidth - rect.right + 10}px`;
+      
+      // Store current short ID for menu actions
+      menu.dataset.shortId = shortId;
+      
+      menu.classList.add('active');
+      moreMenuOpen = true;
+    }
+    
+    function closeMoreMenu() {
+      const menu = document.getElementById('more-menu');
+      menu.classList.remove('active');
+      moreMenuOpen = false;
+    }
+    
+    // ============================================
     // EVENT LISTENERS
     // ============================================
     function setupEventListeners() {
@@ -1428,11 +1797,20 @@
         }
       });
       
-      // Follow button
+      // ✅ UPDATED: Connect Button (instead of Follow)
       document.getElementById('shorts-player').addEventListener('click', (e) => {
-        const followBtn = e.target.closest('.follow-btn');
-        if (followBtn) {
-          handleFollow(followBtn.dataset.creatorId, followBtn);
+        const connectBtn = e.target.closest('.connect-btn');
+        if (connectBtn) {
+          handleConnect(connectBtn.dataset.creatorId, connectBtn);
+        }
+      });
+      
+      // ✅ UPDATED: More Button (Three Dots) - Now Clickable
+      document.getElementById('shorts-player').addEventListener('click', (e) => {
+        const moreBtn = e.target.closest('.more-btn');
+        if (moreBtn) {
+          e.stopPropagation();
+          toggleMoreMenu(moreBtn.dataset.shortId, moreBtn);
         }
       });
       
@@ -1475,6 +1853,34 @@
         }
       });
       
+      // ✅ More Menu Actions
+      document.getElementById('more-report')?.addEventListener('click', () => {
+        handleReport();
+        closeMoreMenu();
+      });
+      
+      document.getElementById('more-mute')?.addEventListener('click', () => {
+        handleMuteCreator();
+        closeMoreMenu();
+      });
+      
+      document.getElementById('more-not-interested')?.addEventListener('click', () => {
+        handleNotInterested();
+        closeMoreMenu();
+      });
+      
+      document.getElementById('more-block')?.addEventListener('click', () => {
+        handleBlockCreator();
+        closeMoreMenu();
+      });
+      
+      // Close more menu when clicking outside
+      document.addEventListener('click', (e) => {
+        if (moreMenuOpen && !e.target.closest('.more-menu') && !e.target.closest('.more-btn')) {
+          closeMoreMenu();
+        }
+      });
+      
       // Double-tap to like
       document.getElementById('shorts-player').addEventListener('touchend', handleDoubleTap);
       document.getElementById('shorts-player').addEventListener('click', handleDoubleTap);
@@ -1488,6 +1894,9 @@
         modal.addEventListener('click', (e) => {
           if (e.target === modal) {
             modal.classList.remove('active');
+            if (modal.id === 'comments-modal') {
+              closeMoreMenu();
+            }
           }
         });
       });
@@ -1539,6 +1948,12 @@
               const likeBtn = activeSlide.querySelector('.like-btn');
               if (likeBtn) handleLike(shortId, likeBtn);
             }
+            break;
+          case 'Escape':
+            e.preventDefault();
+            closeMoreMenu();
+            closeComments();
+            closeShare();
             break;
         }
       });
@@ -1635,16 +2050,17 @@
       }
     }
     
-    async function handleFollow(creatorId, btn) {
+    // ✅ UPDATED: Handle Connect (instead of Follow)
+    async function handleConnect(creatorId, btn) {
       if (!currentUser) {
-        showToast('Please sign in to follow creators', 'info');
+        showToast('Please sign in to connect with creators', 'info');
         return;
       }
       
-      const following = userConnections.has(creatorId);
+      const connected = userConnections.has(creatorId);
       
       try {
-        if (following) {
+        if (connected) {
           const { error } = await supabaseAuth
             .from('connectors')
             .delete()
@@ -1653,11 +2069,11 @@
           
           if (error) throw error;
           
-          btn.textContent = 'Follow';
-          btn.classList.remove('following');
+          btn.textContent = 'Connect';
+          btn.classList.remove('connected');
           userConnections.delete(creatorId);
           
-          showToast('Unfollowed', 'info');
+          showToast('Disconnected', 'info');
         } else {
           const { error } = await supabaseAuth
             .from('connectors')
@@ -1670,15 +2086,63 @@
           
           if (error) throw error;
           
-          btn.textContent = 'Following';
-          btn.classList.add('following');
+          btn.textContent = 'Connected';
+          btn.classList.add('connected');
           userConnections.add(creatorId);
           
-          showToast('Following!', 'success');
+          showToast('Connected!', 'success');
         }
       } catch (error) {
-        console.error('Error following creator:', error);
-        showToast('Failed to update follow', 'error');
+        console.error('Error connecting with creator:', error);
+        showToast('Failed to update connection', 'error');
+      }
+    }
+    
+    // ✅ NEW: More Menu Action Handlers
+    function handleReport() {
+      if (!currentUser) {
+        showToast('Please sign in to report content', 'info');
+        return;
+      }
+      
+      showToast('Report submitted. Thank you!', 'success');
+      // In production, send report to Supabase
+    }
+    
+    function handleMuteCreator() {
+      if (!currentUser) {
+        showToast('Please sign in to mute creators', 'info');
+        return;
+      }
+      
+      const mutedCreators = JSON.parse(localStorage.getItem('muted_creators') || '[]');
+      if (currentShort?.user_id && !mutedCreators.includes(currentShort.user_id)) {
+        mutedCreators.push(currentShort.user_id);
+        localStorage.setItem('muted_creators', JSON.stringify(mutedCreators));
+        showToast('Creator muted', 'success');
+      }
+    }
+    
+    function handleNotInterested() {
+      showToast('We\'ll show you less content like this', 'info');
+      // In production, update recommendation algorithm
+    }
+    
+    function handleBlockCreator() {
+      if (!currentUser) {
+        showToast('Please sign in to block creators', 'info');
+        return;
+      }
+      
+      if (confirm('Are you sure you want to block this creator? You won\'t see their content anymore.')) {
+        const blockedCreators = JSON.parse(localStorage.getItem('blocked_creators') || '[]');
+        if (currentShort?.user_id && !blockedCreators.includes(currentShort.user_id)) {
+          blockedCreators.push(currentShort.user_id);
+          localStorage.setItem('blocked_creators', JSON.stringify(blockedCreators));
+          showToast('Creator blocked', 'success');
+          // Navigate to next short
+          window.shortsSwiper?.slideNext();
+        }
       }
     }
     
@@ -1988,7 +2452,7 @@
             const thumbnailUrl = short.thumbnail_url ? fixMediaUrl(short.thumbnail_url) : '';
             const creatorName = creator?.full_name || creator?.username || 'Creator';
             const initials = getInitials(creatorName);
-            const isFollowing = userConnections.has(creator?.id);
+            const isConnected = userConnections.has(creator?.id);
             
             const slide = document.createElement('div');
             slide.className = 'swiper-slide';
@@ -2022,8 +2486,8 @@
                       <div class="creator-name">${escapeHtml(creatorName)}</div>
                       <div class="creator-username">@${escapeHtml(creator?.username || 'creator')}</div>
                     </div>
-                    <button class="follow-btn ${isFollowing ? 'following' : ''}" data-creator-id="${creator?.id}">
-                      ${isFollowing ? 'Following' : 'Follow'}
+                    <button class="connect-btn ${isConnected ? 'connected' : ''}" data-creator-id="${creator?.id}">
+                      ${isConnected ? 'Connected' : 'Connect'}
                     </button>
                   </div>
                   <div class="shorts-caption" id="caption-${short.id}">${escapeHtml(short.description || short.title || '')}</div>
@@ -2038,7 +2502,7 @@
                     <div class="progress-buffer"></div>
                     <div class="progress-bar"></div>
                   </div>
-                  <button class="control-btn more-btn"><i class="fas fa-ellipsis-h"></i></button>
+                  <button class="control-btn more-btn" data-short-id="${short.id}"><i class="fas fa-ellipsis-h"></i></button>
                 </div>
               </div>
             `;
