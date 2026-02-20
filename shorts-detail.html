@@ -17,7 +17,7 @@
   <!-- Font Awesome -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   
-  <!-- Supabase JS SDK - Load ONCE globally -->
+  <!-- Supabase JS SDK -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   
   <!-- Swiper for Shorts Carousel -->
@@ -26,7 +26,7 @@
   
   <style>
     /* ============================================
-       DESIGN SYSTEM - Matches Explore Screen
+       DESIGN SYSTEM - Matches Creator Dashboard
        ============================================ */
     :root {
       --deep-black: #0A0E12;
@@ -119,7 +119,7 @@
     }
     
     /* ============================================
-       HEADER - From Creator Dashboard (SMALLER)
+       HEADER - From Creator Dashboard
        ============================================ */
     .header {
       position: absolute;
@@ -128,31 +128,31 @@
       right: 0;
       background: rgba(10, 14, 18, 0.9);
       backdrop-filter: blur(20px);
-      padding: 8px 10px;
+      padding: 12px 20px;
       z-index: 100;
       border-bottom: 1px solid var(--card-border);
       display: flex;
       justify-content: space-between;
       align-items: center;
-      min-height: 30px;
+      min-height: 60px;
     }
     
     .logo {
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 12px;
       cursor: pointer;
       text-decoration: none;
     }
     
     .logo-icon {
-      width: 20px;
-      height: 20px;
-      border-radius: 5px;
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
       display: flex;
       align-items: center;
       justify-content: center;
-      box-shadow: 0 0 16px rgba(29, 78, 216, 0.3);
+      box-shadow: 0 0 32px rgba(29, 78, 216, 0.3);
       background: transparent;
       border: 1px solid rgba(255, 255, 255, 0.1);
     }
@@ -166,23 +166,23 @@
     .logo-text {
       font-family: 'Orbitron', sans-serif;
       font-weight: 700;
-      font-size: 9px;
+      font-size: 18px;
       background: linear-gradient(to right, var(--soft-white), var(--bantu-blue));
       -webkit-background-clip: text;
       background-clip: text;
       color: transparent;
-      letter-spacing: 0.25px;
+      letter-spacing: 0.5px;
     }
     
     .header-actions {
       display: flex;
-      gap: 5px;
+      gap: 10px;
       align-items: center;
     }
     
     .icon-btn {
-      width: 20px;
-      height: 20px;
+      width: 40px;
+      height: 40px;
       border-radius: 50%;
       background: rgba(255, 255, 255, 0.1);
       border: 1px solid rgba(255, 255, 255, 0.2);
@@ -193,39 +193,39 @@
       cursor: pointer;
       transition: all 0.3s ease;
       position: relative;
-      font-size: 10px;
-      min-width: 22px;
-      min-height: 22px;
+      font-size: 18px;
+      min-width: 44px;
+      min-height: 44px;
     }
     
     .icon-btn:hover {
       background: rgba(255, 255, 255, 0.2);
-      transform: translateY(-1px);
+      transform: translateY(-2px);
     }
     
     .notification-badge {
       position: absolute;
-      top: -2px;
-      right: -2px;
+      top: -5px;
+      right: -5px;
       background: var(--error-color);
       color: white;
-      font-size: 5px;
+      font-size: 10px;
       font-weight: bold;
-      width: 9px;
-      height: 9px;
+      width: 18px;
+      height: 18px;
       border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
-      border: 1px solid var(--deep-black);
+      border: 2px solid var(--deep-black);
     }
     
     .profile-btn {
-      width: 20px;
-      height: 20px;
+      width: 40px;
+      height: 40px;
       border-radius: 50%;
       background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
-      border: 1px solid rgba(255, 255, 255, 0.2);
+      border: 2px solid rgba(255, 255, 255, 0.2);
       cursor: pointer;
       overflow: hidden;
       transition: all 0.3s ease;
@@ -234,20 +234,21 @@
       justify-content: center;
       color: white;
       font-weight: 600;
-      font-size: 7px;
-      min-width: 22px;
-      min-height: 22px;
+      font-size: 14px;
+      min-width: 44px;
+      min-height: 44px;
     }
     
     .profile-btn:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 4px 10px rgba(29, 78, 216, 0.3);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(29, 78, 216, 0.3);
     }
     
     .profile-img {
       width: 100%;
       height: 100%;
       object-fit: cover;
+      border-radius: 50%;
     }
     
     .profile-placeholder {
@@ -258,7 +259,8 @@
       justify-content: center;
       background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
       color: white;
-      font-size: 8px;
+      font-size: 14px;
+      border-radius: 50%;
     }
     
     /* ============================================
@@ -270,8 +272,8 @@
       height: var(--shorts-player-height);
       background: var(--deep-black);
       overflow: hidden;
-      padding-top: 30px;
-      padding-bottom: 40px;
+      padding-top: 60px; /* Space for header */
+      padding-bottom: 60px; /* Space for bottom nav */
     }
     
     .shorts-swiper {
@@ -318,18 +320,18 @@
        ============================================ */
     .shorts-actions {
       position: absolute;
-      right: calc(0.5rem * var(--ui-scale, 1));
-      bottom: calc(6rem * var(--ui-scale, 1));
+      right: calc(1rem * var(--ui-scale, 1));
+      bottom: calc(8rem * var(--ui-scale, 1));
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: calc(1rem * var(--ui-scale, 1));
+      gap: calc(1.5rem * var(--ui-scale, 1));
       z-index: 20;
     }
     
     .action-btn {
-      width: calc(2rem * var(--ui-scale, 1));
-      height: calc(2rem * var(--ui-scale, 1));
+      width: var(--shorts-action-btn-size);
+      height: var(--shorts-action-btn-size);
       border-radius: 50%;
       background: rgba(255, 255, 255, 0.1);
       border: 1px solid var(--card-border);
@@ -339,11 +341,11 @@
       justify-content: center;
       cursor: pointer;
       transition: all 0.3s ease;
-      font-size: calc(1rem * var(--ui-scale, 1));
+      font-size: calc(1.25rem * var(--ui-scale, 1));
       position: relative;
       backdrop-filter: blur(10px);
-      min-width: 36px;
-      min-height: 36px;
+      min-width: 44px;
+      min-height: 44px;
     }
     
     .action-btn:hover {
@@ -363,8 +365,8 @@
     
     .action-count {
       position: absolute;
-      bottom: calc(-1.2rem * var(--ui-scale, 1));
-      font-size: calc(0.625rem * var(--ui-scale, 1));
+      bottom: calc(-1.5rem * var(--ui-scale, 1));
+      font-size: calc(0.75rem * var(--ui-scale, 1));
       color: var(--slate-grey);
       font-weight: 500;
       white-space: nowrap;
@@ -384,7 +386,7 @@
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%) scale(0);
-      font-size: calc(3rem * var(--ui-scale, 1));
+      font-size: calc(4rem * var(--ui-scale, 1));
       color: var(--error-color);
       opacity: 0;
       pointer-events: none;
@@ -420,9 +422,9 @@
        ============================================ */
     .shorts-info {
       position: absolute;
-      left: calc(0.5rem * var(--ui-scale, 1));
-      bottom: calc(0.5rem * var(--ui-scale, 1));
-      right: calc(4rem * var(--ui-scale, 1));
+      left: calc(1rem * var(--ui-scale, 1));
+      bottom: calc(1rem * var(--ui-scale, 1));
+      right: calc(6rem * var(--ui-scale, 1));
       z-index: 20;
       max-width: calc(70% * var(--ui-scale, 1));
     }
@@ -430,14 +432,14 @@
     .creator-info {
       display: flex;
       align-items: center;
-      gap: calc(0.5rem * var(--ui-scale, 1));
-      margin-bottom: calc(0.5rem * var(--ui-scale, 1));
+      gap: calc(0.75rem * var(--ui-scale, 1));
+      margin-bottom: calc(0.75rem * var(--ui-scale, 1));
       cursor: pointer;
     }
     
     .creator-avatar {
-      width: calc(1.8rem * var(--ui-scale, 1));
-      height: calc(1.8rem * var(--ui-scale, 1));
+      width: var(--shorts-creator-avatar-size);
+      height: var(--shorts-creator-avatar-size);
       border-radius: 50%;
       background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
       display: flex;
@@ -445,10 +447,10 @@
       justify-content: center;
       color: white;
       font-weight: 600;
-      font-size: calc(0.7rem * var(--ui-scale, 1));
+      font-size: calc(0.875rem * var(--ui-scale, 1));
       overflow: hidden;
       flex-shrink: 0;
-      border: 1px solid var(--card-border);
+      border: 2px solid var(--card-border);
     }
     
     .creator-avatar img {
@@ -463,7 +465,7 @@
     }
     
     .creator-name {
-      font-size: calc(0.8rem * var(--ui-scale, 1));
+      font-size: calc(1rem * var(--ui-scale, 1));
       font-weight: 600;
       color: var(--soft-white);
       white-space: nowrap;
@@ -472,7 +474,7 @@
     }
     
     .creator-username {
-      font-size: calc(0.7rem * var(--ui-scale, 1));
+      font-size: calc(0.875rem * var(--ui-scale, 1));
       color: var(--slate-grey);
     }
     
@@ -481,9 +483,9 @@
       background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
       color: var(--deep-black);
       border: none;
-      padding: calc(0.25rem * var(--ui-scale, 1)) calc(0.75rem * var(--ui-scale, 1));
-      border-radius: calc(1rem * var(--ui-scale, 1));
-      font-size: calc(0.6rem * var(--ui-scale, 1));
+      padding: calc(0.375rem * var(--ui-scale, 1)) calc(1rem * var(--ui-scale, 1));
+      border-radius: calc(1.25rem * var(--ui-scale, 1));
+      font-size: calc(0.75rem * var(--ui-scale, 1));
       font-weight: 600;
       cursor: pointer;
       transition: all 0.3s ease;
@@ -491,8 +493,8 @@
     }
     
     .connect-btn:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 2px 6px rgba(29, 78, 216, 0.4);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(29, 78, 216, 0.4);
     }
     
     .connect-btn.connected {
@@ -502,10 +504,10 @@
     }
     
     .shorts-caption {
-      font-size: calc(0.8rem * var(--ui-scale, 1));
+      font-size: calc(0.9375rem * var(--ui-scale, 1));
       line-height: 1.4;
       color: var(--soft-white);
-      margin-bottom: calc(0.3rem * var(--ui-scale, 1));
+      margin-bottom: calc(0.5rem * var(--ui-scale, 1));
       max-height: var(--shorts-caption-max-height);
       overflow: hidden;
       display: -webkit-box;
@@ -523,24 +525,24 @@
       background: none;
       border: none;
       color: var(--warm-gold);
-      font-size: calc(0.6rem * var(--ui-scale, 1));
+      font-size: calc(0.75rem * var(--ui-scale, 1));
       cursor: pointer;
       padding: 0;
-      margin-top: calc(0.15rem * var(--ui-scale, 1));
+      margin-top: calc(0.25rem * var(--ui-scale, 1));
     }
     
     .shorts-meta {
       display: flex;
       align-items: center;
-      gap: calc(0.75rem * var(--ui-scale, 1));
-      font-size: calc(0.6rem * var(--ui-scale, 1));
+      gap: calc(1rem * var(--ui-scale, 1));
+      font-size: calc(0.75rem * var(--ui-scale, 1));
       color: var(--slate-grey);
     }
     
     .shorts-meta span {
       display: flex;
       align-items: center;
-      gap: calc(0.15rem * var(--ui-scale, 1));
+      gap: calc(0.25rem * var(--ui-scale, 1));
     }
     
     /* ============================================
@@ -551,21 +553,21 @@
       bottom: 0;
       left: 0;
       right: 0;
-      height: calc(3rem * var(--ui-scale, 1));
+      height: var(--shorts-controls-height);
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 0 calc(0.75rem * var(--ui-scale, 1));
+      padding: 0 calc(1rem * var(--ui-scale, 1));
       z-index: 20;
       background: linear-gradient(to top, rgba(0,0,0,0.7), transparent);
     }
     
     .progress-container {
       flex: 1;
-      margin: 0 calc(0.75rem * var(--ui-scale, 1));
-      height: calc(0.2rem * var(--ui-scale, 1));
+      margin: 0 calc(1rem * var(--ui-scale, 1));
+      height: calc(0.25rem * var(--ui-scale, 1));
       background: rgba(255, 255, 255, 0.2);
-      border-radius: calc(0.2rem * var(--ui-scale, 1));
+      border-radius: calc(0.25rem * var(--ui-scale, 1));
       cursor: pointer;
       position: relative;
     }
@@ -576,7 +578,7 @@
       left: 0;
       height: 100%;
       background: var(--warm-gold);
-      border-radius: calc(0.2rem * var(--ui-scale, 1));
+      border-radius: calc(0.25rem * var(--ui-scale, 1));
       width: 0%;
       transition: width 0.1s linear;
     }
@@ -587,7 +589,7 @@
       left: 0;
       height: 100%;
       background: rgba(255, 255, 255, 0.3);
-      border-radius: calc(0.2rem * var(--ui-scale, 1));
+      border-radius: calc(0.25rem * var(--ui-scale, 1));
       width: 0%;
     }
     
@@ -595,13 +597,13 @@
       background: none;
       border: none;
       color: var(--soft-white);
-      font-size: calc(1rem * var(--ui-scale, 1));
+      font-size: calc(1.25rem * var(--ui-scale, 1));
       cursor: pointer;
-      padding: calc(0.3rem * var(--ui-scale, 1));
+      padding: calc(0.5rem * var(--ui-scale, 1));
       border-radius: 50%;
       transition: all 0.3s ease;
-      min-width: 36px;
-      min-height: 36px;
+      min-width: 44px;
+      min-height: 44px;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -616,15 +618,15 @@
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%) scale(0);
-      width: calc(4rem * var(--ui-scale, 1));
-      height: calc(4rem * var(--ui-scale, 1));
+      width: calc(5rem * var(--ui-scale, 1));
+      height: calc(5rem * var(--ui-scale, 1));
       background: rgba(0, 0, 0, 0.6);
       border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
       color: white;
-      font-size: calc(1.5rem * var(--ui-scale, 1));
+      font-size: calc(2rem * var(--ui-scale, 1));
       opacity: 0;
       pointer-events: none;
       z-index: 25;
@@ -641,13 +643,13 @@
        ============================================ */
     .more-menu {
       position: absolute;
-      bottom: calc(3rem * var(--ui-scale, 1));
-      right: calc(0.5rem * var(--ui-scale, 1));
+      bottom: calc(4rem * var(--ui-scale, 1));
+      right: calc(1rem * var(--ui-scale, 1));
       background: var(--card-bg);
       border: 1px solid var(--card-border);
-      border-radius: calc(0.75rem * var(--ui-scale, 1));
-      width: calc(10rem * var(--ui-scale, 1));
-      padding: calc(0.3rem * var(--ui-scale, 1)) 0;
+      border-radius: calc(1rem * var(--ui-scale, 1));
+      width: calc(12rem * var(--ui-scale, 1));
+      padding: calc(0.5rem * var(--ui-scale, 1)) 0;
       z-index: 30;
       display: none;
       box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
@@ -673,10 +675,10 @@
     .more-menu-item {
       display: flex;
       align-items: center;
-      gap: calc(0.5rem * var(--ui-scale, 1));
-      padding: calc(0.5rem * var(--ui-scale, 1)) calc(0.75rem * var(--ui-scale, 1));
+      gap: calc(0.75rem * var(--ui-scale, 1));
+      padding: calc(0.75rem * var(--ui-scale, 1)) calc(1rem * var(--ui-scale, 1));
       color: var(--soft-white);
-      font-size: calc(0.7rem * var(--ui-scale, 1));
+      font-size: calc(0.875rem * var(--ui-scale, 1));
       cursor: pointer;
       transition: all 0.3s ease;
       border: none;
@@ -720,7 +722,7 @@
     
     .comments-drawer {
       background: var(--card-bg);
-      border-radius: calc(1.2rem * var(--ui-scale, 1)) calc(1.2rem * var(--ui-scale, 1)) 0 0;
+      border-radius: calc(1.5rem * var(--ui-scale, 1)) calc(1.5rem * var(--ui-scale, 1)) 0 0;
       width: 100%;
       max-height: 70vh;
       overflow: hidden;
@@ -735,7 +737,7 @@
     }
     
     .drawer-header {
-      padding: calc(0.75rem * var(--ui-scale, 1));
+      padding: calc(1rem * var(--ui-scale, 1));
       border-bottom: 1px solid var(--card-border);
       display: flex;
       justify-content: space-between;
@@ -743,7 +745,7 @@
     }
     
     .drawer-header h3 {
-      font-size: calc(0.9rem * var(--ui-scale, 1));
+      font-size: calc(1.125rem * var(--ui-scale, 1));
       font-weight: 600;
       color: var(--soft-white);
     }
@@ -752,34 +754,34 @@
       background: none;
       border: none;
       color: var(--slate-grey);
-      font-size: calc(1rem * var(--ui-scale, 1));
+      font-size: calc(1.25rem * var(--ui-scale, 1));
       cursor: pointer;
-      padding: calc(0.3rem * var(--ui-scale, 1));
+      padding: calc(0.5rem * var(--ui-scale, 1));
     }
     
     .comments-list {
       flex: 1;
       overflow-y: auto;
-      padding: calc(0.75rem * var(--ui-scale, 1));
+      padding: calc(1rem * var(--ui-scale, 1));
     }
     
     .comment-item {
       display: flex;
-      gap: calc(0.5rem * var(--ui-scale, 1));
-      padding: calc(0.5rem * var(--ui-scale, 1)) 0;
+      gap: calc(0.75rem * var(--ui-scale, 1));
+      padding: calc(0.75rem * var(--ui-scale, 1)) 0;
       border-bottom: 1px solid var(--card-border);
     }
     
     .comment-avatar {
-      width: calc(1.6rem * var(--ui-scale, 1));
-      height: calc(1.6rem * var(--ui-scale, 1));
+      width: calc(2rem * var(--ui-scale, 1));
+      height: calc(2rem * var(--ui-scale, 1));
       border-radius: 50%;
       background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
       display: flex;
       align-items: center;
       justify-content: center;
       color: white;
-      font-size: calc(0.6rem * var(--ui-scale, 1));
+      font-size: calc(0.75rem * var(--ui-scale, 1));
       font-weight: 600;
       flex-shrink: 0;
     }
@@ -799,42 +801,42 @@
     .comment-header {
       display: flex;
       align-items: center;
-      gap: calc(0.3rem * var(--ui-scale, 1));
-      margin-bottom: calc(0.15rem * var(--ui-scale, 1));
+      gap: calc(0.5rem * var(--ui-scale, 1));
+      margin-bottom: calc(0.25rem * var(--ui-scale, 1));
     }
     
     .comment-username {
-      font-size: calc(0.7rem * var(--ui-scale, 1));
+      font-size: calc(0.875rem * var(--ui-scale, 1));
       font-weight: 600;
       color: var(--soft-white);
     }
     
     .comment-time {
-      font-size: calc(0.6rem * var(--ui-scale, 1));
+      font-size: calc(0.75rem * var(--ui-scale, 1));
       color: var(--slate-grey);
     }
     
     .comment-text {
-      font-size: calc(0.7rem * var(--ui-scale, 1));
+      font-size: calc(0.875rem * var(--ui-scale, 1));
       color: var(--soft-white);
       line-height: 1.4;
     }
     
     .comment-actions {
       display: flex;
-      gap: calc(0.75rem * var(--ui-scale, 1));
-      margin-top: calc(0.3rem * var(--ui-scale, 1));
+      gap: calc(1rem * var(--ui-scale, 1));
+      margin-top: calc(0.5rem * var(--ui-scale, 1));
     }
     
     .comment-action {
       background: none;
       border: none;
       color: var(--slate-grey);
-      font-size: calc(0.6rem * var(--ui-scale, 1));
+      font-size: calc(0.75rem * var(--ui-scale, 1));
       cursor: pointer;
       display: flex;
       align-items: center;
-      gap: calc(0.15rem * var(--ui-scale, 1));
+      gap: calc(0.25rem * var(--ui-scale, 1));
     }
     
     .comment-action.liked {
@@ -842,23 +844,23 @@
     }
     
     .comment-composer {
-      padding: calc(0.75rem * var(--ui-scale, 1));
+      padding: calc(1rem * var(--ui-scale, 1));
       border-top: 1px solid var(--card-border);
       display: flex;
-      gap: calc(0.5rem * var(--ui-scale, 1));
+      gap: calc(0.75rem * var(--ui-scale, 1));
       align-items: flex-start;
     }
     
     .composer-avatar {
-      width: calc(1.6rem * var(--ui-scale, 1));
-      height: calc(1.6rem * var(--ui-scale, 1));
+      width: calc(2rem * var(--ui-scale, 1));
+      height: calc(2rem * var(--ui-scale, 1));
       border-radius: 50%;
       background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
       display: flex;
       align-items: center;
       justify-content: center;
       color: white;
-      font-size: calc(0.6rem * var(--ui-scale, 1));
+      font-size: calc(0.75rem * var(--ui-scale, 1));
       font-weight: 600;
       flex-shrink: 0;
     }
@@ -867,13 +869,13 @@
       flex: 1;
       background: rgba(255, 255, 255, 0.1);
       border: 1px solid var(--card-border);
-      border-radius: calc(1rem * var(--ui-scale, 1));
-      padding: calc(0.3rem * var(--ui-scale, 1)) calc(0.75rem * var(--ui-scale, 1));
+      border-radius: calc(1.25rem * var(--ui-scale, 1));
+      padding: calc(0.5rem * var(--ui-scale, 1)) calc(1rem * var(--ui-scale, 1));
       color: var(--soft-white);
-      font-size: calc(0.7rem * var(--ui-scale, 1));
+      font-size: calc(0.875rem * var(--ui-scale, 1));
       resize: none;
-      min-height: calc(2rem * var(--ui-scale, 1));
-      max-height: calc(5rem * var(--ui-scale, 1));
+      min-height: calc(2.5rem * var(--ui-scale, 1));
+      max-height: calc(6rem * var(--ui-scale, 1));
       outline: none;
     }
     
@@ -885,9 +887,9 @@
       background: var(--warm-gold);
       color: var(--deep-black);
       border: none;
-      padding: calc(0.3rem * var(--ui-scale, 1)) calc(1rem * var(--ui-scale, 1));
-      border-radius: calc(1rem * var(--ui-scale, 1));
-      font-size: calc(0.7rem * var(--ui-scale, 1));
+      padding: calc(0.5rem * var(--ui-scale, 1)) calc(1.25rem * var(--ui-scale, 1));
+      border-radius: calc(1.25rem * var(--ui-scale, 1));
+      font-size: calc(0.875rem * var(--ui-scale, 1));
       font-weight: 600;
       cursor: pointer;
       transition: all 0.3s ease;
@@ -895,8 +897,8 @@
     }
     
     .post-comment-btn:hover:not(:disabled) {
-      transform: translateY(-1px);
-      box-shadow: 0 2px 6px rgba(245, 158, 11, 0.4);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4);
     }
     
     .post-comment-btn:disabled {
@@ -907,27 +909,27 @@
     /* Share Modal */
     .share-modal {
       background: var(--card-bg);
-      border-radius: calc(1.2rem * var(--ui-scale, 1)) calc(1.2rem * var(--ui-scale, 1)) 0 0;
+      border-radius: calc(1.5rem * var(--ui-scale, 1)) calc(1.5rem * var(--ui-scale, 1)) 0 0;
       width: 100%;
-      padding: calc(1.2rem * var(--ui-scale, 1));
+      padding: calc(1.5rem * var(--ui-scale, 1));
       animation: slideUp 0.3s ease;
     }
     
     .share-options {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
-      gap: calc(0.75rem * var(--ui-scale, 1));
-      margin-bottom: calc(1.2rem * var(--ui-scale, 1));
+      gap: calc(1rem * var(--ui-scale, 1));
+      margin-bottom: calc(1.5rem * var(--ui-scale, 1));
     }
     
     .share-option {
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: calc(0.3rem * var(--ui-scale, 1));
+      gap: calc(0.5rem * var(--ui-scale, 1));
       background: rgba(255, 255, 255, 0.05);
-      padding: calc(0.75rem * var(--ui-scale, 1));
-      border-radius: calc(0.75rem * var(--ui-scale, 1));
+      padding: calc(1rem * var(--ui-scale, 1));
+      border-radius: calc(1rem * var(--ui-scale, 1));
       cursor: pointer;
       transition: all 0.3s ease;
       border: 1px solid var(--card-border);
@@ -935,17 +937,17 @@
     
     .share-option:hover {
       background: rgba(255, 255, 255, 0.1);
-      transform: translateY(-1px);
+      transform: translateY(-2px);
     }
     
     .share-icon {
-      width: calc(2rem * var(--ui-scale, 1));
-      height: calc(2rem * var(--ui-scale, 1));
+      width: calc(2.5rem * var(--ui-scale, 1));
+      height: calc(2.5rem * var(--ui-scale, 1));
       border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: calc(1rem * var(--ui-scale, 1));
+      font-size: calc(1.25rem * var(--ui-scale, 1));
       color: white;
     }
     
@@ -955,18 +957,18 @@
     .share-icon.copy { background: var(--bantu-blue); }
     
     .share-label {
-      font-size: calc(0.6rem * var(--ui-scale, 1));
+      font-size: calc(0.75rem * var(--ui-scale, 1));
       color: var(--soft-white);
       text-align: center;
     }
     
     .share-link {
       display: flex;
-      gap: calc(0.5rem * var(--ui-scale, 1));
+      gap: calc(0.75rem * var(--ui-scale, 1));
       background: rgba(255, 255, 255, 0.05);
-      padding: calc(0.5rem * var(--ui-scale, 1));
-      border-radius: calc(0.5rem * var(--ui-scale, 1));
-      margin-top: calc(0.3rem * var(--ui-scale, 1));
+      padding: calc(0.75rem * var(--ui-scale, 1));
+      border-radius: calc(0.75rem * var(--ui-scale, 1));
+      margin-top: calc(0.5rem * var(--ui-scale, 1));
     }
     
     .share-link input {
@@ -974,7 +976,7 @@
       background: transparent;
       border: none;
       color: var(--slate-grey);
-      font-size: calc(0.7rem * var(--ui-scale, 1));
+      font-size: calc(0.875rem * var(--ui-scale, 1));
       outline: none;
     }
     
@@ -982,9 +984,9 @@
       background: var(--warm-gold);
       color: var(--deep-black);
       border: none;
-      padding: calc(0.25rem * var(--ui-scale, 1)) calc(0.5rem * var(--ui-scale, 1));
-      border-radius: calc(0.3rem * var(--ui-scale, 1));
-      font-size: calc(0.6rem * var(--ui-scale, 1));
+      padding: calc(0.375rem * var(--ui-scale, 1)) calc(0.75rem * var(--ui-scale, 1));
+      border-radius: calc(0.5rem * var(--ui-scale, 1));
+      font-size: calc(0.75rem * var(--ui-scale, 1));
       font-weight: 600;
       cursor: pointer;
     }
@@ -992,27 +994,27 @@
     /* Toast Notifications */
     .toast-container {
       position: fixed;
-      bottom: calc(5rem * var(--ui-scale, 1));
+      bottom: calc(6rem * var(--ui-scale, 1));
       left: 50%;
       transform: translateX(-50%);
       z-index: 2000;
       display: flex;
       flex-direction: column;
-      gap: calc(0.3rem * var(--ui-scale, 1));
+      gap: calc(0.5rem * var(--ui-scale, 1));
     }
     
     .toast {
       background: var(--card-bg);
       border: 1px solid var(--card-border);
-      border-radius: calc(0.5rem * var(--ui-scale, 1));
-      padding: calc(0.5rem * var(--ui-scale, 1)) calc(1rem * var(--ui-scale, 1));
+      border-radius: calc(0.75rem * var(--ui-scale, 1));
+      padding: calc(0.75rem * var(--ui-scale, 1)) calc(1.25rem * var(--ui-scale, 1));
       color: var(--soft-white);
-      font-size: calc(0.7rem * var(--ui-scale, 1));
+      font-size: calc(0.875rem * var(--ui-scale, 1));
       display: flex;
       align-items: center;
-      gap: calc(0.3rem * var(--ui-scale, 1));
+      gap: calc(0.5rem * var(--ui-scale, 1));
       animation: slideIn 0.3s ease;
-      max-width: calc(15rem * var(--ui-scale, 1));
+      max-width: calc(18rem * var(--ui-scale, 1));
       backdrop-filter: blur(10px);
     }
     
@@ -1031,7 +1033,7 @@
     }
     
     /* ============================================
-       BOTTOM NAVIGATION - From Creator Dashboard (SMALLER)
+       BOTTOM NAVIGATION - From Creator Dashboard
        ============================================ */
     .global-nav {
       position: fixed;
@@ -1042,7 +1044,7 @@
       backdrop-filter: blur(20px);
       display: flex;
       justify-content: space-around;
-      padding: 8px 0;
+      padding: 15px 0;
       z-index: 100;
       border-top: 1px solid var(--card-border);
       padding-bottom: env(safe-area-inset-bottom);
@@ -1054,16 +1056,17 @@
       align-items: center;
       color: var(--slate-grey);
       text-decoration: none;
-      font-size: 6px;
+      font-size: 12px;
       transition: all 0.3s ease;
-      padding: calc(0.25rem * var(--ui-scale, 1));
-      min-width: 22px;
-      min-height: 22px;
+      padding: 5px 10px;
+      min-width: 44px;
+      min-height: 44px;
+      justify-content: center;
     }
     
     .nav-item i {
-      font-size: 9px;
-      margin-bottom: 2px;
+      font-size: 18px;
+      margin-bottom: 5px;
     }
     
     .nav-item:hover {
@@ -1075,113 +1078,105 @@
     }
     
     /* ============================================
-       RESPONSIVE - Mobile Optimizations
+       RESPONSIVE
        ============================================ */
     @media (max-width: 768px) {
-      :root {
-        --ui-scale: 0.9;
-      }
-      
       .header {
-        padding: 6px 8px;
-        min-height: 28px;
-      }
-      
-      .logo-icon {
-        width: 18px;
-        height: 18px;
+        padding: 10px 15px;
+        min-height: 55px;
       }
       
       .logo-text {
-        font-size: 8px;
+        font-size: 16px;
       }
       
       .icon-btn, .profile-btn {
-        width: 18px;
-        height: 18px;
-        font-size: 9px;
+        width: 36px;
+        height: 36px;
+        font-size: 16px;
+      }
+      
+      .shorts-player-container {
+        padding-top: 55px;
+        padding-bottom: 55px;
       }
       
       .shorts-actions {
-        right: calc(0.4rem * var(--ui-scale, 1));
-        bottom: calc(5rem * var(--ui-scale, 1));
+        right: calc(0.75rem * var(--ui-scale, 1));
+        bottom: calc(7rem * var(--ui-scale, 1));
       }
       
       .shorts-info {
-        right: calc(4rem * var(--ui-scale, 1));
-        bottom: calc(0.5rem * var(--ui-scale, 1));
+        right: calc(5rem * var(--ui-scale, 1));
+        bottom: calc(0.75rem * var(--ui-scale, 1));
       }
       
       .video-controls {
-        height: calc(2.5rem * var(--ui-scale, 1));
-        padding: 0 calc(0.5rem * var(--ui-scale, 1));
+        height: calc(3.5rem * var(--ui-scale, 1));
+        padding: 0 calc(0.75rem * var(--ui-scale, 1));
       }
       
       .global-nav {
-        padding: 6px 0;
+        padding: 12px 0;
       }
       
       .nav-item {
-        font-size: 5px;
+        font-size: 11px;
       }
       
       .nav-item i {
-        font-size: 8px;
+        font-size: 16px;
       }
     }
     
     @media (max-width: 480px) {
-      :root {
-        --ui-scale: 0.85;
-      }
-      
-      .action-btn {
-        width: calc(1.8rem * var(--ui-scale, 1));
-        height: calc(1.8rem * var(--ui-scale, 1));
-        font-size: calc(0.9rem * var(--ui-scale, 1));
-      }
-      
-      .action-count {
-        font-size: calc(0.5rem * var(--ui-scale, 1));
-      }
-      
       .header {
-        padding: 4px 6px;
-        min-height: 24px;
-      }
-      
-      .logo-icon {
-        width: 16px;
-        height: 16px;
+        padding: 8px 12px;
+        min-height: 50px;
       }
       
       .logo-text {
-        font-size: 7px;
+        font-size: 14px;
+      }
+      
+      .logo-icon {
+        width: 35px;
+        height: 35px;
       }
       
       .icon-btn, .profile-btn {
-        width: 16px;
-        height: 16px;
-        font-size: 8px;
+        width: 32px;
+        height: 32px;
+        font-size: 14px;
+      }
+      
+      .action-btn {
+        width: calc(2.25rem * var(--ui-scale, 1));
+        height: calc(2.25rem * var(--ui-scale, 1));
+        font-size: calc(1.125rem * var(--ui-scale, 1));
+      }
+      
+      .action-count {
+        font-size: calc(0.625rem * var(--ui-scale, 1));
       }
       
       .global-nav {
-        padding: 4px 0;
+        padding: 10px 0;
       }
       
       .nav-item {
-        font-size: 4px;
+        font-size: 10px;
       }
       
       .nav-item i {
-        font-size: 7px;
+        font-size: 15px;
       }
     }
     
     @media (hover: none) and (pointer: coarse) {
-      .action-btn, .control-btn, .connect-btn, .post-comment-btn, .share-option, .more-menu-item {
-        min-width: 36px;
-        min-height: 36px;
+      .action-btn, .control-btn, .connect-btn, .post-comment-btn, .share-option, .more-menu-item, .nav-item {
+        min-width: 44px;
+        min-height: 44px;
       }
     }
     
@@ -1192,9 +1187,9 @@
       }
     }
     
-    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar { width: 6px; }
     ::-webkit-scrollbar-track { background: var(--deep-navy); }
-    ::-webkit-scrollbar-thumb { background: var(--bantu-blue); border-radius: 2px; }
+    ::-webkit-scrollbar-thumb { background: var(--bantu-blue); border-radius: 3px; }
     ::-webkit-scrollbar-thumb:hover { background: var(--warm-gold); }
   </style>
 </head>
@@ -1205,13 +1200,13 @@
     <div>Loading Shorts...</div>
   </div>
   
-  <!-- Header - From Creator Dashboard (SMALLER) -->
+  <!-- ✅ HEADER - From Creator Dashboard -->
   <header class="header">
     <div class="logo" onclick="window.location.href='index.html'">
       <div class="logo-icon">
         <img src="assets/icon/bantu_stream_connect_icon.png" alt="Bantu Stream Connect Logo">
       </div>
-      <div class="logo-text">BANTU</div>
+      <div class="logo-text">BANTU STREAM CONNECT</div>
     </div>
     <div class="header-actions">
       <button id="search-btn" class="icon-btn" title="Search">
@@ -1244,26 +1239,26 @@
     <div class="play-pause-overlay" id="play-pause-overlay">
       <i class="fas fa-play" id="play-pause-icon"></i>
     </div>
-  </div>
-  
-  <!-- More Menu (Three Dots) - NEW & CLICKABLE -->
-  <div class="more-menu" id="more-menu">
-    <button class="more-menu-item" id="more-report">
-      <i class="fas fa-flag"></i>
-      <span>Report</span>
-    </button>
-    <button class="more-menu-item" id="more-mute">
-      <i class="fas fa-volume-mute"></i>
-      <span>Mute Creator</span>
-    </button>
-    <button class="more-menu-item" id="more-not-interested">
-      <i class="fas fa-thumbs-down"></i>
-      <span>Not Interested</span>
-    </button>
-    <button class="more-menu-item danger" id="more-block">
-      <i class="fas fa-ban"></i>
-      <span>Block Creator</span>
-    </button>
+    
+    <!-- ✅ MORE MENU (Three Dots) - Now Clickable -->
+    <div class="more-menu" id="more-menu">
+      <button class="more-menu-item" id="more-report">
+        <i class="fas fa-flag"></i>
+        <span>Report</span>
+      </button>
+      <button class="more-menu-item" id="more-mute">
+        <i class="fas fa-volume-mute"></i>
+        <span>Mute Creator</span>
+      </button>
+      <button class="more-menu-item" id="more-not-interested">
+        <i class="fas fa-thumbs-down"></i>
+        <span>Not Interested</span>
+      </button>
+      <button class="more-menu-item danger" id="more-block">
+        <i class="fas fa-ban"></i>
+        <span>Block Creator</span>
+      </button>
+    </div>
   </div>
   
   <!-- Comments Drawer Modal -->
@@ -1339,19 +1334,19 @@
   <!-- Toast Container -->
   <div class="toast-container" id="toast-container"></div>
   
-  <!-- Bottom Navigation - From Creator Dashboard (SMALLER) -->
+  <!-- ✅ BOTTOM NAVIGATION - From Creator Dashboard -->
   <nav class="global-nav">
     <a href="index.html" class="nav-item">
       <i class="fas fa-home"></i>
       Home
     </a>
-    <a href="explore-screen.html" class="nav-item">
-      <i class="fas fa-compass"></i>
-      Explore
+    <a href="trending_screen.html" class="nav-item">
+      <i class="fas fa-fire"></i>
+      Trending
     </a>
-    <a href="creator-upload.html" class="nav-item">
-      <i class="fas fa-plus-circle"></i>
-      Create
+    <a href="content-library.html" class="nav-item">
+      <i class="fas fa-th-large"></i>
+      Library
     </a>
     <a href="creator-dashboard.html" class="nav-item active">
       <i class="fas fa-user"></i>
@@ -1359,29 +1354,15 @@
     </a>
   </nav>
   
-  <!-- ============================================
-       JAVASCRIPT - FIXED FOR LOADING HANG
-       ============================================ -->
+  <!-- JavaScript -->
   <script>
     // ============================================
-    // SUPABASE CONFIGURATION - SINGLE INSTANCE
+    // SUPABASE CONFIGURATION
     // ============================================
     const SUPABASE_URL = 'https://ydnxqnbjoshvxteevemc.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U';
     
-    // ✅ CRITICAL FIX: Use SINGLE Supabase client instance
-    // Check if already initialized globally to avoid LockManager errors
-    if (!window.supabaseAuth) {
-      window.supabaseAuth = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-        auth: {
-          autoRefreshToken: true,
-          persistSession: true,
-          detectSessionInUrl: false,
-          storage: window.localStorage
-        }
-      });
-      console.log('✅ Supabase client initialized (single instance)');
-    }
+    const supabaseAuth = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     
     // ============================================
     // GLOBAL STATE
@@ -1396,7 +1377,6 @@
     let userConnections = new Set();
     let moreMenuOpen = false;
     let notifications = [];
-    let loadingTimeout = null;
     
     // ============================================
     // UTILITY FUNCTIONS
@@ -1477,56 +1457,21 @@
     }
     
     // ============================================
-    // SHORTS PLAYER INITIALIZATION - FIXED
+    // SHORTS PLAYER INITIALIZATION
     // ============================================
     async function initShortsPlayer() {
       try {
         console.log('🎬 Initializing shorts player...');
         
-        // ✅ CRITICAL FIX: Add loading timeout to prevent infinite hang
-        loadingTimeout = setTimeout(() => {
-          console.warn('⚠️ Loading timeout - showing fallback');
-          document.getElementById('shorts-loading').innerHTML = `
-            <div style="text-align:center;padding:20px">
-              <div style="color:var(--error-color);font-size:48px;margin-bottom:20px">
-                <i class="fas fa-exclamation-triangle"></i>
-              </div>
-              <h3 style="color:var(--soft-white);margin-bottom:10px">Loading Timeout</h3>
-              <p style="color:var(--slate-grey);margin-bottom:20px">Please check your connection and try again.</p>
-              <button onclick="location.reload()" style="background:var(--warm-gold);color:var(--deep-black);border:none;padding:10px 20px;border-radius:8px;cursor:pointer">
-                Retry
-              </button>
-            </div>
-          `;
-        }, 15000); // 15 second timeout
+        // Check auth
+        const { data: { session } } = await supabaseAuth.auth.getSession();
+        currentUser = session?.user || null;
         
-        // Check auth with error handling
-        try {
-          const { data: { session }, error: authError } = await window.supabaseAuth.auth.getSession();
-          
-          if (authError) {
-            console.warn('Auth session error:', authError);
-            // Continue as guest
-            currentUser = null;
-          } else {
-            currentUser = session?.user || null;
-            console.log('✅ Auth state:', currentUser ? 'logged in' : 'guest');
-          }
-        } catch (authErr) {
-          console.warn('Auth check failed, continuing as guest:', authErr);
-          currentUser = null;
-        }
+        // Fetch user connections
+        await fetchUserConnections();
         
-        // Fetch user connections if authenticated
-        if (currentUser) {
-          await fetchUserConnections();
-        }
-        
-        // Load shorts data with fallback
+        // Load shorts data
         await loadShorts();
-        
-        // Clear loading timeout
-        clearTimeout(loadingTimeout);
         
         // Initialize Swiper
         initSwiper();
@@ -1534,41 +1479,18 @@
         // Setup event listeners
         setupEventListeners();
         
-        // Hide loading screen and show content
-        const loadingScreen = document.getElementById('shorts-loading');
-        if (loadingScreen) {
-          loadingScreen.style.display = 'none';
-        }
+        // Hide loading screen
+        document.getElementById('shorts-loading').style.display = 'none';
         
         // Auto-play first short
         playCurrentShort();
         
-        console.log('✅ Shorts player initialized successfully');
-        
+        console.log('✅ Shorts player initialized');
       } catch (error) {
-        console.error('❌ Error initializing shorts player:', error);
-        
-        // Clear timeout
-        clearTimeout(loadingTimeout);
-        
-        // Show error state
-        const loadingScreen = document.getElementById('shorts-loading');
-        if (loadingScreen) {
-          loadingScreen.innerHTML = `
-            <div style="text-align:center;padding:20px">
-              <div style="color:var(--error-color);font-size:48px;margin-bottom:20px">
-                <i class="fas fa-exclamation-triangle"></i>
-              </div>
-              <h3 style="color:var(--soft-white);margin-bottom:10px">Failed to Load</h3>
-              <p style="color:var(--slate-grey);margin-bottom:20px">${error.message || 'Unknown error'}</p>
-              <button onclick="location.reload()" style="background:var(--warm-gold);color:var(--deep-black);border:none;padding:10px 20px;border-radius:8px;cursor:pointer">
-                Retry
-              </button>
-            </div>
-          `;
-        }
-        
-        showToast('Failed to load shorts. Please try again.', 'error');
+        console.error('Error initializing shorts player:', error);
+        showToast('Failed to load shorts', 'error');
+        document.getElementById('shorts-loading').innerHTML = 
+          '<div>Failed to load. <button onclick="location.reload()" style="background:var(--warm-gold);color:var(--deep-black);border:none;padding:10px 20px;border-radius:8px;cursor:pointer;margin-top:10px;">Retry</button></div>';
       }
     }
     
@@ -1576,15 +1498,12 @@
       if (!currentUser) return;
       
       try {
-        const { data: connections, error } = await window.supabaseAuth
+        const { data: connections, error } = await supabaseAuth
           .from('connectors')
           .select('connected_id')
           .eq('connector_id', currentUser.id);
         
-        if (error) {
-          console.warn('Error fetching connections:', error);
-          return;
-        }
+        if (error) throw error;
         
         userConnections = new Set();
         if (connections) {
@@ -1598,96 +1517,36 @@
     }
     
     async function loadShorts() {
-      try {
-        console.log('🔄 Loading shorts data...');
-        
-        // ✅ CRITICAL FIX: Use correct table name 'Content' (capital C)
-        const { data, error } = await window.supabaseAuth
-          .from('Content')
-          .select(`
-            *,
-            user_profiles!user_id (
-              id,
-              username,
-              full_name,
-              avatar_url
-            )
-          `)
-          .eq('status', 'published')
-          .or('media_type.eq.short,duration.lte.60')
-          .order('created_at', { ascending: false })
-          .limit(20);
-        
-        if (error) {
-          console.error('Error fetching shorts:', error);
-          // Fallback to empty array instead of throwing
-          shortsData = [];
-          showToast('No shorts available', 'info');
-          return;
-        }
-        
-        shortsData = data || [];
-        console.log(`✅ Loaded ${shortsData.length} shorts`);
-        
-        if (shortsData.length === 0) {
-          showToast('No shorts available', 'info');
-          return;
-        }
-        
-        // Load real like counts for all shorts
-        await loadRealLikeCounts();
-        
-        renderShorts();
-        
-      } catch (error) {
-        console.error('Error in loadShorts:', error);
-        shortsData = [];
-        showToast('Failed to load shorts', 'error');
-      }
-    }
-    
-    // ✅ FIX: Load real like counts from database
-    async function loadRealLikeCounts() {
-      if (shortsData.length === 0) return;
+      const { data, error } = await supabaseAuth
+        .from('Content')
+        .select(`
+          *,
+          user_profiles!user_id (
+            id,
+            username,
+            full_name,
+            avatar_url
+          )
+        `)
+        .eq('status', 'published')
+        .or('media_type.eq.short,duration.lte.60')
+        .order('created_at', { ascending: false })
+        .limit(20);
       
-      const contentIds = shortsData.map(s => s.id);
+      if (error) throw error;
       
-      try {
-        // Fetch like counts for each short
-        const likeCounts = await Promise.all(
-          contentIds.map(async (id) => {
-            try {
-              const { count, error } = await window.supabaseAuth
-                .from('content_likes')
-                .select('*', { count: 'exact', head: true })
-                .eq('content_id', id);
-              
-              return { id, count: error ? 0 : count };
-            } catch (e) {
-              console.warn('Error fetching likes for', id, e);
-              return { id, count: 0 };
-            }
-          })
-        );
-        
-        // Update shorts data with real counts
-        likeCounts.forEach(({ id, count }) => {
-          const short = shortsData.find(s => s.id === id);
-          if (short) {
-            short.real_likes_count = count;
-          }
-        });
-        
-        console.log('✅ Loaded like counts');
-      } catch (error) {
-        console.warn('Error loading like counts:', error);
-        // Continue with default counts
+      shortsData = data || [];
+      
+      if (shortsData.length === 0) {
+        showToast('No shorts available', 'info');
+        return;
       }
+      
+      renderShorts();
     }
     
     function renderShorts() {
       const wrapper = document.getElementById('shorts-wrapper');
-      if (!wrapper) return;
       
       wrapper.innerHTML = shortsData.map((short, index) => {
         const creator = short.user_profiles;
@@ -1696,11 +1555,6 @@
         const creatorName = creator?.full_name || creator?.username || 'Creator';
         const initials = getInitials(creatorName);
         const isConnected = userConnections.has(creator?.id);
-        
-        // ✅ FIX: Use real like count if available
-        const likesCount = short.real_likes_count !== undefined 
-          ? short.real_likes_count 
-          : (short.likes_count || 0);
         
         return `
           <div class="swiper-slide" data-short-id="${short.id}">
@@ -1720,7 +1574,7 @@
               <div class="shorts-actions">
                 <button class="action-btn like-btn" data-action="like" data-short-id="${short.id}" title="Like">
                   <i class="far fa-heart"></i>
-                  <span class="action-count">${formatNumber(likesCount)}</span>
+                  <span class="action-count">${formatNumber(short.likes_count || 0)}</span>
                 </button>
                 
                 <button class="action-btn comment-btn" data-action="comment" data-short-id="${short.id}" title="Comments">
@@ -1732,7 +1586,6 @@
                   <i class="fas fa-share"></i>
                 </button>
                 
-                <!-- ✅ FIX: Save button with proper data attributes -->
                 <button class="action-btn save-btn" data-action="save" data-short-id="${short.id}" title="Save">
                   <i class="far fa-bookmark"></i>
                 </button>
@@ -1803,43 +1656,38 @@
         return;
       }
       
-      try {
-        window.shortsSwiper = new Swiper('.shorts-swiper', {
-          direction: 'vertical',
-          loop: false,
-          speed: 300,
-          mousewheel: true,
-          keyboard: {
-            enabled: true,
-            onlyInViewport: false
+      window.shortsSwiper = new Swiper('.shorts-swiper', {
+        direction: 'vertical',
+        loop: false,
+        speed: 300,
+        mousewheel: true,
+        keyboard: {
+          enabled: true,
+          onlyInViewport: false
+        },
+        // ✅ AUTO-PLAY TO NEXT SHORT
+        autoplay: {
+          delay: 2500,
+          disableOnInteraction: false,
+          pauseOnMouseEnter: true
+        },
+        on: {
+          slideChange: () => {
+            pauseAllVideos();
+            playCurrentShort();
+            updateActiveShort();
+            closeMoreMenu(); // Close more menu when sliding
           },
-          // ✅ AUTO-PLAY TO NEXT SHORT
-          autoplay: {
-            delay: 2500,
-            disableOnInteraction: false,
-            pauseOnMouseEnter: true
-          },
-          on: {
-            slideChange: () => {
-              pauseAllVideos();
-              playCurrentShort();
-              updateActiveShort();
-              closeMoreMenu();
-            },
-            reachEnd: () => {
-              loadMoreShorts();
-            }
+          reachEnd: () => {
+            loadMoreShorts();
           }
-        });
-        console.log('✅ Swiper initialized');
-      } catch (error) {
-        console.error('Error initializing Swiper:', error);
-      }
+        }
+      });
     }
     
     function pauseAllVideos() {
       document.querySelectorAll('.short-video').forEach(video => {
-        try { video.pause(); } catch(e) {}
+        video.pause();
       });
     }
     
@@ -1855,18 +1703,16 @@
       
       updateShareLink();
       
-      if (document.getElementById('comments-modal')?.classList.contains('active')) {
-        loadComments(currentShort?.id);
+      if (document.getElementById('comments-modal').classList.contains('active')) {
+        loadComments(currentShort.id);
       }
       
       video.currentTime = 0;
-      
-      // Handle autoplay with user interaction requirement
       const playPromise = video.play();
       
       if (playPromise !== undefined) {
         playPromise.catch(error => {
-          console.log('Autoplay prevented (requires user interaction):', error);
+          console.log('Autoplay prevented:', error);
           showPlayPauseOverlay('play');
         });
       }
@@ -1875,8 +1721,6 @@
     }
     
     function setupVideoListeners(video) {
-      if (!video) return;
-      
       video.addEventListener('timeupdate', () => {
         const progress = (video.currentTime / video.duration) * 100;
         const progressBar = document.getElementById(`progress-bar-${video.dataset.shortId}`);
@@ -1895,13 +1739,13 @@
         }
       });
       
+      // ✅ AUTO-PLAY NEXT SHORT ON END
       video.addEventListener('ended', () => {
-        // ✅ AUTO-PLAY NEXT SHORT ON END
         if (window.shortsSwiper) {
           window.shortsSwiper.slideNext();
         } else {
           video.currentTime = 0;
-          video.play().catch(() => {});
+          video.play();
         }
       });
       
@@ -1923,22 +1767,14 @@
     
     function isLiked(shortId) {
       if (!currentUser) return false;
-      try {
-        const liked = JSON.parse(localStorage.getItem(`liked_shorts_${currentUser.id}`) || '[]');
-        return liked.includes(shortId.toString());
-      } catch (e) {
-        return false;
-      }
+      const liked = JSON.parse(localStorage.getItem(`liked_shorts_${currentUser.id}`) || '[]');
+      return liked.includes(shortId.toString());
     }
     
     function isSaved(shortId) {
       if (!currentUser) return false;
-      try {
-        const saved = JSON.parse(localStorage.getItem(`saved_shorts_${currentUser.id}`) || '[]');
-        return saved.includes(shortId.toString());
-      } catch (e) {
-        return false;
-      }
+      const saved = JSON.parse(localStorage.getItem(`saved_shorts_${currentUser.id}`) || '[]');
+      return saved.includes(shortId.toString());
     }
     
     function updateLikeButton(shortId, liked) {
@@ -1974,7 +1810,6 @@
     // ============================================
     function toggleMoreMenu(shortId, button) {
       const menu = document.getElementById('more-menu');
-      if (!menu) return;
       
       if (moreMenuOpen) {
         closeMoreMenu();
@@ -2006,7 +1841,7 @@
     // ============================================
     function setupEventListeners() {
       // Action buttons
-      document.getElementById('shorts-player')?.addEventListener('click', (e) => {
+      document.getElementById('shorts-player').addEventListener('click', (e) => {
         const btn = e.target.closest('.action-btn');
         if (!btn) return;
         
@@ -2030,7 +1865,7 @@
       });
       
       // ✅ UPDATED: Connect Button (instead of Follow)
-      document.getElementById('shorts-player')?.addEventListener('click', (e) => {
+      document.getElementById('shorts-player').addEventListener('click', (e) => {
         const connectBtn = e.target.closest('.connect-btn');
         if (connectBtn) {
           handleConnect(connectBtn.dataset.creatorId, connectBtn);
@@ -2038,7 +1873,7 @@
       });
       
       // ✅ UPDATED: More Button (Three Dots) - Now Clickable
-      document.getElementById('shorts-player')?.addEventListener('click', (e) => {
+      document.getElementById('shorts-player').addEventListener('click', (e) => {
         const moreBtn = e.target.closest('.more-btn');
         if (moreBtn) {
           e.stopPropagation();
@@ -2047,7 +1882,7 @@
       });
       
       // Caption toggle
-      document.getElementById('shorts-player')?.addEventListener('click', (e) => {
+      document.getElementById('shorts-player').addEventListener('click', (e) => {
         const toggle = e.target.closest('.caption-toggle');
         if (toggle) {
           toggleCaption(toggle.dataset.captionId);
@@ -2055,7 +1890,7 @@
       });
       
       // Creator info click
-      document.getElementById('shorts-player')?.addEventListener('click', (e) => {
+      document.getElementById('shorts-player').addEventListener('click', (e) => {
         const creatorInfo = e.target.closest('.creator-info');
         if (creatorInfo) {
           const creatorId = creatorInfo.dataset.creatorId;
@@ -2066,7 +1901,7 @@
       });
       
       // Video controls
-      document.getElementById('shorts-player')?.addEventListener('click', (e) => {
+      document.getElementById('shorts-player').addEventListener('click', (e) => {
         const muteBtn = e.target.closest('.mute-btn');
         if (muteBtn) {
           toggleMute();
@@ -2118,8 +1953,8 @@
       });
       
       // Double-tap to like
-      document.getElementById('shorts-player')?.addEventListener('touchend', handleDoubleTap);
-      document.getElementById('shorts-player')?.addEventListener('click', handleDoubleTap);
+      document.getElementById('shorts-player').addEventListener('touchend', handleDoubleTap);
+      document.getElementById('shorts-player').addEventListener('click', handleDoubleTap);
       
       // Modal close buttons
       document.getElementById('close-comments')?.addEventListener('click', closeComments);
@@ -2153,29 +1988,6 @@
       document.getElementById('share-instagram')?.addEventListener('click', () => shareToInstagram());
       document.getElementById('share-copy')?.addEventListener('click', copyShareLink);
       document.getElementById('copy-link-btn')?.addEventListener('click', copyShareLink);
-      
-      // ✅ FIX #4: Header buttons - Search and Notifications
-      document.getElementById('search-btn')?.addEventListener('click', () => {
-        showToast('Search coming soon!', 'info');
-      });
-      
-      document.getElementById('notifications-btn')?.addEventListener('click', () => {
-        if (!currentUser) {
-          showToast('Please sign in to view notifications', 'info');
-          return;
-        }
-        loadNotifications();
-        showToast(`${notifications.filter(n => !n.is_read).length} unread notifications`, 'info');
-      });
-      
-      // ✅ FIX #5: Profile button
-      document.getElementById('profile-btn')?.addEventListener('click', () => {
-        if (currentUser) {
-          window.location.href = 'profile.html';
-        } else {
-          window.location.href = `login.html?redirect=${encodeURIComponent(window.location.pathname)}`;
-        }
-      });
       
       // Keyboard shortcuts
       document.addEventListener('keydown', (e) => {
@@ -2233,8 +2045,7 @@
       
       try {
         if (liked) {
-          // Unlike
-          const { error } = await window.supabaseAuth
+          const { error } = await supabaseAuth
             .from('content_likes')
             .delete()
             .eq('content_id', shortId)
@@ -2244,27 +2055,17 @@
           
           btn.classList.remove('liked');
           icon.className = 'far fa-heart';
+          let count = parseInt(countEl.textContent.replace('K', '000').replace('M', '000000')) || 0;
+          countEl.textContent = formatNumber(Math.max(0, count - 1));
           
-          // ✅ FIX: Fetch real count after unlike
-          const { count } = await window.supabaseAuth
-            .from('content_likes')
-            .select('*', { count: 'exact', head: true })
-            .eq('content_id', shortId);
-          
-          countEl.textContent = formatNumber(count || 0);
-          
-          // Update localStorage
-          try {
-            const likedShorts = JSON.parse(localStorage.getItem(`liked_shorts_${currentUser.id}`) || '[]');
-            const index = likedShorts.indexOf(shortId.toString());
-            if (index > -1) likedShorts.splice(index, 1);
-            localStorage.setItem(`liked_shorts_${currentUser.id}`, JSON.stringify(likedShorts));
-          } catch (e) {}
+          const likedShorts = JSON.parse(localStorage.getItem(`liked_shorts_${currentUser.id}`) || '[]');
+          const index = likedShorts.indexOf(shortId.toString());
+          if (index > -1) likedShorts.splice(index, 1);
+          localStorage.setItem(`liked_shorts_${currentUser.id}`, JSON.stringify(likedShorts));
           
           showToast('Like removed', 'info');
         } else {
-          // Like
-          const { error } = await window.supabaseAuth
+          const { error } = await supabaseAuth
             .from('content_likes')
             .insert({
               content_id: shortId,
@@ -2276,23 +2077,14 @@
           
           btn.classList.add('liked');
           icon.className = 'fas fa-heart';
+          let count = parseInt(countEl.textContent.replace('K', '000').replace('M', '000000')) || 0;
+          countEl.textContent = formatNumber(count + 1);
           
-          // ✅ FIX: Fetch real count after like
-          const { count } = await window.supabaseAuth
-            .from('content_likes')
-            .select('*', { count: 'exact', head: true })
-            .eq('content_id', shortId);
-          
-          countEl.textContent = formatNumber(count || 0);
-          
-          // Update localStorage
-          try {
-            const likedShorts = JSON.parse(localStorage.getItem(`liked_shorts_${currentUser.id}`) || '[]');
-            if (!likedShorts.includes(shortId.toString())) {
-              likedShorts.push(shortId.toString());
-              localStorage.setItem(`liked_shorts_${currentUser.id}`, JSON.stringify(likedShorts));
-            }
-          } catch (e) {}
+          const likedShorts = JSON.parse(localStorage.getItem(`liked_shorts_${currentUser.id}`) || '[]');
+          if (!likedShorts.includes(shortId.toString())) {
+            likedShorts.push(shortId.toString());
+            localStorage.setItem(`liked_shorts_${currentUser.id}`, JSON.stringify(likedShorts));
+          }
           
           showToast('Liked!', 'success');
           showDoubleTapIndicator();
@@ -2303,8 +2095,7 @@
       }
     }
     
-    // ✅ FIX #3: Handle Save with proper table structure
-    async function handleSave(shortId, btn) {
+    function handleSave(shortId, btn) {
       if (!currentUser) {
         showToast('Please sign in to save shorts', 'info');
         return;
@@ -2312,61 +2103,25 @@
       
       const saved = isSaved(shortId);
       
-      try {
-        if (saved) {
-          // Unsave
-          const { error } = await window.supabaseAuth
-            .from('saved_shorts')
-            .delete()
-            .eq('content_id', shortId)
-            .eq('user_id', currentUser.id);
-          
-          if (error) throw error;
-          
-          btn.classList.remove('saved');
-          btn.querySelector('i').className = 'far fa-bookmark';
-          
-          // Update localStorage
-          try {
-            const savedShorts = JSON.parse(localStorage.getItem(`saved_shorts_${currentUser.id}`) || '[]');
-            const index = savedShorts.indexOf(shortId.toString());
-            if (index > -1) savedShorts.splice(index, 1);
-            localStorage.setItem(`saved_shorts_${currentUser.id}`, JSON.stringify(savedShorts));
-          } catch (e) {}
-          
-          showToast('Removed from saved', 'info');
-        } else {
-          // Save
-          const { error } = await window.supabaseAuth
-            .from('saved_shorts')
-            .insert({
-              content_id: shortId,
-              user_id: currentUser.id,
-              saved_at: new Date().toISOString()
-            });
-          
-          if (error) throw error;
-          
-          btn.classList.add('saved');
-          btn.querySelector('i').className = 'fas fa-bookmark';
-          
-          // Update localStorage
-          try {
-            const savedShorts = JSON.parse(localStorage.getItem(`saved_shorts_${currentUser.id}`) || '[]');
-            if (!savedShorts.includes(shortId.toString())) {
-              savedShorts.push(shortId.toString());
-              localStorage.setItem(`saved_shorts_${currentUser.id}`, JSON.stringify(savedShorts));
-            }
-          } catch (e) {}
-          
-          showToast('Saved!', 'success');
+      if (saved) {
+        const savedShorts = JSON.parse(localStorage.getItem(`saved_shorts_${currentUser.id}`) || '[]');
+        const index = savedShorts.indexOf(shortId.toString());
+        if (index > -1) savedShorts.splice(index, 1);
+        localStorage.setItem(`saved_shorts_${currentUser.id}`, JSON.stringify(savedShorts));
+        updateSaveButton(shortId, false);
+        showToast('Removed from saved', 'info');
+      } else {
+        const savedShorts = JSON.parse(localStorage.getItem(`saved_shorts_${currentUser.id}`) || '[]');
+        if (!savedShorts.includes(shortId.toString())) {
+          savedShorts.push(shortId.toString());
+          localStorage.setItem(`saved_shorts_${currentUser.id}`, JSON.stringify(savedShorts));
         }
-      } catch (error) {
-        console.error('Error saving short:', error);
-        showToast('Failed to save short', 'error');
+        updateSaveButton(shortId, true);
+        showToast('Saved!', 'success');
       }
     }
     
+    // ✅ UPDATED: Handle Connect (instead of Follow)
     async function handleConnect(creatorId, btn) {
       if (!currentUser) {
         showToast('Please sign in to connect with creators', 'info');
@@ -2377,7 +2132,7 @@
       
       try {
         if (connected) {
-          const { error } = await window.supabaseAuth
+          const { error } = await supabaseAuth
             .from('connectors')
             .delete()
             .eq('connector_id', currentUser.id)
@@ -2391,7 +2146,7 @@
           
           showToast('Disconnected', 'info');
         } else {
-          const { error } = await window.supabaseAuth
+          const { error } = await supabaseAuth
             .from('connectors')
             .insert({
               connector_id: currentUser.id,
@@ -2411,6 +2166,52 @@
       } catch (error) {
         console.error('Error connecting with creator:', error);
         showToast('Failed to update connection', 'error');
+      }
+    }
+    
+    // ✅ NEW: More Menu Action Handlers
+    function handleReport() {
+      if (!currentUser) {
+        showToast('Please sign in to report content', 'info');
+        return;
+      }
+      
+      showToast('Report submitted. Thank you!', 'success');
+    }
+    
+    function handleMuteCreator() {
+      if (!currentUser) {
+        showToast('Please sign in to mute creators', 'info');
+        return;
+      }
+      
+      const mutedCreators = JSON.parse(localStorage.getItem('muted_creators') || '[]');
+      if (currentShort?.user_id && !mutedCreators.includes(currentShort.user_id)) {
+        mutedCreators.push(currentShort.user_id);
+        localStorage.setItem('muted_creators', JSON.stringify(mutedCreators));
+        showToast('Creator muted', 'success');
+      }
+    }
+    
+    function handleNotInterested() {
+      showToast('We\'ll show you less content like this', 'info');
+    }
+    
+    function handleBlockCreator() {
+      if (!currentUser) {
+        showToast('Please sign in to block creators', 'info');
+        return;
+      }
+      
+      if (confirm('Are you sure you want to block this creator? You won\'t see their content anymore.')) {
+        const blockedCreators = JSON.parse(localStorage.getItem('blocked_creators') || '[]');
+        if (currentShort?.user_id && !blockedCreators.includes(currentShort.user_id)) {
+          blockedCreators.push(currentShort.user_id);
+          localStorage.setItem('blocked_creators', JSON.stringify(blockedCreators));
+          showToast('Creator blocked', 'success');
+          // Navigate to next short
+          window.shortsSwiper?.slideNext();
+        }
       }
     }
     
@@ -2445,7 +2246,7 @@
       if (!currentVideo) return;
       
       if (currentVideo.paused) {
-        currentVideo.play().catch(() => {});
+        currentVideo.play();
         isPlaying = true;
         showPlayPauseOverlay('play');
       } else {
@@ -2458,8 +2259,6 @@
     function showPlayPauseOverlay(action) {
       const overlay = document.getElementById('play-pause-overlay');
       const icon = document.getElementById('play-pause-icon');
-      
-      if (!overlay || !icon) return;
       
       icon.className = action === 'play' ? 'fas fa-play' : 'fas fa-pause';
       overlay.classList.add('active');
@@ -2501,65 +2300,54 @@
     
     function showDoubleTapIndicator() {
       const indicator = document.getElementById('double-tap-indicator');
-      if (indicator) {
-        indicator.classList.add('active');
-        
-        setTimeout(() => {
-          indicator.classList.remove('active');
-        }, 600);
-      }
+      indicator.classList.add('active');
+      
+      setTimeout(() => {
+        indicator.classList.remove('active');
+      }, 600);
     }
     
     // ============================================
-    // MODALS - FIXED COMMENTS
+    // MODALS
     // ============================================
     async function openComments(shortId) {
       const modal = document.getElementById('comments-modal');
-      if (modal) {
-        modal.classList.add('active');
-        await loadComments(shortId);
-        
-        setTimeout(() => {
-          document.getElementById('comment-input')?.focus();
-        }, 300);
-      }
+      modal.classList.add('active');
+      
+      await loadComments(shortId);
+      
+      setTimeout(() => {
+        document.getElementById('comment-input')?.focus();
+      }, 300);
     }
     
     function closeComments() {
-      const modal = document.getElementById('comments-modal');
-      if (modal) {
-        modal.classList.remove('active');
-      }
+      document.getElementById('comments-modal').classList.remove('active');
     }
     
-    // ✅ FIX #2: Load comments with proper foreign key handling
     async function loadComments(shortId) {
       const list = document.getElementById('comments-list');
-      if (!list) return;
-      
       list.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--slate-grey)">Loading comments...</div>';
       
       try {
-        // ✅ FIX: Use explicit join instead of relying on foreign key cache
-        const { data: comments, error: commentsError } = await window.supabaseAuth
+        const { data, error } = await supabaseAuth
           .from('pulse_comments')
           .select(`
-            id,
-            pulse_id,
-            user_id,
-            comment_text,
-            created_at,
-            likes_count,
-            is_removed
+            *,
+            user_profiles!user_id (
+              username,
+              full_name,
+              avatar_url
+            )
           `)
           .eq('pulse_id', shortId)
           .eq('is_removed', false)
           .order('created_at', { ascending: false })
           .limit(20);
         
-        if (commentsError) throw commentsError;
+        if (error) throw error;
         
-        if (!comments || comments.length === 0) {
+        if (!data || data.length === 0) {
           list.innerHTML = `
             <div style="text-align:center;padding:2rem;color:var(--slate-grey)">
               <i class="fas fa-comment-slash" style="font-size:2rem;margin-bottom:1rem;opacity:0.5"></i>
@@ -2570,23 +2358,8 @@
           return;
         }
         
-        // ✅ FIX: Fetch user profiles separately to avoid foreign key issues
-        const userIds = [...new Set(comments.map(c => c.user_id))];
-        const { data: users, error: usersError } = await window.supabaseAuth
-          .from('user_profiles')
-          .select('id, username, full_name, avatar_url')
-          .in('id', userIds);
-        
-        if (usersError) throw usersError;
-        
-        const userMap = new Map();
-        if (users) {
-          users.forEach(user => userMap.set(user.id, user));
-        }
-        
-        // Render comments with user data
-        list.innerHTML = comments.map(comment => {
-          const user = userMap.get(comment.user_id);
+        list.innerHTML = data.map(comment => {
+          const user = comment.user_profiles;
           const username = user?.username || 'user';
           const name = user?.full_name || username;
           const initials = getInitials(name);
@@ -2625,7 +2398,6 @@
       }
     }
     
-    // ✅ FIX #2: Post comment with proper UUID handling
     async function postComment() {
       const input = document.getElementById('comment-input');
       const text = input.value.trim();
@@ -2637,8 +2409,7 @@
       }
       
       try {
-        // ✅ FIX: Ensure pulse_id is properly typed as UUID if needed
-        const { error } = await window.supabaseAuth
+        const { error } = await supabaseAuth
           .from('pulse_comments')
           .insert({
             pulse_id: currentShort.id,
@@ -2652,45 +2423,36 @@
         input.value = '';
         document.getElementById('post-comment-btn').disabled = true;
         
-        // Reload comments
         await loadComments(currentShort.id);
         
         showToast('Comment posted!', 'success');
         
       } catch (error) {
         console.error('Error posting comment:', error);
-        showToast('Failed to post comment: ' + error.message, 'error');
+        showToast('Failed to post comment', 'error');
       }
     }
     
     function openShare(shortId) {
       const modal = document.getElementById('share-modal');
-      if (modal) {
-        modal.classList.add('active');
-        updateShareLink();
-      }
+      modal.classList.add('active');
+      
+      updateShareLink();
     }
     
     function closeShare() {
-      const modal = document.getElementById('share-modal');
-      if (modal) {
-        modal.classList.remove('active');
-      }
+      document.getElementById('share-modal').classList.remove('active');
     }
     
     function updateShareLink() {
       if (!currentShort) return;
       
       const shareUrl = `${window.location.origin}/shorts-detail.html?id=${currentShort.id}`;
-      const input = document.getElementById('share-link-input');
-      if (input) {
-        input.value = shareUrl;
-      }
+      document.getElementById('share-link-input').value = shareUrl;
     }
     
     async function copyShareLink() {
       const input = document.getElementById('share-link-input');
-      if (!input) return;
       
       try {
         await navigator.clipboard.writeText(input.value);
@@ -2704,14 +2466,14 @@
     
     function shareToWhatsApp() {
       const text = `Check out this short on Bantu Stream Connect!`;
-      const url = document.getElementById('share-link-input')?.value || '';
+      const url = document.getElementById('share-link-input').value;
       window.open(`https://wa.me/?text=${encodeURIComponent(text + ' ' + url)}`, '_blank');
       closeShare();
     }
     
     function shareToTwitter() {
       const text = `Check out this short on Bantu Stream Connect!`;
-      const url = document.getElementById('share-link-input')?.value || '';
+      const url = document.getElementById('share-link-input').value;
       window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`, '_blank');
       closeShare();
     }
@@ -2730,7 +2492,7 @@
       try {
         const lastShort = shortsData[shortsData.length - 1];
         
-        const { data, error } = await window.supabaseAuth
+        const { data, error } = await supabaseAuth
           .from('Content')
           .select(`
             *,
@@ -2750,98 +2512,73 @@
         if (error) throw error;
         
         if (data && data.length > 0) {
-          // Load real like counts for new shorts
-          const contentIds = data.map(s => s.id);
-          const likeCounts = await Promise.all(
-            contentIds.map(async (id) => {
-              try {
-                const { count } = await window.supabaseAuth
-                  .from('content_likes')
-                  .select('*', { count: 'exact', head: true })
-                  .eq('content_id', id);
-                return { id, count: count || 0 };
-              } catch (e) {
-                return { id, count: 0 };
-              }
-            })
-          );
-          
-          likeCounts.forEach(({ id, count }) => {
-            const short = data.find(s => s.id === id);
-            if (short) short.real_likes_count = count;
-          });
-          
           shortsData = [...shortsData, ...data];
           
           const wrapper = document.getElementById('shorts-wrapper');
-          if (wrapper) {
-            data.forEach(short => {
-              const creator = short.user_profiles;
-              const videoUrl = fixMediaUrl(short.file_url);
-              const thumbnailUrl = short.thumbnail_url ? fixMediaUrl(short.thumbnail_url) : '';
-              const creatorName = creator?.full_name || creator?.username || 'Creator';
-              const initials = getInitials(creatorName);
-              const isConnected = userConnections.has(creator?.id);
-              
-              const slide = document.createElement('div');
-              slide.className = 'swiper-slide';
-              slide.dataset.shortId = short.id;
-              slide.innerHTML = `
-                <div class="short-video-wrapper">
-                  <video class="short-video" src="${videoUrl}" poster="${thumbnailUrl}" loop playsinline preload="metadata" data-short-id="${short.id}"></video>
-                  <div class="video-overlay"></div>
-                  <div class="shorts-actions">
-                    <button class="action-btn like-btn" data-action="like" data-short-id="${short.id}">
-                      <i class="far fa-heart"></i>
-                      <span class="action-count">${formatNumber(short.real_likes_count || short.likes_count || 0)}</span>
-                    </button>
-                    <button class="action-btn comment-btn" data-action="comment" data-short-id="${short.id}">
-                      <i class="far fa-comment"></i>
-                      <span class="action-count">${formatNumber(short.comments_count || 0)}</span>
-                    </button>
-                    <button class="action-btn share-btn" data-action="share" data-short-id="${short.id}">
-                      <i class="fas fa-share"></i>
-                    </button>
-                    <button class="action-btn save-btn" data-action="save" data-short-id="${short.id}">
-                      <i class="far fa-bookmark"></i>
+          data.forEach(short => {
+            const creator = short.user_profiles;
+            const videoUrl = fixMediaUrl(short.file_url);
+            const thumbnailUrl = short.thumbnail_url ? fixMediaUrl(short.thumbnail_url) : '';
+            const creatorName = creator?.full_name || creator?.username || 'Creator';
+            const initials = getInitials(creatorName);
+            const isConnected = userConnections.has(creator?.id);
+            
+            const slide = document.createElement('div');
+            slide.className = 'swiper-slide';
+            slide.dataset.shortId = short.id;
+            slide.innerHTML = `
+              <div class="short-video-wrapper">
+                <video class="short-video" src="${videoUrl}" poster="${thumbnailUrl}" loop playsinline preload="metadata" data-short-id="${short.id}"></video>
+                <div class="video-overlay"></div>
+                <div class="shorts-actions">
+                  <button class="action-btn like-btn" data-action="like" data-short-id="${short.id}">
+                    <i class="far fa-heart"></i>
+                    <span class="action-count">${formatNumber(short.likes_count || 0)}</span>
+                  </button>
+                  <button class="action-btn comment-btn" data-action="comment" data-short-id="${short.id}">
+                    <i class="far fa-comment"></i>
+                    <span class="action-count">${formatNumber(short.comments_count || 0)}</span>
+                  </button>
+                  <button class="action-btn share-btn" data-action="share" data-short-id="${short.id}">
+                    <i class="fas fa-share"></i>
+                  </button>
+                  <button class="action-btn save-btn" data-action="save" data-short-id="${short.id}">
+                    <i class="far fa-bookmark"></i>
+                  </button>
+                </div>
+                <div class="shorts-info">
+                  <div class="creator-info" data-creator-id="${creator?.id}" data-creator-name="${creatorName}">
+                    <div class="creator-avatar">
+                      ${creator?.avatar_url ? `<img src="${fixMediaUrl(creator.avatar_url)}" alt="${creatorName}">` : `<span>${initials}</span>`}
+                    </div>
+                    <div class="creator-details">
+                      <div class="creator-name">${escapeHtml(creatorName)}</div>
+                      <div class="creator-username">@${escapeHtml(creator?.username || 'creator')}</div>
+                    </div>
+                    <button class="connect-btn ${isConnected ? 'connected' : ''}" data-creator-id="${creator?.id}">
+                      ${isConnected ? 'Connected' : 'Connect'}
                     </button>
                   </div>
-                  <div class="shorts-info">
-                    <div class="creator-info" data-creator-id="${creator?.id}" data-creator-name="${creatorName}">
-                      <div class="creator-avatar">
-                        ${creator?.avatar_url ? `<img src="${fixMediaUrl(creator.avatar_url)}" alt="${creatorName}">` : `<span>${initials}</span>`}
-                      </div>
-                      <div class="creator-details">
-                        <div class="creator-name">${escapeHtml(creatorName)}</div>
-                        <div class="creator-username">@${escapeHtml(creator?.username || 'creator')}</div>
-                      </div>
-                      <button class="connect-btn ${isConnected ? 'connected' : ''}" data-creator-id="${creator?.id}">
-                        ${isConnected ? 'Connected' : 'Connect'}
-                      </button>
-                    </div>
-                    <div class="shorts-caption" id="caption-${short.id}">${escapeHtml(short.description || short.title || '')}</div>
-                    <div class="shorts-meta">
-                      <span><i class="fas fa-music"></i> ${escapeHtml(short.genre || 'Original Audio')}</span>
-                      <span><i class="fas fa-clock"></i> ${formatTime(short.duration || 0)}</span>
-                    </div>
-                  </div>
-                  <div class="video-controls">
-                    <button class="control-btn mute-btn"><i class="fas fa-volume-up"></i></button>
-                    <div class="progress-container">
-                      <div class="progress-buffer"></div>
-                      <div class="progress-bar"></div>
-                    </div>
-                    <button class="control-btn more-btn" data-short-id="${short.id}"><i class="fas fa-ellipsis-h"></i></button>
+                  <div class="shorts-caption" id="caption-${short.id}">${escapeHtml(short.description || short.title || '')}</div>
+                  <div class="shorts-meta">
+                    <span><i class="fas fa-music"></i> ${escapeHtml(short.genre || 'Original Audio')}</span>
+                    <span><i class="fas fa-clock"></i> ${formatTime(short.duration || 0)}</span>
                   </div>
                 </div>
-              `;
-              wrapper.appendChild(slide);
-            });
-          }
+                <div class="video-controls">
+                  <button class="control-btn mute-btn"><i class="fas fa-volume-up"></i></button>
+                  <div class="progress-container">
+                    <div class="progress-buffer"></div>
+                    <div class="progress-bar"></div>
+                  </div>
+                  <button class="control-btn more-btn" data-short-id="${short.id}"><i class="fas fa-ellipsis-h"></i></button>
+                </div>
+              </div>
+            `;
+            wrapper.appendChild(slide);
+          });
           
-          if (window.shortsSwiper) {
-            window.shortsSwiper.update();
-          }
+          window.shortsSwiper?.update();
           setupEventListeners();
         }
         
@@ -2850,116 +2587,10 @@
       }
     }
     
-    // ✅ FIX #4: Load notifications
-    async function loadNotifications() {
-      if (!currentUser) return;
-      
-      try {
-        const { data, error } = await window.supabaseAuth
-          .from('notifications')
-          .select('*')
-          .eq('user_id', currentUser.id)
-          .order('created_at', { ascending: false })
-          .limit(20);
-        
-        if (error) throw error;
-        
-        notifications = data || [];
-        
-        // Update badge
-        const unreadCount = notifications.filter(n => !n.is_read).length;
-        const badge = document.getElementById('notification-count');
-        if (badge) {
-          badge.textContent = unreadCount > 99 ? '99+' : unreadCount;
-          badge.style.display = unreadCount > 0 ? 'flex' : 'none';
-        }
-        
-      } catch (error) {
-        console.error('Error loading notifications:', error);
-      }
-    }
-    
-    // ✅ FIX #5: Load user profile picture
-    async function loadUserProfilePicture(user) {
-      try {
-        if (!user) return;
-        
-        const placeholder = document.getElementById('userProfilePlaceholder');
-        if (!placeholder) return;
-        
-        // Clear placeholder
-        while (placeholder.firstChild) {
-          placeholder.removeChild(placeholder.firstChild);
-        }
-        
-        const userInitials = getInitials(user.email);
-        
-        // Fetch user profile
-        const { data: profile, error } = await window.supabaseAuth
-          .from('user_profiles')
-          .select('avatar_url, full_name, username')
-          .eq('id', user.id)
-          .maybeSingle();
-        
-        if (error || !profile) {
-          // Fallback to initials
-          const fallback = document.createElement('div');
-          fallback.className = 'profile-placeholder';
-          fallback.style.cssText = 'width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,#1D4ED8,#F59E0B);display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:8px';
-          fallback.textContent = userInitials;
-          placeholder.appendChild(fallback);
-          return;
-        }
-        
-        if (profile.avatar_url) {
-          let avatarUrl = profile.avatar_url;
-          if (!avatarUrl.startsWith('http')) {
-            if (avatarUrl.startsWith('avatars/')) {
-              avatarUrl = `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/${avatarUrl}`;
-            } else {
-              avatarUrl = `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/avatars/${avatarUrl}`;
-            }
-          }
-          
-          const img = document.createElement('img');
-          img.className = 'profile-img';
-          img.alt = profile.full_name || profile.username || 'User';
-          img.style.cssText = 'width: 100%; height: 100%; border-radius: 50%; object-fit: cover;';
-          img.src = avatarUrl;
-          
-          img.onerror = () => {
-            const fallback = document.createElement('div');
-            fallback.className = 'profile-placeholder';
-            fallback.style.cssText = 'width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,#1D4ED8,#F59E0B);display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:8px';
-            fallback.textContent = userInitials;
-            placeholder.innerHTML = '';
-            placeholder.appendChild(fallback);
-          };
-          
-          placeholder.appendChild(img);
-        } else {
-          const nameInitials = profile.full_name ? getInitials(profile.full_name) : userInitials;
-          const fallback = document.createElement('div');
-          fallback.className = 'profile-placeholder';
-          fallback.style.cssText = 'width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,#1D4ED8,#F59E0B);display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:8px';
-          fallback.textContent = nameInitials;
-          placeholder.appendChild(fallback);
-        }
-        
-      } catch (error) {
-        console.error('Error loading user profile picture:', error);
-      }
-    }
-    
     // ============================================
-    // INITIALIZATION - FIXED
+    // INITIALIZATION
     // ============================================
-    document.addEventListener('DOMContentLoaded', async () => {
-      console.log('🎬 DOMContentLoaded - Starting shorts-detail initialization');
-      
-      // Initialize shorts player
-      await initShortsPlayer();
-    });
+    document.addEventListener('DOMContentLoaded', initShortsPlayer);
     
     document.addEventListener('visibilitychange', () => {
       if (document.hidden) {
@@ -2971,36 +2602,9 @@
     
     window.addEventListener('orientationchange', () => {
       setTimeout(() => {
-        if (window.shortsSwiper) {
-          window.shortsSwiper.update();
-        }
+        window.shortsSwiper?.update();
       }, 300);
     });
-    
-    // Auth state listener - using the single global instance
-    if (window.supabaseAuth) {
-      window.supabaseAuth.auth.onAuthStateChange(async (event, session) => {
-        console.log('Auth state changed:', event);
-        
-        if (event === 'SIGNED_IN' && session?.user) {
-          currentUser = session.user;
-          await loadUserProfilePicture(session.user);
-          await loadNotifications();
-          showToast('Welcome back!', 'success');
-        } else if (event === 'SIGNED_OUT') {
-          currentUser = null;
-          const placeholder = document.getElementById('userProfilePlaceholder');
-          if (placeholder) {
-            placeholder.innerHTML = '<div class="profile-placeholder"><i class="fas fa-user"></i></div>';
-          }
-          const badge = document.getElementById('notification-count');
-          if (badge) {
-            badge.style.display = 'none';
-          }
-          showToast('Signed out successfully', 'info');
-        }
-      });
-    }
   </script>
 </body>
 </html>
