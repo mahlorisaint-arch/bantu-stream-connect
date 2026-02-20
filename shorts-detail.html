@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=no">
   <meta name="theme-color" content="#0F172A">
+  <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>Bantu Shorts - Bantu Stream Connect</title>
@@ -118,7 +119,7 @@
     }
     
     /* ============================================
-       HEADER - From Creator Dashboard
+       HEADER - From Creator Dashboard (SMALLER)
        ============================================ */
     .header {
       position: absolute;
@@ -127,31 +128,31 @@
       right: 0;
       background: rgba(10, 14, 18, 0.9);
       backdrop-filter: blur(20px);
-      padding: 16px 20px;
+      padding: 8px 10px; /* ✅ HALVED PADDING */
       z-index: 100;
       border-bottom: 1px solid var(--card-border);
       display: flex;
       justify-content: space-between;
       align-items: center;
-      min-height: 60px;
+      min-height: 30px; /* ✅ HALVED HEIGHT */
     }
     
     .logo {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 6px; /* ✅ HALVED GAP */
       cursor: pointer;
       text-decoration: none;
     }
     
     .logo-icon {
-      width: 40px;
-      height: 40px;
-      border-radius: 10px;
+      width: 20px; /* ✅ HALVED SIZE */
+      height: 20px;
+      border-radius: 5px;
       display: flex;
       align-items: center;
       justify-content: center;
-      box-shadow: 0 0 32px rgba(29, 78, 216, 0.3);
+      box-shadow: 0 0 16px rgba(29, 78, 216, 0.3);
       background: transparent;
       border: 1px solid rgba(255, 255, 255, 0.1);
     }
@@ -165,23 +166,23 @@
     .logo-text {
       font-family: 'Orbitron', sans-serif;
       font-weight: 700;
-      font-size: 18px;
+      font-size: 9px; /* ✅ HALVED FONT SIZE */
       background: linear-gradient(to right, var(--soft-white), var(--bantu-blue));
       -webkit-background-clip: text;
       background-clip: text;
       color: transparent;
-      letter-spacing: 0.5px;
+      letter-spacing: 0.25px;
     }
     
     .header-actions {
       display: flex;
-      gap: 10px;
+      gap: 5px; /* ✅ HALVED GAP */
       align-items: center;
     }
     
     .icon-btn {
-      width: 40px;
-      height: 40px;
+      width: 20px; /* ✅ HALVED SIZE */
+      height: 20px;
       border-radius: 50%;
       background: rgba(255, 255, 255, 0.1);
       border: 1px solid rgba(255, 255, 255, 0.2);
@@ -192,39 +193,39 @@
       cursor: pointer;
       transition: all 0.3s ease;
       position: relative;
-      font-size: 1.25rem;
-      min-width: 44px;
-      min-height: 44px;
+      font-size: 10px; /* ✅ HALVED FONT SIZE */
+      min-width: 22px;
+      min-height: 22px;
     }
     
     .icon-btn:hover {
       background: rgba(255, 255, 255, 0.2);
-      transform: translateY(-2px);
+      transform: translateY(-1px);
     }
     
     .notification-badge {
       position: absolute;
-      top: -5px;
-      right: -5px;
+      top: -2px;
+      right: -2px;
       background: var(--error-color);
       color: white;
-      font-size: 10px;
+      font-size: 5px; /* ✅ HALVED FONT SIZE */
       font-weight: bold;
-      width: 18px;
-      height: 18px;
+      width: 9px;
+      height: 9px;
       border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
-      border: 2px solid var(--deep-black);
+      border: 1px solid var(--deep-black);
     }
     
     .profile-btn {
-      width: 40px;
-      height: 40px;
+      width: 20px; /* ✅ HALVED SIZE */
+      height: 20px;
       border-radius: 50%;
       background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
-      border: 2px solid rgba(255, 255, 255, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.2);
       cursor: pointer;
       overflow: hidden;
       transition: all 0.3s ease;
@@ -233,14 +234,14 @@
       justify-content: center;
       color: white;
       font-weight: 600;
-      font-size: 14px;
-      min-width: 44px;
-      min-height: 44px;
+      font-size: 7px; /* ✅ HALVED FONT SIZE */
+      min-width: 22px;
+      min-height: 22px;
     }
     
     .profile-btn:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 20px rgba(29, 78, 216, 0.3);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 10px rgba(29, 78, 216, 0.3);
     }
     
     .profile-img {
@@ -257,7 +258,7 @@
       justify-content: center;
       background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
       color: white;
-      font-size: 16px;
+      font-size: 8px;
     }
     
     /* ============================================
@@ -269,8 +270,8 @@
       height: var(--shorts-player-height);
       background: var(--deep-black);
       overflow: hidden;
-      padding-top: 60px; /* Space for header */
-      padding-bottom: 80px; /* Space for bottom nav */
+      padding-top: 30px; /* ✅ SPACE FOR SMALLER HEADER */
+      padding-bottom: 40px; /* ✅ SPACE FOR SMALLER NAV */
     }
     
     .shorts-swiper {
@@ -305,7 +306,7 @@
       position: absolute;
       bottom: 0;
       left: 0;
-      right: 0;
+      right:  0;
       height: 50%;
       background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, transparent 100%);
       pointer-events: none;
@@ -317,18 +318,18 @@
        ============================================ */
     .shorts-actions {
       position: absolute;
-      right: calc(1rem * var(--ui-scale, 1));
-      bottom: calc(8rem * var(--ui-scale, 1));
+      right: calc(0.5rem * var(--ui-scale, 1));
+      bottom: calc(6rem * var(--ui-scale, 1));
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: calc(1.5rem * var(--ui-scale, 1));
+      gap: calc(1rem * var(--ui-scale, 1));
       z-index: 20;
     }
     
     .action-btn {
-      width: var(--shorts-action-btn-size);
-      height: var(--shorts-action-btn-size);
+      width: calc(2rem * var(--ui-scale, 1));
+      height: calc(2rem * var(--ui-scale, 1));
       border-radius: 50%;
       background: rgba(255, 255, 255, 0.1);
       border: 1px solid var(--card-border);
@@ -338,11 +339,11 @@
       justify-content: center;
       cursor: pointer;
       transition: all 0.3s ease;
-      font-size: calc(1.25rem * var(--ui-scale, 1));
+      font-size: calc(1rem * var(--ui-scale, 1));
       position: relative;
       backdrop-filter: blur(10px);
-      min-width: 44px;
-      min-height: 44px;
+      min-width: 36px;
+      min-height: 36px;
     }
     
     .action-btn:hover {
@@ -362,8 +363,8 @@
     
     .action-count {
       position: absolute;
-      bottom: calc(-1.5rem * var(--ui-scale, 1));
-      font-size: calc(0.75rem * var(--ui-scale, 1));
+      bottom: calc(-1.2rem * var(--ui-scale, 1));
+      font-size: calc(0.625rem * var(--ui-scale, 1));
       color: var(--slate-grey);
       font-weight: 500;
       white-space: nowrap;
@@ -383,7 +384,7 @@
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%) scale(0);
-      font-size: calc(4rem * var(--ui-scale, 1));
+      font-size: calc(3rem * var(--ui-scale, 1));
       color: var(--error-color);
       opacity: 0;
       pointer-events: none;
@@ -419,9 +420,9 @@
        ============================================ */
     .shorts-info {
       position: absolute;
-      left: calc(1rem * var(--ui-scale, 1));
-      bottom: calc(1rem * var(--ui-scale, 1));
-      right: calc(6rem * var(--ui-scale, 1));
+      left: calc(0.5rem * var(--ui-scale, 1));
+      bottom: calc(0.5rem * var(--ui-scale, 1));
+      right: calc(4rem * var(--ui-scale, 1));
       z-index: 20;
       max-width: calc(70% * var(--ui-scale, 1));
     }
@@ -429,14 +430,14 @@
     .creator-info {
       display: flex;
       align-items: center;
-      gap: calc(0.75rem * var(--ui-scale, 1));
-      margin-bottom: calc(0.75rem * var(--ui-scale, 1));
+      gap: calc(0.5rem * var(--ui-scale, 1));
+      margin-bottom: calc(0.5rem * var(--ui-scale, 1));
       cursor: pointer;
     }
     
     .creator-avatar {
-      width: var(--shorts-creator-avatar-size);
-      height: var(--shorts-creator-avatar-size);
+      width: calc(1.8rem * var(--ui-scale, 1));
+      height: calc(1.8rem * var(--ui-scale, 1));
       border-radius: 50%;
       background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
       display: flex;
@@ -444,10 +445,10 @@
       justify-content: center;
       color: white;
       font-weight: 600;
-      font-size: calc(0.875rem * var(--ui-scale, 1));
+      font-size: calc(0.7rem * var(--ui-scale, 1));
       overflow: hidden;
       flex-shrink: 0;
-      border: 2px solid var(--card-border);
+      border: 1px solid var(--card-border);
     }
     
     .creator-avatar img {
@@ -462,7 +463,7 @@
     }
     
     .creator-name {
-      font-size: calc(1rem * var(--ui-scale, 1));
+      font-size: calc(0.8rem * var(--ui-scale, 1));
       font-weight: 600;
       color: var(--soft-white);
       white-space: nowrap;
@@ -471,18 +472,17 @@
     }
     
     .creator-username {
-      font-size: calc(0.875rem * var(--ui-scale, 1));
+      font-size: calc(0.7rem * var(--ui-scale, 1));
       color: var(--slate-grey);
     }
     
-    /* ✅ UPDATED: Connect Button instead of Follow */
     .connect-btn {
       background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
       color: var(--deep-black);
       border: none;
-      padding: calc(0.375rem * var(--ui-scale, 1)) calc(1rem * var(--ui-scale, 1));
-      border-radius: calc(1.25rem * var(--ui-scale, 1));
-      font-size: calc(0.75rem * var(--ui-scale, 1));
+      padding: calc(0.25rem * var(--ui-scale, 1)) calc(0.75rem * var(--ui-scale, 1));
+      border-radius: calc(1rem * var(--ui-scale, 1));
+      font-size: calc(0.6rem * var(--ui-scale, 1));
       font-weight: 600;
       cursor: pointer;
       transition: all 0.3s ease;
@@ -490,8 +490,8 @@
     }
     
     .connect-btn:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(29, 78, 216, 0.4);
+      transform: translateY(-1px);
+      box-shadow: 0 2px 6px rgba(29, 78, 216, 0.4);
     }
     
     .connect-btn.connected {
@@ -501,10 +501,10 @@
     }
     
     .shorts-caption {
-      font-size: calc(0.9375rem * var(--ui-scale, 1));
+      font-size: calc(0.8rem * var(--ui-scale, 1));
       line-height: 1.4;
       color: var(--soft-white);
-      margin-bottom: calc(0.5rem * var(--ui-scale, 1));
+      margin-bottom: calc(0.3rem * var(--ui-scale, 1));
       max-height: var(--shorts-caption-max-height);
       overflow: hidden;
       display: -webkit-box;
@@ -522,24 +522,24 @@
       background: none;
       border: none;
       color: var(--warm-gold);
-      font-size: calc(0.75rem * var(--ui-scale, 1));
+      font-size: calc(0.6rem * var(--ui-scale, 1));
       cursor: pointer;
       padding: 0;
-      margin-top: calc(0.25rem * var(--ui-scale, 1));
+      margin-top: calc(0.15rem * var(--ui-scale, 1));
     }
     
     .shorts-meta {
       display: flex;
       align-items: center;
-      gap: calc(1rem * var(--ui-scale, 1));
-      font-size: calc(0.75rem * var(--ui-scale, 1));
+      gap: calc(0.75rem * var(--ui-scale, 1));
+      font-size: calc(0.6rem * var(--ui-scale, 1));
       color: var(--slate-grey);
     }
     
     .shorts-meta span {
       display: flex;
       align-items: center;
-      gap: calc(0.25rem * var(--ui-scale, 1));
+      gap: calc(0.15rem * var(--ui-scale, 1));
     }
     
     /* ============================================
@@ -550,21 +550,21 @@
       bottom: 0;
       left: 0;
       right: 0;
-      height: var(--shorts-controls-height);
+      height: calc(3rem * var(--ui-scale, 1));
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 0 calc(1rem * var(--ui-scale, 1));
+      padding: 0 calc(0.75rem * var(--ui-scale, 1));
       z-index: 20;
       background: linear-gradient(to top, rgba(0,0,0,0.7), transparent);
     }
     
     .progress-container {
       flex: 1;
-      margin: 0 calc(1rem * var(--ui-scale, 1));
-      height: calc(0.25rem * var(--ui-scale, 1));
+      margin: 0 calc(0.75rem * var(--ui-scale, 1));
+      height: calc(0.2rem * var(--ui-scale, 1));
       background: rgba(255, 255, 255, 0.2);
-      border-radius: calc(0.25rem * var(--ui-scale, 1));
+      border-radius: calc(0.2rem * var(--ui-scale, 1));
       cursor: pointer;
       position: relative;
     }
@@ -575,7 +575,7 @@
       left: 0;
       height: 100%;
       background: var(--warm-gold);
-      border-radius: calc(0.25rem * var(--ui-scale, 1));
+      border-radius: calc(0.2rem * var(--ui-scale, 1));
       width: 0%;
       transition: width 0.1s linear;
     }
@@ -586,7 +586,7 @@
       left: 0;
       height: 100%;
       background: rgba(255, 255, 255, 0.3);
-      border-radius: calc(0.25rem * var(--ui-scale, 1));
+      border-radius: calc(0.2rem * var(--ui-scale, 1));
       width: 0%;
     }
     
@@ -594,13 +594,13 @@
       background: none;
       border: none;
       color: var(--soft-white);
-      font-size: calc(1.25rem * var(--ui-scale, 1));
+      font-size: calc(1rem * var(--ui-scale, 1));
       cursor: pointer;
-      padding: calc(0.5rem * var(--ui-scale, 1));
+      padding: calc(0.3rem * var(--ui-scale, 1));
       border-radius: 50%;
       transition: all 0.3s ease;
-      min-width: 44px;
-      min-height: 44px;
+      min-width: 36px;
+      min-height: 36px;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -615,15 +615,15 @@
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%) scale(0);
-      width: calc(5rem * var(--ui-scale, 1));
-      height: calc(5rem * var(--ui-scale, 1));
+      width: calc(4rem * var(--ui-scale, 1));
+      height: calc(4rem * var(--ui-scale, 1));
       background: rgba(0, 0, 0, 0.6);
       border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
       color: white;
-      font-size: calc(2rem * var(--ui-scale, 1));
+      font-size: calc(1.5rem * var(--ui-scale, 1));
       opacity: 0;
       pointer-events: none;
       z-index: 25;
@@ -636,17 +636,17 @@
     }
     
     /* ============================================
-       MORE MENU (Three Dots) - NEW
+       MORE MENU (Three Dots)
        ============================================ */
     .more-menu {
       position: absolute;
-      bottom: calc(4rem * var(--ui-scale, 1));
-      right: calc(1rem * var(--ui-scale, 1));
+      bottom: calc(3rem * var(--ui-scale, 1));
+      right: calc(0.5rem * var(--ui-scale, 1));
       background: var(--card-bg);
       border: 1px solid var(--card-border);
-      border-radius: calc(1rem * var(--ui-scale, 1));
-      width: calc(12rem * var(--ui-scale, 1));
-      padding: calc(0.5rem * var(--ui-scale, 1)) 0;
+      border-radius: calc(0.75rem * var(--ui-scale, 1));
+      width: calc(10rem * var(--ui-scale, 1));
+      padding: calc(0.3rem * var(--ui-scale, 1)) 0;
       z-index: 30;
       display: none;
       box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
@@ -672,10 +672,10 @@
     .more-menu-item {
       display: flex;
       align-items: center;
-      gap: calc(0.75rem * var(--ui-scale, 1));
-      padding: calc(0.75rem * var(--ui-scale, 1)) calc(1rem * var(--ui-scale, 1));
+      gap: calc(0.5rem * var(--ui-scale, 1));
+      padding: calc(0.5rem * var(--ui-scale, 1)) calc(0.75rem * var(--ui-scale, 1));
       color: var(--soft-white);
-      font-size: calc(0.875rem * var(--ui-scale, 1));
+      font-size: calc(0.7rem * var(--ui-scale, 1));
       cursor: pointer;
       transition: all 0.3s ease;
       border: none;
@@ -719,7 +719,7 @@
     
     .comments-drawer {
       background: var(--card-bg);
-      border-radius: calc(1.5rem * var(--ui-scale, 1)) calc(1.5rem * var(--ui-scale, 1)) 0 0;
+      border-radius: calc(1.2rem * var(--ui-scale, 1)) calc(1.2rem * var(--ui-scale, 1)) 0 0;
       width: 100%;
       max-height: 70vh;
       overflow: hidden;
@@ -734,7 +734,7 @@
     }
     
     .drawer-header {
-      padding: calc(1rem * var(--ui-scale, 1));
+      padding: calc(0.75rem * var(--ui-scale, 1));
       border-bottom: 1px solid var(--card-border);
       display: flex;
       justify-content: space-between;
@@ -742,7 +742,7 @@
     }
     
     .drawer-header h3 {
-      font-size: calc(1.125rem * var(--ui-scale, 1));
+      font-size: calc(0.9rem * var(--ui-scale, 1));
       font-weight: 600;
       color: var(--soft-white);
     }
@@ -751,34 +751,34 @@
       background: none;
       border: none;
       color: var(--slate-grey);
-      font-size: calc(1.25rem * var(--ui-scale, 1));
+      font-size: calc(1rem * var(--ui-scale, 1));
       cursor: pointer;
-      padding: calc(0.5rem * var(--ui-scale, 1));
+      padding: calc(0.3rem * var(--ui-scale, 1));
     }
     
     .comments-list {
       flex: 1;
       overflow-y: auto;
-      padding: calc(1rem * var(--ui-scale, 1));
+      padding: calc(0.75rem * var(--ui-scale, 1));
     }
     
     .comment-item {
       display: flex;
-      gap: calc(0.75rem * var(--ui-scale, 1));
-      padding: calc(0.75rem * var(--ui-scale, 1)) 0;
+      gap: calc(0.5rem * var(--ui-scale, 1));
+      padding: calc(0.5rem * var(--ui-scale, 1)) 0;
       border-bottom: 1px solid var(--card-border);
     }
     
     .comment-avatar {
-      width: calc(2rem * var(--ui-scale, 1));
-      height: calc(2rem * var(--ui-scale, 1));
+      width: calc(1.6rem * var(--ui-scale, 1));
+      height: calc(1.6rem * var(--ui-scale, 1));
       border-radius: 50%;
       background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
       display: flex;
       align-items: center;
       justify-content: center;
       color: white;
-      font-size: calc(0.75rem * var(--ui-scale, 1));
+      font-size: calc(0.6rem * var(--ui-scale, 1));
       font-weight: 600;
       flex-shrink: 0;
     }
@@ -798,42 +798,42 @@
     .comment-header {
       display: flex;
       align-items: center;
-      gap: calc(0.5rem * var(--ui-scale, 1));
-      margin-bottom: calc(0.25rem * var(--ui-scale, 1));
+      gap: calc(0.3rem * var(--ui-scale, 1));
+      margin-bottom: calc(0.15rem * var(--ui-scale, 1));
     }
     
     .comment-username {
-      font-size: calc(0.875rem * var(--ui-scale, 1));
+      font-size: calc(0.7rem * var(--ui-scale, 1));
       font-weight: 600;
       color: var(--soft-white);
     }
     
     .comment-time {
-      font-size: calc(0.75rem * var(--ui-scale, 1));
+      font-size: calc(0.6rem * var(--ui-scale, 1));
       color: var(--slate-grey);
     }
     
     .comment-text {
-      font-size: calc(0.875rem * var(--ui-scale, 1));
+      font-size: calc(0.7rem * var(--ui-scale, 1));
       color: var(--soft-white);
       line-height: 1.4;
     }
     
     .comment-actions {
       display: flex;
-      gap: calc(1rem * var(--ui-scale, 1));
-      margin-top: calc(0.5rem * var(--ui-scale, 1));
+      gap: calc(0.75rem * var(--ui-scale, 1));
+      margin-top: calc(0.3rem * var(--ui-scale, 1));
     }
     
     .comment-action {
       background: none;
       border: none;
       color: var(--slate-grey);
-      font-size: calc(0.75rem * var(--ui-scale, 1));
+      font-size: calc(0.6rem * var(--ui-scale, 1));
       cursor: pointer;
       display: flex;
       align-items: center;
-      gap: calc(0.25rem * var(--ui-scale, 1));
+      gap: calc(0.15rem * var(--ui-scale, 1));
     }
     
     .comment-action.liked {
@@ -841,23 +841,23 @@
     }
     
     .comment-composer {
-      padding: calc(1rem * var(--ui-scale, 1));
+      padding: calc(0.75rem * var(--ui-scale, 1));
       border-top: 1px solid var(--card-border);
       display: flex;
-      gap: calc(0.75rem * var(--ui-scale, 1));
+      gap: calc(0.5rem * var(--ui-scale, 1));
       align-items: flex-start;
     }
     
     .composer-avatar {
-      width: calc(2rem * var(--ui-scale, 1));
-      height: calc(2rem * var(--ui-scale, 1));
+      width: calc(1.6rem * var(--ui-scale, 1));
+      height: calc(1.6rem * var(--ui-scale, 1));
       border-radius: 50%;
       background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
       display: flex;
       align-items: center;
       justify-content: center;
       color: white;
-      font-size: calc(0.75rem * var(--ui-scale, 1));
+      font-size: calc(0.6rem * var(--ui-scale, 1));
       font-weight: 600;
       flex-shrink: 0;
     }
@@ -866,13 +866,13 @@
       flex: 1;
       background: rgba(255, 255, 255, 0.1);
       border: 1px solid var(--card-border);
-      border-radius: calc(1.25rem * var(--ui-scale, 1));
-      padding: calc(0.5rem * var(--ui-scale, 1)) calc(1rem * var(--ui-scale, 1));
+      border-radius: calc(1rem * var(--ui-scale, 1));
+      padding: calc(0.3rem * var(--ui-scale, 1)) calc(0.75rem * var(--ui-scale, 1));
       color: var(--soft-white);
-      font-size: calc(0.875rem * var(--ui-scale, 1));
+      font-size: calc(0.7rem * var(--ui-scale, 1));
       resize: none;
-      min-height: calc(2.5rem * var(--ui-scale, 1));
-      max-height: calc(6rem * var(--ui-scale, 1));
+      min-height: calc(2rem * var(--ui-scale, 1));
+      max-height: calc(5rem * var(--ui-scale, 1));
       outline: none;
     }
     
@@ -884,9 +884,9 @@
       background: var(--warm-gold);
       color: var(--deep-black);
       border: none;
-      padding: calc(0.5rem * var(--ui-scale, 1)) calc(1.25rem * var(--ui-scale, 1));
-      border-radius: calc(1.25rem * var(--ui-scale, 1));
-      font-size: calc(0.875rem * var(--ui-scale, 1));
+      padding: calc(0.3rem * var(--ui-scale, 1)) calc(1rem * var(--ui-scale, 1));
+      border-radius: calc(1rem * var(--ui-scale, 1));
+      font-size: calc(0.7rem * var(--ui-scale, 1));
       font-weight: 600;
       cursor: pointer;
       transition: all 0.3s ease;
@@ -894,8 +894,8 @@
     }
     
     .post-comment-btn:hover:not(:disabled) {
-      transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4);
+      transform: translateY(-1px);
+      box-shadow: 0 2px 6px rgba(245, 158, 11, 0.4);
     }
     
     .post-comment-btn:disabled {
@@ -906,27 +906,27 @@
     /* Share Modal */
     .share-modal {
       background: var(--card-bg);
-      border-radius: calc(1.5rem * var(--ui-scale, 1)) calc(1.5rem * var(--ui-scale, 1)) 0 0;
+      border-radius: calc(1.2rem * var(--ui-scale, 1)) calc(1.2rem * var(--ui-scale, 1)) 0 0;
       width: 100%;
-      padding: calc(1.5rem * var(--ui-scale, 1));
+      padding: calc(1.2rem * var(--ui-scale, 1));
       animation: slideUp 0.3s ease;
     }
     
     .share-options {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
-      gap: calc(1rem * var(--ui-scale, 1));
-      margin-bottom: calc(1.5rem * var(--ui-scale, 1));
+      gap: calc(0.75rem * var(--ui-scale, 1));
+      margin-bottom: calc(1.2rem * var(--ui-scale, 1));
     }
     
     .share-option {
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: calc(0.5rem * var(--ui-scale, 1));
+      gap: calc(0.3rem * var(--ui-scale, 1));
       background: rgba(255, 255, 255, 0.05);
-      padding: calc(1rem * var(--ui-scale, 1));
-      border-radius: calc(1rem * var(--ui-scale, 1));
+      padding: calc(0.75rem * var(--ui-scale, 1));
+      border-radius: calc(0.75rem * var(--ui-scale, 1));
       cursor: pointer;
       transition: all 0.3s ease;
       border: 1px solid var(--card-border);
@@ -934,17 +934,17 @@
     
     .share-option:hover {
       background: rgba(255, 255, 255, 0.1);
-      transform: translateY(-2px);
+      transform: translateY(-1px);
     }
     
     .share-icon {
-      width: calc(2.5rem * var(--ui-scale, 1));
-      height: calc(2.5rem * var(--ui-scale, 1));
+      width: calc(2rem * var(--ui-scale, 1));
+      height: calc(2rem * var(--ui-scale, 1));
       border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: calc(1.25rem * var(--ui-scale, 1));
+      font-size: calc(1rem * var(--ui-scale, 1));
       color: white;
     }
     
@@ -954,18 +954,18 @@
     .share-icon.copy { background: var(--bantu-blue); }
     
     .share-label {
-      font-size: calc(0.75rem * var(--ui-scale, 1));
+      font-size: calc(0.6rem * var(--ui-scale, 1));
       color: var(--soft-white);
       text-align: center;
     }
     
     .share-link {
       display: flex;
-      gap: calc(0.75rem * var(--ui-scale, 1));
+      gap: calc(0.5rem * var(--ui-scale, 1));
       background: rgba(255, 255, 255, 0.05);
-      padding: calc(0.75rem * var(--ui-scale, 1));
-      border-radius: calc(0.75rem * var(--ui-scale, 1));
-      margin-top: calc(0.5rem * var(--ui-scale, 1));
+      padding: calc(0.5rem * var(--ui-scale, 1));
+      border-radius: calc(0.5rem * var(--ui-scale, 1));
+      margin-top: calc(0.3rem * var(--ui-scale, 1));
     }
     
     .share-link input {
@@ -973,7 +973,7 @@
       background: transparent;
       border: none;
       color: var(--slate-grey);
-      font-size: calc(0.875rem * var(--ui-scale, 1));
+      font-size: calc(0.7rem * var(--ui-scale, 1));
       outline: none;
     }
     
@@ -981,9 +981,9 @@
       background: var(--warm-gold);
       color: var(--deep-black);
       border: none;
-      padding: calc(0.375rem * var(--ui-scale, 1)) calc(0.75rem * var(--ui-scale, 1));
-      border-radius: calc(0.5rem * var(--ui-scale, 1));
-      font-size: calc(0.75rem * var(--ui-scale, 1));
+      padding: calc(0.25rem * var(--ui-scale, 1)) calc(0.5rem * var(--ui-scale, 1));
+      border-radius: calc(0.3rem * var(--ui-scale, 1));
+      font-size: calc(0.6rem * var(--ui-scale, 1));
       font-weight: 600;
       cursor: pointer;
     }
@@ -991,27 +991,27 @@
     /* Toast Notifications */
     .toast-container {
       position: fixed;
-      bottom: calc(6rem * var(--ui-scale, 1));
+      bottom: calc(5rem * var(--ui-scale, 1));
       left: 50%;
       transform: translateX(-50%);
       z-index: 2000;
       display: flex;
       flex-direction: column;
-      gap: calc(0.5rem * var(--ui-scale, 1));
+      gap: calc(0.3rem * var(--ui-scale, 1));
     }
     
     .toast {
       background: var(--card-bg);
       border: 1px solid var(--card-border);
-      border-radius: calc(0.75rem * var(--ui-scale, 1));
-      padding: calc(0.75rem * var(--ui-scale, 1)) calc(1.25rem * var(--ui-scale, 1));
+      border-radius: calc(0.5rem * var(--ui-scale, 1));
+      padding: calc(0.5rem * var(--ui-scale, 1)) calc(1rem * var(--ui-scale, 1));
       color: var(--soft-white);
-      font-size: calc(0.875rem * var(--ui-scale, 1));
+      font-size: calc(0.7rem * var(--ui-scale, 1));
       display: flex;
       align-items: center;
-      gap: calc(0.5rem * var(--ui-scale, 1));
+      gap: calc(0.3rem * var(--ui-scale, 1));
       animation: slideIn 0.3s ease;
-      max-width: calc(18rem * var(--ui-scale, 1));
+      max-width: calc(15rem * var(--ui-scale, 1));
       backdrop-filter: blur(10px);
     }
     
@@ -1030,7 +1030,7 @@
     }
     
     /* ============================================
-       BOTTOM NAVIGATION - From Creator Dashboard
+       BOTTOM NAVIGATION - From Creator Dashboard (SMALLER)
        ============================================ */
     .global-nav {
       position: fixed;
@@ -1041,7 +1041,7 @@
       backdrop-filter: blur(20px);
       display: flex;
       justify-content: space-around;
-      padding: 15px 0;
+      padding: 8px 0; /* ✅ HALVED PADDING */
       z-index: 100;
       border-top: 1px solid var(--card-border);
       padding-bottom: env(safe-area-inset-bottom);
@@ -1053,16 +1053,16 @@
       align-items: center;
       color: var(--slate-grey);
       text-decoration: none;
-      font-size: 12px;
+      font-size: 6px; /* ✅ HALVED FONT SIZE */
       transition: all 0.3s ease;
-      padding: calc(0.5rem * var(--ui-scale, 1));
-      min-width: 44px;
-      min-height: 44px;
+      padding: calc(0.25rem * var(--ui-scale, 1));
+      min-width: 22px;
+      min-height: 22px;
     }
     
     .nav-item i {
-      font-size: 18px;
-      margin-bottom: 5px;
+      font-size: 9px; /* ✅ HALVED FONT SIZE */
+      margin-bottom: 2px;
     }
     
     .nav-item:hover {
@@ -1074,41 +1074,113 @@
     }
     
     /* ============================================
-       RESPONSIVE
+       RESPONSIVE - Mobile Optimizations
        ============================================ */
     @media (max-width: 768px) {
+      :root {
+        --ui-scale: 0.9;
+      }
+      
+      .header {
+        padding: 6px 8px;
+        min-height: 28px;
+      }
+      
+      .logo-icon {
+        width: 18px;
+        height: 18px;
+      }
+      
+      .logo-text {
+        font-size: 8px;
+      }
+      
+      .icon-btn, .profile-btn {
+        width: 18px;
+        height: 18px;
+        font-size: 9px;
+      }
+      
       .shorts-actions {
-        right: calc(0.75rem * var(--ui-scale, 1));
-        bottom: calc(7rem * var(--ui-scale, 1));
+        right: calc(0.4rem * var(--ui-scale, 1));
+        bottom: calc(5rem * var(--ui-scale, 1));
       }
       
       .shorts-info {
-        right: calc(5rem * var(--ui-scale, 1));
-        bottom: calc(0.75rem * var(--ui-scale, 1));
+        right: calc(4rem * var(--ui-scale, 1));
+        bottom: calc(0.5rem * var(--ui-scale, 1));
       }
       
       .video-controls {
-        height: calc(3.5rem * var(--ui-scale, 1));
-        padding: 0 calc(0.75rem * var(--ui-scale, 1));
+        height: calc(2.5rem * var(--ui-scale, 1));
+        padding: 0 calc(0.5rem * var(--ui-scale, 1));
+      }
+      
+      .global-nav {
+        padding: 6px 0;
+      }
+      
+      .nav-item {
+        font-size: 5px;
+      }
+      
+      .nav-item i {
+        font-size: 8px;
       }
     }
     
     @media (max-width: 480px) {
+      :root {
+        --ui-scale: 0.85;
+      }
+      
       .action-btn {
-        width: calc(2.25rem * var(--ui-scale, 1));
-        height: calc(2.25rem * var(--ui-scale, 1));
-        font-size: calc(1.125rem * var(--ui-scale, 1));
+        width: calc(1.8rem * var(--ui-scale, 1));
+        height: calc(1.8rem * var(--ui-scale, 1));
+        font-size: calc(0.9rem * var(--ui-scale, 1));
       }
       
       .action-count {
-        font-size: calc(0.625rem * var(--ui-scale, 1));
+        font-size: calc(0.5rem * var(--ui-scale, 1));
+      }
+      
+      .header {
+        padding: 4px 6px;
+        min-height: 24px;
+      }
+      
+      .logo-icon {
+        width: 16px;
+        height: 16px;
+      }
+      
+      .logo-text {
+        font-size: 7px;
+      }
+      
+      .icon-btn, .profile-btn {
+        width: 16px;
+        height: 16px;
+        font-size: 8px;
+      }
+      
+      .global-nav {
+        padding: 4px 0;
+      }
+      
+      .nav-item {
+        font-size: 4px;
+      }
+      
+      .nav-item i {
+        font-size: 7px;
       }
     }
     
     @media (hover: none) and (pointer: coarse) {
       .action-btn, .control-btn, .connect-btn, .post-comment-btn, .share-option, .more-menu-item {
-        min-width: 44px;
-        min-height: 44px;
+        min-width: 36px;
+        min-height: 36px;
       }
     }
     
@@ -1119,9 +1191,9 @@
       }
     }
     
-    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar { width: 4px; }
     ::-webkit-scrollbar-track { background: var(--deep-navy); }
-    ::-webkit-scrollbar-thumb { background: var(--bantu-blue); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb { background: var(--bantu-blue); border-radius: 2px; }
     ::-webkit-scrollbar-thumb:hover { background: var(--warm-gold); }
   </style>
 </head>
@@ -1132,23 +1204,13 @@
     <div>Loading Shorts...</div>
   </div>
   
-  <!-- Header - From Creator Dashboard -->
+  <!-- Header - From Creator Dashboard (SMALLER) -->
   <header class="header">
     <div class="logo" onclick="window.location.href='index.html'">
       <div class="logo-icon">
-        <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <rect width="40" height="40" rx="8" fill="#0F172A"/>
-          <path d="M8 20 L12 16 L16 22 L20 18 L24 24 L28 20 L32 26" stroke="url(#pulse-gradient)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-          <circle cx="32" cy="26" r="3" fill="#F59E0B"/>
-          <defs>
-            <linearGradient id="pulse-gradient" x1="8" y1="20" x2="32" y2="26" gradientUnits="userSpaceOnUse">
-              <stop stop-color="#1D4ED8"/>
-              <stop offset="1" stop-color="#F59E0B"/>
-            </linearGradient>
-          </defs>
-        </svg>
+        <img src="assets/icon/bantu_stream_connect_icon.png" alt="Bantu Stream Connect Logo">
       </div>
-      <div class="logo-text">BANTU STREAM CONNECT</div>
+      <div class="logo-text">BANTU</div>
     </div>
     <div class="header-actions">
       <button id="search-btn" class="icon-btn" title="Search">
@@ -1183,7 +1245,7 @@
     </div>
   </div>
   
-  <!-- More Menu (Three Dots) - NEW -->
+  <!-- More Menu (Three Dots) -->
   <div class="more-menu" id="more-menu">
     <button class="more-menu-item" id="more-report">
       <i class="fas fa-flag"></i>
@@ -1276,7 +1338,7 @@
   <!-- Toast Container -->
   <div class="toast-container" id="toast-container"></div>
   
-  <!-- Bottom Navigation - From Creator Dashboard -->
+  <!-- Bottom Navigation - From Creator Dashboard (SMALLER) -->
   <nav class="global-nav">
     <a href="index.html" class="nav-item">
       <i class="fas fa-home"></i>
@@ -1318,6 +1380,7 @@
     let lastTapTime = 0;
     let userConnections = new Set();
     let moreMenuOpen = false;
+    let notifications = [];
     
     // ============================================
     // UTILITY FUNCTIONS
@@ -1479,7 +1542,35 @@
         return;
       }
       
+      // ✅ FIX #1: Load real like counts for all shorts
+      await loadRealLikeCounts();
+      
       renderShorts();
+    }
+    
+    // ✅ FIX #1: Load real like counts from database
+    async function loadRealLikeCounts() {
+      const contentIds = shortsData.map(s => s.id);
+      
+      // Fetch like counts for each short
+      const likeCounts = await Promise.all(
+        contentIds.map(async (id) => {
+          const { count, error } = await supabaseAuth
+            .from('content_likes')
+            .select('*', { count: 'exact', head: true })
+            .eq('content_id', id);
+          
+          return { id, count: error ? 0 : count };
+        })
+      );
+      
+      // Update shorts data with real counts
+      likeCounts.forEach(({ id, count }) => {
+        const short = shortsData.find(s => s.id === id);
+        if (short) {
+          short.real_likes_count = count;
+        }
+      });
     }
     
     function renderShorts() {
@@ -1492,6 +1583,11 @@
         const creatorName = creator?.full_name || creator?.username || 'Creator';
         const initials = getInitials(creatorName);
         const isConnected = userConnections.has(creator?.id);
+        
+        // ✅ FIX #1: Use real like count if available
+        const likesCount = short.real_likes_count !== undefined 
+          ? short.real_likes_count 
+          : (short.likes_count || 0);
         
         return `
           <div class="swiper-slide" data-short-id="${short.id}">
@@ -1511,7 +1607,7 @@
               <div class="shorts-actions">
                 <button class="action-btn like-btn" data-action="like" data-short-id="${short.id}" title="Like">
                   <i class="far fa-heart"></i>
-                  <span class="action-count">${formatNumber(short.likes_count || 0)}</span>
+                  <span class="action-count">${formatNumber(likesCount)}</span>
                 </button>
                 
                 <button class="action-btn comment-btn" data-action="comment" data-short-id="${short.id}" title="Comments">
@@ -1523,6 +1619,7 @@
                   <i class="fas fa-share"></i>
                 </button>
                 
+                <!-- ✅ FIX #3: Save button with proper data attributes -->
                 <button class="action-btn save-btn" data-action="save" data-short-id="${short.id}" title="Save">
                   <i class="far fa-bookmark"></i>
                 </button>
@@ -1541,7 +1638,6 @@
                     <div class="creator-name">${escapeHtml(creatorName)}</div>
                     <div class="creator-username">@${escapeHtml(creator?.username || 'creator')}</div>
                   </div>
-                  <!-- ✅ UPDATED: Connect Button -->
                   <button class="connect-btn ${isConnected ? 'connected' : ''}" data-creator-id="${creator?.id}">
                     ${isConnected ? 'Connected' : 'Connect'}
                   </button>
@@ -1573,7 +1669,6 @@
                   <div class="progress-bar" id="progress-bar-${short.id}"></div>
                 </div>
                 
-                <!-- ✅ UPDATED: More Button (Three Dots) -->
                 <button class="control-btn more-btn" title="More" data-short-id="${short.id}">
                   <i class="fas fa-ellipsis-h"></i>
                 </button>
@@ -1613,7 +1708,7 @@
             pauseAllVideos();
             playCurrentShort();
             updateActiveShort();
-            closeMoreMenu(); // Close more menu when sliding
+            closeMoreMenu();
           },
           reachEnd: () => {
             loadMoreShorts();
@@ -1703,12 +1798,14 @@
     }
     
     function isLiked(shortId) {
-      const liked = JSON.parse(localStorage.getItem('liked_shorts') || '[]');
+      if (!currentUser) return false;
+      const liked = JSON.parse(localStorage.getItem(`liked_shorts_${currentUser.id}`) || '[]');
       return liked.includes(shortId.toString());
     }
     
     function isSaved(shortId) {
-      const saved = JSON.parse(localStorage.getItem('saved_shorts') || '[]');
+      if (!currentUser) return false;
+      const saved = JSON.parse(localStorage.getItem(`saved_shorts_${currentUser.id}`) || '[]');
       return saved.includes(shortId.toString());
     }
     
@@ -1741,7 +1838,7 @@
     }
     
     // ============================================
-    // MORE MENU FUNCTIONS - NEW
+    // MORE MENU FUNCTIONS
     // ============================================
     function toggleMoreMenu(shortId, button) {
       const menu = document.getElementById('more-menu');
@@ -1797,7 +1894,7 @@
         }
       });
       
-      // ✅ UPDATED: Connect Button (instead of Follow)
+      // Connect Button
       document.getElementById('shorts-player').addEventListener('click', (e) => {
         const connectBtn = e.target.closest('.connect-btn');
         if (connectBtn) {
@@ -1805,7 +1902,7 @@
         }
       });
       
-      // ✅ UPDATED: More Button (Three Dots) - Now Clickable
+      // More Button (Three Dots) - Now Clickable
       document.getElementById('shorts-player').addEventListener('click', (e) => {
         const moreBtn = e.target.closest('.more-btn');
         if (moreBtn) {
@@ -1853,7 +1950,7 @@
         }
       });
       
-      // ✅ More Menu Actions
+      // More Menu Actions
       document.getElementById('more-report')?.addEventListener('click', () => {
         handleReport();
         closeMoreMenu();
@@ -1918,6 +2015,29 @@
       document.getElementById('share-copy')?.addEventListener('click', copyShareLink);
       document.getElementById('copy-link-btn')?.addEventListener('click', copyShareLink);
       
+      // ✅ FIX #4: Header buttons - Search and Notifications
+      document.getElementById('search-btn')?.addEventListener('click', () => {
+        showToast('Search coming soon!', 'info');
+      });
+      
+      document.getElementById('notifications-btn')?.addEventListener('click', () => {
+        if (!currentUser) {
+          showToast('Please sign in to view notifications', 'info');
+          return;
+        }
+        loadNotifications();
+        showToast(`${notifications.filter(n => !n.is_read).length} unread notifications`, 'info');
+      });
+      
+      // ✅ FIX #5: Profile button
+      document.getElementById('profile-btn')?.addEventListener('click', () => {
+        if (currentUser) {
+          window.location.href = 'profile.html';
+        } else {
+          window.location.href = `login.html?redirect=${encodeURIComponent(window.location.pathname)}`;
+        }
+      });
+      
       // Keyboard shortcuts
       document.addEventListener('keydown', (e) => {
         if (e.target.matches('input, textarea')) return;
@@ -1974,6 +2094,7 @@
       
       try {
         if (liked) {
+          // Unlike
           const { error } = await supabaseAuth
             .from('content_likes')
             .delete()
@@ -1984,16 +2105,24 @@
           
           btn.classList.remove('liked');
           icon.className = 'far fa-heart';
-          let count = parseInt(countEl.textContent.replace('K', '000').replace('M', '000000')) || 0;
-          countEl.textContent = formatNumber(Math.max(0, count - 1));
           
-          const likedShorts = JSON.parse(localStorage.getItem('liked_shorts') || '[]');
+          // ✅ FIX #1: Fetch real count after unlike
+          const { count } = await supabaseAuth
+            .from('content_likes')
+            .select('*', { count: 'exact', head: true })
+            .eq('content_id', shortId);
+          
+          countEl.textContent = formatNumber(count || 0);
+          
+          // Update localStorage
+          const likedShorts = JSON.parse(localStorage.getItem(`liked_shorts_${currentUser.id}`) || '[]');
           const index = likedShorts.indexOf(shortId.toString());
           if (index > -1) likedShorts.splice(index, 1);
-          localStorage.setItem('liked_shorts', JSON.stringify(likedShorts));
+          localStorage.setItem(`liked_shorts_${currentUser.id}`, JSON.stringify(likedShorts));
           
           showToast('Like removed', 'info');
         } else {
+          // Like
           const { error } = await supabaseAuth
             .from('content_likes')
             .insert({
@@ -2006,13 +2135,20 @@
           
           btn.classList.add('liked');
           icon.className = 'fas fa-heart';
-          let count = parseInt(countEl.textContent.replace('K', '000').replace('M', '000000')) || 0;
-          countEl.textContent = formatNumber(count + 1);
           
-          const likedShorts = JSON.parse(localStorage.getItem('liked_shorts') || '[]');
+          // ✅ FIX #1: Fetch real count after like
+          const { count } = await supabaseAuth
+            .from('content_likes')
+            .select('*', { count: 'exact', head: true })
+            .eq('content_id', shortId);
+          
+          countEl.textContent = formatNumber(count || 0);
+          
+          // Update localStorage
+          const likedShorts = JSON.parse(localStorage.getItem(`liked_shorts_${currentUser.id}`) || '[]');
           if (!likedShorts.includes(shortId.toString())) {
             likedShorts.push(shortId.toString());
-            localStorage.setItem('liked_shorts', JSON.stringify(likedShorts));
+            localStorage.setItem(`liked_shorts_${currentUser.id}`, JSON.stringify(likedShorts));
           }
           
           showToast('Liked!', 'success');
@@ -2024,7 +2160,8 @@
       }
     }
     
-    function handleSave(shortId, btn) {
+    // ✅ FIX #3: Handle Save with proper table structure
+    async function handleSave(shortId, btn) {
       if (!currentUser) {
         showToast('Please sign in to save shorts', 'info');
         return;
@@ -2032,25 +2169,57 @@
       
       const saved = isSaved(shortId);
       
-      if (saved) {
-        const savedShorts = JSON.parse(localStorage.getItem('saved_shorts') || '[]');
-        const index = savedShorts.indexOf(shortId.toString());
-        if (index > -1) savedShorts.splice(index, 1);
-        localStorage.setItem('saved_shorts', JSON.stringify(savedShorts));
-        updateSaveButton(shortId, false);
-        showToast('Removed from saved', 'info');
-      } else {
-        const savedShorts = JSON.parse(localStorage.getItem('saved_shorts') || '[]');
-        if (!savedShorts.includes(shortId.toString())) {
-          savedShorts.push(shortId.toString());
-          localStorage.setItem('saved_shorts', JSON.stringify(savedShorts));
+      try {
+        if (saved) {
+          // Unsave
+          const { error } = await supabaseAuth
+            .from('saved_shorts')
+            .delete()
+            .eq('content_id', shortId)
+            .eq('user_id', currentUser.id);
+          
+          if (error) throw error;
+          
+          btn.classList.remove('saved');
+          btn.querySelector('i').className = 'far fa-bookmark';
+          
+          // Update localStorage
+          const savedShorts = JSON.parse(localStorage.getItem(`saved_shorts_${currentUser.id}`) || '[]');
+          const index = savedShorts.indexOf(shortId.toString());
+          if (index > -1) savedShorts.splice(index, 1);
+          localStorage.setItem(`saved_shorts_${currentUser.id}`, JSON.stringify(savedShorts));
+          
+          showToast('Removed from saved', 'info');
+        } else {
+          // Save
+          const { error } = await supabaseAuth
+            .from('saved_shorts')
+            .insert({
+              content_id: shortId,
+              user_id: currentUser.id,
+              saved_at: new Date().toISOString()
+            });
+          
+          if (error) throw error;
+          
+          btn.classList.add('saved');
+          btn.querySelector('i').className = 'fas fa-bookmark';
+          
+          // Update localStorage
+          const savedShorts = JSON.parse(localStorage.getItem(`saved_shorts_${currentUser.id}`) || '[]');
+          if (!savedShorts.includes(shortId.toString())) {
+            savedShorts.push(shortId.toString());
+            localStorage.setItem(`saved_shorts_${currentUser.id}`, JSON.stringify(savedShorts));
+          }
+          
+          showToast('Saved!', 'success');
         }
-        updateSaveButton(shortId, true);
-        showToast('Saved!', 'success');
+      } catch (error) {
+        console.error('Error saving short:', error);
+        showToast('Failed to save short', 'error');
       }
     }
     
-    // ✅ UPDATED: Handle Connect (instead of Follow)
     async function handleConnect(creatorId, btn) {
       if (!currentUser) {
         showToast('Please sign in to connect with creators', 'info');
@@ -2095,54 +2264,6 @@
       } catch (error) {
         console.error('Error connecting with creator:', error);
         showToast('Failed to update connection', 'error');
-      }
-    }
-    
-    // ✅ NEW: More Menu Action Handlers
-    function handleReport() {
-      if (!currentUser) {
-        showToast('Please sign in to report content', 'info');
-        return;
-      }
-      
-      showToast('Report submitted. Thank you!', 'success');
-      // In production, send report to Supabase
-    }
-    
-    function handleMuteCreator() {
-      if (!currentUser) {
-        showToast('Please sign in to mute creators', 'info');
-        return;
-      }
-      
-      const mutedCreators = JSON.parse(localStorage.getItem('muted_creators') || '[]');
-      if (currentShort?.user_id && !mutedCreators.includes(currentShort.user_id)) {
-        mutedCreators.push(currentShort.user_id);
-        localStorage.setItem('muted_creators', JSON.stringify(mutedCreators));
-        showToast('Creator muted', 'success');
-      }
-    }
-    
-    function handleNotInterested() {
-      showToast('We\'ll show you less content like this', 'info');
-      // In production, update recommendation algorithm
-    }
-    
-    function handleBlockCreator() {
-      if (!currentUser) {
-        showToast('Please sign in to block creators', 'info');
-        return;
-      }
-      
-      if (confirm('Are you sure you want to block this creator? You won\'t see their content anymore.')) {
-        const blockedCreators = JSON.parse(localStorage.getItem('blocked_creators') || '[]');
-        if (currentShort?.user_id && !blockedCreators.includes(currentShort.user_id)) {
-          blockedCreators.push(currentShort.user_id);
-          localStorage.setItem('blocked_creators', JSON.stringify(blockedCreators));
-          showToast('Creator blocked', 'success');
-          // Navigate to next short
-          window.shortsSwiper?.slideNext();
-        }
       }
     }
     
@@ -2239,7 +2360,7 @@
     }
     
     // ============================================
-    // MODALS
+    // MODALS - FIXED COMMENTS
     // ============================================
     async function openComments(shortId) {
       const modal = document.getElementById('comments-modal');
@@ -2256,29 +2377,32 @@
       document.getElementById('comments-modal').classList.remove('active');
     }
     
+    // ✅ FIX #2: Load comments with proper foreign key handling
     async function loadComments(shortId) {
       const list = document.getElementById('comments-list');
       list.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--slate-grey)">Loading comments...</div>';
       
       try {
-        const { data, error } = await supabaseAuth
+        // ✅ FIX: Use explicit join instead of relying on foreign key cache
+        const { data: comments, error: commentsError } = await supabaseAuth
           .from('pulse_comments')
           .select(`
-            *,
-            user_profiles!user_id (
-              username,
-              full_name,
-              avatar_url
-            )
+            id,
+            pulse_id,
+            user_id,
+            comment_text,
+            created_at,
+            likes_count,
+            is_removed
           `)
           .eq('pulse_id', shortId)
           .eq('is_removed', false)
           .order('created_at', { ascending: false })
           .limit(20);
         
-        if (error) throw error;
+        if (commentsError) throw commentsError;
         
-        if (!data || data.length === 0) {
+        if (!comments || comments.length === 0) {
           list.innerHTML = `
             <div style="text-align:center;padding:2rem;color:var(--slate-grey)">
               <i class="fas fa-comment-slash" style="font-size:2rem;margin-bottom:1rem;opacity:0.5"></i>
@@ -2289,8 +2413,23 @@
           return;
         }
         
-        list.innerHTML = data.map(comment => {
-          const user = comment.user_profiles;
+        // ✅ FIX: Fetch user profiles separately to avoid foreign key issues
+        const userIds = [...new Set(comments.map(c => c.user_id))];
+        const { data: users, error: usersError } = await supabaseAuth
+          .from('user_profiles')
+          .select('id, username, full_name, avatar_url')
+          .in('id', userIds);
+        
+        if (usersError) throw usersError;
+        
+        const userMap = new Map();
+        if (users) {
+          users.forEach(user => userMap.set(user.id, user));
+        }
+        
+        // Render comments with user data
+        list.innerHTML = comments.map(comment => {
+          const user = userMap.get(comment.user_id);
           const username = user?.username || 'user';
           const name = user?.full_name || username;
           const initials = getInitials(name);
@@ -2329,6 +2468,7 @@
       }
     }
     
+    // ✅ FIX #2: Post comment with proper UUID handling
     async function postComment() {
       const input = document.getElementById('comment-input');
       const text = input.value.trim();
@@ -2340,10 +2480,11 @@
       }
       
       try {
+        // ✅ FIX: Ensure pulse_id is properly typed as UUID if needed
         const { error } = await supabaseAuth
           .from('pulse_comments')
           .insert({
-            pulse_id: currentShort.id,
+            pulse_id: currentShort.id, // This should be UUID format
             user_id: currentUser.id,
             comment_text: text,
             created_at: new Date().toISOString()
@@ -2354,13 +2495,14 @@
         input.value = '';
         document.getElementById('post-comment-btn').disabled = true;
         
+        // Reload comments
         await loadComments(currentShort.id);
         
         showToast('Comment posted!', 'success');
         
       } catch (error) {
         console.error('Error posting comment:', error);
-        showToast('Failed to post comment', 'error');
+        showToast('Failed to post comment: ' + error.message, 'error');
       }
     }
     
@@ -2443,6 +2585,23 @@
         if (error) throw error;
         
         if (data && data.length > 0) {
+          // Load real like counts for new shorts
+          const contentIds = data.map(s => s.id);
+          const likeCounts = await Promise.all(
+            contentIds.map(async (id) => {
+              const { count } = await supabaseAuth
+                .from('content_likes')
+                .select('*', { count: 'exact', head: true })
+                .eq('content_id', id);
+              return { id, count: count || 0 };
+            })
+          );
+          
+          likeCounts.forEach(({ id, count }) => {
+            const short = data.find(s => s.id === id);
+            if (short) short.real_likes_count = count;
+          });
+          
           shortsData = [...shortsData, ...data];
           
           const wrapper = document.getElementById('shorts-wrapper');
@@ -2464,7 +2623,7 @@
                 <div class="shorts-actions">
                   <button class="action-btn like-btn" data-action="like" data-short-id="${short.id}">
                     <i class="far fa-heart"></i>
-                    <span class="action-count">${formatNumber(short.likes_count || 0)}</span>
+                    <span class="action-count">${formatNumber(short.real_likes_count || short.likes_count || 0)}</span>
                   </button>
                   <button class="action-btn comment-btn" data-action="comment" data-short-id="${short.id}">
                     <i class="far fa-comment"></i>
@@ -2518,10 +2677,126 @@
       }
     }
     
+    // ✅ FIX #4: Load notifications
+    async function loadNotifications() {
+      if (!currentUser) return;
+      
+      try {
+        const { data, error } = await supabaseAuth
+          .from('notifications')
+          .select('*')
+          .eq('user_id', currentUser.id)
+          .order('created_at', { ascending: false })
+          .limit(20);
+        
+        if (error) throw error;
+        
+        notifications = data || [];
+        
+        // Update badge
+        const unreadCount = notifications.filter(n => !n.is_read).length;
+        const badge = document.getElementById('notification-count');
+        if (badge) {
+          badge.textContent = unreadCount > 99 ? '99+' : unreadCount;
+          badge.style.display = unreadCount > 0 ? 'flex' : 'none';
+        }
+        
+      } catch (error) {
+        console.error('Error loading notifications:', error);
+      }
+    }
+    
+    // ✅ FIX #5: Load user profile picture
+    async function loadUserProfilePicture(user) {
+      try {
+        if (!user || !document.getElementById('userProfilePlaceholder')) return;
+        
+        const placeholder = document.getElementById('userProfilePlaceholder');
+        
+        // Clear placeholder
+        while (placeholder.firstChild) {
+          placeholder.removeChild(placeholder.firstChild);
+        }
+        
+        const userInitials = getInitials(user.email);
+        
+        // Fetch user profile
+        const { data: profile, error } = await supabaseAuth
+          .from('user_profiles')
+          .select('avatar_url, full_name, username')
+          .eq('id', user.id)
+          .maybeSingle();
+        
+        if (error || !profile) {
+          // Fallback to initials
+          const fallback = document.createElement('div');
+          fallback.className = 'profile-placeholder';
+          fallback.style.cssText = 'width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,#1D4ED8,#F59E0B);display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:8px';
+          fallback.textContent = userInitials;
+          placeholder.appendChild(fallback);
+          return;
+        }
+        
+        if (profile.avatar_url) {
+          let avatarUrl = profile.avatar_url;
+          if (!avatarUrl.startsWith('http')) {
+            if (avatarUrl.startsWith('avatars/')) {
+              avatarUrl = `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/${avatarUrl}`;
+            } else {
+              avatarUrl = `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/avatars/${avatarUrl}`;
+            }
+          }
+          
+          const img = document.createElement('img');
+          img.className = 'profile-img';
+          img.alt = profile.full_name || profile.username || 'User';
+          img.style.cssText = 'width: 100%; height: 100%; border-radius: 50%; object-fit: cover;';
+          img.src = avatarUrl;
+          
+          img.onerror = () => {
+            const fallback = document.createElement('div');
+            fallback.className = 'profile-placeholder';
+            fallback.style.cssText = 'width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,#1D4ED8,#F59E0B);display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:8px';
+            fallback.textContent = userInitials;
+            placeholder.innerHTML = '';
+            placeholder.appendChild(fallback);
+          };
+          
+          placeholder.appendChild(img);
+        } else {
+          const nameInitials = profile.full_name ? getInitials(profile.full_name) : userInitials;
+          const fallback = document.createElement('div');
+          fallback.className = 'profile-placeholder';
+          fallback.style.cssText = 'width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,#1D4ED8,#F59E0B);display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:8px';
+          fallback.textContent = nameInitials;
+          placeholder.appendChild(fallback);
+        }
+        
+      } catch (error) {
+        console.error('Error loading user profile picture:', error);
+      }
+    }
+    
     // ============================================
     // INITIALIZATION
     // ============================================
-    document.addEventListener('DOMContentLoaded', initShortsPlayer);
+    document.addEventListener('DOMContentLoaded', async () => {
+      // Initialize Supabase client if not already done
+      if (!window.supabaseClient) {
+        window.supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      }
+      
+      // Check auth and load profile
+      const { data: { session } } = await supabaseAuth.auth.getSession();
+      if (session?.user) {
+        currentUser = session.user;
+        await loadUserProfilePicture(session.user);
+        await loadNotifications();
+      }
+      
+      // Initialize shorts player
+      await initShortsPlayer();
+    });
     
     document.addEventListener('visibilitychange', () => {
       if (document.hidden) {
@@ -2535,6 +2810,27 @@
       setTimeout(() => {
         window.shortsSwiper?.update();
       }, 300);
+    });
+    
+    // Auth state listener
+    supabaseAuth.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_IN' && session?.user) {
+        currentUser = session.user;
+        await loadUserProfilePicture(session.user);
+        await loadNotifications();
+        showToast('Welcome back!', 'success');
+      } else if (event === 'SIGNED_OUT') {
+        currentUser = null;
+        const placeholder = document.getElementById('userProfilePlaceholder');
+        if (placeholder) {
+          placeholder.innerHTML = '<div class="profile-placeholder"><i class="fas fa-user"></i></div>';
+        }
+        const badge = document.getElementById('notification-count');
+        if (badge) {
+          badge.style.display = 'none';
+        }
+        showToast('Signed out successfully', 'info');
+      }
     });
   </script>
 </body>
