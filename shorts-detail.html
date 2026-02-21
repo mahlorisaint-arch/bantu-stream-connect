@@ -17,7 +17,7 @@
   <!-- Font Awesome -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   
-  <!-- Supabase JS SDK - Load ONCE globally -->
+  <!-- Supabase JS SDK -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   
   <!-- Swiper for Shorts Carousel -->
@@ -1367,7 +1367,7 @@
     const SUPABASE_URL = 'https://ydnxqnbjoshvxteevemc.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U';
     
-    // ✅ CRITICAL: Single Supabase client instance with error handling
+    // ✅ CRITICAL: Single Supabase client instance - NO signal on queries
     if (!window.supabaseAuth) {
       window.supabaseAuth = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
         auth: {
@@ -1383,19 +1383,20 @@
       console.log('✅ Supabase client initialized (single instance)');
     }
     
-    // ✅ CRITICAL: Test connection immediately with timeout
+    // ✅ FIXED: Test connection WITHOUT using .signal() on Supabase queries
     (async function testConnection() {
       try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 5000);
-        
-        const { data, error } = await window.supabaseAuth
+        // Use Promise.race for timeout instead of .signal on Supabase query
+        const connectionTest = window.supabaseAuth
           .from('Content')
           .select('id')
-          .limit(1)
-          .signal(controller.signal);
+          .limit(1);
         
-        clearTimeout(timeoutId);
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Connection timeout')), 5000)
+        );
+        
+        const { data, error } = await Promise.race([connectionTest, timeoutPromise]);
         
         if (error) {
           console.error('❌ Supabase connection test failed:', error);
@@ -1545,14 +1546,14 @@
     async function initShortsPlayer() {
       console.log('🎬 Initializing shorts player...');
       
-      // ✅ CRITICAL: Short timeout with fallback
+      // ✅ FIXED: Short timeout with fallback - NO signal on Supabase queries
       const initTimeout = setTimeout(() => {
         console.warn('⚠️ Initialization timeout - showing fallback');
         hideLoadingScreen(true, 'Connection slow. Please check your internet and try again.');
       }, 8000); // 8 second timeout
       
       try {
-        // ✅ CRITICAL: Auth check with timeout
+        // ✅ Auth check with Promise.race timeout (not Supabase signal)
         let session = null;
         try {
           const authPromise = window.supabaseAuth.auth.getSession();
@@ -1569,17 +1570,16 @@
         currentUser = session?.user || null;
         console.log('✅ Auth state:', currentUser ? 'logged in' : 'guest');
         
-        // ✅ CRITICAL: Fetch connections with error handling
+        // ✅ Fetch connections with error handling
         if (currentUser) {
           try {
             await fetchUserConnections();
           } catch (connErr) {
             console.warn('⚠️ Failed to fetch connections:', connErr);
-            // Continue without connections
           }
         }
         
-        // ✅ CRITICAL: Load shorts with fallback
+        // ✅ Load shorts with fallback
         try {
           await loadShorts();
         } catch (loadErr) {
@@ -1592,12 +1592,12 @@
           }
         }
         
-        // ✅ CRITICAL: Only initialize Swiper if we have content
+        // ✅ Only initialize Swiper if we have content
         if (shortsData.length > 0) {
           initSwiper();
           setupEventListeners();
           
-          // ✅ CRITICAL: Hide loading and show content
+          // ✅ Hide loading and show content
           hideLoadingScreen();
           
           playCurrentShort();
@@ -2947,7 +2947,7 @@
           // Fallback to initials
           const fallback = document.createElement('div');
           fallback.className = 'profile-placeholder';
-          fallback.style.cssText = 'width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,#1D4ED8,#F59E0B);display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:14px';
+          fallback.style.cssText = 'width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,#1D4ED8,#F59E0B);display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:16px';
           fallback.textContent = userInitials;
           placeholder.appendChild(fallback);
           return;
@@ -2972,7 +2972,7 @@
           img.onerror = () => {
             const fallback = document.createElement('div');
             fallback.className = 'profile-placeholder';
-            fallback.style.cssText = 'width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,#1D4ED8,#F59E0B);display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:14px';
+            fallback.style.cssText = 'width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,#1D4ED8,#F59E0B);display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:16px';
             fallback.textContent = userInitials;
             placeholder.innerHTML = '';
             placeholder.appendChild(fallback);
@@ -2983,7 +2983,7 @@
           const nameInitials = profile.full_name ? getInitials(profile.full_name) : userInitials;
           const fallback = document.createElement('div');
           fallback.className = 'profile-placeholder';
-          fallback.style.cssText = 'width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,#1D4ED8,#F59E0B);display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:14px';
+          fallback.style.cssText = 'width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,#1D4ED8,#F59E0B);display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:16px';
           fallback.textContent = nameInitials;
           placeholder.appendChild(fallback);
         }
