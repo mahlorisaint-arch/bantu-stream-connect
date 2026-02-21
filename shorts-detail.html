@@ -1200,50 +1200,9 @@
     }
     
     /* ============================================
-       BOTTOM NAVIGATION
+       BOTTOM NAVIGATION - REMOVED PERMANENTLY
        ============================================ */
-    .global-nav {
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      width: 100%;
-      background: rgba(10, 14, 18, 0.95);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      display: flex;
-      justify-content: space-around;
-      padding: 0.5rem 0;
-      padding-bottom: max(0.5rem, var(--safe-area-bottom));
-      z-index: 100;
-      border-top: 1px solid var(--card-border);
-    }
-    
-    .nav-item {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      color: var(--slate-grey);
-      text-decoration: none;
-      font-size: 0.75rem;
-      transition: all 0.2s ease;
-      padding: 0.5rem;
-      min-width: 44px;
-      min-height: 44px;
-      justify-content: center;
-    }
-    
-    .nav-item i {
-      font-size: 1.25rem;
-      margin-bottom: 0.25rem;
-    }
-    
-    .nav-item:active {
-      color: var(--soft-white);
-    }
-    
-    .nav-item.active {
-      color: var(--warm-gold);
-    }
+    /* Global nav has been removed */
     
     /* ============================================
        RESPONSIVE & UTILITY
@@ -1337,18 +1296,6 @@
       .shorts-caption {
         font-size: 0.875rem;
       }
-      
-      .global-nav {
-        padding: 0.25rem 0;
-      }
-      
-      .nav-item {
-        font-size: 0.6875rem;
-      }
-      
-      .nav-item i {
-        font-size: 1.125rem;
-      }
     }
     
     /* Prevent pull-to-refresh */
@@ -1367,10 +1314,6 @@
       }
       
       .video-controls {
-        padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
-      }
-      
-      .global-nav {
         padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
       }
     }
@@ -1540,25 +1483,7 @@
   <!-- Toast Container -->
   <div class="toast-container" id="toast-container"></div>
   
-  <!-- Bottom Navigation -->
-  <nav class="global-nav">
-    <a href="index.html" class="nav-item">
-      <i class="fas fa-home"></i>
-      <span>Home</span>
-    </a>
-    <a href="trending_screen.html" class="nav-item">
-      <i class="fas fa-fire"></i>
-      <span>Trending</span>
-    </a>
-    <a href="content-library.html" class="nav-item">
-      <i class="fas fa-th-large"></i>
-      <span>Library</span>
-    </a>
-    <a href="creator-dashboard.html" class="nav-item active">
-      <i class="fas fa-user"></i>
-      <span>Creator</span>
-    </a>
-  </nav>
+  <!-- Bottom Navigation - REMOVED PERMANENTLY -->
   
   <script>
     // ============================================
@@ -1582,6 +1507,7 @@
     let swiperInstance = null;
     let initTimeout = null;
     let authCheckComplete = false;
+    let hasRecordedView = false; // Track if view has been recorded for current video
     
     // Loading progress tracking
     let loadingProgress = 0;
@@ -2003,6 +1929,7 @@
           },
           slideChange: function() {
             pauseAllVideos();
+            hasRecordedView = false; // Reset view tracking for new video
             setTimeout(() => playCurrentShort(), 100);
             updateActiveShort();
             closeMoreMenu();
@@ -2045,6 +1972,7 @@
       }
       
       video.currentTime = 0;
+      hasRecordedView = false; // Reset view tracking
       
       // Try to play with user interaction fallback
       const playPromise = video.play();
@@ -2080,6 +2008,12 @@
       if (progressBar && video.duration) {
         const progress = (video.currentTime / video.duration) * 100;
         progressBar.style.width = `${progress}%`;
+      }
+      
+      // Record view after 3 seconds
+      if (!hasRecordedView && video.currentTime >= 3) {
+        hasRecordedView = true;
+        recordView(shortId, Math.floor(video.currentTime));
       }
     }
     
@@ -2169,6 +2103,309 @@
       const time = percent * currentVideo.duration;
       
       currentVideo.currentTime = Math.max(0, Math.min(time, currentVideo.duration));
+    }
+    
+    // ============================================
+    // UPDATED SUPABASE FUNCTIONS - MATCHING YOUR SCHEMA
+    // ============================================
+    
+    // ✅ 1️⃣ RECORD VIEW (Short Watch)
+    async function recordView(contentId, watchDuration = 3) {
+      if (!currentUser) return; // Only record views for logged-in users
+      
+      try {
+        await supabaseClient
+          .from('content_views')
+          .insert({
+            content_id: contentId,
+            viewer_id: currentUser.id, // Note: viewer_id, not user_id
+            view_duration: watchDuration,
+            device_type: 'web'
+          });
+        console.log('✅ View recorded for content:', contentId);
+      } catch (error) {
+        console.error('Error recording view:', error);
+      }
+    }
+    
+    // ✅ 2️⃣ LOAD COMMENTS
+    async function loadComments(contentId) {
+      const list = document.getElementById('comments-list');
+      list.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--slate-grey)"><i class="fas fa-spinner fa-spin"></i> Loading comments...</div>';
+      
+      try {
+        const { data: comments, error } = await supabaseClient
+          .from('comments')
+          .select(`
+            id,
+            comment_text,
+            created_at,
+            author_name,
+            author_avatar,
+            user_id,
+            comment_likes(count)
+          `)
+          .eq('content_id', contentId)
+          .order('created_at', { ascending: false })
+          .limit(50);
+        
+        if (error) throw error;
+        
+        if (!comments || comments.length === 0) {
+          list.innerHTML = `
+            <div style="text-align:center;padding:2rem;color:var(--slate-grey)">
+              <i class="far fa-comment-dots" style="font-size:2rem;margin-bottom:1rem;opacity:0.5"></i>
+              <p>No comments yet</p>
+              <p style="font-size:0.875rem">Be the first to comment!</p>
+            </div>
+          `;
+          return;
+        }
+        
+        list.innerHTML = comments.map(comment => {
+          const likeCount = comment.comment_likes?.[0]?.count || 0;
+          
+          return `
+            <div class="comment-item" data-comment-id="${comment.id}">
+              <div class="comment-avatar">
+                ${comment.author_avatar 
+                  ? `<img src="${fixMediaUrl(comment.author_avatar)}" alt="${comment.author_name}" loading="lazy">` 
+                  : `<span>${getInitials(comment.author_name || 'User')}</span>`
+                }
+              </div>
+              <div class="comment-content">
+                <div class="comment-header">
+                  <span class="comment-username">${escapeHtml(comment.author_name || 'User')}</span>
+                  <span class="comment-time">${getTimeAgo(comment.created_at)}</span>
+                </div>
+                <div class="comment-text">${escapeHtml(comment.comment_text)}</div>
+                <div class="comment-actions">
+                  <button class="comment-action like-comment-btn" data-comment-id="${comment.id}">
+                    <i class="far fa-heart"></i> ${formatNumber(likeCount)}
+                  </button>
+                  <button class="comment-action report-comment-btn" data-comment-id="${comment.id}">
+                    <i class="fas fa-flag"></i> Report
+                  </button>
+                  ${currentUser && comment.user_id === currentUser.id ? `
+                    <button class="comment-action delete-comment-btn" data-comment-id="${comment.id}">
+                      <i class="fas fa-trash"></i> Delete
+                    </button>
+                  ` : ''}
+                </div>
+              </div>
+            </div>
+          `;
+        }).join('');
+        
+        // Attach comment action listeners
+        attachCommentActionListeners();
+        
+      } catch (error) {
+        console.error('Error loading comments:', error);
+        list.innerHTML = `
+          <div style="text-align:center;padding:2rem;color:var(--error-color)">
+            <i class="fas fa-exclamation-circle" style="font-size:2rem;margin-bottom:1rem"></i>
+            <p>Failed to load comments</p>
+            <button onclick="loadComments('${contentId}')" style="background:var(--warm-gold);color:var(--deep-black);border:none;padding:0.5rem 1rem;border-radius:0.5rem;margin-top:1rem;cursor:pointer">
+              Retry
+            </button>
+          </div>
+        `;
+      }
+    }
+    
+    // ✅ 3️⃣ POST COMMENT
+    async function postComment() {
+      const input = document.getElementById('comment-input');
+      const text = input.value.trim();
+      
+      if (!text || !currentShort || !currentUser) {
+        showToast('Please sign in to comment', 'info');
+        return;
+      }
+      
+      // Get user profile for author info
+      try {
+        const { data: profile, error: profileError } = await supabaseClient
+          .from('user_profiles')
+          .select('full_name, avatar_url')
+          .eq('id', currentUser.id)
+          .single();
+        
+        if (profileError) throw profileError;
+        
+        const { error } = await supabaseClient
+          .from('comments')
+          .insert({
+            content_id: currentShort.id,
+            user_id: currentUser.id,
+            author_name: profile?.full_name || currentUser.email?.split('@')[0] || 'User',
+            author_avatar: profile?.avatar_url || null,
+            comment_text: text
+          });
+        
+        if (error) throw error;
+        
+        input.value = '';
+        document.getElementById('post-comment-btn').disabled = true;
+        
+        // Update comment count in UI
+        const commentBtn = document.querySelector(`.swiper-slide-active .comment-btn .action-count`);
+        if (commentBtn) {
+          const currentCount = parseInt(commentBtn.textContent) || 0;
+          commentBtn.textContent = formatNumber(currentCount + 1);
+        }
+        
+        await loadComments(currentShort.id);
+        showToast('Comment posted!', 'success');
+        
+      } catch (error) {
+        console.error('Error posting comment:', error);
+        showToast('Failed to post comment', 'error');
+      }
+    }
+    
+    // ✅ 4️⃣ LIKE COMMENT
+    async function likeComment(commentId, btn) {
+      if (!currentUser) {
+        showToast('Sign in to like comments', 'info');
+        return;
+      }
+      
+      const liked = btn.classList.contains('liked');
+      const countSpan = btn.querySelector('span') || btn;
+      const currentCount = parseInt(countSpan.textContent.replace(/[^0-9]/g, '')) || 0;
+      
+      // Optimistic update
+      if (liked) {
+        btn.classList.remove('liked');
+        btn.querySelector('i').className = 'far fa-heart';
+        countSpan.textContent = formatNumber(currentCount - 1);
+      } else {
+        btn.classList.add('liked');
+        btn.querySelector('i').className = 'fas fa-heart';
+        countSpan.textContent = formatNumber(currentCount + 1);
+      }
+      
+      try {
+        if (liked) {
+          await supabaseClient
+            .from('comment_likes')
+            .delete()
+            .eq('comment_id', commentId)
+            .eq('user_id', currentUser.id);
+        } else {
+          await supabaseClient
+            .from('comment_likes')
+            .insert({
+              comment_id: commentId,
+              user_id: currentUser.id
+            });
+        }
+      } catch (error) {
+        // Revert on error
+        if (liked) {
+          btn.classList.add('liked');
+          btn.querySelector('i').className = 'fas fa-heart';
+          countSpan.textContent = formatNumber(currentCount);
+        } else {
+          btn.classList.remove('liked');
+          btn.querySelector('i').className = 'far fa-heart';
+          countSpan.textContent = formatNumber(currentCount);
+        }
+        console.error('Comment like error:', error);
+        showToast('Failed to update like', 'error');
+      }
+    }
+    
+    // ✅ 5️⃣ REPORT COMMENT
+    async function reportComment(commentId) {
+      if (!currentUser) {
+        showToast('Sign in to report comments', 'info');
+        return;
+      }
+      
+      const reason = prompt('Please provide a reason for reporting this comment:');
+      if (!reason) return;
+      
+      try {
+        const { error } = await supabaseClient
+          .from('comment_reports')
+          .insert({
+            comment_id: commentId,
+            user_id: currentUser.id,
+            reason: reason
+          });
+        
+        if (error) throw error;
+        
+        showToast('Report submitted. Thank you for helping keep our community safe!', 'success');
+      } catch (error) {
+        console.error('Error reporting comment:', error);
+        showToast('Failed to submit report', 'error');
+      }
+    }
+    
+    // ✅ 6️⃣ DELETE COMMENT
+    async function deleteComment(commentId) {
+      if (!currentUser) return;
+      
+      if (!confirm('Delete this comment?')) return;
+      
+      try {
+        const { error } = await supabaseClient
+          .from('comments')
+          .delete()
+          .eq('id', commentId)
+          .eq('user_id', currentUser.id);
+        
+        if (error) throw error;
+        
+        // Remove comment from UI
+        const commentEl = document.querySelector(`.comment-item[data-comment-id="${commentId}"]`);
+        if (commentEl) commentEl.remove();
+        
+        // Update comment count in UI
+        const commentBtn = document.querySelector(`.swiper-slide-active .comment-btn .action-count`);
+        if (commentBtn) {
+          const currentCount = parseInt(commentBtn.textContent) || 0;
+          commentBtn.textContent = formatNumber(Math.max(0, currentCount - 1));
+        }
+        
+        showToast('Comment deleted', 'info');
+      } catch (error) {
+        console.error('Error deleting comment:', error);
+        showToast('Failed to delete comment', 'error');
+      }
+    }
+    
+    function attachCommentActionListeners() {
+      // Like comment buttons
+      document.querySelectorAll('.like-comment-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const commentId = btn.dataset.commentId;
+          likeComment(commentId, btn);
+        });
+      });
+      
+      // Report comment buttons
+      document.querySelectorAll('.report-comment-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const commentId = btn.dataset.commentId;
+          reportComment(commentId);
+        });
+      });
+      
+      // Delete comment buttons
+      document.querySelectorAll('.delete-comment-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const commentId = btn.dataset.commentId;
+          deleteComment(commentId);
+        });
+      });
     }
     
     // ============================================
@@ -2377,10 +2614,10 @@
     // ============================================
     // COMMENT FUNCTIONS
     // ============================================
-    async function openComments(shortId) {
+    function openComments(shortId) {
       const modal = document.getElementById('comments-modal');
       modal.classList.add('active');
-      await loadComments(shortId);
+      loadComments(shortId);
       setTimeout(() => {
         document.getElementById('comment-input')?.focus();
       }, 300);
@@ -2388,130 +2625,6 @@
     
     function closeComments() {
       document.getElementById('comments-modal').classList.remove('active');
-    }
-    
-    async function loadComments(shortId) {
-      const list = document.getElementById('comments-list');
-      list.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--slate-grey)"><i class="fas fa-spinner fa-spin"></i> Loading comments...</div>';
-      
-      try {
-        // Try to fetch real comments
-        const { data: comments, error } = await supabaseClient
-          .from('pulse_comments')
-          .select(`
-            id,
-            pulse_id,
-            user_id,
-            comment_text,
-            created_at,
-            likes_count
-          `)
-          .eq('pulse_id', shortId)
-          .order('created_at', { ascending: false })
-          .limit(20);
-        
-        if (error) throw error;
-        
-        if (!comments || comments.length === 0) {
-          list.innerHTML = `
-            <div style="text-align:center;padding:2rem;color:var(--slate-grey)">
-              <i class="far fa-comment-dots" style="font-size:2rem;margin-bottom:1rem;opacity:0.5"></i>
-              <p>No comments yet</p>
-              <p style="font-size:0.875rem">Be the first to comment!</p>
-            </div>
-          `;
-          return;
-        }
-        
-        // Get user profiles
-        const userIds = [...new Set(comments.map(c => c.user_id))];
-        const { data: users, error: usersError } = await supabaseClient
-          .from('user_profiles')
-          .select('id, username, full_name, avatar_url')
-          .in('id', userIds);
-        
-        if (usersError) throw usersError;
-        
-        const userMap = new Map();
-        if (users) users.forEach(user => userMap.set(user.id, user));
-        
-        list.innerHTML = comments.map(comment => {
-          const user = userMap.get(comment.user_id) || {};
-          const name = user.full_name || user.username || 'User';
-          const initials = getInitials(name);
-          
-          return `
-            <div class="comment-item">
-              <div class="comment-avatar">
-                ${user.avatar_url 
-                  ? `<img src="${fixMediaUrl(user.avatar_url)}" alt="${name}" loading="lazy">` 
-                  : `<span>${initials}</span>`
-                }
-              </div>
-              <div class="comment-content">
-                <div class="comment-header">
-                  <span class="comment-username">@${escapeHtml(user.username || 'user')}</span>
-                  <span class="comment-time">${getTimeAgo(comment.created_at)}</span>
-                </div>
-                <div class="comment-text">${escapeHtml(comment.comment_text)}</div>
-                <div class="comment-actions">
-                  <button class="comment-action">
-                    <i class="far fa-heart"></i> ${formatNumber(comment.likes_count || 0)}
-                  </button>
-                  <button class="comment-action">
-                    <i class="fas fa-reply"></i> Reply
-                  </button>
-                </div>
-              </div>
-            </div>
-          `;
-        }).join('');
-        
-      } catch (error) {
-        console.error('Error loading comments:', error);
-        list.innerHTML = `
-          <div style="text-align:center;padding:2rem;color:var(--error-color)">
-            <i class="fas fa-exclamation-circle" style="font-size:2rem;margin-bottom:1rem"></i>
-            <p>Failed to load comments</p>
-            <button onclick="loadComments('${shortId}')" style="background:var(--warm-gold);color:var(--deep-black);border:none;padding:0.5rem 1rem;border-radius:0.5rem;margin-top:1rem;cursor:pointer">
-              Retry
-            </button>
-          </div>
-        `;
-      }
-    }
-    
-    async function postComment() {
-      const input = document.getElementById('comment-input');
-      const text = input.value.trim();
-      
-      if (!text || !currentShort || !currentUser) {
-        showToast('Please sign in to comment', 'info');
-        return;
-      }
-      
-      try {
-        const { error } = await supabaseClient
-          .from('pulse_comments')
-          .insert({
-            pulse_id: currentShort.id,
-            user_id: currentUser.id,
-            comment_text: text,
-            created_at: new Date().toISOString()
-          });
-        
-        if (error) throw error;
-        
-        input.value = '';
-        document.getElementById('post-comment-btn').disabled = true;
-        
-        await loadComments(currentShort.id);
-        showToast('Comment posted!', 'success');
-        
-      } catch (error) {
-        console.error('Error posting comment:', error);
-        showToast('Failed to post comment', 'error');
-      }
     }
     
     // ============================================
