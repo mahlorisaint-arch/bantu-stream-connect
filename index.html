@@ -254,17 +254,17 @@
             <div class="community-stats-bar">
                 <div class="community-stat">
                     <i class="fas fa-users"></i>
-                    <span class="community-stat-value" id="total-connectors">12.5K</span>
+                    <span class="community-stat-value" id="total-connectors">0</span>
                     <span class="community-stat-label">Active Connectors</span>
                 </div>
                 <div class="community-stat">
                     <i class="fas fa-video"></i>
-                    <span class="community-stat-value" id="total-content">2.3K</span>
+                    <span class="community-stat-value" id="total-content">0</span>
                     <span class="community-stat-label">Pieces of Content</span>
                 </div>
                 <div class="community-stat">
                     <i class="fas fa-user-plus"></i>
-                    <span class="community-stat-value" id="new-connectors">+342</span>
+                    <span class="community-stat-value" id="new-connectors">+0</span>
                     <span class="community-stat-label">Joined Today</span>
                 </div>
                 <div class="community-stat">
@@ -291,7 +291,7 @@
                 </div>
             </section>
 
-            <!-- For You (Personalized Recommendations - Priority 2) -->
+            <!-- For You (Personalized Recommendations based on likes - Priority 2) -->
             <section class="section" id="for-you-section">
                 <div class="section-header">
                     <h2 class="section-title">
@@ -304,16 +304,16 @@
                     </a>
                 </div>
                 <div class="content-grid" id="for-you-grid">
-                    <!-- Personalized recommendations will be loaded here -->
+                    <!-- Personalized recommendations based on likes will be loaded here -->
                 </div>
             </section>
 
-            <!-- From Creators You Follow (Priority 3 - Social) -->
+            <!-- From Creators You Connected With (Priority 3 - Social) -->
             <section class="section" id="following-section" style="display: none;">
                 <div class="section-header">
                     <h2 class="section-title">
                         <i class="fas fa-user-friends" style="color: var(--warm-gold);"></i>
-                        FROM CREATORS YOU FOLLOW
+                        FROM CREATORS YOU CONNECTED WITH
                     </h2>
                     <a href="#" class="see-all-btn" id="see-all-following">
                         See All
@@ -321,7 +321,7 @@
                     </a>
                 </div>
                 <div class="content-grid" id="following-grid">
-                    <!-- Content from followed creators will be loaded here -->
+                    <!-- Content from connected creators will be loaded here -->
                 </div>
             </section>
 
@@ -925,83 +925,190 @@
     <script src="js/explore-screen-features.js" defer></script>
     <script src="js/home-feed-features.js" defer></script>
     
-    <!-- Home Feed Specific JavaScript -->
+    <!-- Home Feed Specific JavaScript - FIXED VERSION -->
     <script>
+        // Global state
+        let currentLanguage = 'all';
+        
         // Home Feed Initialization
         document.addEventListener('DOMContentLoaded', async () => {
-            console.log('🏠 Home Feed Initializing with Personalized Features');
+            console.log('🏠 Home Feed Initializing with Database-Aligned Features');
             
             // Override the explore-screen loading text
             const loadingText = document.getElementById('loading-text');
             if (loadingText) loadingText.textContent = 'Loading Your Personalized Feed...';
             
-            // Wait for explore-screen-features to initialize first
-            await new Promise(resolve => {
-                if (window.initializeExploreScreen) {
-                    resolve();
-                } else {
-                    document.addEventListener('exploreScreenReady', resolve);
-                    setTimeout(resolve, 2000); // Fallback timeout
-                }
-            });
-            
-            console.log('✅ Explore screen features loaded, initializing home feed specifics');
+            // Initialize Supabase client (assuming it's available from explore-screen.js)
+            if (!window.supabaseAuth) {
+                console.error('Supabase client not initialized');
+                return;
+            }
             
             // Personalize welcome message
             updateWelcomeMessage();
             
-            // Load home feed specific sections
-            await loadForYouSection();
-            await loadFollowingContent();
+            // Setup language filter
+            setupLanguageFilter();
             
-            // Setup profile switcher if not already set up
+            // Load all sections with proper language filtering
+            await Promise.all([
+                loadContinueWatching(),
+                loadForYouSection(),
+                loadConnectedContent(),
+                loadCommunityStats(),
+                loadTrendingContent(),
+                loadNewContent(),
+                loadCommunityFavorites()
+            ]);
+            
+            // Setup profile switcher
             setupProfileSwitcher();
             
             // Setup keyboard shortcuts help
             setupKeyboardHelp();
             
-            console.log('🏁 Home Feed Ready');
+            // Setup "See All" buttons
+            setupSeeAllButtons();
+            
+            console.log('🏁 Home Feed Ready with Schema-Aligned Queries');
         });
 
-        // Update welcome message based on user
-        function updateWelcomeMessage() {
-            const userNameSpan = document.getElementById('user-name');
-            const welcomeSubtitle = document.getElementById('welcome-subtitle');
+        // ============================================
+        // LANGUAGE FILTER
+        // ============================================
+        
+        function setupLanguageFilter() {
+            const languageChips = document.querySelectorAll('.language-chip');
+            const moreBtn = document.getElementById('more-languages-btn');
             
-            if (window.currentUser) {
-                const name = window.currentUser.user_metadata?.full_name || 
-                           window.currentUser.email?.split('@')[0] || 
-                           'User';
-                userNameSpan.textContent = name;
-                
-                // Time-based greeting
-                const hour = new Date().getHours();
-                let greeting = 'Good ';
-                if (hour < 12) greeting += 'morning';
-                else if (hour < 18) greeting += 'afternoon';
-                else greeting += 'evening';
-                
-                document.getElementById('welcome-message').innerHTML = `${greeting}, <span id="user-name">${name}</span>! 👋`;
-                
-                if (welcomeSubtitle) {
-                    welcomeSubtitle.textContent = 'Here\'s what we picked for you today';
-                }
-            } else {
-                userNameSpan.textContent = 'Guest';
-                document.getElementById('welcome-message').innerHTML = 'Welcome, <span id="user-name">Guest</span>! 👋';
-                if (welcomeSubtitle) {
-                    welcomeSubtitle.textContent = 'Sign in for personalized recommendations';
-                }
+            languageChips.forEach(chip => {
+                chip.addEventListener('click', async (e) => {
+                    const lang = chip.dataset.lang;
+                    
+                    // Update active state
+                    languageChips.forEach(c => c.classList.remove('active'));
+                    chip.classList.add('active');
+                    
+                    // Update global language
+                    currentLanguage = lang;
+                    
+                    // Reload all sections with new language filter
+                    await Promise.all([
+                        loadContinueWatching(),
+                        loadForYouSection(),
+                        loadConnectedContent(),
+                        loadTrendingContent(),
+                        loadNewContent(),
+                        loadCommunityFavorites()
+                    ]);
+                    
+                    showToast(`Showing content in ${getLanguageName(lang)}`, 'info');
+                });
+            });
+            
+            if (moreBtn) {
+                moreBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    showAllLanguages();
+                });
             }
         }
+        
+        function getLanguageName(code) {
+            const languages = {
+                'all': 'All Languages',
+                'en': 'English',
+                'zu': 'IsiZulu',
+                'xh': 'IsiXhosa',
+                'af': 'Afrikaans',
+                'nso': 'Sepedi',
+                'st': 'Sesotho',
+                'tn': 'Setswana',
+                'ss': 'siSwati',
+                've': 'Tshivenda',
+                'ts': 'Xitsonga',
+                'nr': 'isiNdebele'
+            };
+            return languages[code] || code;
+        }
+        
+        function showAllLanguages() {
+            const modal = document.createElement('div');
+            modal.className = 'language-selector-modal';
+            modal.innerHTML = `
+                <div class="language-selector-content">
+                    <div class="language-selector-header">
+                        <h3>Select Language</h3>
+                        <button class="close-btn"><i class="fas fa-times"></i></button>
+                    </div>
+                    <div class="language-selector-grid">
+                        ${Object.entries({
+                            'all': 'All Languages',
+                            'en': 'English',
+                            'zu': 'IsiZulu',
+                            'xh': 'IsiXhosa',
+                            'af': 'Afrikaans',
+                            'nso': 'Sepedi',
+                            'st': 'Sesotho',
+                            'tn': 'Setswana',
+                            'ss': 'siSwati',
+                            've': 'Tshivenda',
+                            'ts': 'Xitsonga',
+                            'nr': 'isiNdebele'
+                        }).map(([code, name]) => `
+                            <button class="language-option ${code === currentLanguage ? 'active' : ''}" 
+                                    data-lang="${code}">
+                                ${name}
+                            </button>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+            
+            modal.querySelectorAll('.language-option').forEach(btn => {
+                btn.addEventListener('click', async () => {
+                    const lang = btn.dataset.lang;
+                    currentLanguage = lang;
+                    
+                    // Update main chips
+                    document.querySelectorAll('.language-chip').forEach(chip => {
+                        chip.classList.toggle('active', chip.dataset.lang === lang);
+                    });
+                    
+                    // Reload all sections
+                    await Promise.all([
+                        loadContinueWatching(),
+                        loadForYouSection(),
+                        loadConnectedContent(),
+                        loadTrendingContent(),
+                        loadNewContent(),
+                        loadCommunityFavorites()
+                    ]);
+                    
+                    modal.remove();
+                });
+            });
+            
+            modal.querySelector('.close-btn').addEventListener('click', () => modal.remove());
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) modal.remove();
+            });
+        }
 
-        // Load personalized "For You" section
-        async function loadForYouSection() {
-            const forYouGrid = document.getElementById('for-you-grid');
-            if (!forYouGrid) return;
+        // ============================================
+        // CONTINUE WATCHING
+        // ============================================
+        
+        async function loadContinueWatching() {
+            const { data: { user } } = await supabaseAuth.auth.getUser();
+            const continueGrid = document.getElementById('continue-watching-grid');
+            
+            if (!continueGrid) return;
             
             // Show skeleton loading
-            forYouGrid.innerHTML = Array(4).fill().map(() => `
+            continueGrid.innerHTML = Array(4).fill().map(() => `
                 <div class="skeleton-card">
                     <div class="skeleton-thumbnail"></div>
                     <div class="skeleton-title"></div>
@@ -1010,101 +1117,438 @@
                 </div>
             `).join('');
             
-            try {
-                let recommendations = [];
-                
-                if (window.currentUser && window.recommendations) {
-                    // Use existing recommendations from explore-screen
-                    recommendations = window.recommendations || [];
-                }
-                
-                if (recommendations.length === 0) {
-                    // Fallback to trending content
-                    const { data } = await supabaseAuth
-                        .from('Content')
-                        .select('*, user_profiles!user_id(*)')
-                        .eq('status', 'published')
-                        .order('views_count', { ascending: false })
-                        .limit(8);
-                    
-                    recommendations = data || [];
-                }
-                
-                if (recommendations.length === 0) {
-                    forYouGrid.innerHTML = `
-                        <div class="empty-state" style="grid-column: 1 / -1;">
-                            <div class="empty-icon"><i class="fas fa-magic"></i></div>
-                            <h3>No Recommendations Yet</h3>
-                            <p>Start watching to get personalized picks</p>
-                        </div>
-                    `;
-                    return;
-                }
-                
-                // Use the renderContentCards function from explore-screen-features
-                if (typeof renderContentCards === 'function') {
-                    const fragment = renderContentCards(recommendations.slice(0, 8));
-                    forYouGrid.innerHTML = '';
-                    forYouGrid.appendChild(fragment);
-                }
-            } catch (error) {
-                console.error('Error loading for you section:', error);
-                forYouGrid.innerHTML = '<div class="empty-state">Failed to load recommendations</div>';
-            }
-        }
-
-        // Load content from followed creators
-        async function loadFollowingContent() {
-            const followingSection = document.getElementById('following-section');
-            const followingGrid = document.getElementById('following-grid');
-            
-            if (!followingSection || !followingGrid || !window.currentUser) {
-                followingSection.style.display = 'none';
+            if (!user) {
+                continueGrid.innerHTML = '<div class="empty-state">Sign in to see your continue watching</div>';
                 return;
             }
             
             try {
-                // Get creators the user follows
-                const { data: following, error } = await supabaseAuth
-                    .from('connectors')
-                    .select('connected_id')
-                    .eq('connector_id', window.currentUser.id)
-                    .eq('connection_type', 'creator');
+                // Get user's content views
+                let query = supabaseAuth
+                    .from('content_views')
+                    .select(`
+                        content_id,
+                        view_duration,
+                        created_at,
+                        Content!inner(
+                            id,
+                            title,
+                            description,
+                            thumbnail_url,
+                            video_url,
+                            duration,
+                            language,
+                            category,
+                            views_count,
+                            created_at,
+                            user_profiles!user_id(
+                                id,
+                                username,
+                                full_name,
+                                avatar_url
+                            )
+                        )
+                    `)
+                    .eq('viewer_id', user.id)
+                    .order('created_at', { ascending: false });
                 
-                if (error || !following || following.length === 0) {
-                    followingSection.style.display = 'none';
+                const { data: views, error } = await query;
+                
+                if (error) {
+                    console.error('Error loading continue watching:', error);
+                    continueGrid.innerHTML = '<div class="empty-state">Error loading content</div>';
                     return;
                 }
                 
-                const creatorIds = following.map(f => f.connected_id);
+                if (!views || views.length === 0) {
+                    continueGrid.innerHTML = '<div class="empty-state">No viewing history yet</div>';
+                    return;
+                }
                 
-                // Get content from those creators
-                const { data: content } = await supabaseAuth
-                    .from('Content')
-                    .select('*, user_profiles!user_id(*)')
-                    .eq('status', 'published')
-                    .in('user_id', creatorIds)
-                    .order('created_at', { ascending: false })
-                    .limit(8);
+                // Filter for unfinished content and apply language filter
+                let unfinishedContent = views
+                    .filter(v => v.view_duration < v.Content.duration)
+                    .map(v => v.Content);
                 
-                if (content && content.length > 0) {
-                    followingSection.style.display = 'block';
-                    
-                    if (typeof renderContentCards === 'function') {
-                        const fragment = renderContentCards(content);
-                        followingGrid.innerHTML = '';
-                        followingGrid.appendChild(fragment);
-                    }
-                } else {
-                    followingSection.style.display = 'none';
+                // Apply language filter
+                if (currentLanguage !== 'all') {
+                    unfinishedContent = unfinishedContent.filter(c => c.language === currentLanguage);
+                }
+                
+                if (unfinishedContent.length === 0) {
+                    continueGrid.innerHTML = '<div class="empty-state">No unfinished content</div>';
+                    return;
+                }
+                
+                // Render content cards
+                if (typeof renderContentCards === 'function') {
+                    const fragment = renderContentCards(unfinishedContent.slice(0, 8));
+                    continueGrid.innerHTML = '';
+                    continueGrid.appendChild(fragment);
                 }
             } catch (error) {
-                console.error('Error loading following content:', error);
-                followingSection.style.display = 'none';
+                console.error('Error in loadContinueWatching:', error);
+                continueGrid.innerHTML = '<div class="empty-state">Error loading content</div>';
             }
         }
 
-        // Setup profile switcher (if not already in explore-screen-features)
+        // ============================================
+        // FOR YOU - Based on Liked Content
+        // ============================================
+        
+        async function loadForYouSection() {
+            const { data: { user } } = await supabaseAuth.auth.getUser();
+            const grid = document.getElementById('for-you-grid');
+            
+            if (!grid) return;
+            
+            // Show skeleton loading
+            grid.innerHTML = Array(4).fill().map(() => `
+                <div class="skeleton-card">
+                    <div class="skeleton-thumbnail"></div>
+                    <div class="skeleton-title"></div>
+                    <div class="skeleton-creator"></div>
+                    <div class="skeleton-stats"></div>
+                </div>
+            `).join('');
+            
+            if (!user) {
+                grid.innerHTML = '<div class="empty-state">Sign in to get personalized recommendations</div>';
+                return;
+            }
+            
+            try {
+                // Get content the user has liked
+                const { data: likes, error: likesError } = await supabaseAuth
+                    .from('content_likes')
+                    .select('content_id')
+                    .eq('user_id', user.id);
+                
+                if (likesError) {
+                    console.error('Error loading likes:', likesError);
+                    grid.innerHTML = '<div class="empty-state">Error loading recommendations</div>';
+                    return;
+                }
+                
+                if (!likes || likes.length === 0) {
+                    grid.innerHTML = '<div class="empty-state">Like content to get recommendations</div>';
+                    return;
+                }
+                
+                const likedContentIds = likes.map(l => l.content_id);
+                
+                // Get the actual content details for liked items
+                let query = supabaseAuth
+                    .from('Content')
+                    .select('*, user_profiles!user_id(*)')
+                    .in('id', likedContentIds)
+                    .eq('status', 'published');
+                
+                // Apply language filter
+                if (currentLanguage !== 'all') {
+                    query = query.eq('language', currentLanguage);
+                }
+                
+                const { data: content, error: contentError } = await query;
+                
+                if (contentError) {
+                    console.error('Error loading liked content:', contentError);
+                    grid.innerHTML = '<div class="empty-state">Error loading content</div>';
+                    return;
+                }
+                
+                if (!content || content.length === 0) {
+                    grid.innerHTML = '<div class="empty-state">No liked content found</div>';
+                    return;
+                }
+                
+                // Render content cards
+                if (typeof renderContentCards === 'function') {
+                    const fragment = renderContentCards(content.slice(0, 8));
+                    grid.innerHTML = '';
+                    grid.appendChild(fragment);
+                }
+            } catch (error) {
+                console.error('Error in loadForYouSection:', error);
+                grid.innerHTML = '<div class="empty-state">Error loading recommendations</div>';
+            }
+        }
+
+        // ============================================
+        // FROM CREATORS YOU CONNECTED WITH
+        // ============================================
+        
+        async function loadConnectedContent() {
+            const { data: { user } } = await supabaseAuth.auth.getUser();
+            const section = document.getElementById('following-section');
+            const grid = document.getElementById('following-grid');
+            
+            if (!section || !grid) return;
+            
+            if (!user) {
+                section.style.display = 'none';
+                return;
+            }
+            
+            try {
+                // Get creators the user has connected with
+                const { data: connections, error: connectionsError } = await supabaseAuth
+                    .from('connectors')
+                    .select('connected_id')
+                    .eq('connector_id', user.id)
+                    .eq('connection_type', 'creator');
+                
+                if (connectionsError) {
+                    console.error('Error loading connections:', connectionsError);
+                    section.style.display = 'none';
+                    return;
+                }
+                
+                if (!connections || connections.length === 0) {
+                    section.style.display = 'none';
+                    return;
+                }
+                
+                const creatorIds = connections.map(c => c.connected_id);
+                
+                // Get content from those creators
+                let query = supabaseAuth
+                    .from('Content')
+                    .select('*, user_profiles!user_id(*)')
+                    .in('user_id', creatorIds)
+                    .eq('status', 'published')
+                    .order('created_at', { ascending: false });
+                
+                // Apply language filter
+                if (currentLanguage !== 'all') {
+                    query = query.eq('language', currentLanguage);
+                }
+                
+                const { data: content, error: contentError } = await query.limit(8);
+                
+                if (contentError) {
+                    console.error('Error loading connected content:', contentError);
+                    section.style.display = 'none';
+                    return;
+                }
+                
+                if (!content || content.length === 0) {
+                    section.style.display = 'none';
+                    return;
+                }
+                
+                section.style.display = 'block';
+                
+                // Render content cards
+                if (typeof renderContentCards === 'function') {
+                    const fragment = renderContentCards(content);
+                    grid.innerHTML = '';
+                    grid.appendChild(fragment);
+                }
+            } catch (error) {
+                console.error('Error in loadConnectedContent:', error);
+                section.style.display = 'none';
+            }
+        }
+
+        // ============================================
+        // COMMUNITY STATS
+        // ============================================
+        
+        async function loadCommunityStats() {
+            try {
+                // Get active connectors count
+                const { count: connectorsCount, error: connectorsError } = await supabaseAuth
+                    .from('connectors')
+                    .select('*', { count: 'exact', head: true });
+                
+                if (connectorsError) console.error('Error counting connectors:', connectorsError);
+                
+                // Get total content count
+                const { count: contentCount, error: contentError } = await supabaseAuth
+                    .from('Content')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('status', 'published');
+                
+                if (contentError) console.error('Error counting content:', contentError);
+                
+                // Get joined today count
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                
+                const { count: joinedToday, error: joinedError } = await supabaseAuth
+                    .from('user_profiles')
+                    .select('*', { count: 'exact', head: true })
+                    .gte('created_at', today.toISOString());
+                
+                if (joinedError) console.error('Error counting new users:', joinedError);
+                
+                // Update DOM with real counts (fallback to 0 if null)
+                document.getElementById('total-connectors').textContent = 
+                    formatNumber(connectorsCount || 0);
+                
+                document.getElementById('total-content').textContent = 
+                    formatNumber(contentCount || 0);
+                
+                document.getElementById('new-connectors').textContent = 
+                    '+' + formatNumber(joinedToday || 0);
+                
+            } catch (error) {
+                console.error('Error loading community stats:', error);
+            }
+        }
+        
+        function formatNumber(num) {
+            if (num >= 1000) {
+                return (num / 1000).toFixed(1) + 'K';
+            }
+            return num.toString();
+        }
+
+        // ============================================
+        // ADDITIONAL CONTENT SECTIONS
+        // ============================================
+        
+        async function loadTrendingContent() {
+            const grid = document.getElementById('trending-grid');
+            if (!grid) return;
+            
+            try {
+                let query = supabaseAuth
+                    .from('Content')
+                    .select('*, user_profiles!user_id(*)')
+                    .eq('status', 'published')
+                    .order('views_count', { ascending: false });
+                
+                if (currentLanguage !== 'all') {
+                    query = query.eq('language', currentLanguage);
+                }
+                
+                const { data: content, error } = await query.limit(8);
+                
+                if (error) throw error;
+                
+                if (!content || content.length === 0) {
+                    grid.innerHTML = '<div class="empty-state">No trending content</div>';
+                    return;
+                }
+                
+                if (typeof renderContentCards === 'function') {
+                    const fragment = renderContentCards(content);
+                    grid.innerHTML = '';
+                    grid.appendChild(fragment);
+                }
+            } catch (error) {
+                console.error('Error loading trending content:', error);
+            }
+        }
+        
+        async function loadNewContent() {
+            const grid = document.getElementById('new-content-grid');
+            if (!grid) return;
+            
+            try {
+                let query = supabaseAuth
+                    .from('Content')
+                    .select('*, user_profiles!user_id(*)')
+                    .eq('status', 'published')
+                    .order('created_at', { ascending: false });
+                
+                if (currentLanguage !== 'all') {
+                    query = query.eq('language', currentLanguage);
+                }
+                
+                const { data: content, error } = await query.limit(8);
+                
+                if (error) throw error;
+                
+                if (!content || content.length === 0) {
+                    grid.innerHTML = '<div class="empty-state">No new content</div>';
+                    return;
+                }
+                
+                if (typeof renderContentCards === 'function') {
+                    const fragment = renderContentCards(content);
+                    grid.innerHTML = '';
+                    grid.appendChild(fragment);
+                }
+            } catch (error) {
+                console.error('Error loading new content:', error);
+            }
+        }
+        
+        async function loadCommunityFavorites() {
+            const grid = document.getElementById('community-favorites-grid');
+            if (!grid) return;
+            
+            try {
+                // Community favorites = most liked content
+                let query = supabaseAuth
+                    .from('Content')
+                    .select('*, user_profiles!user_id(*)')
+                    .eq('status', 'published')
+                    .order('views_count', { ascending: false });
+                
+                if (currentLanguage !== 'all') {
+                    query = query.eq('language', currentLanguage);
+                }
+                
+                const { data: content, error } = await query.limit(8);
+                
+                if (error) throw error;
+                
+                if (!content || content.length === 0) {
+                    grid.innerHTML = '<div class="empty-state">No community favorites</div>';
+                    return;
+                }
+                
+                if (typeof renderContentCards === 'function') {
+                    const fragment = renderContentCards(content);
+                    grid.innerHTML = '';
+                    grid.appendChild(fragment);
+                }
+            } catch (error) {
+                console.error('Error loading community favorites:', error);
+            }
+        }
+
+        // ============================================
+        // UTILITY FUNCTIONS
+        // ============================================
+        
+        function updateWelcomeMessage() {
+            const userNameSpan = document.getElementById('user-name');
+            const welcomeSubtitle = document.getElementById('welcome-subtitle');
+            
+            supabaseAuth.auth.getUser().then(({ data: { user } }) => {
+                if (user) {
+                    const name = user.user_metadata?.full_name || 
+                               user.email?.split('@')[0] || 
+                               'User';
+                    userNameSpan.textContent = name;
+                    
+                    // Time-based greeting
+                    const hour = new Date().getHours();
+                    let greeting = 'Good ';
+                    if (hour < 12) greeting += 'morning';
+                    else if (hour < 18) greeting += 'afternoon';
+                    else greeting += 'evening';
+                    
+                    document.getElementById('welcome-message').innerHTML = `${greeting}, <span id="user-name">${name}</span>! 👋`;
+                    
+                    if (welcomeSubtitle) {
+                        welcomeSubtitle.textContent = 'Here\'s what we picked for you today';
+                    }
+                } else {
+                    userNameSpan.textContent = 'Guest';
+                    document.getElementById('welcome-message').innerHTML = 'Welcome, <span id="user-name">Guest</span>! 👋';
+                    if (welcomeSubtitle) {
+                        welcomeSubtitle.textContent = 'Sign in for personalized recommendations';
+                    }
+                }
+            });
+        }
+        
         function setupProfileSwitcher() {
             const profileBtn = document.getElementById('current-profile-btn');
             const dropdown = document.getElementById('profile-dropdown');
@@ -1129,8 +1573,7 @@
                 });
             }
         }
-
-        // Setup keyboard shortcuts help
+        
         function setupKeyboardHelp() {
             document.addEventListener('keydown', (e) => {
                 // Show help on ?
@@ -1159,8 +1602,39 @@
                 });
             }
         }
+        
+        function setupSeeAllButtons() {
+            // Continue Watching See All
+            document.getElementById('see-all-continue')?.addEventListener('click', (e) => {
+                e.preventDefault();
+                window.location.href = 'continue-watching.html';
+            });
+            
+            // For You See All
+            document.getElementById('see-all-for-you')?.addEventListener('click', (e) => {
+                e.preventDefault();
+                window.location.href = 'recommendations.html';
+            });
+            
+            // Following See All
+            document.getElementById('see-all-following')?.addEventListener('click', (e) => {
+                e.preventDefault();
+                window.location.href = 'following-content.html';
+            });
+        }
+        
+        function showToast(message, type = 'info') {
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            toast.textContent = message;
+            document.getElementById('toast-container').appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
 
-        // Override analytics to show personal stats
+        // ============================================
+        // OVERRIDE ANALYTICS TO SHOW PERSONAL STATS
+        // ============================================
+        
         const originalLoadPlatformAnalytics = window.loadPlatformAnalytics;
         window.loadPlatformAnalytics = async function() {
             if (originalLoadPlatformAnalytics) {
@@ -1168,23 +1642,29 @@
             }
             
             // Override with personal stats
-            if (window.currentUser) {
-                // Get user's watch time
+            const { data: { user } } = await supabaseAuth.auth.getUser();
+            if (user) {
+                // Get user's watch time from content_views
                 const { data: views } = await supabaseAuth
                     .from('content_views')
-                    .select('*')
-                    .eq('profile_id', window.currentProfile?.id);
+                    .select('view_duration')
+                    .eq('viewer_id', user.id);
                 
                 const totalViews = views?.length || 0;
-                const totalWatchTime = views?.reduce((acc, v) => acc + (v.progress_seconds || 0), 0) || 0;
+                const totalWatchTime = views?.reduce((acc, v) => acc + (v.view_duration || 0), 0) || 0;
                 const hours = Math.floor(totalWatchTime / 3600);
                 
                 document.getElementById('personal-watch-time').textContent = hours + 'h';
                 document.getElementById('personal-views').textContent = totalViews;
                 document.getElementById('personal-sessions').textContent = Math.ceil(totalViews / 5) || 1;
                 
-                // Calculate return rate (simplified)
-                const uniqueDays = new Set(views?.map(v => new Date(v.viewed_at).toDateString())).size;
+                // Calculate return rate (based on unique days)
+                const { data: viewsWithDates } = await supabaseAuth
+                    .from('content_views')
+                    .select('created_at')
+                    .eq('viewer_id', user.id);
+                
+                const uniqueDays = new Set(viewsWithDates?.map(v => new Date(v.created_at).toDateString())).size;
                 const returnRate = uniqueDays > 0 ? Math.min(100, Math.floor((uniqueDays / 7) * 100)) : 0;
                 document.getElementById('return-rate').textContent = returnRate + '%';
             }
@@ -1211,9 +1691,7 @@
         });
 
         // Debug logging
-        console.log('🔍 Debug: Home feed initialization');
-        console.log('- explore-screen.js loaded:', typeof window.supabaseAuth !== 'undefined');
-        console.log('- explore-screen-features.js loaded:', typeof window.CacheManager !== 'undefined');
+        console.log('🔍 Debug: Home feed initialization with schema-aligned queries');
         
         // Dispatch event when explore screen features are ready
         document.addEventListener('exploreScreenFeaturesReady', () => {
