@@ -1,4 +1,13 @@
 // ============================================
+// HOME FEED FEATURES MODULE
+// ============================================
+// This file contains all feature systems for the Bantu platform home feed
+// Includes: Video Preview, Recommendation Engine, Notifications, Analytics, 
+// Search, Continue Watching, Progress Tracking, Sidebar, UI Scale, 
+// Content Metrics, Badges, Tips, Voice Search, and more
+// ============================================
+
+// ============================================
 // VIDEO PREVIEW SYSTEM
 // ============================================
 class VideoPreviewSystem {
@@ -1616,14 +1625,52 @@ async function initVideoHero() {
 }
 
 // ============================================
-// CONTENT METRICS LOADING (FIXED with cache safety)
+// CACHE MANAGER
+// ============================================
+class CacheManager {
+    constructor() {
+        this.cache = new Map();
+        this.ttl = 5 * 60 * 1000; // 5 minutes default
+    }
+    
+    set(key, data, ttl = this.ttl) {
+        this.cache.set(key, { 
+            data, 
+            timestamp: Date.now(), 
+            ttl 
+        });
+    }
+    
+    get(key) {
+        const item = this.cache.get(key);
+        if (!item) return null;
+        
+        if (Date.now() - item.timestamp > item.ttl) {
+            this.cache.delete(key);
+            return null;
+        }
+        
+        return item.data;
+    }
+    
+    clear() {
+        this.cache.clear();
+    }
+    
+    remove(key) {
+        this.cache.delete(key);
+    }
+}
+
+// ============================================
+// BATCHED METRICS LOADING
 // ============================================
 async function loadContentMetrics(contentIds) {
     if (!contentIds || contentIds.length === 0) return;
     
     // Safety check: ensure cacheManager exists and has get method
     if (!window.cacheManager || typeof window.cacheManager.get !== 'function') {
-        console.warn('⚠️ cacheManager not ready, skipping cache check');
+        console.warn('⚠️ cacheManager not ready, proceeding without cache');
         // Proceed without cache
     } else {
         // Check cache first
@@ -1741,199 +1788,256 @@ function updateMetricsOnCards(contentIds) {
 }
 
 // ============================================
-// Wait for core to be ready before using cacheManager
+// VIDEO PREVIEWS ON HOVER
 // ============================================
-function waitForCacheManager(timeout = 5000) {
-    return new Promise((resolve, reject) => {
-        const start = Date.now();
-        const check = () => {
-            if (window.cacheManager && typeof window.cacheManager.get === 'function') {
-                resolve(window.cacheManager);
-            } else if (Date.now() - start > timeout) {
-                console.warn('⚠️ cacheManager not ready after timeout');
-                resolve(null); // Return null instead of rejecting to avoid crash
-            } else {
-                setTimeout(check, 100);
-            }
-        };
-        check();
-    });
-}
-
-// ============================================
-// CONTENT CARD RENDERING (With Metrics)
-// ============================================
-function createContentCardWithMetrics(item) {
-    const metrics = window.contentMetrics?.get(item.id) || { 
-        views: item.views || item.views_count || 0, 
-        likes: item.likes || item.likes_count || 0, 
-        shares: item.shares_count || 0 
-    };
-    
-    const thumbnailUrl = item.thumbnail_url 
-        ? fixMediaUrl(item.thumbnail_url) 
-        : 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop';
-    
-    const creatorProfile = item.user_profiles;
-    const creatorName = creatorProfile?.full_name || creatorProfile?.username || item.creator || 'Creator';
-    const initials = getInitials(creatorName);
-    
-    let avatarHtml = '';
-    if (creatorProfile?.avatar_url) {
-        const avatarUrl = fixMediaUrl(creatorProfile.avatar_url);
-        avatarHtml = `<img src="${avatarUrl}" alt="${escapeHtml(creatorName)}" loading="lazy" onerror="this.parentElement.innerHTML='<div class=\\'creator-initials-small\\'>${initials}</div>'">`;
-    } else {
-        avatarHtml = `<div class="creator-initials-small">${initials}</div>`;
-    }
-    
-    return `
-        <a href="content-detail.html?id=${item.id}" class="content-card" 
-           data-content-id="${item.id}" 
-           data-language="${item.language || 'en'}"
-           data-category="${item.genre || ''}">
-            <div class="card-thumbnail">
-                <img src="${thumbnailUrl}" 
-                     alt="${escapeHtml(item.title)}" 
-                     loading="lazy"
-                     onerror="this.src='https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop'">
-                <div class="card-badges">
-                    ${item.is_new ? '<div class="card-badge badge-new"><i class="fas fa-gem"></i> NEW</div>' : ''}
-                    ${item.is_trending ? '<div class="card-badge badge-trending"><i class="fas fa-fire"></i> TRENDING</div>' : ''}
-                </div>
-                <div class="thumbnail-overlay"></div>
-                <div class="play-overlay">
-                    <div class="play-icon"><i class="fas fa-play"></i></div>
-                </div>
-            </div>
-            <div class="card-content">
-                <h3 class="card-title" title="${escapeHtml(item.title)}">
-                    ${truncateText(escapeHtml(item.title), 50)}
-                </h3>
-                <div class="creator-info">
-                    <div class="creator-avatar-small">${avatarHtml}</div>
-                    <div class="creator-name-small">@${escapeHtml(creatorName.split(' ')[0].toLowerCase())}</div>
-                </div>
-                <div class="card-stats">
-                    <span class="card-stat" title="Views">
-                        <i class="fas fa-eye"></i> ${formatNumber(metrics.views)}
-                    </span>
-                    <span class="card-stat" title="Likes">
-                        <i class="fas fa-heart"></i> ${formatNumber(metrics.likes)}
-                    </span>
-                    <span class="card-stat" title="Shares">
-                        <i class="fas fa-share"></i> ${formatNumber(metrics.shares)}
-                    </span>
-                </div>
-                <div class="card-meta">
-                    <span><i class="fas fa-language"></i> ${languageMap[item.language] || 'English'}</span>
-                    <span><i class="fas fa-clock"></i> ${formatDate(item.created_at)}</span>
-                </div>
-            </div>
-        </a>
-    `;
-}
-
-// ============================================
-// LANGUAGE FILTER SYSTEM
-// ============================================
-const languageMap = {
-    'en': 'English',
-    'zu': 'IsiZulu',
-    'xh': 'IsiXhosa',
-    'af': 'Afrikaans',
-    'nso': 'Sepedi',
-    'st': 'Sesotho',
-    'tn': 'Setswana',
-    'ss': 'siSwati',
-    've': 'Tshivenda',
-    'ts': 'Xitsonga',
-    'nr': 'isiNdebele'
-};
-
-function setupLanguageFilter() {
-    const languageChips = document.querySelectorAll('.language-chip');
-    const moreLanguagesBtn = document.getElementById('more-languages-btn');
-    let languageFilter = 'all';
-
-    languageChips.forEach(chip => {
-        chip.addEventListener('click', (e) => {
-            e.preventDefault();
-            document.querySelectorAll('.language-chip').forEach(c => c.classList.remove('active'));
-            chip.classList.add('active');
-            languageFilter = chip.dataset.lang;
-            filterContentByLanguage(languageFilter);
-            const langName = getLanguageName(languageFilter);
-            if (typeof toast !== 'undefined') {
-                toast.info(`Showing: ${langName}`);
+function setupVideoPreviews() {
+    document.querySelectorAll('.content-card[data-preview-url]').forEach(card => {
+        let video = null;
+        let hoverTimeout = null;
+        
+        card.addEventListener('mouseenter', () => {
+            hoverTimeout = setTimeout(() => {
+                const previewUrl = card.dataset.previewUrl;
+                if (!previewUrl) return;
+                
+                if (!video) {
+                    video = document.createElement('video');
+                    video.className = 'card-preview-video';
+                    video.muted = true;
+                    video.loop = true;
+                    video.playsInline = true;
+                    video.style.cssText = `position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;z-index:2;`;
+                    const thumbnail = card.querySelector('.card-thumbnail');
+                    if (thumbnail) thumbnail.appendChild(video);
+                }
+                
+                video.src = fixMediaUrl(previewUrl);
+                video.play().catch(() => { 
+                    video.remove(); 
+                    video = null; 
+                });
+            }, 300);
+        });
+        
+        card.addEventListener('mouseleave', () => {
+            clearTimeout(hoverTimeout);
+            if (video) { 
+                video.pause(); 
+                video.remove(); 
+                video = null; 
             }
         });
     });
+}
 
-    if (moreLanguagesBtn) {
-        moreLanguagesBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            const languageContainer = document.querySelector('.language-chips');
-            const hiddenLanguages = ['nr', 'ss', 've', 'ts'];
-            hiddenLanguages.forEach(lang => {
-                if (!document.querySelector(`.language-chip[data-lang="${lang}"]`)) {
-                    const newChip = document.createElement('button');
-                    newChip.className = 'language-chip';
-                    newChip.dataset.lang = lang;
-                    newChip.textContent = languageMap[lang] || lang;
-                    newChip.addEventListener('click', (e) => {
-                        e.preventDefault();
-                        document.querySelectorAll('.language-chip').forEach(c => c.classList.remove('active'));
-                        newChip.classList.add('active');
-                        languageFilter = lang;
-                        filterContentByLanguage(lang);
-                        if (typeof toast !== 'undefined') {
-                            toast.info(`Showing: ${languageMap[lang]}`);
+// ============================================
+// CONTINUE WATCHING
+// ============================================
+async function loadContinueWatching() {
+    if (!window.currentUser) return;
+    
+    try {
+        const client = getSupabaseClient();
+        if (!client) return;
+
+        const { data, error } = await client
+            .from('content_views')
+            .select('*, content:content_id (*, user_profiles!user_id(*))')
+            .eq('profile_id', window.currentUser.id)
+            .is('completed_at', null)
+            .order('updated_at', { ascending: false })
+            .limit(20);
+
+        if (error) throw error;
+
+        const section = document.getElementById('continue-watching-section');
+        const grid = document.getElementById('continue-watching-grid');
+        
+        if (data && data.length > 0) {
+            section.style.display = 'block';
+            grid.innerHTML = data.map(item => {
+                const content = item.content;
+                if (!content) return '';
+                const progress = Math.min(100, Math.floor((item.progress_seconds / content.duration) * 100)) || 0;
+                const thumbnailUrl = content.thumbnail_url ? fixMediaUrl(content.thumbnail_url) : 
+                    'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop';
+                
+                return `
+                    <a href="content-detail.html?id=${content.id}&resume=true" class="content-card" data-content-id="${content.id}">
+                        <div class="card-thumbnail">
+                            <img src="${thumbnailUrl}" alt="${escapeHtml(content.title)}" loading="lazy">
+                            <div class="card-badges">
+                                <div class="card-badge continue-badge"><i class="fas fa-play-circle"></i> CONTINUE</div>
+                            </div>
+                            <div class="watch-progress-container">
+                                <div class="watch-progress-bar" style="width: ${progress}%"></div>
+                            </div>
+                        </div>
+                        <div class="card-content">
+                            <h3 class="card-title">${truncateText(escapeHtml(content.title), 50)}</h3>
+                            <div class="card-meta">
+                                <span><i class="fas fa-clock"></i> ${Math.floor(item.progress_seconds / 60)}:${('0' + (item.progress_seconds % 60)).slice(-2)}</span>
+                                <span>${progress}%</span>
+                            </div>
+                        </div>
+                    </a>
+                `;
+            }).join('');
+        } else {
+            section.style.display = 'none';
+        }
+    } catch (error) {
+        console.error('Error loading continue watching:', error);
+    }
+}
+
+// ============================================
+// RECOMMENDATIONS
+// ============================================
+async function loadRecommendations() {
+    if (!window.currentUser) return;
+    
+    try {
+        const client = getSupabaseClient();
+        if (!client) return;
+
+        const { data: history, error: historyError } = await client
+            .from('content_views')
+            .select('content_id, content:content_id(genre, tags, language)')
+            .eq('profile_id', window.currentUser.id)
+            .order('updated_at', { ascending: false })
+            .limit(20);
+
+        if (historyError || !history || history.length === 0) {
+            document.getElementById('recommendations-section').style.display = 'none';
+            return;
+        }
+
+        const genres = new Set();
+        history.forEach(item => {
+            if (item.content?.genre) genres.add(item.content.genre);
+        });
+
+        let query = client.from('Content').select('*, user_profiles!user_id(*)').eq('status', 'published').limit(10);
+        if (genres.size > 0) query = query.in('genre', Array.from(genres));
+
+        const { data, error } = await query;
+        if (error) throw error;
+
+        const section = document.getElementById('recommendations-section');
+        const grid = document.getElementById('recommendations-grid');
+        
+        if (data && data.length > 0) {
+            section.style.display = 'block';
+            const contentIds = data.map(r => r.id);
+            await loadContentMetrics(contentIds);
+            
+            grid.innerHTML = data.map(item => createContentCardWithMetrics(item)).join('');
+            setupVideoPreviews();
+        } else {
+            section.style.display = 'none';
+        }
+    } catch (error) {
+        console.error('Error loading recommendations:', error);
+        document.getElementById('recommendations-section').style.display = 'none';
+    }
+}
+
+// ============================================
+// LIVE STREAMS
+// ============================================
+async function updateLiveStreams() {
+    try {
+        const client = getSupabaseClient();
+        if (!client) return;
+
+        const { data, error } = await client
+            .from('Content')
+            .select('*, user_profiles!user_id(*)')
+            .eq('status', 'published')
+            .eq('media_type', 'live')
+            .order('created_at', { ascending: false })
+            .limit(6);
+
+        if (error) throw error;
+
+        const grid = document.getElementById('live-streams-grid');
+        const noLive = document.getElementById('no-live-streams');
+        
+        if (data && data.length > 0) {
+            grid.style.display = 'grid';
+            noLive.style.display = 'none';
+            const contentIds = data.map(s => s.id);
+            await loadContentMetrics(contentIds);
+            grid.innerHTML = data.map(item => createContentCardWithMetrics(item)).join('');
+            setupVideoPreviews();
+        } else {
+            grid.style.display = 'none';
+            noLive.style.display = 'block';
+        }
+    } catch (error) {
+        console.error('Error loading live streams:', error);
+    }
+}
+
+// ============================================
+// FEATURED CREATORS
+// ============================================
+async function loadFeaturedCreators() {
+    try {
+        const client = getSupabaseClient();
+        if (!client) return;
+
+        const { data, error } = await client
+            .from('user_profiles')
+            .select('*')
+            .order('created_at', { ascending: false })
+            .limit(6);
+
+        if (error) throw error;
+
+        const creatorsList = document.getElementById('creators-list');
+        if (data && data.length > 0) {
+            creatorsList.innerHTML = data.map(creator => {
+                const avatarUrl = creator.avatar_url ? fixMediaUrl(creator.avatar_url) : null;
+                const fullName = creator.full_name || creator.username || 'Creator';
+                const initials = getInitials(fullName);
+                
+                return `
+                    <div class="swiper-slide">
+                        <div class="creator-card">
+                            <div class="creator-avatar">
+                                ${avatarUrl ? `<img src="${avatarUrl}" alt="${fullName}" loading="lazy">` : 
+                                    `<div class="creator-initials">${initials}</div>`}
+                            </div>
+                            <div class="creator-name">${fullName}</div>
+                            <div class="creator-username">@${creator.username || 'creator'}</div>
+                            <div class="creator-actions">
+                                <button class="view-channel-btn" onclick="window.location.href='creator-channel.html?id=${creator.id}'">
+                                    View Channel
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            setTimeout(() => {
+                if (typeof Swiper !== 'undefined') {
+                    new Swiper('#creators-swiper', {
+                        slidesPerView: 1,
+                        spaceBetween: 20,
+                        pagination: { el: '.swiper-pagination', clickable: true },
+                        breakpoints: {
+                            640: { slidesPerView: 2 },
+                            1024: { slidesPerView: 3 }
                         }
                     });
-                    languageContainer.insertBefore(newChip, moreLanguagesBtn);
                 }
-            });
-            moreLanguagesBtn.style.display = 'none';
-            if (typeof toast !== 'undefined') {
-                toast.info('All languages shown');
-            }
-        });
-    }
-
-    const defaultChip = document.querySelector('.language-chip[data-lang="all"]');
-    if (defaultChip) {
-        defaultChip.classList.add('active');
-    }
-}
-
-function getLanguageName(code) {
-    return languageMap[code] || code || 'All Languages';
-}
-
-function filterContentByLanguage(lang) {
-    const contentCards = document.querySelectorAll('.content-card');
-    let visibleCount = 0;
-
-    contentCards.forEach(card => {
-        const contentLang = card.dataset.language || 'en';
-        if (lang === 'all' || contentLang === lang) {
-            card.style.display = 'block';
-            card.style.opacity = '0';
-            card.style.transform = 'translateY(10px)';
-            setTimeout(() => {
-                card.style.opacity = '1';
-                card.style.transform = 'translateY(0)';
-            }, 50);
-            visibleCount++;
-        } else {
-            card.style.display = 'none';
+            }, 100);
         }
-    });
-
-    if (visibleCount === 0 && lang !== 'all') {
-        if (typeof toast !== 'undefined') {
-            toast.warning(`No content in ${getLanguageName(lang)} yet`);
-        }
+    } catch (error) {
+        console.error('Error loading featured creators:', error);
     }
 }
 
@@ -2388,17 +2492,201 @@ function setupVoiceSearch() {
 }
 
 // ============================================
-// Guard: Wait for core to initialize before proceeding
+// Wait for core to be ready before using cacheManager
 // ============================================
-(function waitForCore() {
-    if (typeof window.cacheManager === 'undefined' || typeof window.cacheManager.get !== 'function') {
-        console.log('⏳ Waiting for core.js to initialize cacheManager...');
-        setTimeout(waitForCore, 100);
-        return;
+function waitForCacheManager(timeout = 5000) {
+    return new Promise((resolve, reject) => {
+        const start = Date.now();
+        const check = () => {
+            if (window.cacheManager && typeof window.cacheManager.get === 'function') {
+                resolve(window.cacheManager);
+            } else if (Date.now() - start > timeout) {
+                console.warn('⚠️ cacheManager not ready after timeout');
+                resolve(null); // Return null instead of rejecting to avoid crash
+            } else {
+                setTimeout(check, 100);
+            }
+        };
+        check();
+    });
+}
+
+// ============================================
+// CONTENT CARD RENDERING (With Metrics)
+// ============================================
+function createContentCardWithMetrics(item) {
+    const metrics = window.contentMetrics?.get(item.id) || { 
+        views: item.views || item.views_count || 0, 
+        likes: item.likes || item.likes_count || 0, 
+        shares: item.shares_count || 0 
+    };
+    
+    const thumbnailUrl = item.thumbnail_url 
+        ? fixMediaUrl(item.thumbnail_url) 
+        : 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop';
+    
+    const creatorProfile = item.user_profiles;
+    const creatorName = creatorProfile?.full_name || creatorProfile?.username || item.creator || 'Creator';
+    const initials = getInitials(creatorName);
+    
+    let avatarHtml = '';
+    if (creatorProfile?.avatar_url) {
+        const avatarUrl = fixMediaUrl(creatorProfile.avatar_url);
+        avatarHtml = `<img src="${avatarUrl}" alt="${escapeHtml(creatorName)}" loading="lazy" onerror="this.parentElement.innerHTML='<div class=\\'creator-initials-small\\'>${initials}</div>'">`;
+    } else {
+        avatarHtml = `<div class="creator-initials-small">${initials}</div>`;
     }
-    console.log('✅ Core ready, initializing features...');
-    // The rest of initialization happens in initializeAllFeatures()
-})();
+    
+    return `
+        <a href="content-detail.html?id=${item.id}" class="content-card" 
+           data-content-id="${item.id}" 
+           data-language="${item.language || 'en'}"
+           data-category="${item.genre || ''}">
+            <div class="card-thumbnail">
+                <img src="${thumbnailUrl}" 
+                     alt="${escapeHtml(item.title)}" 
+                     loading="lazy"
+                     onerror="this.src='https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop'">
+                <div class="card-badges">
+                    ${item.is_new ? '<div class="card-badge badge-new"><i class="fas fa-gem"></i> NEW</div>' : ''}
+                    ${item.is_trending ? '<div class="card-badge badge-trending"><i class="fas fa-fire"></i> TRENDING</div>' : ''}
+                </div>
+                <div class="thumbnail-overlay"></div>
+                <div class="play-overlay">
+                    <div class="play-icon"><i class="fas fa-play"></i></div>
+                </div>
+            </div>
+            <div class="card-content">
+                <h3 class="card-title" title="${escapeHtml(item.title)}">
+                    ${truncateText(escapeHtml(item.title), 50)}
+                </h3>
+                <div class="creator-info">
+                    <div class="creator-avatar-small">${avatarHtml}</div>
+                    <div class="creator-name-small">@${escapeHtml(creatorName.split(' ')[0].toLowerCase())}</div>
+                </div>
+                <div class="card-stats">
+                    <span class="card-stat" title="Views">
+                        <i class="fas fa-eye"></i> ${formatNumber(metrics.views)}
+                    </span>
+                    <span class="card-stat" title="Likes">
+                        <i class="fas fa-heart"></i> ${formatNumber(metrics.likes)}
+                    </span>
+                    <span class="card-stat" title="Shares">
+                        <i class="fas fa-share"></i> ${formatNumber(metrics.shares)}
+                    </span>
+                </div>
+                <div class="card-meta">
+                    <span><i class="fas fa-language"></i> ${languageMap[item.language] || 'English'}</span>
+                    <span><i class="fas fa-clock"></i> ${formatDate(item.created_at)}</span>
+                </div>
+            </div>
+        </a>
+    `;
+}
+
+// ============================================
+// LANGUAGE FILTER SYSTEM
+// ============================================
+const languageMap = {
+    'en': 'English',
+    'zu': 'IsiZulu',
+    'xh': 'IsiXhosa',
+    'af': 'Afrikaans',
+    'nso': 'Sepedi',
+    'st': 'Sesotho',
+    'tn': 'Setswana',
+    'ss': 'siSwati',
+    've': 'Tshivenda',
+    'ts': 'Xitsonga',
+    'nr': 'isiNdebele'
+};
+
+function setupLanguageFilter() {
+    const languageChips = document.querySelectorAll('.language-chip');
+    const moreLanguagesBtn = document.getElementById('more-languages-btn');
+    let languageFilter = 'all';
+
+    languageChips.forEach(chip => {
+        chip.addEventListener('click', (e) => {
+            e.preventDefault();
+            document.querySelectorAll('.language-chip').forEach(c => c.classList.remove('active'));
+            chip.classList.add('active');
+            languageFilter = chip.dataset.lang;
+            filterContentByLanguage(languageFilter);
+            const langName = getLanguageName(languageFilter);
+            if (typeof toast !== 'undefined') {
+                toast.info(`Showing: ${langName}`);
+            }
+        });
+    });
+
+    if (moreLanguagesBtn) {
+        moreLanguagesBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            const languageContainer = document.querySelector('.language-chips');
+            const hiddenLanguages = ['nr', 'ss', 've', 'ts'];
+            hiddenLanguages.forEach(lang => {
+                if (!document.querySelector(`.language-chip[data-lang="${lang}"]`)) {
+                    const newChip = document.createElement('button');
+                    newChip.className = 'language-chip';
+                    newChip.dataset.lang = lang;
+                    newChip.textContent = languageMap[lang] || lang;
+                    newChip.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        document.querySelectorAll('.language-chip').forEach(c => c.classList.remove('active'));
+                        newChip.classList.add('active');
+                        languageFilter = lang;
+                        filterContentByLanguage(lang);
+                        if (typeof toast !== 'undefined') {
+                            toast.info(`Showing: ${languageMap[lang]}`);
+                        }
+                    });
+                    languageContainer.insertBefore(newChip, moreLanguagesBtn);
+                }
+            });
+            moreLanguagesBtn.style.display = 'none';
+            if (typeof toast !== 'undefined') {
+                toast.info('All languages shown');
+            }
+        });
+    }
+
+    const defaultChip = document.querySelector('.language-chip[data-lang="all"]');
+    if (defaultChip) {
+        defaultChip.classList.add('active');
+    }
+}
+
+function getLanguageName(code) {
+    return languageMap[code] || code || 'All Languages';
+}
+
+function filterContentByLanguage(lang) {
+    const contentCards = document.querySelectorAll('.content-card');
+    let visibleCount = 0;
+
+    contentCards.forEach(card => {
+        const contentLang = card.dataset.language || 'en';
+        if (lang === 'all' || contentLang === lang) {
+            card.style.display = 'block';
+            card.style.opacity = '0';
+            card.style.transform = 'translateY(10px)';
+            setTimeout(() => {
+                card.style.opacity = '1';
+                card.style.transform = 'translateY(0)';
+            }, 50);
+            visibleCount++;
+        } else {
+            card.style.display = 'none';
+        }
+    });
+
+    if (visibleCount === 0 && lang !== 'all') {
+        if (typeof toast !== 'undefined') {
+            toast.warning(`No content in ${getLanguageName(lang)} yet`);
+        }
+    }
+}
 
 // ============================================
 // UTILITY FUNCTIONS
@@ -2554,6 +2842,26 @@ function initializeAllFeatures() {
         window.uiScaleController.init();
     }
     
+    // Load Explore Features
+    console.log('🔄 Loading Explore Features...');
+    
+    // Load content sections
+    if (typeof loadContinueWatching === 'function') loadContinueWatching();
+    if (typeof loadRecommendations === 'function') loadRecommendations();
+    if (typeof updateLiveStreams === 'function') updateLiveStreams();
+    if (typeof loadFeaturedCreators === 'function') loadFeaturedCreators();
+    if (typeof loadCommunityStats === 'function') loadCommunityStats();
+    
+    // Setup video previews
+    if (typeof setupVideoPreviews === 'function') setupVideoPreviews();
+    
+    // Load metrics for initial content
+    if (typeof loadContentMetrics === 'function') {
+        const cards = document.querySelectorAll('.content-card');
+        const contentIds = Array.from(cards).map(card => card.dataset.contentId).filter(Boolean);
+        if (contentIds.length > 0) loadContentMetrics(contentIds);
+    }
+    
     console.log('✅ All features initialized');
 }
 
@@ -2585,11 +2893,19 @@ window.uiScaleController = window.uiScaleController || new UIScaleController();
 window.setupSidebar = typeof setupSidebar === 'function' ? setupSidebar : null;
 window.initVideoHero = typeof initVideoHero === 'function' ? initVideoHero : null;
 window.loadContentMetrics = typeof loadContentMetrics === 'function' ? loadContentMetrics : null;
+window.setupVideoPreviews = typeof setupVideoPreviews === 'function' ? setupVideoPreviews : null;
+window.loadContinueWatching = typeof loadContinueWatching === 'function' ? loadContinueWatching : null;
+window.loadRecommendations = typeof loadRecommendations === 'function' ? loadRecommendations : null;
+window.updateLiveStreams = typeof updateLiveStreams === 'function' ? updateLiveStreams : null;
+window.loadFeaturedCreators = typeof loadFeaturedCreators === 'function' ? loadFeaturedCreators : null;
+window.loadCommunityStats = typeof loadCommunityStats === 'function' ? loadCommunityStats : null;
 window.createContentCardWithMetrics = typeof createContentCardWithMetrics === 'function' ? createContentCardWithMetrics : null;
 window.waitForCacheManager = typeof waitForCacheManager === 'function' ? waitForCacheManager : null;
+window.closeSidebar = typeof closeSidebar === 'function' ? closeSidebar : null;
 
-// Create global cache manager and content metrics
-window.cacheManager = new CacheManager();
+// Export cache manager and content metrics
+window.CacheManager = CacheManager;
+window.cacheManager = window.cacheManager || new CacheManager();
 window.contentMetrics = new Map();
 
 console.log('✅ Home Feed Features exported globally');
