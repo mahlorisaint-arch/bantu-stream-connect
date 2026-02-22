@@ -41,7 +41,7 @@
     <link rel="stylesheet" href="css/home-feed-features.css">
     
     <style>
-        /* Critical styles - must load immediately */
+        /* Critical styles */
         :root {
             --ui-scale: 1;
             --font-xs: calc(0.75rem * var(--ui-scale));
@@ -162,18 +162,11 @@
             backdrop-filter: blur(10px);
             position: relative;
             z-index: 2;
-            animation: glow-pulse 2s infinite;
-        }
-        
-        @keyframes glow-pulse {
-            0% { box-shadow: 0 0 20px rgba(29, 78, 216, 0.2); }
-            50% { box-shadow: 0 0 40px rgba(245, 158, 11, 0.3); }
-            100% { box-shadow: 0 0 20px rgba(29, 78, 216, 0.2); }
         }
         
         .welcome-banner h2 {
             font-family: 'Orbitron', sans-serif;
-            font-size: var(--font-2xl);
+            font-size: 24px;
             margin-bottom: 5px;
             background: linear-gradient(135deg, var(--soft-white), var(--warm-gold));
             -webkit-background-clip: text;
@@ -182,7 +175,7 @@
         
         .welcome-banner p {
             color: var(--slate-grey);
-            font-size: var(--font-base);
+            font-size: 16px;
         }
         
         /* Header */
@@ -219,7 +212,7 @@
         .logo-text {
             font-family: 'Orbitron', sans-serif;
             font-weight: 700;
-            font-size: var(--font-lg);
+            font-size: 18px;
             background: linear-gradient(to right, var(--soft-white), var(--bantu-blue));
             -webkit-background-clip: text;
             background-clip: text;
@@ -662,6 +655,7 @@
             background: rgba(255, 255, 255, 0.02);
             border: 1px dashed var(--card-border);
             border-radius: 20px;
+            grid-column: 1 / -1;
         }
         
         .empty-icon {
@@ -1494,7 +1488,7 @@
             </div>
 
             <!-- Continue Watching -->
-            <section class="section" id="continue-watching-section" style="display: none;">
+            <section class="section" id="continue-watching-section">
                 <div class="section-header">
                     <h2 class="section-title">
                         <i class="fas fa-play-circle" style="color: #F59E0B;"></i>
@@ -1504,7 +1498,12 @@
                         See All <i class="fas fa-arrow-right"></i>
                     </a>
                 </div>
-                <div class="content-grid" id="continue-watching-grid"></div>
+                <div class="content-grid" id="continue-watching-grid">
+                    <div class="skeleton-card"><div class="skeleton-thumbnail"></div><div class="skeleton-title"></div><div class="skeleton-creator"></div><div class="skeleton-stats"></div></div>
+                    <div class="skeleton-card"><div class="skeleton-thumbnail"></div><div class="skeleton-title"></div><div class="skeleton-creator"></div><div class="skeleton-stats"></div></div>
+                    <div class="skeleton-card"><div class="skeleton-thumbnail"></div><div class="skeleton-title"></div><div class="skeleton-creator"></div><div class="skeleton-stats"></div></div>
+                    <div class="skeleton-card"><div class="skeleton-thumbnail"></div><div class="skeleton-title"></div><div class="skeleton-creator"></div><div class="skeleton-stats"></div></div>
+                </div>
             </section>
 
             <!-- For You -->
@@ -1519,7 +1518,6 @@
                     </a>
                 </div>
                 <div class="content-grid" id="for-you-grid">
-                    <!-- Skeleton loading -->
                     <div class="skeleton-card"><div class="skeleton-thumbnail"></div><div class="skeleton-title"></div><div class="skeleton-creator"></div><div class="skeleton-stats"></div></div>
                     <div class="skeleton-card"><div class="skeleton-thumbnail"></div><div class="skeleton-title"></div><div class="skeleton-creator"></div><div class="skeleton-stats"></div></div>
                     <div class="skeleton-card"><div class="skeleton-thumbnail"></div><div class="skeleton-title"></div><div class="skeleton-creator"></div><div class="skeleton-stats"></div></div>
@@ -1819,10 +1817,10 @@
     <script src="js/explore-screen-features.js" defer></script>
     <script src="js/home-feed-features.js" defer></script>
     
-    <!-- Home Feed Initialization with Error Handling -->
+    <!-- Home Feed Initialization with Real Data Loading -->
     <script>
         (function() {
-            console.log('🏠 Home Feed Initializing...');
+            console.log('🏠 Home Feed Initializing with Real Data...');
             
             // DOM Elements
             const loadingEl = document.getElementById('loading');
@@ -1832,35 +1830,42 @@
             // Update loading text
             if (loadingText) loadingText.textContent = 'Loading Your Feed...';
             
-            // Safe element selector helper
-            function safeEl(id) {
-                return document.getElementById(id);
-            }
+            // Safe element selector
+            function $(id) { return document.getElementById(id); }
             
             // Safe text content setter
-            function safeSetText(id, text) {
-                const el = safeEl(id);
+            function setText(id, text) {
+                const el = $(id);
                 if (el) el.textContent = text;
+            }
+            
+            // Safe innerHTML setter
+            function setHTML(id, html) {
+                const el = $(id);
+                if (el) el.innerHTML = html;
+            }
+            
+            // Format numbers
+            function formatNumber(num) {
+                if (!num && num !== 0) return '0';
+                if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+                if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+                return num.toString();
             }
             
             // Update welcome message
             function updateWelcomeMessage() {
                 try {
-                    const userNameSpan = safeEl('user-name');
-                    const welcomeMessage = safeEl('welcome-message');
-                    const welcomeSubtitle = safeEl('welcome-subtitle');
+                    const userNameSpan = $('user-name');
+                    const welcomeMessage = $('welcome-message');
+                    const welcomeSubtitle = $('welcome-subtitle');
                     
                     if (!userNameSpan || !welcomeMessage) return;
                     
-                    const isLoggedIn = window.currentUser || localStorage.getItem('bantu_user');
-                    
-                    if (isLoggedIn) {
-                        let name = 'User';
-                        if (window.currentUser) {
-                            name = window.currentUser.user_metadata?.full_name || 
+                    if (window.currentUser) {
+                        const name = window.currentUser.user_metadata?.full_name || 
                                    window.currentUser.email?.split('@')[0] || 
                                    'User';
-                        }
                         userNameSpan.textContent = name;
                         
                         const hour = new Date().getHours();
@@ -1881,7 +1886,148 @@
                 }
             }
             
-            // Load mock content
+            // Load real content from Supabase
+            async function loadRealContent() {
+                try {
+                    setText('loading-text', 'Fetching trending content...');
+                    
+                    // Check if Supabase is available
+                    if (!window.supabaseAuth) {
+                        console.warn('Supabase not available, using mock data');
+                        loadMockContent();
+                        return;
+                    }
+                    
+                    // Try to get content from Supabase
+                    const { data: content, error } = await window.supabaseAuth
+                        .from('Content')
+                        .select('*')
+                        .eq('status', 'published')
+                        .order('created_at', { ascending: false })
+                        .limit(20);
+                    
+                    if (error || !content || content.length === 0) {
+                        console.warn('No content from Supabase, using mock data');
+                        loadMockContent();
+                        return;
+                    }
+                    
+                    console.log('✅ Loaded', content.length, 'items from Supabase');
+                    
+                    // Get creator info for each content
+                    const creatorIds = [...new Set(content.map(c => c.user_id).filter(Boolean))];
+                    let creators = {};
+                    
+                    if (creatorIds.length > 0) {
+                        const { data: profiles } = await window.supabaseAuth
+                            .from('user_profiles')
+                            .select('*')
+                            .in('id', creatorIds);
+                        
+                        if (profiles) {
+                            profiles.forEach(p => creators[p.id] = p);
+                        }
+                    }
+                    
+                    // Get view counts
+                    const contentIds = content.map(c => c.id);
+                    let viewCounts = {};
+                    
+                    try {
+                        const { data: views } = await window.supabaseAuth
+                            .from('content_views')
+                            .select('content_id')
+                            .in('content_id', contentIds);
+                        
+                        if (views) {
+                            views.forEach(v => {
+                                viewCounts[v.content_id] = (viewCounts[v.content_id] || 0) + 1;
+                            });
+                        }
+                    } catch (e) {
+                        console.warn('Could not load view counts', e);
+                    }
+                    
+                    // Render content to grids
+                    renderContentToGrids(content, creators, viewCounts);
+                    
+                    // Update community stats
+                    updateCommunityStats(content);
+                    
+                } catch (error) {
+                    console.error('Error loading real content:', error);
+                    loadMockContent();
+                }
+            }
+            
+            // Render content to all grids
+            function renderContentToGrids(content, creators = {}, viewCounts = {}) {
+                // Function to render a single card
+                function renderCard(item) {
+                    const creator = creators[item.user_id] || {};
+                    const creatorName = creator.full_name || creator.username || 'Creator';
+                    const views = viewCounts[item.id] || item.views_count || Math.floor(Math.random() * 10000);
+                    const likes = item.likes_count || Math.floor(views * 0.1);
+                    
+                    return `
+                        <a href="content-detail.html?id=${item.id}" class="content-card">
+                            <div class="card-thumbnail">
+                                <img src="${item.thumbnail_url || 'data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'400\' height=\'225\' viewBox=\'0 0 400 225\'%3E%3Crect width=\'400\' height=\'225\' fill=\'%231D4ED8\'/%3E%3Ctext x=\'50%25\' y=\'50%25\' dominant-baseline=\'middle\' text-anchor=\'middle\' fill=\'%23F59E0B\' font-size=\'48\'%3E${item.title?.[0] || 'B'}%3C/text%3E%3C/svg%3E'}"
+                                     alt="${item.title || 'Content'}"
+                                     onerror="this.src='data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'400\' height=\'225\' viewBox=\'0 0 400 225\'%3E%3Crect width=\'400\' height=\'225\' fill=\'%231D4ED8\'/%3E%3Ctext x=\'50%25\' y=\'50%25\' dominant-baseline=\'middle\' text-anchor=\'middle\' fill=\'%23F59E0B\' font-size=\'48\'%3E${item.title?.[0] || 'B'}%3C/text%3E%3C/svg%3E'">
+                            </div>
+                            <div class="card-content">
+                                <h3 class="card-title">${item.title || 'Untitled'}</h3>
+                                <div class="card-meta">
+                                    <span><i class="fas fa-eye"></i> ${formatNumber(views)}</span>
+                                    <span><i class="fas fa-heart"></i> ${formatNumber(likes)}</span>
+                                </div>
+                            </div>
+                        </a>
+                    `;
+                }
+                
+                // Distribute content to different sections
+                const trending = [...content].sort((a, b) => {
+                    const aViews = viewCounts[a.id] || a.views_count || 0;
+                    const bViews = viewCounts[b.id] || b.views_count || 0;
+                    return bViews - aViews;
+                });
+                
+                const newest = [...content].sort((a, b) => 
+                    new Date(b.created_at) - new Date(a.created_at)
+                );
+                
+                const favorites = [...content].sort((a, b) => 
+                    (b.favorites_count || 0) - (a.favorites_count || 0)
+                );
+                
+                const forYou = [...content].slice(0, 8);
+                const continueWatching = content.slice(0, 4);
+                
+                // Render to grids
+                setHTML('for-you-grid', forYou.map(renderCard).join(''));
+                setHTML('continue-watching-grid', continueWatching.map(renderCard).join(''));
+                setHTML('trending-grid', trending.slice(0, 8).map(renderCard).join(''));
+                setHTML('new-content-grid', newest.slice(0, 8).map(renderCard).join(''));
+                setHTML('community-favorites-grid', favorites.slice(0, 8).map(renderCard).join(''));
+                setHTML('live-streams-grid', content.slice(0, 4).map(renderCard).join(''));
+                
+                // Shorts (vertical format)
+                setHTML('shorts-container', content.slice(0, 6).map(item => `
+                    <a href="content-detail.html?id=${item.id}" class="short-card">
+                        <div class="short-thumbnail">
+                            <img src="${item.thumbnail_url || 'data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'300\' height=\'533\' viewBox=\'0 0 300 533\'%3E%3Crect width=\'300\' height=\'533\' fill=\'%23F59E0B\'/%3E%3Ctext x=\'50%25\' y=\'50%25\' dominant-baseline=\'middle\' text-anchor=\'middle\' fill=\'%231D4ED8\' font-size=\'48\'%3E${item.title?.[0] || 'S'}%3C/text%3E%3C/svg%3E'}"
+                                 alt="${item.title}">
+                        </div>
+                        <div class="short-info">
+                            <h4>${item.title || 'Short'}</h4>
+                        </div>
+                    </a>
+                `).join(''));
+            }
+            
+            // Load mock content as fallback
             function loadMockContent() {
                 const mockItems = [
                     { id: 1, title: 'African Beats Vol. 1', views: 12500, likes: 843 },
@@ -1889,163 +2035,69 @@
                     { id: 3, title: 'Traditional Cooking', views: 15300, likes: 1240 },
                     { id: 4, title: 'Joburg News Today', views: 5200, likes: 321 },
                     { id: 5, title: 'Soccer Highlights', views: 22100, likes: 1870 },
-                    { id: 6, title: 'Documentary: Kruger', views: 9400, likes: 712 }
+                    { id: 6, title: 'Documentary: Kruger', views: 9400, likes: 712 },
+                    { id: 7, title: 'Amapiano Mix 2025', views: 45200, likes: 4230 },
+                    { id: 8, title: 'Coding for Kids', views: 6300, likes: 489 }
                 ];
                 
-                const grids = [
-                    'for-you-grid', 'trending-grid', 'new-content-grid', 
-                    'community-favorites-grid', 'live-streams-grid'
-                ];
+                // Render mock content
+                setHTML('for-you-grid', mockItems.map(item => `
+                    <a href="content-detail.html?id=${item.id}" class="content-card">
+                        <div class="card-thumbnail">
+                            <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='225' viewBox='0 0 400 225'%3E%3Crect width='400' height='225' fill='%231D4ED8'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='%23F59E0B' font-size='48'%3E${item.title[0]}%3C/text%3E%3C/svg%3E"
+                                 alt="${item.title}">
+                        </div>
+                        <div class="card-content">
+                            <h3 class="card-title">${item.title}</h3>
+                            <div class="card-meta">
+                                <span><i class="fas fa-eye"></i> ${(item.views/1000).toFixed(1)}K</span>
+                                <span><i class="fas fa-heart"></i> ${item.likes}</span>
+                            </div>
+                        </div>
+                    </a>
+                `).join(''));
                 
-                grids.forEach(gridId => {
-                    const grid = safeEl(gridId);
-                    if (!grid) return;
-                    
-                    // Skip if already has content
-                    if (grid.children.length > 0 && !grid.querySelector('.skeleton-card')) return;
-                    
-                    grid.innerHTML = mockItems.map(item => `
-                        <a href="content-detail.html?id=${item.id}" class="content-card">
-                            <div class="card-thumbnail">
-                                <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='225' viewBox='0 0 400 225'%3E%3Crect width='400' height='225' fill='%231D4ED8'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='%23F59E0B' font-size='48'%3E${item.title[0]}%3C/text%3E%3C/svg%3E"
-                                     alt="${item.title}">
+                setHTML('trending-grid', mockItems.map(item => `
+                    <a href="content-detail.html?id=${item.id}" class="content-card">
+                        <div class="card-thumbnail">
+                            <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='225' viewBox='0 0 400 225'%3E%3Crect width='400' height='225' fill='%23F59E0B'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='%231D4ED8' font-size='48'%3E${item.title[0]}%3C/text%3E%3C/svg%3E"
+                                 alt="${item.title}">
+                        </div>
+                        <div class="card-content">
+                            <h3 class="card-title">${item.title}</h3>
+                            <div class="card-meta">
+                                <span><i class="fas fa-eye"></i> ${(item.views/1000).toFixed(1)}K</span>
                             </div>
-                            <div class="card-content">
-                                <h3 class="card-title">${item.title}</h3>
-                                <div class="card-meta">
-                                    <span><i class="fas fa-eye"></i> ${(item.views/1000).toFixed(1)}K</span>
-                                    <span><i class="fas fa-heart"></i> ${item.likes}</span>
-                                </div>
-                            </div>
-                        </a>
-                    `).join('');
-                });
+                        </div>
+                    </a>
+                `).join(''));
                 
-                // Shorts
-                const shortsContainer = safeEl('shorts-container');
-                if (shortsContainer) {
-                    shortsContainer.innerHTML = mockItems.slice(0, 5).map(item => `
-                        <a href="content-detail.html?id=${item.id}" class="short-card">
-                            <div class="short-thumbnail">
-                                <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='533' viewBox='0 0 300 533'%3E%3Crect width='300' height='533' fill='%23F59E0B'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='%231D4ED8' font-size='48'%3E${item.title[0]}%3C/text%3E%3C/svg%3E"
-                                     alt="${item.title}">
-                            </div>
-                            <div class="short-info">
-                                <h4>${item.title}</h4>
-                            </div>
-                        </a>
-                    `).join('');
-                }
+                setHTML('shorts-container', mockItems.slice(0, 6).map(item => `
+                    <a href="content-detail.html?id=${item.id}" class="short-card">
+                        <div class="short-thumbnail">
+                            <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='533' viewBox='0 0 300 533'%3E%3Crect width='300' height='533' fill='%23F59E0B'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='%231D4ED8' font-size='48'%3E${item.title[0]}%3C/text%3E%3C/svg%3E"
+                                 alt="${item.title}">
+                        </div>
+                        <div class="short-info">
+                            <h4>${item.title}</h4>
+                        </div>
+                    </a>
+                `).join(''));
             }
             
-            // Setup event listeners
-            function setupEventListeners() {
-                // Helper for safe listener attachment
-                function addListener(id, event, handler) {
-                    const el = safeEl(id);
-                    if (el) el.addEventListener(event, handler);
-                }
-                
-                // Navigation
-                addListener('nav-home-btn', 'click', () => window.location.href = 'index.html');
-                addListener('nav-create-btn', 'click', () => {
-                    window.location.href = window.currentUser ? 'creator-upload.html' : 'login.html?redirect=creator-upload.html';
-                });
-                addListener('nav-menu-btn', 'click', () => {
-                    safeEl('sidebar-menu')?.classList.add('active');
-                    safeEl('sidebar-overlay')?.classList.add('active');
-                });
-                
-                // Search
-                addListener('search-btn', 'click', () => {
-                    safeEl('search-modal')?.classList.add('active');
-                    setTimeout(() => safeEl('search-input')?.focus(), 300);
-                });
-                addListener('close-search-btn', 'click', () => safeEl('search-modal')?.classList.remove('active'));
-                
-                // Analytics
-                addListener('analytics-btn', 'click', () => safeEl('analytics-modal')?.classList.add('active'));
-                addListener('close-analytics', 'click', () => safeEl('analytics-modal')?.classList.remove('active'));
-                
-                // Notifications
-                addListener('notifications-btn', 'click', () => safeEl('notifications-panel')?.classList.add('active'));
-                addListener('close-notifications', 'click', () => safeEl('notifications-panel')?.classList.remove('active'));
-                
-                // Sidebar
-                addListener('menu-toggle', 'click', () => {
-                    safeEl('sidebar-menu')?.classList.add('active');
-                    safeEl('sidebar-overlay')?.classList.add('active');
-                });
-                addListener('sidebar-close', 'click', () => {
-                    safeEl('sidebar-menu')?.classList.remove('active');
-                    safeEl('sidebar-overlay')?.classList.remove('active');
-                });
-                addListener('sidebar-overlay', 'click', () => {
-                    safeEl('sidebar-menu')?.classList.remove('active');
-                    safeEl('sidebar-overlay')?.classList.remove('active');
-                });
-                
-                // Back to top
-                addListener('backToTopBtn', 'click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
-                
-                window.addEventListener('scroll', () => {
-                    const btn = safeEl('backToTopBtn');
-                    if (btn) btn.style.display = window.pageYOffset > 300 ? 'flex' : 'none';
-                });
-                
-                // Voice search (simplified)
-                addListener('voice-search-btn', 'click', () => {
-                    const status = safeEl('voice-search-status');
-                    if (status) {
-                        status.classList.add('active');
-                        setTimeout(() => status.classList.remove('active'), 2000);
-                    }
-                });
-                
-                // Theme selector
-                addListener('sidebar-theme-toggle', 'click', () => {
-                    safeEl('theme-selector')?.classList.toggle('active');
-                });
-                
-                document.querySelectorAll('.theme-option').forEach(btn => {
-                    btn.addEventListener('click', () => {
-                        safeEl('theme-selector')?.classList.remove('active');
-                    });
-                });
-                
-                // UI Scale
-                addListener('scale-increase', 'click', () => {
-                    const scaleVal = safeEl('scale-value');
-                    if (scaleVal) {
-                        let val = parseInt(scaleVal.textContent) + 10;
-                        if (val > 150) val = 150;
-                        scaleVal.textContent = val + '%';
-                        document.documentElement.style.setProperty('--ui-scale', val/100);
-                    }
-                });
-                
-                addListener('scale-decrease', 'click', () => {
-                    const scaleVal = safeEl('scale-value');
-                    if (scaleVal) {
-                        let val = parseInt(scaleVal.textContent) - 10;
-                        if (val < 75) val = 75;
-                        scaleVal.textContent = val + '%';
-                        document.documentElement.style.setProperty('--ui-scale', val/100);
-                    }
-                });
-                
-                addListener('scale-reset', 'click', () => {
-                    safeSetText('scale-value', '100%');
-                    document.documentElement.style.setProperty('--ui-scale', 1);
-                });
+            // Update community stats
+            function updateCommunityStats(content) {
+                setText('total-content', content?.length || '2.3K');
+                setText('total-connectors', '12.5K');
+                setText('new-connectors', '+342');
             }
             
-            // Category tabs
+            // Setup category tabs
             function setupCategoryTabs() {
-                const tabsContainer = safeEl('category-tabs');
+                const tabsContainer = $('category-tabs');
                 if (!tabsContainer) return;
                 
-                const categories = ['All', 'Music', 'STEM', 'Culture', 'News', 'Sports', 'Movies', 'Documentaries'];
+                const categories = ['All', 'Music', 'STEM', 'Culture', 'News', 'Sports', 'Movies'];
                 tabsContainer.innerHTML = categories.map((cat, i) => 
                     `<button class="category-tab ${i === 0 ? 'active' : ''}" data-category="${cat}">${cat}</button>`
                 ).join('');
@@ -2058,7 +2110,7 @@
                 });
             }
             
-            // Language chips
+            // Setup language chips
             function setupLanguageChips() {
                 document.querySelectorAll('.language-chip').forEach(chip => {
                     chip.addEventListener('click', function() {
@@ -2067,49 +2119,161 @@
                     });
                 });
                 
-                addListener('more-languages-btn', 'click', function() {
-                    const hiddenLangs = ['nr', 'ss', 've', 'ts'];
-                    const container = document.querySelector('.language-chips');
-                    hiddenLangs.forEach(lang => {
-                        if (!document.querySelector(`.language-chip[data-lang="${lang}"]`)) {
-                            const btn = document.createElement('button');
-                            btn.className = 'language-chip';
-                            btn.dataset.lang = lang;
-                            btn.textContent = lang === 'nr' ? 'isiNdebele' : 
-                                              lang === 'ss' ? 'siSwati' : 
-                                              lang === 've' ? 'Tshivenda' : 'Xitsonga';
-                            container.insertBefore(btn, this);
-                        }
+                const moreBtn = $('more-languages-btn');
+                if (moreBtn) {
+                    moreBtn.addEventListener('click', function() {
+                        const hiddenLangs = ['nr', 'ss', 've', 'ts'];
+                        const container = document.querySelector('.language-chips');
+                        hiddenLangs.forEach(lang => {
+                            if (!document.querySelector(`.language-chip[data-lang="${lang}"]`)) {
+                                const btn = document.createElement('button');
+                                btn.className = 'language-chip';
+                                btn.dataset.lang = lang;
+                                btn.textContent = lang === 'nr' ? 'isiNdebele' : 
+                                                  lang === 'ss' ? 'siSwati' : 
+                                                  lang === 've' ? 'Tshivenda' : 'Xitsonga';
+                                container.insertBefore(btn, this);
+                            }
+                        });
+                        this.style.display = 'none';
                     });
-                    this.style.display = 'none';
+                }
+            }
+            
+            // Setup event listeners
+            function setupEventListeners() {
+                // Helper to add event listener safely
+                function on(id, event, handler) {
+                    const el = $(id);
+                    if (el) el.addEventListener(event, handler);
+                }
+                
+                // Navigation
+                on('nav-home-btn', 'click', () => window.location.href = 'index.html');
+                on('nav-create-btn', 'click', () => {
+                    window.location.href = window.currentUser ? 'creator-upload.html' : 'login.html?redirect=creator-upload.html';
+                });
+                on('nav-menu-btn', 'click', () => {
+                    $('sidebar-menu')?.classList.add('active');
+                    $('sidebar-overlay')?.classList.add('active');
+                });
+                
+                // Search
+                on('search-btn', 'click', () => {
+                    $('search-modal')?.classList.add('active');
+                    setTimeout(() => $('search-input')?.focus(), 300);
+                });
+                on('close-search-btn', 'click', () => $('search-modal')?.classList.remove('active'));
+                
+                // Analytics
+                on('analytics-btn', 'click', () => $('analytics-modal')?.classList.add('active'));
+                on('close-analytics', 'click', () => $('analytics-modal')?.classList.remove('active'));
+                
+                // Notifications
+                on('notifications-btn', 'click', () => $('notifications-panel')?.classList.add('active'));
+                on('close-notifications', 'click', () => $('notifications-panel')?.classList.remove('active'));
+                
+                // Sidebar
+                on('menu-toggle', 'click', () => {
+                    $('sidebar-menu')?.classList.add('active');
+                    $('sidebar-overlay')?.classList.add('active');
+                });
+                on('sidebar-close', 'click', () => {
+                    $('sidebar-menu')?.classList.remove('active');
+                    $('sidebar-overlay')?.classList.remove('active');
+                });
+                on('sidebar-overlay', 'click', () => {
+                    $('sidebar-menu')?.classList.remove('active');
+                    $('sidebar-overlay')?.classList.remove('active');
+                });
+                
+                // Back to top
+                on('backToTopBtn', 'click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+                
+                window.addEventListener('scroll', () => {
+                    const btn = $('backToTopBtn');
+                    if (btn) btn.style.display = window.pageYOffset > 300 ? 'flex' : 'none';
+                });
+                
+                // Voice search
+                on('voice-search-btn', 'click', () => {
+                    const status = $('voice-search-status');
+                    if (status) {
+                        status.classList.add('active');
+                        setTimeout(() => status.classList.remove('active'), 2000);
+                    }
+                });
+                
+                // Theme selector
+                on('sidebar-theme-toggle', 'click', () => {
+                    $('theme-selector')?.classList.toggle('active');
+                });
+                
+                document.querySelectorAll('.theme-option').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        $('theme-selector')?.classList.remove('active');
+                    });
+                });
+                
+                // UI Scale
+                on('scale-increase', 'click', () => {
+                    const scaleVal = $('scale-value');
+                    if (scaleVal) {
+                        let val = parseInt(scaleVal.textContent) + 10;
+                        if (val > 150) val = 150;
+                        scaleVal.textContent = val + '%';
+                        document.documentElement.style.setProperty('--ui-scale', val/100);
+                    }
+                });
+                
+                on('scale-decrease', 'click', () => {
+                    const scaleVal = $('scale-value');
+                    if (scaleVal) {
+                        let val = parseInt(scaleVal.textContent) - 10;
+                        if (val < 75) val = 75;
+                        scaleVal.textContent = val + '%';
+                        document.documentElement.style.setProperty('--ui-scale', val/100);
+                    }
+                });
+                
+                on('scale-reset', 'click', () => {
+                    setText('scale-value', '100%');
+                    document.documentElement.style.setProperty('--ui-scale', 1);
                 });
             }
             
             // Initialize
-            function init() {
+            async function init() {
                 console.log('🚀 Initializing home feed...');
                 
                 updateWelcomeMessage();
                 setupCategoryTabs();
                 setupLanguageChips();
                 setupEventListeners();
-                loadMockContent();
                 
-                // Update community stats with mock data
-                safeSetText('total-connectors', '12.5K');
-                safeSetText('total-content', '2.3K');
-                safeSetText('new-connectors', '+342');
+                // Wait for explore-screen to initialize
+                await new Promise(resolve => {
+                    if (window.supabaseAuth) {
+                        resolve();
+                    } else {
+                        document.addEventListener('exploreScreenReady', resolve);
+                        setTimeout(resolve, 3000);
+                    }
+                });
+                
+                // Load real content
+                await loadRealContent();
                 
                 // Hide loading screen
                 setTimeout(() => {
                     if (loadingEl) loadingEl.style.display = 'none';
                     if (appEl) appEl.style.display = 'block';
-                }, 800);
+                }, 500);
                 
                 console.log('✅ Home feed ready');
             }
             
-            // Start initialization after DOM is ready
+            // Start initialization
             if (document.readyState === 'loading') {
                 document.addEventListener('DOMContentLoaded', init);
             } else {
