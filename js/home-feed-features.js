@@ -1,995 +1,1323 @@
 // ============================================
-// VIDEO PREVIEW SYSTEM (Enhanced)
+// HOME FEED FEATURES - COMPLETE UPDATED VERSION
 // ============================================
-class VideoPreviewSystem {
-    constructor() {
-        this.hoverTimeout = null;
-        this.currentPreview = null;
-        this.touchStartTime = 0;
-        this.touchStartX = 0;
-        this.touchStartY = 0;
-        this.touchMoved = false;
-        this.isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-    }
+
+// ============================================
+// PREVENT MULTIPLE INITIALIZATIONS
+// ============================================
+(function() {
+    // Check for existing declarations
+    const existingClasses = {
+        VideoPreviewSystem: typeof VideoPreviewSystem !== 'undefined',
+        RecommendationEngine: typeof RecommendationEngine !== 'undefined',
+        NotificationSystem: typeof NotificationSystem !== 'undefined',
+        AnalyticsSystem: typeof AnalyticsSystem !== 'undefined',
+        SearchSystem: typeof SearchSystem !== 'undefined',
+        ContinueWatchingSystem: typeof ContinueWatchingSystem !== 'undefined',
+        ProgressTracker: typeof ProgressTracker !== 'undefined',
+        UIScaleController: typeof UIScaleController !== 'undefined',
+        CacheManager: typeof CacheManager !== 'undefined'
+    };
     
-    init() {
-        this.setupEventDelegation();
-        this.setupVideoAttributes();
-    }
+    console.log('📋 Checking for existing class declarations:', existingClasses);
     
-    setupEventDelegation() {
-        // Mouse events for desktop
-        document.addEventListener('mouseover', (e) => {
-            if (!this.isMobile) {
-                const card = e.target.closest('.content-card');
-                if (card) {
-                    this.handleCardHover(card);
-                }
-            }
-        });
-        
-        document.addEventListener('mouseout', (e) => {
-            if (!this.isMobile) {
-                const card = e.target.closest('.content-card');
-                if (card) {
-                    this.handleCardLeave(card);
-                }
-            }
-        });
-        
-        // Touch events for mobile (optimized)
-        document.addEventListener('touchstart', (e) => {
-            this.touchStartTime = Date.now();
-            this.touchStartX = e.touches[0].clientX;
-            this.touchStartY = e.touches[0].clientY;
-            this.touchMoved = false;
-            
-            const card = e.target.closest('.content-card');
-            if (card && !e.target.closest('.share-btn') && 
-                !e.target.closest('.creator-btn') && !e.target.closest('.tip-creator-btn')) {
-                this.handleCardHover(card);
-            }
-        }, { passive: true });
-        
-        document.addEventListener('touchmove', (e) => {
-            if (e.touches.length > 0) {
-                const touchX = e.touches[0].clientX;
-                const touchY = e.touches[0].clientY;
-                const deltaX = Math.abs(touchX - this.touchStartX);
-                const deltaY = Math.abs(touchY - this.touchStartY);
-                
-                if (deltaX > 10 || deltaY > 10) {
-                    this.touchMoved = true;
-                    this.handleCardLeaveAll();
-                }
-            }
-        }, { passive: true });
-        
-        document.addEventListener('touchend', (e) => {
-            const touchDuration = Date.now() - this.touchStartTime;
-            
-            if (touchDuration < 300 && !this.touchMoved) {
-                const card = e.target.closest('.content-card');
-                if (card) {
-                    this.handleCardLeave(card);
-                }
-            } else {
-                this.handleCardLeaveAll();
-            }
-            
-            this.touchMoved = false;
-        }, { passive: true });
+    // If already initialized, skip
+    if (window.homeFeedFeaturesInitialized) {
+        console.log('⚠️ Home Feed Features already initialized, skipping...');
+        return;
     }
-    
-    setupVideoAttributes() {
-        document.querySelectorAll('.video-preview, .card-preview-video').forEach(video => {
-            video.playsInline = true;
-            video.muted = true;
-            video.setAttribute('playsinline', '');
-            video.setAttribute('muted', '');
-            video.setAttribute('preload', 'metadata');
-        });
-    }
-    
-    handleCardHover(card) {
-        clearTimeout(this.hoverTimeout);
-        
-        this.hoverTimeout = setTimeout(() => {
-            const videoElement = card.querySelector('.video-preview, .card-preview-video');
-            if (videoElement && videoElement.src) {
-                card.classList.add('video-hover');
-                this.currentPreview = videoElement;
-                
-                videoElement.currentTime = 0;
-                const playPromise = videoElement.play();
-                
-                if (playPromise !== undefined) {
-                    playPromise.catch(e => {
-                        console.log('Video autoplay prevented:', e);
-                        card.classList.remove('video-hover');
-                    });
-                }
-            }
-        }, this.isMobile ? 100 : 500);
-    }
-    
-    handleCardLeave(card) {
-        clearTimeout(this.hoverTimeout);
-        
-        const videoElement = card.querySelector('.video-preview, .card-preview-video');
-        if (videoElement) {
-            videoElement.pause();
-            videoElement.currentTime = 0;
+})();
+
+// ============================================
+// CACHE MANAGER - Check if already defined
+// ============================================
+if (typeof window.CacheManager === 'undefined') {
+    class CacheManager {
+        constructor() {
+            this.cache = new Map();
+            this.ttl = 5 * 60 * 1000; // 5 minutes
         }
         
-        card.classList.remove('video-hover');
-        this.currentPreview = null;
+        set(key, data, ttl = this.ttl) {
+            this.cache.set(key, {
+                data,
+                timestamp: Date.now(),
+                ttl
+            });
+        }
+        
+        get(key) {
+            const item = this.cache.get(key);
+            if (!item) return null;
+            
+            if (Date.now() - item.timestamp > item.ttl) {
+                this.cache.delete(key);
+                return null;
+            }
+            
+            return item.data;
+        }
+        
+        clear() {
+            this.cache.clear();
+        }
     }
     
-    handleCardLeaveAll() {
-        clearTimeout(this.hoverTimeout);
+    window.CacheManager = CacheManager;
+}
+
+// Only initialize if not already set
+if (!window.cacheManager) {
+    window.cacheManager = new window.CacheManager();
+}
+
+// ============================================
+// CONTENT METRICS - Check if already defined
+// ============================================
+if (!window.contentMetrics) {
+    window.contentMetrics = new Map();
+}
+
+// ============================================
+// FIXED SUPABASE QUERY HELPER
+// ============================================
+function buildSafeQuery(table, options = {}) {
+    const { select = '*', where = {}, orderBy = null, order = 'asc', limit = 10, offset = 0 } = options;
+    
+    const client = getSupabaseClient();
+    if (!client) return null;
+    
+    let query = client.from(table).select(select);
+    
+    // Safely apply where conditions
+    Object.entries(where).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+            query = query.eq(key, value);
+        }
+    });
+    
+    // Safely apply order
+    if (orderBy) {
+        query = query.order(orderBy, { ascending: order === 'asc' });
+    }
+    
+    // Apply pagination
+    query = query.range(offset, offset + limit - 1);
+    
+    return query;
+}
+
+// ============================================
+// VIDEO PREVIEW SYSTEM (Enhanced)
+// ============================================
+if (typeof VideoPreviewSystem === 'undefined') {
+    class VideoPreviewSystem {
+        constructor() {
+            this.hoverTimeout = null;
+            this.currentPreview = null;
+            this.touchStartTime = 0;
+            this.touchStartX = 0;
+            this.touchStartY = 0;
+            this.touchMoved = false;
+            this.isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+        }
         
-        document.querySelectorAll('.content-card.video-hover').forEach(card => {
+        init() {
+            this.setupEventDelegation();
+            this.setupVideoAttributes();
+        }
+        
+        setupEventDelegation() {
+            // Mouse events for desktop
+            document.addEventListener('mouseover', (e) => {
+                if (!this.isMobile) {
+                    const card = e.target.closest('.content-card');
+                    if (card) {
+                        this.handleCardHover(card);
+                    }
+                }
+            });
+            
+            document.addEventListener('mouseout', (e) => {
+                if (!this.isMobile) {
+                    const card = e.target.closest('.content-card');
+                    if (card) {
+                        this.handleCardLeave(card);
+                    }
+                }
+            });
+            
+            // Touch events for mobile (optimized)
+            document.addEventListener('touchstart', (e) => {
+                this.touchStartTime = Date.now();
+                this.touchStartX = e.touches[0].clientX;
+                this.touchStartY = e.touches[0].clientY;
+                this.touchMoved = false;
+                
+                const card = e.target.closest('.content-card');
+                if (card && !e.target.closest('.share-btn') && 
+                    !e.target.closest('.creator-btn') && !e.target.closest('.tip-creator-btn')) {
+                    this.handleCardHover(card);
+                }
+            }, { passive: true });
+            
+            document.addEventListener('touchmove', (e) => {
+                if (e.touches.length > 0) {
+                    const touchX = e.touches[0].clientX;
+                    const touchY = e.touches[0].clientY;
+                    const deltaX = Math.abs(touchX - this.touchStartX);
+                    const deltaY = Math.abs(touchY - this.touchStartY);
+                    
+                    if (deltaX > 10 || deltaY > 10) {
+                        this.touchMoved = true;
+                        this.handleCardLeaveAll();
+                    }
+                }
+            }, { passive: true });
+            
+            document.addEventListener('touchend', (e) => {
+                const touchDuration = Date.now() - this.touchStartTime;
+                
+                if (touchDuration < 300 && !this.touchMoved) {
+                    const card = e.target.closest('.content-card');
+                    if (card) {
+                        this.handleCardLeave(card);
+                    }
+                } else {
+                    this.handleCardLeaveAll();
+                }
+                
+                this.touchMoved = false;
+            }, { passive: true });
+        }
+        
+        setupVideoAttributes() {
+            document.querySelectorAll('.video-preview, .card-preview-video').forEach(video => {
+                video.playsInline = true;
+                video.muted = true;
+                video.setAttribute('playsinline', '');
+                video.setAttribute('muted', '');
+                video.setAttribute('preload', 'metadata');
+            });
+        }
+        
+        handleCardHover(card) {
+            clearTimeout(this.hoverTimeout);
+            
+            this.hoverTimeout = setTimeout(() => {
+                const videoElement = card.querySelector('.video-preview, .card-preview-video');
+                if (videoElement && videoElement.src) {
+                    card.classList.add('video-hover');
+                    this.currentPreview = videoElement;
+                    
+                    videoElement.currentTime = 0;
+                    const playPromise = videoElement.play();
+                    
+                    if (playPromise !== undefined) {
+                        playPromise.catch(e => {
+                            console.log('Video autoplay prevented:', e);
+                            card.classList.remove('video-hover');
+                        });
+                    }
+                }
+            }, this.isMobile ? 100 : 500);
+        }
+        
+        handleCardLeave(card) {
+            clearTimeout(this.hoverTimeout);
+            
             const videoElement = card.querySelector('.video-preview, .card-preview-video');
             if (videoElement) {
                 videoElement.pause();
                 videoElement.currentTime = 0;
             }
+            
             card.classList.remove('video-hover');
-        });
+            this.currentPreview = null;
+        }
         
-        this.currentPreview = null;
+        handleCardLeaveAll() {
+            clearTimeout(this.hoverTimeout);
+            
+            document.querySelectorAll('.content-card.video-hover').forEach(card => {
+                const videoElement = card.querySelector('.video-preview, .card-preview-video');
+                if (videoElement) {
+                    videoElement.pause();
+                    videoElement.currentTime = 0;
+                }
+                card.classList.remove('video-hover');
+            });
+            
+            this.currentPreview = null;
+        }
     }
+    
+    window.VideoPreviewSystem = VideoPreviewSystem;
 }
 
 // ============================================
 // RECOMMENDATION ENGINE (Enhanced)
 // ============================================
-class RecommendationEngine {
-    constructor() {
-        this.userPreferences = {
-            likedGenres: [],
-            watchedContent: [],
-            preferredCreators: [],
-            likedLanguages: []
-        };
-        this.algorithmVersion = 'v1.0';
-    }
-    
-    async init() {
-        await this.loadUserPreferences();
-        this.setupTracking();
-    }
-    
-    async loadUserPreferences() {
-        try {
-            const likedContent = JSON.parse(localStorage.getItem('user_liked_content') || '[]');
-            this.userPreferences.likedGenres = [...new Set(likedContent.map(item => item.genre))].filter(Boolean);
-            
-            const watchHistory = JSON.parse(localStorage.getItem('watch_history') || '{}');
-            this.userPreferences.watchedContent = Object.keys(watchHistory);
-            
-            const preferredLanguages = JSON.parse(localStorage.getItem('preferred_languages') || '[]');
-            this.userPreferences.likedLanguages = preferredLanguages;
-        } catch (error) {
-            console.error('Error loading user preferences:', error);
+if (typeof RecommendationEngine === 'undefined') {
+    class RecommendationEngine {
+        constructor() {
+            this.userPreferences = {
+                likedGenres: [],
+                watchedContent: [],
+                preferredCreators: [],
+                likedLanguages: []
+            };
+            this.algorithmVersion = 'v1.0';
         }
-    }
-    
-    setupTracking() {
-        document.addEventListener('click', (e) => {
-            const card = e.target.closest('.content-card');
-            if (card) {
-                const contentId = card.dataset.contentId;
-                if (contentId) {
-                    this.trackView(contentId);
-                }
+        
+        async init() {
+            await this.loadUserPreferences();
+            this.setupTracking();
+        }
+        
+        async loadUserPreferences() {
+            try {
+                const likedContent = JSON.parse(localStorage.getItem('user_liked_content') || '[]');
+                this.userPreferences.likedGenres = [...new Set(likedContent.map(item => item.genre))].filter(Boolean);
+                
+                const watchHistory = JSON.parse(localStorage.getItem('watch_history') || '{}');
+                this.userPreferences.watchedContent = Object.keys(watchHistory);
+                
+                const preferredLanguages = JSON.parse(localStorage.getItem('preferred_languages') || '[]');
+                this.userPreferences.likedLanguages = preferredLanguages;
+            } catch (error) {
+                console.error('Error loading user preferences:', error);
             }
-        });
-    }
-    
-    trackView(contentId) {
-        const views = JSON.parse(localStorage.getItem('content_views') || '[]');
-        if (!views.includes(contentId)) {
-            views.push(contentId);
-            localStorage.setItem('content_views', JSON.stringify(views.slice(-100)));
-        }
-    }
-    
-    calculateRecommendationScore(content, userData) {
-        let score = 0;
-        
-        // Genre matching
-        if (content.genre && this.userPreferences.likedGenres.includes(content.genre)) {
-            score += 3;
         }
         
-        // Language matching
-        if (content.language && this.userPreferences.likedLanguages.includes(content.language)) {
-            score += 2;
-        }
-        
-        // Creator preference
-        if (content.user_id && this.userPreferences.preferredCreators.includes(content.user_id)) {
-            score += 2;
-        }
-        
-        // Popularity boost
-        if (content.views || content.views_count) {
-            const views = content.views || content.views_count || 0;
-            score += Math.min(views / 1000, 2);
-        }
-        
-        // Recency boost (last 24 hours)
-        if (content.created_at) {
-            const hoursOld = (Date.now() - new Date(content.created_at).getTime()) / (1000 * 60 * 60);
-            if (hoursOld < 24) score += 1;
-            if (hoursOld < 1) score += 2;
-        }
-        
-        // Avoid recommending already watched content
-        if (this.userPreferences.watchedContent.includes(content.id.toString())) {
-            score -= 2;
-        }
-        
-        return Math.max(0, score);
-    }
-    
-    getPersonalizedRecommendations(allContent, limit = 5) {
-        if (!allContent || allContent.length === 0) return [];
-        
-        const scoredContent = allContent.map(content => ({
-            ...content,
-            recommendationScore: this.calculateRecommendationScore(content, this.userPreferences)
-        }));
-        
-        return scoredContent
-            .sort((a, b) => b.recommendationScore - a.recommendationScore)
-            .slice(0, limit)
-            .filter(item => item.recommendationScore > 0);
-    }
-    
-    getTrendingFallback(contentData, limit = 5) {
-        if (!contentData || contentData.length === 0) return [];
-        
-        const oneWeekAgo = new Date();
-        oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
-        
-        return contentData
-            .filter(item => {
-                try {
-                    return new Date(item.created_at) >= oneWeekAgo;
-                } catch {
-                    return false;
+        setupTracking() {
+            document.addEventListener('click', (e) => {
+                const card = e.target.closest('.content-card');
+                if (card) {
+                    const contentId = card.dataset.contentId;
+                    if (contentId) {
+                        this.trackView(contentId);
+                    }
                 }
-            })
-            .sort((a, b) => {
-                const aViews = a.views || a.views_count || 0;
-                const bViews = b.views || b.views_count || 0;
-                const aLikes = a.likes || a.likes_count || 0;
-                const bLikes = b.likes || b.likes_count || 0;
-                const aScore = aViews + (aLikes * 2);
-                const bScore = bViews + (bLikes * 2);
-                return bScore - aScore;
-            })
-            .slice(0, limit);
+            });
+        }
+        
+        trackView(contentId) {
+            const views = JSON.parse(localStorage.getItem('content_views') || '[]');
+            if (!views.includes(contentId)) {
+                views.push(contentId);
+                localStorage.setItem('content_views', JSON.stringify(views.slice(-100)));
+            }
+        }
+        
+        calculateRecommendationScore(content, userData) {
+            let score = 0;
+            
+            // Genre matching
+            if (content.genre && this.userPreferences.likedGenres.includes(content.genre)) {
+                score += 3;
+            }
+            
+            // Language matching
+            if (content.language && this.userPreferences.likedLanguages.includes(content.language)) {
+                score += 2;
+            }
+            
+            // Creator preference
+            if (content.user_id && this.userPreferences.preferredCreators.includes(content.user_id)) {
+                score += 2;
+            }
+            
+            // Popularity boost
+            if (content.views || content.views_count) {
+                const views = content.views || content.views_count || 0;
+                score += Math.min(views / 1000, 2);
+            }
+            
+            // Recency boost (last 24 hours)
+            if (content.created_at) {
+                const hoursOld = (Date.now() - new Date(content.created_at).getTime()) / (1000 * 60 * 60);
+                if (hoursOld < 24) score += 1;
+                if (hoursOld < 1) score += 2;
+            }
+            
+            // Avoid recommending already watched content
+            if (this.userPreferences.watchedContent.includes(content.id.toString())) {
+                score -= 2;
+            }
+            
+            return Math.max(0, score);
+        }
+        
+        getPersonalizedRecommendations(allContent, limit = 5) {
+            if (!allContent || allContent.length === 0) return [];
+            
+            const scoredContent = allContent.map(content => ({
+                ...content,
+                recommendationScore: this.calculateRecommendationScore(content, this.userPreferences)
+            }));
+            
+            return scoredContent
+                .sort((a, b) => b.recommendationScore - a.recommendationScore)
+                .slice(0, limit)
+                .filter(item => item.recommendationScore > 0);
+        }
+        
+        getTrendingFallback(contentData, limit = 5) {
+            if (!contentData || contentData.length === 0) return [];
+            
+            const oneWeekAgo = new Date();
+            oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+            
+            return contentData
+                .filter(item => {
+                    try {
+                        return new Date(item.created_at) >= oneWeekAgo;
+                    } catch {
+                        return false;
+                    }
+                })
+                .sort((a, b) => {
+                    const aViews = a.views || a.views_count || 0;
+                    const bViews = b.views || b.views_count || 0;
+                    const aLikes = a.likes || a.likes_count || 0;
+                    const bLikes = b.likes || b.likes_count || 0;
+                    const aScore = aViews + (aLikes * 2);
+                    const bScore = bViews + (bLikes * 2);
+                    return bScore - aScore;
+                })
+                .slice(0, limit);
+        }
     }
+    
+    window.RecommendationEngine = RecommendationEngine;
 }
 
 // ============================================
 // NOTIFICATION SYSTEM (Enhanced)
 // ============================================
-class NotificationSystem {
-    constructor() {
-        this.notifications = [];
-        this.unreadCount = 0;
-        this.realtimeChannel = null;
-        this.pollingInterval = null;
-    }
-    
-    async init() {
-        await this.loadNotifications();
-        this.setupRealtime();
-        this.renderNotifications();
-        this.setupEventListeners();
-        this.updateBadge();
-    }
-    
-    async loadNotifications() {
-        try {
-            const saved = localStorage.getItem('notifications');
-            if (saved) {
-                this.notifications = JSON.parse(saved);
-                this.unreadCount = this.notifications.filter(n => !n.read).length;
-            }
-            
-            await this.fetchNewNotifications();
-        } catch (error) {
-            console.error('Failed to load notifications:', error);
+if (typeof NotificationSystem === 'undefined') {
+    class NotificationSystem {
+        constructor() {
+            this.notifications = [];
+            this.unreadCount = 0;
+            this.realtimeChannel = null;
+            this.pollingInterval = null;
         }
-    }
-    
-    async fetchNewNotifications() {
-        const mockNotifications = [
-            {
-                id: Date.now() - 3600000,
-                type: 'new_content',
-                title: 'New Content Available',
-                message: '5 new videos uploaded in your favorite categories',
-                timestamp: Date.now() - 3600000,
-                read: false,
-                icon: 'fas fa-video'
-            },
-            {
-                id: Date.now() - 7200000,
-                type: 'trending',
-                title: 'Content is Trending',
-                message: 'Your watched content is trending now!',
-                timestamp: Date.now() - 7200000,
-                read: false,
-                icon: 'fas fa-fire'
-            }
-        ];
         
-        mockNotifications.forEach(notification => {
-            if (!this.notifications.find(n => n.id === notification.id)) {
-                this.notifications.unshift(notification);
-            }
-        });
-        
-        this.saveNotifications();
-        this.renderNotifications();
-        this.updateBadge();
-    }
-    
-    setupRealtime() {
-        this.pollingInterval = setInterval(() => {
-            this.simulateRealtimeUpdate();
-        }, 30000);
-        
-        if ('Notification' in window && Notification.permission === 'default') {
-            Notification.requestPermission();
+        async init() {
+            await this.loadNotifications();
+            this.setupRealtime();
+            this.renderNotifications();
+            this.setupEventListeners();
+            this.updateBadge();
         }
-    }
-    
-    simulateRealtimeUpdate() {
-        if (Math.random() > 0.7) {
-            const newNotification = {
-                id: Date.now(),
-                type: 'realtime',
-                title: 'Live Update',
-                message: 'New content trending right now!',
-                timestamp: Date.now(),
-                read: false,
-                icon: 'fas fa-bolt'
-            };
-            
-            this.addNotification(newNotification);
-            
-            if (Notification.permission === 'granted') {
-                new Notification(newNotification.title, {
-                    body: newNotification.message,
-                    icon: '/icon.png'
-                });
+        
+        async loadNotifications() {
+            try {
+                const saved = localStorage.getItem('notifications');
+                if (saved) {
+                    this.notifications = JSON.parse(saved);
+                    this.unreadCount = this.notifications.filter(n => !n.read).length;
+                }
+                
+                await this.fetchNewNotifications();
+            } catch (error) {
+                console.error('Failed to load notifications:', error);
             }
         }
-    }
-    
-    addNotification(notification) {
-        this.notifications.unshift(notification);
-        if (!notification.read) {
-            this.unreadCount++;
-        }
-        this.saveNotifications();
-        this.renderNotifications();
-        this.updateBadge();
-    }
-    
-    markAsRead(id) {
-        const notification = this.notifications.find(n => n.id === id);
-        if (notification && !notification.read) {
-            notification.read = true;
-            this.unreadCount--;
+        
+        async fetchNewNotifications() {
+            const mockNotifications = [
+                {
+                    id: Date.now() - 3600000,
+                    type: 'new_content',
+                    title: 'New Content Available',
+                    message: '5 new videos uploaded in your favorite categories',
+                    timestamp: Date.now() - 3600000,
+                    read: false,
+                    icon: 'fas fa-video'
+                },
+                {
+                    id: Date.now() - 7200000,
+                    type: 'trending',
+                    title: 'Content is Trending',
+                    message: 'Your watched content is trending now!',
+                    timestamp: Date.now() - 7200000,
+                    read: false,
+                    icon: 'fas fa-fire'
+                }
+            ];
+            
+            mockNotifications.forEach(notification => {
+                if (!this.notifications.find(n => n.id === notification.id)) {
+                    this.notifications.unshift(notification);
+                }
+            });
+            
             this.saveNotifications();
             this.renderNotifications();
             this.updateBadge();
         }
-    }
-    
-    markAllAsRead() {
-        this.notifications.forEach(n => n.read = true);
-        this.unreadCount = 0;
-        this.saveNotifications();
-        this.renderNotifications();
-        this.updateBadge();
-    }
-    
-    updateBadge() {
-        const badge = document.getElementById('notification-count');
-        const navBadge = document.getElementById('nav-notification-count');
-        const sidebarBadge = document.getElementById('sidebar-notification-count');
         
-        const countText = this.unreadCount > 99 ? '99+' : this.unreadCount;
-        const display = this.unreadCount > 0 ? 'flex' : 'none';
-        
-        [badge, navBadge, sidebarBadge].forEach(el => {
-            if (el) {
-                el.textContent = countText;
-                el.style.display = display;
+        setupRealtime() {
+            this.pollingInterval = setInterval(() => {
+                this.simulateRealtimeUpdate();
+            }, 30000);
+            
+            if ('Notification' in window && Notification.permission === 'default') {
+                Notification.requestPermission();
             }
-        });
-    }
-    
-    saveNotifications() {
-        localStorage.setItem('notifications', JSON.stringify(this.notifications));
-    }
-    
-    renderNotifications() {
-        const container = document.getElementById('notifications-list');
-        if (!container) return;
-        
-        if (this.notifications.length === 0) {
-            container.innerHTML = `
-                <div class="empty-notifications">
-                    <i class="fas fa-bell-slash"></i>
-                    <p>No notifications yet</p>
-                </div>
-            `;
-            return;
         }
         
-        container.innerHTML = this.notifications.map(notification => `
-            <div class="notification-item ${notification.read ? 'read' : 'unread'}" data-id="${notification.id}">
-                <div class="notification-icon">
-                    <i class="${notification.icon}"></i>
-                </div>
-                <div class="notification-content">
-                    <h4>${escapeHtml(notification.title)}</h4>
-                    <p>${escapeHtml(notification.message)}</p>
-                    <span class="notification-time">${this.formatTime(notification.timestamp)}</span>
-                </div>
-                ${!notification.read ? '<div class="notification-dot"></div>' : ''}
-            </div>
-        `).join('');
-        
-        container.querySelectorAll('.notification-item').forEach(item => {
-            item.addEventListener('click', (e) => {
-                const id = parseInt(item.dataset.id);
-                this.markAsRead(id);
-            });
-        });
-    }
-    
-    formatTime(timestamp) {
-        const now = Date.now();
-        const diff = now - timestamp;
-        
-        if (diff < 60000) return 'Just now';
-        if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
-        if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
-        return `${Math.floor(diff / 86400000)}d ago`;
-    }
-    
-    setupEventListeners() {
-        const notificationsBtn = document.getElementById('notifications-btn');
-        const navNotificationsBtn = document.getElementById('nav-notifications-btn');
-        const notificationsPanel = document.getElementById('notifications-panel');
-        const closeNotifications = document.getElementById('close-notifications');
-        const markAllRead = document.getElementById('mark-all-read');
-        
-        const openNotifications = () => {
-            if (notificationsPanel) {
-                notificationsPanel.classList.add('active');
-                this.markAllAsRead();
+        simulateRealtimeUpdate() {
+            if (Math.random() > 0.7) {
+                const newNotification = {
+                    id: Date.now(),
+                    type: 'realtime',
+                    title: 'Live Update',
+                    message: 'New content trending right now!',
+                    timestamp: Date.now(),
+                    read: false,
+                    icon: 'fas fa-bolt'
+                };
+                
+                this.addNotification(newNotification);
+                
+                if (Notification.permission === 'granted') {
+                    new Notification(newNotification.title, {
+                        body: newNotification.message,
+                        icon: '/icon.png'
+                    });
+                }
             }
-        };
-        
-        if (notificationsBtn) {
-            notificationsBtn.addEventListener('click', openNotifications);
         }
         
-        if (navNotificationsBtn) {
-            navNotificationsBtn.addEventListener('click', openNotifications);
+        addNotification(notification) {
+            this.notifications.unshift(notification);
+            if (!notification.read) {
+                this.unreadCount++;
+            }
+            this.saveNotifications();
+            this.renderNotifications();
+            this.updateBadge();
         }
         
-        if (closeNotifications) {
-            closeNotifications.addEventListener('click', () => {
-                notificationsPanel.classList.remove('active');
+        markAsRead(id) {
+            const notification = this.notifications.find(n => n.id === id);
+            if (notification && !notification.read) {
+                notification.read = true;
+                this.unreadCount--;
+                this.saveNotifications();
+                this.renderNotifications();
+                this.updateBadge();
+            }
+        }
+        
+        markAllAsRead() {
+            this.notifications.forEach(n => n.read = true);
+            this.unreadCount = 0;
+            this.saveNotifications();
+            this.renderNotifications();
+            this.updateBadge();
+        }
+        
+        updateBadge() {
+            const badge = document.getElementById('notification-count');
+            const navBadge = document.getElementById('nav-notification-count');
+            const sidebarBadge = document.getElementById('sidebar-notification-count');
+            
+            const countText = this.unreadCount > 99 ? '99+' : this.unreadCount;
+            const display = this.unreadCount > 0 ? 'flex' : 'none';
+            
+            [badge, navBadge, sidebarBadge].forEach(el => {
+                if (el) {
+                    el.textContent = countText;
+                    el.style.display = display;
+                }
             });
         }
         
-        if (markAllRead) {
-            markAllRead.addEventListener('click', () => {
-                this.markAllAsRead();
+        saveNotifications() {
+            localStorage.setItem('notifications', JSON.stringify(this.notifications));
+        }
+        
+        renderNotifications() {
+            const container = document.getElementById('notifications-list');
+            if (!container) return;
+            
+            if (this.notifications.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-notifications">
+                        <i class="fas fa-bell-slash"></i>
+                        <p>No notifications yet</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = this.notifications.map(notification => `
+                <div class="notification-item ${notification.read ? 'read' : 'unread'}" data-id="${notification.id}">
+                    <div class="notification-icon">
+                        <i class="${notification.icon}"></i>
+                    </div>
+                    <div class="notification-content">
+                        <h4>${escapeHtml(notification.title)}</h4>
+                        <p>${escapeHtml(notification.message)}</p>
+                        <span class="notification-time">${this.formatTime(notification.timestamp)}</span>
+                    </div>
+                    ${!notification.read ? '<div class="notification-dot"></div>' : ''}
+                </div>
+            `).join('');
+            
+            container.querySelectorAll('.notification-item').forEach(item => {
+                item.addEventListener('click', (e) => {
+                    const id = parseInt(item.dataset.id);
+                    this.markAsRead(id);
+                });
             });
         }
         
-        document.addEventListener('click', (e) => {
-            if (notificationsPanel && notificationsBtn &&
-                !notificationsPanel.contains(e.target) && 
-                !notificationsBtn.contains(e.target) &&
-                (!navNotificationsBtn || !navNotificationsBtn.contains(e.target)) &&
-                notificationsPanel.classList.contains('active')) {
-                notificationsPanel.classList.remove('active');
+        formatTime(timestamp) {
+            const now = Date.now();
+            const diff = now - timestamp;
+            
+            if (diff < 60000) return 'Just now';
+            if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
+            if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
+            return `${Math.floor(diff / 86400000)}d ago`;
+        }
+        
+        setupEventListeners() {
+            const notificationsBtn = document.getElementById('notifications-btn');
+            const navNotificationsBtn = document.getElementById('nav-notifications-btn');
+            const notificationsPanel = document.getElementById('notifications-panel');
+            const closeNotifications = document.getElementById('close-notifications');
+            const markAllRead = document.getElementById('mark-all-read');
+            
+            const openNotifications = () => {
+                if (notificationsPanel) {
+                    notificationsPanel.classList.add('active');
+                    this.markAllAsRead();
+                }
+            };
+            
+            if (notificationsBtn) {
+                notificationsBtn.addEventListener('click', openNotifications);
             }
-        });
+            
+            if (navNotificationsBtn) {
+                navNotificationsBtn.addEventListener('click', openNotifications);
+            }
+            
+            if (closeNotifications) {
+                closeNotifications.addEventListener('click', () => {
+                    notificationsPanel.classList.remove('active');
+                });
+            }
+            
+            if (markAllRead) {
+                markAllRead.addEventListener('click', () => {
+                    this.markAllAsRead();
+                });
+            }
+            
+            document.addEventListener('click', (e) => {
+                if (notificationsPanel && notificationsBtn &&
+                    !notificationsPanel.contains(e.target) && 
+                    !notificationsBtn.contains(e.target) &&
+                    (!navNotificationsBtn || !navNotificationsBtn.contains(e.target)) &&
+                    notificationsPanel.classList.contains('active')) {
+                    notificationsPanel.classList.remove('active');
+                }
+            });
+        }
     }
+    
+    window.NotificationSystem = NotificationSystem;
 }
 
 // ============================================
 // ANALYTICS SYSTEM (Enhanced)
 // ============================================
-class AnalyticsSystem {
-    constructor() {
-        this.userId = null;
-        this.sessionId = null;
-        this.sessionStart = null;
-        this.watchTime = 0;
-        this.sessions = [];
-        this.chart = null;
-    }
-    
-    init() {
-        this.userId = localStorage.getItem('analytics_user_id') || this.generateId();
-        this.sessionId = this.generateId();
-        this.sessionStart = Date.now();
-        
-        localStorage.setItem('analytics_user_id', this.userId);
-        
-        this.trackSessionStart();
-        this.setupEventTracking();
-        this.updateAnalyticsDisplay();
-        this.setupAnalyticsChart();
-        this.setupEventListeners();
-    }
-    
-    generateId() {
-        return 'id_' + Math.random().toString(36).substr(2, 9);
-    }
-    
-    trackSessionStart() {
-        const previousSessions = JSON.parse(localStorage.getItem('user_sessions') || '[]');
-        this.sessions = previousSessions;
-        
-        this.sessions.push({
-            id: this.sessionId,
-            startTime: this.sessionStart,
-            endTime: null,
-            duration: null
-        });
-        
-        if (this.sessions.length > 30) {
-            this.sessions = this.sessions.slice(-30);
+if (typeof AnalyticsSystem === 'undefined') {
+    class AnalyticsSystem {
+        constructor() {
+            this.userId = null;
+            this.sessionId = null;
+            this.sessionStart = null;
+            this.watchTime = 0;
+            this.sessions = [];
+            this.chart = null;
         }
         
-        localStorage.setItem('user_sessions', JSON.stringify(this.sessions));
-    }
-    
-    trackEvent(event, properties = {}) {
-        const eventData = {
-            event,
-            properties: {
-                ...properties,
-                userId: this.userId,
-                sessionId: this.sessionId,
-                timestamp: Date.now(),
-                page: window.location.pathname
+        init() {
+            this.userId = localStorage.getItem('analytics_user_id') || this.generateId();
+            this.sessionId = this.generateId();
+            this.sessionStart = Date.now();
+            
+            localStorage.setItem('analytics_user_id', this.userId);
+            
+            this.trackSessionStart();
+            this.setupEventTracking();
+            this.updateAnalyticsDisplay();
+            this.setupAnalyticsChart();
+            this.setupEventListeners();
+        }
+        
+        generateId() {
+            return 'id_' + Math.random().toString(36).substr(2, 9);
+        }
+        
+        trackSessionStart() {
+            const previousSessions = JSON.parse(localStorage.getItem('user_sessions') || '[]');
+            this.sessions = previousSessions;
+            
+            this.sessions.push({
+                id: this.sessionId,
+                startTime: this.sessionStart,
+                endTime: null,
+                duration: null
+            });
+            
+            if (this.sessions.length > 30) {
+                this.sessions = this.sessions.slice(-30);
             }
-        };
-        
-        const events = JSON.parse(localStorage.getItem('analytics_events') || '[]');
-        events.push(eventData);
-        if (events.length > 1000) events.shift();
-        localStorage.setItem('analytics_events', JSON.stringify(events));
-        
-        console.log(`📊 Tracked: ${event}`, eventData.properties);
-    }
-    
-    trackWatchTime(duration) {
-        this.watchTime += duration;
-        this.trackEvent('watch_time', { duration, total_watch_time: this.watchTime });
-        this.updateAnalyticsDisplay();
-    }
-    
-    trackContentInteraction(contentId, type, details = {}) {
-        this.trackEvent('content_interaction', {
-            content_id: contentId,
-            interaction_type: type,
-            ...details
-        });
-    }
-    
-    updateAnalyticsDisplay() {
-        const hours = Math.floor(this.watchTime / 3600000);
-        const minutes = Math.floor((this.watchTime % 3600000) / 60000);
-        document.getElementById('total-watch-time').textContent = `${hours}h ${minutes}m`;
-        
-        const totalSessions = this.sessions.length;
-        document.getElementById('sessions-per-user').textContent = totalSessions;
-        
-        const uniqueSessions = [...new Set(this.sessions.map(s => s.id))].length;
-        const returnRate = totalSessions > 1 ? Math.round(((totalSessions - 1) / totalSessions) * 100) : 0;
-        document.getElementById('return-rate').textContent = `${returnRate}%`;
-        
-        const totalViews = parseInt(localStorage.getItem('total_views') || '0');
-        document.getElementById('total-views').textContent = totalViews.toLocaleString();
-        
-        document.getElementById('watch-time-trend').textContent = '+12%';
-        document.getElementById('sessions-trend').textContent = '+5%';
-        document.getElementById('return-rate-trend').textContent = '+3%';
-        document.getElementById('views-trend').textContent = '+8%';
-    }
-    
-    setupAnalyticsChart() {
-        const ctx = document.getElementById('engagement-chart');
-        if (!ctx) return;
-        
-        if (this.chart) {
-            this.chart.destroy();
-        }
-        if (window.engagementChart) {
-            window.engagementChart.destroy();
+            
+            localStorage.setItem('user_sessions', JSON.stringify(this.sessions));
         }
         
-        const data = {
-            labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-            datasets: [
-                {
-                    label: 'Watch Time (hours)',
-                    data: [2.5, 3.2, 4.1, 3.8, 4.5, 5.2, 4.8],
-                    borderColor: '#F59E0B',
-                    backgroundColor: 'rgba(245, 158, 11, 0.1)',
-                    tension: 0.4,
-                    fill: true
-                },
-                {
-                    label: 'Sessions',
-                    data: [12, 15, 18, 14, 20, 22, 19],
-                    borderColor: '#1D4ED8',
-                    backgroundColor: 'rgba(29, 78, 216, 0.1)',
-                    tension: 0.4,
-                    fill: true
+        trackEvent(event, properties = {}) {
+            const eventData = {
+                event,
+                properties: {
+                    ...properties,
+                    userId: this.userId,
+                    sessionId: this.sessionId,
+                    timestamp: Date.now(),
+                    page: window.location.pathname
                 }
-            ]
-        };
+            };
+            
+            const events = JSON.parse(localStorage.getItem('analytics_events') || '[]');
+            events.push(eventData);
+            if (events.length > 1000) events.shift();
+            localStorage.setItem('analytics_events', JSON.stringify(events));
+            
+            console.log(`📊 Tracked: ${event}`, eventData.properties);
+        }
         
-        this.chart = new Chart(ctx, {
-            type: 'line',
-            data: data,
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        labels: {
-                            color: 'var(--soft-white)'
+        trackWatchTime(duration) {
+            this.watchTime += duration;
+            this.trackEvent('watch_time', { duration, total_watch_time: this.watchTime });
+            this.updateAnalyticsDisplay();
+        }
+        
+        trackContentInteraction(contentId, type, details = {}) {
+            this.trackEvent('content_interaction', {
+                content_id: contentId,
+                interaction_type: type,
+                ...details
+            });
+        }
+        
+        updateAnalyticsDisplay() {
+            const hours = Math.floor(this.watchTime / 3600000);
+            const minutes = Math.floor((this.watchTime % 3600000) / 60000);
+            document.getElementById('total-watch-time').textContent = `${hours}h ${minutes}m`;
+            
+            const totalSessions = this.sessions.length;
+            document.getElementById('sessions-per-user').textContent = totalSessions;
+            
+            const uniqueSessions = [...new Set(this.sessions.map(s => s.id))].length;
+            const returnRate = totalSessions > 1 ? Math.round(((totalSessions - 1) / totalSessions) * 100) : 0;
+            document.getElementById('return-rate').textContent = `${returnRate}%`;
+            
+            const totalViews = parseInt(localStorage.getItem('total_views') || '0');
+            document.getElementById('total-views').textContent = totalViews.toLocaleString();
+            
+            document.getElementById('watch-time-trend').textContent = '+12%';
+            document.getElementById('sessions-trend').textContent = '+5%';
+            document.getElementById('return-rate-trend').textContent = '+3%';
+            document.getElementById('views-trend').textContent = '+8%';
+        }
+        
+        setupAnalyticsChart() {
+            const ctx = document.getElementById('engagement-chart');
+            if (!ctx) return;
+            
+            if (this.chart) {
+                this.chart.destroy();
+            }
+            if (window.engagementChart) {
+                window.engagementChart.destroy();
+            }
+            
+            const data = {
+                labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                datasets: [
+                    {
+                        label: 'Watch Time (hours)',
+                        data: [2.5, 3.2, 4.1, 3.8, 4.5, 5.2, 4.8],
+                        borderColor: '#F59E0B',
+                        backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    },
+                    {
+                        label: 'Sessions',
+                        data: [12, 15, 18, 14, 20, 22, 19],
+                        borderColor: '#1D4ED8',
+                        backgroundColor: 'rgba(29, 78, 216, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }
+                ]
+            };
+            
+            this.chart = new Chart(ctx, {
+                type: 'line',
+                data: data,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: 'var(--soft-white)'
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                            ticks: { color: 'var(--slate-grey)' }
+                        },
+                        y: {
+                            grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                            ticks: { color: 'var(--slate-grey)' }
                         }
                     }
-                },
-                scales: {
-                    x: {
-                        grid: { color: 'rgba(255, 255, 255, 0.1)' },
-                        ticks: { color: 'var(--slate-grey)' }
-                    },
-                    y: {
-                        grid: { color: 'rgba(255, 255, 255, 0.1)' },
-                        ticks: { color: 'var(--slate-grey)' }
+                }
+            });
+            
+            window.engagementChart = this.chart;
+        }
+        
+        setupEventTracking() {
+            document.addEventListener('click', (e) => {
+                const card = e.target.closest('.content-card');
+                if (card) {
+                    const contentId = card.dataset.contentId;
+                    if (contentId) {
+                        this.trackContentInteraction(contentId, 'view');
+                        
+                        let totalViews = parseInt(localStorage.getItem('total_views') || '0');
+                        totalViews++;
+                        localStorage.setItem('total_views', totalViews.toString());
+                        this.updateAnalyticsDisplay();
                     }
                 }
-            }
-        });
+            });
+            
+            document.addEventListener('play', (e) => {
+                if (e.target.tagName === 'VIDEO') {
+                    const video = e.target;
+                    const contentId = video.closest('.content-card')?.dataset.contentId;
+                    if (contentId) {
+                        this.trackContentInteraction(contentId, 'video_play');
+                        
+                        const startTime = Date.now();
+                        video.addEventListener('pause', () => {
+                            const duration = Date.now() - startTime;
+                            this.trackWatchTime(duration);
+                        });
+                        
+                        video.addEventListener('ended', () => {
+                            const duration = Date.now() - startTime;
+                            this.trackWatchTime(duration);
+                        });
+                    }
+                }
+            }, true);
+        }
         
-        window.engagementChart = this.chart;
-    }
-    
-    setupEventTracking() {
-        document.addEventListener('click', (e) => {
-            const card = e.target.closest('.content-card');
-            if (card) {
-                const contentId = card.dataset.contentId;
-                if (contentId) {
-                    this.trackContentInteraction(contentId, 'view');
-                    
-                    let totalViews = parseInt(localStorage.getItem('total_views') || '0');
-                    totalViews++;
-                    localStorage.setItem('total_views', totalViews.toString());
+        setupEventListeners() {
+            const analyticsBtn = document.getElementById('analytics-btn');
+            const analyticsModal = document.getElementById('analytics-modal');
+            const closeAnalytics = document.getElementById('close-analytics');
+            
+            if (analyticsBtn && analyticsModal) {
+                analyticsBtn.addEventListener('click', () => {
+                    analyticsModal.classList.add('active');
                     this.updateAnalyticsDisplay();
-                }
+                });
             }
-        });
-        
-        document.addEventListener('play', (e) => {
-            if (e.target.tagName === 'VIDEO') {
-                const video = e.target;
-                const contentId = video.closest('.content-card')?.dataset.contentId;
-                if (contentId) {
-                    this.trackContentInteraction(contentId, 'video_play');
-                    
-                    const startTime = Date.now();
-                    video.addEventListener('pause', () => {
-                        const duration = Date.now() - startTime;
-                        this.trackWatchTime(duration);
-                    });
-                    
-                    video.addEventListener('ended', () => {
-                        const duration = Date.now() - startTime;
-                        this.trackWatchTime(duration);
-                    });
-                }
+            
+            if (closeAnalytics) {
+                closeAnalytics.addEventListener('click', () => {
+                    analyticsModal.classList.remove('active');
+                });
             }
-        }, true);
+            
+            analyticsModal?.addEventListener('click', (e) => {
+                if (e.target === analyticsModal) {
+                    analyticsModal.classList.remove('active');
+                }
+            });
+        }
     }
     
-    setupEventListeners() {
-        const analyticsBtn = document.getElementById('analytics-btn');
-        const analyticsModal = document.getElementById('analytics-modal');
-        const closeAnalytics = document.getElementById('close-analytics');
-        
-        if (analyticsBtn && analyticsModal) {
-            analyticsBtn.addEventListener('click', () => {
-                analyticsModal.classList.add('active');
-                this.updateAnalyticsDisplay();
-            });
-        }
-        
-        if (closeAnalytics) {
-            closeAnalytics.addEventListener('click', () => {
-                analyticsModal.classList.remove('active');
-            });
-        }
-        
-        analyticsModal?.addEventListener('click', (e) => {
-            if (e.target === analyticsModal) {
-                analyticsModal.classList.remove('active');
-            }
-        });
-    }
+    window.AnalyticsSystem = AnalyticsSystem;
 }
 
 // ============================================
 // SEARCH SYSTEM (Enhanced)
 // ============================================
-class SearchSystem {
-    constructor() {
-        this.modal = null;
-        this.searchInput = null;
-        this.resultsGrid = null;
-        this.currentResults = [];
-        this.searchTimeout = null;
-    }
-    
-    init() {
-        this.modal = document.getElementById('search-modal');
-        this.searchInput = document.getElementById('search-input');
-        this.resultsGrid = document.getElementById('search-results-grid');
-        this.setupEventListeners();
-        this.setupVoiceSearchButton();
-    }
-    
-    setupEventListeners() {
-        const searchBtn = document.getElementById('search-btn');
-        if (searchBtn) {
-            searchBtn.addEventListener('click', () => this.openSearch());
+if (typeof SearchSystem === 'undefined') {
+    class SearchSystem {
+        constructor() {
+            this.modal = null;
+            this.searchInput = null;
+            this.resultsGrid = null;
+            this.currentResults = [];
+            this.searchTimeout = null;
         }
         
-        const closeSearchBtn = document.getElementById('close-search-btn');
-        if (closeSearchBtn) {
-            closeSearchBtn.addEventListener('click', () => this.closeSearch());
+        init() {
+            this.modal = document.getElementById('search-modal');
+            this.searchInput = document.getElementById('search-input');
+            this.resultsGrid = document.getElementById('search-results-grid');
+            this.setupEventListeners();
+            this.setupVoiceSearchButton();
         }
         
-        this.searchInput?.addEventListener('input', (e) => {
-            this.handleSearch(e.target.value);
-        });
-        
-        document.getElementById('category-filter')?.addEventListener('change', () => {
-            this.handleSearch(this.searchInput?.value || '');
-        });
-        
-        document.getElementById('media-type-filter')?.addEventListener('change', () => {
-            this.handleSearch(this.searchInput?.value || '');
-        });
-        
-        document.getElementById('sort-filter')?.addEventListener('change', () => {
-            this.handleSearch(this.searchInput?.value || '');
-        });
-        
-        document.getElementById('language-filter')?.addEventListener('change', () => {
-            this.handleSearch(this.searchInput?.value || '');
-        });
-        
-        this.modal?.addEventListener('click', (e) => {
-            if (e.target === this.modal) {
-                this.closeSearch();
+        setupEventListeners() {
+            const searchBtn = document.getElementById('search-btn');
+            if (searchBtn) {
+                searchBtn.addEventListener('click', () => this.openSearch());
             }
-        });
-    }
-    
-    setupVoiceSearchButton() {
-        const voiceSearchBtn = document.getElementById('voice-search-btn');
-        if (voiceSearchBtn && ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
-            voiceSearchBtn.style.display = 'flex';
-            voiceSearchBtn.addEventListener('click', () => this.startVoiceSearch());
-        } else if (voiceSearchBtn) {
-            voiceSearchBtn.style.display = 'none';
-        }
-    }
-    
-    startVoiceSearch() {
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        const recognition = new SpeechRecognition();
-        recognition.continuous = false;
-        recognition.interimResults = false;
-        recognition.lang = 'en-ZA';
-        
-        const voiceStatus = document.getElementById('voice-search-status');
-        const voiceStatusText = document.getElementById('voice-status-text');
-        
-        recognition.start();
-        
-        if (voiceStatus) {
-            voiceStatus.classList.add('active');
-            voiceStatusText.textContent = 'Listening...';
-        }
-        
-        recognition.onresult = (event) => {
-            const transcript = event.results[0][0].transcript;
-            if (this.searchInput) {
-                this.searchInput.value = transcript;
-                this.handleSearch(transcript);
+            
+            const closeSearchBtn = document.getElementById('close-search-btn');
+            if (closeSearchBtn) {
+                closeSearchBtn.addEventListener('click', () => this.closeSearch());
             }
-            if (voiceStatus) {
-                voiceStatus.classList.remove('active');
-            }
-            if (typeof toast !== 'undefined') {
-                toast.info(`Searching: "${transcript}"`);
-            }
-        };
-        
-        recognition.onerror = (event) => {
-            console.error('Voice search error:', event.error);
-            if (voiceStatus) {
-                voiceStatus.classList.remove('active');
-            }
-        };
-        
-        recognition.onend = () => {
-            if (voiceStatus) {
-                voiceStatus.classList.remove('active');
-            }
-        };
-    }
-    
-    openSearch() {
-        this.modal?.classList.add('active');
-        setTimeout(() => this.searchInput?.focus(), 350);
-    }
-    
-    closeSearch() {
-        this.modal?.classList.remove('active');
-        if (this.searchInput) this.searchInput.value = '';
-        if (this.resultsGrid) this.resultsGrid.innerHTML = '';
-    }
-    
-    handleSearch(query) {
-        clearTimeout(this.searchTimeout);
-        this.searchTimeout = setTimeout(async () => {
-            if (!query.trim()) {
-                if (this.resultsGrid) {
-                    this.resultsGrid.innerHTML = '<div class="no-results">Start typing to search...</div>';
+            
+            this.searchInput?.addEventListener('input', (e) => {
+                this.handleSearch(e.target.value);
+            });
+            
+            document.getElementById('category-filter')?.addEventListener('change', () => {
+                this.handleSearch(this.searchInput?.value || '');
+            });
+            
+            document.getElementById('media-type-filter')?.addEventListener('change', () => {
+                this.handleSearch(this.searchInput?.value || '');
+            });
+            
+            document.getElementById('sort-filter')?.addEventListener('change', () => {
+                this.handleSearch(this.searchInput?.value || '');
+            });
+            
+            document.getElementById('language-filter')?.addEventListener('change', () => {
+                this.handleSearch(this.searchInput?.value || '');
+            });
+            
+            this.modal?.addEventListener('click', (e) => {
+                if (e.target === this.modal) {
+                    this.closeSearch();
                 }
-                return;
+            });
+        }
+        
+        setupVoiceSearchButton() {
+            const voiceSearchBtn = document.getElementById('voice-search-btn');
+            if (voiceSearchBtn && ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
+                voiceSearchBtn.style.display = 'flex';
+                voiceSearchBtn.addEventListener('click', () => this.startVoiceSearch());
+            } else if (voiceSearchBtn) {
+                voiceSearchBtn.style.display = 'none';
+            }
+        }
+        
+        startVoiceSearch() {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            const recognition = new SpeechRecognition();
+            recognition.continuous = false;
+            recognition.interimResults = false;
+            recognition.lang = 'en-ZA';
+            
+            const voiceStatus = document.getElementById('voice-search-status');
+            const voiceStatusText = document.getElementById('voice-status-text');
+            
+            recognition.start();
+            
+            if (voiceStatus) {
+                voiceStatus.classList.add('active');
+                voiceStatusText.textContent = 'Listening...';
             }
             
-            if (this.resultsGrid) {
-                this.resultsGrid.innerHTML = '<div class="infinite-scroll-loading"><div class="infinite-scroll-spinner"></div><div>Searching...</div></div>';
-            }
+            recognition.onresult = (event) => {
+                const transcript = event.results[0][0].transcript;
+                if (this.searchInput) {
+                    this.searchInput.value = transcript;
+                    this.handleSearch(transcript);
+                }
+                if (voiceStatus) {
+                    voiceStatus.classList.remove('active');
+                }
+                if (typeof toast !== 'undefined') {
+                    toast.info(`Searching: "${transcript}"`);
+                }
+            };
             
-            try {
-                const client = getSupabaseClient();
-                if (!client) {
-                    this.renderMockSearchResults();
+            recognition.onerror = (event) => {
+                console.error('Voice search error:', event.error);
+                if (voiceStatus) {
+                    voiceStatus.classList.remove('active');
+                }
+            };
+            
+            recognition.onend = () => {
+                if (voiceStatus) {
+                    voiceStatus.classList.remove('active');
+                }
+            };
+        }
+        
+        openSearch() {
+            this.modal?.classList.add('active');
+            setTimeout(() => this.searchInput?.focus(), 350);
+        }
+        
+        closeSearch() {
+            this.modal?.classList.remove('active');
+            if (this.searchInput) this.searchInput.value = '';
+            if (this.resultsGrid) this.resultsGrid.innerHTML = '';
+        }
+        
+        handleSearch(query) {
+            clearTimeout(this.searchTimeout);
+            this.searchTimeout = setTimeout(async () => {
+                if (!query.trim()) {
+                    if (this.resultsGrid) {
+                        this.resultsGrid.innerHTML = '<div class="no-results">Start typing to search...</div>';
+                    }
                     return;
                 }
                 
-                const category = document.getElementById('category-filter')?.value;
-                const mediaType = document.getElementById('media-type-filter')?.value;
-                const language = document.getElementById('language-filter')?.value;
-                
-                let queryBuilder = client
-                    .from('Content')
-                    .select('*, user_profiles!user_id(*)')
-                    .eq('status', 'published');
-                
-                if (category && category !== 'all') {
-                    queryBuilder = queryBuilder.eq('genre', category);
+                if (this.resultsGrid) {
+                    this.resultsGrid.innerHTML = '<div class="infinite-scroll-loading"><div class="infinite-scroll-spinner"></div><div>Searching...</div></div>';
                 }
                 
-                if (mediaType && mediaType !== 'all') {
-                    queryBuilder = queryBuilder.eq('media_type', mediaType);
-                }
-                
-                if (language && language !== 'all') {
-                    queryBuilder = queryBuilder.eq('language', language);
-                }
-                
-                const { data, error } = await queryBuilder.limit(50);
-                
-                if (error) throw error;
-                
-                const results = (data || []).filter(item => {
-                    const searchText = query.toLowerCase();
-                    return (
-                        (item.title && item.title.toLowerCase().includes(searchText)) ||
-                        (item.description && item.description.toLowerCase().includes(searchText)) ||
-                        (item.genre && item.genre.toLowerCase().includes(searchText))
-                    );
-                });
-                
-                this.currentResults = results;
-                
-                const sortBy = document.getElementById('sort-filter')?.value;
-                if (sortBy === 'popular') {
-                    results.sort((a, b) => (b.views || 0) - (a.views || 0));
-                } else if (sortBy === 'trending') {
-                    results.sort((a, b) => {
-                        const aScore = (a.views || 0) + ((a.likes || 0) * 2);
-                        const bScore = (b.views || 0) + ((b.likes || 0) * 2);
-                        return bScore - aScore;
+                try {
+                    const client = getSupabaseClient();
+                    if (!client) {
+                        this.renderMockSearchResults();
+                        return;
+                    }
+                    
+                    const category = document.getElementById('category-filter')?.value;
+                    const mediaType = document.getElementById('media-type-filter')?.value;
+                    const language = document.getElementById('language-filter')?.value;
+                    
+                    let queryBuilder = client
+                        .from('Content')
+                        .select('*, user_profiles!user_id(*)')
+                        .eq('status', 'published');
+                    
+                    if (category && category !== 'all') {
+                        queryBuilder = queryBuilder.eq('genre', category);
+                    }
+                    
+                    if (mediaType && mediaType !== 'all') {
+                        queryBuilder = queryBuilder.eq('media_type', mediaType);
+                    }
+                    
+                    if (language && language !== 'all') {
+                        queryBuilder = queryBuilder.eq('language', language);
+                    }
+                    
+                    const { data, error } = await queryBuilder.limit(50);
+                    
+                    if (error) throw error;
+                    
+                    const results = (data || []).filter(item => {
+                        const searchText = query.toLowerCase();
+                        return (
+                            (item.title && item.title.toLowerCase().includes(searchText)) ||
+                            (item.description && item.description.toLowerCase().includes(searchText)) ||
+                            (item.genre && item.genre.toLowerCase().includes(searchText))
+                        );
                     });
-                } else if (sortBy === 'newest') {
-                    results.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+                    
+                    this.currentResults = results;
+                    
+                    const sortBy = document.getElementById('sort-filter')?.value;
+                    if (sortBy === 'popular') {
+                        results.sort((a, b) => (b.views || 0) - (a.views || 0));
+                    } else if (sortBy === 'trending') {
+                        results.sort((a, b) => {
+                            const aScore = (a.views || 0) + ((a.likes || 0) * 2);
+                            const bScore = (b.views || 0) + ((b.likes || 0) * 2);
+                            return bScore - aScore;
+                        });
+                    } else if (sortBy === 'newest') {
+                        results.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+                    }
+                    
+                    this.renderSearchResults(results);
+                } catch (error) {
+                    console.error('Search error:', error);
+                    this.renderMockSearchResults();
                 }
-                
-                this.renderSearchResults(results);
-            } catch (error) {
-                console.error('Search error:', error);
-                this.renderMockSearchResults();
-            }
-        }, 300);
-    }
-    
-    renderMockSearchResults() {
-        if (!this.resultsGrid) return;
-        
-        const mockResults = [
-            {
-                id: 1,
-                title: 'African Music Festival',
-                thumbnail_url: 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop',
-                views: 12500,
-                likes: 3420,
-                creator: 'Music Africa'
-            },
-            {
-                id: 2,
-                title: 'Traditional Dance Tutorial',
-                thumbnail_url: 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop',
-                views: 8300,
-                likes: 2150,
-                creator: 'Dance Culture'
-            },
-            {
-                id: 3,
-                title: 'Cooking Jollof Rice',
-                thumbnail_url: 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop',
-                views: 15200,
-                likes: 4230,
-                creator: 'Tasty Africa'
-            }
-        ];
-        
-        this.renderSearchResults(mockResults);
-    }
-    
-    renderSearchResults(results) {
-        if (!this.resultsGrid) return;
-        
-        if (results.length === 0) {
-            this.resultsGrid.innerHTML = '<div class="no-results">No results found. Try different keywords.</div>';
-            return;
+            }, 300);
         }
         
-        this.resultsGrid.innerHTML = results.map(item => {
+        renderMockSearchResults() {
+            if (!this.resultsGrid) return;
+            
+            const mockResults = [
+                {
+                    id: 1,
+                    title: 'African Music Festival',
+                    thumbnail_url: 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop',
+                    views: 12500,
+                    likes: 3420,
+                    creator: 'Music Africa'
+                },
+                {
+                    id: 2,
+                    title: 'Traditional Dance Tutorial',
+                    thumbnail_url: 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop',
+                    views: 8300,
+                    likes: 2150,
+                    creator: 'Dance Culture'
+                },
+                {
+                    id: 3,
+                    title: 'Cooking Jollof Rice',
+                    thumbnail_url: 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop',
+                    views: 15200,
+                    likes: 4230,
+                    creator: 'Tasty Africa'
+                }
+            ];
+            
+            this.renderSearchResults(mockResults);
+        }
+        
+        renderSearchResults(results) {
+            if (!this.resultsGrid) return;
+            
+            if (results.length === 0) {
+                this.resultsGrid.innerHTML = '<div class="no-results">No results found. Try different keywords.</div>';
+                return;
+            }
+            
+            this.resultsGrid.innerHTML = results.map(item => {
+                const metrics = window.contentMetrics?.get(item.id) || { 
+                    views: item.views || 0, 
+                    likes: item.likes || 0,
+                    shares: item.shares_count || 0
+                };
+                
+                const creatorProfile = item.user_profiles;
+                const creatorName = creatorProfile?.full_name || creatorProfile?.username || item.creator || 'Creator';
+                const initials = getInitials(creatorName);
+                
+                let avatarHtml = '';
+                if (creatorProfile?.avatar_url) {
+                    avatarHtml = `<img src="${fixMediaUrl(creatorProfile.avatar_url)}" alt="${escapeHtml(creatorName)}">`;
+                } else {
+                    avatarHtml = `<div class="creator-initials-small">${initials}</div>`;
+                }
+                
+                return `
+                    <a href="content-detail.html?id=${item.id}" class="content-card" data-content-id="${item.id}" data-language="${item.language || 'en'}">
+                        <div class="card-thumbnail">
+                            <img src="${fixMediaUrl(item.thumbnail_url) || 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop'}"
+                                 alt="${escapeHtml(item.title)}"
+                                 loading="lazy">
+                            <div class="thumbnail-overlay"></div>
+                            <video class="video-preview" muted preload="metadata">
+                                <source src="${fixMediaUrl(item.preview_url || item.file_url) || ''}" type="video/mp4">
+                            </video>
+                            <div class="card-badges">
+                                ${item.is_new ? '<div class="card-badge badge-new"><i class="fas fa-gem"></i> NEW</div>' : ''}
+                                ${item.is_trending ? '<div class="card-badge badge-trending"><i class="fas fa-fire"></i> TRENDING</div>' : ''}
+                            </div>
+                            <div class="play-overlay">
+                                <div class="play-icon"><i class="fas fa-play"></i></div>
+                            </div>
+                        </div>
+                        <div class="card-content">
+                            <h3 class="card-title" title="${escapeHtml(item.title)}">
+                                ${truncateText(escapeHtml(item.title), 50)}
+                            </h3>
+                            <div class="creator-info">
+                                <div class="creator-avatar-small">${avatarHtml}</div>
+                                <div class="creator-name-small">${escapeHtml(creatorName)}</div>
+                            </div>
+                            <div class="card-stats">
+                                <span class="card-stat" title="Views">
+                                    <i class="fas fa-eye"></i> ${formatNumber(metrics.views)}
+                                </span>
+                                <span class="card-stat" title="Likes">
+                                    <i class="fas fa-heart"></i> ${formatNumber(metrics.likes)}
+                                </span>
+                                <span class="card-stat" title="Shares">
+                                    <i class="fas fa-share"></i> ${formatNumber(metrics.shares)}
+                                </span>
+                            </div>
+                            <div class="card-meta">
+                                <span><i class="fas fa-language"></i> ${getLanguageName(item.language) || 'English'}</span>
+                                <span><i class="fas fa-clock"></i> ${formatDate(item.created_at)}</span>
+                            </div>
+                        </div>
+                    </a>
+                `;
+            }).join('');
+            
+            if (window.videoPreviewSystem) {
+                window.videoPreviewSystem.setupVideoAttributes();
+            }
+        }
+    }
+    
+    window.SearchSystem = SearchSystem;
+}
+
+// ============================================
+// CONTINUE WATCHING SYSTEM (Enhanced)
+// ============================================
+if (typeof ContinueWatchingSystem === 'undefined') {
+    class ContinueWatchingSystem {
+        constructor() {
+            this.watchHistory = {};
+        }
+        
+        init() {
+            this.loadWatchHistory();
+            this.setupProgressTracking();
+            this.updateContinueWatchingSection();
+        }
+        
+        loadWatchHistory() {
+            try {
+                const history = localStorage.getItem('watch_history');
+                if (history) {
+                    this.watchHistory = JSON.parse(history);
+                }
+            } catch (error) {
+                console.error('Error loading watch history:', error);
+                this.watchHistory = {};
+            }
+        }
+        
+        saveWatchHistory() {
+            try {
+                localStorage.setItem('watch_history', JSON.stringify(this.watchHistory));
+            } catch (error) {
+                console.error('Error saving watch history:', error);
+            }
+        }
+        
+        updateWatchProgress(contentId, progress) {
+            this.watchHistory[contentId] = {
+                progress: progress,
+                lastWatched: Date.now()
+            };
+            this.saveWatchHistory();
+            
+            localStorage.setItem(`watch_progress_${contentId}`, progress.toString());
+            this.updateContinueWatchingSection();
+        }
+        
+        getWatchProgress(contentId) {
+            const entry = this.watchHistory[contentId];
+            return entry ? entry.progress : 0;
+        }
+        
+        getContinueWatchingContent(allContent) {
+            const continueWatching = [];
+            
+            for (const [contentId, data] of Object.entries(this.watchHistory)) {
+                if (data.progress > 0 && data.progress < 90) {
+                    const content = allContent.find(c => c.id == contentId);
+                    if (content) {
+                        continueWatching.push({
+                            ...content,
+                            watchProgress: data.progress,
+                            lastWatched: data.lastWatched
+                        });
+                    }
+                }
+            }
+            
+            return continueWatching.sort((a, b) => b.lastWatched - a.lastWatched);
+        }
+        
+        setupProgressTracking() {
+            document.addEventListener('play', (e) => {
+                if (e.target.tagName === 'VIDEO') {
+                    const video = e.target;
+                    const contentId = video.closest('.content-card')?.dataset.contentId;
+                    
+                    if (contentId) {
+                        video.addEventListener('timeupdate', () => {
+                            if (video.duration) {
+                                const progress = (video.currentTime / video.duration) * 100;
+                                this.updateWatchProgress(contentId, progress);
+                            }
+                        });
+                    }
+                }
+            }, true);
+        }
+        
+        updateContinueWatchingSection() {
+            const allContent = window.allContentData || [];
+            const continueWatching = this.getContinueWatchingContent(allContent);
+            
+            let continueWatchingSection = document.querySelector('.section[data-type="continue-watching"]');
+            
+            if (continueWatching.length > 0) {
+                if (!continueWatchingSection) {
+                    continueWatchingSection = this.createContinueWatchingSection();
+                }
+                
+                const grid = continueWatchingSection.querySelector('.content-grid');
+                if (grid) {
+                    grid.innerHTML = continueWatching.slice(0, 5).map(item => this.createContinueWatchingCard(item)).join('');
+                }
+            } else if (continueWatchingSection) {
+                continueWatchingSection.style.display = 'none';
+            }
+        }
+        
+        createContinueWatchingSection() {
+            const sectionHTML = `
+                <section class="section" data-type="continue-watching">
+                    <div class="section-header">
+                        <h2 class="section-title">Continue Watching</h2>
+                        <button class="see-all-btn" onclick="window.location.href='content-library.html?filter=continue-watching'">See All</button>
+                    </div>
+                    <div class="content-grid">
+                        <!-- Continue watching will be loaded here -->
+                    </div>
+                </section>
+            `;
+            
+            const contentSections = document.getElementById('content-sections');
+            if (contentSections) {
+                contentSections.insertAdjacentHTML('afterbegin', sectionHTML);
+            }
+            
+            return document.querySelector('.section[data-type="continue-watching"]');
+        }
+        
+        createContinueWatchingCard(item) {
             const metrics = window.contentMetrics?.get(item.id) || { 
                 views: item.views || 0, 
                 likes: item.likes || 0,
@@ -1008,18 +1336,18 @@ class SearchSystem {
             }
             
             return `
-                <a href="content-detail.html?id=${item.id}" class="content-card" data-content-id="${item.id}" data-language="${item.language || 'en'}">
+                <a href="content-detail.html?id=${item.id}" class="content-card" data-content-id="${item.id}">
                     <div class="card-thumbnail">
-                        <img src="${fixMediaUrl(item.thumbnail_url) || 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop'}"
+                        <img src="${fixMediaUrl(item.thumbnail_url) || 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop'}" 
                              alt="${escapeHtml(item.title)}"
                              loading="lazy">
                         <div class="thumbnail-overlay"></div>
-                        <video class="video-preview" muted preload="metadata">
-                            <source src="${fixMediaUrl(item.preview_url || item.file_url) || ''}" type="video/mp4">
-                        </video>
-                        <div class="card-badges">
-                            ${item.is_new ? '<div class="card-badge badge-new"><i class="fas fa-gem"></i> NEW</div>' : ''}
-                            ${item.is_trending ? '<div class="card-badge badge-trending"><i class="fas fa-fire"></i> TRENDING</div>' : ''}
+                        <div class="continue-watching-badge">
+                            <i class="fas fa-play-circle"></i>
+                            Continue
+                        </div>
+                        <div class="continue-watching-progress">
+                            <div class="continue-watching-progress-fill" style="width: ${item.watchProgress || 0}%"></div>
                         </div>
                         <div class="play-overlay">
                             <div class="play-icon"><i class="fas fa-play"></i></div>
@@ -1040,267 +1368,182 @@ class SearchSystem {
                             <span class="card-stat" title="Likes">
                                 <i class="fas fa-heart"></i> ${formatNumber(metrics.likes)}
                             </span>
-                            <span class="card-stat" title="Shares">
-                                <i class="fas fa-share"></i> ${formatNumber(metrics.shares)}
+                            <span class="card-stat" title="Progress">
+                                <i class="fas fa-clock"></i> ${Math.round(item.watchProgress || 0)}%
                             </span>
-                        </div>
-                        <div class="card-meta">
-                            <span><i class="fas fa-language"></i> ${getLanguageName(item.language) || 'English'}</span>
-                            <span><i class="fas fa-clock"></i> ${formatDate(item.created_at)}</span>
                         </div>
                     </div>
                 </a>
             `;
-        }).join('');
-        
-        if (window.videoPreviewSystem) {
-            window.videoPreviewSystem.setupVideoAttributes();
-        }
-    }
-}
-
-// ============================================
-// CONTINUE WATCHING SYSTEM (Enhanced)
-// ============================================
-class ContinueWatchingSystem {
-    constructor() {
-        this.watchHistory = {};
-    }
-    
-    init() {
-        this.loadWatchHistory();
-        this.setupProgressTracking();
-        this.updateContinueWatchingSection();
-    }
-    
-    loadWatchHistory() {
-        try {
-            const history = localStorage.getItem('watch_history');
-            if (history) {
-                this.watchHistory = JSON.parse(history);
-            }
-        } catch (error) {
-            console.error('Error loading watch history:', error);
-            this.watchHistory = {};
         }
     }
     
-    saveWatchHistory() {
-        try {
-            localStorage.setItem('watch_history', JSON.stringify(this.watchHistory));
-        } catch (error) {
-            console.error('Error saving watch history:', error);
-        }
-    }
-    
-    updateWatchProgress(contentId, progress) {
-        this.watchHistory[contentId] = {
-            progress: progress,
-            lastWatched: Date.now()
-        };
-        this.saveWatchHistory();
-        
-        localStorage.setItem(`watch_progress_${contentId}`, progress.toString());
-        this.updateContinueWatchingSection();
-    }
-    
-    getWatchProgress(contentId) {
-        const entry = this.watchHistory[contentId];
-        return entry ? entry.progress : 0;
-    }
-    
-    getContinueWatchingContent(allContent) {
-        const continueWatching = [];
-        
-        for (const [contentId, data] of Object.entries(this.watchHistory)) {
-            if (data.progress > 0 && data.progress < 90) {
-                const content = allContent.find(c => c.id == contentId);
-                if (content) {
-                    continueWatching.push({
-                        ...content,
-                        watchProgress: data.progress,
-                        lastWatched: data.lastWatched
-                    });
-                }
-            }
-        }
-        
-        return continueWatching.sort((a, b) => b.lastWatched - a.lastWatched);
-    }
-    
-    setupProgressTracking() {
-        document.addEventListener('play', (e) => {
-            if (e.target.tagName === 'VIDEO') {
-                const video = e.target;
-                const contentId = video.closest('.content-card')?.dataset.contentId;
-                
-                if (contentId) {
-                    video.addEventListener('timeupdate', () => {
-                        if (video.duration) {
-                            const progress = (video.currentTime / video.duration) * 100;
-                            this.updateWatchProgress(contentId, progress);
-                        }
-                    });
-                }
-            }
-        }, true);
-    }
-    
-    updateContinueWatchingSection() {
-        const allContent = window.allContentData || [];
-        const continueWatching = this.getContinueWatchingContent(allContent);
-        
-        let continueWatchingSection = document.querySelector('.section[data-type="continue-watching"]');
-        
-        if (continueWatching.length > 0) {
-            if (!continueWatchingSection) {
-                continueWatchingSection = this.createContinueWatchingSection();
-            }
-            
-            const grid = continueWatchingSection.querySelector('.content-grid');
-            if (grid) {
-                grid.innerHTML = continueWatching.slice(0, 5).map(item => this.createContinueWatchingCard(item)).join('');
-            }
-        } else if (continueWatchingSection) {
-            continueWatchingSection.style.display = 'none';
-        }
-    }
-    
-    createContinueWatchingSection() {
-        const sectionHTML = `
-            <section class="section" data-type="continue-watching">
-                <div class="section-header">
-                    <h2 class="section-title">Continue Watching</h2>
-                    <button class="see-all-btn" onclick="window.location.href='content-library.html?filter=continue-watching'">See All</button>
-                </div>
-                <div class="content-grid">
-                    <!-- Continue watching will be loaded here -->
-                </div>
-            </section>
-        `;
-        
-        const contentSections = document.getElementById('content-sections');
-        if (contentSections) {
-            contentSections.insertAdjacentHTML('afterbegin', sectionHTML);
-        }
-        
-        return document.querySelector('.section[data-type="continue-watching"]');
-    }
-    
-    createContinueWatchingCard(item) {
-        const metrics = window.contentMetrics?.get(item.id) || { 
-            views: item.views || 0, 
-            likes: item.likes || 0,
-            shares: item.shares_count || 0
-        };
-        
-        const creatorProfile = item.user_profiles;
-        const creatorName = creatorProfile?.full_name || creatorProfile?.username || item.creator || 'Creator';
-        const initials = getInitials(creatorName);
-        
-        let avatarHtml = '';
-        if (creatorProfile?.avatar_url) {
-            avatarHtml = `<img src="${fixMediaUrl(creatorProfile.avatar_url)}" alt="${escapeHtml(creatorName)}">`;
-        } else {
-            avatarHtml = `<div class="creator-initials-small">${initials}</div>`;
-        }
-        
-        return `
-            <a href="content-detail.html?id=${item.id}" class="content-card" data-content-id="${item.id}">
-                <div class="card-thumbnail">
-                    <img src="${fixMediaUrl(item.thumbnail_url) || 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop'}" 
-                         alt="${escapeHtml(item.title)}"
-                         loading="lazy">
-                    <div class="thumbnail-overlay"></div>
-                    <div class="continue-watching-badge">
-                        <i class="fas fa-play-circle"></i>
-                        Continue
-                    </div>
-                    <div class="continue-watching-progress">
-                        <div class="continue-watching-progress-fill" style="width: ${item.watchProgress || 0}%"></div>
-                    </div>
-                    <div class="play-overlay">
-                        <div class="play-icon"><i class="fas fa-play"></i></div>
-                    </div>
-                </div>
-                <div class="card-content">
-                    <h3 class="card-title" title="${escapeHtml(item.title)}">
-                        ${truncateText(escapeHtml(item.title), 50)}
-                    </h3>
-                    <div class="creator-info">
-                        <div class="creator-avatar-small">${avatarHtml}</div>
-                        <div class="creator-name-small">${escapeHtml(creatorName)}</div>
-                    </div>
-                    <div class="card-stats">
-                        <span class="card-stat" title="Views">
-                            <i class="fas fa-eye"></i> ${formatNumber(metrics.views)}
-                        </span>
-                        <span class="card-stat" title="Likes">
-                            <i class="fas fa-heart"></i> ${formatNumber(metrics.likes)}
-                        </span>
-                        <span class="card-stat" title="Progress">
-                            <i class="fas fa-clock"></i> ${Math.round(item.watchProgress || 0)}%
-                        </span>
-                    </div>
-                </div>
-            </a>
-        `;
-    }
+    window.ContinueWatchingSystem = ContinueWatchingSystem;
 }
 
 // ============================================
 // PROGRESS TRACKER
 // ============================================
-class ProgressTracker {
-    constructor() {
-        this.trackedVideos = new Map();
-    }
-    
-    trackVideoProgress(videoElement, contentId) {
-        if (!videoElement || !contentId) return;
+if (typeof ProgressTracker === 'undefined') {
+    class ProgressTracker {
+        constructor() {
+            this.trackedVideos = new Map();
+        }
         
-        const tracker = {
-            contentId: contentId,
-            startTime: Date.now(),
-            lastUpdate: Date.now(),
-            totalTime: 0,
-            interval: null
-        };
-        
-        tracker.interval = setInterval(() => {
-            const currentTime = Date.now();
-            const elapsed = currentTime - tracker.lastUpdate;
-            tracker.totalTime += elapsed;
-            tracker.lastUpdate = currentTime;
+        trackVideoProgress(videoElement, contentId) {
+            if (!videoElement || !contentId) return;
             
-            if (tracker.totalTime >= 5000) {
+            const tracker = {
+                contentId: contentId,
+                startTime: Date.now(),
+                lastUpdate: Date.now(),
+                totalTime: 0,
+                interval: null
+            };
+            
+            tracker.interval = setInterval(() => {
+                const currentTime = Date.now();
+                const elapsed = currentTime - tracker.lastUpdate;
+                tracker.totalTime += elapsed;
+                tracker.lastUpdate = currentTime;
+                
+                if (tracker.totalTime >= 5000) {
+                    const progress = tracker.totalTime;
+                    localStorage.setItem(`watch_progress_${contentId}`, progress.toString());
+                    tracker.totalTime = 0;
+                }
+            }, 1000);
+            
+            this.trackedVideos.set(videoElement, tracker);
+            
+            videoElement.addEventListener('ended', () => {
+                this.stopTracking(videoElement);
+            });
+            
+            videoElement.addEventListener('pause', () => {
+                this.stopTracking(videoElement);
+            });
+        }
+        
+        stopTracking(videoElement) {
+            const tracker = this.trackedVideos.get(videoElement);
+            if (tracker) {
+                clearInterval(tracker.interval);
+                this.trackedVideos.delete(videoElement);
+                
                 const progress = tracker.totalTime;
-                localStorage.setItem(`watch_progress_${contentId}`, progress.toString());
-                tracker.totalTime = 0;
+                localStorage.setItem(`watch_progress_${tracker.contentId}`, progress.toString());
             }
-        }, 1000);
-        
-        this.trackedVideos.set(videoElement, tracker);
-        
-        videoElement.addEventListener('ended', () => {
-            this.stopTracking(videoElement);
-        });
-        
-        videoElement.addEventListener('pause', () => {
-            this.stopTracking(videoElement);
-        });
-    }
-    
-    stopTracking(videoElement) {
-        const tracker = this.trackedVideos.get(videoElement);
-        if (tracker) {
-            clearInterval(tracker.interval);
-            this.trackedVideos.delete(videoElement);
-            
-            const progress = tracker.totalTime;
-            localStorage.setItem(`watch_progress_${tracker.contentId}`, progress.toString());
         }
     }
+    
+    window.ProgressTracker = ProgressTracker;
+}
+
+// ============================================
+// UI SCALE CONTROLLER
+// ============================================
+if (typeof UIScaleController === 'undefined') {
+    class UIScaleController {
+        constructor() {
+            this.scaleKey = 'bantu_ui_scale';
+            this.scales = [0.75, 0.85, 1.0, 1.15, 1.25, 1.5];
+            this.currentIndex = 2;
+        }
+
+        init() {
+            const savedScale = localStorage.getItem(this.scaleKey);
+            if (savedScale) {
+                this.currentIndex = this.scales.indexOf(parseFloat(savedScale));
+                if (this.currentIndex === -1) this.currentIndex = 2;
+            }
+            this.applyScale();
+            this.setupEventListeners();
+            this.respectSystemSettings();
+            console.log('🎨 UI Scale Controller initialized');
+        }
+
+        setupEventListeners() {
+            const decreaseBtn = document.getElementById('scale-decrease');
+            const increaseBtn = document.getElementById('scale-increase');
+            const resetBtn = document.getElementById('scale-reset');
+
+            if (decreaseBtn) {
+                decreaseBtn.addEventListener('click', () => this.decrease());
+            }
+            if (increaseBtn) {
+                increaseBtn.addEventListener('click', () => this.increase());
+            }
+            if (resetBtn) {
+                resetBtn.addEventListener('click', () => this.reset());
+            }
+        }
+
+        applyScale() {
+            const scale = this.scales[this.currentIndex];
+            document.documentElement.style.setProperty('--ui-scale', scale);
+            localStorage.setItem(this.scaleKey, scale);
+            this.updateScaleDisplay();
+            document.dispatchEvent(new CustomEvent('scaleChanged', { detail: { scale } }));
+            console.log(`📏 UI Scale set to: ${scale}x`);
+        }
+
+        updateScaleDisplay() {
+            const scaleValue = document.getElementById('scale-value');
+            const sidebarScaleValue = document.getElementById('sidebar-scale-value');
+            const percentage = Math.round(this.getScale() * 100) + '%';
+            
+            if (scaleValue) scaleValue.textContent = percentage;
+            if (sidebarScaleValue) sidebarScaleValue.textContent = percentage;
+        }
+
+        getScale() {
+            return this.scales[this.currentIndex];
+        }
+
+        increase() {
+            if (this.currentIndex < this.scales.length - 1) {
+                this.currentIndex++;
+                this.applyScale();
+                this.showScaleToast();
+            }
+        }
+
+        decrease() {
+            if (this.currentIndex > 0) {
+                this.currentIndex--;
+                this.applyScale();
+                this.showScaleToast();
+            }
+        }
+
+        reset() {
+            this.currentIndex = 2;
+            this.applyScale();
+            this.showScaleToast();
+        }
+
+        showScaleToast() {
+            const percentage = Math.round(this.getScale() * 100);
+            if (typeof toast !== 'undefined') {
+                toast.info(`UI Size: ${percentage}%`);
+            }
+        }
+
+        respectSystemSettings() {
+            const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            if (reducedMotion) {
+                console.log('♿ Reduced motion preference detected');
+            }
+            
+            const largeTextQuery = window.matchMedia('(min-resolution: 120dpi)');
+            if (largeTextQuery.matches) {
+                console.log('📱 System may have large text enabled');
+            }
+        }
+    }
+    
+    window.UIScaleController = UIScaleController;
 }
 
 // ============================================
@@ -1535,108 +1778,6 @@ function closeSidebar() {
 }
 
 // ============================================
-// UI SCALE CONTROLLER
-// ============================================
-class UIScaleController {
-    constructor() {
-        this.scaleKey = 'bantu_ui_scale';
-        this.scales = [0.75, 0.85, 1.0, 1.15, 1.25, 1.5];
-        this.currentIndex = 2;
-    }
-
-    init() {
-        const savedScale = localStorage.getItem(this.scaleKey);
-        if (savedScale) {
-            this.currentIndex = this.scales.indexOf(parseFloat(savedScale));
-            if (this.currentIndex === -1) this.currentIndex = 2;
-        }
-        this.applyScale();
-        this.setupEventListeners();
-        this.respectSystemSettings();
-        console.log('🎨 UI Scale Controller initialized');
-    }
-
-    setupEventListeners() {
-        const decreaseBtn = document.getElementById('scale-decrease');
-        const increaseBtn = document.getElementById('scale-increase');
-        const resetBtn = document.getElementById('scale-reset');
-
-        if (decreaseBtn) {
-            decreaseBtn.addEventListener('click', () => this.decrease());
-        }
-        if (increaseBtn) {
-            increaseBtn.addEventListener('click', () => this.increase());
-        }
-        if (resetBtn) {
-            resetBtn.addEventListener('click', () => this.reset());
-        }
-    }
-
-    applyScale() {
-        const scale = this.scales[this.currentIndex];
-        document.documentElement.style.setProperty('--ui-scale', scale);
-        localStorage.setItem(this.scaleKey, scale);
-        this.updateScaleDisplay();
-        document.dispatchEvent(new CustomEvent('scaleChanged', { detail: { scale } }));
-        console.log(`📏 UI Scale set to: ${scale}x`);
-    }
-
-    updateScaleDisplay() {
-        const scaleValue = document.getElementById('scale-value');
-        const sidebarScaleValue = document.getElementById('sidebar-scale-value');
-        const percentage = Math.round(this.getScale() * 100) + '%';
-        
-        if (scaleValue) scaleValue.textContent = percentage;
-        if (sidebarScaleValue) sidebarScaleValue.textContent = percentage;
-    }
-
-    getScale() {
-        return this.scales[this.currentIndex];
-    }
-
-    increase() {
-        if (this.currentIndex < this.scales.length - 1) {
-            this.currentIndex++;
-            this.applyScale();
-            this.showScaleToast();
-        }
-    }
-
-    decrease() {
-        if (this.currentIndex > 0) {
-            this.currentIndex--;
-            this.applyScale();
-            this.showScaleToast();
-        }
-    }
-
-    reset() {
-        this.currentIndex = 2;
-        this.applyScale();
-        this.showScaleToast();
-    }
-
-    showScaleToast() {
-        const percentage = Math.round(this.getScale() * 100);
-        if (typeof toast !== 'undefined') {
-            toast.info(`UI Size: ${percentage}%`);
-        }
-    }
-
-    respectSystemSettings() {
-        const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-        if (reducedMotion) {
-            console.log('♿ Reduced motion preference detected');
-        }
-        
-        const largeTextQuery = window.matchMedia('(min-resolution: 120dpi)');
-        if (largeTextQuery.matches) {
-            console.log('📱 System may have large text enabled');
-        }
-    }
-}
-
-// ============================================
 // VIDEO HERO (Fixed)
 // ============================================
 async function initVideoHero() {
@@ -1650,27 +1791,31 @@ async function initVideoHero() {
     try {
         const client = getSupabaseClient();
         if (client) {
-            const { data, error } = await client
-                .from('Content')
-                .select('*')
-                .eq('status', 'published')
-                .order('views_count', { ascending: false })
-                .limit(1);
+            const query = buildSafeQuery('Content', {
+                where: { status: 'published' },
+                orderBy: 'views_count',
+                order: 'desc',
+                limit: 1
+            });
             
-            if (!error && data && data.length > 0) {
-                const featured = data[0];
-                const videoUrl = featured.preview_url || featured.file_url;
+            if (query) {
+                const { data, error } = await query;
                 
-                if (videoUrl) {
-                    heroVideo.src = fixMediaUrl(videoUrl);
-                    heroVideo.poster = featured.thumbnail_url ? fixMediaUrl(featured.thumbnail_url) : '';
+                if (!error && data && data.length > 0) {
+                    const featured = data[0];
+                    const videoUrl = featured.preview_url || featured.file_url;
                     
-                    heroTitle.textContent = featured.title || 'DISCOVER & CONNECT';
-                    heroSubtitle.textContent = truncateText(featured.description || 'Explore amazing content from creators across Africa', 120);
-                    
-                    heroVideo.play().catch(() => {
-                        if (heroMuteBtn) heroMuteBtn.style.display = 'flex';
-                    });
+                    if (videoUrl) {
+                        heroVideo.src = fixMediaUrl(videoUrl);
+                        heroVideo.poster = featured.thumbnail_url ? fixMediaUrl(featured.thumbnail_url) : '';
+                        
+                        heroTitle.textContent = featured.title || 'DISCOVER & CONNECT';
+                        heroSubtitle.textContent = truncateText(featured.description || 'Explore amazing content from creators across Africa', 120);
+                        
+                        heroVideo.play().catch(() => {
+                            if (heroMuteBtn) heroMuteBtn.style.display = 'flex';
+                        });
+                    }
                 }
             }
         }
@@ -2554,40 +2699,6 @@ function closeAllModals() {
 }
 
 // ============================================
-// CACHE MANAGER (Added)
-// ============================================
-class CacheManager {
-    constructor() {
-        this.cache = new Map();
-        this.ttl = 5 * 60 * 1000;
-    }
-    
-    set(key, data, ttl = this.ttl) {
-        this.cache.set(key, {
-            data,
-            timestamp: Date.now(),
-            ttl
-        });
-    }
-    
-    get(key) {
-        const item = this.cache.get(key);
-        if (!item) return null;
-        
-        if (Date.now() - item.timestamp > item.ttl) {
-            this.cache.delete(key);
-            return null;
-        }
-        
-        return item.data;
-    }
-    
-    clear() {
-        this.cache.clear();
-    }
-}
-
-// ============================================
 // UTILITY FUNCTIONS
 // ============================================
 function formatNumber(num) {
@@ -2722,39 +2833,44 @@ const toast = {
 function initializeAllFeatures() {
     console.log('🚀 Initializing all Home Feed features...');
     
-    window.cacheManager = new CacheManager();
-    window.contentMetrics = new Map();
+    // Set flag to prevent multiple initializations
+    if (window.homeFeedFeaturesInitialized) {
+        console.log('⚠️ Home Feed Features already initialized, skipping...');
+        return;
+    }
     
-    window.uiScaleController = new UIScaleController();
+    // Initialize core systems
+    window.uiScaleController = new window.UIScaleController();
     window.uiScaleController.init();
     
-    const videoPreview = new VideoPreviewSystem();
+    const videoPreview = new window.VideoPreviewSystem();
     window.videoPreviewSystem = videoPreview;
     videoPreview.init();
     
-    const recommendation = new RecommendationEngine();
+    const recommendation = new window.RecommendationEngine();
     window.recommendationEngine = recommendation;
     recommendation.init();
     
-    const notification = new NotificationSystem();
+    const notification = new window.NotificationSystem();
     window.notificationSystem = notification;
     notification.init();
     
-    const analytics = new AnalyticsSystem();
+    const analytics = new window.AnalyticsSystem();
     window.analyticsSystem = analytics;
     analytics.init();
     
-    const search = new SearchSystem();
+    const search = new window.SearchSystem();
     window.searchSystem = search;
     search.init();
     
-    const continueWatching = new ContinueWatchingSystem();
+    const continueWatching = new window.ContinueWatchingSystem();
     window.continueWatchingSystem = continueWatching;
     continueWatching.init();
     
-    const progress = new ProgressTracker();
+    const progress = new window.ProgressTracker();
     window.progressTracker = progress;
     
+    // Initialize UI features
     if (typeof setupLanguageFilter === 'function') {
         setupLanguageFilter();
     }
@@ -2803,6 +2919,9 @@ function initializeAllFeatures() {
         setupKeyboardNavigation();
     }
     
+    // Set initialized flag
+    window.homeFeedFeaturesInitialized = true;
+    
     console.log('✅ All features initialized');
     
     document.dispatchEvent(new CustomEvent('homeFeedReady'));
@@ -2811,16 +2930,7 @@ function initializeAllFeatures() {
 // ============================================
 // EXPORT GLOBALLY
 // ============================================
-window.videoPreviewSystem = videoPreviewSystem;
-window.recommendationEngine = recommendationEngine;
-window.notificationSystem = notificationSystem;
-window.analyticsSystem = analyticsSystem;
-window.searchSystem = searchSystem;
-window.continueWatchingSystem = continueWatchingSystem;
-window.progressTracker = progressTracker;
-window.uiScaleController = uiScaleController;
-window.cacheManager = cacheManager;
-window.contentMetrics = contentMetrics;
+window.buildSafeQuery = buildSafeQuery;
 window.toast = toast;
 window.loadContentMetrics = loadContentMetrics;
 window.loadShorts = loadShorts;
@@ -2833,9 +2943,20 @@ window.setupSidebar = setupSidebar;
 window.closeSidebar = closeSidebar;
 window.setupWatchParty = setupWatchParty;
 window.loadWatchPartyContent = loadWatchPartyContent;
+window.getLanguageName = getLanguageName;
+window.filterContentByLanguage = filterContentByLanguage;
+window.formatNumber = formatNumber;
+window.truncateText = truncateText;
+window.escapeHtml = escapeHtml;
+window.formatDate = formatDate;
+window.getInitials = getInitials;
+window.fixMediaUrl = fixMediaUrl;
+window.debounce = debounce;
+window.getSupabaseClient = getSupabaseClient;
 
 console.log('✅ Home Feed Features exported globally');
 
+// Initialize when DOM is ready
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initializeAllFeatures);
 } else {
