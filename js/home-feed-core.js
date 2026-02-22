@@ -1,3 +1,11 @@
+// ============================================
+// HOME FEED CORE MODULE
+// ============================================
+// This file contains all core systems for the Bantu platform home feed
+// Includes: Enhanced Supabase Client, Cache Manager, Error Handler, 
+// Performance Monitor, State Manager, and Supabase Auth
+// ============================================
+
 // Enhanced Supabase client with caching and timeout handling
 class ContentSupabaseClient {
     constructor(url, key) {
@@ -724,3 +732,54 @@ window.StateManager = StateManager;
 console.log('✅ Home Feed Core exported to window');
 console.log('📦 Cache Manager version:', cacheManager.currentVersion);
 console.log('🔧 Service Worker cleanup enabled');
+
+// ============================================
+// INITIALIZE CORE SYSTEMS
+// ============================================
+(async function initializeCore() {
+    console.log('🚀 Initializing Core Systems...');
+    
+    // Initialize cache manager
+    if (typeof cacheManager !== 'undefined' && cacheManager.init) {
+        await cacheManager.init();
+        console.log('✅ Cache Manager initialized');
+    }
+    
+    // Initialize performance monitoring
+    if (typeof performanceMonitor !== 'undefined') {
+        performanceMonitor.reportMetrics();
+        console.log('✅ Performance Monitor initialized');
+    }
+    
+    // Check authentication status
+    if (typeof supabaseAuth !== 'undefined') {
+        try {
+            const { data: { session } } = await supabaseAuth.auth.getSession();
+            if (session?.user) {
+                window.currentUser = session.user;
+                console.log('✅ User authenticated:', session.user.email);
+            } else {
+                window.currentUser = null;
+                console.log('ℹ️ User not authenticated');
+            }
+        } catch (error) {
+            console.error('❌ Auth check failed:', error);
+            window.currentUser = null;
+        }
+    }
+    
+    console.log('✅ Core Systems ready');
+})();
+
+// ============================================
+// EXPORT FOR OTHER SCRIPTS
+// ============================================
+// Ensure all core systems are available globally before any other scripts run
+// This ensures home-feed-features.js and home-feed.js can access them
+window.dispatchEvent(new CustomEvent('coreReady', { 
+    detail: { 
+        cacheManager: !!window.cacheManager,
+        supabaseAuth: !!window.supabaseAuth,
+        currentUser: window.currentUser
+    } 
+}));
