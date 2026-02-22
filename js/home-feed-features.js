@@ -1625,44 +1625,6 @@ async function initVideoHero() {
 }
 
 // ============================================
-// CACHE MANAGER
-// ============================================
-class CacheManager {
-    constructor() {
-        this.cache = new Map();
-        this.ttl = 5 * 60 * 1000; // 5 minutes default
-    }
-    
-    set(key, data, ttl = this.ttl) {
-        this.cache.set(key, { 
-            data, 
-            timestamp: Date.now(), 
-            ttl 
-        });
-    }
-    
-    get(key) {
-        const item = this.cache.get(key);
-        if (!item) return null;
-        
-        if (Date.now() - item.timestamp > item.ttl) {
-            this.cache.delete(key);
-            return null;
-        }
-        
-        return item.data;
-    }
-    
-    clear() {
-        this.cache.clear();
-    }
-    
-    remove(key) {
-        this.cache.delete(key);
-    }
-}
-
-// ============================================
 // BATCHED METRICS LOADING
 // ============================================
 async function loadContentMetrics(contentIds) {
@@ -2903,9 +2865,7 @@ window.createContentCardWithMetrics = typeof createContentCardWithMetrics === 'f
 window.waitForCacheManager = typeof waitForCacheManager === 'function' ? waitForCacheManager : null;
 window.closeSidebar = typeof closeSidebar === 'function' ? closeSidebar : null;
 
-// Export cache manager and content metrics
-window.CacheManager = CacheManager;
-window.cacheManager = window.cacheManager || new CacheManager();
+// Export cache manager reference (but NOT redefine the class)
 window.contentMetrics = new Map();
 
 console.log('✅ Home Feed Features exported globally');
