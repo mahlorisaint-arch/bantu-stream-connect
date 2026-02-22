@@ -26,7 +26,7 @@
     <!-- Chart.js for Analytics -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
-    <!-- Swiper for Shorts Carousel -->
+    <!-- Swiper for Shorts Carousel and Creators Carousel -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css">
     <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js" defer></script>
     
@@ -480,7 +480,131 @@
                 </div>
             </section>
 
-            <!-- Content Sections -->
+            <!-- Continue Watching Section -->
+            <section class="section" id="continue-watching-section" style="display: none;">
+                <div class="section-header">
+                    <h2 class="section-title">
+                        <i class="fas fa-play-circle" style="color: var(--warm-gold);"></i>
+                        CONTINUE WATCHING
+                    </h2>
+                    <a href="#" class="see-all-btn" id="see-all-continue">
+                        See All <i class="fas fa-arrow-right"></i>
+                    </a>
+                </div>
+                <div class="content-grid" id="continue-watching-grid"></div>
+            </section>
+
+            <!-- Community Favorites Section -->
+            <section class="section">
+                <div class="section-header">
+                    <h2 class="section-title">
+                        <i class="fas fa-handshake" style="color: var(--warm-gold);"></i>
+                        COMMUNITY FAVORITES
+                    </h2>
+                    <a href="#" class="see-all-btn" id="see-all-community">
+                        See All <i class="fas fa-arrow-right"></i>
+                    </a>
+                </div>
+                <div class="content-grid" id="community-favorites-grid"></div>
+            </section>
+
+            <!-- Recommendations Section -->
+            <section class="section" id="recommendations-section" style="display: none;">
+                <div class="section-header">
+                    <h2 class="section-title">
+                        <i class="fas fa-magic" style="color: var(--bantu-blue);"></i>
+                        BECAUSE YOU WATCHED...
+                    </h2>
+                    <a href="#" class="see-all-btn" id="see-all-recommendations">
+                        See All <i class="fas fa-arrow-right"></i>
+                    </a>
+                </div>
+                <div class="content-grid" id="recommendations-grid"></div>
+            </section>
+
+            <!-- Featured Creators Section -->
+            <section class="section">
+                <div class="section-header">
+                    <h2 class="section-title">
+                        <i class="fas fa-star" style="color: var(--warm-gold);"></i>
+                        CREATOR OF THE WEEK
+                    </h2>
+                    <a href="creators.html" class="see-all-btn">
+                        See All <i class="fas fa-arrow-right"></i>
+                    </a>
+                </div>
+                <div class="featured-creators">
+                    <div class="swiper" id="creators-swiper">
+                        <div class="swiper-wrapper" id="creators-list"></div>
+                        <div class="swiper-pagination"></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Live Streams Section -->
+            <section class="section">
+                <div class="section-header">
+                    <h2 class="section-title">
+                        <i class="fas fa-circle" style="color: #EF4444; font-size: 20px; animation: pulse 1.5s infinite;"></i>
+                        LIVE NOW
+                    </h2>
+                    <button class="see-all-btn" id="see-all-live">
+                        See All <i class="fas fa-arrow-right"></i>
+                    </button>
+                </div>
+                <div class="content-grid" id="live-streams-grid"></div>
+                <div id="no-live-streams" class="empty-state" style="display: none;">
+                    <div class="empty-icon"><i class="fas fa-broadcast-tower"></i></div>
+                    <h3>No Live Streams</h3>
+                    <p>Check back later for live content</p>
+                </div>
+            </section>
+
+            <!-- Trending Content Section -->
+            <section class="section">
+                <div class="section-header">
+                    <h2 class="section-title">
+                        <i class="fas fa-fire" style="color: var(--warm-gold);"></i>
+                        TRENDING NOW
+                    </h2>
+                    <a href="trending.html" class="see-all-btn">
+                        See All <i class="fas fa-arrow-right"></i>
+                    </a>
+                </div>
+                <div class="content-grid" id="trending-grid"></div>
+            </section>
+
+            <!-- Latest Gems Section -->
+            <section class="section">
+                <div class="section-header">
+                    <h2 class="section-title">
+                        <i class="fas fa-gem" style="color: var(--bantu-blue);"></i>
+                        LATEST GEMS
+                    </h2>
+                    <a href="content-library.html" class="see-all-btn">
+                        See All <i class="fas fa-arrow-right"></i>
+                    </a>
+                </div>
+                <div class="content-grid" id="new-content-grid"></div>
+            </section>
+
+            <!-- Events Section -->
+            <section class="section events-section">
+                <div class="section-header">
+                    <h2 class="section-title">
+                        <i class="fas fa-calendar-alt" style="color: var(--warm-gold);"></i>
+                        UPCOMING EVENTS
+                    </h2>
+                </div>
+                <div id="events-list"></div>
+                <div id="no-events" class="empty-state" style="display: none;">
+                    <div class="empty-icon"><i class="fas fa-calendar-alt"></i></div>
+                    <h3>No Upcoming Events</h3>
+                    <p>Check back soon for scheduled events</p>
+                </div>
+            </section>
+
+            <!-- Content Sections (Legacy) -->
             <div id="content-sections">
                 <!-- Content will be loaded here -->
             </div>
@@ -515,6 +639,9 @@
                     <i class="fas fa-arrow-right"></i>
                 </button>
             </div>
+
+            <!-- Infinite Scroll Sentinel -->
+            <div id="infinite-scroll-sentinel" style="height: 20px;"></div>
         </main>
 
         <!-- Footer -->
@@ -826,6 +953,17 @@
             // Verify cacheManager is available
             console.log('- cacheManager available:', typeof window.cacheManager !== 'undefined');
             console.log('- cacheManager.get function:', typeof window.cacheManager?.get === 'function');
+            
+            // Verify all new sections exist
+            console.log('🔍 Debug new sections:');
+            console.log('- continue-watching-section:', document.getElementById('continue-watching-section'));
+            console.log('- community-favorites-grid:', document.getElementById('community-favorites-grid'));
+            console.log('- recommendations-section:', document.getElementById('recommendations-section'));
+            console.log('- creators-swiper:', document.getElementById('creators-swiper'));
+            console.log('- live-streams-grid:', document.getElementById('live-streams-grid'));
+            console.log('- trending-grid:', document.getElementById('trending-grid'));
+            console.log('- new-content-grid:', document.getElementById('new-content-grid'));
+            console.log('- events-list:', document.getElementById('events-list'));
         });
     </script>
 </body>
