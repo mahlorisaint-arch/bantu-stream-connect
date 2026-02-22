@@ -2,39 +2,44 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
-    <title>Bantu Stream Connect - Home Feed</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+    <title>Home - Bantu Stream Connect</title>
     
-    <!-- PWA Configuration -->
-    <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#0F172A">
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    
-    <!-- Google Fonts -->
+    <!-- PERFORMANCE: Preload Critical Resources -->
+    <link rel="preload" href="css/explore-screen.css" as="style">
+    <link rel="preload" href="css/explore-screen-features.css" as="style">
+    <link rel="preload" href="css/home-feed-features.css" as="style">
+    <link rel="preload" href="js/explore-screen.js" as="script">
+    <link rel="preload" href="js/explore-screen-features.js" as="script">
+    <link rel="preload" href="js/home-feed-features.js" as="script">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://ydnxqnbjoshvxteevemc.supabase.co">
+    <link rel="dns-prefetch" href="https://ydnxqnbjoshvxteevemc.supabase.co">
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+    <link rel="dns-prefetch" href="https://cdnjs.cloudflare.com">
+    
+    <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Orbitron:wght@400;500;600;700&display=swap" rel="stylesheet">
     
     <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" media="print" onload="this.media='all'">
+    <noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"></noscript>
+    
+    <!-- Chart.js for analytics - Loaded async -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" async></script>
     
     <!-- Supabase JS SDK -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
-    <!-- Chart.js for Analytics -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    
-    <!-- Swiper for Shorts Carousel and Creators Carousel -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css">
+    <!-- Swiper JS for carousels -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" media="print" onload="this.media='all'">
+    <noscript><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css"></noscript>
     <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js" defer></script>
     
-    <!-- External CSS - Load in order -->
-    <link rel="stylesheet" href="css/home-feed.css">
-    <link rel="stylesheet" href="css/home-feed-themes.css">
-    <link rel="stylesheet" href="css/home-feed-components.css">
-    <link rel="stylesheet" href="css/home-feed-utilities.css">
+    <!-- CSS Files -->
+    <link rel="stylesheet" href="css/explore-screen.css">
+    <link rel="stylesheet" href="css/explore-screen-features.css">
     <link rel="stylesheet" href="css/home-feed-features.css">
     
     <!-- Inline critical CSS for skeleton loading -->
@@ -46,11 +51,13 @@
             overflow: hidden;
             animation: skeleton-pulse 1.5s ease-in-out infinite;
         }
+        
         .skeleton-thumbnail {
             width: 100%;
             aspect-ratio: 16/9;
             background: rgba(255, 255, 255, 0.05);
         }
+        
         .skeleton-title {
             height: 20px;
             width: 80%;
@@ -58,6 +65,7 @@
             background: rgba(255, 255, 255, 0.05);
             border-radius: 4px;
         }
+        
         .skeleton-creator {
             height: 16px;
             width: 60%;
@@ -65,6 +73,7 @@
             background: rgba(255, 255, 255, 0.05);
             border-radius: 4px;
         }
+        
         .skeleton-stats {
             height: 14px;
             width: 90%;
@@ -72,17 +81,50 @@
             background: rgba(255, 255, 255, 0.05);
             border-radius: 4px;
         }
+        
         @keyframes skeleton-pulse {
             0%, 100% { opacity: 0.6; }
             50% { opacity: 0.3; }
         }
+        
+        /* Welcome banner animation */
+        .welcome-banner {
+            background: linear-gradient(135deg, rgba(29, 78, 216, 0.2), rgba(245, 158, 11, 0.2));
+            border: 1px solid rgba(245, 158, 11, 0.3);
+            border-radius: 16px;
+            padding: 20px;
+            margin: 20px 0;
+            backdrop-filter: blur(10px);
+            animation: glow-pulse 2s infinite;
+        }
+        
+        @keyframes glow-pulse {
+            0% { box-shadow: 0 0 20px rgba(29, 78, 216, 0.2); }
+            50% { box-shadow: 0 0 40px rgba(245, 158, 11, 0.3); }
+            100% { box-shadow: 0 0 20px rgba(29, 78, 216, 0.2); }
+        }
+        
         /* Ensure main content is hidden until loaded */
         #app {
             opacity: 0;
             transition: opacity 0.3s ease;
         }
+        
         #app[style*="display: block"] {
             opacity: 1;
+        }
+
+        /* UI Scale CSS Variables (fallback) */
+        :root {
+            --ui-scale: 1;
+            --font-xs: calc(0.75rem * var(--ui-scale));
+            --font-sm: calc(0.875rem * var(--ui-scale));
+            --font-base: calc(1rem * var(--ui-scale));
+            --font-lg: calc(1.125rem * var(--ui-scale));
+            --font-xl: calc(1.25rem * var(--ui-scale));
+            --font-2xl: calc(1.5rem * var(--ui-scale));
+            --font-3xl: calc(1.875rem * var(--ui-scale));
+            --font-4xl: calc(2.25rem * var(--ui-scale));
         }
     </style>
 </head>
@@ -90,11 +132,8 @@
     <!-- Loading Screen -->
     <div id="loading" class="loading-screen">
         <div class="spinner"></div>
-        <div id="loading-text">Loading Bantu Stream Connect...</div>
+        <div id="loading-text">Loading Your Personalized Feed...</div>
     </div>
-
-    <!-- Accessibility Skip Link -->
-    <a href="#main-content" class="skip-link">Skip to main content</a>
 
     <!-- Animated Background -->
     <div class="animated-bg">
@@ -102,212 +141,6 @@
         <div class="glow-cycle glow-2"></div>
         <div class="glow-cycle glow-3"></div>
         <div class="glow-cycle glow-4"></div>
-    </div>
-
-    <!-- Notifications Panel -->
-    <div id="notifications-panel" class="notifications-panel">
-        <div class="notifications-header">
-            <h2>Notifications</h2>
-            <button id="close-notifications" class="icon-btn">
-                <i class="fas fa-times"></i>
-            </button>
-        </div>
-        <div class="notifications-list" id="notifications-list">
-            <!-- Notifications loaded here -->
-        </div>
-        <div class="notifications-footer">
-            <button id="mark-all-read" class="text-btn">Mark all as read</button>
-            <button id="notification-settings" class="text-btn">Settings</button>
-        </div>
-    </div>
-
-    <!-- Analytics Modal -->
-    <div id="analytics-modal" class="analytics-modal">
-        <div class="analytics-content">
-            <div class="analytics-header">
-                <h2>Analytics Dashboard</h2>
-                <button id="close-analytics" class="close-search-btn">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <div class="analytics-body">
-                <div class="analytics-grid">
-                    <div class="analytics-card">
-                        <h3>Watch Time</h3>
-                        <div class="analytics-value" id="total-watch-time">0h 0m</div>
-                        <div class="analytics-trend" id="watch-time-trend">+0%</div>
-                    </div>
-                    <div class="analytics-card">
-                        <h3>Sessions/User</h3>
-                        <div class="analytics-value" id="sessions-per-user">0</div>
-                        <div class="analytics-trend" id="sessions-trend">+0%</div>
-                    </div>
-                    <div class="analytics-card">
-                        <h3>Return Rate</h3>
-                        <div class="analytics-value" id="return-rate">0%</div>
-                        <div class="analytics-trend" id="return-rate-trend">+0%</div>
-                    </div>
-                    <div class="analytics-card">
-                        <h3>Total Views</h3>
-                        <div class="analytics-value" id="total-views">0</div>
-                        <div class="analytics-trend" id="views-trend">+0%</div>
-                    </div>
-                </div>
-                <div class="charts-container">
-                    <canvas id="engagement-chart"></canvas>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Theme Selector -->
-    <div id="theme-selector" class="theme-selector">
-        <button class="theme-option active" data-theme="dark">
-            <i class="fas fa-moon"></i> Dark
-        </button>
-        <button class="theme-option" data-theme="light">
-            <i class="fas fa-sun"></i> Light
-        </button>
-        <button class="theme-option" data-theme="high-contrast">
-            <i class="fas fa-eye"></i> High Contrast
-        </button>
-    </div>
-
-    <!-- Search Modal -->
-    <div id="search-modal" class="search-modal">
-        <div class="search-modal-header">
-            <div class="search-input-container">
-                <i class="search-icon fas fa-search"></i>
-                <input type="text" id="search-input" class="search-input" placeholder="Search for content, creators, or categories..." autocomplete="off">
-                <button id="voice-search-btn-modal" class="voice-search-btn" title="Voice Search">
-                    <i class="fas fa-microphone"></i>
-                </button>
-            </div>
-            <button id="close-search-btn" class="close-search-btn">
-                <i class="fas fa-times"></i>
-            </button>
-        </div>
-        <div class="search-filters">
-            <div class="filter-group">
-                <label class="filter-label">Category</label>
-                <select id="category-filter" class="filter-select">
-                    <option value="">All Categories</option>
-                    <option value="Movies">Movies</option>
-                    <option value="TV Shows">TV Shows</option>
-                    <option value="Documentaries">Documentaries</option>
-                    <option value="Music">Music</option>
-                    <option value="Sports">Sports</option>
-                    <option value="News">News</option>
-                    <option value="STEM">STEM</option>
-                    <option value="Podcasts">Podcasts</option>
-                </select>
-            </div>
-            <div class="filter-group">
-                <label class="filter-label">Media Type</label>
-                <select id="media-type-filter" class="filter-select">
-                    <option value="">All Types</option>
-                    <option value="video">Video</option>
-                    <option value="audio">Audio</option>
-                    <option value="image">Image</option>
-                </select>
-            </div>
-            <div class="filter-group">
-                <label class="filter-label">Sort By</label>
-                <select id="sort-filter" class="filter-select">
-                    <option value="newest">Newest First</option>
-                    <option value="oldest">Oldest First</option>
-                    <option value="popular">Most Popular</option>
-                    <option value="trending">Trending</option>
-                </select>
-            </div>
-            <div class="filter-group">
-                <label class="filter-label">Language</label>
-                <select id="language-filter-search" class="filter-select">
-                    <option value="">All Languages</option>
-                    <option value="en">English</option>
-                    <option value="zu">IsiZulu</option>
-                    <option value="xh">IsiXhosa</option>
-                    <option value="af">Afrikaans</option>
-                    <option value="nso">Sepedi</option>
-                    <option value="st">Sesotho</option>
-                    <option value="tn">Setswana</option>
-                    <option value="ss">siSwati</option>
-                    <option value="ve">Tshivenda</option>
-                    <option value="ts">Xitsonga</option>
-                    <option value="nr">isiNdebele</option>
-                </select>
-            </div>
-        </div>
-        <div id="search-results" class="search-results">
-            <div id="search-results-grid" class="search-results-grid">
-                <!-- Search results will be loaded here -->
-            </div>
-        </div>
-    </div>
-
-    <!-- Keyboard Shortcuts Help Modal -->
-    <div id="keyboard-shortcuts-help" class="keyboard-shortcuts-help">
-        <div class="shortcuts-header">
-            <h2 class="shortcuts-title">Keyboard Shortcuts</h2>
-            <button id="close-shortcuts-btn" class="close-search-btn">
-                <i class="fas fa-times"></i>
-            </button>
-        </div>
-        <div class="shortcuts-list">
-            <div class="shortcut-item">
-                <span>Search</span>
-                <kbd class="shortcut-key">Ctrl + K</kbd>
-            </div>
-            <div class="shortcut-item">
-                <span>Close Search/Modal</span>
-                <kbd class="shortcut-key">Esc</kbd>
-            </div>
-            <div class="shortcut-item">
-                <span>Play/Pause Video Preview</span>
-                <kbd class="shortcut-key">Space</kbd>
-            </div>
-            <div class="shortcut-item">
-                <span>Show Keyboard Shortcuts</span>
-                <kbd class="shortcut-key">?</kbd>
-            </div>
-            <div class="shortcut-item">
-                <span>Toggle Theme</span>
-                <kbd class="shortcut-key">Alt + T</kbd>
-            </div>
-            <div class="shortcut-item">
-                <span>Notifications</span>
-                <kbd class="shortcut-key">Alt + N</kbd>
-            </div>
-            <div class="shortcut-item">
-                <span>Analytics</span>
-                <kbd class="shortcut-key">Alt + A</kbd>
-            </div>
-            <div class="shortcut-item">
-                <span>Navigate to Home</span>
-                <kbd class="shortcut-key">Alt + H</kbd>
-            </div>
-            <div class="shortcut-item">
-                <span>Navigate to Profile</span>
-                <kbd class="shortcut-key">Alt + P</kbd>
-            </div>
-            <div class="shortcut-item">
-                <span>Refresh Content</span>
-                <kbd class="shortcut-key">Ctrl + R</kbd>
-            </div>
-        </div>
-    </div>
-
-    <!-- Error Recovery Modal -->
-    <div id="error-recovery-modal" class="error-recovery-modal">
-        <div class="error-recovery-content">
-            <h2>Connection Issue Detected</h2>
-            <p>We're having trouble connecting to the server. You can continue using cached content.</p>
-            <div class="error-recovery-actions">
-                <button id="retry-connection" class="btn-primary">Retry Connection</button>
-                <button id="continue-offline" class="btn-secondary">Continue Offline</button>
-                <button id="report-issue" class="btn-text">Report Issue</button>
-            </div>
-        </div>
     </div>
 
     <!-- Main Content (hidden until loaded) -->
@@ -320,18 +153,55 @@
                     <i class="fas fa-bars"></i>
                 </button>
                 <div class="logo-icon">
-                    <img src="assets/icon/bantu_stream_connect_icon.png" alt="Bantu Stream Connect Logo">
+                    <i class="fas fa-film" style="color: var(--warm-gold); font-size: 20px;"></i>
                 </div>
                 <div class="logo-text">BANTU STREAM CONNECT</div>
             </div>
+            
             <div class="header-actions">
-                <!-- Keep ONLY these 3 actions -->
+                <!-- Voice Search Button -->
                 <button id="voice-search-btn" class="icon-btn" title="Voice Search">
                     <i class="fas fa-microphone"></i>
                 </button>
+                
+                <!-- Analytics Button -->
+                <button id="analytics-btn" class="icon-btn" title="Analytics (Alt+A)">
+                    <i class="fas fa-chart-line"></i>
+                </button>
+                
+                <!-- Search Button -->
                 <button id="search-btn" class="icon-btn search-btn" title="Search (Ctrl+K)">
                     <i class="fas fa-search"></i>
                 </button>
+                
+                <!-- Notifications Button -->
+                <button id="notifications-btn" class="icon-btn" title="Notifications (Alt+N)">
+                    <i class="fas fa-bell"></i>
+                    <span class="notification-badge" id="notification-count" style="display: none;">0</span>
+                </button>
+                
+                <!-- Profile Button with Dropdown -->
+                <div class="profile-switcher">
+                    <button id="current-profile-btn" class="profile-btn" title="Profile (Alt+P)">
+                        <div class="profile-placeholder" id="userProfilePlaceholder">
+                            <i class="fas fa-user"></i>
+                        </div>
+                        <span class="profile-name" id="current-profile-name">Guest</span>
+                        <i class="fas fa-chevron-down"></i>
+                    </button>
+                    <div class="profile-dropdown" id="profile-dropdown">
+                        <div class="profile-dropdown-header">
+                            <h4>Switch Profile</h4>
+                        </div>
+                        <div class="profile-list" id="profile-list"></div>
+                        <div class="profile-dropdown-footer">
+                            <button class="text-btn" id="manage-profiles-btn">
+                                <i class="fas fa-user-cog"></i> Manage Profiles
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
                 <!-- "Built in South Africa" Badge -->
                 <div class="rsa-badge" title="Proudly South African">
                     <i class="fas fa-map-marker-alt"></i>
@@ -340,107 +210,47 @@
             </div>
         </header>
 
-        <!-- Simplified Bottom Navigation -->
-        <div class="navigation-button-container">
-            <div class="navigation-button">
-                <div class="nav-icon" id="nav-home-btn" title="Home" onclick="window.location.href='index.html'">
-                    <i class="fas fa-home"></i>
-                </div>
-                <div class="nav-icon" id="nav-create-btn" title="Create Content">
-                    <i class="fas fa-plus-circle"></i>
-                </div>
-                <!-- Menu button opens sidebar -->
-                <div class="nav-icon" id="nav-menu-btn" title="Menu">
-                    <i class="fas fa-bars"></i>
+        <!-- Welcome Banner (Personalized Greeting) -->
+        <div class="welcome-banner" id="welcome-banner">
+            <h2 id="welcome-message">Welcome back, <span id="user-name">Guest</span>! 👋</h2>
+            <p id="welcome-subtitle">Discover new content tailored just for you</p>
+        </div>
+
+        <!-- Language Filter Bar -->
+        <div class="language-filter-bar">
+            <div class="language-filter-container">
+                <i class="fas fa-language"></i>
+                <span class="language-filter-label">Filter by Language:</span>
+                <div class="language-chips" id="language-chips">
+                    <button class="language-chip active" data-lang="all">All</button>
+                    <button class="language-chip" data-lang="en">English</button>
+                    <button class="language-chip" data-lang="zu">IsiZulu</button>
+                    <button class="language-chip" data-lang="xh">IsiXhosa</button>
+                    <button class="language-chip" data-lang="af">Afrikaans</button>
+                    <button class="language-chip" data-lang="nso">Sepedi</button>
+                    <button class="language-chip" data-lang="st">Sesotho</button>
+                    <button class="language-chip" data-lang="tn">Setswana</button>
+                    <button class="language-chip" data-lang="ss">siSwati</button>
+                    <button class="language-chip" data-lang="ve">Tshivenda</button>
+                    <button class="language-chip" data-lang="ts">Xitsonga</button>
+                    <button class="language-chip" data-lang="nr">isiNdebele</button>
+                    <button class="language-chip-more" id="more-languages-btn">
+                        More <i class="fas fa-chevron-down"></i>
+                    </button>
                 </div>
             </div>
         </div>
 
+        <!-- Category Tabs -->
+        <div class="category-tabs-container">
+            <div id="category-tabs" class="category-tabs">
+                <!-- Categories will be loaded here -->
+            </div>
+        </div>
+
         <!-- Main Content -->
-        <main class="container" id="main-content">
-            <!-- Home-Feed Development Window -->
-            <div id="development-status-card" class="development-card">
-                <div class="development-header">
-                    <div class="pulse-icon-container" id="pulse-icon-container" onclick="window.location.href='pulse-feed.html'">
-                        <div class="pulse-icon">
-                            <svg viewBox="0 0 100 100">
-                                <defs>
-                                    <linearGradient id="pulseGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                                        <stop offset="0%" stop-color="#1D4ED8" />
-                                        <stop offset="100%" stop-color="#F59E0B" />
-                                    </linearGradient>
-                                </defs>
-                                <path class="pulse-path" d="M20,50 C30,20 40,30 50,50 S70,80 80,50" />
-                                <circle class="pulse-node" cx="80" cy="50" r="4" />
-                            </svg>
-                        </div>
-                        <div class="pulse-ripple"></div>
-                    </div>
-                    
-                    <div class="development-content">
-                        <h2>We're Building Something Powerful</h2>
-                        <div class="development-message">
-                            Bantu Stream Connect is currently in active development.<br><br>
-                            Our web experience is taking shape, and our mobile app is in its final stages — preparing for public launch following our closed testing period on Google Play.<br><br>
-                            While we build, you can explore what's already live:<br>
-                            <strong>Bantu Connect Pulse</strong> — a new space to share moments, ideas, and creativity.
-                        </div>
-                        <div class="cta-hint">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M5 12h14M12 5l7 7-7 7"/>
-                            </svg>
-                            Tap the pulsing icon to begin your journey to Pulse Feed
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- VIDEO HERO SECTION -->
-            <section class="video-hero-section" id="video-hero">
-                <video class="hero-video" id="hero-video" muted loop playsinline preload="metadata" poster="">
-                    <source src="" type="video/mp4">
-                    Your browser does not support the video tag.
-                </video>
-                <div class="hero-overlay"></div>
-                <div class="hero-content">
-                    <h1 class="hero-title" id="hero-title">DISCOVER & CONNECT</h1>
-                    <p class="hero-subtitle" id="hero-subtitle">Explore amazing content from creators across Africa</p>
-                    <div class="hero-buttons">
-                        <button id="browse-all-btn" class="hero-btn">Explore All Content</button>
-                        <button id="hero-mute-btn" class="hero-btn secondary" aria-label="Toggle mute">
-                            <i class="fas fa-volume-mute"></i>
-                        </button>
-                    </div>
-                </div>
-                <div class="hero-controls">
-                    <button id="hero-mute-btn-mobile" class="hero-mute-btn" aria-label="Toggle mute">
-                        <i class="fas fa-volume-mute"></i>
-                    </button>
-                </div>
-            </section>
-
-            <!-- LANGUAGE FILTER BAR -->
-            <div class="language-filter-bar">
-                <div class="language-filter-container">
-                    <i class="fas fa-language"></i>
-                    <span class="language-filter-label">Filter by Language:</span>
-                    <div class="language-chips" id="language-chips">
-                        <button class="language-chip active" data-lang="all">All</button>
-                        <button class="language-chip" data-lang="en">English</button>
-                        <button class="language-chip" data-lang="zu">IsiZulu</button>
-                        <button class="language-chip" data-lang="xh">IsiXhosa</button>
-                        <button class="language-chip" data-lang="af">Afrikaans</button>
-                        <button class="language-chip" data-lang="nso">Sepedi</button>
-                        <button class="language-chip" data-lang="st">Sesotho</button>
-                        <button class="language-chip" data-lang="tn">Setswana</button>
-                        <button class="language-chip-more" id="more-languages-btn">
-                            More <i class="fas fa-chevron-down"></i>
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- COMMUNITY STATS BAR -->
+        <main class="container">
+            <!-- Community Stats Bar -->
             <div class="community-stats-bar">
                 <div class="community-stat">
                     <i class="fas fa-users"></i>
@@ -464,7 +274,58 @@
                 </div>
             </div>
 
-            <!-- SHORTS SECTION -->
+            <!-- Continue Watching Row (Priority 1 - Personal) -->
+            <section class="section" id="continue-watching-section">
+                <div class="section-header">
+                    <h2 class="section-title">
+                        <i class="fas fa-play-circle" style="color: var(--warm-gold);"></i>
+                        CONTINUE WATCHING
+                    </h2>
+                    <a href="#" class="see-all-btn" id="see-all-continue">
+                        See All
+                        <i class="fas fa-arrow-right"></i>
+                    </a>
+                </div>
+                <div class="content-grid" id="continue-watching-grid">
+                    <!-- Continue watching content will be loaded here -->
+                </div>
+            </section>
+
+            <!-- For You (Personalized Recommendations - Priority 2) -->
+            <section class="section" id="for-you-section">
+                <div class="section-header">
+                    <h2 class="section-title">
+                        <i class="fas fa-magic" style="color: var(--bantu-blue);"></i>
+                        FOR YOU
+                    </h2>
+                    <a href="#" class="see-all-btn" id="see-all-for-you">
+                        See All
+                        <i class="fas fa-arrow-right"></i>
+                    </a>
+                </div>
+                <div class="content-grid" id="for-you-grid">
+                    <!-- Personalized recommendations will be loaded here -->
+                </div>
+            </section>
+
+            <!-- From Creators You Follow (Priority 3 - Social) -->
+            <section class="section" id="following-section" style="display: none;">
+                <div class="section-header">
+                    <h2 class="section-title">
+                        <i class="fas fa-user-friends" style="color: var(--warm-gold);"></i>
+                        FROM CREATORS YOU FOLLOW
+                    </h2>
+                    <a href="#" class="see-all-btn" id="see-all-following">
+                        See All
+                        <i class="fas fa-arrow-right"></i>
+                    </a>
+                </div>
+                <div class="content-grid" id="following-grid">
+                    <!-- Content from followed creators will be loaded here -->
+                </div>
+            </section>
+
+            <!-- Shorts / Quick Bits Section -->
             <section class="section">
                 <div class="section-header">
                     <h2 class="section-title">
@@ -472,7 +333,8 @@
                         QUICK BITS
                     </h2>
                     <a href="#" class="see-all-btn" id="see-all-shorts">
-                        See All <i class="fas fa-arrow-right"></i>
+                        See All
+                        <i class="fas fa-arrow-right"></i>
                     </a>
                 </div>
                 <div class="shorts-container" id="shorts-container">
@@ -480,21 +342,7 @@
                 </div>
             </section>
 
-            <!-- Continue Watching Section -->
-            <section class="section" id="continue-watching-section" style="display: none;">
-                <div class="section-header">
-                    <h2 class="section-title">
-                        <i class="fas fa-play-circle" style="color: var(--warm-gold);"></i>
-                        CONTINUE WATCHING
-                    </h2>
-                    <a href="#" class="see-all-btn" id="see-all-continue">
-                        See All <i class="fas fa-arrow-right"></i>
-                    </a>
-                </div>
-                <div class="content-grid" id="continue-watching-grid"></div>
-            </section>
-
-            <!-- Community Favorites Section -->
+            <!-- Community Favorites (Popular in Your Region) -->
             <section class="section">
                 <div class="section-header">
                     <h2 class="section-title">
@@ -502,46 +350,16 @@
                         COMMUNITY FAVORITES
                     </h2>
                     <a href="#" class="see-all-btn" id="see-all-community">
-                        See All <i class="fas fa-arrow-right"></i>
+                        See All
+                        <i class="fas fa-arrow-right"></i>
                     </a>
                 </div>
-                <div class="content-grid" id="community-favorites-grid"></div>
-            </section>
-
-            <!-- Recommendations Section -->
-            <section class="section" id="recommendations-section" style="display: none;">
-                <div class="section-header">
-                    <h2 class="section-title">
-                        <i class="fas fa-magic" style="color: var(--bantu-blue);"></i>
-                        BECAUSE YOU WATCHED...
-                    </h2>
-                    <a href="#" class="see-all-btn" id="see-all-recommendations">
-                        See All <i class="fas fa-arrow-right"></i>
-                    </a>
-                </div>
-                <div class="content-grid" id="recommendations-grid"></div>
-            </section>
-
-            <!-- Featured Creators Section -->
-            <section class="section">
-                <div class="section-header">
-                    <h2 class="section-title">
-                        <i class="fas fa-star" style="color: var(--warm-gold);"></i>
-                        CREATOR OF THE WEEK
-                    </h2>
-                    <a href="creators.html" class="see-all-btn">
-                        See All <i class="fas fa-arrow-right"></i>
-                    </a>
-                </div>
-                <div class="featured-creators">
-                    <div class="swiper" id="creators-swiper">
-                        <div class="swiper-wrapper" id="creators-list"></div>
-                        <div class="swiper-pagination"></div>
-                    </div>
+                <div class="content-grid" id="community-favorites-grid">
+                    <!-- Community favorites will be loaded here -->
                 </div>
             </section>
 
-            <!-- Live Streams Section -->
+            <!-- Live Streams -->
             <section class="section">
                 <div class="section-header">
                     <h2 class="section-title">
@@ -549,46 +367,80 @@
                         LIVE NOW
                     </h2>
                     <button class="see-all-btn" id="see-all-live">
-                        See All <i class="fas fa-arrow-right"></i>
+                        See All
+                        <i class="fas fa-arrow-right"></i>
                     </button>
                 </div>
-                <div class="content-grid" id="live-streams-grid"></div>
+                <div class="content-grid" id="live-streams-grid">
+                    <!-- Live streams will be loaded here -->
+                </div>
+                <!-- Empty State (initially hidden) -->
                 <div id="no-live-streams" class="empty-state" style="display: none;">
-                    <div class="empty-icon"><i class="fas fa-broadcast-tower"></i></div>
+                    <div class="empty-icon">
+                        <i class="fas fa-broadcast-tower"></i>
+                    </div>
                     <h3>No Live Streams</h3>
                     <p>Check back later for live content</p>
                 </div>
             </section>
 
-            <!-- Trending Content Section -->
+            <!-- Trending Content -->
             <section class="section">
                 <div class="section-header">
                     <h2 class="section-title">
                         <i class="fas fa-fire" style="color: var(--warm-gold);"></i>
                         TRENDING NOW
                     </h2>
-                    <a href="trending.html" class="see-all-btn">
-                        See All <i class="fas fa-arrow-right"></i>
+                    <a href="https://bantustreamconnect.com/trending_screen" class="see-all-btn">
+                        See All
+                        <i class="fas fa-arrow-right"></i>
                     </a>
                 </div>
-                <div class="content-grid" id="trending-grid"></div>
+                <div class="content-grid" id="trending-grid">
+                    <!-- Trending content skeleton will be replaced -->
+                </div>
             </section>
 
-            <!-- Latest Gems Section -->
+            <!-- New Content -->
             <section class="section">
                 <div class="section-header">
                     <h2 class="section-title">
                         <i class="fas fa-gem" style="color: var(--bantu-blue);"></i>
                         LATEST GEMS
                     </h2>
-                    <a href="content-library.html" class="see-all-btn">
-                        See All <i class="fas fa-arrow-right"></i>
+                    <a href="https://bantustreamconnect.com/content-library" class="see-all-btn">
+                        See All
+                        <i class="fas fa-arrow-right"></i>
                     </a>
                 </div>
-                <div class="content-grid" id="new-content-grid"></div>
+                <div class="content-grid" id="new-content-grid">
+                    <!-- New content skeleton will be replaced -->
+                </div>
             </section>
 
-            <!-- Events Section -->
+            <!-- Featured Creators -->
+            <section class="section">
+                <div class="section-header">
+                    <h2 class="section-title">
+                        <i class="fas fa-star" style="color: var(--warm-gold);"></i>
+                        CREATOR OF THE WEEK
+                    </h2>
+                    <a href="https://bantustreamconnect.com/creators" class="see-all-btn">
+                        See All
+                        <i class="fas fa-arrow-right"></i>
+                    </a>
+                </div>
+                <div class="featured-creators">
+                    <div class="swiper" id="creators-swiper">
+                        <div class="swiper-wrapper" id="creators-list">
+                            <!-- Creators will be loaded here -->
+                        </div>
+                        <div class="swiper-pagination"></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Upcoming Events -->
             <section class="section events-section">
                 <div class="section-header">
                     <h2 class="section-title">
@@ -596,49 +448,26 @@
                         UPCOMING EVENTS
                     </h2>
                 </div>
-                <div id="events-list"></div>
+                <div id="events-list">
+                    <!-- Events will be loaded here -->
+                </div>
+                <!-- Empty State (initially hidden) -->
                 <div id="no-events" class="empty-state" style="display: none;">
-                    <div class="empty-icon"><i class="fas fa-calendar-alt"></i></div>
+                    <div class="empty-icon">
+                        <i class="fas fa-calendar-alt"></i>
+                    </div>
                     <h3>No Upcoming Events</h3>
                     <p>Check back soon for scheduled events</p>
                 </div>
             </section>
 
-            <!-- Content Sections (Legacy) -->
-            <div id="content-sections">
-                <!-- Content will be loaded here -->
-            </div>
-
-            <!-- Performance Metrics Display -->
-            <div id="performance-metrics" class="performance-metrics">
-                <div class="metric">
-                    <span class="metric-label">FCP:</span>
-                    <span class="metric-value" id="fcp-metric">0s</span>
-                </div>
-                <div class="metric">
-                    <span class="metric-label">LCP:</span>
-                    <span class="metric-value" id="lcp-metric">0s</span>
-                </div>
-                <div class="metric">
-                    <span class="metric-label">CLS:</span>
-                    <span class="metric-value" id="cls-metric">0</span>
-                </div>
-            </div>
-
-            <!-- Infinite Scroll Loading Indicator -->
-            <div id="infinite-scroll-loading" class="infinite-scroll-loading" style="display: none;">
-                <div class="infinite-scroll-spinner"></div>
-                <div>Loading more content...</div>
-            </div>
-
-            <!-- Browse All CTA -->
-            <div class="browse-all-cta">
-                <button id="browse-all-cta" class="cta-button" data-target="content-library">
-                    <i class="fas fa-compass"></i>
-                    Browse All Content
+            <!-- Explore All CTA -->
+            <section class="explore-all-cta">
+                <button id="explore-all-btn" class="explore-btn">
+                    <span>EXPLORE ALL CONTENT</span>
                     <i class="fas fa-arrow-right"></i>
                 </button>
-            </div>
+            </section>
 
             <!-- Infinite Scroll Sentinel -->
             <div id="infinite-scroll-sentinel" style="height: 20px;"></div>
@@ -646,33 +475,47 @@
 
         <!-- Footer -->
         <footer class="footer">
-            <p>Bantu Stream Connect © 2025 • Built in South Africa</p>
+            <p>Bantu Stream Connect © 2025 • <i class="fas fa-heart" style="color: var(--warm-gold);"></i> Built in South Africa • NO DNA, JUST RSA</p>
             <div class="footer-links">
-                <a href="data-deletion-request.html">Data Deletion Request</a>
-                <a href="delete-account.html">Delete Account</a>
-                <a href="empowerment.html">Empowerment</a>
-                <a href="blog.html">Blog</a>
                 <a href="privacy-policy.html">Privacy Policy</a>
-                <a href="thank-you.html">Thank You</a>
-            </div>
-            <div class="footer-contact">
-                Need help? Contact us at <a href="mailto:support@bantustreamconnect.com">support@bantustreamconnect.com</a>
-            </div>
-            <div class="performance-info">
-                <button id="toggle-performance" class="text-btn">
-                    <i class="fas fa-tachometer-alt"></i> Toggle Performance Metrics
-                </button>
+                <a href="terms-of-service.html">Terms of Service</a>
+                <a href="support.html">Support</a>
             </div>
         </footer>
+
+        <!-- Simplified Bottom Navigation -->
+        <div class="navigation-button-container">
+            <div class="navigation-button">
+                <div class="nav-icon" id="nav-home-btn" title="Home">
+                    <i class="fas fa-home"></i>
+                </div>
+                <div class="nav-icon" id="nav-create-btn" title="Create Content">
+                    <i class="fas fa-plus-circle"></i>
+                </div>
+                <div class="nav-icon" id="nav-menu-btn" title="Menu">
+                    <i class="fas fa-bars"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Toast Container -->
+        <div id="toast-container"></div>
+
+        <!-- Back to Top Button -->
+        <button id="backToTopBtn" class="back-to-top">
+            <i class="fas fa-arrow-up"></i>
+        </button>
     </div>
 
-    <!-- SIDEBAR MENU -->
+    <!-- =================================================================== -->
+    <!-- SIDEBAR MENU (Enhanced)                                             -->
+    <!-- =================================================================== -->
     <div class="sidebar-overlay" id="sidebar-overlay"></div>
     <div class="sidebar-menu" id="sidebar-menu">
         <div class="sidebar-header">
             <div class="sidebar-logo" onclick="window.location.href='index.html'">
                 <div class="logo-icon">
-                    <img src="assets/icon/bantu_stream_connect_icon.png" alt="Bantu Stream Connect">
+                    <i class="fas fa-film" style="color: var(--warm-gold); font-size: 18px;"></i>
                 </div>
                 <span class="sidebar-logo-text">BANTU</span>
             </div>
@@ -740,6 +583,7 @@
                 <span><i class="fas fa-palette"></i> Theme</span>
                 <i class="fas fa-chevron-right" style="color: var(--slate-grey);"></i>
             </div>
+            
             <div class="sidebar-scale-control">
                 <div class="scale-control-row">
                     <span><i class="fas fa-text-height"></i> UI Size</span>
@@ -762,39 +606,201 @@
         </div>
     </div>
 
-    <!-- BADGES MODAL -->
-    <div id="badges-modal" class="badges-modal">
-        <div class="badges-content">
-            <div class="badges-header">
-                <h2><i class="fas fa-medal"></i> Your Exploration Badges</h2>
-                <button id="close-badges" class="close-search-btn">
+    <!-- =================================================================== -->
+    <!-- MODALS & PANELS                                                     -->
+    <!-- =================================================================== -->
+
+    <!-- Analytics Modal -->
+    <div id="analytics-modal" class="analytics-modal">
+        <div class="analytics-content">
+            <div class="analytics-header">
+                <h2>My Personal Analytics</h2>
+                <button id="close-analytics" class="close-search-btn">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
-            <div class="badges-body">
-                <div class="badges-stats">
-                    <div class="badge-stat">
-                        <span class="badge-stat-value" id="badges-earned">0</span>
-                        <span class="badge-stat-label">Badges Earned</span>
+            <div class="analytics-body">
+                <div class="analytics-grid">
+                    <div class="analytics-card">
+                        <h3>Watch Time</h3>
+                        <div class="analytics-value" id="personal-watch-time">0h</div>
+                        <div class="analytics-trend" id="watch-time-trend">+0%</div>
                     </div>
-                    <div class="badge-stat">
-                        <span class="badge-stat-value" id="badges-total">12</span>
-                        <span class="badge-stat-label">Total Available</span>
+                    <div class="analytics-card">
+                        <h3>Sessions</h3>
+                        <div class="analytics-value" id="personal-sessions">0</div>
+                        <div class="analytics-trend" id="sessions-trend">+0%</div>
+                    </div>
+                    <div class="analytics-card">
+                        <h3>Return Rate</h3>
+                        <div class="analytics-value" id="return-rate">0%</div>
+                        <div class="analytics-trend" id="return-trend">+0%</div>
+                    </div>
+                    <div class="analytics-card">
+                        <h3>Total Views</h3>
+                        <div class="analytics-value" id="personal-views">0</div>
+                        <div class="analytics-trend" id="views-trend">+0%</div>
                     </div>
                 </div>
-                <div class="badges-grid" id="badges-grid">
-                    <!-- Badges will be loaded here -->
+                <div class="charts-container">
+                    <canvas id="engagement-chart"></canvas>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- TIP MODAL -->
+    <!-- Search Modal (with Voice Search) -->
+    <div id="search-modal" class="search-modal">
+        <div class="search-modal-header">
+            <div class="search-input-container">
+                <i class="search-icon fas fa-search"></i>
+                <input type="text" id="search-input" class="search-input" placeholder="Search content, creators, or categories..." autocomplete="off">
+                <button id="voice-search-modal-btn" class="voice-search-btn" title="Voice Search">
+                    <i class="fas fa-microphone"></i>
+                </button>
+            </div>
+            <button id="close-search-btn" class="close-search-btn">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="search-filters">
+            <div class="filter-group">
+                <label class="filter-label">Category</label>
+                <select id="category-filter" class="filter-select">
+                    <option value="">All Categories</option>
+                    <option value="Music">Music</option>
+                    <option value="STEM">STEM</option>
+                    <option value="Culture">Culture</option>
+                    <option value="News">News</option>
+                    <option value="Sports">Sports</option>
+                    <option value="Movies">Movies</option>
+                    <option value="Documentaries">Documentaries</option>
+                    <option value="Podcasts">Podcasts</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label class="filter-label">Sort By</label>
+                <select id="sort-filter" class="filter-select">
+                    <option value="newest">Newest First</option>
+                    <option value="popular">Most Popular</option>
+                    <option value="trending">Trending</option>
+                    <option value="connectors">Most Connectors</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label class="filter-label">Language</label>
+                <select id="language-filter" class="filter-select">
+                    <option value="">All Languages</option>
+                    <option value="en">English</option>
+                    <option value="zu">IsiZulu</option>
+                    <option value="xh">IsiXhosa</option>
+                    <option value="af">Afrikaans</option>
+                    <option value="nso">Sepedi</option>
+                    <option value="st">Sesotho</option>
+                    <option value="tn">Setswana</option>
+                    <option value="ss">siSwati</option>
+                    <option value="ve">Tshivenda</option>
+                    <option value="ts">Xitsonga</option>
+                    <option value="nr">isiNdebele</option>
+                </select>
+            </div>
+        </div>
+        <div id="search-results" class="search-results">
+            <div id="search-results-grid" class="search-results-grid">
+                <!-- Results loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Notifications Panel -->
+    <div id="notifications-panel" class="notifications-panel">
+        <div class="notifications-header">
+            <h2>Notifications</h2>
+            <button id="close-notifications" class="icon-btn">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="notifications-list" id="notifications-list">
+            <!-- Notifications loaded here -->
+        </div>
+        <div class="notifications-footer">
+            <button id="mark-all-read" class="text-btn">Mark all as read</button>
+            <button id="notification-settings" class="text-btn">Settings</button>
+        </div>
+    </div>
+
+    <!-- Theme Selector -->
+    <div id="theme-selector" class="theme-selector">
+        <button class="theme-option" data-theme="dark">
+            <i class="fas fa-moon"></i> Dark
+        </button>
+        <button class="theme-option" data-theme="light">
+            <i class="fas fa-sun"></i> Light
+        </button>
+        <button class="theme-option" data-theme="high-contrast">
+            <i class="fas fa-eye"></i> High Contrast
+        </button>
+    </div>
+
+    <!-- Watch Party Modal -->
+    <div id="watch-party-modal" class="watch-party-modal">
+        <div class="watch-party-content">
+            <div class="watch-party-header">
+                <h2><i class="fas fa-users"></i> Start a Watch Party</h2>
+                <button id="close-watch-party" class="close-btn">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="watch-party-body">
+                <div class="watch-party-content-selector">
+                    <h3>Select Content</h3>
+                    <div class="watch-party-search">
+                        <input type="text" id="watch-party-search" placeholder="Search content...">
+                    </div>
+                    <div class="watch-party-content-list" id="watch-party-content-list">
+                        <!-- Content list loaded here -->
+                    </div>
+                </div>
+                <div class="watch-party-settings">
+                    <h3>Party Settings</h3>
+                    <div class="setting-item">
+                        <label>
+                            <input type="checkbox" id="party-sync-playback" checked>
+                            Sync playback for everyone
+                        </label>
+                    </div>
+                    <div class="setting-item">
+                        <label>
+                            <input type="checkbox" id="party-chat-enabled" checked>
+                            Enable party chat
+                        </label>
+                    </div>
+                    <div class="setting-item">
+                        <label>Invite Friends</label>
+                        <div class="invite-friends">
+                            <input type="text" id="party-invite-email" placeholder="Enter email">
+                            <button id="party-invite-btn" class="btn-small">Invite</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="watch-party-footer">
+                <button id="start-watch-party" class="primary-btn">
+                    <i class="fas fa-play"></i> Start Party
+                </button>
+                <button id="copy-party-link" class="secondary-btn">
+                    <i class="fas fa-link"></i> Copy Invite Link
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tip Creator Modal -->
     <div id="tip-modal" class="tip-modal">
         <div class="tip-content">
             <div class="tip-header">
                 <h2><i class="fas fa-gift"></i> Support Creator</h2>
-                <button id="close-tip" class="close-search-btn">
+                <button id="close-tip" class="close-btn">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
@@ -815,7 +821,7 @@
                         </button>
                     </div>
                     <div class="custom-amount" id="custom-amount" style="display: none;">
-                        <input type="number" id="custom-tip-amount" placeholder="Enter amount (R)" min="1" step="1">
+                        <input type="number" id="custom-tip-amount" placeholder="Enter amount (R)">
                     </div>
                 </div>
                 <div class="tip-message">
@@ -824,14 +830,53 @@
                 </div>
             </div>
             <div class="tip-footer">
-                <button id="send-tip" class="btn-primary">
+                <button id="send-tip" class="primary-btn">
                     <i class="fas fa-gift"></i> Send Tip
                 </button>
             </div>
         </div>
     </div>
 
-    <!-- UI SCALE CONTROL WIDGET -->
+    <!-- Badges Modal (Gamification Feature) -->
+    <div id="badges-modal" class="badges-modal">
+        <div class="badges-content">
+            <div class="badges-header">
+                <h2><i class="fas fa-medal"></i> Your Badges</h2>
+                <button id="close-badges" class="close-btn">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="badges-body">
+                <div class="badges-stats">
+                    <div class="badge-stat">
+                        <span class="badge-stat-value" id="badges-earned">0</span>
+                        <span class="badge-stat-label">Badges Earned</span>
+                    </div>
+                    <div class="badge-stat">
+                        <span class="badge-stat-value" id="badges-total">12</span>
+                        <span class="badge-stat-label">Total Available</span>
+                    </div>
+                    <div class="badge-stat">
+                        <span class="badge-stat-value" id="exploration-score">0</span>
+                        <span class="badge-stat-label">Exploration Score</span>
+                    </div>
+                </div>
+                <div class="badges-grid" id="badges-grid">
+                    <!-- Badges will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Voice Search Status -->
+    <div id="voice-search-status" class="voice-search-status">
+        <div class="voice-status-content">
+            <i class="fas fa-microphone"></i>
+            <span id="voice-status-text">Listening...</span>
+        </div>
+    </div>
+
+    <!-- UI Scale Control Widget (floating button for quick access) -->
     <div class="ui-scale-control" id="ui-scale-control">
         <div class="scale-control-bar">
             <button class="scale-btn" id="scale-decrease" title="Make Smaller (Ctrl+-)">
@@ -847,124 +892,376 @@
         </div>
     </div>
 
-    <!-- VOICE SEARCH STATUS -->
-    <div id="voice-search-status" class="voice-search-status">
-        <div class="voice-status-content">
-            <i class="fas fa-microphone"></i>
-            <span id="voice-status-text">Listening...</span>
+    <!-- Keyboard Shortcuts Help Modal -->
+    <div id="shortcuts-modal" class="analytics-modal" style="display: none;">
+        <div class="analytics-content">
+            <div class="analytics-header">
+                <h2>Keyboard Shortcuts</h2>
+                <button id="close-shortcuts" class="close-search-btn">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="analytics-body">
+                <div class="shortcuts-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px;">
+                    <div><kbd>Ctrl+K</kbd> - Search</div>
+                    <div><kbd>Alt+N</kbd> - Notifications</div>
+                    <div><kbd>Alt+A</kbd> - Analytics</div>
+                    <div><kbd>Alt+P</kbd> - Profile</div>
+                    <div><kbd>Ctrl++</kbd> - Increase UI</div>
+                    <div><kbd>Ctrl+-</kbd> - Decrease UI</div>
+                    <div><kbd>Ctrl+0</kbd> - Reset UI</div>
+                    <div><kbd>Alt+T</kbd> - Toggle Theme</div>
+                    <div><kbd>/</kbd> - Focus Search</div>
+                    <div><kbd>?</kbd> - Show Help</div>
+                </div>
+            </div>
         </div>
     </div>
 
-    <!-- Toast Container -->
-    <div id="toast-container"></div>
-
-    <!-- Cache Status Indicator -->
-    <div id="cache-status" class="cache-status">
-        <span id="cache-status-text">Cache: Loading...</span>
-    </div>
-
-    <!-- =========================================== -->
-    <!-- SCRIPTS - LOAD IN CORRECT ORDER           -->
-    <!-- CORE → FEATURES → UI → UTILS → MAIN APP   -->
-    <!-- =========================================== -->
+    <!-- JavaScript Files - Defer non-critical scripts -->
+    <script src="env.js" defer></script>
+    <script src="js/rate-limiter.js" defer></script>
+    <script src="js/explore-screen.js" defer></script>
+    <script src="js/explore-screen-features.js" defer></script>
+    <script src="js/home-feed-features.js" defer></script>
     
-    <!-- 1. CORE must load FIRST (defines global instances and CacheManager) -->
-    <script src="js/home-feed-core.js"></script>
-    
-    <!-- 2. FEATURES load SECOND (uses core instances, adds new ones, exports to window) -->
-    <script src="js/home-feed-features.js"></script>
-    
-    <!-- 3. UI loads THIRD (uses instances from core + features) -->
-    <script src="js/home-feed-ui.js"></script>
-    
-    <!-- 4. UTILS loads FOURTH (helper functions) -->
-    <script src="js/home-feed-utils.js"></script>
-    
-    <!-- 5. MAIN APP loads LAST (orchestrates everything) -->
-    <script src="js/home-feed.js"></script>
-    
-    <!-- Service Worker Registration with version check -->
+    <!-- Home Feed Specific JavaScript -->
     <script>
-        // Service Worker Registration with automatic version cleanup
-        if ('serviceWorker' in navigator) {
-            // First, unregister any old service workers
-            navigator.serviceWorker.getRegistrations().then(registrations => {
-                registrations.forEach(registration => {
-                    // Check if this is an old version
-                    if (registration.active && registration.active.scriptURL.includes('sw.js')) {
-                        console.log('📱 Found service worker registration:', registration.active.scriptURL);
+        // Home Feed Initialization
+        document.addEventListener('DOMContentLoaded', async () => {
+            console.log('🏠 Home Feed Initializing with Personalized Features');
+            
+            // Override the explore-screen loading text
+            const loadingText = document.getElementById('loading-text');
+            if (loadingText) loadingText.textContent = 'Loading Your Personalized Feed...';
+            
+            // Wait for explore-screen-features to initialize first
+            await new Promise(resolve => {
+                if (window.initializeExploreScreen) {
+                    resolve();
+                } else {
+                    document.addEventListener('exploreScreenReady', resolve);
+                    setTimeout(resolve, 2000); // Fallback timeout
+                }
+            });
+            
+            console.log('✅ Explore screen features loaded, initializing home feed specifics');
+            
+            // Personalize welcome message
+            updateWelcomeMessage();
+            
+            // Load home feed specific sections
+            await loadForYouSection();
+            await loadFollowingContent();
+            
+            // Setup profile switcher if not already set up
+            setupProfileSwitcher();
+            
+            // Setup keyboard shortcuts help
+            setupKeyboardHelp();
+            
+            console.log('🏁 Home Feed Ready');
+        });
+
+        // Update welcome message based on user
+        function updateWelcomeMessage() {
+            const userNameSpan = document.getElementById('user-name');
+            const welcomeSubtitle = document.getElementById('welcome-subtitle');
+            
+            if (window.currentUser) {
+                const name = window.currentUser.user_metadata?.full_name || 
+                           window.currentUser.email?.split('@')[0] || 
+                           'User';
+                userNameSpan.textContent = name;
+                
+                // Time-based greeting
+                const hour = new Date().getHours();
+                let greeting = 'Good ';
+                if (hour < 12) greeting += 'morning';
+                else if (hour < 18) greeting += 'afternoon';
+                else greeting += 'evening';
+                
+                document.getElementById('welcome-message').innerHTML = `${greeting}, <span id="user-name">${name}</span>! 👋`;
+                
+                if (welcomeSubtitle) {
+                    welcomeSubtitle.textContent = 'Here\'s what we picked for you today';
+                }
+            } else {
+                userNameSpan.textContent = 'Guest';
+                document.getElementById('welcome-message').innerHTML = 'Welcome, <span id="user-name">Guest</span>! 👋';
+                if (welcomeSubtitle) {
+                    welcomeSubtitle.textContent = 'Sign in for personalized recommendations';
+                }
+            }
+        }
+
+        // Load personalized "For You" section
+        async function loadForYouSection() {
+            const forYouGrid = document.getElementById('for-you-grid');
+            if (!forYouGrid) return;
+            
+            // Show skeleton loading
+            forYouGrid.innerHTML = Array(4).fill().map(() => `
+                <div class="skeleton-card">
+                    <div class="skeleton-thumbnail"></div>
+                    <div class="skeleton-title"></div>
+                    <div class="skeleton-creator"></div>
+                    <div class="skeleton-stats"></div>
+                </div>
+            `).join('');
+            
+            try {
+                let recommendations = [];
+                
+                if (window.currentUser && window.recommendations) {
+                    // Use existing recommendations from explore-screen
+                    recommendations = window.recommendations || [];
+                }
+                
+                if (recommendations.length === 0) {
+                    // Fallback to trending content
+                    const { data } = await supabaseAuth
+                        .from('Content')
+                        .select('*, user_profiles!user_id(*)')
+                        .eq('status', 'published')
+                        .order('views_count', { ascending: false })
+                        .limit(8);
+                    
+                    recommendations = data || [];
+                }
+                
+                if (recommendations.length === 0) {
+                    forYouGrid.innerHTML = `
+                        <div class="empty-state" style="grid-column: 1 / -1;">
+                            <div class="empty-icon"><i class="fas fa-magic"></i></div>
+                            <h3>No Recommendations Yet</h3>
+                            <p>Start watching to get personalized picks</p>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                // Use the renderContentCards function from explore-screen-features
+                if (typeof renderContentCards === 'function') {
+                    const fragment = renderContentCards(recommendations.slice(0, 8));
+                    forYouGrid.innerHTML = '';
+                    forYouGrid.appendChild(fragment);
+                }
+            } catch (error) {
+                console.error('Error loading for you section:', error);
+                forYouGrid.innerHTML = '<div class="empty-state">Failed to load recommendations</div>';
+            }
+        }
+
+        // Load content from followed creators
+        async function loadFollowingContent() {
+            const followingSection = document.getElementById('following-section');
+            const followingGrid = document.getElementById('following-grid');
+            
+            if (!followingSection || !followingGrid || !window.currentUser) {
+                followingSection.style.display = 'none';
+                return;
+            }
+            
+            try {
+                // Get creators the user follows
+                const { data: following, error } = await supabaseAuth
+                    .from('connectors')
+                    .select('connected_id')
+                    .eq('connector_id', window.currentUser.id)
+                    .eq('connection_type', 'creator');
+                
+                if (error || !following || following.length === 0) {
+                    followingSection.style.display = 'none';
+                    return;
+                }
+                
+                const creatorIds = following.map(f => f.connected_id);
+                
+                // Get content from those creators
+                const { data: content } = await supabaseAuth
+                    .from('Content')
+                    .select('*, user_profiles!user_id(*)')
+                    .eq('status', 'published')
+                    .in('user_id', creatorIds)
+                    .order('created_at', { ascending: false })
+                    .limit(8);
+                
+                if (content && content.length > 0) {
+                    followingSection.style.display = 'block';
+                    
+                    if (typeof renderContentCards === 'function') {
+                        const fragment = renderContentCards(content);
+                        followingGrid.innerHTML = '';
+                        followingGrid.appendChild(fragment);
+                    }
+                } else {
+                    followingSection.style.display = 'none';
+                }
+            } catch (error) {
+                console.error('Error loading following content:', error);
+                followingSection.style.display = 'none';
+            }
+        }
+
+        // Setup profile switcher (if not already in explore-screen-features)
+        function setupProfileSwitcher() {
+            const profileBtn = document.getElementById('current-profile-btn');
+            const dropdown = document.getElementById('profile-dropdown');
+            const manageProfilesBtn = document.getElementById('manage-profiles-btn');
+            
+            if (!profileBtn || !dropdown) return;
+            
+            profileBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                dropdown.classList.toggle('active');
+            });
+            
+            document.addEventListener('click', (e) => {
+                if (!profileBtn.contains(e.target) && !dropdown.contains(e.target)) {
+                    dropdown.classList.remove('active');
+                }
+            });
+            
+            if (manageProfilesBtn) {
+                manageProfilesBtn.addEventListener('click', () => {
+                    window.location.href = 'manage-profiles.html';
+                });
+            }
+        }
+
+        // Setup keyboard shortcuts help
+        function setupKeyboardHelp() {
+            document.addEventListener('keydown', (e) => {
+                // Show help on ?
+                if (e.key === '?' && !e.ctrlKey && !e.altKey && !e.metaKey) {
+                    e.preventDefault();
+                    const shortcutsModal = document.getElementById('shortcuts-modal');
+                    if (shortcutsModal) {
+                        shortcutsModal.style.display = 'flex';
+                    }
+                }
+            });
+            
+            const closeShortcuts = document.getElementById('close-shortcuts');
+            if (closeShortcuts) {
+                closeShortcuts.addEventListener('click', () => {
+                    document.getElementById('shortcuts-modal').style.display = 'none';
+                });
+            }
+            
+            const shortcutsModal = document.getElementById('shortcuts-modal');
+            if (shortcutsModal) {
+                shortcutsModal.addEventListener('click', (e) => {
+                    if (e.target === shortcutsModal) {
+                        shortcutsModal.style.display = 'none';
                     }
                 });
-            });
-            
-            // Register the current service worker
-            navigator.serviceWorker.register('sw.js')
-                .then(registration => {
-                    console.log('✅ Service Worker registered successfully:', registration);
-                    
-                    // Check for updates
-                    registration.addEventListener('updatefound', () => {
-                        const newWorker = registration.installing;
-                        console.log('🔄 New service worker installing...');
-                        
-                        newWorker.addEventListener('statechange', () => {
-                            console.log('📱 Service worker state:', newWorker.state);
-                        });
-                    });
-                })
-                .catch(error => {
-                    console.error('❌ Service Worker registration failed:', error);
-                });
-                
-            // Listen for controller change (new SW activated)
-            navigator.serviceWorker.addEventListener('controllerchange', () => {
-                console.log('🔄 Service worker controller changed - new version activated');
-            });
-        }
-        
-        // Add beforeunload event to track session end
-        window.addEventListener('beforeunload', () => {
-            // Track session end if analytics is available
-            if (window.analyticsSystem && typeof window.analyticsSystem.trackEvent === 'function') {
-                // Use sendBeacon for reliable last ping
-                navigator.sendBeacon('/api/track-session-end');
             }
-        });
+        }
+
+        // Override analytics to show personal stats
+        const originalLoadPlatformAnalytics = window.loadPlatformAnalytics;
+        window.loadPlatformAnalytics = async function() {
+            if (originalLoadPlatformAnalytics) {
+                await originalLoadPlatformAnalytics();
+            }
+            
+            // Override with personal stats
+            if (window.currentUser) {
+                // Get user's watch time
+                const { data: views } = await supabaseAuth
+                    .from('content_views')
+                    .select('*')
+                    .eq('profile_id', window.currentProfile?.id);
+                
+                const totalViews = views?.length || 0;
+                const totalWatchTime = views?.reduce((acc, v) => acc + (v.progress_seconds || 0), 0) || 0;
+                const hours = Math.floor(totalWatchTime / 3600);
+                
+                document.getElementById('personal-watch-time').textContent = hours + 'h';
+                document.getElementById('personal-views').textContent = totalViews;
+                document.getElementById('personal-sessions').textContent = Math.ceil(totalViews / 5) || 1;
+                
+                // Calculate return rate (simplified)
+                const uniqueDays = new Set(views?.map(v => new Date(v.viewed_at).toDateString())).size;
+                const returnRate = uniqueDays > 0 ? Math.min(100, Math.floor((uniqueDays / 7) * 100)) : 0;
+                document.getElementById('return-rate').textContent = returnRate + '%';
+            }
+        };
     </script>
     
-    <!-- Debug script to verify loading order -->
+    <!-- Service Worker Registration -->
     <script>
-        console.log('📋 Script loading order:');
-        console.log('- core.js: loaded');
-        console.log('- features.js: loaded');
-        console.log('- ui.js: loaded');
-        console.log('- utils.js: loaded');
-        console.log('- app.js: loaded');
-        console.log('✅ All scripts loaded in correct order');
-        
-        // Debug: Check if sidebar elements exist
-        document.addEventListener('DOMContentLoaded', () => {
-            console.log('🔍 Debug sidebar elements:');
-            console.log('- menu-toggle:', document.getElementById('menu-toggle'));
-            console.log('- sidebar-menu:', document.getElementById('sidebar-menu'));
-            console.log('- sidebar-overlay:', document.getElementById('sidebar-overlay'));
-            console.log('- setupSidebar function:', typeof window.setupSidebar);
-            
-            // Verify cacheManager is available
-            console.log('- cacheManager available:', typeof window.cacheManager !== 'undefined');
-            console.log('- cacheManager.get function:', typeof window.cacheManager?.get === 'function');
-            
-            // Verify all new sections exist
-            console.log('🔍 Debug new sections:');
-            console.log('- continue-watching-section:', document.getElementById('continue-watching-section'));
-            console.log('- community-favorites-grid:', document.getElementById('community-favorites-grid'));
-            console.log('- recommendations-section:', document.getElementById('recommendations-section'));
-            console.log('- creators-swiper:', document.getElementById('creators-swiper'));
-            console.log('- live-streams-grid:', document.getElementById('live-streams-grid'));
-            console.log('- trending-grid:', document.getElementById('trending-grid'));
-            console.log('- new-content-grid:', document.getElementById('new-content-grid'));
-            console.log('- events-list:', document.getElementById('events-list'));
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js').catch(error => {
+                    console.log('ServiceWorker registration failed:', error);
+                });
+            });
+        }
+
+        // Performance monitoring
+        window.addEventListener('load', () => {
+            if (window.performance) {
+                const perfData = performance.timing;
+                const pageLoadTime = perfData.loadEventEnd - perfData.navigationStart;
+                console.log(`📊 Home feed load time: ${pageLoadTime}ms`);
+            }
         });
+
+        // Debug logging
+        console.log('🔍 Debug: Home feed initialization');
+        console.log('- explore-screen.js loaded:', typeof window.supabaseAuth !== 'undefined');
+        console.log('- explore-screen-features.js loaded:', typeof window.CacheManager !== 'undefined');
+        
+        // Dispatch event when explore screen features are ready
+        document.addEventListener('exploreScreenFeaturesReady', () => {
+            console.log('🚀 Explore screen features ready, continuing home feed init');
+        });
+        
+        // Update scale display on scale change
+        document.addEventListener('scaleChanged', function(e) {
+            const scaleValue = document.getElementById('scale-value');
+            const sidebarScaleValue = document.getElementById('sidebar-scale-value');
+            const percentage = Math.round(e.detail.scale * 100) + '%';
+            
+            if (scaleValue) scaleValue.textContent = percentage;
+            if (sidebarScaleValue) sidebarScaleValue.textContent = percentage;
+        });
+
+        // Keyboard shortcuts for scaling (global)
+        document.addEventListener('keydown', function(e) {
+            // Ctrl+Plus for increase
+            if ((e.ctrlKey || e.metaKey) && (e.key === '+' || e.key === '=')) {
+                e.preventDefault();
+                if (window.uiScaleController) {
+                    window.uiScaleController.increase();
+                }
+            }
+            
+            // Ctrl+Minus for decrease
+            if ((e.ctrlKey || e.metaKey) && e.key === '-') {
+                e.preventDefault();
+                if (window.uiScaleController) {
+                    window.uiScaleController.decrease();
+                }
+            }
+            
+            // Ctrl+0 for reset
+            if ((e.ctrlKey || e.metaKey) && e.key === '0') {
+                e.preventDefault();
+                if (window.uiScaleController) {
+                    window.uiScaleController.reset();
+                }
+            }
+        });
+
+        // Initialize UI Scale Controller if not already initialized
+        if (!window.uiScaleController && typeof UIScaleController !== 'undefined') {
+            window.uiScaleController = new UIScaleController();
+            window.uiScaleController.init();
+        }
     </script>
 </body>
 </html>
