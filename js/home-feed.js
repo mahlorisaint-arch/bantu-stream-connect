@@ -938,8 +938,8 @@ class HomeFeedApp {
     
     createContentCardWithMetrics(item) {
         // Use the global function if available
-        if (typeof createContentCardWithMetrics === 'function') {
-            return createContentCardWithMetrics(item);
+        if (typeof window.createContentCardWithMetrics === 'function') {
+            return window.createContentCardWithMetrics(item);
         }
         
         // Fallback implementation
@@ -1286,6 +1286,22 @@ class HomeFeedApp {
                 const target = seeAllBtn.dataset.target;
                 this.handleSeeAllClick(target);
             }
+        });
+        
+        // ===== NEW: See-all buttons for explore features =====
+        document.getElementById('see-all-continue')?.addEventListener('click', (e) => {
+            e.preventDefault();
+            window.location.href = 'continue-watching.html';
+        });
+        
+        document.getElementById('see-all-community')?.addEventListener('click', (e) => {
+            e.preventDefault();
+            window.location.href = 'community-favorites.html';
+        });
+        
+        document.getElementById('see-all-live')?.addEventListener('click', (e) => {
+            e.preventDefault();
+            window.location.href = 'live-streams.html';
         });
         
         // Performance metrics toggle
