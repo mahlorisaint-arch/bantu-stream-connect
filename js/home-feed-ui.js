@@ -283,6 +283,9 @@ function renderContentCards(contents, showMetrics = true) {
         
         const metrics = window.contentMetrics?.get(content.id) || { views: 0, likes: 0, shares: 0 };
         const favorites = content.favorites_count || 0;
+        const duration = content.duration || 0;
+        const durationFormatted = window.formatDuration ? window.formatDuration(duration) : (duration > 0 ? `${Math.floor(duration / 60)}:${('0' + (duration % 60)).slice(-2)}` : '');
+        const connectorCount = window.connectorCountsByContent?.get(content.id) || 0;
         
         let avatarHtml = '';
         if (creatorProfile?.avatar_url) {
@@ -301,6 +304,7 @@ function renderContentCards(contents, showMetrics = true) {
                 </div>
                 <div class="thumbnail-overlay"></div>
                 <div class="play-overlay"><div class="play-icon"><i class="fas fa-play"></i></div></div>
+                ${duration > 0 ? `<div class="duration-badge">${durationFormatted}</div>` : ''}
             </div>
             <div class="card-content">
                 <h3 class="card-title" title="${escapeHtml(content.title)}">${truncateText(escapeHtml(content.title), 50)}</h3>
@@ -316,6 +320,9 @@ function renderContentCards(contents, showMetrics = true) {
                     <span><i class="fas fa-language"></i> ${window.languageMap[content.language] || 'English'}</span>
                 </div>
                 ` : ''}
+                <div class="connector-info">
+                    <i class="fas fa-user-friends"></i> ${formatNumber(connectorCount)} Connectors
+                </div>
             </div>
         `;
         
