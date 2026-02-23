@@ -6,11 +6,11 @@
     <title>Home - Bantu Stream Connect</title>
     
     <!-- PERFORMANCE: Preload Critical Resources -->
-    <link rel="preload" href="css/explore-screen.css" as="style">
-    <link rel="preload" href="css/explore-screen-features.css" as="style">
+    <link rel="preload" href="css/home-feed.css" as="style">
+    <link rel="preload" href="css/home-feed-ui.css" as="style">
     <link rel="preload" href="css/home-feed-features.css" as="style">
-    <link rel="preload" href="js/explore-screen.js" as="script">
-    <link rel="preload" href="js/explore-screen-features.js" as="script">
+    <link rel="preload" href="js/home-feed.js" as="script">
+    <link rel="preload" href="js/home-feed-ui.js" as="script">
     <link rel="preload" href="js/home-feed-features.js" as="script">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -37,9 +37,9 @@
     <noscript><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css"></noscript>
     <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js" defer></script>
     
-    <!-- CSS Files -->
-    <link rel="stylesheet" href="css/explore-screen.css">
-    <link rel="stylesheet" href="css/explore-screen-features.css">
+    <!-- CSS Files - RENAMED -->
+    <link rel="stylesheet" href="css/home-feed.css">
+    <link rel="stylesheet" href="css/home-feed-ui.css">
     <link rel="stylesheet" href="css/home-feed-features.css">
     
     <!-- Inline critical CSS for skeleton loading -->
@@ -918,278 +918,12 @@
         </div>
     </div>
 
-    <!-- JavaScript Files - Defer non-critical scripts -->
+    <!-- JavaScript Files - RENAMED -->
     <script src="env.js" defer></script>
     <script src="js/rate-limiter.js" defer></script>
-    <script src="js/explore-screen.js" defer></script>
-    <script src="js/explore-screen-features.js" defer></script>
+    <script src="js/home-feed.js" defer></script>
+    <script src="js/home-feed-ui.js" defer></script>
     <script src="js/home-feed-features.js" defer></script>
-    
-    <!-- Home Feed Specific JavaScript -->
-    <script>
-        // Home Feed Initialization
-        document.addEventListener('DOMContentLoaded', async () => {
-            console.log('🏠 Home Feed Initializing with Personalized Features');
-            
-            // Override the explore-screen loading text
-            const loadingText = document.getElementById('loading-text');
-            if (loadingText) loadingText.textContent = 'Loading Your Personalized Feed...';
-            
-            // Wait for explore-screen-features to initialize first
-            await new Promise(resolve => {
-                if (window.initializeExploreScreen) {
-                    resolve();
-                } else {
-                    document.addEventListener('exploreScreenReady', resolve);
-                    setTimeout(resolve, 2000); // Fallback timeout
-                }
-            });
-            
-            console.log('✅ Explore screen features loaded, initializing home feed specifics');
-            
-            // Personalize welcome message
-            updateWelcomeMessage();
-            
-            // Load home feed specific sections
-            await loadForYouSection();
-            await loadFollowingContent();
-            
-            // Setup profile switcher if not already set up
-            setupProfileSwitcher();
-            
-            // Setup keyboard shortcuts help
-            setupKeyboardHelp();
-            
-            console.log('🏁 Home Feed Ready');
-        });
-
-        // Update welcome message based on user
-        function updateWelcomeMessage() {
-            const userNameSpan = document.getElementById('user-name');
-            const welcomeSubtitle = document.getElementById('welcome-subtitle');
-            
-            if (window.currentUser) {
-                const name = window.currentUser.user_metadata?.full_name || 
-                           window.currentUser.email?.split('@')[0] || 
-                           'User';
-                userNameSpan.textContent = name;
-                
-                // Time-based greeting
-                const hour = new Date().getHours();
-                let greeting = 'Good ';
-                if (hour < 12) greeting += 'morning';
-                else if (hour < 18) greeting += 'afternoon';
-                else greeting += 'evening';
-                
-                document.getElementById('welcome-message').innerHTML = `${greeting}, <span id="user-name">${name}</span>! 👋`;
-                
-                if (welcomeSubtitle) {
-                    welcomeSubtitle.textContent = 'Here\'s what we picked for you today';
-                }
-            } else {
-                userNameSpan.textContent = 'Guest';
-                document.getElementById('welcome-message').innerHTML = 'Welcome, <span id="user-name">Guest</span>! 👋';
-                if (welcomeSubtitle) {
-                    welcomeSubtitle.textContent = 'Sign in for personalized recommendations';
-                }
-            }
-        }
-
-        // Load personalized "For You" section
-        async function loadForYouSection() {
-            const forYouGrid = document.getElementById('for-you-grid');
-            if (!forYouGrid) return;
-            
-            // Show skeleton loading
-            forYouGrid.innerHTML = Array(4).fill().map(() => `
-                <div class="skeleton-card">
-                    <div class="skeleton-thumbnail"></div>
-                    <div class="skeleton-title"></div>
-                    <div class="skeleton-creator"></div>
-                    <div class="skeleton-stats"></div>
-                </div>
-            `).join('');
-            
-            try {
-                let recommendations = [];
-                
-                if (window.currentUser && window.recommendations) {
-                    // Use existing recommendations from explore-screen
-                    recommendations = window.recommendations || [];
-                }
-                
-                if (recommendations.length === 0) {
-                    // Fallback to trending content
-                    const { data } = await supabaseAuth
-                        .from('Content')
-                        .select('*, user_profiles!user_id(*)')
-                        .eq('status', 'published')
-                        .order('views_count', { ascending: false })
-                        .limit(8);
-                    
-                    recommendations = data || [];
-                }
-                
-                if (recommendations.length === 0) {
-                    forYouGrid.innerHTML = `
-                        <div class="empty-state" style="grid-column: 1 / -1;">
-                            <div class="empty-icon"><i class="fas fa-magic"></i></div>
-                            <h3>No Recommendations Yet</h3>
-                            <p>Start watching to get personalized picks</p>
-                        </div>
-                    `;
-                    return;
-                }
-                
-                // Use the renderContentCards function from explore-screen-features
-                if (typeof renderContentCards === 'function') {
-                    const fragment = renderContentCards(recommendations.slice(0, 8));
-                    forYouGrid.innerHTML = '';
-                    forYouGrid.appendChild(fragment);
-                }
-            } catch (error) {
-                console.error('Error loading for you section:', error);
-                forYouGrid.innerHTML = '<div class="empty-state">Failed to load recommendations</div>';
-            }
-        }
-
-        // Load content from followed creators
-        async function loadFollowingContent() {
-            const followingSection = document.getElementById('following-section');
-            const followingGrid = document.getElementById('following-grid');
-            
-            if (!followingSection || !followingGrid || !window.currentUser) {
-                followingSection.style.display = 'none';
-                return;
-            }
-            
-            try {
-                // Get creators the user follows
-                const { data: following, error } = await supabaseAuth
-                    .from('connectors')
-                    .select('connected_id')
-                    .eq('connector_id', window.currentUser.id)
-                    .eq('connection_type', 'creator');
-                
-                if (error || !following || following.length === 0) {
-                    followingSection.style.display = 'none';
-                    return;
-                }
-                
-                const creatorIds = following.map(f => f.connected_id);
-                
-                // Get content from those creators
-                const { data: content } = await supabaseAuth
-                    .from('Content')
-                    .select('*, user_profiles!user_id(*)')
-                    .eq('status', 'published')
-                    .in('user_id', creatorIds)
-                    .order('created_at', { ascending: false })
-                    .limit(8);
-                
-                if (content && content.length > 0) {
-                    followingSection.style.display = 'block';
-                    
-                    if (typeof renderContentCards === 'function') {
-                        const fragment = renderContentCards(content);
-                        followingGrid.innerHTML = '';
-                        followingGrid.appendChild(fragment);
-                    }
-                } else {
-                    followingSection.style.display = 'none';
-                }
-            } catch (error) {
-                console.error('Error loading following content:', error);
-                followingSection.style.display = 'none';
-            }
-        }
-
-        // Setup profile switcher (if not already in explore-screen-features)
-        function setupProfileSwitcher() {
-            const profileBtn = document.getElementById('current-profile-btn');
-            const dropdown = document.getElementById('profile-dropdown');
-            const manageProfilesBtn = document.getElementById('manage-profiles-btn');
-            
-            if (!profileBtn || !dropdown) return;
-            
-            profileBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                dropdown.classList.toggle('active');
-            });
-            
-            document.addEventListener('click', (e) => {
-                if (!profileBtn.contains(e.target) && !dropdown.contains(e.target)) {
-                    dropdown.classList.remove('active');
-                }
-            });
-            
-            if (manageProfilesBtn) {
-                manageProfilesBtn.addEventListener('click', () => {
-                    window.location.href = 'manage-profiles.html';
-                });
-            }
-        }
-
-        // Setup keyboard shortcuts help
-        function setupKeyboardHelp() {
-            document.addEventListener('keydown', (e) => {
-                // Show help on ?
-                if (e.key === '?' && !e.ctrlKey && !e.altKey && !e.metaKey) {
-                    e.preventDefault();
-                    const shortcutsModal = document.getElementById('shortcuts-modal');
-                    if (shortcutsModal) {
-                        shortcutsModal.style.display = 'flex';
-                    }
-                }
-            });
-            
-            const closeShortcuts = document.getElementById('close-shortcuts');
-            if (closeShortcuts) {
-                closeShortcuts.addEventListener('click', () => {
-                    document.getElementById('shortcuts-modal').style.display = 'none';
-                });
-            }
-            
-            const shortcutsModal = document.getElementById('shortcuts-modal');
-            if (shortcutsModal) {
-                shortcutsModal.addEventListener('click', (e) => {
-                    if (e.target === shortcutsModal) {
-                        shortcutsModal.style.display = 'none';
-                    }
-                });
-            }
-        }
-
-        // Override analytics to show personal stats
-        const originalLoadPlatformAnalytics = window.loadPlatformAnalytics;
-        window.loadPlatformAnalytics = async function() {
-            if (originalLoadPlatformAnalytics) {
-                await originalLoadPlatformAnalytics();
-            }
-            
-            // Override with personal stats
-            if (window.currentUser) {
-                // Get user's watch time
-                const { data: views } = await supabaseAuth
-                    .from('content_views')
-                    .select('*')
-                    .eq('profile_id', window.currentProfile?.id);
-                
-                const totalViews = views?.length || 0;
-                const totalWatchTime = views?.reduce((acc, v) => acc + (v.progress_seconds || 0), 0) || 0;
-                const hours = Math.floor(totalWatchTime / 3600);
-                
-                document.getElementById('personal-watch-time').textContent = hours + 'h';
-                document.getElementById('personal-views').textContent = totalViews;
-                document.getElementById('personal-sessions').textContent = Math.ceil(totalViews / 5) || 1;
-                
-                // Calculate return rate (simplified)
-                const uniqueDays = new Set(views?.map(v => new Date(v.viewed_at).toDateString())).size;
-                const returnRate = uniqueDays > 0 ? Math.min(100, Math.floor((uniqueDays / 7) * 100)) : 0;
-                document.getElementById('return-rate').textContent = returnRate + '%';
-            }
-        };
-    </script>
     
     <!-- Service Worker Registration -->
     <script>
@@ -1212,12 +946,12 @@
 
         // Debug logging
         console.log('🔍 Debug: Home feed initialization');
-        console.log('- explore-screen.js loaded:', typeof window.supabaseAuth !== 'undefined');
-        console.log('- explore-screen-features.js loaded:', typeof window.CacheManager !== 'undefined');
+        console.log('- home-feed.js loaded:', typeof window.supabaseAuth !== 'undefined');
+        console.log('- home-feed-ui.js loaded:', typeof window.UIScaleController !== 'undefined');
         
-        // Dispatch event when explore screen features are ready
-        document.addEventListener('exploreScreenFeaturesReady', () => {
-            console.log('🚀 Explore screen features ready, continuing home feed init');
+        // Dispatch event when home feed UI is ready
+        document.addEventListener('homeFeedUIReady', () => {
+            console.log('🚀 Home feed UI ready, continuing initialization');
         });
         
         // Update scale display on scale change
