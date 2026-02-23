@@ -77,14 +77,22 @@ class ContentSupabaseClient {
         let queryUrl = `${this.url}/rest/v1/${table}?select=${select}`;
 
         Object.keys(where).forEach(key => {
-            queryUrl += `&${key}=eq.${encodeURIComponent(where[key])}`;
+            if (where[key] !== undefined && where[key] !== null) {
+                queryUrl += `&${key}=eq.${encodeURIComponent(where[key])}`;
+            }
         });
 
         if (orderBy) {
             queryUrl += `&order=${orderBy}.${order}`;
         }
 
-        queryUrl += `&limit=${limit}&offset=${offset}`;
+        if (limit) {
+            queryUrl += `&limit=${limit}`;
+        }
+
+        if (offset) {
+            queryUrl += `&offset=${offset}`;
+        }
 
         try {
             const response = await window.rateLimiter.execute('content', async () => {
@@ -215,3 +223,6 @@ const contentSupabase = new ContentSupabaseClient(SUPABASE_URL, SUPABASE_ANON_KE
 window.contentSupabase = contentSupabase;
 
 console.log('✅ Content Supabase client initialized');
+
+// Make supabaseAuth available globally
+window.supabaseAuth = supabaseAuth;
