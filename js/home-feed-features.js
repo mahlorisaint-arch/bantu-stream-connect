@@ -52,6 +52,7 @@ async function initializeHomeFeed() {
         
         // Load all content sections in parallel
         await Promise.all([
+            loadCinematicHero(), // NEW: Load hero section first
             loadContinueWatching(),
             loadForYouSection(),
             loadFollowingContent(),
@@ -80,7 +81,7 @@ async function initializeHomeFeed() {
         updateWelcomeMessage();
         updateHeaderProfile();
         renderCategoryTabs();
-        setupNavigationButtons(); // New function for bottom nav
+        setupNavigationButtons();
         
         // Hide loading screen
         setTimeout(() => {
@@ -109,13 +110,184 @@ async function initializeHomeFeed() {
 }
 
 // ============================================
+// NEW: CINEMATIC CREATOR SPOTLIGHT (HERO SECTION)
+// ============================================
+async function loadCinematicHero() {
+    try {
+        // Get trending content with highest engagement velocity
+        const { data: trendingData, error } = await supabaseAuth
+            .from('Content')
+            .select('*, user_profiles!user_id(*)')
+            .eq('status', 'published')
+            .order('views_count', { ascending: false })
+            .order('favorites_count', { ascending: false })
+            .limit(5);
+        
+        if (error) throw error;
+        
+        const featuredContent = trendingData?.[0] || getMockHeroContent();
+        
+        if (!featuredContent) return;
+        
+        // Update hero video
+        const heroVideo = document.getElementById('hero-background-video');
+        const videoSource = heroVideo?.querySelector('source');
+        
+        if (heroVideo && videoSource && featuredContent.file_url) {
+            videoSource.src = contentSupabase.fixMediaUrl(featuredContent.file_url);
+            heroVideo.load();
+            heroVideo.play().catch(() => {
+                // Autoplay prevented, show poster
+                console.log('Video autoplay prevented');
+            });
+        }
+        
+        // Update creator info
+        const creator = featuredContent.user_profiles;
+        if (creator) {
+            document.getElementById('hero-creator-name').textContent = creator.full_name || creator.username || 'Featured Creator';
+            
+            const avatarImg = document.getElementById('hero-creator-avatar-img');
+            if (creator.avatar_url) {
+                avatarImg.src = contentSupabase.fixMediaUrl(creator.avatar_url);
+                avatarImg.style.display = 'block';
+            } else {
+                avatarImg.style.display = 'none';
+                // Show initials
+                const initials = getInitials(creator.full_name || creator.username);
+                document.getElementById('hero-creator-avatar').innerHTML += `<span class="hero-creator-initials">${initials}</span>`;
+            }
+        }
+        
+        // Update title and description
+        document.getElementById('hero-title').textContent = featuredContent.title || 'DISCOVER & CONNECT';
+        document.getElementById('hero-subtitle').textContent = featuredContent.description || 'Explore amazing content, connect with creators, and join live streams from across Africa';
+        
+        // Update metrics
+        document.getElementById('hero-views').textContent = formatNumber(featuredContent.views_count || 12500);
+        document.getElementById('hero-favorites').textContent = formatNumber(featuredContent.favorites_count || 2300);
+        
+        // Get connector count for this creator
+        if (creator) {
+            const { count } = await supabaseAuth
+                .from('connectors')
+                .select('*', { count: 'exact', head: true })
+                .eq('connected_id', creator.id)
+                .eq('connection_type', 'creator');
+            
+            document.getElementById('hero-connectors').textContent = formatNumber(count || 1200);
+        }
+        
+        document.getElementById('hero-shares').textContent = formatNumber(featuredContent.shares_count || 856);
+        
+        // Check if creator is verified (based on content quality/follower count)
+        const { count: followerCount } = await supabaseAuth
+            .from('connectors')
+            .select('*', { count: 'exact', head: true })
+            .eq('connected_id', creator?.id)
+            .eq('connection_type', 'creator');
+        
+        if (followerCount > 1000) {
+            document.getElementById('hero-verified-badge').style.display = 'inline-flex';
+        }
+        
+        // Store content ID for watch button
+        const heroWatchBtn = document.getElementById('hero-watch-btn');
+        if (heroWatchBtn) {
+            heroWatchBtn.dataset.contentId = featuredContent.id;
+            heroWatchBtn.dataset.creatorId = creator?.id;
+        }
+        
+        // Setup hero buttons
+        setupHeroButtons();
+        
+    } catch (error) {
+        console.error('Error loading cinematic hero:', error);
+        // Load mock data as fallback
+        loadMockHeroContent();
+    }
+}
+
+function getMockHeroContent() {
+    return {
+        id: 1,
+        title: 'African Music Festival 2025',
+        description: 'Experience the rhythm of Africa with live performances from top artists across the continent.',
+        views_count: 15420,
+        favorites_count: 3450,
+        shares_count: 1200,
+        file_url: 'https://assets.mixkit.co/videos/preview/mixkit-young-woman-playing-the-saxophone-4864-large.mp4',
+        user_profiles: {
+            id: 'creator-1',
+            full_name: 'AfroBeats Official',
+            username: 'afrobeats',
+            avatar_url: null
+        }
+    };
+}
+
+function loadMockHeroContent() {
+    const mock = getMockHeroContent();
+    
+    document.getElementById('hero-creator-name').textContent = mock.user_profiles.full_name;
+    document.getElementById('hero-title').textContent = mock.title;
+    document.getElementById('hero-subtitle').textContent = mock.description;
+    document.getElementById('hero-views').textContent = formatNumber(mock.views_count);
+    document.getElementById('hero-favorites').textContent = formatNumber(mock.favorites_count);
+    document.getElementById('hero-connectors').textContent = '1.2K';
+    document.getElementById('hero-shares').textContent = formatNumber(mock.shares_count);
+    
+    const heroVideo = document.getElementById('hero-background-video');
+    const videoSource = heroVideo?.querySelector('source');
+    if (heroVideo && videoSource) {
+        videoSource.src = mock.file_url;
+        heroVideo.load();
+    }
+}
+
+function setupHeroButtons() {
+    const exploreBtn = document.getElementById('hero-explore-btn');
+    const watchBtn = document.getElementById('hero-watch-btn');
+    const audioControl = document.getElementById('hero-audio-control');
+    const heroVideo = document.getElementById('hero-background-video');
+    
+    if (exploreBtn) {
+        exploreBtn.addEventListener('click', () => {
+            window.location.href = 'https://bantustreamconnect.com/content-library';
+        });
+    }
+    
+    if (watchBtn && heroVideo) {
+        watchBtn.addEventListener('click', () => {
+            const contentId = watchBtn.dataset.contentId;
+            if (contentId) {
+                window.location.href = `content-detail.html?id=${contentId}`;
+            } else {
+                window.location.href = 'https://bantustreamconnect.com/trending_screen';
+            }
+        });
+    }
+    
+    if (audioControl && heroVideo) {
+        audioControl.addEventListener('click', () => {
+            heroVideo.muted = !heroVideo.muted;
+            audioControl.innerHTML = heroVideo.muted ? 
+                '<i class="fas fa-volume-mute"></i>' : 
+                '<i class="fas fa-volume-up"></i>';
+            audioControl.title = heroVideo.muted ? 'Unmute' : 'Mute';
+        });
+    }
+}
+
+// ============================================
 // UPDATE APP ICON
 // ============================================
 function updateAppIcon() {
     // Update logo icon in header
-    const logoIcon = document.querySelector('.logo-icon i');
+    const logoIcon = document.querySelector('.logo-icon');
     if (logoIcon) {
-        logoIcon.style.display = 'none';
+        // Clear existing content
+        logoIcon.innerHTML = '';
         
         // Add img element
         const img = document.createElement('img');
@@ -125,17 +297,13 @@ function updateAppIcon() {
         img.style.height = '100%';
         img.style.objectFit = 'contain';
         
-        const logoIconDiv = document.querySelector('.logo-icon');
-        if (logoIconDiv) {
-            logoIconDiv.innerHTML = '';
-            logoIconDiv.appendChild(img);
-        }
+        logoIcon.appendChild(img);
     }
     
     // Update sidebar logo icon
-    const sidebarLogoIcon = document.querySelector('.sidebar-logo .logo-icon i');
+    const sidebarLogoIcon = document.querySelector('.sidebar-logo .logo-icon');
     if (sidebarLogoIcon) {
-        sidebarLogoIcon.style.display = 'none';
+        sidebarLogoIcon.innerHTML = '';
         
         const img = document.createElement('img');
         img.src = 'assets/icon/bantu_stream_connect_icon.png';
@@ -144,11 +312,7 @@ function updateAppIcon() {
         img.style.height = '100%';
         img.style.objectFit = 'contain';
         
-        const sidebarLogoIconDiv = document.querySelector('.sidebar-logo .logo-icon');
-        if (sidebarLogoIconDiv) {
-            sidebarLogoIconDiv.innerHTML = '';
-            sidebarLogoIconDiv.appendChild(img);
-        }
+        sidebarLogoIcon.appendChild(img);
     }
 }
 
@@ -206,7 +370,6 @@ async function loadUserProfiles() {
     if (!window.currentUser) return;
     
     try {
-        // Fix: Use correct table name 'profiles' or handle error gracefully
         const { data, error } = await supabaseAuth
             .from('user_profiles')
             .select('*')
@@ -214,7 +377,6 @@ async function loadUserProfiles() {
         
         if (error) {
             console.warn('Error loading profiles, using default:', error);
-            // Create default profile
             window.userProfiles = [{
                 id: window.currentUser.id,
                 name: window.currentUser.user_metadata?.full_name || 'Default',
@@ -256,7 +418,6 @@ function updateWelcomeMessage() {
                     'User';
         userNameSpan.textContent = name;
         
-        // Time-based greeting
         const hour = new Date().getHours();
         let greeting = 'Good ';
         if (hour < 12) greeting += 'morning';
@@ -278,7 +439,86 @@ function updateWelcomeMessage() {
 }
 
 // ============================================
-// CONTINUE WATCHING
+// LOAD CONNECTOR COUNTS FOR CONTENT (FIXED)
+// ============================================
+async function loadConnectorCountsForContent(contentIds) {
+    if (!contentIds || contentIds.length === 0) return;
+    
+    try {
+        // Get creator IDs for each content
+        const { data: contentData } = await supabaseAuth
+            .from('Content')
+            .select('id, user_id')
+            .in('id', contentIds);
+        
+        const creatorIds = [...new Set(contentData?.map(c => c.user_id).filter(Boolean))];
+        
+        if (creatorIds.length === 0) return;
+        
+        // Get connector counts for each creator
+        const connectorPromises = creatorIds.map(userId => 
+            supabaseAuth
+                .from('connectors')
+                .select('*', { count: 'exact', head: true })
+                .eq('connected_id', userId)
+                .eq('connection_type', 'creator')
+        );
+        
+        const connectorResults = await Promise.all(connectorPromises);
+        const creatorCountMap = new Map();
+        
+        creatorIds.forEach((id, index) => {
+            creatorCountMap.set(id, connectorResults[index].count || 0);
+        });
+        
+        // Also store in global map for creator counts
+        creatorCountMap.forEach((count, id) => {
+            window.connectorCounts.set(id, count);
+        });
+        
+        // Map to content IDs
+        contentData?.forEach(item => {
+            window.connectorCountsByContent.set(item.id, creatorCountMap.get(item.user_id) || 0);
+        });
+        
+        // Update UI for any visible cards
+        updateConnectorCountsOnCards();
+        
+    } catch (error) {
+        console.error('Error loading connector counts:', error);
+    }
+}
+
+function updateConnectorCountsOnCards() {
+    document.querySelectorAll('.content-card').forEach(card => {
+        const contentId = card.dataset.contentId;
+        if (!contentId) return;
+        
+        const count = window.connectorCountsByContent.get(contentId) || 0;
+        
+        // Find or create connector info element
+        let connectorInfo = card.querySelector('.connector-info');
+        if (connectorInfo) {
+            connectorInfo.innerHTML = `<i class="fas fa-user-friends"></i> ${formatNumber(count)} Connectors`;
+        }
+    });
+    
+    // Update shorts cards too
+    document.querySelectorAll('.short-card').forEach(card => {
+        const contentId = card.dataset.contentId;
+        if (!contentId) return;
+        
+        const count = window.connectorCountsByContent.get(contentId) || 0;
+        
+        let connectorInfo = card.querySelector('.connector-info-small');
+        if (connectorInfo) {
+            connectorInfo.innerHTML = `<i class="fas fa-user-friends"></i> ${formatNumber(count)}`;
+        }
+    });
+}
+
+// ============================================
+// CONTINUE WATCHING (FIXED with connector counts)
 // ============================================
 async function loadContinueWatching() {
     const section = document.getElementById('continue-watching-section');
@@ -292,7 +532,6 @@ async function loadContinueWatching() {
     }
     
     try {
-        // Fix: Use correct field name based on schema
         const { data, error } = await supabaseAuth
             .from('content_views')
             .select(`
@@ -315,7 +554,7 @@ async function loadContinueWatching() {
         if (window.continueWatching.length > 0) {
             section.style.display = 'block';
             
-            // Load metrics for these content items
+            // Load metrics and connector counts for these content items
             const contentIds = window.continueWatching.map(item => item.content_id);
             await loadContentMetrics(contentIds);
             await loadConnectorCountsForContent(contentIds);
@@ -332,7 +571,7 @@ async function loadContinueWatching() {
                 const creatorProfile = content.user_profiles;
                 const creatorName = creatorProfile?.full_name || creatorProfile?.username || 'Creator';
                 const initials = getInitials(creatorName);
-                const connectorCount = window.connectorCounts.get(content.user_id) || 0;
+                const connectorCount = window.connectorCountsByContent.get(content.id) || 0;
                 const duration = content.duration || 0;
                 const durationFormatted = formatDuration(duration);
                 
@@ -389,250 +628,7 @@ async function loadContinueWatching() {
 }
 
 // ============================================
-// FOR YOU SECTION (Personalized Recommendations) - FIXED
-// ============================================
-async function loadForYouSection() {
-    const forYouGrid = document.getElementById('for-you-grid');
-    if (!forYouGrid) return;
-    
-    // Show skeleton loading
-    forYouGrid.innerHTML = Array(4).fill().map(() => `
-        <div class="skeleton-card">
-            <div class="skeleton-thumbnail"></div>
-            <div class="skeleton-title"></div>
-            <div class="skeleton-creator"></div>
-            <div class="skeleton-stats"></div>
-        </div>
-    `).join('');
-    
-    try {
-        let recommendations = [];
-        
-        if (window.currentUser) {
-            // Get user's favorited content (likes)
-            const { data: likedContent, error: likesError } = await supabaseAuth
-                .from('content_likes')
-                .select('content_id')
-                .eq('user_id', window.currentUser.id);
-            
-            if (likesError) throw likesError;
-            
-            // Get content from creators the user is connected to
-            const { data: connectedCreators, error: connectorsError } = await supabaseAuth
-                .from('connectors')
-                .select('connected_id')
-                .eq('connector_id', window.currentUser.id)
-                .eq('connection_type', 'creator');
-            
-            if (connectorsError) throw connectorsError;
-            
-            const likedContentIds = (likedContent || []).map(l => l.content_id);
-            const connectedCreatorIds = (connectedCreators || []).map(c => c.connected_id);
-            
-            // Build recommendation query based on user's interests
-            let query = supabaseAuth
-                .from('Content')
-                .select('*, user_profiles!user_id(*)')
-                .eq('status', 'published')
-                .order('views_count', { ascending: false })
-                .limit(12);
-            
-            // If user has liked content, prioritize similar genres
-            if (likedContentIds.length > 0) {
-                // Get genres from liked content
-                const { data: likedGenres } = await supabaseAuth
-                    .from('Content')
-                    .select('genre')
-                    .in('id', likedContentIds.slice(0, 10));
-                
-                const genres = [...new Set((likedGenres || []).map(g => g.genre).filter(Boolean))];
-                
-                if (genres.length > 0) {
-                    query = query.in('genre', genres);
-                }
-            }
-            
-            // If user has connected creators, prioritize their content
-            if (connectedCreatorIds.length > 0) {
-                const { data: creatorContent, error: creatorError } = await supabaseAuth
-                    .from('Content')
-                    .select('*, user_profiles!user_id(*)')
-                    .eq('status', 'published')
-                    .in('user_id', connectedCreatorIds)
-                    .order('created_at', { ascending: false })
-                    .limit(8);
-                
-                if (!creatorError && creatorContent) {
-                    recommendations = [...creatorContent];
-                }
-            }
-            
-            // Get trending content as fallback/additional
-            const { data: trendingData } = await supabaseAuth
-                .from('Content')
-                .select('*, user_profiles!user_id(*)')
-                .eq('status', 'published')
-                .order('views_count', { ascending: false })
-                .limit(12 - recommendations.length);
-            
-            // Merge and deduplicate
-            const existingIds = new Set(recommendations.map(r => r.id));
-            const newTrending = (trendingData || []).filter(t => !existingIds.has(t.id));
-            recommendations = [...recommendations, ...newTrending].slice(0, 8);
-        }
-        
-        if (recommendations.length === 0) {
-            // Fallback to trending content
-            const { data } = await supabaseAuth
-                .from('Content')
-                .select('*, user_profiles!user_id(*)')
-                .eq('status', 'published')
-                .order('views_count', { ascending: false })
-                .limit(8);
-            
-            recommendations = data || [];
-        }
-        
-        if (recommendations.length === 0) {
-            forYouGrid.innerHTML = `
-                <div class="empty-state" style="grid-column: 1 / -1;">
-                    <div class="empty-icon"><i class="fas fa-magic"></i></div>
-                    <h3>No Recommendations Yet</h3>
-                    <p>Start watching and liking content to get personalized picks</p>
-                </div>
-            `;
-            return;
-        }
-        
-        // Load metrics for recommendations
-        const contentIds = recommendations.map(r => r.id);
-        await loadContentMetrics(contentIds);
-        await loadConnectorCountsForContent(contentIds);
-        
-        // Update renderContentCards to show connectors instead of favorites
-        const fragment = renderContentCards(recommendations.slice(0, 8), true);
-        forYouGrid.innerHTML = '';
-        forYouGrid.appendChild(fragment);
-    } catch (error) {
-        console.error('Error loading for you section:', error);
-        forYouGrid.innerHTML = '<div class="empty-state">Failed to load recommendations</div>';
-    }
-}
-
-// ============================================
-// FOLLOWING CONTENT - Renamed to "From Creators You Connected With"
-// ============================================
-async function loadFollowingContent() {
-    const followingSection = document.getElementById('following-section');
-    const followingGrid = document.getElementById('following-grid');
-    
-    if (!followingSection || !followingGrid) return;
-    
-    if (!window.currentUser) {
-        followingSection.style.display = 'none';
-        return;
-    }
-    
-    try {
-        // Get creators the user is connected with (using connectors table)
-        const { data: following, error } = await supabaseAuth
-            .from('connectors')
-            .select('connected_id')
-            .eq('connector_id', window.currentUser.id)
-            .eq('connection_type', 'creator');
-        
-        if (error || !following || following.length === 0) {
-            followingSection.style.display = 'none';
-            return;
-        }
-        
-        const creatorIds = following.map(f => f.connected_id);
-        
-        // Get content from those creators
-        const { data: content, error: contentError } = await supabaseAuth
-            .from('Content')
-            .select('*, user_profiles!user_id(*)')
-            .eq('status', 'published')
-            .in('user_id', creatorIds)
-            .order('created_at', { ascending: false })
-            .limit(8);
-        
-        if (contentError) throw contentError;
-        
-        if (content && content.length > 0) {
-            followingSection.style.display = 'block';
-            
-            // Update section title
-            const sectionTitle = followingSection.querySelector('.section-title');
-            if (sectionTitle) {
-                sectionTitle.innerHTML = `
-                    <i class="fas fa-user-friends" style="color: var(--warm-gold);"></i>
-                    FROM CREATORS YOU CONNECTED WITH
-                `;
-            }
-            
-            // Load metrics
-            const contentIds = content.map(c => c.id);
-            await loadContentMetrics(contentIds);
-            await loadConnectorCountsForContent(contentIds);
-            
-            const fragment = renderContentCards(content, true);
-            followingGrid.innerHTML = '';
-            followingGrid.appendChild(fragment);
-        } else {
-            followingSection.style.display = 'none';
-        }
-    } catch (error) {
-        console.error('Error loading following content:', error);
-        followingSection.style.display = 'none';
-    }
-}
-
-// ============================================
-// LOAD CONNECTOR COUNTS FOR CONTENT
-// ============================================
-async function loadConnectorCountsForContent(contentIds) {
-    if (!contentIds || contentIds.length === 0) return;
-    
-    try {
-        // Get creator IDs for each content
-        const { data: contentData } = await supabaseAuth
-            .from('Content')
-            .select('id, user_id')
-            .in('id', contentIds);
-        
-        const creatorIds = [...new Set(contentData?.map(c => c.user_id).filter(Boolean))];
-        
-        if (creatorIds.length === 0) return;
-        
-        // Get connector counts for each creator
-        const connectorPromises = creatorIds.map(userId => 
-            supabaseAuth
-                .from('connectors')
-                .select('*', { count: 'exact', head: true })
-                .eq('connected_id', userId)
-                .eq('connection_type', 'creator')
-        );
-        
-        const connectorResults = await Promise.all(connectorPromises);
-        const creatorCountMap = new Map();
-        
-        creatorIds.forEach((id, index) => {
-            creatorCountMap.set(id, connectorResults[index].count || 0);
-        });
-        
-        // Map to content IDs
-        contentData?.forEach(item => {
-            window.connectorCountsByContent.set(item.id, creatorCountMap.get(item.user_id) || 0);
-        });
-        
-    } catch (error) {
-        console.error('Error loading connector counts:', error);
-    }
-}
-
-// ============================================
-// SHORTS SECTION
+// SHORTS SECTION (FIXED with connector counts and shorts-detail link)
 // ============================================
 async function loadShorts() {
     const container = document.getElementById('shorts-container');
@@ -657,6 +653,10 @@ async function loadShorts() {
             return;
         }
         
+        // Load connector counts for shorts
+        const contentIds = window.shorts.map(s => s.id);
+        await loadConnectorCountsForContent(contentIds);
+        
         container.style.display = 'flex';
         container.innerHTML = window.shorts.map(short => {
             const thumbnailUrl = short.thumbnail_url
@@ -667,10 +667,10 @@ async function loadShorts() {
             const creatorName = creatorProfile?.full_name || creatorProfile?.username || 'Creator';
             const duration = short.duration || 0;
             const durationFormatted = formatDuration(duration);
-            const connectorCount = window.connectorCounts.get(short.user_id) || 0;
+            const connectorCount = window.connectorCountsByContent.get(short.id) || 0;
             
             return `
-                <a href="content-detail.html?id=${short.id}" class="short-card">
+                <a href="shorts-detail.html?id=${short.id}" class="short-card" data-content-id="${short.id}">
                     <div class="short-thumbnail">
                         <img src="${thumbnailUrl}" alt="${escapeHtml(short.title)}" loading="lazy">
                         <div class="short-overlay">
@@ -694,6 +694,186 @@ async function loadShorts() {
 }
 
 // ============================================
+// FOR YOU SECTION (Personalized Recommendations)
+// ============================================
+async function loadForYouSection() {
+    const forYouGrid = document.getElementById('for-you-grid');
+    if (!forYouGrid) return;
+    
+    forYouGrid.innerHTML = Array(4).fill().map(() => `
+        <div class="skeleton-card">
+            <div class="skeleton-thumbnail"></div>
+            <div class="skeleton-title"></div>
+            <div class="skeleton-creator"></div>
+            <div class="skeleton-stats"></div>
+        </div>
+    `).join('');
+    
+    try {
+        let recommendations = [];
+        
+        if (window.currentUser) {
+            const { data: likedContent } = await supabaseAuth
+                .from('content_likes')
+                .select('content_id')
+                .eq('user_id', window.currentUser.id);
+            
+            const { data: connectedCreators } = await supabaseAuth
+                .from('connectors')
+                .select('connected_id')
+                .eq('connector_id', window.currentUser.id)
+                .eq('connection_type', 'creator');
+            
+            const likedContentIds = (likedContent || []).map(l => l.content_id);
+            const connectedCreatorIds = (connectedCreators || []).map(c => c.connected_id);
+            
+            let query = supabaseAuth
+                .from('Content')
+                .select('*, user_profiles!user_id(*)')
+                .eq('status', 'published')
+                .order('views_count', { ascending: false })
+                .limit(12);
+            
+            if (likedContentIds.length > 0) {
+                const { data: likedGenres } = await supabaseAuth
+                    .from('Content')
+                    .select('genre')
+                    .in('id', likedContentIds.slice(0, 10));
+                
+                const genres = [...new Set((likedGenres || []).map(g => g.genre).filter(Boolean))];
+                
+                if (genres.length > 0) {
+                    query = query.in('genre', genres);
+                }
+            }
+            
+            if (connectedCreatorIds.length > 0) {
+                const { data: creatorContent } = await supabaseAuth
+                    .from('Content')
+                    .select('*, user_profiles!user_id(*)')
+                    .eq('status', 'published')
+                    .in('user_id', connectedCreatorIds)
+                    .order('created_at', { ascending: false })
+                    .limit(8);
+                
+                if (creatorContent) {
+                    recommendations = [...creatorContent];
+                }
+            }
+            
+            const { data: trendingData } = await supabaseAuth
+                .from('Content')
+                .select('*, user_profiles!user_id(*)')
+                .eq('status', 'published')
+                .order('views_count', { ascending: false })
+                .limit(12 - recommendations.length);
+            
+            const existingIds = new Set(recommendations.map(r => r.id));
+            const newTrending = (trendingData || []).filter(t => !existingIds.has(t.id));
+            recommendations = [...recommendations, ...newTrending].slice(0, 8);
+        }
+        
+        if (recommendations.length === 0) {
+            const { data } = await supabaseAuth
+                .from('Content')
+                .select('*, user_profiles!user_id(*)')
+                .eq('status', 'published')
+                .order('views_count', { ascending: false })
+                .limit(8);
+            
+            recommendations = data || [];
+        }
+        
+        if (recommendations.length === 0) {
+            forYouGrid.innerHTML = `
+                <div class="empty-state" style="grid-column: 1 / -1;">
+                    <div class="empty-icon"><i class="fas fa-magic"></i></div>
+                    <h3>No Recommendations Yet</h3>
+                    <p>Start watching and liking content to get personalized picks</p>
+                </div>
+            `;
+            return;
+        }
+        
+        const contentIds = recommendations.map(r => r.id);
+        await loadContentMetrics(contentIds);
+        await loadConnectorCountsForContent(contentIds);
+        
+        const fragment = renderContentCards(recommendations.slice(0, 8), true);
+        forYouGrid.innerHTML = '';
+        forYouGrid.appendChild(fragment);
+    } catch (error) {
+        console.error('Error loading for you section:', error);
+        forYouGrid.innerHTML = '<div class="empty-state">Failed to load recommendations</div>';
+    }
+}
+
+// ============================================
+// FOLLOWING CONTENT (From Creators You Connected With)
+// ============================================
+async function loadFollowingContent() {
+    const followingSection = document.getElementById('following-section');
+    const followingGrid = document.getElementById('following-grid');
+    
+    if (!followingSection || !followingGrid) return;
+    
+    if (!window.currentUser) {
+        followingSection.style.display = 'none';
+        return;
+    }
+    
+    try {
+        const { data: following, error } = await supabaseAuth
+            .from('connectors')
+            .select('connected_id')
+            .eq('connector_id', window.currentUser.id)
+            .eq('connection_type', 'creator');
+        
+        if (error || !following || following.length === 0) {
+            followingSection.style.display = 'none';
+            return;
+        }
+        
+        const creatorIds = following.map(f => f.connected_id);
+        
+        const { data: content, error: contentError } = await supabaseAuth
+            .from('Content')
+            .select('*, user_profiles!user_id(*)')
+            .eq('status', 'published')
+            .in('user_id', creatorIds)
+            .order('created_at', { ascending: false })
+            .limit(8);
+        
+        if (contentError) throw contentError;
+        
+        if (content && content.length > 0) {
+            followingSection.style.display = 'block';
+            
+            const sectionTitle = followingSection.querySelector('.section-title');
+            if (sectionTitle) {
+                sectionTitle.innerHTML = `
+                    <i class="fas fa-user-friends" style="color: var(--warm-gold);"></i>
+                    FROM CREATORS YOU CONNECTED WITH
+                `;
+            }
+            
+            const contentIds = content.map(c => c.id);
+            await loadContentMetrics(contentIds);
+            await loadConnectorCountsForContent(contentIds);
+            
+            const fragment = renderContentCards(content, true);
+            followingGrid.innerHTML = '';
+            followingGrid.appendChild(fragment);
+        } else {
+            followingSection.style.display = 'none';
+        }
+    } catch (error) {
+        console.error('Error loading following content:', error);
+        followingSection.style.display = 'none';
+    }
+}
+
+// ============================================
 // COMMUNITY FAVORITES
 // ============================================
 async function loadCommunityFavorites() {
@@ -705,7 +885,6 @@ async function loadCommunityFavorites() {
         window.communityFavorites = data || [];
         
         if (window.communityFavorites.length > 0) {
-            // Load metrics
             const contentIds = window.communityFavorites.map(c => c.id);
             await loadContentMetrics(contentIds);
             await loadConnectorCountsForContent(contentIds);
@@ -743,7 +922,6 @@ async function loadLiveStreams() {
         grid.style.display = 'grid';
         noLiveStreams.style.display = 'none';
         
-        // Load metrics
         const contentIds = window.liveStreams.map(s => s.id);
         await loadContentMetrics(contentIds);
         await loadConnectorCountsForContent(contentIds);
@@ -778,7 +956,6 @@ async function loadTrendingContent() {
             return;
         }
         
-        // Load metrics
         const contentIds = window.trendingContent.map(c => c.id);
         await loadContentMetrics(contentIds);
         await loadConnectorCountsForContent(contentIds);
@@ -813,7 +990,6 @@ async function loadNewContent() {
             return;
         }
         
-        // Load metrics
         const contentIds = window.newContent.map(c => c.id);
         await loadContentMetrics(contentIds);
         await loadConnectorCountsForContent(contentIds);
@@ -834,7 +1010,6 @@ async function loadFeaturedCreators() {
     if (!creatorsList) return;
     
     try {
-        // Get top creators based on content count and connectors
         const { data: contentData } = await supabaseAuth
             .from('Content')
             .select('user_id')
@@ -859,7 +1034,6 @@ async function loadFeaturedCreators() {
             }
         });
         
-        // Calculate creator scores
         const creatorScores = new Map();
         contentCountMap.forEach((count, userId) => {
             creatorScores.set(userId, (creatorScores.get(userId) || 0) + count * 2);
@@ -949,7 +1123,6 @@ async function loadFeaturedCreators() {
             `;
         }).join('');
         
-        // Initialize Swiper if available
         setTimeout(() => {
             if (typeof Swiper !== 'undefined') {
                 new Swiper('#creators-swiper', {
@@ -972,7 +1145,7 @@ async function loadFeaturedCreators() {
 }
 
 // ============================================
-// EVENTS - Fixed query
+// EVENTS
 // ============================================
 async function loadEvents() {
     const eventsList = document.getElementById('events-list');
@@ -981,9 +1154,7 @@ async function loadEvents() {
     if (!eventsList || !noEvents) return;
     
     try {
-        // Check if events table exists - if not, show mock data
         let data = [];
-        let error = null;
         
         try {
             const result = await supabaseAuth
@@ -994,15 +1165,8 @@ async function loadEvents() {
                 .limit(5);
             
             data = result.data || [];
-            error = result.error;
         } catch (e) {
-            console.warn('Events table may not exist, using mock data:', e);
-            // Use mock data if table doesn't exist
-            data = getMockEvents();
-        }
-        
-        if (error) {
-            console.warn('Error fetching events:', error);
+            console.warn('Events table may not exist, using mock data');
             data = getMockEvents();
         }
         
@@ -1050,7 +1214,6 @@ async function loadEvents() {
     } catch (error) {
         console.error('Error loading events:', error);
         
-        // Show mock events as fallback
         const mockEvents = getMockEvents();
         if (mockEvents.length > 0) {
             eventsList.style.display = 'block';
@@ -1117,18 +1280,15 @@ window.setReminder = function(eventId) {
 // ============================================
 async function loadCommunityStats() {
     try {
-        // Get total connectors
         const { count: connectorsCount } = await supabaseAuth
             .from('connectors')
             .select('*', { count: 'exact', head: true });
         
-        // Get total content
         const { count: contentCount } = await supabaseAuth
             .from('Content')
             .select('*', { count: 'exact', head: true })
             .eq('status', 'published');
         
-        // Get new connectors today
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         
@@ -1137,13 +1297,11 @@ async function loadCommunityStats() {
             .select('*', { count: 'exact', head: true })
             .gte('created_at', today.toISOString());
         
-        // Update UI
         document.getElementById('total-connectors').textContent = formatNumber(connectorsCount || 12500);
         document.getElementById('total-content').textContent = formatNumber(contentCount || 2300);
         document.getElementById('new-connectors').textContent = `+${formatNumber(newConnectors || 342)}`;
     } catch (error) {
         console.error('Error loading community stats:', error);
-        // Fallback to mock data
         document.getElementById('total-connectors').textContent = '12.5K';
         document.getElementById('total-content').textContent = '2.3K';
         document.getElementById('new-connectors').textContent = '+342';
@@ -1174,7 +1332,6 @@ window.formatDuration = formatDuration;
 async function loadContentMetrics(contentIds) {
     if (!contentIds || contentIds.length === 0) return;
     
-    // Check cache first
     const cacheKey = `metrics-${contentIds.sort().join(',')}`;
     const cached = window.cacheManager.get(cacheKey);
     if (cached) {
@@ -1182,7 +1339,6 @@ async function loadContentMetrics(contentIds) {
         return;
     }
     
-    // Batch queries
     const viewsPromises = contentIds.map(id => 
         supabaseAuth.from('content_views').select('*', { count: 'exact', head: true }).eq('content_id', id)
     );
@@ -1209,7 +1365,6 @@ async function loadContentMetrics(contentIds) {
         metricsMap.get(id).likes = r.count || 0;
     });
     
-    // Get shares
     try {
         const sharesPromises = contentIds.map(id => 
             supabaseAuth.from('content_shares').select('*', { count: 'exact', head: true }).eq('content_id', id)
@@ -1274,16 +1429,9 @@ function setupSidebar() {
         }
     });
     
-    // Update sidebar profile
     updateSidebarProfile();
-    
-    // Setup sidebar navigation
     setupSidebarNavigation();
-    
-    // Setup theme toggle
     setupSidebarThemeToggle();
-    
-    // Setup scale controls
     setupSidebarScaleControls();
 }
 
@@ -1306,15 +1454,14 @@ function updateSidebarProfile() {
                     email.textContent = window.currentUser.email;
                     
                     if (profile.avatar_url) {
-                        avatar.innerHTML = `<img src="${contentSupabase.fixMediaUrl(profile.avatar_url)}" alt="Profile">`;
+                        avatar.innerHTML = `<img src="${contentSupabase.fixMediaUrl(profile.avatar_url)}" alt="Profile" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
                     } else {
                         const initials = getInitials(profile.full_name || profile.username);
-                        avatar.innerHTML = `<span>${initials}</span>`;
+                        avatar.innerHTML = `<span style="font-size:1.2rem;font-weight:bold;">${initials}</span>`;
                     }
                 } else {
-                    // Show default with initials from email
                     const initials = window.currentUser.email ? window.currentUser.email[0].toUpperCase() : '?';
-                    avatar.innerHTML = `<span>${initials}</span>`;
+                    avatar.innerHTML = `<span style="font-size:1.2rem;font-weight:bold;">${initials}</span>`;
                     name.textContent = window.currentUser.email?.split('@')[0] || 'User';
                     email.textContent = window.currentUser.email || 'Signed in';
                 }
@@ -1329,7 +1476,7 @@ function updateSidebarProfile() {
     } else {
         name.textContent = 'Guest';
         email.textContent = 'Sign in to continue';
-        avatar.innerHTML = '<i class="fas fa-user"></i>';
+        avatar.innerHTML = '<i class="fas fa-user" style="font-size:1.5rem;"></i>';
         
         if (profileSection) {
             profileSection.addEventListener('click', () => {
@@ -1471,7 +1618,7 @@ function setupSidebarScaleControls() {
 }
 
 // ============================================
-// BOTTOM NAVIGATION BUTTONS - FIXED
+// BOTTOM NAVIGATION BUTTONS
 // ============================================
 function setupNavigationButtons() {
     const navHomeBtn = document.getElementById('nav-home-btn');
@@ -1606,7 +1753,7 @@ function filterContentByLanguage(lang) {
 }
 
 // ============================================
-// SEARCH - FIXED
+// SEARCH
 // ============================================
 function setupSearch() {
     const searchBtn = document.getElementById('search-btn');
@@ -1710,7 +1857,6 @@ async function searchContent(query, category = '', sortBy = 'newest', language =
         
         let results = data || [];
         
-        // Load metrics for search results
         if (results.length > 0) {
             const contentIds = results.map(r => r.id);
             await loadContentMetrics(contentIds);
@@ -1952,7 +2098,6 @@ async function loadPersonalAnalytics() {
     if (!window.currentUser || !window.currentProfile) return;
     
     try {
-        // Get user's watch time
         const { data: views } = await supabaseAuth
             .from('content_views')
             .select('*')
@@ -1966,12 +2111,10 @@ async function loadPersonalAnalytics() {
         document.getElementById('personal-views').textContent = totalViews;
         document.getElementById('personal-sessions').textContent = Math.ceil(totalViews / 5) || 1;
         
-        // Calculate return rate
         const uniqueDays = new Set(views?.map(v => new Date(v.created_at).toDateString())).size;
         const returnRate = uniqueDays > 0 ? Math.min(100, Math.floor((uniqueDays / 7) * 100)) : 0;
         document.getElementById('return-rate').textContent = returnRate + '%';
         
-        // Load engagement chart
         await loadEngagementChart();
     } catch (error) {
         console.error('Error loading personal analytics:', error);
@@ -1983,7 +2126,6 @@ async function loadEngagementChart() {
     if (!ctx || typeof Chart === 'undefined') return;
     
     try {
-        // Get views data for the last 7 days
         const sevenDaysAgo = new Date();
         sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
         
@@ -1992,7 +2134,6 @@ async function loadEngagementChart() {
             .select('created_at')
             .gte('created_at', sevenDaysAgo.toISOString());
         
-        // Group by day
         const viewsByDay = new Array(7).fill(0);
         const today = new Date();
         
@@ -2004,12 +2145,10 @@ async function loadEngagementChart() {
             }
         });
         
-        // Destroy existing chart if exists
         if (window.engagementChart) {
             window.engagementChart.destroy();
         }
         
-        // Create new chart
         window.engagementChart = new Chart(ctx, {
             type: 'line',
             data: {
@@ -2492,12 +2631,10 @@ async function reloadContentByCategory(category) {
         
         window.newContent = newData || [];
         
-        // Load metrics
         const allIds = [...window.trendingContent.map(c => c.id), ...window.newContent.map(c => c.id)];
         await loadContentMetrics(allIds);
         await loadConnectorCountsForContent(allIds);
         
-        // Update grids
         const trendingGrid = document.getElementById('trending-grid');
         if (trendingGrid && window.trendingContent.length > 0) {
             const fragment = renderContentCards(window.trendingContent, true);
@@ -2642,7 +2779,6 @@ async function updateHeaderProfile() {
                 
                 currentProfileName.textContent = profile.full_name || profile.username || 'Profile';
             } else {
-                // Show default with email initial
                 const initials = window.currentUser.email ? window.currentUser.email[0].toUpperCase() : 'U';
                 profilePlaceholder.innerHTML = '';
                 const div = document.createElement('div');
@@ -2737,7 +2873,6 @@ async function loadMoreContent() {
         document.getElementById('infinite-scroll-loading')?.remove();
         
         if (data && data.length > 0) {
-            // Load metrics for new content
             const contentIds = data.map(c => c.id);
             await loadContentMetrics(contentIds);
             await loadConnectorCountsForContent(contentIds);
