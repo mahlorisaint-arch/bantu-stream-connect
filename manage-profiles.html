@@ -59,6 +59,27 @@
             </div>
             
             <div class="header-actions">
+                <!-- Voice Search Button -->
+                <button id="voice-search-btn" class="icon-btn" title="Voice Search">
+                    <i class="fas fa-microphone"></i>
+                </button>
+                
+                <!-- Analytics Button -->
+                <button id="analytics-btn" class="icon-btn" title="Analytics (Alt+A)">
+                    <i class="fas fa-chart-line"></i>
+                </button>
+                
+                <!-- Search Button -->
+                <button id="search-btn" class="icon-btn search-btn" title="Search (Ctrl+K)">
+                    <i class="fas fa-search"></i>
+                </button>
+                
+                <!-- Notifications Button -->
+                <button id="notifications-btn" class="icon-btn" title="Notifications (Alt+N)">
+                    <i class="fas fa-bell"></i>
+                    <span class="notification-badge" id="notification-count" style="display: none;">0</span>
+                </button>
+                
                 <!-- Profile Button with Dropdown -->
                 <div class="profile-switcher">
                     <button id="current-profile-btn" class="profile-btn" title="Profile (Alt+P)">
@@ -76,6 +97,9 @@
                         <div class="profile-dropdown-footer">
                             <button class="text-btn" id="manage-profiles-btn">
                                 <i class="fas fa-user-cog"></i> Manage Profiles
+                            </button>
+                            <button class="text-btn" id="logout-btn">
+                                <i class="fas fa-sign-out-alt"></i> Sign Out
                             </button>
                         </div>
                     </div>
@@ -200,7 +224,7 @@
     </div>
 
     <!-- =================================================================== -->
-    <!-- SIDEBAR MENU                                                        -->
+    <!-- SIDEBAR MENU (Enhanced)                                             -->
     <!-- =================================================================== -->
     <div class="sidebar-overlay" id="sidebar-overlay"></div>
     <div class="sidebar-menu" id="sidebar-menu">
@@ -225,7 +249,7 @@
                 <div class="sidebar-profile-name" id="sidebar-profile-name">Guest</div>
                 <div class="sidebar-profile-email" id="sidebar-profile-email">Sign in to continue</div>
             </div>
-            <i class="fas fa-chevron-right" style="color: var(--slate-grey);"></i>
+            <i class="fas fa-chevron-right"></i>
         </div>
         
         <!-- Navigation Items -->
@@ -251,9 +275,17 @@
                 <i class="fas fa-medal"></i>
                 <span>My Badges</span>
             </a>
+            <a href="#" class="sidebar-nav-item" id="sidebar-watch-party">
+                <i class="fas fa-users"></i>
+                <span>Watch Party</span>
+            </a>
             <a href="creator-upload.html" class="sidebar-nav-item" id="sidebar-create">
                 <i class="fas fa-plus-circle"></i>
                 <span>Create</span>
+            </a>
+            <a href="creator-dashboard.html" class="sidebar-nav-item" id="sidebar-dashboard">
+                <i class="fas fa-tachometer-alt"></i>
+                <span>Dashboard</span>
             </a>
             <a href="manage-profiles.html" class="sidebar-nav-item active">
                 <i class="fas fa-user-cog"></i>
@@ -485,6 +517,107 @@
         </div>
     </div>
 
+    <!-- Search Modal -->
+    <div id="search-modal" class="search-modal">
+        <div class="search-modal-header">
+            <div class="search-input-container">
+                <i class="search-icon fas fa-search"></i>
+                <input type="text" id="search-input" class="search-input" placeholder="Search content, creators, or categories..." autocomplete="off">
+                <button id="voice-search-modal-btn" class="voice-search-btn" title="Voice Search">
+                    <i class="fas fa-microphone"></i>
+                </button>
+            </div>
+            <button id="close-search-btn" class="close-search-btn">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="search-filters">
+            <div class="filter-group">
+                <label class="filter-label">Category</label>
+                <select id="category-filter" class="filter-select">
+                    <option value="">All Categories</option>
+                    <option value="Music">Music</option>
+                    <option value="STEM">STEM</option>
+                    <option value="Culture">Culture</option>
+                    <option value="News">News</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label class="filter-label">Sort By</label>
+                <select id="sort-filter" class="filter-select">
+                    <option value="newest">Newest First</option>
+                    <option value="popular">Most Popular</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label class="filter-label">Language</label>
+                <select id="language-filter" class="filter-select">
+                    <option value="">All Languages</option>
+                    <option value="en">English</option>
+                    <option value="zu">IsiZulu</option>
+                    <option value="xh">IsiXhosa</option>
+                </select>
+            </div>
+        </div>
+        <div id="search-results" class="search-results">
+            <div id="search-results-grid" class="search-results-grid">
+                <!-- Results loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Notifications Panel -->
+    <div id="notifications-panel" class="notifications-panel">
+        <div class="notifications-header">
+            <h2>Notifications</h2>
+            <button id="close-notifications" class="icon-btn">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="notifications-list" id="notifications-list">
+            <!-- Notifications loaded here -->
+        </div>
+        <div class="notifications-footer">
+            <button id="mark-all-read" class="text-btn">Mark all as read</button>
+            <button id="notification-settings" class="text-btn">Settings</button>
+        </div>
+    </div>
+
+    <!-- Analytics Modal -->
+    <div id="analytics-modal" class="analytics-modal">
+        <div class="analytics-content">
+            <div class="analytics-header">
+                <h2>My Personal Analytics</h2>
+                <button id="close-analytics" class="close-search-btn">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="analytics-body">
+                <div class="analytics-grid">
+                    <div class="analytics-card">
+                        <h3>Watch Time</h3>
+                        <div class="analytics-value" id="personal-watch-time">0h</div>
+                    </div>
+                    <div class="analytics-card">
+                        <h3>Sessions</h3>
+                        <div class="analytics-value" id="personal-sessions">0</div>
+                    </div>
+                    <div class="analytics-card">
+                        <h3>Return Rate</h3>
+                        <div class="analytics-value" id="return-rate">0%</div>
+                    </div>
+                    <div class="analytics-card">
+                        <h3>Total Views</h3>
+                        <div class="analytics-value" id="personal-views">0</div>
+                    </div>
+                </div>
+                <div class="charts-container">
+                    <canvas id="engagement-chart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Theme Selector -->
     <div id="theme-selector" class="theme-selector">
         <button class="theme-option" data-theme="dark">
@@ -496,6 +629,115 @@
         <button class="theme-option" data-theme="high-contrast">
             <i class="fas fa-eye"></i> High Contrast
         </button>
+    </div>
+
+    <!-- Watch Party Modal -->
+    <div id="watch-party-modal" class="watch-party-modal">
+        <div class="watch-party-content">
+            <div class="watch-party-header">
+                <h2><i class="fas fa-users"></i> Start a Watch Party</h2>
+                <button id="close-watch-party" class="close-btn">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="watch-party-body">
+                <div class="watch-party-content-selector">
+                    <h3>Select Content</h3>
+                    <div class="watch-party-search">
+                        <input type="text" id="watch-party-search" placeholder="Search content...">
+                    </div>
+                    <div class="watch-party-content-list" id="watch-party-content-list">
+                        <!-- Content list loaded here -->
+                    </div>
+                </div>
+                <div class="watch-party-settings">
+                    <h3>Party Settings</h3>
+                    <div class="setting-item">
+                        <label>
+                            <input type="checkbox" id="party-sync-playback" checked>
+                            Sync playback for everyone
+                        </label>
+                    </div>
+                    <div class="setting-item">
+                        <label>
+                            <input type="checkbox" id="party-chat-enabled" checked>
+                            Enable party chat
+                        </label>
+                    </div>
+                </div>
+            </div>
+            <div class="watch-party-footer">
+                <button id="start-watch-party" class="primary-btn">
+                    <i class="fas fa-play"></i> Start Party
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tip Creator Modal -->
+    <div id="tip-modal" class="tip-modal">
+        <div class="tip-content">
+            <div class="tip-header">
+                <h2><i class="fas fa-gift"></i> Support Creator</h2>
+                <button id="close-tip" class="close-btn">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="tip-body">
+                <div class="creator-info-tip" id="tip-creator-info">
+                    <!-- Creator info loaded here -->
+                </div>
+                <div class="tip-amounts">
+                    <h3>Select Amount</h3>
+                    <div class="tip-options">
+                        <button class="tip-option" data-amount="5">R5</button>
+                        <button class="tip-option" data-amount="10">R10</button>
+                        <button class="tip-option" data-amount="25">R25</button>
+                        <button class="tip-option" data-amount="50">R50</button>
+                    </div>
+                </div>
+                <div class="tip-message">
+                    <h3>Message (Optional)</h3>
+                    <textarea id="tip-message" placeholder="Say something nice..."></textarea>
+                </div>
+            </div>
+            <div class="tip-footer">
+                <button id="send-tip" class="primary-btn">
+                    <i class="fas fa-gift"></i> Send Tip
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Badges Modal -->
+    <div id="badges-modal" class="badges-modal">
+        <div class="badges-content">
+            <div class="badges-header">
+                <h2><i class="fas fa-medal"></i> Your Badges</h2>
+                <button id="close-badges" class="close-btn">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="badges-body">
+                <div class="badges-stats">
+                    <div class="badge-stat">
+                        <span class="badge-stat-value" id="badges-earned">0</span>
+                        <span class="badge-stat-label">Badges Earned</span>
+                    </div>
+                </div>
+                <div class="badges-grid" id="badges-grid">
+                    <!-- Badges will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Voice Search Status -->
+    <div id="voice-search-status" class="voice-search-status">
+        <div class="voice-status-content">
+            <i class="fas fa-microphone"></i>
+            <span id="voice-status-text">Listening...</span>
+        </div>
     </div>
 
     <!-- UI Scale Control Widget -->
@@ -514,14 +756,68 @@
         </div>
     </div>
 
+    <!-- Keyboard Shortcuts Help Modal -->
+    <div id="shortcuts-modal" class="analytics-modal" style="display: none;">
+        <div class="analytics-content">
+            <div class="analytics-header">
+                <h2>Keyboard Shortcuts</h2>
+                <button id="close-shortcuts" class="close-search-btn">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="analytics-body">
+                <div class="shortcuts-grid">
+                    <div><kbd>Ctrl+K</kbd> - Search</div>
+                    <div><kbd>Alt+N</kbd> - Notifications</div>
+                    <div><kbd>Alt+A</kbd> - Analytics</div>
+                    <div><kbd>Alt+P</kbd> - Profile</div>
+                    <div><kbd>Ctrl+N</kbd> - New Profile</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- JavaScript Files -->
-    <script src="env.js" defer></script>
-    <script src="js/rate-limiter.js" defer></script>
-    <script src="js/home-feed.js" defer></script>
-    <script src="js/home-feed-ui.js" defer></script>
-    <script src="js/manage-profiles.js" defer></script>
+    <script src="env.js"></script>
+    <script src="js/rate-limiter.js"></script>
+    <script src="js/home-feed.js"></script>
+    <script src="js/home-feed-ui.js"></script>
+    <script src="js/home-feed-features.js"></script>
+    <script src="js/manage-profiles.js"></script>
     
     <script>
+        // Supabase Configuration
+        const SUPABASE_URL = window.ENV?.SUPABASE_URL || 'https://ydnxqnbjoshvxteevemc.supabase.co';
+        const SUPABASE_ANON_KEY = window.ENV?.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U';
+
+        // Initialize Supabase client
+        const supabaseAuth = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        window.supabaseAuth = supabaseAuth;
+
+        // Content Supabase client for media URLs
+        class ContentSupabaseClient {
+            constructor(url, key) {
+                this.url = url;
+                this.key = key;
+            }
+
+            fixMediaUrl(url) {
+                if (!url) return '';
+                if (url.startsWith('http')) return url;
+                if (url.includes('supabase.co')) return url;
+                return `${this.url}/storage/v1/object/public/${url.replace(/^\/+/, '')}`;
+            }
+        }
+
+        window.contentSupabase = new ContentSupabaseClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // Global state
+        window.currentUser = null;
+        window.currentProfile = null;
+        window.notifications = [];
+        window.userProfiles = [];
+        window.profiles = [];
+
         // Initialize when DOM is ready
         document.addEventListener('DOMContentLoaded', async () => {
             console.log('🚀 Manage Profiles Page Initializing');
@@ -530,6 +826,10 @@
             const app = document.getElementById('app');
             
             try {
+                // Override loading text
+                const loadingText = document.getElementById('loading-text');
+                if (loadingText) loadingText.textContent = 'Loading Profiles...';
+                
                 // Check authentication
                 await checkAuth();
                 
@@ -538,13 +838,37 @@
                     await loadUserProfiles();
                 }
                 
+                // Initialize UI Scale Controller
+                if (!window.uiScaleController && typeof UIScaleController !== 'undefined') {
+                    window.uiScaleController = new UIScaleController();
+                    window.uiScaleController.init();
+                }
+                
                 // Initialize page components
-                initializeManageProfiles();
-                setupSidebar();
-                setupNavigationButtons();
-                setupBackToTop();
-                setupKeyboardNavigation();
-                updateHeaderProfile();
+                if (typeof initializeManageProfiles === 'function') {
+                    initializeManageProfiles();
+                }
+                
+                // Setup sidebar
+                if (typeof setupSidebar === 'function') {
+                    setupSidebar();
+                }
+                
+                // Setup other UI components
+                if (typeof setupSearch === 'function') setupSearch();
+                if (typeof setupNotifications === 'function') setupNotifications();
+                if (typeof setupAnalytics === 'function') setupAnalytics();
+                if (typeof setupVoiceSearch === 'function') setupVoiceSearch();
+                if (typeof setupWatchParty === 'function') setupWatchParty();
+                if (typeof setupTipSystem === 'function') setupTipSystem();
+                if (typeof setupBackToTop === 'function') setupBackToTop();
+                if (typeof setupKeyboardNavigation === 'function') setupKeyboardNavigation();
+                if (typeof setupNavigationButtons === 'function') setupNavigationButtons();
+                
+                // Update header profile
+                if (typeof updateHeaderProfile === 'function') {
+                    updateHeaderProfile();
+                }
                 
                 // Hide loading screen
                 setTimeout(() => {
@@ -564,11 +888,724 @@
             }
         });
 
-        // Initialize UI Scale Controller
-        if (!window.uiScaleController && typeof UIScaleController !== 'undefined') {
-            window.uiScaleController = new UIScaleController();
-            window.uiScaleController.init();
+        // ============================================
+        // AUTHENTICATION FUNCTIONS
+        // ============================================
+        async function checkAuth() {
+            try {
+                const { data, error } = await supabaseAuth.auth.getSession();
+                if (error) throw error;
+                
+                const session = data?.session;
+                window.currentUser = session?.user || null;
+                
+                if (window.currentUser) {
+                    console.log('✅ User authenticated:', window.currentUser.email);
+                    await loadUserProfile();
+                } else {
+                    console.log('⚠️ User not authenticated');
+                    showToast('Please sign in to manage profiles', 'warning');
+                    
+                    // Redirect to login after a short delay
+                    setTimeout(() => {
+                        window.location.href = 'login.html?redirect=manage-profiles.html';
+                    }, 2000);
+                }
+                
+                return window.currentUser;
+            } catch (error) {
+                console.error('Auth check error:', error);
+                return null;
+            }
         }
+
+        async function loadUserProfile() {
+            try {
+                if (!window.currentUser) return;
+                
+                const { data: profile, error } = await supabaseAuth
+                    .from('user_profiles')
+                    .select('*')
+                    .eq('id', window.currentUser.id)
+                    .maybeSingle();
+                
+                if (error) {
+                    console.warn('Profile fetch error:', error);
+                    return;
+                }
+                
+                if (profile) {
+                    window.currentProfile = profile;
+                }
+                
+                await loadNotifications();
+            } catch (error) {
+                console.error('Error loading profile:', error);
+            }
+        }
+
+        async function loadUserProfiles() {
+            if (!window.currentUser) return;
+            
+            try {
+                const { data, error } = await supabaseAuth
+                    .from('user_profiles')
+                    .select('*')
+                    .eq('id', window.currentUser.id);
+                
+                if (error) {
+                    console.warn('Error loading profiles:', error);
+                    window.userProfiles = [{
+                        id: window.currentUser.id,
+                        name: window.currentUser.user_metadata?.full_name || 'Default',
+                        full_name: window.currentUser.user_metadata?.full_name || 'Default',
+                        avatar_url: null
+                    }];
+                } else {
+                    window.userProfiles = data || [];
+                }
+                
+                if (window.userProfiles.length === 0) {
+                    window.userProfiles = [{
+                        id: window.currentUser.id,
+                        name: window.currentUser.user_metadata?.full_name || 'Default',
+                        full_name: window.currentUser.user_metadata?.full_name || 'Default',
+                        avatar_url: null
+                    }];
+                }
+                
+                const savedProfileId = localStorage.getItem('currentProfileId');
+                window.currentProfile = window.userProfiles.find(p => p.id === savedProfileId) || window.userProfiles[0];
+                
+                if (typeof updateProfileSwitcher === 'function') {
+                    updateProfileSwitcher();
+                }
+            } catch (error) {
+                console.error('Error loading profiles:', error);
+            }
+        }
+
+        async function loadNotifications() {
+            try {
+                if (!window.currentUser) {
+                    updateNotificationBadge(0);
+                    return;
+                }
+                
+                const { data, error } = await supabaseAuth
+                    .from('notifications')
+                    .select('*')
+                    .eq('user_id', window.currentUser.id)
+                    .order('created_at', { ascending: false })
+                    .limit(20);
+                
+                if (error) {
+                    console.warn('Error loading notifications:', error);
+                    updateNotificationBadge(0);
+                    return;
+                }
+                
+                window.notifications = data || [];
+                const unreadCount = window.notifications.filter(n => !n.is_read).length;
+                updateNotificationBadge(unreadCount);
+            } catch (error) {
+                console.error('Error loading notifications:', error);
+                updateNotificationBadge(0);
+            }
+        }
+
+        function updateNotificationBadge(count) {
+            const mainBadge = document.getElementById('notification-count');
+            const sidebarBadge = document.getElementById('sidebar-notification-count');
+            
+            [mainBadge, sidebarBadge].forEach(badge => {
+                if (badge) {
+                    badge.textContent = count > 99 ? '99+' : count;
+                    badge.style.display = count > 0 ? 'flex' : 'none';
+                }
+            });
+        }
+
+        // ============================================
+        // SIDEBAR SETUP (Complete implementation)
+        // ============================================
+        function setupSidebar() {
+            const menuToggle = document.getElementById('menu-toggle');
+            const sidebarClose = document.getElementById('sidebar-close');
+            const sidebarOverlay = document.getElementById('sidebar-overlay');
+            const sidebarMenu = document.getElementById('sidebar-menu');
+            
+            if (!menuToggle || !sidebarClose || !sidebarOverlay || !sidebarMenu) return;
+            
+            const openSidebar = () => {
+                sidebarMenu.classList.add('active');
+                sidebarOverlay.classList.add('active');
+                document.body.style.overflow = 'hidden';
+            };
+            
+            const closeSidebar = () => {
+                sidebarMenu.classList.remove('active');
+                sidebarOverlay.classList.remove('active');
+                document.body.style.overflow = '';
+            };
+            
+            menuToggle.addEventListener('click', (e) => {
+                e.stopPropagation();
+                openSidebar();
+            });
+            
+            sidebarClose.addEventListener('click', closeSidebar);
+            sidebarOverlay.addEventListener('click', closeSidebar);
+            
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && sidebarMenu.classList.contains('active')) {
+                    closeSidebar();
+                }
+            });
+            
+            updateSidebarProfile();
+            setupSidebarNavigation();
+            setupSidebarThemeToggle();
+            setupSidebarScaleControls();
+        }
+
+        function updateSidebarProfile() {
+            const avatar = document.getElementById('sidebar-profile-avatar');
+            const name = document.getElementById('sidebar-profile-name');
+            const email = document.getElementById('sidebar-profile-email');
+            const profileSection = document.getElementById('sidebar-profile');
+            
+            if (!avatar || !name || !email) return;
+            
+            if (window.currentUser) {
+                supabaseAuth.from('user_profiles')
+                    .select('*')
+                    .eq('id', window.currentUser.id)
+                    .maybeSingle()
+                    .then(({ data: profile }) => {
+                        if (profile) {
+                            name.textContent = profile.full_name || profile.username || 'User';
+                            email.textContent = window.currentUser.email;
+                            
+                            if (profile.avatar_url) {
+                                avatar.innerHTML = `<img src="${window.contentSupabase.fixMediaUrl(profile.avatar_url)}" alt="Profile" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
+                            } else {
+                                const initials = getInitials(profile.full_name || profile.username);
+                                avatar.innerHTML = `<span style="font-size:1.2rem;font-weight:bold;">${initials}</span>`;
+                            }
+                        } else {
+                            const initials = window.currentUser.email ? window.currentUser.email[0].toUpperCase() : '?';
+                            avatar.innerHTML = `<span style="font-size:1.2rem;font-weight:bold;">${initials}</span>`;
+                            name.textContent = window.currentUser.email?.split('@')[0] || 'User';
+                            email.textContent = window.currentUser.email || 'Signed in';
+                        }
+                    });
+                
+                if (profileSection) {
+                    profileSection.addEventListener('click', () => {
+                        closeSidebar();
+                        window.location.href = 'manage-profiles.html';
+                    });
+                }
+            } else {
+                name.textContent = 'Guest';
+                email.textContent = 'Sign in to continue';
+                avatar.innerHTML = '<i class="fas fa-user" style="font-size:1.5rem;"></i>';
+                
+                if (profileSection) {
+                    profileSection.addEventListener('click', () => {
+                        closeSidebar();
+                        window.location.href = `login.html?redirect=${encodeURIComponent(window.location.pathname)}`;
+                    });
+                }
+            }
+        }
+
+        function closeSidebar() {
+            const sidebarMenu = document.getElementById('sidebar-menu');
+            const sidebarOverlay = document.getElementById('sidebar-overlay');
+            if (sidebarMenu && sidebarOverlay) {
+                sidebarMenu.classList.remove('active');
+                sidebarOverlay.classList.remove('active');
+                document.body.style.overflow = '';
+            }
+        }
+
+        function setupSidebarNavigation() {
+            document.getElementById('sidebar-analytics')?.addEventListener('click', (e) => {
+                e.preventDefault();
+                closeSidebar();
+                if (!window.currentUser) {
+                    showToast('Please sign in to view analytics', 'warning');
+                    return;
+                }
+                const analyticsModal = document.getElementById('analytics-modal');
+                if (analyticsModal) {
+                    analyticsModal.classList.add('active');
+                    if (typeof loadPersonalAnalytics === 'function') {
+                        loadPersonalAnalytics();
+                    }
+                }
+            });
+            
+            document.getElementById('sidebar-notifications')?.addEventListener('click', (e) => {
+                e.preventDefault();
+                closeSidebar();
+                const notificationsPanel = document.getElementById('notifications-panel');
+                if (notificationsPanel) {
+                    notificationsPanel.classList.add('active');
+                    if (typeof renderNotifications === 'function') {
+                        renderNotifications();
+                    }
+                }
+            });
+            
+            document.getElementById('sidebar-badges')?.addEventListener('click', (e) => {
+                e.preventDefault();
+                closeSidebar();
+                if (!window.currentUser) {
+                    showToast('Please sign in to view badges', 'warning');
+                    return;
+                }
+                const badgesModal = document.getElementById('badges-modal');
+                if (badgesModal) {
+                    badgesModal.classList.add('active');
+                    if (typeof loadUserBadges === 'function') {
+                        loadUserBadges();
+                    }
+                }
+            });
+            
+            document.getElementById('sidebar-watch-party')?.addEventListener('click', (e) => {
+                e.preventDefault();
+                closeSidebar();
+                if (!window.currentUser) {
+                    showToast('Please sign in to start a watch party', 'warning');
+                    return;
+                }
+                const watchPartyModal = document.getElementById('watch-party-modal');
+                if (watchPartyModal) {
+                    watchPartyModal.classList.add('active');
+                    if (typeof loadWatchPartyContent === 'function') {
+                        loadWatchPartyContent();
+                    }
+                }
+            });
+            
+            document.getElementById('sidebar-create')?.addEventListener('click', async (e) => {
+                e.preventDefault();
+                closeSidebar();
+                const { data } = await supabaseAuth.auth.getSession();
+                if (!data?.session) {
+                    showToast('Please sign in to upload content', 'warning');
+                    window.location.href = `login.html?redirect=creator-upload.html`;
+                } else {
+                    window.location.href = 'creator-upload.html';
+                }
+            });
+            
+            document.getElementById('sidebar-dashboard')?.addEventListener('click', async (e) => {
+                e.preventDefault();
+                closeSidebar();
+                const { data } = await supabaseAuth.auth.getSession();
+                if (!data?.session) {
+                    showToast('Please sign in to access dashboard', 'warning');
+                    window.location.href = `login.html?redirect=creator-dashboard.html`;
+                } else {
+                    window.location.href = 'creator-dashboard.html';
+                }
+            });
+        }
+
+        function setupSidebarThemeToggle() {
+            const themeToggle = document.getElementById('sidebar-theme-toggle');
+            if (!themeToggle) return;
+            
+            themeToggle.addEventListener('click', () => {
+                closeSidebar();
+                const themeSelector = document.getElementById('theme-selector');
+                if (themeSelector) {
+                    themeSelector.classList.toggle('active');
+                }
+            });
+        }
+
+        function setupSidebarScaleControls() {
+            if (!window.uiScaleController) return;
+            
+            const decreaseBtn = document.getElementById('sidebar-scale-decrease');
+            const increaseBtn = document.getElementById('sidebar-scale-increase');
+            const resetBtn = document.getElementById('sidebar-scale-reset');
+            const scaleValue = document.getElementById('sidebar-scale-value');
+            
+            const updateDisplay = () => {
+                if (scaleValue) {
+                    scaleValue.textContent = Math.round(window.uiScaleController.getScale() * 100) + '%';
+                }
+            };
+            
+            if (decreaseBtn) {
+                decreaseBtn.addEventListener('click', () => {
+                    window.uiScaleController.decrease();
+                    updateDisplay();
+                });
+            }
+            
+            if (increaseBtn) {
+                increaseBtn.addEventListener('click', () => {
+                    window.uiScaleController.increase();
+                    updateDisplay();
+                });
+            }
+            
+            if (resetBtn) {
+                resetBtn.addEventListener('click', () => {
+                    window.uiScaleController.reset();
+                    updateDisplay();
+                });
+            }
+            
+            updateDisplay();
+            document.addEventListener('scaleChanged', updateDisplay);
+        }
+
+        // ============================================
+        // UTILITY FUNCTIONS
+        // ============================================
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            if (!container) return;
+            
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            
+            const icons = {
+                error: 'fa-exclamation-triangle',
+                success: 'fa-check-circle',
+                warning: 'fa-exclamation-circle',
+                info: 'fa-info-circle'
+            };
+            
+            toast.innerHTML = `
+                <i class="fas ${icons[type] || 'fa-info-circle'}"></i>
+                <span>${escapeHtml(message)}</span>
+            `;
+            
+            container.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateX(100%)';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+        window.showToast = showToast;
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        window.escapeHtml = escapeHtml;
+
+        function getInitials(name) {
+            if (!name || name.trim() === '') return '?';
+            const names = name.trim().split(' ');
+            if (names.length >= 2) {
+                return (names[0][0] + names[names.length - 1][0]).toUpperCase();
+            }
+            return name[0].toUpperCase();
+        }
+        window.getInitials = getInitials;
+
+        function formatNumber(num) {
+            if (!num && num !== 0) return '0';
+            if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+            if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+            return num?.toString() || '0';
+        }
+        window.formatNumber = formatNumber;
+
+        // ============================================
+        // BOTTOM NAVIGATION BUTTONS
+        // ============================================
+        function setupNavigationButtons() {
+            const navHomeBtn = document.getElementById('nav-home-btn');
+            const navCreateBtn = document.getElementById('nav-create-btn');
+            const navMenuBtn = document.getElementById('nav-menu-btn');
+            
+            if (navHomeBtn) {
+                navHomeBtn.addEventListener('click', () => {
+                    window.location.href = 'index.html';
+                });
+            }
+            
+            if (navCreateBtn) {
+                navCreateBtn.addEventListener('click', async () => {
+                    const { data } = await supabaseAuth.auth.getSession();
+                    if (data?.session) {
+                        window.location.href = 'creator-upload.html';
+                    } else {
+                        showToast('Please sign in to create content', 'warning');
+                        window.location.href = 'login.html?redirect=creator-upload.html';
+                    }
+                });
+            }
+            
+            if (navMenuBtn) {
+                navMenuBtn.addEventListener('click', () => {
+                    const sidebarMenu = document.getElementById('sidebar-menu');
+                    const sidebarOverlay = document.getElementById('sidebar-overlay');
+                    if (sidebarMenu && sidebarOverlay) {
+                        sidebarMenu.classList.add('active');
+                        sidebarOverlay.classList.add('active');
+                        document.body.style.overflow = 'hidden';
+                    }
+                });
+            }
+        }
+        window.setupNavigationButtons = setupNavigationButtons;
+
+        // ============================================
+        // BACK TO TOP
+        // ============================================
+        function setupBackToTop() {
+            const backToTopBtn = document.getElementById('backToTopBtn');
+            if (!backToTopBtn) return;
+            
+            backToTopBtn.addEventListener('click', () => {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            });
+            
+            window.addEventListener('scroll', () => {
+                backToTopBtn.style.display = window.pageYOffset > 300 ? 'flex' : 'none';
+            });
+        }
+        window.setupBackToTop = setupBackToTop;
+
+        // ============================================
+        // KEYBOARD NAVIGATION
+        // ============================================
+        function setupKeyboardNavigation() {
+            document.addEventListener('keydown', (e) => {
+                if (e.target.matches('input, textarea, select')) return;
+                
+                switch(e.key) {
+                    case '?':
+                        if (!e.ctrlKey && !e.altKey && !e.metaKey) {
+                            e.preventDefault();
+                            const shortcutsModal = document.getElementById('shortcuts-modal');
+                            if (shortcutsModal) {
+                                shortcutsModal.style.display = 'flex';
+                            }
+                        }
+                        break;
+                    case '/':
+                        if (e.ctrlKey || e.metaKey) {
+                            e.preventDefault();
+                            document.getElementById('search-btn')?.click();
+                        }
+                        break;
+                    case 'Escape':
+                        closeAllModals();
+                        break;
+                }
+            });
+            
+            const closeShortcuts = document.getElementById('close-shortcuts');
+            if (closeShortcuts) {
+                closeShortcuts.addEventListener('click', () => {
+                    document.getElementById('shortcuts-modal').style.display = 'none';
+                });
+            }
+            
+            const shortcutsModal = document.getElementById('shortcuts-modal');
+            if (shortcutsModal) {
+                shortcutsModal.addEventListener('click', (e) => {
+                    if (e.target === shortcutsModal) {
+                        shortcutsModal.style.display = 'none';
+                    }
+                });
+            }
+        }
+        window.setupKeyboardNavigation = setupKeyboardNavigation;
+
+        function closeAllModals() {
+            document.querySelectorAll('.analytics-modal.active, .search-modal.active, .notifications-panel.active, .watch-party-modal.active, .tip-modal.active, .badges-modal.active, .profile-modal.active, .delete-modal.active')
+                .forEach(el => el.classList.remove('active'));
+            
+            const shortcutsModal = document.getElementById('shortcuts-modal');
+            if (shortcutsModal) {
+                shortcutsModal.style.display = 'none';
+            }
+        }
+
+        // ============================================
+        // PROFILE SWITCHER
+        // ============================================
+        function updateProfileSwitcher() {
+            const profileList = document.getElementById('profile-list');
+            const currentProfileName = document.getElementById('current-profile-name');
+            const profilePlaceholder = document.getElementById('userProfilePlaceholder');
+            
+            if (!profileList || !currentProfileName || !profilePlaceholder) return;
+            
+            if (window.currentProfile) {
+                currentProfileName.textContent = window.currentProfile.full_name || window.currentProfile.name || 'Profile';
+                
+                while (profilePlaceholder.firstChild) {
+                    profilePlaceholder.removeChild(profilePlaceholder.firstChild);
+                }
+                
+                if (window.currentProfile.avatar_url) {
+                    const img = document.createElement('img');
+                    img.className = 'profile-img';
+                    img.src = window.contentSupabase.fixMediaUrl(window.currentProfile.avatar_url);
+                    img.alt = window.currentProfile.full_name || 'Profile';
+                    img.style.cssText = 'width: 100%; height: 100%; border-radius: 50%; object-fit: cover;';
+                    profilePlaceholder.appendChild(img);
+                } else {
+                    const initials = getInitials(window.currentProfile.full_name || window.currentProfile.name);
+                    const div = document.createElement('div');
+                    div.className = 'profile-placeholder';
+                    div.style.cssText = 'width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,#1D4ED8,#F59E0B);display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:16px';
+                    div.textContent = initials;
+                    profilePlaceholder.appendChild(div);
+                }
+            }
+            
+            profileList.innerHTML = (window.userProfiles || []).map(profile => {
+                const initials = getInitials(profile.full_name || profile.name);
+                const isActive = window.currentProfile?.id === profile.id;
+                
+                return `
+                    <div class="profile-item ${isActive ? 'active' : ''}" data-profile-id="${profile.id}">
+                        <div class="profile-avatar-small">
+                            ${profile.avatar_url 
+                                ? `<img src="${window.contentSupabase.fixMediaUrl(profile.avatar_url)}" alt="${escapeHtml(profile.full_name || profile.name)}">`
+                                : `<div class="profile-initials">${initials}</div>`
+                            }
+                        </div>
+                        <span class="profile-name">${escapeHtml(profile.full_name || profile.name)}</span>
+                        ${isActive ? '<i class="fas fa-check"></i>' : ''}
+                    </div>
+                `;
+            }).join('');
+            
+            document.querySelectorAll('.profile-item').forEach(item => {
+                item.addEventListener('click', async () => {
+                    const profileId = item.dataset.profileId;
+                    const profile = window.userProfiles.find(p => p.id === profileId);
+                    
+                    if (profile) {
+                        window.currentProfile = profile;
+                        localStorage.setItem('currentProfileId', profileId);
+                        
+                        updateProfileSwitcher();
+                        updateHeaderProfile();
+                        
+                        showToast(`Switched to ${profile.full_name || profile.name}`, 'success');
+                    }
+                });
+            });
+            
+            const profileBtn = document.getElementById('current-profile-btn');
+            const dropdown = document.getElementById('profile-dropdown');
+            const logoutBtn = document.getElementById('logout-btn');
+            
+            if (profileBtn && dropdown) {
+                profileBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    dropdown.classList.toggle('active');
+                });
+                
+                document.addEventListener('click', (e) => {
+                    if (!profileBtn.contains(e.target) && !dropdown.contains(e.target)) {
+                        dropdown.classList.remove('active');
+                    }
+                });
+            }
+            
+            if (logoutBtn) {
+                logoutBtn.addEventListener('click', async () => {
+                    await supabaseAuth.auth.signOut();
+                    window.currentUser = null;
+                    window.currentProfile = null;
+                    window.userProfiles = [];
+                    localStorage.removeItem('currentProfileId');
+                    showToast('Signed out successfully', 'success');
+                    setTimeout(() => {
+                        window.location.href = 'index.html';
+                    }, 1000);
+                });
+            }
+        }
+        window.updateProfileSwitcher = updateProfileSwitcher;
+
+        // ============================================
+        // HEADER PROFILE UPDATE
+        // ============================================
+        async function updateHeaderProfile() {
+            try {
+                const profilePlaceholder = document.getElementById('userProfilePlaceholder');
+                const currentProfileName = document.getElementById('current-profile-name');
+                
+                if (!profilePlaceholder || !currentProfileName) return;
+                
+                if (window.currentUser) {
+                    const { data: profile } = await supabaseAuth
+                        .from('user_profiles')
+                        .select('*')
+                        .eq('id', window.currentUser.id)
+                        .maybeSingle();
+                    
+                    if (profile) {
+                        profilePlaceholder.innerHTML = '';
+                        
+                        if (profile.avatar_url) {
+                            const img = document.createElement('img');
+                            img.className = 'profile-img';
+                            img.src = window.contentSupabase.fixMediaUrl(profile.avatar_url);
+                            img.alt = profile.full_name || 'Profile';
+                            img.style.cssText = 'width: 100%; height: 100%; border-radius: 50%; object-fit: cover;';
+                            profilePlaceholder.appendChild(img);
+                        } else {
+                            const initials = getInitials(profile.full_name || profile.username || 'User');
+                            const div = document.createElement('div');
+                            div.className = 'profile-placeholder';
+                            div.style.cssText = 'width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,#1D4ED8,#F59E0B);display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:16px';
+                            div.textContent = initials;
+                            profilePlaceholder.appendChild(div);
+                        }
+                        
+                        currentProfileName.textContent = profile.full_name || profile.username || 'Profile';
+                    } else {
+                        const initials = window.currentUser.email ? window.currentUser.email[0].toUpperCase() : 'U';
+                        profilePlaceholder.innerHTML = '';
+                        const div = document.createElement('div');
+                        div.className = 'profile-placeholder';
+                        div.style.cssText = 'width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,#1D4ED8,#F59E0B);display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:16px';
+                        div.textContent = initials;
+                        profilePlaceholder.appendChild(div);
+                        
+                        currentProfileName.textContent = window.currentUser.email?.split('@')[0] || 'User';
+                    }
+                } else {
+                    profilePlaceholder.innerHTML = '';
+                    const div = document.createElement('div');
+                    div.className = 'profile-placeholder';
+                    div.style.cssText = 'width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,#1D4ED8,#F59E0B);display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:16px';
+                    div.textContent = 'G';
+                    profilePlaceholder.appendChild(div);
+                    
+                    currentProfileName.textContent = 'Guest';
+                }
+            } catch (error) {
+                console.error('Error updating header profile:', error);
+            }
+        }
+        window.updateHeaderProfile = updateHeaderProfile;
 
         // Update scale display on scale change
         document.addEventListener('scaleChanged', function(e) {
@@ -579,6 +1616,73 @@
             if (scaleValue) scaleValue.textContent = percentage;
             if (sidebarScaleValue) sidebarScaleValue.textContent = percentage;
         });
+
+        // UIScaleController class
+        class UIScaleController {
+            constructor() {
+                this.scaleKey = 'bantu_ui_scale';
+                this.scales = [0.75, 0.85, 1.0, 1.15, 1.25, 1.5];
+                this.currentIndex = 2;
+            }
+
+            init() {
+                const savedScale = localStorage.getItem(this.scaleKey);
+                if (savedScale) {
+                    this.currentIndex = this.scales.indexOf(parseFloat(savedScale));
+                    if (this.currentIndex === -1) this.currentIndex = 2;
+                }
+                this.applyScale();
+            }
+
+            applyScale() {
+                const scale = this.scales[this.currentIndex];
+                document.documentElement.style.setProperty('--ui-scale', scale);
+                localStorage.setItem(this.scaleKey, scale);
+                this.updateScaleDisplay();
+                document.dispatchEvent(new CustomEvent('scaleChanged', { detail: { scale } }));
+            }
+
+            updateScaleDisplay() {
+                const scaleValue = document.getElementById('scale-value');
+                if (scaleValue) {
+                    scaleValue.textContent = Math.round(this.getScale() * 100) + '%';
+                }
+            }
+
+            getScale() {
+                return this.scales[this.currentIndex];
+            }
+
+            increase() {
+                if (this.currentIndex < this.scales.length - 1) {
+                    this.currentIndex++;
+                    this.applyScale();
+                    this.showScaleToast();
+                }
+            }
+
+            decrease() {
+                if (this.currentIndex > 0) {
+                    this.currentIndex--;
+                    this.applyScale();
+                    this.showScaleToast();
+                }
+            }
+
+            reset() {
+                this.currentIndex = 2;
+                this.applyScale();
+                this.showScaleToast();
+            }
+
+            showScaleToast() {
+                const scale = this.getScale();
+                const percentage = Math.round(scale * 100);
+                showToast(`UI Size: ${percentage}%`, 'info');
+            }
+        }
+
+        window.UIScaleController = UIScaleController;
     </script>
 </body>
 </html>
