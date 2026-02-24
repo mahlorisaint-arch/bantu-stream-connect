@@ -7,7 +7,7 @@ const supabaseAuth = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KE
 
 console.log('✅ Supabase Auth client initialized');
 
-// Global state variables
+// Global state variables (minimal - only for auth/profiles)
 window.currentUser = null;
 window.currentProfile = null;
 window.notifications = [];
@@ -18,13 +18,6 @@ window.PAGE_SIZE = 20;
 window.currentCategory = 'All';
 window.userProfiles = [];
 window.userBadges = [];
-window.continueWatching = [];
-window.recommendations = [];
-window.shorts = [];
-window.liveStreams = [];
-window.trendingContent = [];
-window.newContent = [];
-window.communityFavorites = [];
 
 // Categories list
 const categories = [
@@ -121,100 +114,6 @@ class ContentSupabaseClient {
         if (url.startsWith('http')) return url;
         if (url.includes('supabase.co')) return url;
         return `${this.url}/storage/v1/object/public/${url.replace(/^\/+/, '')}`;
-    }
-
-    async getLiveStreams() {
-        try {
-            const { data, error } = await supabaseAuth
-                .from('Content')
-                .select('*, user_profiles!user_id(*)')
-                .eq('media_type', 'live')
-                .eq('status', 'published')
-                .order('created_at', { ascending: false })
-                .limit(10);
-            
-            return data || [];
-        } catch (error) {
-            console.error('Error getting live streams:', error);
-            return [];
-        }
-    }
-
-    async getTrendingContent(category = null) {
-        try {
-            let query = supabaseAuth
-                .from('Content')
-                .select('*, user_profiles!user_id(*)')
-                .eq('status', 'published')
-                .order('views_count', { ascending: false })
-                .limit(12);
-
-            if (category && category !== 'All') {
-                query = query.eq('genre', category);
-            }
-
-            const { data, error } = await query;
-            if (error) throw error;
-
-            // Enrich with real view counts
-            const enriched = await Promise.all(
-                (data || []).map(async (item) => {
-                    const { count: viewsCount } = await supabaseAuth
-                        .from('content_views')
-                        .select('*', { count: 'exact', head: true })
-                        .eq('content_id', item.id);
-                    
-                    return {
-                        ...item,
-                        real_views: viewsCount || item.views_count || 0
-                    };
-                })
-            );
-
-            return enriched;
-        } catch (error) {
-            console.error('Error getting trending content:', error);
-            return [];
-        }
-    }
-
-    async getNewContent(category = null) {
-        try {
-            let query = supabaseAuth
-                .from('Content')
-                .select('*, user_profiles!user_id(*)')
-                .eq('status', 'published')
-                .order('created_at', { ascending: false })
-                .limit(12);
-
-            if (category && category !== 'All') {
-                query = query.eq('genre', category);
-            }
-
-            const { data, error } = await query;
-            if (error) throw error;
-            return data || [];
-        } catch (error) {
-            console.error('Error getting new content:', error);
-            return [];
-        }
-    }
-
-    async getCommunityFavorites() {
-        try {
-            const { data, error } = await supabaseAuth
-                .from('Content')
-                .select('*, user_profiles!user_id(*)')
-                .eq('status', 'published')
-                .order('favorites_count', { ascending: false })
-                .limit(12);
-
-            if (error) throw error;
-            return data || [];
-        } catch (error) {
-            console.error('Error getting community favorites:', error);
-            return [];
-        }
     }
 }
 
