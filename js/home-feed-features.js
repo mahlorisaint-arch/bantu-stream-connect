@@ -1,45 +1,28 @@
 // ============================================
-// HOME FEED INITIALIZATION
+// HOME FEED INITIALIZATION - PRODUCTION ARCHITECTURE
 // ============================================
 document.addEventListener('DOMContentLoaded', async () => {
-    console.log('🏠 Home Feed Initializing with Personalized Features');
+    console.log('🚀 Home Feed Initializing (Production Mode)');
     
     // Override loading text
     const loadingText = document.getElementById('loading-text');
-    if (loadingText) loadingText.textContent = 'Loading Your Personalized Feed...';
+    if (loadingText) loadingText.textContent = 'Building Your Feed...';
     
-    // Wait for UI to be ready
-    await new Promise(resolve => {
-        if (window.renderContentCards) {
-            resolve();
-        } else {
-            document.addEventListener('homeFeedUIReady', resolve);
-            setTimeout(resolve, 2000); // Fallback timeout
-        }
-    });
-    
-    console.log('✅ Home feed UI ready, initializing features');
-    
-    // Initialize all features
+    // Initialize the feed sequentially for stability
     await initializeHomeFeed();
 });
 
 // ============================================
-// CONTENT METRICS CACHE
-// ============================================
-window.contentMetrics = new Map(); // Content ID -> {views, likes, shares}
-window.connectorCounts = new Map(); // Creator ID -> connector count
-window.connectorCountsByContent = new Map(); // Content ID -> connector count
-
-// ============================================
-// MAIN INITIALIZATION FUNCTION
+// HOME FEED CONTROLLER
 // ============================================
 async function initializeHomeFeed() {
     const loadingScreen = document.getElementById('loading');
     const app = document.getElementById('app');
     
     try {
-        // Check authentication
+        console.log("🚀 Initializing Home Feed (Production Mode)");
+        
+        // Check authentication first
         await checkAuth();
         
         // Update app icon
@@ -50,23 +33,21 @@ async function initializeHomeFeed() {
             await loadUserProfiles();
         }
         
-        // Load all content sections in parallel
-        await Promise.all([
-            loadCinematicHero(), // NEW: Load hero section first
-            loadContinueWatching(),
-            loadForYouSection(),
-            loadFollowingContent(),
-            loadShorts(),
-            loadCommunityFavorites(),
-            loadLiveStreams(),
-            loadTrendingContent(),
-            loadNewContent(),
-            loadFeaturedCreators(),
-            loadEvents(),
-            loadCommunityStats()
-        ]);
+        // Load sections sequentially for stability
+        await loadCinematicHero();                // Hero section first
+        await loadContinueWatchingSection();      // Section 1
+        await loadForYouSection();                // Section 2
+        await loadFollowingSection();             // Section 3
+        await loadShortsSection();                // Section 4
+        await loadCommunityFavoritesSection();    // Section 5
+        await loadLiveStreamsSection();           // Live streams
+        await loadTrendingSection();              // Section 6
+        await loadNewContentSection();            // Section 7
+        await loadFeaturedCreatorsSection();      // Creators
+        await loadEventsSection();                // Events
+        await loadCommunityStats();                // Stats
         
-        // Initialize UI components
+        // Initialize UI components (non-data dependent)
         setupSidebar();
         setupLanguageFilter();
         setupSearch();
@@ -83,7 +64,7 @@ async function initializeHomeFeed() {
         renderCategoryTabs();
         setupNavigationButtons();
         
-        // Hide loading screen
+        // Hide loading screen and show content
         setTimeout(() => {
             loadingScreen.style.display = 'none';
             app.style.display = 'block';
@@ -97,9 +78,10 @@ async function initializeHomeFeed() {
             });
         }, 500);
         
-        console.log('🏁 Home Feed Ready');
-    } catch (error) {
-        console.error('❌ Error initializing home feed:', error);
+        console.log("✅ Home Feed Loaded Successfully");
+        
+    } catch (err) {
+        console.error("❌ Home Feed Initialization Error:", err);
         showToast('Failed to load home feed', 'error');
         
         setTimeout(() => {
@@ -110,11 +92,908 @@ async function initializeHomeFeed() {
 }
 
 // ============================================
-// NEW: CINEMATIC CREATOR SPOTLIGHT (HERO SECTION)
+// METRICS AGGREGATOR - NO SIDE EFFECTS
+// ============================================
+
+// Master builder - composes complete dataset for a section
+async function buildSectionData(contentList) {
+    if (!contentList || contentList.length === 0) return [];
+    
+    const contentIds = contentList.map(c => c.id);
+    const creatorIds = [...new Set(contentList.map(c => c.user_id).filter(Boolean))];
+    
+    const metrics = await fetchAllMetrics(contentIds, creatorIds);
+    
+    return contentList.map(item => ({
+        ...item,
+        metrics: {
+            views: metrics.views[item.id] || 0,
+            likes: metrics.likes[item.id] || 0,
+            shares: metrics.shares[item.id] || 0,
+            favorites: item.favorites_count || 0,
+            connectors: metrics.connectors[item.user_id] || 0
+        }
+    }));
+}
+
+// Fetch all metrics in parallel
+async function fetchAllMetrics(contentIds, creatorIds) {
+    const [viewsRes, likesRes, sharesRes, connectorsRes] = await Promise.all([
+        fetchViewCounts(contentIds),
+        fetchLikeCounts(contentIds),
+        fetchShareCounts(contentIds),
+        fetchConnectorCounts(creatorIds)
+    ]);
+
+    return {
+        views: viewsRes,
+        likes: likesRes,
+        shares: sharesRes,
+        connectors: connectorsRes
+    };
+}
+
+// View counts
+async function fetchViewCounts(contentIds) {
+    if (!contentIds.length) return {};
+    
+    try {
+        const { data } = await supabaseAuth
+            .from("content_views")
+            .select("content_id")
+            .in("content_id", contentIds);
+
+        const counts = {};
+        data?.forEach(row => {
+            counts[row.content_id] = (counts[row.content_id] || 0) + 1;
+        });
+        return counts;
+    } catch (error) {
+        console.error('Error fetching view counts:', error);
+        return {};
+    }
+}
+
+// Like counts
+async function fetchLikeCounts(contentIds) {
+    if (!contentIds.length) return {};
+    
+    try {
+        const { data } = await supabaseAuth
+            .from("content_likes")
+            .select("content_id")
+            .in("content_id", contentIds);
+
+        const counts = {};
+        data?.forEach(row => {
+            counts[row.content_id] = (counts[row.content_id] || 0) + 1;
+        });
+        return counts;
+    } catch (error) {
+        console.error('Error fetching like counts:', error);
+        return {};
+    }
+}
+
+// Share counts
+async function fetchShareCounts(contentIds) {
+    if (!contentIds.length) return {};
+    
+    try {
+        const { data } = await supabaseAuth
+            .from("content_shares")
+            .select("content_id")
+            .in("content_id", contentIds);
+
+        const counts = {};
+        data?.forEach(row => {
+            counts[row.content_id] = (counts[row.content_id] || 0) + 1;
+        });
+        return counts;
+    } catch (error) {
+        console.error('Error fetching share counts:', error);
+        return {};
+    }
+}
+
+// Connector counts per creator
+async function fetchConnectorCounts(creatorIds) {
+    if (!creatorIds.length) return {};
+    
+    try {
+        const { data } = await supabaseAuth
+            .from("connectors")
+            .select("connected_id")
+            .in("connected_id", creatorIds);
+
+        const counts = {};
+        data?.forEach(row => {
+            counts[row.connected_id] = (counts[row.connected_id] || 0) + 1;
+        });
+        return counts;
+    } catch (error) {
+        console.error('Error fetching connector counts:', error);
+        return {};
+    }
+}
+
+// ============================================
+// SECTION 1: CONTINUE WATCHING
+// ============================================
+async function loadContinueWatchingSection() {
+    const section = document.getElementById('continue-watching-section');
+    const container = document.getElementById('continue-watching-grid');
+    
+    if (!section || !container) return;
+    
+    // Hide section if user not logged in
+    if (!window.currentUser || !window.currentProfile) {
+        section.style.display = 'none';
+        return;
+    }
+    
+    try {
+        // 1️⃣ Fetch raw content
+        const { data: views, error } = await supabaseAuth
+            .from('content_views')
+            .select(`
+                *,
+                content:content_id (*, user_profiles!user_id(*))
+            `)
+            .eq('profile_id', window.currentProfile.id)
+            .is('completed_at', null)
+            .order('updated_at', { ascending: false })
+            .limit(20);
+        
+        if (error) throw error;
+        
+        const contentList = views?.map(v => v.content).filter(Boolean) || [];
+        
+        if (contentList.length === 0) {
+            section.style.display = 'none';
+            return;
+        }
+        
+        // 2️⃣ Build complete dataset with metrics
+        const sectionData = await buildSectionData(contentList);
+        
+        // 3️⃣ Create progress map for continue watching
+        const progressMap = {};
+        views.forEach(view => {
+            if (view.content_id && view.content) {
+                const progress = Math.min(100, Math.floor(
+                    (view.view_duration || view.progress_seconds || 0) / 
+                    (view.content.duration || 1) * 100
+                )) || 0;
+                
+                progressMap[view.content_id] = {
+                    progress,
+                    current: view.view_duration || view.progress_seconds || 0,
+                    total: view.content.duration || 0
+                };
+            }
+        });
+        
+        // 4️⃣ Render once with progress data
+        section.style.display = 'block';
+        renderContinueWatchingCards(container, sectionData, progressMap);
+        
+    } catch (err) {
+        console.error("❌ Continue Watching Section Error:", err);
+        section.style.display = 'none';
+    }
+}
+
+// Specialized renderer for continue watching (includes progress)
+function renderContinueWatchingCards(container, contents, progressMap) {
+    container.innerHTML = '';
+    
+    contents.forEach(content => {
+        if (!content) return;
+        
+        const progress = progressMap[content.id] || { progress: 0, current: 0, total: 0 };
+        const thumbnailUrl = content.thumbnail_url
+            ? contentSupabase.fixMediaUrl(content.thumbnail_url)
+            : 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop';
+        
+        const creatorProfile = content.user_profiles;
+        const creatorName = creatorProfile?.full_name || creatorProfile?.username || 'Creator';
+        const initials = getInitials(creatorName);
+        const durationFormatted = formatDuration(content.duration || 0);
+        const currentFormatted = formatDuration(progress.current);
+        
+        let avatarHtml = '';
+        if (creatorProfile?.avatar_url) {
+            const avatarUrl = contentSupabase.fixMediaUrl(creatorProfile.avatar_url);
+            avatarHtml = `<img src="${avatarUrl}" alt="${escapeHtml(creatorName)}" loading="lazy">`;
+        } else {
+            avatarHtml = `<div class="creator-initials-small">${initials}</div>`;
+        }
+        
+        const card = document.createElement('a');
+        card.className = 'content-card';
+        card.href = `content-detail.html?id=${content.id}&resume=true`;
+        card.dataset.contentId = content.id;
+        card.dataset.language = content.language || 'en';
+        card.dataset.category = content.genre || '';
+        
+        card.innerHTML = `
+            <div class="card-thumbnail">
+                <img src="${thumbnailUrl}" alt="${escapeHtml(content.title)}" loading="lazy">
+                <div class="card-badges">
+                    <div class="card-badge continue-badge">
+                        <i class="fas fa-play-circle"></i> CONTINUE
+                    </div>
+                </div>
+                <div class="thumbnail-overlay"></div>
+                <div class="watch-progress-container">
+                    <div class="watch-progress-bar" style="width: ${progress.progress}%"></div>
+                </div>
+                <div class="play-overlay">
+                    <div class="play-icon"><i class="fas fa-play"></i></div>
+                </div>
+                ${content.duration > 0 ? `<div class="duration-badge">${durationFormatted}</div>` : ''}
+            </div>
+            <div class="card-content">
+                <h3 class="card-title" title="${escapeHtml(content.title)}">${truncateText(escapeHtml(content.title), 50)}</h3>
+                <div class="creator-info">
+                    <div class="creator-avatar-small">${avatarHtml}</div>
+                    <div class="creator-name-small">${escapeHtml(creatorName)}</div>
+                </div>
+                <div class="card-meta">
+                    <span><i class="fas fa-clock"></i> ${currentFormatted} / ${durationFormatted}</span>
+                    <span>${progress.progress}%</span>
+                </div>
+                <div class="connector-info">
+                    <i class="fas fa-user-friends"></i> ${formatNumber(content.metrics.connectors)} Connectors
+                </div>
+            </div>
+        `;
+        
+        container.appendChild(card);
+    });
+}
+
+// ============================================
+// SECTION 2: FOR YOU (Personalized)
+// ============================================
+async function loadForYouSection() {
+    const container = document.getElementById('for-you-grid');
+    if (!container) return;
+    
+    // Show skeleton loading
+    container.innerHTML = Array(4).fill().map(() => `
+        <div class="skeleton-card">
+            <div class="skeleton-thumbnail"></div>
+            <div class="skeleton-title"></div>
+            <div class="skeleton-creator"></div>
+            <div class="skeleton-stats"></div>
+        </div>
+    `).join('');
+    
+    try {
+        let contentList = [];
+        
+        if (window.currentUser) {
+            // Get user's liked content for genre preferences
+            const { data: likedContent } = await supabaseAuth
+                .from('content_likes')
+                .select('content_id')
+                .eq('user_id', window.currentUser.id)
+                .limit(20);
+            
+            const likedIds = (likedContent || []).map(l => l.content_id);
+            
+            // Get genres from liked content
+            let genres = [];
+            if (likedIds.length > 0) {
+                const { data: likedGenres } = await supabaseAuth
+                    .from('Content')
+                    .select('genre')
+                    .in('id', likedIds.slice(0, 10));
+                
+                genres = [...new Set((likedGenres || []).map(g => g.genre).filter(Boolean))];
+            }
+            
+            // Build query based on preferences
+            let query = supabaseAuth
+                .from('Content')
+                .select('*, user_profiles!user_id(*)')
+                .eq('status', 'published');
+            
+            if (genres.length > 0) {
+                query = query.in('genre', genres);
+            }
+            
+            const { data } = await query
+                .order('views_count', { ascending: false })
+                .limit(12);
+            
+            contentList = data || [];
+        }
+        
+        // Fallback to trending if no personalized content
+        if (contentList.length === 0) {
+            const { data } = await supabaseAuth
+                .from('Content')
+                .select('*, user_profiles!user_id(*)')
+                .eq('status', 'published')
+                .order('views_count', { ascending: false })
+                .limit(8);
+            
+            contentList = data || [];
+        }
+        
+        if (contentList.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state" style="grid-column: 1 / -1;">
+                    <div class="empty-icon"><i class="fas fa-magic"></i></div>
+                    <h3>No Recommendations Yet</h3>
+                    <p>Start watching and liking content to get personalized picks</p>
+                </div>
+            `;
+            return;
+        }
+        
+        // Build complete dataset with metrics
+        const sectionData = await buildSectionData(contentList.slice(0, 8));
+        
+        // Render once
+        container.innerHTML = '';
+        renderContentCards(container, sectionData);
+        
+    } catch (err) {
+        console.error("❌ For You Section Error:", err);
+        container.innerHTML = '<div class="empty-state">Failed to load recommendations</div>';
+    }
+}
+
+// ============================================
+// SECTION 3: FROM CREATORS YOU CONNECTED WITH
+// ============================================
+async function loadFollowingSection() {
+    const section = document.getElementById('following-section');
+    const container = document.getElementById('following-grid');
+    
+    if (!section || !container) return;
+    
+    if (!window.currentUser) {
+        section.style.display = 'none';
+        return;
+    }
+    
+    try {
+        // 1️⃣ Get creators user follows
+        const { data: following, error } = await supabaseAuth
+            .from('connectors')
+            .select('connected_id')
+            .eq('connector_id', window.currentUser.id)
+            .eq('connection_type', 'creator');
+        
+        if (error || !following || following.length === 0) {
+            section.style.display = 'none';
+            return;
+        }
+        
+        const creatorIds = following.map(f => f.connected_id);
+        
+        // 2️⃣ Fetch content from followed creators
+        const { data: contentList, error: contentError } = await supabaseAuth
+            .from('Content')
+            .select('*, user_profiles!user_id(*)')
+            .eq('status', 'published')
+            .in('user_id', creatorIds)
+            .order('created_at', { ascending: false })
+            .limit(8);
+        
+        if (contentError) throw contentError;
+        
+        if (!contentList || contentList.length === 0) {
+            section.style.display = 'none';
+            return;
+        }
+        
+        // 3️⃣ Build complete dataset with metrics
+        const sectionData = await buildSectionData(contentList);
+        
+        // 4️⃣ Update section title and render
+        section.style.display = 'block';
+        const sectionTitle = section.querySelector('.section-title');
+        if (sectionTitle) {
+            sectionTitle.innerHTML = `
+                <i class="fas fa-user-friends" style="color: var(--warm-gold);"></i>
+                FROM CREATORS YOU CONNECTED WITH
+            `;
+        }
+        
+        container.innerHTML = '';
+        renderContentCards(container, sectionData);
+        
+    } catch (err) {
+        console.error("❌ Following Section Error:", err);
+        section.style.display = 'none';
+    }
+}
+
+// ============================================
+// SECTION 4: QUICK BITS (SHORTS)
+// ============================================
+async function loadShortsSection() {
+    const container = document.getElementById('shorts-container');
+    if (!container) return;
+    
+    try {
+        // 1️⃣ Fetch short content
+        const { data: contentList, error } = await supabaseAuth
+            .from('Content')
+            .select('*, user_profiles!user_id(*)')
+            .eq('status', 'published')
+            .eq('media_type', 'short')
+            .or('media_type.eq.short,duration.lte.60')
+            .order('views_count', { ascending: false })
+            .limit(10);
+        
+        if (error) throw error;
+        
+        if (!contentList || contentList.length === 0) {
+            container.style.display = 'none';
+            return;
+        }
+        
+        // 2️⃣ Build complete dataset with metrics
+        const sectionData = await buildSectionData(contentList);
+        
+        // 3️⃣ Render shorts
+        container.style.display = 'flex';
+        renderShortsCards(container, sectionData);
+        
+    } catch (err) {
+        console.error("❌ Shorts Section Error:", err);
+    }
+}
+
+// Specialized renderer for shorts
+function renderShortsCards(container, contents) {
+    container.innerHTML = '';
+    
+    contents.forEach(content => {
+        const thumbnailUrl = content.thumbnail_url
+            ? contentSupabase.fixMediaUrl(content.thumbnail_url)
+            : 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=600&fit=crop';
+        
+        const creatorProfile = content.user_profiles;
+        const creatorName = creatorProfile?.full_name || creatorProfile?.username || 'Creator';
+        const durationFormatted = formatDuration(content.duration || 0);
+        
+        const card = document.createElement('a');
+        card.className = 'short-card';
+        card.href = `shorts-detail.html?id=${content.id}`;
+        card.dataset.contentId = content.id;
+        
+        card.innerHTML = `
+            <div class="short-thumbnail">
+                <img src="${thumbnailUrl}" alt="${escapeHtml(content.title)}" loading="lazy">
+                <div class="short-overlay">
+                    <i class="fas fa-play"></i>
+                </div>
+                ${content.duration > 0 ? `<div class="duration-badge">${durationFormatted}</div>` : ''}
+            </div>
+            <div class="short-info">
+                <h4>${truncateText(escapeHtml(content.title), 30)}</h4>
+                <p>${escapeHtml(creatorName)}</p>
+                <div class="connector-info-small">
+                    <i class="fas fa-user-friends"></i> ${formatNumber(content.metrics.connectors)}
+                </div>
+            </div>
+        `;
+        
+        container.appendChild(card);
+    });
+}
+
+// ============================================
+// SECTION 5: COMMUNITY FAVORITES
+// ============================================
+async function loadCommunityFavoritesSection() {
+    const container = document.getElementById('community-favorites-grid');
+    if (!container) return;
+    
+    try {
+        // 1️⃣ Fetch community favorites (by favorites_count)
+        const { data: contentList, error } = await supabaseAuth
+            .from('Content')
+            .select('*, user_profiles!user_id(*)')
+            .eq('status', 'published')
+            .order('favorites_count', { ascending: false })
+            .limit(12);
+        
+        if (error) throw error;
+        
+        if (!contentList || contentList.length === 0) {
+            container.innerHTML = '<div class="empty-state"><p>No community favorites yet</p></div>';
+            return;
+        }
+        
+        // 2️⃣ Build complete dataset with metrics
+        const sectionData = await buildSectionData(contentList.slice(0, 8));
+        
+        // 3️⃣ Render
+        container.innerHTML = '';
+        renderContentCards(container, sectionData);
+        
+    } catch (err) {
+        console.error("❌ Community Favorites Section Error:", err);
+    }
+}
+
+// ============================================
+// LIVE STREAMS SECTION
+// ============================================
+async function loadLiveStreamsSection() {
+    const container = document.getElementById('live-streams-grid');
+    const noLiveStreams = document.getElementById('no-live-streams');
+    
+    if (!container || !noLiveStreams) return;
+    
+    try {
+        // 1️⃣ Fetch live streams
+        const { data: contentList, error } = await supabaseAuth
+            .from('Content')
+            .select('*, user_profiles!user_id(*)')
+            .eq('media_type', 'live')
+            .eq('status', 'published')
+            .order('created_at', { ascending: false })
+            .limit(10);
+        
+        if (error) throw error;
+        
+        if (!contentList || contentList.length === 0) {
+            container.style.display = 'none';
+            noLiveStreams.style.display = 'block';
+            return;
+        }
+        
+        // 2️⃣ Build complete dataset with metrics
+        const sectionData = await buildSectionData(contentList);
+        
+        // 3️⃣ Render
+        container.style.display = 'grid';
+        noLiveStreams.style.display = 'none';
+        container.innerHTML = '';
+        renderContentCards(container, sectionData);
+        
+    } catch (err) {
+        console.error("❌ Live Streams Section Error:", err);
+    }
+}
+
+// ============================================
+// SECTION 6: TRENDING NOW
+// ============================================
+async function loadTrendingSection() {
+    const container = document.getElementById('trending-grid');
+    if (!container) return;
+    
+    try {
+        // 1️⃣ Fetch trending content (by views_count)
+        const { data: contentList, error } = await supabaseAuth
+            .from('Content')
+            .select('*, user_profiles!user_id(*)')
+            .eq('status', 'published')
+            .order('views_count', { ascending: false })
+            .limit(12);
+        
+        if (error) throw error;
+        
+        if (!contentList || contentList.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state" style="grid-column: 1 / -1;">
+                    <div class="empty-icon"><i class="fas fa-chart-line"></i></div>
+                    <h3>No Trending Content</h3>
+                    <p>Popular content will appear here</p>
+                </div>
+            `;
+            return;
+        }
+        
+        // 2️⃣ Build complete dataset with metrics
+        const sectionData = await buildSectionData(contentList.slice(0, 8));
+        
+        // 3️⃣ Render
+        container.innerHTML = '';
+        renderContentCards(container, sectionData);
+        
+    } catch (err) {
+        console.error("❌ Trending Section Error:", err);
+    }
+}
+
+// ============================================
+// SECTION 7: LATEST GEMS (NEW CONTENT)
+// ============================================
+async function loadNewContentSection() {
+    const container = document.getElementById('new-content-grid');
+    if (!container) return;
+    
+    try {
+        // 1️⃣ Fetch new content (by created_at)
+        const { data: contentList, error } = await supabaseAuth
+            .from('Content')
+            .select('*, user_profiles!user_id(*)')
+            .eq('status', 'published')
+            .order('created_at', { ascending: false })
+            .limit(12);
+        
+        if (error) throw error;
+        
+        if (!contentList || contentList.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state" style="grid-column: 1 / -1;">
+                    <div class="empty-icon"><i class="fas fa-gem"></i></div>
+                    <h3>No New Content</h3>
+                    <p>Fresh content will appear here</p>
+                </div>
+            `;
+            return;
+        }
+        
+        // 2️⃣ Build complete dataset with metrics
+        const sectionData = await buildSectionData(contentList.slice(0, 8));
+        
+        // 3️⃣ Render
+        container.innerHTML = '';
+        renderContentCards(container, sectionData);
+        
+    } catch (err) {
+        console.error("❌ New Content Section Error:", err);
+    }
+}
+
+// ============================================
+// FEATURED CREATORS SECTION
+// ============================================
+async function loadFeaturedCreatorsSection() {
+    const creatorsList = document.getElementById('creators-list');
+    if (!creatorsList) return;
+    
+    try {
+        // Get content counts per creator
+        const { data: contentData } = await supabaseAuth
+            .from('Content')
+            .select('user_id')
+            .eq('status', 'published');
+        
+        const contentCountMap = new Map();
+        contentData?.forEach(item => {
+            if (item.user_id) {
+                contentCountMap.set(item.user_id, (contentCountMap.get(item.user_id) || 0) + 1);
+            }
+        });
+        
+        // Get connector counts per creator
+        const { data: connectorData } = await supabaseAuth
+            .from('connectors')
+            .select('connected_id')
+            .eq('connection_type', 'creator');
+        
+        const connectorCountMap = new Map();
+        connectorData?.forEach(item => {
+            if (item.connected_id) {
+                connectorCountMap.set(item.connected_id, (connectorCountMap.get(item.connected_id) || 0) + 1);
+            }
+        });
+        
+        // Calculate scores and get top creators
+        const creatorScores = new Map();
+        contentCountMap.forEach((count, userId) => {
+            creatorScores.set(userId, (creatorScores.get(userId) || 0) + count * 2);
+        });
+        connectorCountMap.forEach((count, userId) => {
+            creatorScores.set(userId, (creatorScores.get(userId) || 0) + count);
+        });
+        
+        const sortedCreators = Array.from(creatorScores.entries())
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 6)
+            .map(([userId]) => userId);
+        
+        if (sortedCreators.length === 0) {
+            creatorsList.innerHTML = `
+                <div class="swiper-slide">
+                    <div class="creator-card">
+                        <div class="empty-icon"><i class="fas fa-users"></i></div>
+                        <h3>No Featured Creators</h3>
+                        <p>Top creators will appear here</p>
+                    </div>
+                </div>
+            `;
+            return;
+        }
+        
+        // Fetch creator profiles
+        const { data: profiles } = await supabaseAuth
+            .from('user_profiles')
+            .select('*')
+            .in('id', sortedCreators);
+        
+        const featuredCreators = profiles?.map(profile => ({
+            ...profile,
+            video_count: contentCountMap.get(profile.id) || 0,
+            follower_count: connectorCountMap.get(profile.id) || 0
+        })) || [];
+        
+        // Render creators
+        renderCreatorsCards(creatorsList, featuredCreators);
+        
+    } catch (err) {
+        console.error("❌ Featured Creators Section Error:", err);
+    }
+}
+
+function renderCreatorsCards(container, creators) {
+    container.innerHTML = creators.map(creator => {
+        const avatarUrl = creator.avatar_url
+            ? contentSupabase.fixMediaUrl(creator.avatar_url)
+            : null;
+        
+        const bio = creator.bio || 'Passionate content creator sharing authentic stories and experiences.';
+        const truncatedBio = bio.length > 100 ? bio.substring(0, 100) + '...' : bio;
+        const fullName = creator.full_name || creator.username || 'Creator';
+        const username = creator.username || 'creator';
+        const initials = getInitials(fullName);
+        const videoCount = creator.video_count || 0;
+        const followerCount = creator.follower_count || 0;
+        const isTopCreator = videoCount > 5 || followerCount > 100;
+        
+        return `
+            <div class="swiper-slide">
+                <div class="creator-card">
+                    ${isTopCreator ? '<div class="founder-badge">TOP CREATOR</div>' : ''}
+                    <div class="creator-avatar">
+                        ${avatarUrl ? `
+                            <img src="${avatarUrl}" alt="${fullName}" loading="lazy">
+                        ` : `
+                            <div class="creator-initials">${initials}</div>
+                        `}
+                    </div>
+                    <div class="creator-name">${fullName}</div>
+                    <div class="creator-username">@${username}</div>
+                    <div class="creator-bio">${escapeHtml(truncatedBio)}</div>
+                    <div class="creator-stats">
+                        <div class="stat">
+                            <div class="stat-number">${videoCount}</div>
+                            <div class="stat-label">Videos</div>
+                        </div>
+                        <div class="stat">
+                            <div class="stat-number">${formatNumber(followerCount)}</div>
+                            <div class="stat-label">Connectors</div>
+                        </div>
+                    </div>
+                    <div class="creator-actions">
+                        <button class="view-channel-btn" onclick="window.location.href='creator-channel.html?id=${creator.id}'">
+                            View Channel
+                        </button>
+                        <button class="tip-creator-btn" data-creator-id="${creator.id}" data-creator-name="${fullName}">
+                            <i class="fas fa-gift"></i> Tip
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+    
+    // Initialize Swiper after render
+    setTimeout(() => {
+        if (typeof Swiper !== 'undefined') {
+            new Swiper('#creators-swiper', {
+                slidesPerView: 1,
+                spaceBetween: 20,
+                pagination: {
+                    el: '.swiper-pagination',
+                    clickable: true,
+                },
+                breakpoints: {
+                    640: { slidesPerView: 2 },
+                    1024: { slidesPerView: 3 }
+                }
+            });
+        }
+    }, 100);
+}
+
+// ============================================
+// EVENTS SECTION
+// ============================================
+async function loadEventsSection() {
+    const eventsList = document.getElementById('events-list');
+    const noEvents = document.getElementById('no-events');
+    
+    if (!eventsList || !noEvents) return;
+    
+    try {
+        let data = [];
+        
+        try {
+            const result = await supabaseAuth
+                .from('events')
+                .select('*')
+                .gte('start_time', new Date().toISOString())
+                .order('start_time', { ascending: true })
+                .limit(5);
+            
+            data = result.data || [];
+        } catch (e) {
+            console.warn('Events table may not exist, using mock data');
+            data = getMockEvents();
+        }
+        
+        if (!data || data.length === 0) {
+            eventsList.style.display = 'none';
+            noEvents.style.display = 'block';
+            return;
+        }
+        
+        eventsList.style.display = 'block';
+        noEvents.style.display = 'none';
+        
+        renderEventsCards(eventsList, data);
+        
+    } catch (err) {
+        console.error("❌ Events Section Error:", err);
+        
+        const mockEvents = getMockEvents();
+        if (mockEvents.length > 0) {
+            eventsList.style.display = 'block';
+            noEvents.style.display = 'none';
+            renderEventsCards(eventsList, mockEvents);
+        } else {
+            eventsList.style.display = 'none';
+            noEvents.style.display = 'block';
+        }
+    }
+}
+
+function renderEventsCards(container, events) {
+    container.innerHTML = events.map(event => {
+        const eventDate = new Date(event.start_time || event.time);
+        const formattedDate = eventDate.toLocaleDateString('en-ZA', { 
+            weekday: 'short', 
+            month: 'short', 
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+        
+        return `
+            <div class="event-card">
+                <div class="event-header">
+                    <div>
+                        <div class="event-title">${escapeHtml(event.title)}</div>
+                        <div class="event-time">${formattedDate}</div>
+                    </div>
+                </div>
+                <div class="event-description">${escapeHtml(event.description || '')}</div>
+                <div class="event-actions">
+                    <button class="reminder-btn" onclick="setReminder('${event.id}')">
+                        <i class="fas fa-bell"></i> Set Reminder
+                    </button>
+                    ${event.tags ? `
+                    <div class="event-tags">
+                        ${event.tags.map(tag => `<span class="event-tag">${tag}</span>`).join('')}
+                    </div>
+                    ` : ''}
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+// ============================================
+// CINEMATIC HERO SECTION
 // ============================================
 async function loadCinematicHero() {
     try {
-        // Get trending content with highest engagement velocity
+        // Get trending content with highest engagement
         const { data: trendingData, error } = await supabaseAuth
             .from('Content')
             .select('*, user_profiles!user_id(*)')
@@ -137,7 +1016,6 @@ async function loadCinematicHero() {
             videoSource.src = contentSupabase.fixMediaUrl(featuredContent.file_url);
             heroVideo.load();
             heroVideo.play().catch(() => {
-                // Autoplay prevented, show poster
                 console.log('Video autoplay prevented');
             });
         }
@@ -153,7 +1031,6 @@ async function loadCinematicHero() {
                 avatarImg.style.display = 'block';
             } else {
                 avatarImg.style.display = 'none';
-                // Show initials
                 const initials = getInitials(creator.full_name || creator.username);
                 document.getElementById('hero-creator-avatar').innerHTML += `<span class="hero-creator-initials">${initials}</span>`;
             }
@@ -163,31 +1040,16 @@ async function loadCinematicHero() {
         document.getElementById('hero-title').textContent = featuredContent.title || 'DISCOVER & CONNECT';
         document.getElementById('hero-subtitle').textContent = featuredContent.description || 'Explore amazing content, connect with creators, and join live streams from across Africa';
         
-        // Update metrics
-        document.getElementById('hero-views').textContent = formatNumber(featuredContent.views_count || 12500);
+        // Get metrics for hero
+        const metrics = await fetchAllMetrics([featuredContent.id], creator ? [creator.id] : []);
+        
+        document.getElementById('hero-views').textContent = formatNumber(metrics.views[featuredContent.id] || featuredContent.views_count || 12500);
         document.getElementById('hero-favorites').textContent = formatNumber(featuredContent.favorites_count || 2300);
+        document.getElementById('hero-connectors').textContent = formatNumber(creator ? (metrics.connectors[creator.id] || 1200) : 1200);
+        document.getElementById('hero-shares').textContent = formatNumber(metrics.shares[featuredContent.id] || featuredContent.shares_count || 856);
         
-        // Get connector count for this creator
-        if (creator) {
-            const { count } = await supabaseAuth
-                .from('connectors')
-                .select('*', { count: 'exact', head: true })
-                .eq('connected_id', creator.id)
-                .eq('connection_type', 'creator');
-            
-            document.getElementById('hero-connectors').textContent = formatNumber(count || 1200);
-        }
-        
-        document.getElementById('hero-shares').textContent = formatNumber(featuredContent.shares_count || 856);
-        
-        // Check if creator is verified (based on content quality/follower count)
-        const { count: followerCount } = await supabaseAuth
-            .from('connectors')
-            .select('*', { count: 'exact', head: true })
-            .eq('connected_id', creator?.id)
-            .eq('connection_type', 'creator');
-        
-        if (followerCount > 1000) {
+        // Check if creator is verified
+        if (creator && (metrics.connectors[creator.id] || 0) > 1000) {
             document.getElementById('hero-verified-badge').style.display = 'inline-flex';
         }
         
@@ -198,16 +1060,122 @@ async function loadCinematicHero() {
             heroWatchBtn.dataset.creatorId = creator?.id;
         }
         
-        // Setup hero buttons
         setupHeroButtons();
         
     } catch (error) {
         console.error('Error loading cinematic hero:', error);
-        // Load mock data as fallback
         loadMockHeroContent();
     }
 }
 
+// ============================================
+// COMMUNITY STATS
+// ============================================
+async function loadCommunityStats() {
+    try {
+        const { count: connectorsCount } = await supabaseAuth
+            .from('connectors')
+            .select('*', { count: 'exact', head: true });
+        
+        const { count: contentCount } = await supabaseAuth
+            .from('Content')
+            .select('*', { count: 'exact', head: true })
+            .eq('status', 'published');
+        
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        const { count: newConnectors } = await supabaseAuth
+            .from('connectors')
+            .select('*', { count: 'exact', head: true })
+            .gte('created_at', today.toISOString());
+        
+        document.getElementById('total-connectors').textContent = formatNumber(connectorsCount || 12500);
+        document.getElementById('total-content').textContent = formatNumber(contentCount || 2300);
+        document.getElementById('new-connectors').textContent = `+${formatNumber(newConnectors || 342)}`;
+    } catch (error) {
+        console.error('Error loading community stats:', error);
+        document.getElementById('total-connectors').textContent = '12.5K';
+        document.getElementById('total-content').textContent = '2.3K';
+        document.getElementById('new-connectors').textContent = '+342';
+    }
+}
+
+// ============================================
+// PURE RENDER FUNCTION - NO GLOBALS, NO MUTATIONS
+// ============================================
+function renderContentCards(container, contents) {
+    if (!container || !contents || contents.length === 0) return;
+    
+    const fragment = document.createDocumentFragment();
+    
+    contents.forEach(content => {
+        if (!content) return;
+        
+        const thumbnailUrl = content.thumbnail_url
+            ? contentSupabase.fixMediaUrl(content.thumbnail_url)
+            : 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=225&fit=crop';
+        
+        const creatorProfile = content.user_profiles;
+        const displayName = creatorProfile?.full_name || creatorProfile?.username || 'User';
+        const initials = getInitials(displayName);
+        const username = creatorProfile?.username || 'creator';
+        const isNew = (new Date() - new Date(content.created_at)) < 7 * 24 * 60 * 60 * 1000;
+        const durationFormatted = formatDuration(content.duration || 0);
+        
+        let avatarHtml = '';
+        if (creatorProfile?.avatar_url) {
+            const avatarUrl = contentSupabase.fixMediaUrl(creatorProfile.avatar_url);
+            avatarHtml = `<img src="${avatarUrl}" alt="${escapeHtml(displayName)}" loading="lazy">`;
+        } else {
+            avatarHtml = `<div class="creator-initials-small">${initials}</div>`;
+        }
+        
+        const card = document.createElement('a');
+        card.className = 'content-card';
+        card.href = `content-detail.html?id=${content.id}`;
+        card.dataset.contentId = content.id;
+        card.dataset.language = content.language || 'en';
+        card.dataset.category = content.genre || '';
+        
+        card.innerHTML = `
+            <div class="card-thumbnail">
+                <img src="${thumbnailUrl}" alt="${escapeHtml(content.title)}" loading="lazy">
+                <div class="card-badges">
+                    ${isNew ? '<div class="card-badge badge-new"><i class="fas fa-gem"></i> NEW</div>' : ''}
+                    <div class="connector-badge"><i class="fas fa-star"></i><span>${formatNumber(content.metrics?.favorites || 0)} Favorites</span></div>
+                </div>
+                <div class="thumbnail-overlay"></div>
+                <div class="play-overlay"><div class="play-icon"><i class="fas fa-play"></i></div></div>
+                ${content.duration > 0 ? `<div class="duration-badge">${durationFormatted}</div>` : ''}
+            </div>
+            <div class="card-content">
+                <h3 class="card-title" title="${escapeHtml(content.title)}">${truncateText(escapeHtml(content.title), 50)}</h3>
+                <div class="creator-info">
+                    <div class="creator-avatar-small">${avatarHtml}</div>
+                    <div class="creator-name-small">@${escapeHtml(username)}</div>
+                </div>
+                <div class="card-meta">
+                    <span><i class="fas fa-eye"></i> ${formatNumber(content.metrics?.views || 0)}</span>
+                    <span><i class="fas fa-heart"></i> ${formatNumber(content.metrics?.likes || 0)}</span>
+                    <span><i class="fas fa-share"></i> ${formatNumber(content.metrics?.shares || 0)}</span>
+                    <span><i class="fas fa-language"></i> ${window.languageMap[content.language] || 'English'}</span>
+                </div>
+                <div class="connector-info">
+                    <i class="fas fa-user-friends"></i> ${formatNumber(content.metrics?.connectors || 0)} Connectors
+                </div>
+            </div>
+        `;
+        
+        fragment.appendChild(card);
+    });
+    
+    container.appendChild(fragment);
+}
+
+// ============================================
+// MOCK DATA FUNCTIONS (Fallbacks)
+// ============================================
 function getMockHeroContent() {
     return {
         id: 1,
@@ -245,6 +1213,36 @@ function loadMockHeroContent() {
     }
 }
 
+function getMockEvents() {
+    return [
+        {
+            id: 1,
+            title: 'African Music Festival Live Stream',
+            description: 'Join us for the biggest African music festival with live performances from top artists across the continent.',
+            time: 'Tomorrow 7:00 PM SAST',
+            tags: ['Music', 'Live', 'Festival']
+        },
+        {
+            id: 2,
+            title: 'Tech Startup Pitch Competition',
+            description: 'Watch innovative African startups pitch their ideas to a panel of investors.',
+            time: 'Friday 3:00 PM WAT',
+            tags: ['Technology', 'Startups', 'Business']
+        },
+        {
+            id: 3,
+            title: 'Cooking Masterclass: Traditional Dishes',
+            description: 'Learn to cook authentic African dishes with master chefs.',
+            time: 'Saturday 2:00 PM EAT',
+            tags: ['Food', 'Cooking', 'Education']
+        }
+    ];
+}
+
+window.setReminder = function(eventId) {
+    showToast('Reminder set for this event!', 'success');
+};
+
 function setupHeroButtons() {
     const exploreBtn = document.getElementById('hero-explore-btn');
     const watchBtn = document.getElementById('hero-watch-btn');
@@ -280,44 +1278,7 @@ function setupHeroButtons() {
 }
 
 // ============================================
-// UPDATE APP ICON
-// ============================================
-function updateAppIcon() {
-    // Update logo icon in header
-    const logoIcon = document.querySelector('.logo-icon');
-    if (logoIcon) {
-        // Clear existing content
-        logoIcon.innerHTML = '';
-        
-        // Add img element
-        const img = document.createElement('img');
-        img.src = 'assets/icon/bantu_stream_connect_icon.png';
-        img.alt = 'Bantu Stream Connect';
-        img.style.width = '100%';
-        img.style.height = '100%';
-        img.style.objectFit = 'contain';
-        
-        logoIcon.appendChild(img);
-    }
-    
-    // Update sidebar logo icon
-    const sidebarLogoIcon = document.querySelector('.sidebar-logo .logo-icon');
-    if (sidebarLogoIcon) {
-        sidebarLogoIcon.innerHTML = '';
-        
-        const img = document.createElement('img');
-        img.src = 'assets/icon/bantu_stream_connect_icon.png';
-        img.alt = 'Bantu Stream Connect';
-        img.style.width = '100%';
-        img.style.height = '100%';
-        img.style.objectFit = 'contain';
-        
-        sidebarLogoIcon.appendChild(img);
-    }
-}
-
-// ============================================
-// AUTHENTICATION
+// AUTHENTICATION & PROFILE FUNCTIONS
 // ============================================
 async function checkAuth() {
     try {
@@ -401,995 +1362,6 @@ async function loadUserProfiles() {
     } catch (error) {
         console.error('Error loading profiles:', error);
     }
-}
-
-// ============================================
-// WELCOME MESSAGE
-// ============================================
-function updateWelcomeMessage() {
-    const userNameSpan = document.getElementById('user-name');
-    const welcomeSubtitle = document.getElementById('welcome-subtitle');
-    const welcomeMessage = document.getElementById('welcome-message');
-    
-    if (window.currentUser && window.currentProfile) {
-        const name = window.currentProfile.name || 
-                    window.currentUser.user_metadata?.full_name || 
-                    window.currentUser.email?.split('@')[0] || 
-                    'User';
-        userNameSpan.textContent = name;
-        
-        const hour = new Date().getHours();
-        let greeting = 'Good ';
-        if (hour < 12) greeting += 'morning';
-        else if (hour < 18) greeting += 'afternoon';
-        else greeting += 'evening';
-        
-        welcomeMessage.innerHTML = `${greeting}, <span id="user-name">${name}</span>! 👋`;
-        
-        if (welcomeSubtitle) {
-            welcomeSubtitle.textContent = 'Here\'s what we picked for you today';
-        }
-    } else {
-        userNameSpan.textContent = 'Guest';
-        welcomeMessage.innerHTML = 'Welcome, <span id="user-name">Guest</span>! 👋';
-        if (welcomeSubtitle) {
-            welcomeSubtitle.textContent = 'Sign in for personalized recommendations';
-        }
-    }
-}
-
-// ============================================
-// LOAD CONNECTOR COUNTS FOR CONTENT (FIXED)
-// ============================================
-async function loadConnectorCountsForContent(contentIds) {
-    if (!contentIds || contentIds.length === 0) return;
-    
-    try {
-        // Get creator IDs for each content
-        const { data: contentData } = await supabaseAuth
-            .from('Content')
-            .select('id, user_id')
-            .in('id', contentIds);
-        
-        const creatorIds = [...new Set(contentData?.map(c => c.user_id).filter(Boolean))];
-        
-        if (creatorIds.length === 0) return;
-        
-        // Get connector counts for each creator
-        const connectorPromises = creatorIds.map(userId => 
-            supabaseAuth
-                .from('connectors')
-                .select('*', { count: 'exact', head: true })
-                .eq('connected_id', userId)
-                .eq('connection_type', 'creator')
-        );
-        
-        const connectorResults = await Promise.all(connectorPromises);
-        const creatorCountMap = new Map();
-        
-        creatorIds.forEach((id, index) => {
-            creatorCountMap.set(id, connectorResults[index].count || 0);
-        });
-        
-        // Also store in global map for creator counts
-        creatorCountMap.forEach((count, id) => {
-            window.connectorCounts.set(id, count);
-        });
-        
-        // Map to content IDs
-        contentData?.forEach(item => {
-            window.connectorCountsByContent.set(item.id, creatorCountMap.get(item.user_id) || 0);
-        });
-        
-        // Update UI for any visible cards
-        updateConnectorCountsOnCards();
-        
-    } catch (error) {
-        console.error('Error loading connector counts:', error);
-    }
-}
-
-function updateConnectorCountsOnCards() {
-    document.querySelectorAll('.content-card').forEach(card => {
-        const contentId = card.dataset.contentId;
-        if (!contentId) return;
-        
-        const count = window.connectorCountsByContent.get(contentId) || 0;
-        
-        // Find or create connector info element
-        let connectorInfo = card.querySelector('.connector-info');
-        if (connectorInfo) {
-            connectorInfo.innerHTML = `<i class="fas fa-user-friends"></i> ${formatNumber(count)} Connectors`;
-        }
-    });
-    
-    // Update shorts cards too
-    document.querySelectorAll('.short-card').forEach(card => {
-        const contentId = card.dataset.contentId;
-        if (!contentId) return;
-        
-        const count = window.connectorCountsByContent.get(contentId) || 0;
-        
-        let connectorInfo = card.querySelector('.connector-info-small');
-        if (connectorInfo) {
-            connectorInfo.innerHTML = `<i class="fas fa-user-friends"></i> ${formatNumber(count)}`;
-        }
-    });
-}
-
-// ============================================
-// CONTINUE WATCHING (FIXED with connector counts)
-// ============================================
-async function loadContinueWatching() {
-    const section = document.getElementById('continue-watching-section');
-    const grid = document.getElementById('continue-watching-grid');
-    
-    if (!section || !grid) return;
-    
-    if (!window.currentUser || !window.currentProfile) {
-        section.style.display = 'none';
-        return;
-    }
-    
-    try {
-        const { data, error } = await supabaseAuth
-            .from('content_views')
-            .select(`
-                *,
-                content:content_id (*, user_profiles!user_id(*))
-            `)
-            .eq('profile_id', window.currentProfile.id)
-            .is('completed_at', null)
-            .order('updated_at', { ascending: false })
-            .limit(20);
-        
-        if (error) {
-            console.warn('Error loading continue watching:', error);
-            section.style.display = 'none';
-            return;
-        }
-        
-        window.continueWatching = data || [];
-        
-        if (window.continueWatching.length > 0) {
-            section.style.display = 'block';
-            
-            // Load metrics and connector counts for these content items
-            const contentIds = window.continueWatching.map(item => item.content_id);
-            await loadContentMetrics(contentIds);
-            await loadConnectorCountsForContent(contentIds);
-            
-            grid.innerHTML = window.continueWatching.map(item => {
-                const content = item.content;
-                if (!content) return '';
-                
-                const progress = Math.min(100, Math.floor((item.view_duration || item.progress_seconds || 0) / (content.duration || 1) * 100)) || 0;
-                const thumbnailUrl = content.thumbnail_url
-                    ? contentSupabase.fixMediaUrl(content.thumbnail_url)
-                    : 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop';
-                
-                const creatorProfile = content.user_profiles;
-                const creatorName = creatorProfile?.full_name || creatorProfile?.username || 'Creator';
-                const initials = getInitials(creatorName);
-                const connectorCount = window.connectorCountsByContent.get(content.id) || 0;
-                const duration = content.duration || 0;
-                const durationFormatted = formatDuration(duration);
-                
-                let avatarHtml = '';
-                if (creatorProfile?.avatar_url) {
-                    const avatarUrl = contentSupabase.fixMediaUrl(creatorProfile.avatar_url);
-                    avatarHtml = `<img src="${avatarUrl}" alt="${escapeHtml(creatorName)}" loading="lazy">`;
-                } else {
-                    avatarHtml = `<div class="creator-initials-small">${initials}</div>`;
-                }
-                
-                return `
-                    <a href="content-detail.html?id=${content.id}&resume=true" class="content-card" data-content-id="${content.id}" data-language="${content.language || 'en'}" data-category="${content.genre || ''}">
-                        <div class="card-thumbnail">
-                            <img src="${thumbnailUrl}" alt="${escapeHtml(content.title)}" loading="lazy">
-                            <div class="card-badges">
-                                <div class="card-badge continue-badge">
-                                    <i class="fas fa-play-circle"></i> CONTINUE
-                                </div>
-                            </div>
-                            <div class="thumbnail-overlay"></div>
-                            <div class="watch-progress-container">
-                                <div class="watch-progress-bar" style="width: ${progress}%"></div>
-                            </div>
-                            <div class="play-overlay">
-                                <div class="play-icon"><i class="fas fa-play"></i></div>
-                            </div>
-                            ${duration > 0 ? `<div class="duration-badge">${durationFormatted}</div>` : ''}
-                        </div>
-                        <div class="card-content">
-                            <h3 class="card-title" title="${escapeHtml(content.title)}">${truncateText(escapeHtml(content.title), 50)}</h3>
-                            <div class="creator-info">
-                                <div class="creator-avatar-small">${avatarHtml}</div>
-                                <div class="creator-name-small">${escapeHtml(creatorName)}</div>
-                            </div>
-                            <div class="card-meta">
-                                <span><i class="fas fa-clock"></i> ${Math.floor((item.view_duration || item.progress_seconds || 0) / 60)}:${('0' + ((item.view_duration || item.progress_seconds || 0) % 60)).slice(-2)} / ${durationFormatted}</span>
-                                <span>${progress}%</span>
-                            </div>
-                            <div class="connector-info">
-                                <i class="fas fa-user-friends"></i> ${formatNumber(connectorCount)} Connectors
-                            </div>
-                        </div>
-                    </a>
-                `;
-            }).join('');
-        } else {
-            section.style.display = 'none';
-        }
-    } catch (error) {
-        console.error('Error loading continue watching:', error);
-        section.style.display = 'none';
-    }
-}
-
-// ============================================
-// SHORTS SECTION (FIXED with connector counts and shorts-detail link)
-// ============================================
-async function loadShorts() {
-    const container = document.getElementById('shorts-container');
-    if (!container) return;
-    
-    try {
-        const { data, error } = await supabaseAuth
-            .from('Content')
-            .select('*, user_profiles!user_id(*)')
-            .eq('status', 'published')
-            .eq('media_type', 'short')
-            .or('media_type.eq.short,duration.lte.60')
-            .order('views_count', { ascending: false })
-            .limit(10);
-        
-        if (error) throw error;
-        
-        window.shorts = data || [];
-        
-        if (window.shorts.length === 0) {
-            container.style.display = 'none';
-            return;
-        }
-        
-        // Load connector counts for shorts
-        const contentIds = window.shorts.map(s => s.id);
-        await loadConnectorCountsForContent(contentIds);
-        
-        container.style.display = 'flex';
-        container.innerHTML = window.shorts.map(short => {
-            const thumbnailUrl = short.thumbnail_url
-                ? contentSupabase.fixMediaUrl(short.thumbnail_url)
-                : 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=600&fit=crop';
-            
-            const creatorProfile = short.user_profiles;
-            const creatorName = creatorProfile?.full_name || creatorProfile?.username || 'Creator';
-            const duration = short.duration || 0;
-            const durationFormatted = formatDuration(duration);
-            const connectorCount = window.connectorCountsByContent.get(short.id) || 0;
-            
-            return `
-                <a href="shorts-detail.html?id=${short.id}" class="short-card" data-content-id="${short.id}">
-                    <div class="short-thumbnail">
-                        <img src="${thumbnailUrl}" alt="${escapeHtml(short.title)}" loading="lazy">
-                        <div class="short-overlay">
-                            <i class="fas fa-play"></i>
-                        </div>
-                        ${duration > 0 ? `<div class="duration-badge">${durationFormatted}</div>` : ''}
-                    </div>
-                    <div class="short-info">
-                        <h4>${truncateText(escapeHtml(short.title), 30)}</h4>
-                        <p>${escapeHtml(creatorName)}</p>
-                        <div class="connector-info-small">
-                            <i class="fas fa-user-friends"></i> ${formatNumber(connectorCount)}
-                        </div>
-                    </div>
-                </a>
-            `;
-        }).join('');
-    } catch (error) {
-        console.error('Error loading shorts:', error);
-    }
-}
-
-// ============================================
-// FOR YOU SECTION (Personalized Recommendations)
-// ============================================
-async function loadForYouSection() {
-    const forYouGrid = document.getElementById('for-you-grid');
-    if (!forYouGrid) return;
-    
-    forYouGrid.innerHTML = Array(4).fill().map(() => `
-        <div class="skeleton-card">
-            <div class="skeleton-thumbnail"></div>
-            <div class="skeleton-title"></div>
-            <div class="skeleton-creator"></div>
-            <div class="skeleton-stats"></div>
-        </div>
-    `).join('');
-    
-    try {
-        let recommendations = [];
-        
-        if (window.currentUser) {
-            const { data: likedContent } = await supabaseAuth
-                .from('content_likes')
-                .select('content_id')
-                .eq('user_id', window.currentUser.id);
-            
-            const { data: connectedCreators } = await supabaseAuth
-                .from('connectors')
-                .select('connected_id')
-                .eq('connector_id', window.currentUser.id)
-                .eq('connection_type', 'creator');
-            
-            const likedContentIds = (likedContent || []).map(l => l.content_id);
-            const connectedCreatorIds = (connectedCreators || []).map(c => c.connected_id);
-            
-            let query = supabaseAuth
-                .from('Content')
-                .select('*, user_profiles!user_id(*)')
-                .eq('status', 'published')
-                .order('views_count', { ascending: false })
-                .limit(12);
-            
-            if (likedContentIds.length > 0) {
-                const { data: likedGenres } = await supabaseAuth
-                    .from('Content')
-                    .select('genre')
-                    .in('id', likedContentIds.slice(0, 10));
-                
-                const genres = [...new Set((likedGenres || []).map(g => g.genre).filter(Boolean))];
-                
-                if (genres.length > 0) {
-                    query = query.in('genre', genres);
-                }
-            }
-            
-            if (connectedCreatorIds.length > 0) {
-                const { data: creatorContent } = await supabaseAuth
-                    .from('Content')
-                    .select('*, user_profiles!user_id(*)')
-                    .eq('status', 'published')
-                    .in('user_id', connectedCreatorIds)
-                    .order('created_at', { ascending: false })
-                    .limit(8);
-                
-                if (creatorContent) {
-                    recommendations = [...creatorContent];
-                }
-            }
-            
-            const { data: trendingData } = await supabaseAuth
-                .from('Content')
-                .select('*, user_profiles!user_id(*)')
-                .eq('status', 'published')
-                .order('views_count', { ascending: false })
-                .limit(12 - recommendations.length);
-            
-            const existingIds = new Set(recommendations.map(r => r.id));
-            const newTrending = (trendingData || []).filter(t => !existingIds.has(t.id));
-            recommendations = [...recommendations, ...newTrending].slice(0, 8);
-        }
-        
-        if (recommendations.length === 0) {
-            const { data } = await supabaseAuth
-                .from('Content')
-                .select('*, user_profiles!user_id(*)')
-                .eq('status', 'published')
-                .order('views_count', { ascending: false })
-                .limit(8);
-            
-            recommendations = data || [];
-        }
-        
-        if (recommendations.length === 0) {
-            forYouGrid.innerHTML = `
-                <div class="empty-state" style="grid-column: 1 / -1;">
-                    <div class="empty-icon"><i class="fas fa-magic"></i></div>
-                    <h3>No Recommendations Yet</h3>
-                    <p>Start watching and liking content to get personalized picks</p>
-                </div>
-            `;
-            return;
-        }
-        
-        const contentIds = recommendations.map(r => r.id);
-        await loadContentMetrics(contentIds);
-        await loadConnectorCountsForContent(contentIds);
-        
-        const fragment = renderContentCards(recommendations.slice(0, 8), true);
-        forYouGrid.innerHTML = '';
-        forYouGrid.appendChild(fragment);
-    } catch (error) {
-        console.error('Error loading for you section:', error);
-        forYouGrid.innerHTML = '<div class="empty-state">Failed to load recommendations</div>';
-    }
-}
-
-// ============================================
-// FOLLOWING CONTENT (From Creators You Connected With)
-// ============================================
-async function loadFollowingContent() {
-    const followingSection = document.getElementById('following-section');
-    const followingGrid = document.getElementById('following-grid');
-    
-    if (!followingSection || !followingGrid) return;
-    
-    if (!window.currentUser) {
-        followingSection.style.display = 'none';
-        return;
-    }
-    
-    try {
-        const { data: following, error } = await supabaseAuth
-            .from('connectors')
-            .select('connected_id')
-            .eq('connector_id', window.currentUser.id)
-            .eq('connection_type', 'creator');
-        
-        if (error || !following || following.length === 0) {
-            followingSection.style.display = 'none';
-            return;
-        }
-        
-        const creatorIds = following.map(f => f.connected_id);
-        
-        const { data: content, error: contentError } = await supabaseAuth
-            .from('Content')
-            .select('*, user_profiles!user_id(*)')
-            .eq('status', 'published')
-            .in('user_id', creatorIds)
-            .order('created_at', { ascending: false })
-            .limit(8);
-        
-        if (contentError) throw contentError;
-        
-        if (content && content.length > 0) {
-            followingSection.style.display = 'block';
-            
-            const sectionTitle = followingSection.querySelector('.section-title');
-            if (sectionTitle) {
-                sectionTitle.innerHTML = `
-                    <i class="fas fa-user-friends" style="color: var(--warm-gold);"></i>
-                    FROM CREATORS YOU CONNECTED WITH
-                `;
-            }
-            
-            const contentIds = content.map(c => c.id);
-            await loadContentMetrics(contentIds);
-            await loadConnectorCountsForContent(contentIds);
-            
-            const fragment = renderContentCards(content, true);
-            followingGrid.innerHTML = '';
-            followingGrid.appendChild(fragment);
-        } else {
-            followingSection.style.display = 'none';
-        }
-    } catch (error) {
-        console.error('Error loading following content:', error);
-        followingSection.style.display = 'none';
-    }
-}
-
-// ============================================
-// COMMUNITY FAVORITES
-// ============================================
-async function loadCommunityFavorites() {
-    const grid = document.getElementById('community-favorites-grid');
-    if (!grid) return;
-    
-    try {
-        const data = await contentSupabase.getCommunityFavorites();
-        window.communityFavorites = data || [];
-        
-        if (window.communityFavorites.length > 0) {
-            const contentIds = window.communityFavorites.map(c => c.id);
-            await loadContentMetrics(contentIds);
-            await loadConnectorCountsForContent(contentIds);
-            
-            const fragment = renderContentCards(window.communityFavorites.slice(0, 8), true);
-            grid.innerHTML = '';
-            grid.appendChild(fragment);
-        } else {
-            grid.innerHTML = '<div class="empty-state"><p>No community favorites yet</p></div>';
-        }
-    } catch (error) {
-        console.error('Error loading community favorites:', error);
-    }
-}
-
-// ============================================
-// LIVE STREAMS
-// ============================================
-async function loadLiveStreams() {
-    const grid = document.getElementById('live-streams-grid');
-    const noLiveStreams = document.getElementById('no-live-streams');
-    
-    if (!grid || !noLiveStreams) return;
-    
-    try {
-        const data = await contentSupabase.getLiveStreams();
-        window.liveStreams = data || [];
-        
-        if (window.liveStreams.length === 0) {
-            grid.style.display = 'none';
-            noLiveStreams.style.display = 'block';
-            return;
-        }
-        
-        grid.style.display = 'grid';
-        noLiveStreams.style.display = 'none';
-        
-        const contentIds = window.liveStreams.map(s => s.id);
-        await loadContentMetrics(contentIds);
-        await loadConnectorCountsForContent(contentIds);
-        
-        const fragment = renderContentCards(window.liveStreams, true);
-        grid.innerHTML = '';
-        grid.appendChild(fragment);
-    } catch (error) {
-        console.error('Error loading live streams:', error);
-    }
-}
-
-// ============================================
-// TRENDING CONTENT
-// ============================================
-async function loadTrendingContent() {
-    const grid = document.getElementById('trending-grid');
-    if (!grid) return;
-    
-    try {
-        const data = await contentSupabase.getTrendingContent();
-        window.trendingContent = data || [];
-        
-        if (window.trendingContent.length === 0) {
-            grid.innerHTML = `
-                <div class="empty-state" style="grid-column: 1 / -1;">
-                    <div class="empty-icon"><i class="fas fa-chart-line"></i></div>
-                    <h3>No Trending Content</h3>
-                    <p>Popular content will appear here</p>
-                </div>
-            `;
-            return;
-        }
-        
-        const contentIds = window.trendingContent.map(c => c.id);
-        await loadContentMetrics(contentIds);
-        await loadConnectorCountsForContent(contentIds);
-        
-        const fragment = renderContentCards(window.trendingContent.slice(0, 8), true);
-        grid.innerHTML = '';
-        grid.appendChild(fragment);
-    } catch (error) {
-        console.error('Error loading trending content:', error);
-    }
-}
-
-// ============================================
-// NEW CONTENT
-// ============================================
-async function loadNewContent() {
-    const grid = document.getElementById('new-content-grid');
-    if (!grid) return;
-    
-    try {
-        const data = await contentSupabase.getNewContent();
-        window.newContent = data || [];
-        
-        if (window.newContent.length === 0) {
-            grid.innerHTML = `
-                <div class="empty-state" style="grid-column: 1 / -1;">
-                    <div class="empty-icon"><i class="fas fa-gem"></i></div>
-                    <h3>No New Content</h3>
-                    <p>Fresh content will appear here</p>
-                </div>
-            `;
-            return;
-        }
-        
-        const contentIds = window.newContent.map(c => c.id);
-        await loadContentMetrics(contentIds);
-        await loadConnectorCountsForContent(contentIds);
-        
-        const fragment = renderContentCards(window.newContent.slice(0, 8), true);
-        grid.innerHTML = '';
-        grid.appendChild(fragment);
-    } catch (error) {
-        console.error('Error loading new content:', error);
-    }
-}
-
-// ============================================
-// FEATURED CREATORS
-// ============================================
-async function loadFeaturedCreators() {
-    const creatorsList = document.getElementById('creators-list');
-    if (!creatorsList) return;
-    
-    try {
-        const { data: contentData } = await supabaseAuth
-            .from('Content')
-            .select('user_id')
-            .eq('status', 'published');
-        
-        const contentCountMap = new Map();
-        contentData?.forEach(item => {
-            if (item.user_id) {
-                contentCountMap.set(item.user_id, (contentCountMap.get(item.user_id) || 0) + 1);
-            }
-        });
-        
-        const { data: connectorData } = await supabaseAuth
-            .from('connectors')
-            .select('connected_id')
-            .eq('connection_type', 'creator');
-        
-        const connectorCountMap = new Map();
-        connectorData?.forEach(item => {
-            if (item.connected_id) {
-                connectorCountMap.set(item.connected_id, (connectorCountMap.get(item.connected_id) || 0) + 1);
-            }
-        });
-        
-        const creatorScores = new Map();
-        contentCountMap.forEach((count, userId) => {
-            creatorScores.set(userId, (creatorScores.get(userId) || 0) + count * 2);
-        });
-        connectorCountMap.forEach((count, userId) => {
-            creatorScores.set(userId, (creatorScores.get(userId) || 0) + count);
-        });
-        
-        const sortedCreators = Array.from(creatorScores.entries())
-            .sort((a, b) => b[1] - a[1])
-            .slice(0, 6)
-            .map(([userId]) => userId);
-        
-        if (sortedCreators.length === 0) {
-            creatorsList.innerHTML = `
-                <div class="swiper-slide">
-                    <div class="creator-card">
-                        <div class="empty-icon"><i class="fas fa-users"></i></div>
-                        <h3>No Featured Creators</h3>
-                        <p>Top creators will appear here</p>
-                    </div>
-                </div>
-            `;
-            return;
-        }
-        
-        const { data: profiles } = await supabaseAuth
-            .from('user_profiles')
-            .select('*')
-            .in('id', sortedCreators);
-        
-        const featuredCreators = profiles?.map(profile => ({
-            ...profile,
-            video_count: contentCountMap.get(profile.id) || 0,
-            follower_count: connectorCountMap.get(profile.id) || 0
-        })) || [];
-        
-        creatorsList.innerHTML = featuredCreators.map(creator => {
-            const avatarUrl = creator.avatar_url
-                ? contentSupabase.fixMediaUrl(creator.avatar_url)
-                : null;
-            
-            const bio = creator.bio || 'Passionate content creator sharing authentic stories and experiences.';
-            const truncatedBio = bio.length > 100 ? bio.substring(0, 100) + '...' : bio;
-            const fullName = creator.full_name || creator.username || 'Creator';
-            const username = creator.username || 'creator';
-            const displayName = fullName || username;
-            const initials = getInitials(displayName);
-            const videoCount = creator.video_count || 0;
-            const followerCount = creator.follower_count || 0;
-            const isTopCreator = videoCount > 5 || followerCount > 100;
-            
-            return `
-                <div class="swiper-slide">
-                    <div class="creator-card">
-                        ${isTopCreator ? '<div class="founder-badge">TOP CREATOR</div>' : ''}
-                        <div class="creator-avatar">
-                            ${avatarUrl ? `
-                                <img src="${avatarUrl}" alt="${fullName}" loading="lazy">
-                            ` : `
-                                <div class="creator-initials">${initials}</div>
-                            `}
-                        </div>
-                        <div class="creator-name">${fullName}</div>
-                        <div class="creator-username">@${username}</div>
-                        <div class="creator-bio">${escapeHtml(truncatedBio)}</div>
-                        <div class="creator-stats">
-                            <div class="stat">
-                                <div class="stat-number">${videoCount}</div>
-                                <div class="stat-label">Videos</div>
-                            </div>
-                            <div class="stat">
-                                <div class="stat-number">${formatNumber(followerCount)}</div>
-                                <div class="stat-label">Connectors</div>
-                            </div>
-                        </div>
-                        <div class="creator-actions">
-                            <button class="view-channel-btn" onclick="window.location.href='creator-channel.html?id=${creator.id}'">
-                                View Channel
-                            </button>
-                            <button class="tip-creator-btn" data-creator-id="${creator.id}" data-creator-name="${fullName}">
-                                <i class="fas fa-gift"></i> Tip
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }).join('');
-        
-        setTimeout(() => {
-            if (typeof Swiper !== 'undefined') {
-                new Swiper('#creators-swiper', {
-                    slidesPerView: 1,
-                    spaceBetween: 20,
-                    pagination: {
-                        el: '.swiper-pagination',
-                        clickable: true,
-                    },
-                    breakpoints: {
-                        640: { slidesPerView: 2 },
-                        1024: { slidesPerView: 3 }
-                    }
-                });
-            }
-        }, 100);
-    } catch (error) {
-        console.error('Error loading featured creators:', error);
-    }
-}
-
-// ============================================
-// EVENTS
-// ============================================
-async function loadEvents() {
-    const eventsList = document.getElementById('events-list');
-    const noEvents = document.getElementById('no-events');
-    
-    if (!eventsList || !noEvents) return;
-    
-    try {
-        let data = [];
-        
-        try {
-            const result = await supabaseAuth
-                .from('events')
-                .select('*')
-                .gte('start_time', new Date().toISOString())
-                .order('start_time', { ascending: true })
-                .limit(5);
-            
-            data = result.data || [];
-        } catch (e) {
-            console.warn('Events table may not exist, using mock data');
-            data = getMockEvents();
-        }
-        
-        if (!data || data.length === 0) {
-            eventsList.style.display = 'none';
-            noEvents.style.display = 'block';
-            return;
-        }
-        
-        eventsList.style.display = 'block';
-        noEvents.style.display = 'none';
-        
-        eventsList.innerHTML = data.map(event => {
-            const eventDate = new Date(event.start_time || event.time);
-            const formattedDate = eventDate.toLocaleDateString('en-ZA', { 
-                weekday: 'short', 
-                month: 'short', 
-                day: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit'
-            });
-            
-            return `
-                <div class="event-card">
-                    <div class="event-header">
-                        <div>
-                            <div class="event-title">${escapeHtml(event.title)}</div>
-                            <div class="event-time">${formattedDate}</div>
-                        </div>
-                    </div>
-                    <div class="event-description">${escapeHtml(event.description || '')}</div>
-                    <div class="event-actions">
-                        <button class="reminder-btn" onclick="setReminder('${event.id}')">
-                            <i class="fas fa-bell"></i> Set Reminder
-                        </button>
-                        ${event.tags ? `
-                        <div class="event-tags">
-                            ${event.tags.map(tag => `<span class="event-tag">${tag}</span>`).join('')}
-                        </div>
-                        ` : ''}
-                    </div>
-                </div>
-            `;
-        }).join('');
-    } catch (error) {
-        console.error('Error loading events:', error);
-        
-        const mockEvents = getMockEvents();
-        if (mockEvents.length > 0) {
-            eventsList.style.display = 'block';
-            noEvents.style.display = 'none';
-            
-            eventsList.innerHTML = mockEvents.map(event => `
-                <div class="event-card">
-                    <div class="event-header">
-                        <div>
-                            <div class="event-title">${event.title}</div>
-                            <div class="event-time">${event.time}</div>
-                        </div>
-                    </div>
-                    <div class="event-description">${event.description}</div>
-                    <div class="event-actions">
-                        <button class="reminder-btn" onclick="setReminder('${event.id}')">
-                            <i class="fas fa-bell"></i> Set Reminder
-                        </button>
-                        <div class="event-tags">
-                            ${event.tags.map(tag => `<span class="event-tag">${tag}</span>`).join('')}
-                        </div>
-                    </div>
-                </div>
-            `).join('');
-        } else {
-            eventsList.style.display = 'none';
-            noEvents.style.display = 'block';
-        }
-    }
-}
-
-function getMockEvents() {
-    return [
-        {
-            id: 1,
-            title: 'African Music Festival Live Stream',
-            description: 'Join us for the biggest African music festival with live performances from top artists across the continent.',
-            time: 'Tomorrow 7:00 PM SAST',
-            tags: ['Music', 'Live', 'Festival']
-        },
-        {
-            id: 2,
-            title: 'Tech Startup Pitch Competition',
-            description: 'Watch innovative African startups pitch their ideas to a panel of investors.',
-            time: 'Friday 3:00 PM WAT',
-            tags: ['Technology', 'Startups', 'Business']
-        },
-        {
-            id: 3,
-            title: 'Cooking Masterclass: Traditional Dishes',
-            description: 'Learn to cook authentic African dishes with master chefs.',
-            time: 'Saturday 2:00 PM EAT',
-            tags: ['Food', 'Cooking', 'Education']
-        }
-    ];
-}
-
-window.setReminder = function(eventId) {
-    showToast('Reminder set for this event!', 'success');
-};
-
-// ============================================
-// COMMUNITY STATS
-// ============================================
-async function loadCommunityStats() {
-    try {
-        const { count: connectorsCount } = await supabaseAuth
-            .from('connectors')
-            .select('*', { count: 'exact', head: true });
-        
-        const { count: contentCount } = await supabaseAuth
-            .from('Content')
-            .select('*', { count: 'exact', head: true })
-            .eq('status', 'published');
-        
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        
-        const { count: newConnectors } = await supabaseAuth
-            .from('connectors')
-            .select('*', { count: 'exact', head: true })
-            .gte('created_at', today.toISOString());
-        
-        document.getElementById('total-connectors').textContent = formatNumber(connectorsCount || 12500);
-        document.getElementById('total-content').textContent = formatNumber(contentCount || 2300);
-        document.getElementById('new-connectors').textContent = `+${formatNumber(newConnectors || 342)}`;
-    } catch (error) {
-        console.error('Error loading community stats:', error);
-        document.getElementById('total-connectors').textContent = '12.5K';
-        document.getElementById('total-content').textContent = '2.3K';
-        document.getElementById('new-connectors').textContent = '+342';
-    }
-}
-
-// ============================================
-// FORMAT DURATION
-// ============================================
-function formatDuration(seconds) {
-    if (!seconds || seconds === 0) return '0:00';
-    
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    const secs = seconds % 60;
-    
-    if (hours > 0) {
-        return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-    } else {
-        return `${minutes}:${secs.toString().padStart(2, '0')}`;
-    }
-}
-window.formatDuration = formatDuration;
-
-// ============================================
-// CONTENT METRICS LOADING
-// ============================================
-async function loadContentMetrics(contentIds) {
-    if (!contentIds || contentIds.length === 0) return;
-    
-    const cacheKey = `metrics-${contentIds.sort().join(',')}`;
-    const cached = window.cacheManager.get(cacheKey);
-    if (cached) {
-        cached.forEach(m => window.contentMetrics.set(m.content_id, m));
-        return;
-    }
-    
-    const viewsPromises = contentIds.map(id => 
-        supabaseAuth.from('content_views').select('*', { count: 'exact', head: true }).eq('content_id', id)
-    );
-    
-    const likesPromises = contentIds.map(id => 
-        supabaseAuth.from('content_likes').select('*', { count: 'exact', head: true }).eq('content_id', id)
-    );
-    
-    const [viewsResults, likesResults] = await Promise.all([
-        Promise.all(viewsPromises),
-        Promise.all(likesPromises)
-    ]);
-    
-    const metricsMap = new Map();
-    viewsResults.forEach((r, i) => {
-        const id = contentIds[i];
-        if (!metricsMap.has(id)) metricsMap.set(id, {});
-        metricsMap.get(id).views = r.count || 0;
-    });
-    
-    likesResults.forEach((r, i) => {
-        const id = contentIds[i];
-        if (!metricsMap.has(id)) metricsMap.set(id, {});
-        metricsMap.get(id).likes = r.count || 0;
-    });
-    
-    try {
-        const sharesPromises = contentIds.map(id => 
-            supabaseAuth.from('content_shares').select('*', { count: 'exact', head: true }).eq('content_id', id)
-        );
-        const sharesResults = await Promise.all(sharesPromises);
-        sharesResults.forEach((r, i) => {
-            const id = contentIds[i];
-            if (!metricsMap.has(id)) metricsMap.set(id, {});
-            metricsMap.get(id).shares = r.count || 0;
-        });
-    } catch (e) {
-        contentIds.forEach(id => {
-            if (!metricsMap.has(id)) metricsMap.set(id, {});
-            metricsMap.get(id).shares = 0;
-        });
-    }
-    
-    metricsMap.forEach((metrics, id) => {
-        window.contentMetrics.set(id, metrics);
-    });
-    
-    window.cacheManager.set(cacheKey, 
-        Array.from(metricsMap.entries()).map(([k, v]) => ({ content_id: k, ...v })), 
-        3 * 60 * 1000
-    );
 }
 
 // ============================================
@@ -1859,8 +1831,19 @@ async function searchContent(query, category = '', sortBy = 'newest', language =
         
         if (results.length > 0) {
             const contentIds = results.map(r => r.id);
-            await loadContentMetrics(contentIds);
-            await loadConnectorCountsForContent(contentIds);
+            const creatorIds = [...new Set(results.map(r => r.user_id).filter(Boolean))];
+            const metrics = await fetchAllMetrics(contentIds, creatorIds);
+            
+            // Enrich results with metrics
+            results = results.map(item => ({
+                ...item,
+                metrics: {
+                    views: metrics.views[item.id] || 0,
+                    likes: metrics.likes[item.id] || 0,
+                    shares: metrics.shares[item.id] || 0,
+                    connectors: metrics.connectors[item.user_id] || 0
+                }
+            }));
         }
         
         if (sortBy === 'popular') {
@@ -1885,7 +1868,47 @@ function renderSearchResults(results) {
         return;
     }
     
-    const fragment = renderContentCards(results, true);
+    const fragment = document.createDocumentFragment();
+    
+    results.slice(0, 12).forEach(content => {
+        if (!content) return;
+        
+        const thumbnailUrl = content.thumbnail_url
+            ? contentSupabase.fixMediaUrl(content.thumbnail_url)
+            : 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=225&fit=crop';
+        
+        const creatorProfile = content.user_profiles;
+        const displayName = creatorProfile?.full_name || creatorProfile?.username || 'User';
+        const username = creatorProfile?.username || 'creator';
+        const durationFormatted = formatDuration(content.duration || 0);
+        
+        const card = document.createElement('a');
+        card.className = 'content-card';
+        card.href = `content-detail.html?id=${content.id}`;
+        card.dataset.contentId = content.id;
+        
+        card.innerHTML = `
+            <div class="card-thumbnail">
+                <img src="${thumbnailUrl}" alt="${escapeHtml(content.title)}" loading="lazy">
+                <div class="thumbnail-overlay"></div>
+                <div class="play-overlay"><div class="play-icon"><i class="fas fa-play"></i></div></div>
+                ${content.duration > 0 ? `<div class="duration-badge">${durationFormatted}</div>` : ''}
+            </div>
+            <div class="card-content">
+                <h3 class="card-title" title="${escapeHtml(content.title)}">${truncateText(escapeHtml(content.title), 50)}</h3>
+                <div class="creator-info">
+                    <div class="creator-name-small">@${escapeHtml(username)}</div>
+                </div>
+                <div class="card-meta">
+                    <span><i class="fas fa-eye"></i> ${formatNumber(content.metrics?.views || 0)}</span>
+                    <span><i class="fas fa-heart"></i> ${formatNumber(content.metrics?.likes || 0)}</span>
+                </div>
+            </div>
+        `;
+        
+        fragment.appendChild(card);
+    });
+    
     grid.innerHTML = '';
     grid.appendChild(fragment);
 }
@@ -2623,30 +2646,52 @@ async function reloadContentByCategory(category) {
             .order('views_count', { ascending: false })
             .limit(8);
         
-        window.trendingContent = trendingData || [];
+        const trendingIds = (trendingData || []).map(c => c.id);
+        const trendingCreatorIds = [...new Set((trendingData || []).map(c => c.user_id).filter(Boolean))];
+        
+        const trendingMetrics = await fetchAllMetrics(trendingIds, trendingCreatorIds);
+        
+        const trendingWithMetrics = (trendingData || []).map(item => ({
+            ...item,
+            metrics: {
+                views: trendingMetrics.views[item.id] || 0,
+                likes: trendingMetrics.likes[item.id] || 0,
+                shares: trendingMetrics.shares[item.id] || 0,
+                favorites: item.favorites_count || 0,
+                connectors: trendingMetrics.connectors[item.user_id] || 0
+            }
+        }));
+        
+        const trendingGrid = document.getElementById('trending-grid');
+        if (trendingGrid && trendingWithMetrics.length > 0) {
+            trendingGrid.innerHTML = '';
+            renderContentCards(trendingGrid, trendingWithMetrics);
+        }
         
         const { data: newData } = await query
             .order('created_at', { ascending: false })
             .limit(8);
         
-        window.newContent = newData || [];
+        const newIds = (newData || []).map(c => c.id);
+        const newCreatorIds = [...new Set((newData || []).map(c => c.user_id).filter(Boolean))];
         
-        const allIds = [...window.trendingContent.map(c => c.id), ...window.newContent.map(c => c.id)];
-        await loadContentMetrics(allIds);
-        await loadConnectorCountsForContent(allIds);
+        const newMetrics = await fetchAllMetrics(newIds, newCreatorIds);
         
-        const trendingGrid = document.getElementById('trending-grid');
-        if (trendingGrid && window.trendingContent.length > 0) {
-            const fragment = renderContentCards(window.trendingContent, true);
-            trendingGrid.innerHTML = '';
-            trendingGrid.appendChild(fragment);
-        }
+        const newWithMetrics = (newData || []).map(item => ({
+            ...item,
+            metrics: {
+                views: newMetrics.views[item.id] || 0,
+                likes: newMetrics.likes[item.id] || 0,
+                shares: newMetrics.shares[item.id] || 0,
+                favorites: item.favorites_count || 0,
+                connectors: newMetrics.connectors[item.user_id] || 0
+            }
+        }));
         
         const newContentGrid = document.getElementById('new-content-grid');
-        if (newContentGrid && window.newContent.length > 0) {
-            const fragment = renderContentCards(window.newContent, true);
+        if (newContentGrid && newWithMetrics.length > 0) {
             newContentGrid.innerHTML = '';
-            newContentGrid.appendChild(fragment);
+            renderContentCards(newContentGrid, newWithMetrics);
         }
     } catch (error) {
         console.error('Error reloading content by category:', error);
@@ -2716,7 +2761,7 @@ function updateProfileSwitcher() {
                 localStorage.setItem('currentProfileId', profileId);
                 
                 updateProfileSwitcher();
-                await loadContinueWatching();
+                await loadContinueWatchingSection();
                 await loadForYouSection();
                 
                 showToast(`Switched to ${profile.name}`, 'success');
@@ -2874,10 +2919,21 @@ async function loadMoreContent() {
         
         if (data && data.length > 0) {
             const contentIds = data.map(c => c.id);
-            await loadContentMetrics(contentIds);
-            await loadConnectorCountsForContent(contentIds);
+            const creatorIds = [...new Set(data.map(c => c.user_id).filter(Boolean))];
+            const metrics = await fetchAllMetrics(contentIds, creatorIds);
             
-            appendMoreContent(data);
+            const dataWithMetrics = data.map(item => ({
+                ...item,
+                metrics: {
+                    views: metrics.views[item.id] || 0,
+                    likes: metrics.likes[item.id] || 0,
+                    shares: metrics.shares[item.id] || 0,
+                    favorites: item.favorites_count || 0,
+                    connectors: metrics.connectors[item.user_id] || 0
+                }
+            }));
+            
+            appendMoreContent(dataWithMetrics);
             window.hasMoreContent = data.length === window.PAGE_SIZE;
         } else {
             window.hasMoreContent = false;
@@ -2901,8 +2957,7 @@ function appendMoreContent(newItems) {
     const newContentGrid = document.getElementById('new-content-grid');
     if (!newContentGrid) return;
     
-    const fragment = renderContentCards(newItems, true);
-    newContentGrid.appendChild(fragment);
+    renderContentCards(newContentGrid, newItems);
 }
 
 // ============================================
@@ -2958,5 +3013,77 @@ function closeAllModals() {
     const shortcutsModal = document.getElementById('shortcuts-modal');
     if (shortcutsModal) {
         shortcutsModal.style.display = 'none';
+    }
+}
+
+// ============================================
+// WELCOME MESSAGE
+// ============================================
+function updateWelcomeMessage() {
+    const userNameSpan = document.getElementById('user-name');
+    const welcomeSubtitle = document.getElementById('welcome-subtitle');
+    const welcomeMessage = document.getElementById('welcome-message');
+    
+    if (window.currentUser && window.currentProfile) {
+        const name = window.currentProfile.name || 
+                    window.currentUser.user_metadata?.full_name || 
+                    window.currentUser.email?.split('@')[0] || 
+                    'User';
+        userNameSpan.textContent = name;
+        
+        const hour = new Date().getHours();
+        let greeting = 'Good ';
+        if (hour < 12) greeting += 'morning';
+        else if (hour < 18) greeting += 'afternoon';
+        else greeting += 'evening';
+        
+        welcomeMessage.innerHTML = `${greeting}, <span id="user-name">${name}</span>! 👋`;
+        
+        if (welcomeSubtitle) {
+            welcomeSubtitle.textContent = 'Here\'s what we picked for you today';
+        }
+    } else {
+        userNameSpan.textContent = 'Guest';
+        welcomeMessage.innerHTML = 'Welcome, <span id="user-name">Guest</span>! 👋';
+        if (welcomeSubtitle) {
+            welcomeSubtitle.textContent = 'Sign in for personalized recommendations';
+        }
+    }
+}
+
+// ============================================
+// UPDATE APP ICON
+// ============================================
+function updateAppIcon() {
+    // Update logo icon in header
+    const logoIcon = document.querySelector('.logo-icon');
+    if (logoIcon) {
+        // Clear existing content
+        logoIcon.innerHTML = '';
+        
+        // Add img element
+        const img = document.createElement('img');
+        img.src = 'assets/icon/bantu_stream_connect_icon.png';
+        img.alt = 'Bantu Stream Connect';
+        img.style.width = '100%';
+        img.style.height = '100%';
+        img.style.objectFit = 'contain';
+        
+        logoIcon.appendChild(img);
+    }
+    
+    // Update sidebar logo icon
+    const sidebarLogoIcon = document.querySelector('.sidebar-logo .logo-icon');
+    if (sidebarLogoIcon) {
+        sidebarLogoIcon.innerHTML = '';
+        
+        const img = document.createElement('img');
+        img.src = 'assets/icon/bantu_stream_connect_icon.png';
+        img.alt = 'Bantu Stream Connect';
+        img.style.width = '100%';
+        img.style.height = '100%';
+        img.style.objectFit = 'contain';
+        
+        sidebarLogoIcon.appendChild(img);
     }
 }
