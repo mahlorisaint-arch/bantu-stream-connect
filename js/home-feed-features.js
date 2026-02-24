@@ -213,7 +213,7 @@ async function initializeHomeFeed() {
 }
 
 // ============================================
-// METRICS AGGREGATOR - NO SIDE EFFECTS
+// METRICS AGGREGATOR - REAL COUNTS ONLY, NO DEMO FALLBACKS
 // ============================================
 
 // Master builder - composes complete dataset for a section
@@ -231,7 +231,7 @@ async function buildSectionData(contentList) {
             views: metrics.views[item.id] || 0,
             likes: metrics.likes[item.id] || 0,
             shares: metrics.shares[item.id] || 0,
-            favorites: item.favorites_count || 0,
+            favorites: metrics.favorites[item.id] || 0,
             connectors: metrics.connectors[item.user_id] || 0
         }
     }));
@@ -239,10 +239,11 @@ async function buildSectionData(contentList) {
 
 // Fetch all metrics in parallel
 async function fetchAllMetrics(contentIds, creatorIds) {
-    const [viewsRes, likesRes, sharesRes, connectorsRes] = await Promise.all([
+    const [viewsRes, likesRes, sharesRes, favoritesRes, connectorsRes] = await Promise.all([
         fetchViewCounts(contentIds),
         fetchLikeCounts(contentIds),
         fetchShareCounts(contentIds),
+        fetchFavoriteCounts(contentIds),
         fetchConnectorCounts(creatorIds)
     ]);
 
@@ -250,24 +251,32 @@ async function fetchAllMetrics(contentIds, creatorIds) {
         views: viewsRes,
         likes: likesRes,
         shares: sharesRes,
+        favorites: favoritesRes,
         connectors: connectorsRes
     };
 }
 
-// View counts
+// FIXED: View counts with proper GROUP BY
 async function fetchViewCounts(contentIds) {
     if (!contentIds.length) return {};
     
     try {
-        const { data } = await supabaseAuth
+        const { data, error } = await supabaseAuth
             .from("content_views")
-            .select("content_id")
-            .in("content_id", contentIds);
+            .select("content_id, count")
+            .in("content_id", contentIds)
+            .group("content_id");
+
+        if (error) {
+            console.error("View count error:", error);
+            return {};
+        }
 
         const counts = {};
         data?.forEach(row => {
-            counts[row.content_id] = (counts[row.content_id] || 0) + 1;
+            counts[row.content_id] = row.count;
         });
+
         return counts;
     } catch (error) {
         console.error('Error fetching view counts:', error);
@@ -275,20 +284,27 @@ async function fetchViewCounts(contentIds) {
     }
 }
 
-// Like counts
+// FIXED: Like counts with proper GROUP BY
 async function fetchLikeCounts(contentIds) {
     if (!contentIds.length) return {};
     
     try {
-        const { data } = await supabaseAuth
+        const { data, error } = await supabaseAuth
             .from("content_likes")
-            .select("content_id")
-            .in("content_id", contentIds);
+            .select("content_id, count")
+            .in("content_id", contentIds)
+            .group("content_id");
+
+        if (error) {
+            console.error("Like count error:", error);
+            return {};
+        }
 
         const counts = {};
         data?.forEach(row => {
-            counts[row.content_id] = (counts[row.content_id] || 0) + 1;
+            counts[row.content_id] = row.count;
         });
+
         return counts;
     } catch (error) {
         console.error('Error fetching like counts:', error);
@@ -296,23 +312,58 @@ async function fetchLikeCounts(contentIds) {
     }
 }
 
-// Share counts
+// FIXED: Share counts with proper GROUP BY
 async function fetchShareCounts(contentIds) {
     if (!contentIds.length) return {};
     
     try {
-        const { data } = await supabaseAuth
+        const { data, error } = await supabaseAuth
             .from("content_shares")
-            .select("content_id")
-            .in("content_id", contentIds);
+            .select("content_id, count")
+            .in("content_id", contentIds)
+            .group("content_id");
+
+        if (error) {
+            console.error("Share count error:", error);
+            return {};
+        }
 
         const counts = {};
         data?.forEach(row => {
-            counts[row.content_id] = (counts[row.content_id] || 0) + 1;
+            counts[row.content_id] = row.count;
         });
+
         return counts;
     } catch (error) {
         console.error('Error fetching share counts:', error);
+        return {};
+    }
+}
+
+// NEW: Favorite counts
+async function fetchFavoriteCounts(contentIds) {
+    if (!contentIds.length) return {};
+    
+    try {
+        const { data, error } = await supabaseAuth
+            .from("content_favorites")
+            .select("content_id, count")
+            .in("content_id", contentIds)
+            .group("content_id");
+
+        if (error) {
+            console.error("Favorite count error:", error);
+            return {};
+        }
+
+        const counts = {};
+        data?.forEach(row => {
+            counts[row.content_id] = row.count;
+        });
+
+        return counts;
+    } catch (error) {
+        console.error('Error fetching favorite counts:', error);
         return {};
     }
 }
@@ -322,15 +373,22 @@ async function fetchConnectorCounts(creatorIds) {
     if (!creatorIds.length) return {};
     
     try {
-        const { data } = await supabaseAuth
+        const { data, error } = await supabaseAuth
             .from("connectors")
-            .select("connected_id")
-            .in("connected_id", creatorIds);
+            .select("connected_id, count")
+            .in("connected_id", creatorIds)
+            .group("connected_id");
+
+        if (error) {
+            console.error("Connector count error:", error);
+            return {};
+        }
 
         const counts = {};
         data?.forEach(row => {
-            counts[row.connected_id] = (counts[row.connected_id] || 0) + 1;
+            counts[row.connected_id] = row.count;
         });
+
         return counts;
     } catch (error) {
         console.error('Error fetching connector counts:', error);
@@ -516,21 +574,40 @@ async function loadForYouSection() {
                 genres = [...new Set((likedGenres || []).map(g => g.genre).filter(Boolean))];
             }
             
-            // Build query based on preferences
-            let query = supabaseAuth
-                .from('Content')
-                .select('*, user_profiles!user_id(*)')
-                .eq('status', 'published');
-            
-            if (genres.length > 0) {
-                query = query.in('genre', genres);
+            // Try to use ranked_content view if available
+            try {
+                let query = supabaseAuth
+                    .from('ranked_content')
+                    .select('*, user_profiles!user_id(*)')
+                    .eq('status', 'published');
+                
+                if (genres.length > 0) {
+                    query = query.in('genre', genres);
+                }
+                
+                const { data } = await query
+                    .order('engagement_score', { ascending: false })
+                    .limit(12);
+                
+                contentList = data || [];
+            } catch (e) {
+                console.log('Ranked content view not available, using fallback');
+                // Fallback to regular query
+                let query = supabaseAuth
+                    .from('Content')
+                    .select('*, user_profiles!user_id(*)')
+                    .eq('status', 'published');
+                
+                if (genres.length > 0) {
+                    query = query.in('genre', genres);
+                }
+                
+                const { data } = await query
+                    .order('views_count', { ascending: false })
+                    .limit(12);
+                
+                contentList = data || [];
             }
-            
-            const { data } = await query
-                .order('views_count', { ascending: false })
-                .limit(12);
-            
-            contentList = data || [];
         }
         
         // Fallback to trending if no personalized content
@@ -559,9 +636,12 @@ async function loadForYouSection() {
         // Build complete dataset with metrics
         const sectionData = await buildSectionData(contentList.slice(0, 8));
         
+        // Apply diversity filter (max 2 per creator)
+        const diversifiedData = diversifyByCreator(sectionData, 2);
+        
         // Render once
         container.innerHTML = '';
-        renderContentCards(container, sectionData);
+        renderContentCards(container, diversifiedData);
         
     } catch (err) {
         console.error("❌ For You Section Error:", err);
@@ -796,15 +876,29 @@ async function loadTrendingSection() {
     if (!container) return;
     
     try {
-        // 1️⃣ Fetch trending content (by views_count)
-        const { data: contentList, error } = await supabaseAuth
-            .from('Content')
-            .select('*, user_profiles!user_id(*)')
-            .eq('status', 'published')
-            .order('views_count', { ascending: false })
-            .limit(12);
+        // Try to use ranked_content with engagement score
+        let contentList = [];
         
-        if (error) throw error;
+        try {
+            const { data } = await supabaseAuth
+                .from('ranked_content')
+                .select('*, user_profiles!user_id(*)')
+                .eq('status', 'published')
+                .order('engagement_score', { ascending: false })
+                .limit(12);
+            
+            contentList = data || [];
+        } catch (e) {
+            // Fallback to views_count
+            const { data } = await supabaseAuth
+                .from('Content')
+                .select('*, user_profiles!user_id(*)')
+                .eq('status', 'published')
+                .order('views_count', { ascending: false })
+                .limit(12);
+            
+            contentList = data || [];
+        }
         
         if (!contentList || contentList.length === 0) {
             container.innerHTML = `
@@ -1115,19 +1209,34 @@ function renderEventsCards(container, events) {
 async function loadCinematicHero() {
     try {
         // Get trending content with highest engagement
-        const { data: trendingData, error } = await supabaseAuth
-            .from('Content')
-            .select('*, user_profiles!user_id(*)')
-            .eq('status', 'published')
-            .order('views_count', { ascending: false })
-            .order('favorites_count', { ascending: false })
-            .limit(5);
+        let featuredContent = null;
         
-        if (error) throw error;
+        // Try to use ranked_content view
+        try {
+            const { data: rankedData } = await supabaseAuth
+                .from('ranked_content')
+                .select('*, user_profiles!user_id(*)')
+                .eq('status', 'published')
+                .order('engagement_score', { ascending: false })
+                .limit(1);
+            
+            featuredContent = rankedData?.[0];
+        } catch (e) {
+            // Fallback to views_count
+            const { data: trendingData } = await supabaseAuth
+                .from('Content')
+                .select('*, user_profiles!user_id(*)')
+                .eq('status', 'published')
+                .order('views_count', { ascending: false })
+                .order('favorites_count', { ascending: false })
+                .limit(1);
+            
+            featuredContent = trendingData?.[0];
+        }
         
-        const featuredContent = trendingData?.[0] || getMockHeroContent();
-        
-        if (!featuredContent) return;
+        if (!featuredContent) {
+            featuredContent = getMockHeroContent();
+        }
         
         // Update hero video
         const heroVideo = document.getElementById('hero-background-video');
@@ -1165,7 +1274,7 @@ async function loadCinematicHero() {
         const metrics = await fetchAllMetrics([featuredContent.id], creator ? [creator.id] : []);
         
         document.getElementById('hero-views').textContent = formatNumber(metrics.views[featuredContent.id] || featuredContent.views_count || 12500);
-        document.getElementById('hero-favorites').textContent = formatNumber(featuredContent.favorites_count || 2300);
+        document.getElementById('hero-favorites').textContent = formatNumber(metrics.favorites[featuredContent.id] || featuredContent.favorites_count || 2300);
         document.getElementById('hero-connectors').textContent = formatNumber(creator ? (metrics.connectors[creator.id] || 1200) : 1200);
         document.getElementById('hero-shares').textContent = formatNumber(metrics.shares[featuredContent.id] || featuredContent.shares_count || 856);
         
@@ -1223,7 +1332,7 @@ async function loadCommunityStats() {
 }
 
 // ============================================
-// PURE RENDER FUNCTION - NO GLOBALS, NO MUTATIONS
+// PURE RENDER FUNCTION - CLEAN, COMPACT, PREMIUM FEEL
 // ============================================
 function renderContentCards(container, contents) {
     if (!container || !contents || contents.length === 0) return;
@@ -1238,22 +1347,19 @@ function renderContentCards(container, contents) {
             : 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=225&fit=crop';
         
         const creatorProfile = content.user_profiles;
-        const displayName = creatorProfile?.full_name || creatorProfile?.username || 'User';
-        const initials = getInitials(displayName);
         const username = creatorProfile?.username || 'creator';
         const isNew = (new Date() - new Date(content.created_at)) < 7 * 24 * 60 * 60 * 1000;
         const durationFormatted = formatDuration(content.duration || 0);
         
-        let avatarHtml = '';
-        if (creatorProfile?.avatar_url) {
-            const avatarUrl = contentSupabase.fixMediaUrl(creatorProfile.avatar_url);
-            avatarHtml = `<img src="${avatarUrl}" alt="${escapeHtml(displayName)}" loading="lazy">`;
-        } else {
-            avatarHtml = `<div class="creator-initials-small">${initials}</div>`;
-        }
+        // REAL METRICS ONLY - no demo fallbacks
+        const views = content.metrics?.views || 0;
+        const likes = content.metrics?.likes || 0;
+        const shares = content.metrics?.shares || 0;
+        const favorites = content.metrics?.favorites || 0;
+        const connectors = content.metrics?.connectors || 0;
         
         const card = document.createElement('a');
-        card.className = 'content-card';
+        card.className = 'content-card compact';
         card.href = `content-detail.html?id=${content.id}`;
         card.dataset.contentId = content.id;
         card.dataset.language = content.language || 'en';
@@ -1263,39 +1369,61 @@ function renderContentCards(container, contents) {
             <div class="card-thumbnail">
                 <img src="${thumbnailUrl}" alt="${escapeHtml(content.title)}" loading="lazy">
                 <div class="card-badges">
-                    ${isNew ? '<div class="card-badge badge-new"><i class="fas fa-gem"></i> NEW</div>' : ''}
-                    <div class="connector-badge"><i class="fas fa-star"></i><span>${formatNumber(content.metrics?.favorites || 0)} Favorites</span></div>
+                    ${isNew ? '<div class="card-badge badge-new">NEW</div>' : ''}
+                    ${favorites > 0 ? `<div class="connector-badge"><i class="fas fa-star"></i> ${formatNumber(favorites)}</div>` : ''}
                 </div>
-                <div class="thumbnail-overlay"></div>
                 <div class="play-overlay"><div class="play-icon"><i class="fas fa-play"></i></div></div>
                 ${content.duration > 0 ? `<div class="duration-badge">${durationFormatted}</div>` : ''}
             </div>
             <div class="card-content">
-                <h3 class="card-title" title="${escapeHtml(content.title)}">${truncateText(escapeHtml(content.title), 50)}</h3>
-                <div class="creator-info">
-                    <div class="creator-avatar-small">${avatarHtml}</div>
-                    <div class="creator-name-small">@${escapeHtml(username)}</div>
-                </div>
+                <h4 class="card-title" title="${escapeHtml(content.title)}">${truncateText(escapeHtml(content.title), 50)}</h4>
                 <div class="card-meta">
-                    <span><i class="fas fa-eye"></i> ${formatNumber(content.metrics?.views || 0)}</span>
-                    <span><i class="fas fa-heart"></i> ${formatNumber(content.metrics?.likes || 0)}</span>
-                    <span><i class="fas fa-share"></i> ${formatNumber(content.metrics?.shares || 0)}</span>
-                    <span><i class="fas fa-language"></i> ${window.languageMap[content.language] || 'English'}</span>
+                    <span>@${escapeHtml(username)}</span>
                 </div>
-                <div class="connector-info">
-                    <i class="fas fa-user-friends"></i> ${formatNumber(content.metrics?.connectors || 0)} Connectors
+                <div class="card-stats">
+                    <span><i class="fas fa-eye"></i> ${formatNumber(views)}</span>
+                    <span><i class="fas fa-heart"></i> ${formatNumber(likes)}</span>
+                    <span><i class="fas fa-share"></i> ${formatNumber(shares)}</span>
                 </div>
+                ${connectors > 0 ? `
+                    <div class="connector-info">
+                        <i class="fas fa-user-friends"></i> ${formatNumber(connectors)} Connectors
+                    </div>
+                ` : ''}
             </div>
         `;
         
         fragment.appendChild(card);
     });
     
+    container.innerHTML = '';
     container.appendChild(fragment);
 }
 
+// Diversity filter - prevents feed from being dominated by single creator
+function diversifyByCreator(contents, maxPerCreator = 2) {
+    const creatorCount = new Map();
+    const result = [];
+
+    for (const item of contents) {
+        const creatorId = item.user_id;
+        if (!creatorId) {
+            result.push(item);
+            continue;
+        }
+        
+        const count = creatorCount.get(creatorId) || 0;
+        if (count < maxPerCreator) {
+            creatorCount.set(creatorId, count + 1);
+            result.push(item);
+        }
+    }
+
+    return result;
+}
+
 // ============================================
-// MOCK DATA FUNCTIONS (Fallbacks)
+// MOCK DATA FUNCTIONS (Fallbacks only - minimal)
 // ============================================
 function getMockHeroContent() {
     return {
@@ -1962,6 +2090,7 @@ async function searchContent(query, category = '', sortBy = 'newest', language =
                     views: metrics.views[item.id] || 0,
                     likes: metrics.likes[item.id] || 0,
                     shares: metrics.shares[item.id] || 0,
+                    favorites: metrics.favorites[item.id] || 0,
                     connectors: metrics.connectors[item.user_id] || 0
                 }
             }));
@@ -1971,6 +2100,10 @@ async function searchContent(query, category = '', sortBy = 'newest', language =
             results.sort((a, b) => (b.views_count || 0) - (a.views_count || 0));
         } else if (sortBy === 'newest') {
             results.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+        } else if (sortBy === 'trending') {
+            results.sort((a, b) => ((b.views_count || 0) + (b.likes_count || 0) * 2) - ((a.views_count || 0) + (a.likes_count || 0) * 2));
+        } else if (sortBy === 'connectors') {
+            results.sort((a, b) => (b.metrics?.connectors || 0) - (a.metrics?.connectors || 0));
         }
         
         return results;
@@ -2004,23 +2137,22 @@ function renderSearchResults(results) {
         const durationFormatted = formatDuration(content.duration || 0);
         
         const card = document.createElement('a');
-        card.className = 'content-card';
+        card.className = 'content-card compact';
         card.href = `content-detail.html?id=${content.id}`;
         card.dataset.contentId = content.id;
         
         card.innerHTML = `
             <div class="card-thumbnail">
                 <img src="${thumbnailUrl}" alt="${escapeHtml(content.title)}" loading="lazy">
-                <div class="thumbnail-overlay"></div>
                 <div class="play-overlay"><div class="play-icon"><i class="fas fa-play"></i></div></div>
                 ${content.duration > 0 ? `<div class="duration-badge">${durationFormatted}</div>` : ''}
             </div>
             <div class="card-content">
-                <h3 class="card-title" title="${escapeHtml(content.title)}">${truncateText(escapeHtml(content.title), 50)}</h3>
-                <div class="creator-info">
-                    <div class="creator-name-small">@${escapeHtml(username)}</div>
-                </div>
+                <h4 class="card-title" title="${escapeHtml(content.title)}">${truncateText(escapeHtml(content.title), 50)}</h4>
                 <div class="card-meta">
+                    <span>@${escapeHtml(username)}</span>
+                </div>
+                <div class="card-stats">
                     <span><i class="fas fa-eye"></i> ${formatNumber(content.metrics?.views || 0)}</span>
                     <span><i class="fas fa-heart"></i> ${formatNumber(content.metrics?.likes || 0)}</span>
                 </div>
@@ -2778,7 +2910,7 @@ async function reloadContentByCategory(category) {
                 views: trendingMetrics.views[item.id] || 0,
                 likes: trendingMetrics.likes[item.id] || 0,
                 shares: trendingMetrics.shares[item.id] || 0,
-                favorites: item.favorites_count || 0,
+                favorites: trendingMetrics.favorites[item.id] || 0,
                 connectors: trendingMetrics.connectors[item.user_id] || 0
             }
         }));
@@ -2804,7 +2936,7 @@ async function reloadContentByCategory(category) {
                 views: newMetrics.views[item.id] || 0,
                 likes: newMetrics.likes[item.id] || 0,
                 shares: newMetrics.shares[item.id] || 0,
-                favorites: item.favorites_count || 0,
+                favorites: newMetrics.favorites[item.id] || 0,
                 connectors: newMetrics.connectors[item.user_id] || 0
             }
         }));
@@ -3049,7 +3181,7 @@ async function loadMoreContent() {
                     views: metrics.views[item.id] || 0,
                     likes: metrics.likes[item.id] || 0,
                     shares: metrics.shares[item.id] || 0,
-                    favorites: item.favorites_count || 0,
+                    favorites: metrics.favorites[item.id] || 0,
                     connectors: metrics.connectors[item.user_id] || 0
                 }
             }));
@@ -3208,3 +3340,14 @@ function updateAppIcon() {
         sidebarLogoIcon.appendChild(img);
     }
 }
+
+// Initialize global variables
+window.PAGE_SIZE = 20;
+window.currentPage = 0;
+window.hasMoreContent = true;
+window.isLoadingMore = false;
+window.languageMap = {
+    en: 'English', zu: 'IsiZulu', xh: 'IsiXhosa', af: 'Afrikaans',
+    nso: 'Sepedi', st: 'Sesotho', tn: 'Setswana', ss: 'siSwati',
+    ve: 'Tshivenda', ts: 'Xitsonga', nr: 'isiNdebele'
+};
