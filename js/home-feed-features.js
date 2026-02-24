@@ -1,6 +1,127 @@
 // ============================================
 // HOME FEED INITIALIZATION - PRODUCTION ARCHITECTURE
 // ============================================
+
+// ============================================
+// UTILITY FUNCTIONS (MUST BE DEFINED FIRST)
+// ============================================
+
+/**
+ * Format duration in seconds to MM:SS or HH:MM:SS format
+ * @param {number} seconds - Duration in seconds
+ * @returns {string} Formatted duration string
+ */
+function formatDuration(seconds) {
+    if (!seconds || isNaN(seconds) || seconds <= 0) return "0:00";
+
+    const hrs = Math.floor(seconds / 3600);
+    const mins = Math.floor((seconds % 3600) / 60);
+    const secs = Math.floor(seconds % 60);
+
+    if (hrs > 0) {
+        return `${hrs}:${mins.toString().padStart(2, "0")}:${secs
+            .toString()
+            .padStart(2, "0")}`;
+    }
+
+    return `${mins}:${secs.toString().padStart(2, "0")}`;
+}
+
+/**
+ * Format large numbers with K/M suffixes
+ * @param {number} num - Number to format
+ * @returns {string} Formatted number string
+ */
+function formatNumber(num) {
+    if (!num && num !== 0) return '0';
+    if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+    if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+    return num.toString();
+}
+
+/**
+ * Get initials from a name
+ * @param {string} name - Full name
+ * @returns {string} Initials (max 2 characters)
+ */
+function getInitials(name) {
+    if (!name) return '?';
+    return name
+        .split(' ')
+        .map(part => part[0])
+        .join('')
+        .toUpperCase()
+        .substring(0, 2);
+}
+
+/**
+ * Escape HTML special characters
+ * @param {string} text - Text to escape
+ * @returns {string} Escaped text
+ */
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+/**
+ * Truncate text to specified length
+ * @param {string} text - Text to truncate
+ * @param {number} maxLength - Maximum length
+ * @returns {string} Truncated text
+ */
+function truncateText(text, maxLength) {
+    if (!text || text.length <= maxLength) return text;
+    return text.substring(0, maxLength) + '...';
+}
+
+/**
+ * Debounce function to limit function calls
+ * @param {Function} func - Function to debounce
+ * @param {number} wait - Wait time in milliseconds
+ * @returns {Function} Debounced function
+ */
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
+
+/**
+ * Show toast notification
+ * @param {string} message - Message to display
+ * @param {string} type - Type of toast (success, error, warning, info)
+ */
+function showToast(message, type = 'info') {
+    const container = document.getElementById('toast-container');
+    if (!container) return;
+    
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    toast.innerHTML = `
+        <i class="fas ${type === 'success' ? 'fa-check-circle' : 
+                        type === 'error' ? 'fa-exclamation-circle' : 
+                        type === 'warning' ? 'fa-exclamation-triangle' : 
+                        'fa-info-circle'}"></i>
+        <span>${escapeHtml(message)}</span>
+    `;
+    
+    container.appendChild(toast);
+    
+    setTimeout(() => {
+        toast.classList.add('toast-hide');
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
     console.log('🚀 Home Feed Initializing (Production Mode)');
     
