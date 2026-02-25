@@ -6,8 +6,8 @@
     <title>Manage Profiles - Bantu Stream Connect</title>
     
     <!-- PERFORMANCE: Preload Critical Resources -->
-    <link rel="preload" href="css/home-feed.css" as="style">
-    <link rel="preload" href="css/home-feed-ui.css" as="style">
+    <link rel="preload" href="css/manage-profiles-ui.css" as="style">
+    <link rel="preload" href="css/manage-profiles-features.css" as="style">
     <link rel="preload" href="css/manage-profiles.css" as="style">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -21,8 +21,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <!-- CSS Files -->
-    <link rel="stylesheet" href="css/home-feed.css">
-    <link rel="stylesheet" href="css/home-feed-ui.css">
+    <link rel="stylesheet" href="css/manage-profiles-ui.css">
+    <link rel="stylesheet" href="css/manage-profiles-features.css">
     <link rel="stylesheet" href="css/manage-profiles.css">
     
     <!-- Supabase JS SDK -->
@@ -365,6 +365,15 @@
                         </div>
                     </div>
 
+                    <!-- Profile Bio -->
+                    <div class="form-group">
+                        <label for="profile-bio">Bio</label>
+                        <textarea id="profile-bio" class="form-textarea" placeholder="Tell us about yourself..." maxlength="500" rows="3"></textarea>
+                        <div class="character-count">
+                            <span id="bio-count">0</span>/500
+                        </div>
+                    </div>
+
                     <!-- Profile Type -->
                     <div class="form-group">
                         <label>Profile Type</label>
@@ -450,8 +459,32 @@
                         </select>
                     </div>
 
+                    <!-- Privacy & Security Settings -->
+                    <div class="form-group">
+                        <h3 class="settings-subtitle">Privacy & Security</h3>
+                        <label class="toggle-label">
+                            <span>Private Profile</span>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="private-profile-toggle">
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </label>
+                        <p class="field-hint">When enabled, your profile won't appear in search results</p>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="toggle-label">
+                            <span>Show Watch History</span>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="show-history-toggle" checked>
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </label>
+                    </div>
+
                     <!-- Auto-play Settings -->
                     <div class="form-group">
+                        <h3 class="settings-subtitle">Playback Settings</h3>
                         <label class="toggle-label">
                             <span>Auto-play next episode</span>
                             <label class="toggle-switch">
@@ -466,6 +499,16 @@
                             <span>Auto-play previews while browsing</span>
                             <label class="toggle-switch">
                                 <input type="checkbox" id="preview-toggle">
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </label>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="toggle-label">
+                            <span>HD Content Only</span>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="hd-toggle">
                                 <span class="toggle-slider"></span>
                             </label>
                         </label>
@@ -490,11 +533,20 @@
             </div>
             <div class="delete-body">
                 <p>Are you sure you want to delete <strong id="delete-profile-name">this profile</strong>?</p>
-                <p class="delete-warning">This action cannot be undone. All watch history, preferences, and saved data for this profile will be permanently deleted.</p>
+                <div class="warning-list">
+                    <p><i class="fas fa-times-circle"></i> All watch history will be permanently deleted</p>
+                    <p><i class="fas fa-times-circle"></i> All preferences and settings will be lost</p>
+                    <p><i class="fas fa-times-circle"></i> Saved content and favorites will be removed</p>
+                </div>
+                <p class="delete-warning">This action cannot be undone.</p>
+                <p class="support-contact">For support, contact: support@bantustreamconnect.co.za</p>
             </div>
             <div class="delete-footer">
                 <button class="cancel-delete-btn" id="cancel-delete-btn">Cancel</button>
-                <button class="confirm-delete-btn" id="confirm-delete-btn">Delete Permanently</button>
+                <button class="confirm-delete-btn" id="confirm-delete-btn">
+                    <i class="fas fa-spinner fa-spin" style="display: none;"></i>
+                    <span>Delete Permanently</span>
+                </button>
             </div>
         </div>
     </div>
@@ -508,11 +560,20 @@
             </div>
             <div class="delete-body">
                 <p>Are you sure you want to delete <strong>ALL profiles</strong> except your main account?</p>
-                <p class="delete-warning">This action cannot be undone. All watch history, preferences, and saved data for all profiles will be permanently deleted.</p>
+                <div class="warning-list">
+                    <p><i class="fas fa-times-circle"></i> All watch history will be permanently deleted</p>
+                    <p><i class="fas fa-times-circle"></i> All preferences and settings will be lost</p>
+                    <p><i class="fas fa-times-circle"></i> Saved content and favorites will be removed</p>
+                </div>
+                <p class="delete-warning">This action cannot be undone.</p>
+                <input type="text" id="delete-confirmation" class="form-input" placeholder="Type 'DELETE' to confirm">
             </div>
             <div class="delete-footer">
                 <button class="cancel-delete-btn" id="cancel-delete-all-btn">Cancel</button>
-                <button class="confirm-delete-btn" id="confirm-delete-all-btn">Delete All</button>
+                <button class="confirm-delete-btn" id="confirm-delete-all-btn" disabled>
+                    <i class="fas fa-spinner fa-spin" style="display: none;"></i>
+                    <span>Delete All</span>
+                </button>
             </div>
         </div>
     </div>
@@ -780,10 +841,9 @@
     <!-- JavaScript Files -->
     <script src="env.js"></script>
     <script src="js/rate-limiter.js"></script>
-    <script src="js/home-feed.js"></script>
-    <script src="js/home-feed-ui.js"></script>
-    <script src="js/home-feed-features.js"></script>
     <script src="js/manage-profiles.js"></script>
+    <script src="js/manage-profiles-ui.js"></script>
+    <script src="js/manage-profiles-features.js"></script>
     
     <script>
         // Supabase Configuration
@@ -847,6 +907,16 @@
                 // Initialize page components
                 if (typeof initializeManageProfiles === 'function') {
                     initializeManageProfiles();
+                }
+                
+                // Initialize UI components
+                if (typeof initializeManageProfilesUI === 'function') {
+                    initializeManageProfilesUI();
+                }
+                
+                // Initialize features
+                if (typeof initializeManageProfilesFeatures === 'function') {
+                    initializeManageProfilesFeatures();
                 }
                 
                 // Setup sidebar
