@@ -5,6 +5,8 @@
 // Global state
 window.profiles = [];
 window.currentEditingProfile = null;
+window.favorites = [];
+window.watchHistory = [];
 
 // ============================================
 // INITIALIZATION
@@ -22,6 +24,12 @@ function initializeManageProfiles() {
     setupAddProfileButton();
     setupNavigation();
     setupLogoutButton();
+    
+    // Load additional data if user is authenticated
+    if (window.currentUser) {
+        loadFavorites();
+        loadWatchHistory();
+    }
 }
 
 // ============================================
@@ -95,6 +103,50 @@ async function loadProfiles() {
                 </button>
             </div>
         `;
+    }
+}
+
+// ============================================
+// LOAD FAVORITES
+// ============================================
+async function loadFavorites() {
+    try {
+        if (!window.currentUser) return;
+        
+        const { data, error } = await supabaseAuth
+            .from('favorites')
+            .select('*')
+            .eq('user_id', window.currentUser.id)
+            .order('created_at', { ascending: false })
+            .limit(10);
+        
+        if (error) throw error;
+        
+        window.favorites = data || [];
+    } catch (error) {
+        console.error('Error loading favorites:', error);
+    }
+}
+
+// ============================================
+// LOAD WATCH HISTORY
+// ============================================
+async function loadWatchHistory() {
+    try {
+        if (!window.currentUser) return;
+        
+        const { data, error } = await supabaseAuth
+            .from('watch_history')
+            .select('*')
+            .eq('user_id', window.currentUser.id)
+            .order('watched_at', { ascending: false })
+            .limit(10);
+        
+        if (error) throw error;
+        
+        window.watchHistory = data || [];
+    } catch (error) {
+        console.error('Error loading watch history:', error);
     }
 }
 
@@ -180,6 +232,7 @@ function renderProfiles() {
                     <span class="profile-type-badge">
                         ${profile.profile_type || 'Adult'}
                     </span>
+                    <p class="profile-bio">${escapeHtml(profile.bio || 'No bio yet')}</p>
                     <div class="profile-stats">
                         <div class="profile-stat">
                             <span class="stat-value">${profile.watch_time ? Math.floor(profile.watch_time / 3600) + 'h' : '0h'}</span>
@@ -296,7 +349,9 @@ function setupProfileModal() {
     const uploadBtn = document.getElementById('upload-avatar-btn');
     const generateBtn = document.getElementById('generate-avatar-btn');
     const nameInput = document.getElementById('profile-name');
+    const bioInput = document.getElementById('profile-bio');
     const nameCount = document.getElementById('name-count');
+    const bioCount = document.getElementById('bio-count');
     
     // Close modal handlers
     const closeModal = () => {
@@ -317,6 +372,13 @@ function setupProfileModal() {
     if (nameInput && nameCount) {
         nameInput.addEventListener('input', () => {
             nameCount.textContent = nameInput.value.length;
+        });
+    }
+    
+    // Bio character count
+    if (bioInput && bioCount) {
+        bioInput.addEventListener('input', () => {
+            bioCount.textContent = bioInput.value.length;
         });
     }
     
@@ -355,16 +417,20 @@ function openCreateProfileModal() {
     const modalTitle = document.getElementById('modal-title');
     const profileId = document.getElementById('profile-id');
     const nameInput = document.getElementById('profile-name');
+    const bioInput = document.getElementById('profile-bio');
     const avatarImage = document.getElementById('avatar-image');
     const avatarPlaceholder = document.getElementById('avatar-placeholder');
     const nameCount = document.getElementById('name-count');
+    const bioCount = document.getElementById('bio-count');
     
-    if (!modal || !modalTitle || !profileId || !nameInput || !avatarImage || !avatarPlaceholder || !nameCount) return;
+    if (!modal || !modalTitle || !profileId || !nameInput || !bioInput || !avatarImage || !avatarPlaceholder || !nameCount || !bioCount) return;
     
     modalTitle.textContent = 'Create New Profile';
     profileId.value = '';
     nameInput.value = '';
+    bioInput.value = '';
     nameCount.textContent = '0';
+    bioCount.textContent = '0';
     
     // Reset avatar
     avatarImage.style.display = 'none';
@@ -389,11 +455,20 @@ function openCreateProfileModal() {
     const maturitySelect = document.getElementById('maturity-rating');
     if (maturitySelect) maturitySelect.value = 'all';
     
+    const privateToggle = document.getElementById('private-profile-toggle');
+    if (privateToggle) privateToggle.checked = false;
+    
+    const historyToggle = document.getElementById('show-history-toggle');
+    if (historyToggle) historyToggle.checked = true;
+    
     const autoplayToggle = document.getElementById('autoplay-toggle');
     if (autoplayToggle) autoplayToggle.checked = true;
     
     const previewToggle = document.getElementById('preview-toggle');
     if (previewToggle) previewToggle.checked = false;
+    
+    const hdToggle = document.getElementById('hd-toggle');
+    if (hdToggle) hdToggle.checked = false;
     
     modal.classList.add('active');
 }
@@ -411,16 +486,20 @@ function openEditProfileModal(profileId) {
     const modalTitle = document.getElementById('modal-title');
     const idInput = document.getElementById('profile-id');
     const nameInput = document.getElementById('profile-name');
+    const bioInput = document.getElementById('profile-bio');
     const avatarImage = document.getElementById('avatar-image');
     const avatarPlaceholder = document.getElementById('avatar-placeholder');
     const nameCount = document.getElementById('name-count');
+    const bioCount = document.getElementById('bio-count');
     
-    if (!modal || !modalTitle || !idInput || !nameInput || !avatarImage || !avatarPlaceholder || !nameCount) return;
+    if (!modal || !modalTitle || !idInput || !nameInput || !bioInput || !avatarImage || !avatarPlaceholder || !nameCount || !bioCount) return;
     
     modalTitle.textContent = 'Edit Profile';
     idInput.value = profile.id;
     nameInput.value = profile.full_name || profile.username || '';
+    bioInput.value = profile.bio || '';
     nameCount.textContent = nameInput.value.length;
+    bioCount.textContent = bioInput.value.length;
     
     // Set avatar
     if (profile.avatar_url) {
@@ -458,12 +537,22 @@ function openEditProfileModal(profileId) {
     const maturitySelect = document.getElementById('maturity-rating');
     if (maturitySelect) maturitySelect.value = profile.maturity_rating || 'all';
     
+    // Set privacy settings
+    const privateToggle = document.getElementById('private-profile-toggle');
+    if (privateToggle) privateToggle.checked = profile.is_private || false;
+    
+    const historyToggle = document.getElementById('show-history-toggle');
+    if (historyToggle) historyToggle.checked = profile.show_history !== false;
+    
     // Set auto-play settings
     const autoplayToggle = document.getElementById('autoplay-toggle');
     if (autoplayToggle) autoplayToggle.checked = profile.autoplay !== false;
     
     const previewToggle = document.getElementById('preview-toggle');
     if (previewToggle) previewToggle.checked = profile.preview_autoplay || false;
+    
+    const hdToggle = document.getElementById('hd-toggle');
+    if (hdToggle) hdToggle.checked = profile.hd_only || false;
     
     modal.classList.add('active');
 }
@@ -563,7 +652,9 @@ function generateInitialsAvatar(name) {
 async function saveProfile() {
     try {
         const nameInput = document.getElementById('profile-name');
+        const bioInput = document.getElementById('profile-bio');
         const name = nameInput?.value.trim();
+        const bio = bioInput?.value.trim();
         
         if (!name) {
             showToast('Please enter a profile name', 'warning');
@@ -585,11 +676,20 @@ async function saveProfile() {
         const maturitySelect = document.getElementById('maturity-rating');
         const maturityRating = maturitySelect ? maturitySelect.value : 'all';
         
+        const privateToggle = document.getElementById('private-profile-toggle');
+        const isPrivate = privateToggle ? privateToggle.checked : false;
+        
+        const historyToggle = document.getElementById('show-history-toggle');
+        const showHistory = historyToggle ? historyToggle.checked : true;
+        
         const autoplayToggle = document.getElementById('autoplay-toggle');
         const autoplay = autoplayToggle ? autoplayToggle.checked : true;
         
         const previewToggle = document.getElementById('preview-toggle');
         const previewAutoplay = previewToggle ? previewToggle.checked : false;
+        
+        const hdToggle = document.getElementById('hd-toggle');
+        const hdOnly = hdToggle ? hdToggle.checked : false;
         
         // Get avatar
         let avatarUrl = null;
@@ -604,12 +704,16 @@ async function saveProfile() {
             // Update existing profile
             await updateProfile(profileId, {
                 full_name: name,
+                bio: bio,
                 profile_type: profileType,
                 preferences,
                 languages,
                 maturity_rating: maturityRating,
+                is_private: isPrivate,
+                show_history: showHistory,
                 autoplay,
                 preview_autoplay: previewAutoplay,
+                hd_only: hdOnly,
                 avatar_url: avatarUrl,
                 updated_at: new Date().toISOString()
             });
@@ -617,13 +721,17 @@ async function saveProfile() {
             // Create new profile
             await createProfile({
                 full_name: name,
+                bio: bio,
                 username: name.toLowerCase().replace(/\s+/g, '_'),
                 profile_type: profileType,
                 preferences,
                 languages,
                 maturity_rating: maturityRating,
+                is_private: isPrivate,
+                show_history: showHistory,
                 autoplay,
                 preview_autoplay: previewAutoplay,
+                hd_only: hdOnly,
                 avatar_url: avatarUrl
             });
         }
@@ -652,8 +760,17 @@ async function createProfile(profileData) {
                 id: window.currentUser.id,
                 full_name: profileData.full_name,
                 username: profileData.username,
+                bio: profileData.bio,
                 avatar_url: profileData.avatar_url,
-                bio: '',
+                profile_type: profileData.profile_type,
+                preferences: profileData.preferences,
+                languages: profileData.languages,
+                maturity_rating: profileData.maturity_rating,
+                is_private: profileData.is_private,
+                show_history: profileData.show_history,
+                autoplay: profileData.autoplay,
+                preview_autoplay: profileData.preview_autoplay,
+                hd_only: profileData.hd_only,
                 updated_at: new Date().toISOString()
             });
         
@@ -676,7 +793,17 @@ async function updateProfile(profileId, profileData) {
             .from('user_profiles')
             .update({
                 full_name: profileData.full_name,
+                bio: profileData.bio,
                 avatar_url: profileData.avatar_url,
+                profile_type: profileData.profile_type,
+                preferences: profileData.preferences,
+                languages: profileData.languages,
+                maturity_rating: profileData.maturity_rating,
+                is_private: profileData.is_private,
+                show_history: profileData.show_history,
+                autoplay: profileData.autoplay,
+                preview_autoplay: profileData.preview_autoplay,
+                hd_only: profileData.hd_only,
                 updated_at: new Date().toISOString()
             })
             .eq('id', profileId);
@@ -698,11 +825,15 @@ function resetProfileForm() {
     window.currentEditingProfile = null;
     const profileId = document.getElementById('profile-id');
     const nameInput = document.getElementById('profile-name');
+    const bioInput = document.getElementById('profile-bio');
     const nameCount = document.getElementById('name-count');
+    const bioCount = document.getElementById('bio-count');
     
     if (profileId) profileId.value = '';
     if (nameInput) nameInput.value = '';
+    if (bioInput) bioInput.value = '';
     if (nameCount) nameCount.textContent = '0';
+    if (bioCount) bioCount.textContent = '0';
 }
 
 // ============================================
@@ -741,9 +872,12 @@ function setupDeleteModals() {
     const cancelDeleteAll = document.getElementById('cancel-delete-all-btn');
     const confirmDeleteAll = document.getElementById('confirm-delete-all-btn');
     const deleteAllBtn = document.getElementById('delete-all-profiles-btn');
+    const deleteConfirmation = document.getElementById('delete-confirmation');
     
     const closeDeleteAllModal = () => {
         if (deleteAllModal) deleteAllModal.classList.remove('active');
+        if (deleteConfirmation) deleteConfirmation.value = '';
+        if (confirmDeleteAll) confirmDeleteAll.disabled = true;
     };
     
     if (cancelDeleteAll) cancelDeleteAll.addEventListener('click', closeDeleteAllModal);
@@ -751,6 +885,14 @@ function setupDeleteModals() {
     if (deleteAllModal) {
         deleteAllModal.addEventListener('click', (e) => {
             if (e.target === deleteAllModal) closeDeleteAllModal();
+        });
+    }
+    
+    if (deleteConfirmation) {
+        deleteConfirmation.addEventListener('input', (e) => {
+            if (confirmDeleteAll) {
+                confirmDeleteAll.disabled = e.target.value !== 'DELETE';
+            }
         });
     }
     
@@ -793,15 +935,29 @@ function openDeleteProfileModal(profileId, profileName) {
 // DELETE PROFILE
 // ============================================
 async function deleteProfile(profileId) {
+    const confirmBtn = document.getElementById('confirm-delete-btn');
+    const spinner = confirmBtn?.querySelector('.fa-spinner');
+    const btnText = confirmBtn?.querySelector('span');
+    
     try {
+        // Show loading state
+        if (confirmBtn) confirmBtn.disabled = true;
+        if (spinner) spinner.style.display = 'inline-block';
+        if (btnText) btnText.textContent = 'Deleting...';
+        
         // Prevent deleting current profile
         if (window.currentProfile?.id === profileId) {
             showToast('Cannot delete current profile', 'warning');
             return;
         }
         
-        // In a real multi-profile system, you'd delete from profiles table
-        // For now, we'll just show a success message since we can't delete the main user
+        // Delete profile from database
+        const { error } = await supabaseAuth
+            .from('user_profiles')
+            .delete()
+            .eq('id', profileId);
+        
+        if (error) throw error;
         
         showToast('Profile deleted successfully', 'success');
         
@@ -815,6 +971,11 @@ async function deleteProfile(profileId) {
     } catch (error) {
         console.error('Error deleting profile:', error);
         showToast('Failed to delete profile', 'error');
+    } finally {
+        // Reset button state
+        if (confirmBtn) confirmBtn.disabled = false;
+        if (spinner) spinner.style.display = 'none';
+        if (btnText) btnText.textContent = 'Delete Permanently';
     }
 }
 
@@ -822,9 +983,29 @@ async function deleteProfile(profileId) {
 // DELETE ALL PROFILES
 // ============================================
 async function deleteAllProfiles() {
+    const confirmBtn = document.getElementById('confirm-delete-all-btn');
+    const spinner = confirmBtn?.querySelector('.fa-spinner');
+    const btnText = confirmBtn?.querySelector('span');
+    
     try {
+        // Show loading state
+        if (confirmBtn) confirmBtn.disabled = true;
+        if (spinner) spinner.style.display = 'inline-block';
+        if (btnText) btnText.textContent = 'Deleting...';
+        
         // Keep only current profile
         const currentId = window.currentProfile?.id;
+        
+        // Delete all other profiles
+        for (const profile of window.profiles) {
+            if (profile.id !== currentId) {
+                await supabaseAuth
+                    .from('user_profiles')
+                    .delete()
+                    .eq('id', profile.id);
+            }
+        }
+        
         window.profiles = window.profiles.filter(p => p.id === currentId);
         
         renderProfiles();
@@ -835,6 +1016,11 @@ async function deleteAllProfiles() {
     } catch (error) {
         console.error('Error deleting all profiles:', error);
         showToast('Failed to delete profiles', 'error');
+    } finally {
+        // Reset button state
+        if (confirmBtn) confirmBtn.disabled = false;
+        if (spinner) spinner.style.display = 'none';
+        if (btnText) btnText.textContent = 'Delete All';
     }
 }
 
@@ -947,3 +1133,5 @@ window.initializeManageProfiles = initializeManageProfiles;
 window.openCreateProfileModal = openCreateProfileModal;
 window.openEditProfileModal = openEditProfileModal;
 window.loadProfiles = loadProfiles;
+window.loadFavorites = loadFavorites;
+window.loadWatchHistory = loadWatchHistory;
