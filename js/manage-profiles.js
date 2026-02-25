@@ -57,7 +57,12 @@ function initializeManageProfiles() {
 // ============================================
 async function checkAuth() {
   try {
-    const { data, error } = await supabaseAuth.auth.getSession();
+    if (!window.supabaseAuth) {
+      console.warn('Supabase not initialized yet');
+      return null;
+    }
+    
+    const { data, error } = await window.supabaseAuth.auth.getSession();
     if (error) throw error;
     
     const session = data?.session;
@@ -68,7 +73,9 @@ async function checkAuth() {
       await loadUserProfile();
     } else {
       console.log('⚠️ User not authenticated');
-      showToast('Please sign in to manage profiles', 'warning');
+      if (typeof showToast === 'function') {
+        showToast('Please sign in to manage profiles', 'warning');
+      }
       setTimeout(() => {
         window.location.href = 'login.html?redirect=manage-profiles.html';
       }, 2000);
@@ -86,9 +93,9 @@ async function checkAuth() {
 // ============================================
 async function loadUserProfile() {
   try {
-    if (!window.currentUser) return;
+    if (!window.currentUser || !window.supabaseAuth) return;
     
-    const { data: profile, error } = await supabaseAuth
+    const { data: profile, error } = await window.supabaseAuth
       .from('user_profiles')
       .select('*')
       .eq('id', window.currentUser.id)
@@ -113,10 +120,10 @@ async function loadUserProfile() {
 // LOAD USER PROFILES
 // ============================================
 async function loadUserProfiles() {
-  if (!window.currentUser) return;
+  if (!window.currentUser || !window.supabaseAuth) return;
   
   try {
-    const { data, error } = await supabaseAuth
+    const { data, error } = await window.supabaseAuth
       .from('user_profiles')
       .select('*')
       .eq('id', window.currentUser.id);
@@ -173,8 +180,10 @@ async function loadProfiles() {
   `).join('');
   
   try {
-    if (!window.currentUser) {
-      showToast('Please sign in to manage profiles', 'warning');
+    if (!window.currentUser || !window.supabaseAuth) {
+      if (typeof showToast === 'function') {
+        showToast('Please sign in to manage profiles', 'warning');
+      }
       profilesGrid.innerHTML = `
         <div class="profiles-empty">
           <i class="fas fa-user-circle"></i>
@@ -188,7 +197,7 @@ async function loadProfiles() {
       return;
     }
     
-    const { data: profiles, error } = await supabaseAuth
+    const { data: profiles, error } = await window.supabaseAuth
       .from('user_profiles')
       .select('*')
       .eq('id', window.currentUser.id);
@@ -210,7 +219,9 @@ async function loadProfiles() {
     
   } catch (error) {
     console.error('Error loading profiles:', error);
-    showToast('Failed to load profiles', 'error');
+    if (typeof showToast === 'function') {
+      showToast('Failed to load profiles', 'error');
+    }
     profilesGrid.innerHTML = `
       <div class="profiles-empty">
         <i class="fas fa-exclamation-triangle"></i>
@@ -229,9 +240,9 @@ async function loadProfiles() {
 // ============================================
 async function loadFavorites() {
   try {
-    if (!window.currentUser) return;
+    if (!window.currentUser || !window.supabaseAuth) return;
     
-    const { data, error } = await supabaseAuth
+    const { data, error } = await window.supabaseAuth
       .from('favorites')
       .select('*')
       .eq('user_id', window.currentUser.id)
@@ -251,9 +262,9 @@ async function loadFavorites() {
 // ============================================
 async function loadWatchHistory() {
   try {
-    if (!window.currentUser) return;
+    if (!window.currentUser || !window.supabaseAuth) return;
     
-    const { data, error } = await supabaseAuth
+    const { data, error } = await window.supabaseAuth
       .from('watch_history')
       .select('*')
       .eq('user_id', window.currentUser.id)
@@ -273,12 +284,12 @@ async function loadWatchHistory() {
 // ============================================
 async function loadNotifications() {
   try {
-    if (!window.currentUser) {
+    if (!window.currentUser || !window.supabaseAuth) {
       updateNotificationBadge(0);
       return;
     }
     
-    const { data, error } = await supabaseAuth
+    const { data, error } = await window.supabaseAuth
       .from('notifications')
       .select('*')
       .eq('user_id', window.currentUser.id)
@@ -321,6 +332,8 @@ function updateNotificationBadge(count) {
 // ============================================
 async function createDefaultProfile() {
   try {
+    if (!window.currentUser || !window.supabaseAuth) return;
+    
     const defaultProfile = {
       id: window.currentUser.id,
       full_name: window.currentUser.user_metadata?.full_name || window.currentUser.email?.split('@')[0] || 'User',
@@ -331,7 +344,7 @@ async function createDefaultProfile() {
       updated_at: new Date().toISOString()
     };
     
-    const { error } = await supabaseAuth
+    const { error } = await window.supabaseAuth
       .from('user_profiles')
       .insert([defaultProfile]);
     
@@ -341,7 +354,9 @@ async function createDefaultProfile() {
     window.currentProfile = defaultProfile;
     localStorage.setItem('currentProfileId', defaultProfile.id);
     
-    showToast('Default profile created', 'success');
+    if (typeof showToast === 'function') {
+      showToast('Default profile created', 'success');
+    }
   } catch (error) {
     console.error('Error creating default profile:', error);
   }
@@ -492,10 +507,14 @@ async function setDefaultProfile(profileId) {
     updateHeaderProfile();
     updateProfileSwitcher();
     
-    showToast(`Default profile set to ${profile.full_name || profile.username}`, 'success');
+    if (typeof showToast === 'function') {
+      showToast(`Default profile set to ${profile.full_name || profile.username}`, 'success');
+    }
   } catch (error) {
     console.error('Error setting default profile:', error);
-    showToast('Failed to set default profile', 'error');
+    if (typeof showToast === 'function') {
+      showToast('Failed to set default profile', 'error');
+    }
   }
 }
 
@@ -556,7 +575,9 @@ function setupProfileModal() {
       if (name) {
         generateInitialsAvatar(name);
       } else {
-        showToast('Enter a profile name first', 'warning');
+        if (typeof showToast === 'function') {
+          showToast('Enter a profile name first', 'warning');
+        }
       }
     });
   }
@@ -724,8 +745,10 @@ function openEditProfileModal(profileId) {
 // ============================================
 async function uploadProfileAvatar() {
   try {
-    if (!window.currentUser) {
-      showToast('Please sign in to upload avatar', 'warning');
+    if (!window.currentUser || !window.supabaseAuth) {
+      if (typeof showToast === 'function') {
+        showToast('Please sign in to upload avatar', 'warning');
+      }
       return;
     }
     
@@ -740,35 +763,43 @@ async function uploadProfileAvatar() {
       
       // Validate file size (max 2MB)
       if (file.size > 2 * 1024 * 1024) {
-        showToast('Image must be less than 2MB', 'error');
+        if (typeof showToast === 'function') {
+          showToast('Image must be less than 2MB', 'error');
+        }
         return;
       }
       
       // Validate file type
       if (!file.type.startsWith('image/')) {
-        showToast('Please upload an image file', 'error');
+        if (typeof showToast === 'function') {
+          showToast('Please upload an image file', 'error');
+        }
         return;
       }
       
       // Show loading
-      showToast('Uploading...', 'info');
+      if (typeof showToast === 'function') {
+        showToast('Uploading...', 'info');
+      }
       
       // Upload to Supabase Storage
       const fileExt = file.name.split('.').pop();
       const fileName = `avatars/${window.currentUser.id}/${Date.now()}.${fileExt}`;
       
-      const { data, error } = await supabaseAuth.storage
+      const { data, error } = await window.supabaseAuth.storage
         .from('avatars')
         .upload(fileName, file);
       
       if (error) {
         console.error('Upload error:', error);
-        showToast('Failed to upload avatar', 'error');
+        if (typeof showToast === 'function') {
+          showToast('Failed to upload avatar', 'error');
+        }
         return;
       }
       
       // Get public URL
-      const { data: { publicUrl } } = supabaseAuth.storage
+      const { data: { publicUrl } } = window.supabaseAuth.storage
         .from('avatars')
         .getPublicUrl(fileName);
       
@@ -782,13 +813,17 @@ async function uploadProfileAvatar() {
         avatarPlaceholder.style.display = 'none';
       }
       
-      showToast('Avatar uploaded successfully', 'success');
+      if (typeof showToast === 'function') {
+        showToast('Avatar uploaded successfully', 'success');
+      }
     };
     
     input.click();
   } catch (error) {
     console.error('Error uploading avatar:', error);
-    showToast('Failed to upload avatar', 'error');
+    if (typeof showToast === 'function') {
+      showToast('Failed to upload avatar', 'error');
+    }
   }
 }
 
@@ -818,7 +853,9 @@ async function saveProfile() {
     const bio = bioInput?.value.trim();
     
     if (!name) {
-      showToast('Please enter a profile name', 'warning');
+      if (typeof showToast === 'function') {
+        showToast('Please enter a profile name', 'warning');
+      }
       nameInput?.focus();
       return;
     }
@@ -906,7 +943,9 @@ async function saveProfile() {
     
   } catch (error) {
     console.error('Error saving profile:', error);
-    showToast('Failed to save profile', 'error');
+    if (typeof showToast === 'function') {
+      showToast('Failed to save profile', 'error');
+    }
   }
 }
 
@@ -915,7 +954,9 @@ async function saveProfile() {
 // ============================================
 async function createProfile(profileData) {
   try {
-    const { error } = await supabaseAuth
+    if (!window.currentUser || !window.supabaseAuth) return;
+    
+    const { error } = await window.supabaseAuth
       .from('user_profiles')
       .upsert({
         id: window.currentUser.id,
@@ -937,7 +978,9 @@ async function createProfile(profileData) {
     
     if (error) throw error;
     
-    showToast('Profile created successfully', 'success');
+    if (typeof showToast === 'function') {
+      showToast('Profile created successfully', 'success');
+    }
   } catch (error) {
     console.error('Error creating profile:', error);
     throw error;
@@ -949,7 +992,9 @@ async function createProfile(profileData) {
 // ============================================
 async function updateProfile(profileId, profileData) {
   try {
-    const { error } = await supabaseAuth
+    if (!window.supabaseAuth) return;
+    
+    const { error } = await window.supabaseAuth
       .from('user_profiles')
       .update({
         full_name: profileData.full_name,
@@ -970,7 +1015,9 @@ async function updateProfile(profileId, profileData) {
     
     if (error) throw error;
     
-    showToast('Profile updated successfully', 'success');
+    if (typeof showToast === 'function') {
+      showToast('Profile updated successfully', 'success');
+    }
   } catch (error) {
     console.error('Error updating profile:', error);
     throw error;
@@ -1060,7 +1107,9 @@ function setupDeleteModals() {
   if (deleteAllBtn) {
     deleteAllBtn.addEventListener('click', () => {
       if (window.profiles.length === 0) {
-        showToast('No profiles to delete', 'info');
+        if (typeof showToast === 'function') {
+          showToast('No profiles to delete', 'info');
+        }
         return;
       }
       if (deleteAllModal) deleteAllModal.classList.add('active');
@@ -1100,19 +1149,25 @@ async function deleteProfile(profileId) {
     
     // Prevent deleting current profile
     if (window.currentProfile?.id === profileId) {
-      showToast('Cannot delete current profile', 'warning');
+      if (typeof showToast === 'function') {
+        showToast('Cannot delete current profile', 'warning');
+      }
       return;
     }
     
     // Delete profile from database
-    const { error } = await supabaseAuth
+    if (!window.supabaseAuth) return;
+    
+    const { error } = await window.supabaseAuth
       .from('user_profiles')
       .delete()
       .eq('id', profileId);
     
     if (error) throw error;
     
-    showToast('Profile deleted successfully', 'success');
+    if (typeof showToast === 'function') {
+      showToast('Profile deleted successfully', 'success');
+    }
     
     // Remove from local array
     window.profiles = window.profiles.filter(p => p.id !== profileId);
@@ -1123,7 +1178,9 @@ async function deleteProfile(profileId) {
     
   } catch (error) {
     console.error('Error deleting profile:', error);
-    showToast('Failed to delete profile', 'error');
+    if (typeof showToast === 'function') {
+      showToast('Failed to delete profile', 'error');
+    }
   } finally {
     // Reset button state
     if (confirmBtn) confirmBtn.disabled = false;
@@ -1150,9 +1207,11 @@ async function deleteAllProfiles() {
     const currentId = window.currentProfile?.id;
     
     // Delete all other profiles
+    if (!window.supabaseAuth) return;
+    
     for (const profile of window.profiles) {
       if (profile.id !== currentId) {
-        await supabaseAuth
+        await window.supabaseAuth
           .from('user_profiles')
           .delete()
           .eq('id', profile.id);
@@ -1164,10 +1223,14 @@ async function deleteAllProfiles() {
     renderProfiles();
     updateDefaultProfileSelect();
     
-    showToast('All other profiles deleted', 'success');
+    if (typeof showToast === 'function') {
+      showToast('All other profiles deleted', 'success');
+    }
   } catch (error) {
     console.error('Error deleting all profiles:', error);
-    showToast('Failed to delete profiles', 'error');
+    if (typeof showToast === 'function') {
+      showToast('Failed to delete profiles', 'error');
+    }
   } finally {
     // Reset button state
     if (confirmBtn) confirmBtn.disabled = false;
@@ -1194,14 +1257,18 @@ function setupSettingsControls() {
   if (switchingToggle) {
     switchingToggle.addEventListener('change', (e) => {
       localStorage.setItem('profileSwitching', e.target.checked);
-      showToast('Profile switching ' + (e.target.checked ? 'enabled' : 'disabled'), 'success');
+      if (typeof showToast === 'function') {
+        showToast('Profile switching ' + (e.target.checked ? 'enabled' : 'disabled'), 'success');
+      }
     });
   }
   
   if (autoLoadToggle) {
     autoLoadToggle.addEventListener('change', (e) => {
       localStorage.setItem('autoLoadContinueWatching', e.target.checked);
-      showToast('Auto-load ' + (e.target.checked ? 'enabled' : 'disabled'), 'success');
+      if (typeof showToast === 'function') {
+        showToast('Auto-load ' + (e.target.checked ? 'enabled' : 'disabled'), 'success');
+      }
     });
   }
 }
@@ -1230,18 +1297,93 @@ function setupAddProfileButton() {
 // ============================================
 function setupLogoutButton() {
   const logoutBtn = document.getElementById('logout-btn');
-  if (logoutBtn) {
+  if (logoutBtn && window.supabaseAuth) {
     logoutBtn.addEventListener('click', async () => {
-      await supabaseAuth.auth.signOut();
+      await window.supabaseAuth.auth.signOut();
       window.currentUser = null;
       window.currentProfile = null;
       window.userProfiles = [];
       localStorage.removeItem('currentProfileId');
-      showToast('Signed out successfully', 'success');
+      if (typeof showToast === 'function') {
+        showToast('Signed out successfully', 'success');
+      }
       setTimeout(() => {
         window.location.href = 'index.html';
       }, 1000);
     });
+  }
+}
+
+// ============================================
+// UPDATE HEADER PROFILE
+// ============================================
+function updateHeaderProfile() {
+  const profileName = document.getElementById('current-profile-name');
+  const profilePlaceholder = document.getElementById('userProfilePlaceholder');
+  
+  if (profileName) {
+    profileName.textContent = window.currentProfile?.full_name || window.currentProfile?.username || 'Guest';
+  }
+  
+  if (profilePlaceholder && window.currentProfile?.avatar_url) {
+    profilePlaceholder.innerHTML = `<img src="${window.contentSupabase.fixMediaUrl(window.currentProfile.avatar_url)}" alt="Profile" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">`;
+  }
+}
+
+// ============================================
+// UPDATE PROFILE SWITCHER
+// ============================================
+function updateProfileSwitcher() {
+  const profileList = document.getElementById('profile-list');
+  if (!profileList) return;
+  
+  profileList.innerHTML = window.userProfiles.map(profile => {
+    const isCurrent = window.currentProfile?.id === profile.id;
+    const initials = getInitials(profile.full_name || profile.name || 'User');
+    
+    return `
+      <button class="profile-list-item ${isCurrent ? 'active' : ''}" data-profile-id="${profile.id}">
+        <div class="profile-avatar-small">
+          ${profile.avatar_url 
+            ? `<img src="${window.contentSupabase.fixMediaUrl(profile.avatar_url)}" alt="${escapeHtml(profile.full_name || profile.name)}">`
+            : `<div class="avatar-initials">${initials}</div>`
+          }
+        </div>
+        <span class="profile-list-name">${escapeHtml(profile.full_name || profile.name || 'Profile')}</span>
+        ${isCurrent ? '<i class="fas fa-check"></i>' : ''}
+      </button>
+    `;
+  }).join('');
+  
+  profileList.querySelectorAll('.profile-list-item').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const profileId = btn.dataset.profileId;
+      await switchProfile(profileId);
+    });
+  });
+}
+
+// ============================================
+// SWITCH PROFILE
+// ============================================
+async function switchProfile(profileId) {
+  const profile = window.userProfiles.find(p => p.id === profileId);
+  if (!profile) return;
+  
+  window.currentProfile = profile;
+  localStorage.setItem('currentProfileId', profileId);
+  
+  updateHeaderProfile();
+  updateProfileSwitcher();
+  
+  if (typeof showToast === 'function') {
+    showToast(`Switched to ${profile.full_name || profile.name}`, 'success');
+  }
+  
+  // Reload page-specific data if needed
+  if (localStorage.getItem('autoLoadContinueWatching') !== 'false') {
+    // Trigger any auto-load functionality
+    document.dispatchEvent(new CustomEvent('profileSwitched', { detail: { profile } }));
   }
 }
 
@@ -1267,13 +1409,15 @@ function setupNavigation() {
   
   // Create button
   const navCreateBtn = document.getElementById('nav-create-btn');
-  if (navCreateBtn) {
+  if (navCreateBtn && window.supabaseAuth) {
     navCreateBtn.addEventListener('click', async () => {
-      const { data } = await supabaseAuth.auth.getSession();
+      const { data } = await window.supabaseAuth.auth.getSession();
       if (data?.session) {
         window.location.href = 'creator-upload.html';
       } else {
-        showToast('Please sign in to create content', 'warning');
+        if (typeof showToast === 'function') {
+          showToast('Please sign in to create content', 'warning');
+        }
         window.location.href = 'login.html?redirect=creator-upload.html';
       }
     });
@@ -1348,6 +1492,9 @@ window.checkAuth = checkAuth;
 window.loadUserProfile = loadUserProfile;
 window.loadUserProfiles = loadUserProfiles;
 window.updateNotificationBadge = updateNotificationBadge;
+window.updateHeaderProfile = updateHeaderProfile;
+window.updateProfileSwitcher = updateProfileSwitcher;
+window.switchProfile = switchProfile;
 window.showToast = showToast;
 window.escapeHtml = escapeHtml;
 window.getInitials = getInitials;
