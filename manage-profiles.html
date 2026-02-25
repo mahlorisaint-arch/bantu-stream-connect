@@ -905,24 +905,34 @@
   </div>
   
   <!-- =================================================================== -->
-  <!-- JAVASCRIPT FILES                                                    -->
+  <!-- JAVASCRIPT FILES (Load Supabase SDK FIRST)                          -->
   <!-- =================================================================== -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="env.js"></script>
   <script src="js/rate-limiter.js"></script>
   <script src="js/manage-profiles.js"></script>
+  <script src="js/manage-profiles-ui.js"></script>
   <script src="js/manage-profiles-features.js"></script>
-  
+
   <!-- =================================================================== -->
-  <!-- INITIALIZATION SCRIPT                                               -->
+  <!-- INITIALIZATION SCRIPT (After all dependencies load)                 -->
   <!-- =================================================================== -->
   <script>
+  // Wait for Supabase to be available
+  function initializeSupabase() {
     // Supabase Configuration
     const SUPABASE_URL = window.ENV?.SUPABASE_URL || 'https://ydnxqnbjoshvxteevemc.supabase.co';
     const SUPABASE_ANON_KEY = window.ENV?.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U';
     
+    // Check if Supabase is loaded
+    if (!window.supabase) {
+      console.error('❌ Supabase SDK not loaded!');
+      setTimeout(initializeSupabase, 100);
+      return;
+    }
+    
     // Initialize Supabase client
-    const supabaseAuth = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    window.supabaseAuth = supabaseAuth;
+    window.supabaseAuth = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     
     // Content Supabase client for media URLs
     class ContentSupabaseClient {
@@ -946,154 +956,177 @@
     window.userProfiles = [];
     window.profiles = [];
     
+    console.log('✅ Supabase initialized');
+    
     // Initialize when DOM is ready
-    document.addEventListener('DOMContentLoaded', async () => {
-      console.log('🚀 Manage Profiles Page Initializing');
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', onDOMReady);
+    } else {
+      onDOMReady();
+    }
+  }
+
+  async function onDOMReady() {
+    console.log('🚀 Manage Profiles Page Initializing');
+    
+    const loadingScreen = document.getElementById('loading');
+    const app = document.getElementById('app');
+    
+    try {
+      // Override loading text
+      const loadingText = document.getElementById('loading-text');
+      if (loadingText) loadingText.textContent = 'Loading Profiles...';
       
-      const loadingScreen = document.getElementById('loading');
-      const app = document.getElementById('app');
-      
-      try {
-        // Override loading text
-        const loadingText = document.getElementById('loading-text');
-        if (loadingText) loadingText.textContent = 'Loading Profiles...';
-        
-        // Check authentication
+      // Check authentication
+      if (typeof checkAuth === 'function') {
         await checkAuth();
-        
-        // Load user profiles
-        if (window.currentUser) {
-          await loadUserProfiles();
-        }
-        
-        // Initialize UI Scale Controller
-        if (!window.uiScaleController && typeof UIScaleController !== 'undefined') {
-          window.uiScaleController = new UIScaleController();
-          window.uiScaleController.init();
-        }
-        
-        // Initialize page components
-        if (typeof initializeManageProfiles === 'function') {
-          initializeManageProfiles();
-        }
-        
-        // Initialize features
-        if (typeof initializeManageProfilesFeatures === 'function') {
-          initializeManageProfilesFeatures();
-        }
-        
-        // Setup sidebar
-        if (typeof setupSidebar === 'function') {
-          setupSidebar();
-        }
-        
-        // Setup other UI components
-        if (typeof setupSearch === 'function') setupSearch();
-        if (typeof setupNotifications === 'function') setupNotifications();
-        if (typeof setupAnalytics === 'function') setupAnalytics();
-        if (typeof setupVoiceSearch === 'function') setupVoiceSearch();
-        if (typeof setupWatchParty === 'function') setupWatchParty();
-        if (typeof setupTipSystem === 'function') setupTipSystem();
-        if (typeof setupBackToTop === 'function') setupBackToTop();
-        if (typeof setupKeyboardNavigation === 'function') setupKeyboardNavigation();
-        if (typeof setupNavigationButtons === 'function') setupNavigationButtons();
-        
-        // Update header profile
-        if (typeof updateHeaderProfile === 'function') {
-          updateHeaderProfile();
-        }
-        
-        // Hide loading screen
-        setTimeout(() => {
-          loadingScreen.style.display = 'none';
-          app.style.display = 'block';
-        }, 500);
-        
-        console.log('✅ Manage Profiles Page Loaded');
-      } catch (error) {
-        console.error('❌ Error loading manage profiles:', error);
+      }
+      
+      // Load user profiles
+      if (window.currentUser && typeof loadUserProfiles === 'function') {
+        await loadUserProfiles();
+      }
+      
+      // Initialize UI Scale Controller
+      if (!window.uiScaleController && typeof UIScaleController !== 'undefined') {
+        window.uiScaleController = new UIScaleController();
+        window.uiScaleController.init();
+      }
+      
+      // Initialize page components
+      if (typeof initializeManageProfiles === 'function') {
+        initializeManageProfiles();
+      }
+      
+      // Initialize UI components
+      if (typeof initializeManageProfilesUI === 'function') {
+        initializeManageProfilesUI();
+      }
+      
+      // Initialize features
+      if (typeof initializeManageProfilesFeatures === 'function') {
+        initializeManageProfilesFeatures();
+      }
+      
+      // Setup sidebar
+      if (typeof setupSidebar === 'function') {
+        setupSidebar();
+      }
+      
+      // Setup other UI components
+      if (typeof setupSearch === 'function') setupSearch();
+      if (typeof setupNotifications === 'function') setupNotifications();
+      if (typeof setupAnalytics === 'function') setupAnalytics();
+      if (typeof setupVoiceSearch === 'function') setupVoiceSearch();
+      if (typeof setupWatchParty === 'function') setupWatchParty();
+      if (typeof setupTipSystem === 'function') setupTipSystem();
+      if (typeof setupBackToTop === 'function') setupBackToTop();
+      if (typeof setupKeyboardNavigation === 'function') setupKeyboardNavigation();
+      if (typeof setupNavigationButtons === 'function') setupNavigationButtons();
+      
+      // Update header profile
+      if (typeof updateHeaderProfile === 'function') {
+        updateHeaderProfile();
+      }
+      
+      // Hide loading screen
+      setTimeout(() => {
+        loadingScreen.style.display = 'none';
+        app.style.display = 'block';
+      }, 500);
+      
+      console.log('✅ Manage Profiles Page Loaded');
+    } catch (error) {
+      console.error('❌ Error loading manage profiles:', error);
+      if (typeof showToast === 'function') {
         showToast('Failed to load profiles', 'error');
-        setTimeout(() => {
-          loadingScreen.style.display = 'none';
-          app.style.display = 'block';
-        }, 1000);
       }
-    });
+      setTimeout(() => {
+        loadingScreen.style.display = 'none';
+        app.style.display = 'block';
+      }, 1000);
+    }
+  }
+
+  // Start initialization
+  initializeSupabase();
+
+  // Update scale display on scale change
+  document.addEventListener('scaleChanged', function(e) {
+    const scaleValue = document.getElementById('scale-value');
+    const sidebarScaleValue = document.getElementById('sidebar-scale-value');
+    const percentage = Math.round(e.detail.scale * 100) + '%';
+    if (scaleValue) scaleValue.textContent = percentage;
+    if (sidebarScaleValue) sidebarScaleValue.textContent = percentage;
+  });
+
+  // UIScaleController class
+  class UIScaleController {
+    constructor() {
+      this.scaleKey = 'bantu_ui_scale';
+      this.scales = [0.75, 0.85, 1.0, 1.15, 1.25, 1.5];
+      this.currentIndex = 2;
+    }
     
-    // Update scale display on scale change
-    document.addEventListener('scaleChanged', function(e) {
+    init() {
+      const savedScale = localStorage.getItem(this.scaleKey);
+      if (savedScale) {
+        this.currentIndex = this.scales.indexOf(parseFloat(savedScale));
+        if (this.currentIndex === -1) this.currentIndex = 2;
+      }
+      this.applyScale();
+    }
+    
+    applyScale() {
+      const scale = this.scales[this.currentIndex];
+      document.documentElement.style.setProperty('--ui-scale', scale);
+      localStorage.setItem(this.scaleKey, scale);
+      this.updateScaleDisplay();
+      document.dispatchEvent(new CustomEvent('scaleChanged', { detail: { scale } }));
+    }
+    
+    updateScaleDisplay() {
       const scaleValue = document.getElementById('scale-value');
-      const sidebarScaleValue = document.getElementById('sidebar-scale-value');
-      const percentage = Math.round(e.detail.scale * 100) + '%';
-      if (scaleValue) scaleValue.textContent = percentage;
-      if (sidebarScaleValue) sidebarScaleValue.textContent = percentage;
-    });
+      if (scaleValue) {
+        scaleValue.textContent = Math.round(this.getScale() * 100) + '%';
+      }
+    }
     
-    // UIScaleController class
-    class UIScaleController {
-      constructor() {
-        this.scaleKey = 'bantu_ui_scale';
-        this.scales = [0.75, 0.85, 1.0, 1.15, 1.25, 1.5];
-        this.currentIndex = 2;
-      }
-      
-      init() {
-        const savedScale = localStorage.getItem(this.scaleKey);
-        if (savedScale) {
-          this.currentIndex = this.scales.indexOf(parseFloat(savedScale));
-          if (this.currentIndex === -1) this.currentIndex = 2;
-        }
-        this.applyScale();
-      }
-      
-      applyScale() {
-        const scale = this.scales[this.currentIndex];
-        document.documentElement.style.setProperty('--ui-scale', scale);
-        localStorage.setItem(this.scaleKey, scale);
-        this.updateScaleDisplay();
-        document.dispatchEvent(new CustomEvent('scaleChanged', { detail: { scale } }));
-      }
-      
-      updateScaleDisplay() {
-        const scaleValue = document.getElementById('scale-value');
-        if (scaleValue) {
-          scaleValue.textContent = Math.round(this.getScale() * 100) + '%';
-        }
-      }
-      
-      getScale() {
-        return this.scales[this.currentIndex];
-      }
-      
-      increase() {
-        if (this.currentIndex < this.scales.length - 1) {
-          this.currentIndex++;
-          this.applyScale();
-          this.showScaleToast();
-        }
-      }
-      
-      decrease() {
-        if (this.currentIndex > 0) {
-          this.currentIndex--;
-          this.applyScale();
-          this.showScaleToast();
-        }
-      }
-      
-      reset() {
-        this.currentIndex = 2;
+    getScale() {
+      return this.scales[this.currentIndex];
+    }
+    
+    increase() {
+      if (this.currentIndex < this.scales.length - 1) {
+        this.currentIndex++;
         this.applyScale();
         this.showScaleToast();
       }
-      
-      showScaleToast() {
-        const scale = this.getScale();
-        const percentage = Math.round(scale * 100);
+    }
+    
+    decrease() {
+      if (this.currentIndex > 0) {
+        this.currentIndex--;
+        this.applyScale();
+        this.showScaleToast();
+      }
+    }
+    
+    reset() {
+      this.currentIndex = 2;
+      this.applyScale();
+      this.showScaleToast();
+    }
+    
+    showScaleToast() {
+      const scale = this.getScale();
+      const percentage = Math.round(scale * 100);
+      if (typeof showToast === 'function') {
         showToast(`UI Size: ${percentage}%`, 'info');
       }
     }
-    window.UIScaleController = UIScaleController;
+  }
+  window.UIScaleController = UIScaleController;
   </script>
 </body>
 </html>
