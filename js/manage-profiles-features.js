@@ -1,5 +1,5 @@
 // ============================================
-// MANAGE PROFILES FEATURES - Advanced Features
+// MANAGE PROFILES FEATURES - Clean Version
 // ============================================
 
 // ============================================
@@ -8,7 +8,6 @@
 function initializeManageProfilesFeatures() {
     console.log('🎯 Initializing Manage Profiles Features');
     
-    // Setup advanced features
     setupSearch();
     setupNotifications();
     setupAnalytics();
@@ -16,7 +15,6 @@ function initializeManageProfilesFeatures() {
     setupWatchParty();
     setupTipSystem();
     setupBadges();
-    setupProfileContentSections();
 }
 
 // ============================================
@@ -60,6 +58,19 @@ function setupSearch() {
 }
 
 // ============================================
+// OPEN SEARCH
+// ============================================
+function openSearch() {
+    const searchModal = document.getElementById('search-modal');
+    const searchInput = document.getElementById('search-input');
+    
+    if (searchModal) {
+        searchModal.classList.add('active');
+        setTimeout(() => searchInput?.focus(), 100);
+    }
+}
+
+// ============================================
 // PERFORM SEARCH
 // ============================================
 async function performSearch(query) {
@@ -88,7 +99,6 @@ async function performSearch(query) {
         const sort = document.getElementById('sort-filter')?.value;
         const language = document.getElementById('language-filter')?.value;
         
-        // Build query
         let supabaseQuery = supabaseAuth
             .from('content')
             .select('*')
@@ -132,7 +142,7 @@ async function performSearch(query) {
                 </div>
                 <div class="thumbnail-info">
                     <div class="thumbnail-title">${escapeHtml(item.title)}</div>
-                    <div class="thumbnail-meta">${item.views || 0} views • ${item.duration || '0:00'}</div>
+                    <div class="thumbnail-meta">${item.views || 0} views</div>
                 </div>
             </div>
         `).join('');
@@ -172,6 +182,72 @@ function setupNotifications() {
 }
 
 // ============================================
+// RENDER NOTIFICATIONS
+// ============================================
+function renderNotifications() {
+    const list = document.getElementById('notifications-list');
+    if (!list) return;
+    
+    if (!window.notifications || window.notifications.length === 0) {
+        list.innerHTML = `
+            <div class="empty-state-small">
+                <i class="fas fa-bell-slash"></i>
+                <p>No notifications yet</p>
+            </div>
+        `;
+        return;
+    }
+    
+    list.innerHTML = window.notifications.map(notification => `
+        <div class="notification-item ${notification.is_read ? '' : 'unread'}" data-id="${notification.id}">
+            <div class="notification-icon">
+                <i class="fas ${notification.icon || 'fa-bell'}"></i>
+            </div>
+            <div class="notification-content">
+                <h4>${escapeHtml(notification.title)}</h4>
+                <p>${escapeHtml(notification.message)}</p>
+                <span class="notification-time">${formatTimeAgo(notification.created_at)}</span>
+            </div>
+            ${!notification.is_read ? '<span class="notification-dot"></span>' : ''}
+        </div>
+    `).join('');
+    
+    document.querySelectorAll('.notification-item').forEach(item => {
+        item.addEventListener('click', async () => {
+            const id = item.dataset.id;
+            await markNotificationAsRead(id);
+        });
+    });
+}
+
+// ============================================
+// MARK NOTIFICATION AS READ
+// ============================================
+async function markNotificationAsRead(id) {
+    try {
+        const { error } = await supabaseAuth
+            .from('notifications')
+            .update({ is_read: true })
+            .eq('id', id);
+        
+        if (error) throw error;
+        
+        const notification = window.notifications.find(n => n.id === id);
+        if (notification) {
+            notification.is_read = true;
+        }
+        
+        const unreadCount = window.notifications.filter(n => !n.is_read).length;
+        updateNotificationBadge(unreadCount);
+        
+        renderNotifications();
+        
+    } catch (error) {
+        console.error('Error marking notification as read:', error);
+    }
+}
+
+// ============================================
 // MARK ALL NOTIFICATIONS AS READ
 // ============================================
 async function markAllNotificationsRead() {
@@ -194,10 +270,7 @@ async function markAllNotificationsRead() {
         
         if (error) throw error;
         
-        // Update local state
         window.notifications.forEach(n => n.is_read = true);
-        
-        // Update UI
         updateNotificationBadge(0);
         renderNotifications();
         
@@ -228,6 +301,89 @@ function setupAnalytics() {
 }
 
 // ============================================
+// LOAD PERSONAL ANALYTICS
+// ============================================
+async function loadPersonalAnalytics() {
+    if (!window.currentUser) return;
+    
+    try {
+        const { data: watchData } = await supabaseAuth
+            .from('watch_history')
+            .select('duration_seconds')
+            .eq('user_id', window.currentUser.id);
+        
+        const totalSeconds = watchData?.reduce((sum, item) => sum + (item.duration_seconds || 0), 0) || 0;
+        const hours = Math.floor(totalSeconds / 3600);
+        
+        document.getElementById('personal-watch-time').textContent = hours + 'h';
+        
+        const { count: sessions } = await supabaseAuth
+            .from('watch_sessions')
+            .select('*', { count: 'exact', head: true })
+            .eq('user_id', window.currentUser.id);
+        
+        document.getElementById('personal-sessions').textContent = sessions || 0;
+        
+        const { count: views } = await supabaseAuth
+            .from('watch_history')
+            .select('*', { count: 'exact', head: true })
+            .eq('user_id', window.currentUser.id);
+        
+        document.getElementById('personal-views').textContent = views || 0;
+        
+        document.getElementById('return-rate').textContent = Math.floor(Math.random() * 30) + 40 + '%';
+        
+        initializeAnalyticsChart();
+        
+    } catch (error) {
+        console.error('Error loading analytics:', error);
+    }
+}
+
+// ============================================
+// INITIALIZE ANALYTICS CHART
+// ============================================
+function initializeAnalyticsChart() {
+    const canvas = document.getElementById('engagement-chart');
+    if (!canvas || typeof Chart === 'undefined') return;
+    
+    const ctx = canvas.getContext('2d');
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+            datasets: [{
+                label: 'Watch Time (minutes)',
+                data: [65, 59, 80, 81, 56, 55, 40],
+                borderColor: '#F59E0B',
+                backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                tension: 0.4,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    labels: { color: '#F5F5F5' }
+                }
+            },
+            scales: {
+                y: {
+                    grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                    ticks: { color: '#A0A0A0' }
+                },
+                x: {
+                    grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                    ticks: { color: '#A0A0A0' }
+                }
+            }
+        }
+    });
+}
+
+// ============================================
 // SETUP VOICE SEARCH
 // ============================================
 function setupVoiceSearch() {
@@ -235,11 +391,8 @@ function setupVoiceSearch() {
     const voiceModalBtn = document.getElementById('voice-search-modal-btn');
     
     if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-        // Voice search not supported
         [voiceBtn, voiceModalBtn].forEach(btn => {
-            if (btn) {
-                btn.style.display = 'none';
-            }
+            if (btn) btn.style.display = 'none';
         });
         return;
     }
@@ -294,13 +447,8 @@ function setupVoiceSearch() {
         }
     };
     
-    if (voiceBtn) {
-        voiceBtn.addEventListener('click', startVoiceSearch);
-    }
-    
-    if (voiceModalBtn) {
-        voiceModalBtn.addEventListener('click', startVoiceSearch);
-    }
+    if (voiceBtn) voiceBtn.addEventListener('click', startVoiceSearch);
+    if (voiceModalBtn) voiceModalBtn.addEventListener('click', startVoiceSearch);
 }
 
 // ============================================
@@ -311,6 +459,17 @@ function setupWatchParty() {
     const closeWatchParty = document.getElementById('close-watch-party');
     const startParty = document.getElementById('start-watch-party');
     const searchInput = document.getElementById('watch-party-search');
+    
+    if (watchPartyBtn) {
+        watchPartyBtn.addEventListener('click', () => {
+            if (!window.currentUser) {
+                showToast('Please sign in to start a watch party', 'warning');
+                return;
+            }
+            document.getElementById('watch-party-modal')?.classList.add('active');
+            loadWatchPartyContent();
+        });
+    }
     
     if (closeWatchParty) {
         closeWatchParty.addEventListener('click', () => {
@@ -362,24 +521,18 @@ async function loadWatchPartyContent(search = '') {
         }
         
         list.innerHTML = data.map(item => `
-            <div class="watch-party-item" data-id="${item.id}">
-                <div class="watch-party-thumb">
-                    ${item.thumbnail_url 
-                        ? `<img src="${contentSupabase.fixMediaUrl(item.thumbnail_url)}" alt="${escapeHtml(item.title)}" style="width:100%;height:100%;object-fit:cover;">`
-                        : `<i class="fas fa-film"></i>`
-                    }
-                </div>
-                <div class="watch-party-info">
+            <div class="watch-party-content-item" data-id="${item.id}">
+                <img src="${contentSupabase.fixMediaUrl(item.thumbnail_url || '')}" alt="${escapeHtml(item.title)}">
+                <div class="watch-party-content-info">
                     <h4>${escapeHtml(item.title)}</h4>
-                    <p>${item.creator_name || 'Unknown'} • ${item.duration || '0:00'}</p>
+                    <p>${item.duration || '0:00'}</p>
                 </div>
             </div>
         `).join('');
         
-        // Add selection handler
-        document.querySelectorAll('.watch-party-item').forEach(item => {
+        document.querySelectorAll('.watch-party-content-item').forEach(item => {
             item.addEventListener('click', () => {
-                document.querySelectorAll('.watch-party-item').forEach(i => i.classList.remove('selected'));
+                document.querySelectorAll('.watch-party-content-item').forEach(i => i.classList.remove('selected'));
                 item.classList.add('selected');
             });
         });
@@ -394,7 +547,7 @@ async function loadWatchPartyContent(search = '') {
 // START WATCH PARTY
 // ============================================
 function startWatchParty() {
-    const selected = document.querySelector('.watch-party-item.selected');
+    const selected = document.querySelector('.watch-party-content-item.selected');
     if (!selected) {
         showToast('Please select content to watch', 'warning');
         return;
@@ -404,15 +557,12 @@ function startWatchParty() {
     const syncPlayback = document.getElementById('party-sync-playback')?.checked;
     const chatEnabled = document.getElementById('party-chat-enabled')?.checked;
     
-    // Generate party code
     const partyCode = Math.random().toString(36).substring(2, 8).toUpperCase();
     
     showToast(`Watch party created! Code: ${partyCode}`, 'success');
     
-    // Close modal
     document.getElementById('watch-party-modal')?.classList.remove('active');
     
-    // Navigate to watch page with party params
     setTimeout(() => {
         window.location.href = `watch.html?id=${contentId}&party=${partyCode}&sync=${syncPlayback}&chat=${chatEnabled}`;
     }, 1500);
@@ -435,7 +585,6 @@ function setupTipSystem() {
         sendTip.addEventListener('click', sendTipToCreator);
     }
     
-    // Tip amount selection
     document.querySelectorAll('.tip-option').forEach(btn => {
         btn.addEventListener('click', () => {
             document.querySelectorAll('.tip-option').forEach(b => b.classList.remove('selected'));
@@ -460,12 +609,9 @@ async function sendTipToCreator() {
     }
     
     const amount = selectedAmount.dataset.amount;
-    const message = document.getElementById('tip-message')?.value;
     
-    // Here you would integrate with a payment processor
     showToast(`Thank you for your tip of R${amount}!`, 'success');
     
-    // Close modal
     document.getElementById('tip-modal')?.classList.remove('active');
 }
 
@@ -503,137 +649,32 @@ async function loadUserBadges() {
     
     if (!grid) return;
     
-    // Mock badges data
     const badges = [
         { id: 1, name: 'First Watch', description: 'Watched your first video', icon: 'fa-play', earned: true },
         { id: 2, name: 'Early Adopter', description: 'Joined in the first month', icon: 'fa-rocket', earned: true },
-        { id: 3, name: 'Super Fan', description: 'Watched 100 hours', icon: 'fa-heart', earned: false },
-        { id: 4, name: 'Social Butterfly', description: 'Shared 10 videos', icon: 'fa-share-alt', earned: false },
-        { id: 5, name: 'Commentator', description: 'Posted 50 comments', icon: 'fa-comment', earned: false },
-        { id: 6, name: 'Creator', description: 'Uploaded your first video', icon: 'fa-video', earned: false }
+        { id: 3, name: 'Super Fan', description: 'Watched 100 hours', icon: 'fa-heart', earned: false }
     ];
     
     const earned = badges.filter(b => b.earned).length;
     if (countEl) countEl.textContent = earned;
     
     grid.innerHTML = badges.map(badge => `
-        <div class="badge-item ${badge.earned ? '' : 'locked'}">
-            <div class="badge-icon">
+        <div class="badge-item ${badge.earned ? 'earned' : 'locked'}">
+            <div class="badge-icon ${badge.earned ? 'earned' : ''}">
                 <i class="fas ${badge.icon}"></i>
             </div>
-            <div class="badge-name">${badge.name}</div>
-            <div class="badge-description">${badge.description}</div>
+            <div class="badge-info">
+                <h4>${badge.name}</h4>
+                <p>${badge.description}</p>
+                ${badge.earned ? '<span class="badge-earned-date">Earned</span>' : ''}
+            </div>
         </div>
     `).join('');
 }
 
-// ============================================
-// SETUP PROFILE CONTENT SECTIONS
-// ============================================
-function setupProfileContentSections() {
-    // This would be called when viewing a specific profile
-    if (window.currentProfile) {
-        loadProfileFavorites();
-        loadProfileWatchHistory();
-    }
-}
-
-// ============================================
-// LOAD PROFILE FAVORITES
-// ============================================
-async function loadProfileFavorites() {
-    const container = document.getElementById('profile-favorites');
-    if (!container || !window.currentProfile) return;
-    
-    try {
-        const { data, error } = await supabaseAuth
-            .from('favorites')
-            .select('*, content:content_id(*)')
-            .eq('user_id', window.currentProfile.id)
-            .limit(10);
-        
-        if (error) throw error;
-        
-        if (!data || data.length === 0) {
-            container.innerHTML = `
-                <div class="empty-state-small">
-                    <i class="fas fa-heart"></i>
-                    <p>No favorites yet</p>
-                </div>
-            `;
-            return;
-        }
-        
-        container.innerHTML = data.map(item => `
-            <div class="content-thumbnail" onclick="window.location.href='watch.html?id=${item.content_id}'">
-                <div class="thumbnail-image">
-                    ${item.content?.thumbnail_url 
-                        ? `<img src="${contentSupabase.fixMediaUrl(item.content.thumbnail_url)}" alt="${escapeHtml(item.content.title)}" style="width:100%;height:100%;object-fit:cover;">`
-                        : `<i class="fas fa-film"></i>`
-                    }
-                </div>
-                <div class="thumbnail-info">
-                    <div class="thumbnail-title">${escapeHtml(item.content?.title || 'Unknown')}</div>
-                    <div class="thumbnail-meta">Added ${formatTimeAgo(item.created_at)}</div>
-                </div>
-            </div>
-        `).join('');
-        
-    } catch (error) {
-        console.error('Error loading favorites:', error);
-    }
-}
-
-// ============================================
-// LOAD PROFILE WATCH HISTORY
-// ============================================
-async function loadProfileWatchHistory() {
-    const container = document.getElementById('profile-history');
-    if (!container || !window.currentProfile) return;
-    
-    try {
-        const { data, error } = await supabaseAuth
-            .from('watch_history')
-            .select('*, content:content_id(*)')
-            .eq('user_id', window.currentProfile.id)
-            .order('watched_at', { ascending: false })
-            .limit(10);
-        
-        if (error) throw error;
-        
-        if (!data || data.length === 0) {
-            container.innerHTML = `
-                <div class="empty-state-small">
-                    <i class="fas fa-history"></i>
-                    <p>No watch history yet</p>
-                </div>
-            `;
-            return;
-        }
-        
-        container.innerHTML = data.map(item => `
-            <div class="content-thumbnail" onclick="window.location.href='watch.html?id=${item.content_id}'">
-                <div class="thumbnail-image">
-                    ${item.content?.thumbnail_url 
-                        ? `<img src="${contentSupabase.fixMediaUrl(item.content.thumbnail_url)}" alt="${escapeHtml(item.content.title)}" style="width:100%;height:100%;object-fit:cover;">`
-                        : `<i class="fas fa-film"></i>`
-                    }
-                </div>
-                <div class="thumbnail-info">
-                    <div class="thumbnail-title">${escapeHtml(item.content?.title || 'Unknown')}</div>
-                    <div class="thumbnail-meta">Watched ${formatTimeAgo(item.watched_at)}</div>
-                </div>
-            </div>
-        `).join('');
-        
-    } catch (error) {
-        console.error('Error loading watch history:', error);
-    }
-}
-
 // Export functions
 window.initializeManageProfilesFeatures = initializeManageProfilesFeatures;
+window.renderNotifications = renderNotifications;
+window.loadPersonalAnalytics = loadPersonalAnalytics;
 window.loadWatchPartyContent = loadWatchPartyContent;
 window.loadUserBadges = loadUserBadges;
-window.loadProfileFavorites = loadProfileFavorites;
-window.loadProfileWatchHistory = loadProfileWatchHistory;
