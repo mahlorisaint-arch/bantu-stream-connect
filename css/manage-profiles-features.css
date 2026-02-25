@@ -1,5 +1,5 @@
 /* ============================================
-   MANAGE PROFILES FEATURES - Additional Features
+   MANAGE PROFILES FEATURES - Clean Version
    ============================================ */
 
 /* Settings Subtitle */
@@ -57,8 +57,8 @@
 }
 
 .support-contact {
-    color: var(--warm-gold) !important;
-    font-size: var(--font-sm) !important;
+    color: var(--warm-gold);
+    font-size: var(--font-sm);
     margin-top: var(--spacing-md);
     padding: var(--spacing-xs);
     background: rgba(245, 158, 11, 0.1);
@@ -83,7 +83,7 @@
     box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.3);
 }
 
-/* Favorites and Watch History Sections */
+/* Profile Content Sections */
 .profile-content-section {
     margin-top: calc(2rem * var(--ui-scale));
     padding: 0 calc(1.5rem * var(--ui-scale));
@@ -103,6 +103,7 @@
     color: var(--warm-gold);
 }
 
+/* Horizontal Scroll for Favorites/History */
 .horizontal-scroll {
     display: flex;
     overflow-x: auto;
@@ -197,43 +198,6 @@
     font-size: var(--font-sm);
 }
 
-/* Creator Info in Tip Modal */
-.creator-info-tip {
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-md);
-    padding: var(--spacing-md);
-    background: var(--card-bg);
-    border: 1px solid var(--card-border);
-    border-radius: var(--card-radius);
-    margin-bottom: var(--spacing-lg);
-}
-
-.creator-avatar-tip {
-    width: calc(3.125rem * var(--ui-scale));
-    height: calc(3.125rem * var(--ui-scale));
-    border-radius: 50%;
-    background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    font-size: var(--font-xl);
-    font-weight: bold;
-}
-
-.creator-details-tip h3 {
-    font-size: var(--font-base);
-    font-weight: 600;
-    color: var(--soft-white);
-    margin-bottom: calc(0.125rem * var(--ui-scale));
-}
-
-.creator-details-tip p {
-    font-size: var(--font-xs);
-    color: var(--slate-grey);
-}
-
 /* Tip Options */
 .tip-options {
     display: grid;
@@ -313,65 +277,7 @@
     color: var(--slate-grey);
 }
 
-/* Watch Party Content List */
-.watch-party-content-list {
-    max-height: calc(18.75rem * var(--ui-scale));
-    overflow-y: auto;
-    margin: var(--spacing-md) 0;
-}
-
-.watch-party-item {
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-sm);
-    padding: var(--spacing-sm);
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid var(--card-border);
-    border-radius: calc(0.5rem * var(--ui-scale));
-    margin-bottom: var(--spacing-xs);
-    cursor: pointer;
-    transition: all 0.3s ease;
-}
-
-.watch-party-item:hover {
-    background: rgba(255, 255, 255, 0.1);
-    border-color: var(--warm-gold);
-}
-
-.watch-party-item.selected {
-    background: rgba(245, 158, 11, 0.1);
-    border-color: var(--warm-gold);
-}
-
-.watch-party-thumb {
-    width: calc(3.125rem * var(--ui-scale));
-    height: calc(3.125rem * var(--ui-scale));
-    background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
-    border-radius: calc(0.375rem * var(--ui-scale));
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    font-size: var(--font-lg);
-}
-
-.watch-party-info {
-    flex: 1;
-}
-
-.watch-party-info h4 {
-    font-size: var(--font-sm);
-    font-weight: 600;
-    color: var(--soft-white);
-    margin-bottom: calc(0.125rem * var(--ui-scale));
-}
-
-.watch-party-info p {
-    font-size: calc(0.6875rem * var(--ui-scale));
-    color: var(--slate-grey);
-}
-
-/* Keyboard Shortcuts Modal */
+/* Keyboard Shortcuts */
 .shortcuts-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(calc(12.5rem * var(--ui-scale)), 1fr));
@@ -385,13 +291,13 @@
 }
 
 .shortcuts-grid kbd {
-    background: var(--card-border);
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid var(--card-border);
     border-radius: calc(0.25rem * var(--ui-scale));
     padding: calc(0.125rem * var(--ui-scale)) calc(0.375rem * var(--ui-scale));
     color: var(--warm-gold);
     font-family: monospace;
     font-size: var(--font-xs);
-    border: 1px solid var(--slate-grey);
 }
 
 /* Voice Search Status */
@@ -432,17 +338,6 @@
     font-weight: 500;
 }
 
-@keyframes pulse {
-    0%, 100% {
-        opacity: 1;
-        transform: scale(1);
-    }
-    50% {
-        opacity: 0.7;
-        transform: scale(1.1);
-    }
-}
-
 /* Animations */
 @keyframes slideIn {
     from {
@@ -464,19 +359,18 @@
     }
 }
 
-/* Toast Notifications Enhancement */
-.toast {
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-sm);
-    animation: slideIn 0.3s ease;
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 0.7;
+        transform: scale(1.1);
+    }
 }
 
-.toast i {
-    font-size: var(--font-base);
-}
-
-/* Responsive Adjustments for Features */
+/* Responsive */
 @media (max-width: 768px) {
     .tip-options {
         grid-template-columns: repeat(2, 1fr);
@@ -504,21 +398,11 @@
 }
 
 @media (max-width: 480px) {
-    .creator-info-tip {
-        flex-direction: column;
-        text-align: center;
-    }
-    
     .tip-options {
         grid-template-columns: 1fr;
     }
     
     .badges-grid {
         grid-template-columns: repeat(2, 1fr);
-    }
-    
-    .watch-party-item {
-        flex-direction: column;
-        text-align: center;
     }
 }
