@@ -1,337 +1,303 @@
 // ============================================
-// CACHE MANAGER
+// MANAGE PROFILES UI - Clean Version
 // ============================================
-class CacheManager {
-    constructor() {
-        this.cache = new Map();
-        this.ttl = window.ENV?.CACHE_TTL || 5 * 60 * 1000; // 5 minutes default
+
+// ============================================
+// INITIALIZATION
+// ============================================
+function initializeManageProfilesUI() {
+    console.log('🎯 Initializing Manage Profiles UI');
+    
+    setupToastContainer();
+    setupBackToTop();
+    setupThemeSelector();
+    setupScaleControl();
+    setupKeyboardShortcuts();
+}
+
+// ============================================
+// TOAST CONTAINER SETUP
+// ============================================
+function setupToastContainer() {
+    let container = document.getElementById('toast-container');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'toast-container';
+        container.className = 'toast-container';
+        document.body.appendChild(container);
+    }
+}
+
+// ============================================
+// BACK TO TOP
+// ============================================
+function setupBackToTop() {
+    const backToTopBtn = document.getElementById('backToTopBtn');
+    if (!backToTopBtn) return;
+    
+    backToTopBtn.addEventListener('click', () => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+    
+    window.addEventListener('scroll', () => {
+        backToTopBtn.style.display = window.pageYOffset > 300 ? 'flex' : 'none';
+    });
+}
+
+// ============================================
+// CLOSE ALL MODALS
+// ============================================
+function closeAllModals() {
+    const modals = [
+        'profile-modal',
+        'delete-modal',
+        'delete-all-modal',
+        'search-modal',
+        'notifications-panel',
+        'analytics-modal',
+        'watch-party-modal',
+        'tip-modal',
+        'badges-modal',
+        'theme-selector'
+    ];
+    
+    modals.forEach(modalId => {
+        const modal = document.getElementById(modalId);
+        if (modal) {
+            modal.classList.remove('active');
+        }
+    });
+    
+    const profileDropdown = document.getElementById('profile-dropdown');
+    if (profileDropdown) {
+        profileDropdown.classList.remove('active');
+    }
+}
+
+// ============================================
+// THEME SELECTOR SETUP
+// ============================================
+function setupThemeSelector() {
+    const themeSelector = document.getElementById('theme-selector');
+    if (!themeSelector) return;
+    
+    const savedTheme = localStorage.getItem('bantu_theme') || 'dark';
+    applyTheme(savedTheme);
+    
+    document.querySelectorAll('.theme-option').forEach(option => {
+        option.addEventListener('click', () => {
+            const theme = option.dataset.theme;
+            applyTheme(theme);
+            themeSelector.classList.remove('active');
+        });
+    });
+    
+    document.addEventListener('click', (e) => {
+        if (!themeSelector.contains(e.target) && !e.target.closest('#sidebar-theme-toggle')) {
+            themeSelector.classList.remove('active');
+        }
+    });
+}
+
+// ============================================
+// APPLY THEME
+// ============================================
+function applyTheme(theme) {
+    const root = document.documentElement;
+    
+    root.classList.remove('theme-dark', 'theme-light', 'theme-high-contrast');
+    
+    switch(theme) {
+        case 'light':
+            root.classList.add('theme-light');
+            root.style.setProperty('--deep-black', '#ffffff');
+            root.style.setProperty('--soft-white', '#1a1a1a');
+            root.style.setProperty('--slate-grey', '#666666');
+            root.style.setProperty('--card-bg', 'rgba(255, 255, 255, 0.9)');
+            root.style.setProperty('--card-border', 'rgba(0, 0, 0, 0.1)');
+            break;
+            
+        case 'high-contrast':
+            root.classList.add('theme-high-contrast');
+            root.style.setProperty('--deep-black', '#000000');
+            root.style.setProperty('--soft-white', '#ffffff');
+            root.style.setProperty('--slate-grey', '#ffff00');
+            root.style.setProperty('--warm-gold', '#ff0000');
+            root.style.setProperty('--bantu-blue', '#00ff00');
+            root.style.setProperty('--card-bg', '#000000');
+            root.style.setProperty('--card-border', '#ffffff');
+            break;
+            
+        default:
+            root.classList.add('theme-dark');
+            root.style.setProperty('--deep-black', '#0A0A0A');
+            root.style.setProperty('--soft-white', '#F5F5F5');
+            root.style.setProperty('--slate-grey', '#A0A0A0');
+            root.style.setProperty('--warm-gold', '#F59E0B');
+            root.style.setProperty('--bantu-blue', '#1D4ED8');
+            root.style.setProperty('--card-bg', 'rgba(18, 18, 18, 0.95)');
+            root.style.setProperty('--card-border', 'rgba(255, 255, 255, 0.1)');
+            break;
     }
     
-    set(key, data, ttl = this.ttl) {
-        this.cache.set(key, {
-            data,
-            timestamp: Date.now(),
-            ttl
+    localStorage.setItem('bantu_theme', theme);
+    showToast(`Theme changed to ${theme}`, 'success');
+}
+
+// ============================================
+// SCALE CONTROL SETUP
+// ============================================
+function setupScaleControl() {
+    const decreaseBtn = document.getElementById('scale-decrease');
+    const increaseBtn = document.getElementById('scale-increase');
+    const resetBtn = document.getElementById('scale-reset');
+    
+    if (!window.uiScaleController) {
+        window.uiScaleController = new UIScaleController();
+        window.uiScaleController.init();
+    }
+    
+    if (decreaseBtn) {
+        decreaseBtn.addEventListener('click', () => {
+            window.uiScaleController.decrease();
         });
     }
     
-    get(key) {
-        const item = this.cache.get(key);
-        if (!item) return null;
-        
-        if (Date.now() - item.timestamp > item.ttl) {
-            this.cache.delete(key);
-            return null;
-        }
-        
-        return item.data;
+    if (increaseBtn) {
+        increaseBtn.addEventListener('click', () => {
+            window.uiScaleController.increase();
+        });
     }
     
-    clear() {
-        this.cache.clear();
+    if (resetBtn) {
+        resetBtn.addEventListener('click', () => {
+            window.uiScaleController.reset();
+        });
     }
 }
-
-window.cacheManager = new CacheManager();
 
 // ============================================
-// QUERY BATCHER
+// KEYBOARD SHORTCUTS SETUP
 // ============================================
-class QueryBatcher {
-    constructor() {
-        this.batchSize = 20;
-    }
-    
-    async batchQuery(table, ids, field = 'id') {
-        const cacheKey = `${table}-${ids.sort().join(',')}`;
-        const cached = window.cacheManager.get(cacheKey);
-        if (cached) return cached;
+function setupKeyboardShortcuts() {
+    document.addEventListener('keydown', (e) => {
+        if (e.target.matches('input, textarea, select')) return;
         
-        const batches = [];
-        for (let i = 0; i < ids.length; i += this.batchSize) {
-            batches.push(ids.slice(i, i + this.batchSize));
+        if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+            e.preventDefault();
+            document.getElementById('search-btn')?.click();
         }
         
-        const results = await Promise.all(
-            batches.map(batch => 
-                supabaseAuth.from(table).select('*').in(field, batch)
-            )
-        );
-        
-        const data = results.flatMap(r => r.data || []);
-        window.cacheManager.set(cacheKey, data, 2 * 60 * 1000);
-        return data;
-    }
-}
-
-window.queryBatcher = new QueryBatcher();
-
-// ============================================
-// DYNAMIC UI SCALING SYSTEM
-// ============================================
-class UIScaleController {
-    constructor() {
-        this.scaleKey = 'bantu_ui_scale';
-        this.scales = [0.75, 0.85, 1.0, 1.15, 1.25, 1.5];
-        this.currentIndex = 2; // Default to 1.0
-        this.init();
-    }
-
-    init() {
-        // Load saved preference
-        const savedScale = localStorage.getItem(this.scaleKey);
-        if (savedScale) {
-            this.currentIndex = this.scales.indexOf(parseFloat(savedScale));
-            if (this.currentIndex === -1) this.currentIndex = 2;
+        if (e.altKey && e.key === 'n') {
+            e.preventDefault();
+            toggleNotifications();
         }
         
-        // Apply scale
-        this.applyScale();
-        
-        console.log('🎨 UI Scale Controller initialized');
-    }
-
-    applyScale() {
-        const scale = this.scales[this.currentIndex];
-        document.documentElement.style.setProperty('--ui-scale', scale);
-        localStorage.setItem(this.scaleKey, scale);
-        
-        // Update scale display
-        this.updateScaleDisplay();
-        
-        // Dispatch event
-        document.dispatchEvent(new CustomEvent('scaleChanged', { detail: { scale } }));
-    }
-
-    updateScaleDisplay() {
-        const scaleValue = document.getElementById('scale-value');
-        if (scaleValue) {
-            scaleValue.textContent = Math.round(this.getScale() * 100) + '%';
+        if (e.altKey && e.key === 'a') {
+            e.preventDefault();
+            openAnalytics();
         }
         
-        const sidebarScaleValue = document.getElementById('sidebar-scale-value');
-        if (sidebarScaleValue) {
-            sidebarScaleValue.textContent = Math.round(this.getScale() * 100) + '%';
-        }
-    }
-
-    getScale() {
-        return this.scales[this.currentIndex];
-    }
-
-    increase() {
-        if (this.currentIndex < this.scales.length - 1) {
-            this.currentIndex++;
-            this.applyScale();
-            this.showScaleToast();
-        }
-    }
-
-    decrease() {
-        if (this.currentIndex > 0) {
-            this.currentIndex--;
-            this.applyScale();
-            this.showScaleToast();
-        }
-    }
-
-    reset() {
-        this.currentIndex = 2;
-        this.applyScale();
-        this.showScaleToast();
-    }
-
-    showScaleToast() {
-        const scale = this.getScale();
-        const percentage = Math.round(scale * 100);
-        if (typeof showToast === 'function') {
-            showToast(`UI Size: ${percentage}%`, 'info');
-        }
-    }
-}
-
-window.uiScaleController = new UIScaleController();
-
-// ============================================
-// UTILITY FUNCTIONS
-// ============================================
-function showToast(message, type = 'info') {
-    const container = document.getElementById('toast-container');
-    if (!container) return;
-    
-    const toast = document.createElement('div');
-    toast.className = `toast ${type}`;
-    
-    const icons = {
-        error: 'fa-exclamation-triangle',
-        success: 'fa-check-circle',
-        warning: 'fa-exclamation-circle',
-        info: 'fa-info-circle'
-    };
-    
-    toast.innerHTML = `
-        <i class="fas ${icons[type] || 'fa-info-circle'}"></i>
-        <span>${escapeHtml(message)}</span>
-    `;
-    
-    container.appendChild(toast);
-    
-    setTimeout(() => {
-        toast.style.opacity = '0';
-        toast.style.transform = 'translateX(100%)';
-        setTimeout(() => toast.remove(), 300);
-    }, 3000);
-}
-window.showToast = showToast;
-
-function formatNumber(num) {
-    if (!num && num !== 0) return '0';
-    if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
-    if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
-    return num?.toString() || '0';
-}
-window.formatNumber = formatNumber;
-
-function truncateText(text, maxLength) {
-    if (!text) return '';
-    if (text.length <= maxLength) return text;
-    return text.substring(0, maxLength) + '...';
-}
-window.truncateText = truncateText;
-
-function escapeHtml(text) {
-    if (!text) return '';
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
-}
-window.escapeHtml = escapeHtml;
-
-function formatDate(dateString) {
-    if (!dateString) return '';
-    try {
-        const date = new Date(dateString);
-        const now = new Date();
-        const diffTime = Math.abs(now - date);
-        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-        
-        if (diffDays === 0) {
-            return 'Today';
-        } else if (diffDays === 1) {
-            return 'Yesterday';
-        } else if (diffDays < 7) {
-            return `${diffDays} days ago`;
-        } else if (diffDays < 30) {
-            const weeks = Math.floor(diffDays / 7);
-            return `${weeks} week${weeks > 1 ? 's' : ''} ago`;
-        } else {
-            return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-        }
-    } catch (error) {
-        return '';
-    }
-}
-window.formatDate = formatDate;
-
-function debounce(func, wait) {
-    let timeout;
-    return function executedFunction(...args) {
-        const later = () => {
-            clearTimeout(timeout);
-            func(...args);
-        };
-        clearTimeout(timeout);
-        timeout = setTimeout(later, wait);
-    };
-}
-window.debounce = debounce;
-
-function getInitials(name) {
-    if (!name || name.trim() === '') return '?';
-    const names = name.trim().split(' ');
-    if (names.length >= 2) {
-        return (names[0][0] + names[names.length - 1][0]).toUpperCase();
-    }
-    return name[0].toUpperCase();
-}
-window.getInitials = getInitials;
-
-// ============================================
-// RENDER CONTENT CARDS
-// ============================================
-function renderContentCards(contents, showMetrics = true) {
-    const fragment = document.createDocumentFragment();
-    
-    contents.forEach(content => {
-        const card = document.createElement('a');
-        card.className = 'content-card';
-        card.href = `content-detail.html?id=${content.id}`;
-        card.dataset.contentId = content.id;
-        card.dataset.previewUrl = content.preview_url || '';
-        card.dataset.language = content.language || 'en';
-        card.dataset.category = content.genre || '';
-        
-        const thumbnailUrl = content.thumbnail_url
-            ? contentSupabase.fixMediaUrl(content.thumbnail_url)
-            : 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=225&fit=crop';
-        
-        const creatorProfile = content.user_profiles;
-        const displayName = creatorProfile?.full_name || creatorProfile?.username || 'User';
-        const initials = getInitials(displayName);
-        const username = creatorProfile?.username || 'creator';
-        const isNew = (new Date() - new Date(content.created_at)) < 7 * 24 * 60 * 60 * 1000;
-        
-        const metrics = window.contentMetrics?.get(content.id) || { views: 0, likes: 0, shares: 0 };
-        const favorites = content.favorites_count || 0;
-        const duration = content.duration || 0;
-        const durationFormatted = window.formatDuration ? window.formatDuration(duration) : (duration > 0 ? `${Math.floor(duration / 60)}:${('0' + (duration % 60)).slice(-2)}` : '');
-        const connectorCount = window.connectorCountsByContent?.get(content.id) || 0;
-        
-        let avatarHtml = '';
-        if (creatorProfile?.avatar_url) {
-            const avatarUrl = contentSupabase.fixMediaUrl(creatorProfile.avatar_url);
-            avatarHtml = `<img src="${avatarUrl}" alt="${escapeHtml(displayName)}" loading="lazy">`;
-        } else {
-            avatarHtml = `<div class="creator-initials-small">${initials}</div>`;
+        if (e.altKey && e.key === 'p') {
+            e.preventDefault();
+            toggleProfileDropdown();
         }
         
-        card.innerHTML = `
-            <div class="card-thumbnail">
-                <img src="${thumbnailUrl}" alt="${escapeHtml(content.title)}" loading="lazy">
-                <div class="card-badges">
-                    ${isNew ? '<div class="card-badge badge-new"><i class="fas fa-gem"></i> NEW</div>' : ''}
-                    <div class="connector-badge"><i class="fas fa-star"></i><span>${formatNumber(favorites)} Favorites</span></div>
-                </div>
-                <div class="thumbnail-overlay"></div>
-                <div class="play-overlay"><div class="play-icon"><i class="fas fa-play"></i></div></div>
-                ${duration > 0 ? `<div class="duration-badge">${durationFormatted}</div>` : ''}
-            </div>
-            <div class="card-content">
-                <h3 class="card-title" title="${escapeHtml(content.title)}">${truncateText(escapeHtml(content.title), 50)}</h3>
-                <div class="creator-info">
-                    <div class="creator-avatar-small">${avatarHtml}</div>
-                    <div class="creator-name-small">@${escapeHtml(username)}</div>
-                </div>
-                ${showMetrics ? `
-                <div class="card-meta">
-                    <span><i class="fas fa-eye"></i> ${formatNumber(metrics.views)}</span>
-                    <span><i class="fas fa-heart"></i> ${formatNumber(metrics.likes)}</span>
-                    <span><i class="fas fa-share"></i> ${formatNumber(metrics.shares)}</span>
-                    <span><i class="fas fa-language"></i> ${window.languageMap[content.language] || 'English'}</span>
-                </div>
-                ` : ''}
-                <div class="connector-info">
-                    <i class="fas fa-user-friends"></i> ${formatNumber(connectorCount)} Connectors
-                </div>
-            </div>
-        `;
+        if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
+            e.preventDefault();
+            if (window.currentUser) {
+                openCreateProfileModal();
+            } else {
+                showToast('Please sign in to create a profile', 'warning');
+            }
+        }
         
-        fragment.appendChild(card);
+        if (e.key === 'Escape') {
+            closeAllModals();
+        }
+        
+        if (e.key === '?' && !e.shiftKey) {
+            e.preventDefault();
+            document.getElementById('shortcuts-modal').style.display = 'flex';
+        }
     });
     
-    return fragment;
+    const closeShortcuts = document.getElementById('close-shortcuts');
+    if (closeShortcuts) {
+        closeShortcuts.addEventListener('click', () => {
+            document.getElementById('shortcuts-modal').style.display = 'none';
+        });
+    }
 }
-window.renderContentCards = renderContentCards;
 
-// Dispatch event when UI is ready
-document.dispatchEvent(new CustomEvent('homeFeedUIReady'));
+// ============================================
+// TOGGLE NOTIFICATIONS
+// ============================================
+function toggleNotifications() {
+    const panel = document.getElementById('notifications-panel');
+    if (panel) {
+        panel.classList.toggle('active');
+        if (panel.classList.contains('active') && typeof renderNotifications === 'function') {
+            renderNotifications();
+        }
+    }
+}
+
+// ============================================
+// OPEN ANALYTICS
+// ============================================
+function openAnalytics() {
+    if (!window.currentUser) {
+        showToast('Please sign in to view analytics', 'warning');
+        return;
+    }
+    
+    const modal = document.getElementById('analytics-modal');
+    if (modal) {
+        modal.classList.add('active');
+        if (typeof loadPersonalAnalytics === 'function') {
+            loadPersonalAnalytics();
+        }
+    }
+}
+
+// ============================================
+// TOGGLE PROFILE DROPDOWN
+// ============================================
+function toggleProfileDropdown() {
+    const dropdown = document.getElementById('profile-dropdown');
+    if (dropdown) {
+        dropdown.classList.toggle('active');
+    }
+}
+
+// ============================================
+// FORMAT TIME AGO
+// ============================================
+function formatTimeAgo(timestamp) {
+    if (!timestamp) return '';
+    
+    const date = new Date(timestamp);
+    const now = new Date();
+    const seconds = Math.floor((now - date) / 1000);
+    
+    if (seconds < 60) return 'just now';
+    
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return `${minutes}m ago`;
+    
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours}h ago`;
+    
+    const days = Math.floor(hours / 24);
+    if (days < 7) return `${days}d ago`;
+    
+    return date.toLocaleDateString();
+}
+
+// Export functions
+window.initializeManageProfilesUI = initializeManageProfilesUI;
+window.closeAllModals = closeAllModals;
+window.toggleNotifications = toggleNotifications;
+window.openAnalytics = openAnalytics;
+window.formatTimeAgo = formatTimeAgo;
