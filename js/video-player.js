@@ -1,5 +1,5 @@
 // js/video-player.js - Bantu Stream Connect Enhanced Video Player
-// COMPLETE FIXED VERSION WITH ALL REQUIRED METHODS
+// COMPLETE FIXED VERSION WITH ALL REQUIRED METHODS AND NULL CHECKS
 
 class EnhancedVideoPlayer {
   constructor(options = {}) {
@@ -82,15 +82,15 @@ class EnhancedVideoPlayer {
     // ============================================
     // CRITICAL FIX: Preserve existing video source
     // ============================================
-    const existingSrc = this.video.src || this.video.getAttribute('src');
-    const existingSourceElements = Array.from(this.video.querySelectorAll('source'));
+    var existingSrc = this.video.src || this.video.getAttribute('src');
+    var existingSourceElements = Array.from(this.video.querySelectorAll('source'));
     
     console.log('📥 Existing video src:', existingSrc);
     console.log('📥 Existing source elements:', existingSourceElements.length);
     
     // Store existing source info before we modify anything
-    let preservedSource = null;
-    let preservedType = null;
+    var preservedSource = null;
+    var preservedType = null;
     
     if (existingSourceElements.length > 0) {
         preservedSource = existingSourceElements[0].src;
@@ -144,7 +144,7 @@ class EnhancedVideoPlayer {
         this.video.removeAttribute('src');
         
         // Create new source element
-        const source = document.createElement('source');
+        var source = document.createElement('source');
         source.src = preservedSource;
         source.type = preservedType || 'video/mp4';
         
@@ -171,7 +171,8 @@ class EnhancedVideoPlayer {
   }
   
   setupVideoEventListeners() {
-    const events = [
+    var self = this;
+    var events = [
       'play', 'pause', 'ended', 'error', 'waiting', 'canplay',
       'canplaythrough', 'loadeddata', 'loadedmetadata',
       'timeupdate', 'progress', 'seeking', 'seeked',
@@ -179,14 +180,19 @@ class EnhancedVideoPlayer {
       'leavepictureinpicture'
     ];
     
-    events.forEach(event => {
-      this.video.addEventListener(event, (e) => this.handleVideoEvent(event, e));
+    events.forEach(function(event) {
+      self.video.addEventListener(event, function(e) {
+        self.handleVideoEvent(event, e);
+      });
     });
     
     console.log('✅ Video event listeners setup');
   }
   
   handleVideoEvent(event, e) {
+    // CRITICAL FIX: Add null check at top
+    if (!this.video) return;
+    
     switch(event) {
       case 'play':
         this.handlePlay();
@@ -217,13 +223,18 @@ class EnhancedVideoPlayer {
   }
   
   handlePlay() {
+    // CRITICAL FIX: Add null check
+    if (!this.video) return;
+    
     this.playbackStartTime = Date.now();
     this.stats.playCount++;
     
     // Update play button icon
-    const playBtn = this.controls?.querySelector('.play-pause');
-    if (playBtn) {
-      playBtn.innerHTML = '<i class="fas fa-pause"></i>';
+    if (this.controls) {
+      var playBtn = this.controls.querySelector('.play-pause');
+      if (playBtn) {
+        playBtn.innerHTML = '<i class="fas fa-pause"></i>';
+      }
     }
     
     this.emit('playbackstart', {
@@ -233,19 +244,24 @@ class EnhancedVideoPlayer {
   }
   
   handlePause() {
+    // CRITICAL FIX: Add null check
+    if (!this.video) return;
+    
     if (this.playbackStartTime) {
-      const watchTime = Date.now() - this.playbackStartTime;
+      var watchTime = Date.now() - this.playbackStartTime;
       this.stats.totalWatchTime += watchTime;
       this.playbackStartTime = null;
       
       // Update play button icon
-      const playBtn = this.controls?.querySelector('.play-pause');
-      if (playBtn) {
-        playBtn.innerHTML = '<i class="fas fa-play"></i>';
+      if (this.controls) {
+        var playBtn = this.controls.querySelector('.play-pause');
+        if (playBtn) {
+          playBtn.innerHTML = '<i class="fas fa-play"></i>';
+        }
       }
       
       this.emit('playbackpause', {
-        watchTime,
+        watchTime: watchTime,
         currentTime: this.video.currentTime
       });
     }
@@ -265,12 +281,13 @@ class EnhancedVideoPlayer {
   handleBuffering() {
     this.isBuffering = true;
     this.stats.bufferingCount++;
-    const startTime = Date.now();
+    var startTime = Date.now();
+    var self = this;
     
-    this.bufferingTimeout = setTimeout(() => {
-      if (this.isBuffering) {
-        this.stats.bufferingTime += Date.now() - startTime;
-        this.showBufferingIndicator();
+    this.bufferingTimeout = setTimeout(function() {
+      if (self.isBuffering) {
+        self.stats.bufferingTime += Date.now() - startTime;
+        self.showBufferingIndicator();
       }
     }, 500);
     
@@ -293,7 +310,7 @@ class EnhancedVideoPlayer {
     if (!this.container) return;
     
     // Remove any existing controls
-    const existingControls = this.container.querySelector('.enhanced-video-controls');
+    var existingControls = this.container.querySelector('.enhanced-video-controls');
     if (existingControls) {
       existingControls.remove();
     }
@@ -323,22 +340,25 @@ class EnhancedVideoPlayer {
     this.setupControlListeners();
     
     // Show/hide controls on hover
-    this.container.addEventListener('mouseenter', () => {
-      this.controls.style.opacity = '1';
+    var self = this;
+    this.container.addEventListener('mouseenter', function() {
+      if (self.controls) self.controls.style.opacity = '1';
     });
     
-    this.container.addEventListener('mouseleave', () => {
-      if (!this.video.paused) {
-        this.controls.style.opacity = '0';
+    this.container.addEventListener('mouseleave', function() {
+      // CRITICAL FIX: Add null check
+      if (!self.video) return;
+      if (!self.video.paused && self.controls) {
+        self.controls.style.opacity = '0';
       }
     });
     
-    this.video.addEventListener('play', () => {
-      this.controls.style.opacity = '1';
+    this.video.addEventListener('play', function() {
+      if (self.controls) self.controls.style.opacity = '1';
     });
     
-    this.video.addEventListener('pause', () => {
-      this.controls.style.opacity = '1';
+    this.video.addEventListener('pause', function() {
+      if (self.controls) self.controls.style.opacity = '1';
     });
     
     console.log('✅ Custom controls created');
@@ -380,11 +400,13 @@ class EnhancedVideoPlayer {
         <div class="settings-section">
           <h4>Playback Speed</h4>
           <div class="speed-options">
-            ${this.config.playbackRates.map(rate => `
-              <button class="speed-option ${rate === 1 ? 'active' : ''}" data-rate="${rate}">
-                ${rate}x
-              </button>
-            `).join('')}
+            ${this.config.playbackRates.map(function(rate) {
+              return `
+                <button class="speed-option ${rate === 1 ? 'active' : ''}" data-rate="${rate}">
+                  ${rate}x
+                </button>
+              `;
+            }).join('')}
           </div>
         </div>
       </div>
@@ -394,39 +416,45 @@ class EnhancedVideoPlayer {
   setupControlListeners() {
     if (!this.controls) return;
     
+    var self = this;
+    
     // Play/Pause button
-    const playBtn = this.controls.querySelector('.play-pause');
+    var playBtn = this.controls.querySelector('.play-pause');
     if (playBtn) {
-      playBtn.addEventListener('click', () => this.togglePlay());
+      playBtn.addEventListener('click', function() {
+        self.togglePlay();
+      });
     }
     
     // Progress bar
-    const progressBar = this.controls.querySelector('.progress-bar');
+    var progressBar = this.controls.querySelector('.progress-bar');
     if (progressBar) {
-      progressBar.addEventListener('input', (e) => {
-        const percent = e.target.value;
-        const time = (percent / 100) * (this.video.duration || 0);
-        this.seek(time);
+      progressBar.addEventListener('input', function(e) {
+        var percent = e.target.value;
+        var time = (percent / 100) * (self.video.duration || 0);
+        self.seek(time);
       });
     }
     
     // Volume button
-    const volumeBtn = this.controls.querySelector('.volume-btn');
-    const volumeBar = this.controls.querySelector('.volume-bar');
+    var volumeBtn = this.controls.querySelector('.volume-btn');
+    var volumeBar = this.controls.querySelector('.volume-bar');
     
     if (volumeBtn && volumeBar) {
-      volumeBtn.addEventListener('click', () => {
-        this.video.muted = !this.video.muted;
-        volumeBtn.innerHTML = this.video.muted ? 
+      volumeBtn.addEventListener('click', function() {
+        if (!self.video) return;
+        self.video.muted = !self.video.muted;
+        volumeBtn.innerHTML = self.video.muted ? 
           '<i class="fas fa-volume-mute"></i>' : 
           '<i class="fas fa-volume-up"></i>';
-        volumeBar.value = this.video.muted ? 0 : this.video.volume * 100;
+        volumeBar.value = self.video.muted ? 0 : self.video.volume * 100;
       });
       
-      volumeBar.addEventListener('input', (e) => {
-        const volume = e.target.value / 100;
-        this.video.volume = volume;
-        this.video.muted = volume === 0;
+      volumeBar.addEventListener('input', function(e) {
+        if (!self.video) return;
+        var volume = e.target.value / 100;
+        self.video.volume = volume;
+        self.video.muted = volume === 0;
         volumeBtn.innerHTML = volume === 0 ? 
           '<i class="fas fa-volume-mute"></i>' : 
           '<i class="fas fa-volume-up"></i>';
@@ -434,17 +462,17 @@ class EnhancedVideoPlayer {
     }
     
     // Settings button
-    const settingsBtn = this.controls.querySelector('.settings-btn');
-    const settingsMenu = this.controls.querySelector('.settings-menu');
+    var settingsBtn = this.controls.querySelector('.settings-btn');
+    var settingsMenu = this.controls.querySelector('.settings-menu');
     
     if (settingsBtn && settingsMenu) {
-      settingsBtn.addEventListener('click', () => {
+      settingsBtn.addEventListener('click', function() {
         settingsMenu.style.display = settingsMenu.style.display === 'none' ? 'block' : 'none';
       });
       
       // Close settings when clicking outside
-      document.addEventListener('click', (e) => {
-        if (settingsMenu.style.display === 'block' && 
+      document.addEventListener('click', function(e) {
+        if (settingsMenu && settingsMenu.style.display === 'block' && 
             !settingsMenu.contains(e.target) && 
             !settingsBtn.contains(e.target)) {
           settingsMenu.style.display = 'none';
@@ -453,42 +481,50 @@ class EnhancedVideoPlayer {
     }
     
     // Speed options
-    const speedOptions = this.controls.querySelectorAll('.speed-option');
-    speedOptions.forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        const rate = parseFloat(e.target.dataset.rate);
-        this.setPlaybackRate(rate);
+    var speedOptions = this.controls.querySelectorAll('.speed-option');
+    speedOptions.forEach(function(btn) {
+      btn.addEventListener('click', function(e) {
+        var rate = parseFloat(e.target.dataset.rate);
+        self.setPlaybackRate(rate);
         
         // Update active state
-        speedOptions.forEach(b => b.classList.remove('active'));
+        speedOptions.forEach(function(b) {
+          b.classList.remove('active');
+        });
         e.target.classList.add('active');
+        
+        // Hide settings menu
+        if (settingsMenu) settingsMenu.style.display = 'none';
       });
     });
     
     // Fullscreen button
-    const fullscreenBtn = this.controls.querySelector('.fullscreen-btn');
+    var fullscreenBtn = this.controls.querySelector('.fullscreen-btn');
     if (fullscreenBtn) {
-      fullscreenBtn.addEventListener('click', () => this.toggleFullscreen());
+      fullscreenBtn.addEventListener('click', function() {
+        self.toggleFullscreen();
+      });
     }
     
     // Update time display
-    this.video.addEventListener('timeupdate', () => {
-      this.updateTimeDisplay();
+    this.video.addEventListener('timeupdate', function() {
+      self.updateTimeDisplay();
     });
     
     console.log('✅ Control listeners setup');
   }
   
   updateTimeDisplay() {
-    if (!this.controls) return;
+    // CRITICAL FIX: Add null check at top
+    if (!this.controls || !this.video) return;
     
-    const currentTime = this.video.currentTime;
-    const duration = this.video.duration || 0;
+    var currentTime = this.video.currentTime;
+    var duration = this.video.duration || 0;
     
     // Update time display
-    const currentTimeEl = this.controls.querySelector('.current-time');
-    const durationEl = this.controls.querySelector('.duration');
-    const progressBar = this.controls.querySelector('.progress-bar');
+    var currentTimeEl = this.controls.querySelector('.current-time');
+    var durationEl = this.controls.querySelector('.duration');
+    var progressBar = this.controls.querySelector('.progress-bar');
     
     if (currentTimeEl) {
       currentTimeEl.textContent = this.formatTime(currentTime);
@@ -499,7 +535,7 @@ class EnhancedVideoPlayer {
     }
     
     if (progressBar) {
-      const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
+      var progress = duration > 0 ? (currentTime / duration) * 100 : 0;
       progressBar.value = progress;
     }
   }
@@ -509,17 +545,21 @@ class EnhancedVideoPlayer {
   // ======================
   
   play() {
-    return this.video.play().catch(error => {
-      this.handleError({ target: this.video });
+    var self = this;
+    return this.video.play().catch(function(error) {
+      self.handleError({ target: self.video });
       throw error;
     });
   }
   
   pause() {
-    this.video.pause();
+    if (this.video) {
+      this.video.pause();
+    }
   }
   
   togglePlay() {
+    if (!this.video) return;
     if (this.video.paused) {
       this.play();
     } else {
@@ -528,21 +568,25 @@ class EnhancedVideoPlayer {
   }
   
   seek(time) {
-    if (!isNaN(time) && isFinite(time)) {
+    if (!isNaN(time) && isFinite(time) && this.video) {
       this.video.currentTime = time;
     }
   }
   
   setPlaybackRate(rate) {
-    this.video.playbackRate = rate;
-    this.playbackRate = rate;
-    this.emit('ratechange', rate);
+    if (this.video) {
+      this.video.playbackRate = rate;
+      this.playbackRate = rate;
+      this.emit('ratechange', rate);
+    }
   }
   
   setVolume(volume) {
-    this.video.volume = Math.max(0, Math.min(1, volume));
-    this.video.muted = this.video.volume === 0;
-    this.emit('volumechange', this.video.volume);
+    if (this.video) {
+      this.video.volume = Math.max(0, Math.min(1, volume));
+      this.video.muted = this.video.volume === 0;
+      this.emit('volumechange', this.video.volume);
+    }
   }
   
   // ======================
@@ -551,7 +595,7 @@ class EnhancedVideoPlayer {
   
   toggleFullscreen() {
     // Use the player container, not video element
-    const playerContainer = document.querySelector('.inline-player');
+    var playerContainer = document.querySelector('.inline-player');
     if (!playerContainer) {
       console.error('Player container not found for fullscreen');
       return;
@@ -582,8 +626,9 @@ class EnhancedVideoPlayer {
     this.isFullscreen = !this.isFullscreen;
     
     // Force custom controls to show in fullscreen
-    setTimeout(() => {
-      if (this.controls) this.controls.style.opacity = '1';
+    var self = this;
+    setTimeout(function() {
+      if (self.controls) self.controls.style.opacity = '1';
     }, 100);
   }
   
@@ -601,8 +646,11 @@ class EnhancedVideoPlayer {
   // ======================
   
   showBufferingIndicator() {
+    // CRITICAL FIX: Add null check
+    if (!this.container) return;
+    
     // Create or show buffering indicator
-    let indicator = this.container.querySelector('.buffering-indicator');
+    var indicator = this.container.querySelector('.buffering-indicator');
     if (!indicator) {
       indicator = document.createElement('div');
       indicator.className = 'buffering-indicator';
@@ -628,15 +676,23 @@ class EnhancedVideoPlayer {
   }
   
   hideBufferingIndicator() {
-    const indicator = this.container.querySelector('.buffering-indicator');
+    // CRITICAL FIX: Add null check
+    if (!this.container) return;
+    
+    var indicator = this.container.querySelector('.buffering-indicator');
     if (indicator) {
       indicator.style.display = 'none';
     }
   }
   
   showErrorOverlay(message) {
+    // CRITICAL FIX: Add null check
+    if (!this.container) return;
+    
     // Create or show error overlay
-    let overlay = this.container.querySelector('.error-overlay');
+    var overlay = this.container.querySelector('.error-overlay');
+    var self = this;
+    
     if (!overlay) {
       overlay = document.createElement('div');
       overlay.className = 'error-overlay';
@@ -663,11 +719,13 @@ class EnhancedVideoPlayer {
       this.container.appendChild(overlay);
       
       // Add retry button listener
-      const retryBtn = overlay.querySelector('.retry-btn');
+      var retryBtn = overlay.querySelector('.retry-btn');
       if (retryBtn) {
-        retryBtn.addEventListener('click', () => {
-          this.video.load();
-          this.video.play().catch(console.error);
+        retryBtn.addEventListener('click', function() {
+          if (self.video) {
+            self.video.load();
+            self.video.play().catch(console.error);
+          }
           overlay.style.display = 'none';
         });
       }
@@ -676,7 +734,10 @@ class EnhancedVideoPlayer {
   }
   
   hideErrorOverlay() {
-    const overlay = this.container.querySelector('.error-overlay');
+    // CRITICAL FIX: Add null check
+    if (!this.container) return;
+    
+    var overlay = this.container.querySelector('.error-overlay');
     if (overlay) {
       overlay.style.display = 'none';
     }
@@ -690,10 +751,10 @@ class EnhancedVideoPlayer {
     if (!seconds || isNaN(seconds)) return '0:00';
     
     seconds = Math.floor(seconds);
-    const minutes = Math.floor(seconds / 60);
-    const secs = seconds % 60;
+    var minutes = Math.floor(seconds / 60);
+    var secs = seconds % 60;
     
-    return `${minutes}:${secs.toString().padStart(2, '0')}`;
+    return minutes + ':' + (secs < 10 ? '0' + secs : secs);
   }
   
   formatCount(num) {
@@ -716,8 +777,8 @@ class EnhancedVideoPlayer {
   
   off(event, callback) {
     if (this.eventListeners.has(event)) {
-      const callbacks = this.eventListeners.get(event);
-      const index = callbacks.indexOf(callback);
+      var callbacks = this.eventListeners.get(event);
+      var index = callbacks.indexOf(callback);
       if (index > -1) {
         callbacks.splice(index, 1);
       }
@@ -726,11 +787,11 @@ class EnhancedVideoPlayer {
   
   emit(event, data) {
     if (this.eventListeners.has(event)) {
-      this.eventListeners.get(event).forEach(callback => {
+      this.eventListeners.get(event).forEach(function(callback) {
         try {
           callback(data);
         } catch (error) {
-          console.error(`Error in ${event} listener:`, error);
+          console.error('Error in ' + event + ' listener:', error);
         }
       });
     }
@@ -746,11 +807,11 @@ class EnhancedVideoPlayer {
     // ============================================
     // CRITICAL FIX: Preserve video source on destroy
     // ============================================
-    let preservedSource = null;
-    let preservedType = null;
+    var preservedSource = null;
+    var preservedType = null;
     
     if (this.video) {
-        const existingSources = this.video.querySelectorAll('source');
+        var existingSources = this.video.querySelectorAll('source');
         if (existingSources.length > 0) {
             preservedSource = existingSources[0].src;
             preservedType = existingSources[0].type;
@@ -766,15 +827,16 @@ class EnhancedVideoPlayer {
 
     // Remove event listeners
     if (this.video) {
-        const events = [
+        var events = [
           'play', 'pause', 'ended', 'error', 'waiting', 'canplay',
           'canplaythrough', 'loadeddata', 'loadedmetadata',
           'timeupdate', 'progress', 'seeking', 'seeked',
           'volumechange', 'ratechange'
         ];
         
-        events.forEach(event => {
-          this.video.removeEventListener(event, this.handleVideoEvent);
+        var self = this;
+        events.forEach(function(event) {
+          self.video.removeEventListener(event, self.handleVideoEvent);
         });
     }
     
@@ -812,7 +874,7 @@ class EnhancedVideoPlayer {
             this.video.removeAttribute('src');
             
             // Create new source element
-            const source = document.createElement('source');
+            var source = document.createElement('source');
             source.src = preservedSource;
             source.type = preservedType || 'video/mp4';
             
@@ -841,7 +903,7 @@ class EnhancedVideoPlayer {
   // ======================
   
   getStats() {
-    return { ...this.stats };
+    return Object.assign({}, this.stats);
   }
   
   getCurrentTime() {
@@ -869,4 +931,4 @@ class EnhancedVideoPlayer {
 window.EnhancedVideoPlayer = EnhancedVideoPlayer;
 window.BantuVideoPlayer = EnhancedVideoPlayer; // For compatibility
 
-console.log('✅ Enhanced Video Player loaded successfully');
+console.log('✅ Enhanced Video Player loaded successfully with null checks');
