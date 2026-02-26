@@ -1,10 +1,12 @@
 // js/content-detail.js - FIXED FOR RLS POLICIES - WITH ACCURATE COUNT BYPASS - VIEWS RECORDED ON PLAY BUTTON CLICK (LIKE MOBILE APP)
 // FIXED: Theme selector conflict resolved, navigation icons properly aligned
+// PHASE 1 UPDATE: Watch Session Lifecycle Integration
 console.log('🎬 Content Detail Initializing with RLS-compliant fixes and view tracking on Play button click...');
 
 // Global variables
 let currentContent = null;
 let enhancedVideoPlayer = null;
+let watchSession = null; // PHASE 1: Watch session instance
 let isInitialized = false;
 let currentUserId = null;
 
@@ -46,12 +48,28 @@ document.addEventListener('DOMContentLoaded', async () => {
   initThemeSelector(); // FIXED: Theme selector now properly implemented
   initGlobalNavigation(); // FIXED: Navigation icons with proper event listeners
   
+  // PHASE 1: Load Continue Watching section
+  if (currentUserId) {
+    await loadContinueWatching(currentUserId);
+    setupContinueWatchingRefresh();
+  }
+  
   // Show app
   document.getElementById('loading').style.display = 'none';
   document.getElementById('app').style.display = 'block';
   
   console.log('✅ Content Detail fully initialized with RLS-compliant fixes');
-});
+}
+
+// PHASE 1: Import WatchSession class
+// Make sure watch-session.js is loaded before this script
+if (!window.WatchSession) {
+  console.warn('⚠️ WatchSession not loaded, will attempt to load dynamically');
+  // Dynamic load as fallback
+  const script = document.createElement('script');
+  script.src = 'js/watch-session.js';
+  document.head.appendChild(script);
+}
 
 async function waitForHelpers() {
   return new Promise((resolve) => {
@@ -72,10 +90,24 @@ function setupAuthListeners() {
       currentUserId = window.AuthHelper.getUserProfile()?.id || null;
       updateProfileUI();
       showToast('Welcome back!', 'success');
+      
+      // PHASE 1: Reload continue watching on sign in
+      if (currentUserId) {
+        await loadContinueWatching(currentUserId);
+      }
     } else if (event === 'SIGNED_OUT') {
       currentUserId = null;
       resetProfileUI();
       showToast('Signed out successfully', 'info');
+      
+      // PHASE 1: Hide continue watching on sign out
+      document.getElementById('continueWatchingSection').style.display = 'none';
+      
+      // Clean up watch session if active
+      if (watchSession) {
+        await watchSession.stop();
+        watchSession = null;
+      }
     }
   });
   
@@ -216,6 +248,19 @@ async function loadContentFromURL() {
       .select('*', { count: 'exact', head: true })
       .eq('content_id', contentId);
     
+    // PHASE 1: Get watch progress if user is authenticated
+    let watchProgress = null;
+    if (currentUserId) {
+      const { data: progressData } = await window.supabaseClient
+        .from('watch_progress')
+        .select('last_position, is_completed')
+        .eq('user_id', currentUserId)
+        .eq('content_id', contentId)
+        .maybeSingle();
+      
+      watchProgress = progressData;
+    }
+    
     // Process data with ACCURATE counts from source tables
     currentContent = {
       id: contentData.id,
@@ -235,16 +280,25 @@ async function loadContentFromURL() {
       creator: contentData.user_profiles?.full_name || contentData.user_profiles?.username || 'Creator',
       creator_display_name: contentData.user_profiles?.full_name || contentData.user_profiles?.username || 'Creator',
       creator_id: contentData.user_profiles?.id || contentData.user_id,
-      user_id: contentData.user_id
+      user_id: contentData.user_id,
+      // PHASE 1: Add watch progress
+      watch_progress: watchProgress?.last_position || 0,
+      is_completed: watchProgress?.is_completed || false
     };
     
     console.log('📥 Content loaded with ACCURATE counts:', {
       views: currentContent.views_count,
-      likes: currentContent.likes_count // Now shows 2 when 2 users like it
+      likes: currentContent.likes_count, // Now shows 2 when 2 users like it
+      watch_progress: currentContent.watch_progress
     });
     
     // Update UI
     updateContentUI(currentContent);
+    
+    // PHASE 1: Add resume button if there's progress
+    if (currentContent.watch_progress > 10 && !currentContent.is_completed) {
+      addResumeButton(currentContent.watch_progress);
+    }
     
     // Initialize user-specific states
     if (currentUserId) {
@@ -260,6 +314,35 @@ async function loadContentFromURL() {
     console.error('❌ Content load failed:', error);
     showToast('Content not available. Please try again.', 'error');
     document.getElementById('contentTitle').textContent = 'Content Unavailable';
+  }
+}
+
+// PHASE 1: Add resume button to hero actions
+function addResumeButton(progressSeconds) {
+  const heroActions = document.querySelector('.hero-actions');
+  if (!heroActions) return;
+  
+  // Check if resume button already exists
+  if (document.getElementById('resumeBtn')) return;
+  
+  const resumeBtn = document.createElement('button');
+  resumeBtn.id = 'resumeBtn';
+  resumeBtn.className = 'btn btn-primary resume-btn';
+  resumeBtn.innerHTML = `
+    <i class="fas fa-play"></i>
+    <span>Resume (${formatDuration(progressSeconds)})</span>
+  `;
+  
+  resumeBtn.addEventListener('click', handlePlay);
+  
+  // Insert before the play button
+  const playBtn = document.getElementById('playBtn');
+  if (playBtn) {
+    heroActions.insertBefore(resumeBtn, playBtn);
+    // Optionally hide the regular play button
+    playBtn.style.display = 'none';
+  } else {
+    heroActions.prepend(resumeBtn);
   }
 }
 
@@ -654,8 +737,8 @@ function initializeEnhancedVideoPlayer() {
         window.stateManager.setState('session.playing', true);
       }
       
-      // ❌ VIEW RECORDING REMOVED - Views are now recorded on Play button click
-      // This matches mobile app behavior
+      // PHASE 1: Initialize watch session on play
+      initializeWatchSessionOnPlay();
     });
     
     enhancedVideoPlayer.on('pause', () => {
@@ -680,6 +763,76 @@ function initializeEnhancedVideoPlayer() {
     console.error('❌ Failed to initialize enhanced video player:', error);
     showToast('Video player failed to load. Using basic player.', 'warning');
     videoElement.controls = true;
+  }
+}
+
+// PHASE 1: Initialize watch session when video plays
+async function initializeWatchSessionOnPlay() {
+  if (!currentContent || !currentUserId || !enhancedVideoPlayer?.video) {
+    console.log('⏭️ Cannot initialize watch session: missing content, user, or video');
+    return;
+  }
+  
+  // Clean up any existing session
+  if (watchSession) {
+    await watchSession.stop();
+    watchSession = null;
+  }
+  
+  try {
+    // Make sure WatchSession class is available
+    if (!window.WatchSession) {
+      console.warn('WatchSession not available, cannot track progress');
+      return;
+    }
+    
+    watchSession = new window.WatchSession({
+      contentId: currentContent.id,
+      userId: currentUserId,
+      supabaseClient: window.supabaseClient,
+      videoElement: enhancedVideoPlayer.video,
+      syncInterval: 10000,        // Sync every 10 seconds
+      viewThreshold: 20,          // Count view after 20s watched
+      completionThreshold: 0.9,   // Mark complete at 90%
+      
+      // Callbacks
+      onProgressSync: (data) => {
+        console.log('📊 Progress synced:', data);
+        // Could update UI if needed
+      },
+      onViewCounted: async (data) => {
+        console.log('👁️ View counted:', data);
+        // Refresh view count in UI
+        await refreshCountsFromSource();
+      },
+      onComplete: (data) => {
+        console.log('🏆 Content completed:', data);
+        showToast('✅ You finished this video!', 'success');
+        
+        // Remove resume button if it exists
+        const resumeBtn = document.getElementById('resumeBtn');
+        if (resumeBtn) {
+          resumeBtn.remove();
+          // Show play button again
+          const playBtn = document.getElementById('playBtn');
+          if (playBtn) playBtn.style.display = 'flex';
+        }
+      },
+      onError: (error) => {
+        console.error('❌ Watch session error:', error.context, error.error);
+      }
+    });
+    
+    const success = await watchSession.start(enhancedVideoPlayer.video);
+    
+    if (success) {
+      console.log('✅ Watch session initialized successfully');
+    } else {
+      console.warn('⚠️ Watch session failed to start');
+    }
+    
+  } catch (error) {
+    console.error('❌ Failed to initialize watch session:', error);
   }
 }
 
@@ -919,6 +1072,12 @@ function handlePlay() {
     enhancedVideoPlayer = null;
   }
   
+  // PHASE 1: Clean up any existing watch session
+  if (watchSession) {
+    watchSession.stop().catch(console.warn);
+    watchSession = null;
+  }
+  
   // Clear and set video source
   console.log('🔧 Setting video source...');
   
@@ -1002,6 +1161,12 @@ function setupEventListeners() {
       if (video) {
         video.pause();
         video.currentTime = 0;
+      }
+      
+      // PHASE 1: Stop watch session
+      if (watchSession) {
+        watchSession.stop().catch(console.warn);
+        watchSession = null;
       }
       
       if (enhancedVideoPlayer) {
@@ -2369,6 +2534,158 @@ function initGlobalNavigation() {
   // Notifications button is handled in initNotificationsPanel
 }
 
+// ============================================
+// PHASE 1: CONTINUE WATCHING — LOAD & RENDER
+// ============================================
+
+async function loadContinueWatching(userId, limit = 8) {
+  const section = document.getElementById('continueWatchingSection');
+  if (!section) return;
+  
+  if (!userId || !window.supabaseClient) {
+    section.style.display = 'none';
+    return;
+  }
+  
+  try {
+    const { data, error } = await window.supabaseClient
+      .from('watch_progress')
+      .select(`
+        content_id,
+        last_position,
+        is_completed,
+        updated_at,
+        Content (
+          id,
+          title,
+          thumbnail_url,
+          genre,
+          duration,
+          status,
+          user_profiles!user_id (
+            id,
+            full_name,
+            username,
+            avatar_url
+          )
+        )
+      `)
+      .eq('user_id', userId)
+      .eq('is_completed', false)
+      .neq('last_position', 0)
+      .eq('Content.status', 'published')
+      .order('updated_at', { ascending: false })
+      .limit(limit);
+    
+    if (error) throw error;
+    
+    if (!data || data.length === 0) {
+      section.style.display = 'none';
+      return;
+    }
+    
+    renderContinueWatching(data);
+    section.style.display = 'block';
+    
+  } catch (error) {
+    console.error('❌ Failed to load continue watching:', error);
+    section.style.display = 'none';
+  }
+}
+
+function renderContinueWatching(items) {
+  const container = document.getElementById('continueGrid');
+  if (!container) return;
+  
+  container.innerHTML = items.map(item => {
+    const content = item.Content;
+    if (!content) return ''; // Skip if content was deleted
+    
+    const progress = content.duration > 0 
+      ? Math.min(100, Math.round((item.last_position / content.duration) * 100))
+      : 0;
+    
+    const timeWatched = formatDuration(item.last_position);
+    const totalTime = formatDuration(content.duration);
+    
+    // Fix media URLs
+    const thumbnailUrl = window.SupabaseHelper?.fixMediaUrl?.(content.thumbnail_url) 
+      || content.thumbnail_url 
+      || 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop';
+    
+    const creatorName = content.user_profiles?.full_name 
+      || content.user_profiles?.username 
+      || 'Creator';
+    
+    return `
+      <a href="content-detail.html?id=${content.id}" class="content-card continue-card" data-content-id="${content.id}">
+        <div class="card-thumbnail">
+          <img src="${thumbnailUrl}" 
+               alt="${escapeHtml(content.title)}"
+               loading="lazy"
+               onerror="this.src='https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop'">
+          
+          <div class="progress-bar-overlay">
+            <div class="progress-fill" style="width:${progress}%"></div>
+          </div>
+          
+          <div class="resume-badge">
+            <i class="fas fa-play"></i> Resume
+          </div>
+        </div>
+        
+        <div class="card-content">
+          <h3 class="card-title">${truncateText(content.title, 45)}</h3>
+          
+          <div class="related-meta">
+            <span>${timeWatched} / ${totalTime}</span>
+          </div>
+          
+          <div class="creator-chip">
+            <i class="fas fa-user"></i>
+            ${truncateText(creatorName, 20)}
+          </div>
+        </div>
+      </a>
+    `;
+  }).join('');
+  
+  // Add click tracking (optional)
+  container.querySelectorAll('.continue-card').forEach(card => {
+    card.addEventListener('click', (e) => {
+      if (window.track?.continueWatchingClick) {
+        const contentId = card.dataset.contentId;
+        window.track.continueWatchingClick(contentId);
+      }
+    });
+  });
+}
+
+// PHASE 1: Refresh button handler
+function setupContinueWatchingRefresh() {
+  const refreshBtn = document.getElementById('refreshContinueBtn');
+  if (!refreshBtn) return;
+  
+  refreshBtn.addEventListener('click', async () => {
+    if (!currentUserId) return;
+    
+    showToast('Refreshing...', 'info');
+    refreshBtn.disabled = true;
+    refreshBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+    
+    try {
+      await loadContinueWatching(currentUserId);
+      showToast('Updated!', 'success');
+    } catch (error) {
+      console.error('Refresh failed:', error);
+      showToast('Refresh failed', 'error');
+    } finally {
+      refreshBtn.disabled = false;
+      refreshBtn.innerHTML = '<i class="fas fa-redo"></i>';
+    }
+  });
+}
+
 // Utility functions
 function safeSetText(id, text) {
   const el = document.getElementById(id);
@@ -2495,4 +2812,11 @@ window.recordContentView = recordContentView;
 window.refreshCountsFromSource = refreshCountsFromSource;
 window.clearViewCache = clearViewCache;
 
-console.log('✅ Content detail script loaded with ACCURATE COUNT BYPASS - Views recorded on Play button click (matches mobile app)');
+// PHASE 1: Page unload handler - clean up watch session
+window.addEventListener('beforeunload', () => {
+  if (watchSession) {
+    watchSession.stop();
+  }
+});
+
+console.log('✅ Content detail script loaded with PHASE 1 WATCH SESSION integration - Views recorded on Play button click (matches mobile app)');
