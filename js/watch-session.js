@@ -1,6 +1,6 @@
 // js/watch-session.js — Production Watch Session Lifecycle Manager
 // Bantu Stream Connect — Phase 1 Implementation
-// FIXED: No optional chaining (?.) for maximum compatibility
+// ✅ FIXED: Matches your actual Supabase schema (total_watch_time, no session_id/device_type)
 
 (function() {
   'use strict';
@@ -8,34 +8,30 @@
   console.log('🎬 WatchSession module loading...');
 
   function WatchSession(config) {
-    // Validate required config
     if (!config || !config.contentId || !config.supabase) {
       console.error('❌ WatchSession: Missing required config (contentId, supabase)');
       return;
     }
 
-    // Required config
     this.contentId = config.contentId;
     this.userId = config.userId || null;
     this.supabase = config.supabase;
     
-    // Optional config with defaults
     this.videoElement = config.videoElement || null;
     this.syncInterval = config.syncInterval || 10000;
     this.viewThreshold = config.viewThreshold || 20;
     this.completionThreshold = config.completionThreshold || 0.9;
     
-    // Internal state
     this.sessionId = this._generateSessionId();
     this.lastSyncTime = 0;
     this.lastSavedPosition = 0;
+    this.totalWatchTime = 0; // Track cumulative watch time
     this.viewCounted = false;
     this.isCompleted = false;
     this.isActive = false;
     this.syncTimeout = null;
     this.visibilityHandler = null;
     
-    // Callbacks
     this.onProgressSync = config.onProgressSync || null;
     this.onViewCounted = config.onViewCounted || null;
     this.onComplete = config.onComplete || null;
@@ -78,19 +74,13 @@
 
   WatchSession.prototype.stop = function() {
     if (!this.isActive) return;
-    
-    // Final sync
     this._syncProgress(true);
-    
-    // Cleanup
     this._detachEventListeners();
     this._cleanupVisibilityHandler();
-    
     if (this.syncTimeout) {
       clearTimeout(this.syncTimeout);
       this.syncTimeout = null;
     }
-    
     this.isActive = false;
     console.log('🛑 WatchSession stopped: ' + this.sessionId);
   };
@@ -108,6 +98,7 @@
       isActive: this.isActive,
       lastPosition: this.videoElement ? this.videoElement.currentTime : 0,
       lastSavedPosition: this.lastSavedPosition,
+      totalWatchTime: this.totalWatchTime,
       viewCounted: this.viewCounted,
       isCompleted: this.isCompleted
     };
@@ -122,15 +113,12 @@
       if (typeof crypto !== 'undefined' && crypto.randomUUID) {
         return crypto.randomUUID();
       }
-    } catch (e) {
-      // Fallback below
-    }
+    } catch (e) {}
     return 'session_' + Date.now() + '_' + Math.random().toString(36).slice(2, 10);
   };
 
   WatchSession.prototype._initializeProgress = function() {
     var self = this;
-    
     if (!this.userId) {
       console.log('🔓 No user — progress tracking disabled');
       return Promise.resolve();
@@ -149,8 +137,9 @@
         }
         if (result.data) {
           self.lastSavedPosition = result.data.last_position || 0;
+          self.totalWatchTime = result.data.total_watch_time || 0;
           self.isCompleted = result.data.is_completed || false;
-          console.log('📥 Loaded progress: ' + self.lastSavedPosition + 's, completed: ' + self.isCompleted);
+          console.log('📥 Loaded progress: ' + self.lastSavedPosition + 's, total: ' + self.totalWatchTime + 's, completed: ' + self.isCompleted);
         }
       })
       .catch(function(error) {
@@ -160,7 +149,6 @@
 
   WatchSession.prototype._resumePlayback = function() {
     var self = this;
-    
     if (!this.videoElement || !this.userId) return Promise.resolve();
     
     var shouldResume = 
@@ -200,7 +188,6 @@
     if (typeof showToast === 'function') {
       showToast('Resuming from ' + this._formatTime(this.lastSavedPosition), 'info');
     }
-    
     console.log('⏪ Resumed at ' + this.lastSavedPosition + 's');
   };
 
@@ -209,7 +196,6 @@
     
     var self = this;
     
-    // Bind handlers to instance
     this._boundTimeUpdate = this._onTimeUpdate.bind(this);
     this._boundPlay = this._onPlay.bind(this);
     this._boundPause = this._onPause.bind(this);
@@ -269,13 +255,21 @@
     var currentTime = Math.floor(video.currentTime);
     var duration = video.duration || 0;
     
-    // Count view after threshold
+    // Count view after threshold (anti-inflation)
     if (!this.viewCounted && currentTime >= this.viewThreshold) {
       this._recordView(video);
       this.viewCounted = true;
     }
     
-    // Check completion
+    // Track cumulative watch time (only when playing)
+    if (!video.paused && this.lastSyncTime > 0) {
+      var elapsed = currentTime - this.lastSavedPosition;
+      if (elapsed > 0) {
+        this.totalWatchTime += elapsed;
+      }
+    }
+    
+    // Check completion at 90%
     if (!this.isCompleted && duration > 0) {
       var progress = currentTime / duration;
       if (progress >= this.completionThreshold) {
@@ -329,23 +323,23 @@
   };
 
   // ============================================
-  // DATABASE OPERATIONS
+  // DATABASE OPERATIONS — ✅ MATCHES YOUR SCHEMA
   // ============================================
 
   WatchSession.prototype._recordView = function(video) {
     var self = this;
     if (!this.userId) return;
     
+    // ✅ Use ONLY columns that exist in your content_views table
     return this.supabase
       .from('content_views')
       .insert({
         content_id: this.contentId,
         viewer_id: this.userId,
-        session_id: this.sessionId,
         view_duration: Math.floor(video.currentTime),
         counted_as_view: true,
-        device_type: this._getDeviceType(),
         created_at: new Date().toISOString()
+        // ❌ REMOVED: session_id, device_type (not in your schema)
       })
       .then(function(result) {
         if (result.error && result.error.code !== '23505') {
@@ -373,27 +367,30 @@
       return Promise.resolve();
     }
     
+    // ✅ Use ONLY columns that exist in your watch_progress table
     return this.supabase
       .from('watch_progress')
       .upsert({
         user_id: this.userId,
         content_id: this.contentId,
         last_position: currentTime,
-        watch_duration: currentTime,
+        total_watch_time: this.totalWatchTime,  // ✅ Your schema uses this
         is_completed: this.isCompleted,
         completed_at: this.isCompleted ? new Date().toISOString() : null,
         updated_at: new Date().toISOString()
+        // ❌ REMOVED: watch_duration (your schema uses total_watch_time)
       }, {
         onConflict: ['user_id', 'content_id']
       })
       .then(function(result) {
         if (result.error) throw result.error;
-        console.log('💾 Progress synced: ' + currentTime + 's' + (self.isCompleted ? ' (completed)' : ''));
+        console.log('💾 Progress synced: pos=' + currentTime + 's, total=' + self.totalWatchTime + 's' + (self.isCompleted ? ' (completed)' : ''));
         if (self.onProgressSync) {
           self.onProgressSync({
             contentId: self.contentId,
             position: currentTime,
             duration: duration,
+            totalWatchTime: self.totalWatchTime,
             completed: self.isCompleted
           });
         }
@@ -436,17 +433,6 @@
     var mins = Math.floor(seconds / 60);
     var secs = Math.floor(seconds % 60);
     return mins + ':' + secs.toString().padStart(2, '0');
-  };
-
-  WatchSession.prototype._getDeviceType = function() {
-    var ua = navigator.userAgent || '';
-    if (/Mobile|Android|iP(hone|od)|IEMobile|Windows Phone|BlackBerry/i.test(ua)) {
-      return 'mobile';
-    }
-    if (/Tablet|iPad/i.test(ua)) {
-      return 'tablet';
-    }
-    return 'desktop';
   };
 
   WatchSession.prototype._handleError = function(context, error) {
