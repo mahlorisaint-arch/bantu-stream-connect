@@ -1,12 +1,14 @@
 // js/content-detail.js - FIXED FOR RLS POLICIES - WITH ACCURATE COUNT BYPASS - VIEWS RECORDED ON PLAY BUTTON CLICK (LIKE MOBILE APP)
 // FIXED: Theme selector conflict resolved, navigation icons properly aligned
 // PHASE 1 UPDATE: Watch Session Lifecycle Integration with syntax-safe WatchSession
+// PHASE 2 UPDATE: Watch Later & Playlist System Integration
 console.log('🎬 Content Detail Initializing with RLS-compliant fixes and view tracking on Play button click...');
 
 // Global variables
 let currentContent = null;
 let enhancedVideoPlayer = null;
 let watchSession = null; // PHASE 1: Watch session instance
+let playlistManager = null; // PHASE 2: Playlist manager instance
 let isInitialized = false;
 let currentUserId = null;
 
@@ -54,11 +56,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     setupContinueWatchingRefresh();
   }
   
+  // PHASE 2: Initialize Playlist Manager after auth is ready
+  if (window.PlaylistManager && currentUserId) {
+    await initializePlaylistManager();
+  }
+  
   // Show app
   document.getElementById('loading').style.display = 'none';
   document.getElementById('app').style.display = 'block';
   
-  console.log('✅ Content Detail fully initialized with RLS-compliant fixes');
+  console.log('✅ Content Detail fully initialized with RLS-compliant fixes and PHASE 2 Watch Later');
 });
 
 // PHASE 1: Import WatchSession class
@@ -71,6 +78,15 @@ if (!window.WatchSession) {
   document.head.appendChild(script);
 }
 
+// PHASE 2: Import PlaylistManager class
+if (!window.PlaylistManager) {
+  console.warn('⚠️ PlaylistManager not loaded, will attempt to load dynamically');
+  // Dynamic load as fallback
+  const script = document.createElement('script');
+  script.src = 'js/playlist-manager.js';
+  document.head.appendChild(script);
+}
+
 async function waitForHelpers() {
   return new Promise((resolve) => {
     const check = setInterval(() => {
@@ -80,6 +96,126 @@ async function waitForHelpers() {
       }
     }, 100);
   });
+}
+
+// ============================================
+// PHASE 2: PLAYLIST MANAGER INITIALIZATION
+// ============================================
+async function initializePlaylistManager() {
+  if (!window.PlaylistManager) {
+    console.warn('⚠️ PlaylistManager not loaded yet');
+    return;
+  }
+  
+  if (!currentUserId) {
+    console.log('🔓 Guest user — playlist features disabled');
+    return;
+  }
+  
+  try {
+    playlistManager = new window.PlaylistManager({
+      supabase: window.supabaseClient,
+      userId: currentUserId,
+      watchLaterTitle: 'Watch Later',
+      onPlaylistUpdated: function(data) {
+        console.log('📋 Playlist updated:', data);
+        // Update UI optimistically
+        updateWatchLaterButtonState();
+      },
+      onError: function(err) {
+        console.error('❌ Playlist error:', err);
+        showToast('Playlist error: ' + err.error, 'error');
+      }
+    });
+    
+    // Initialize Watch Later button state
+    await updateWatchLaterButtonState();
+    
+    console.log('✅ PlaylistManager initialized');
+    
+  } catch (error) {
+    console.error('❌ Failed to initialize PlaylistManager:', error);
+  }
+}
+
+// PHASE 2: Update Watch Later button state
+async function updateWatchLaterButtonState() {
+  const btn = document.getElementById('watchLaterBtn');
+  if (!btn || !currentContent?.id || !playlistManager) return;
+  
+  try {
+    const isInList = await playlistManager.isInWatchLater(currentContent.id);
+    
+    if (isInList) {
+      btn.classList.add('active');
+      btn.innerHTML = '<i class="fas fa-check"></i><span>Saved</span>';
+      btn.title = 'Remove from Watch Later';
+    } else {
+      btn.classList.remove('active');
+      btn.innerHTML = '<i class="far fa-clock"></i><span>Watch Later</span>';
+      btn.title = 'Add to Watch Later';
+    }
+    
+  } catch (error) {
+    console.error('❌ Failed to update Watch Later button:', error);
+    // Default to unselected state on error
+    btn.classList.remove('active');
+    btn.innerHTML = '<i class="far fa-clock"></i><span>Watch Later</span>';
+  }
+}
+
+// PHASE 2: Handle Watch Later button click
+async function handleWatchLaterToggle() {
+  if (!currentContent?.id) {
+    showToast('No content selected', 'error');
+    return;
+  }
+  
+  if (!currentUserId) {
+    showToast('Sign in to save to Watch Later', 'warning');
+    // Redirect to login with return URL
+    const redirect = encodeURIComponent(window.location.href);
+    window.location.href = `login.html?redirect=${redirect}`;
+    return;
+  }
+  
+  if (!playlistManager) {
+    showToast('Playlist system loading...', 'info');
+    return;
+  }
+  
+  const btn = document.getElementById('watchLaterBtn');
+  if (!btn) return;
+  
+  // Show loading state
+  const originalHTML = btn.innerHTML;
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+  btn.disabled = true;
+  
+  try {
+    const result = await playlistManager.toggleWatchLater(currentContent.id);
+    
+    if (result.success) {
+      if (result.action === 'added') {
+        showToast('✅ Added to Watch Later', 'success');
+      } else if (result.action === 'removed') {
+        showToast('🗑️ Removed from Watch Later', 'info');
+      }
+      // State updated via callback
+    } else {
+      showToast('❌ ' + (result.error || 'Failed to update'), 'error');
+      // Revert button state
+      await updateWatchLaterButtonState();
+    }
+    
+  } catch (error) {
+    console.error('❌ Watch Later toggle failed:', error);
+    showToast('Failed to update Watch Later', 'error');
+    await updateWatchLaterButtonState();
+    
+  } finally {
+    btn.disabled = false;
+  }
 }
 
 // Authentication setup
@@ -95,8 +231,14 @@ function setupAuthListeners() {
       if (currentUserId) {
         await loadContinueWatching(currentUserId);
       }
+      
+      // PHASE 2: Initialize playlist manager on sign in
+      if (window.PlaylistManager && !playlistManager) {
+        await initializePlaylistManager();
+      }
     } else if (event === 'SIGNED_OUT') {
       currentUserId = null;
+      playlistManager = null; // PHASE 2: Clear playlist manager
       resetProfileUI();
       showToast('Signed out successfully', 'info');
       
@@ -107,6 +249,13 @@ function setupAuthListeners() {
       if (watchSession) {
         watchSession.stop();
         watchSession = null;
+      }
+      
+      // PHASE 2: Reset Watch Later button
+      const watchLaterBtn = document.getElementById('watchLaterBtn');
+      if (watchLaterBtn) {
+        watchLaterBtn.classList.remove('active');
+        watchLaterBtn.innerHTML = '<i class="far fa-clock"></i><span>Watch Later</span>';
       }
     }
   });
@@ -304,6 +453,11 @@ async function loadContentFromURL() {
     if (currentUserId) {
       await initializeLikeButton(contentId, currentUserId);
       await initializeFavoriteButton(contentId, currentUserId);
+    }
+    
+    // PHASE 2: Initialize Watch Later button state after content is loaded
+    if (playlistManager) {
+      await updateWatchLaterButtonState();
     }
     
     // Load comments & related content
@@ -1379,6 +1533,14 @@ function setupEventListeners() {
         showToast('Failed to update favorite', 'error');
       }
     });
+  }
+  
+  // ============================================
+  // PHASE 2: WATCH LATER BUTTON
+  // ============================================
+  const watchLaterBtn = document.getElementById('watchLaterBtn');
+  if (watchLaterBtn) {
+    watchLaterBtn.addEventListener('click', handleWatchLaterToggle);
   }
   
   // Refresh comments
