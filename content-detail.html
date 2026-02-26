@@ -130,6 +130,11 @@
               <i class="far fa-star"></i>
               <span>Favorite</span>
             </button>
+            <!-- ✅ PHASE 2: WATCH LATER BUTTON ADDED HERE -->
+            <button class="btn btn-secondary" id="watchLaterBtn">
+              <i class="far fa-clock"></i>
+              <span>Watch Later</span>
+            </button>
             <button class="btn btn-secondary" id="shareBtn">
               <i class="fas fa-share"></i>
               <span>Share</span>
@@ -520,10 +525,13 @@
   <script src="js/auth-helper.js"></script>
   <script src="js/security.js"></script>
   <script src="js/analytics.js"></script>
+  
+  <!-- PHASE 2: Playlist Manager MUST load before content-detail.js -->
+  <script src="js/playlist-manager.js"></script>
+  
+  <!-- Video Player Scripts -->
   <script src="js/video-player.js"></script>
   <script src="js/virtual-scroll.js"></script>
-  
-  <!-- PHASE 1 FIX: New Video Player Features -->
   <script src="js/video-player-features.js"></script>
   
   <!-- PHASE 1: Watch Session Lifecycle Manager -->
