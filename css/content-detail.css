@@ -134,6 +134,40 @@
   flex-wrap: wrap;
 }
 
+/* PHASE 2: Watch Later Button States */
+#watchLaterBtn {
+  transition: all 0.2s ease;
+}
+
+#watchLaterBtn.active {
+  background: linear-gradient(135deg, var(--success-color), #2b8a3e);
+  border-color: var(--success-color);
+}
+
+#watchLaterBtn.active i {
+  animation: checkmark 0.3s ease;
+}
+
+@keyframes checkmark {
+  0% { transform: scale(0); }
+  50% { transform: scale(1.2); }
+  100% { transform: scale(1); }
+}
+
+/* Loading state */
+#watchLaterBtn:disabled {
+  opacity: 0.7;
+  cursor: wait;
+}
+
+#watchLaterBtn:disabled i {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
 /* PHASE 1: Resume Button Styling */
 .resume-btn {
   background: linear-gradient(135deg, #F59E0B, #1D4ED8) !important;
