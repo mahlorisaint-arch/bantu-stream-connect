@@ -1,6 +1,6 @@
 // js/recommendation-engine.js — SQL-Based Recommendation Engine
 // Bantu Stream Connect — Phase 3 Implementation
-// No ML required — just smart, structured queries
+// Uses your actual schema: bigint content IDs, viewer_id for content_views
 
 (function() {
   'use strict';
@@ -23,13 +23,14 @@
       MORE_FROM_CREATOR: 'more_from_creator',
       TRENDING_IN_INTERESTS: 'trending_in_interests',
       CONTINUE_WATCHING: 'continue_watching',
-      SIMILAR_GENRE: 'similar_genre'
+      SIMILAR_GENRE: 'similar_genre',
+      PERSONALIZED: 'personalized'
     };
     
     // Config
     this.defaultLimit = config.limit || 12;
-    this.minWatchThreshold = config.minWatchThreshold || 0.5; // 50% watched = signal
-    this.cacheDuration = config.cacheDuration || 60000; // 1 minute cache
+    this.minWatchThreshold = config.minWatchThreshold || 0.5;
+    this.cacheDuration = config.cacheDuration || 60000; // 1 minute
     
     // Cache
     this._cache = {};
@@ -39,7 +40,7 @@
   }
 
   // ============================================
-  // PUBLIC API — Get Recommendations
+  // PUBLIC API
   // ============================================
 
   RecommendationEngine.prototype.getRecommendations = async function(type, options = {}) {
@@ -54,6 +55,9 @@
     let results = [];
     
     switch(type) {
+      case this.TYPES.CONTINUE_WATCHING:
+        results = await this._getContinueWatching(options);
+        break;
       case this.TYPES.BECAUSE_YOU_WATCHED:
         results = await this._getBecauseYouWatched(options);
         break;
@@ -63,11 +67,11 @@
       case this.TYPES.TRENDING_IN_INTERESTS:
         results = await this._getTrendingInInterests(options);
         break;
-      case this.TYPES.CONTINUE_WATCHING:
-        results = await this._getContinueWatching(options);
-        break;
       case this.TYPES.SIMILAR_GENRE:
         results = await this._getSimilarGenre(options);
+        break;
+      case this.TYPES.PERSONALIZED:
+        results = await this._getPersonalizedRecommendations(options);
         break;
       default:
         console.warn('⚠️ Unknown recommendation type:', type);
@@ -82,12 +86,11 @@
   };
 
   RecommendationEngine.prototype.getMultipleRails = async function(railConfigs) {
-    // Fetch multiple recommendation rails in parallel
     const promises = railConfigs.map(config => 
       this.getRecommendations(config.type, config.options || {})
         .then(results => ({ type: config.type, results }))
         .catch(error => {
-          console.error(`❌ Failed to load ${config.type}:`, error);
+          console.error('❌ Failed to load ' + config.type + ':', error);
           return { type: config.type, results: [] };
         })
     );
@@ -99,6 +102,30 @@
   // PRIVATE — Recommendation Queries
   // ============================================
 
+  RecommendationEngine.prototype._getPersonalizedRecommendations = async function(options) {
+    if (!this.userId) return [];
+    
+    const limit = options.limit || this.defaultLimit;
+    const excludeContentId = options.excludeContentId || this.currentContentId;
+    
+    try {
+      // Use the SQL function we created
+      const { data, error } = await this.supabase
+        .rpc('get_personalized_recommendations', {
+          p_user_id: this.userId,
+          p_limit: limit,
+          p_exclude_content_id: excludeContentId
+        });
+      
+      if (error) throw error;
+      return await this._enrichRecommendations(data || []);
+      
+    } catch (error) {
+      console.error('❌ Personalized recommendations failed:', error);
+      return await this._getFallbackRecommendations(excludeContentId, limit);
+    }
+  };
+
   RecommendationEngine.prototype._getBecauseYouWatched = async function(options) {
     if (!this.userId) return [];
     
@@ -106,97 +133,40 @@
     const excludeContentId = options.excludeContentId || this.currentContentId;
     
     try {
-      // Step 1: Get user's top watched genres (weighted by completion)
-      const {  watchedGenres, error: genresError } = await this.supabase
+      // Get user's top watched genres
+      const { data: genresData, error: genresError } = await this.supabase
         .rpc('get_user_top_genres', {
           p_user_id: this.userId,
-          p_min_completion: this.minWatchThreshold,
+          p_min_completion: 0.5,
           p_limit: 5
         });
       
-      if (genresError || !watchedGenres?.length) {
-        // Fallback: simple genre match from recent watches
-        return await this._getSimpleGenreMatch(excludeContentId, limit);
+      if (genresError || !genresData?.length) {
+        return await this._getFallbackRecommendations(excludeContentId, limit);
       }
       
-      // Step 2: Fetch content matching those genres, excluding watched
-      const genreList = watchedGenres.map(g => g.genre);
+      const genreList = genresData.map(g => g.genre);
       
-      const {  recommendations, error: recsError } = await this.supabase
+      // Fetch content matching those genres
+      const { data: recommendations, error: recsError } = await this.supabase
         .from('Content')
         .select(`
-          id,
-          title,
-          thumbnail_url,
-          genre,
-          duration,
-          views_count,
-          likes_count,
-          created_at,
-          user_profiles!user_id (
-            id,
-            full_name,
-            username,
-            avatar_url
-          )
+          id, title, thumbnail_url, genre, duration, views_count, likes_count, created_at,
+          user_profiles!user_id (full_name, username, avatar_url)
         `)
         .in('genre', genreList)
         .eq('status', 'published')
         .neq('id', excludeContentId)
-        .not('id', 'in', `(
-          SELECT content_id FROM watch_progress 
-          WHERE user_id = '${this.userId}' AND is_completed = true
-        )`)
         .order('views_count', { ascending: false })
         .limit(limit);
       
       if (recsError) throw recsError;
-      
-      // Step 3: Enrich with real view counts and engagement score
       return await this._enrichRecommendations(recommendations || []);
       
     } catch (error) {
       console.error('❌ Because you watched failed:', error);
-      return await this._getSimpleGenreMatch(excludeContentId, limit);
+      return await this._getFallbackRecommendations(excludeContentId, limit);
     }
-  };
-
-  RecommendationEngine.prototype._getSimpleGenreMatch = async function(excludeContentId, limit) {
-    if (!this.userId) return [];
-    
-    // Get user's most recent watched genre
-    const {  recentWatch } = await this.supabase
-      .from('watch_progress')
-      .select('content_id')
-      .eq('user_id', this.userId)
-      .order('updated_at', { ascending: false })
-      .limit(1)
-      .single();
-    
-    if (!recentWatch) return [];
-    
-    const {  content } = await this.supabase
-      .from('Content')
-      .select('genre')
-      .eq('id', recentWatch.content_id)
-      .single();
-    
-    if (!content?.genre) return [];
-    
-    const {  recommendations, error } = await this.supabase
-      .from('Content')
-      .select(`
-        id, title, thumbnail_url, genre, duration, views_count,
-        user_profiles!user_id (full_name, username, avatar_url)
-      `)
-      .eq('genre', content.genre)
-      .eq('status', 'published')
-      .neq('id', excludeContentId)
-      .order('created_at', { ascending: false })
-      .limit(limit);
-    
-    if (error) return [];
-    return await this._enrichRecommendations(recommendations || []);
   };
 
   RecommendationEngine.prototype._getMoreFromCreator = async function(options) {
@@ -207,17 +177,11 @@
     if (!creatorId) return [];
     
     try {
-      const {  content, error } = await this.supabase
+      const { data, error } = await this.supabase
         .from('Content')
         .select(`
-          id,
-          title,
-          thumbnail_url,
-          genre,
-          duration,
-          views_count,
-          likes_count,
-          created_at
+          id, title, thumbnail_url, genre, duration, views_count, likes_count, created_at,
+          user_profiles!user_id (full_name, username, avatar_url)
         `)
         .eq('user_id', creatorId)
         .eq('status', 'published')
@@ -226,7 +190,7 @@
         .limit(limit);
       
       if (error) throw error;
-      return await this._enrichRecommendations(content || []);
+      return await this._enrichRecommendations(data || []);
       
     } catch (error) {
       console.error('❌ More from creator failed:', error);
@@ -238,38 +202,30 @@
     if (!this.userId) return [];
     
     const limit = options.limit || this.defaultLimit;
-    const timeWindow = options.timeWindow || '7 days'; // '24 hours', '7 days', '30 days'
+    const timeWindow = options.timeWindow || '7 days';
     
     try {
-      // Get user's interest genres
-      const {  genres } = await this.supabase
+      const { data: genresData } = await this.supabase
         .rpc('get_user_top_genres', {
           p_user_id: this.userId,
-          p_min_completion: 0.3, // Lower threshold for trending
+          p_min_completion: 0.3,
           p_limit: 3
         });
       
-      if (!genres?.length) return [];
+      if (!genresData?.length) return [];
       
-      const genreList = genres.map(g => g.genre);
+      const genreList = genresData.map(g => g.genre);
+      const timeAgo = new Date(Date.now() - this._parseTimeWindow(timeWindow)).toISOString();
       
-      // Get trending content in those genres (high engagement recently)
-      const {  trending, error } = await this.supabase
+      const { data: trending, error } = await this.supabase
         .from('Content')
         .select(`
-          id,
-          title,
-          thumbnail_url,
-          genre,
-          duration,
-          views_count,
-          likes_count,
-          created_at,
+          id, title, thumbnail_url, genre, duration, views_count, likes_count, created_at,
           user_profiles!user_id (full_name, username, avatar_url)
         `)
         .in('genre', genreList)
         .eq('status', 'published')
-        .gte('created_at', new Date(Date.now() - this._parseTimeWindow(timeWindow)).toISOString())
+        .gte('created_at', timeAgo)
         .order('likes_count', { ascending: false })
         .limit(limit);
       
@@ -288,20 +244,12 @@
     const limit = options.limit || 8;
     
     try {
-      const {  progress, error } = await this.supabase
+      const { data, error } = await this.supabase
         .from('watch_progress')
         .select(`
-          content_id,
-          last_position,
-          is_completed,
-          updated_at,
+          content_id, last_position, is_completed, updated_at,
           Content (
-            id,
-            title,
-            thumbnail_url,
-            genre,
-            duration,
-            status,
+            id, title, thumbnail_url, genre, duration, status,
             user_profiles!user_id (full_name, username, avatar_url)
           )
         `)
@@ -314,8 +262,8 @@
       
       if (error) throw error;
       
-      // Filter out null content (deleted) and format
-      return (progress || [])
+      // Filter out null content and format
+      return (data || [])
         .filter(item => item.Content)
         .map(item => ({
           ...item.Content,
@@ -339,17 +287,10 @@
     if (!genre) return [];
     
     try {
-      const {  content, error } = await this.supabase
+      const { data, error } = await this.supabase
         .from('Content')
         .select(`
-          id,
-          title,
-          thumbnail_url,
-          genre,
-          duration,
-          views_count,
-          likes_count,
-          created_at,
+          id, title, thumbnail_url, genre, duration, views_count, likes_count, created_at,
           user_profiles!user_id (full_name, username, avatar_url)
         `)
         .eq('genre', genre)
@@ -359,10 +300,32 @@
         .limit(limit);
       
       if (error) throw error;
-      return await this._enrichRecommendations(content || []);
+      return await this._enrichRecommendations(data || []);
       
     } catch (error) {
       console.error('❌ Similar genre failed:', error);
+      return [];
+    }
+  };
+
+  RecommendationEngine.prototype._getFallbackRecommendations = async function(excludeContentId, limit) {
+    try {
+      const { data, error } = await this.supabase
+        .from('Content')
+        .select(`
+          id, title, thumbnail_url, genre, duration, views_count, likes_count, created_at,
+          user_profiles!user_id (full_name, username, avatar_url)
+        `)
+        .eq('status', 'published')
+        .neq('id', excludeContentId)
+        .order('created_at', { ascending: false })
+        .limit(limit);
+      
+      if (error) throw error;
+      return await this._enrichRecommendations(data || []);
+      
+    } catch (error) {
+      console.error('❌ Fallback recommendations failed:', error);
       return [];
     }
   };
@@ -372,15 +335,14 @@
   // ============================================
 
   RecommendationEngine.prototype._enrichRecommendations = async function(items) {
-    // Add real view counts and engagement score
     return Promise.all(items.map(async (item) => {
-      // Get real view count from content_views
+      // Get real view count from content_views (uses viewer_id)
       const { count: realViews } = await this.supabase
         .from('content_views')
         .select('*', { count: 'exact', head: true })
         .eq('content_id', item.id);
       
-      // Calculate engagement score (likes / views)
+      // Calculate engagement score
       const views = realViews || item.views_count || 1;
       const engagement = item.likes_count ? (item.likes_count / views) : 0;
       
@@ -388,14 +350,13 @@
         ...item,
         real_views_count: realViews || 0,
         engagement_score: Math.round(engagement * 100) / 100,
-        // Fix media URL
         thumbnail_url: window.SupabaseHelper?.fixMediaUrl?.(item.thumbnail_url) || item.thumbnail_url
       };
     }));
   };
 
   RecommendationEngine.prototype._getCacheKey = function(type, options) {
-    return `${type}_${this.userId || 'guest'}_${JSON.stringify(options)}`;
+    return type + '_' + (this.userId || 'guest') + '_' + JSON.stringify(options);
   };
 
   RecommendationEngine.prototype._isCacheValid = function(key) {
