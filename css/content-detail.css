@@ -133,6 +133,19 @@
   gap: 12px;
   flex-wrap: wrap;
 }
+
+/* PHASE 1: Resume Button Styling */
+.resume-btn {
+  background: linear-gradient(135deg, #F59E0B, #1D4ED8) !important;
+  animation: pulse-glow 2s infinite;
+}
+
+@keyframes pulse-glow {
+  0% { box-shadow: 0 0 5px rgba(245, 158, 11, 0.5); }
+  50% { box-shadow: 0 0 20px rgba(29, 78, 216, 0.8); }
+  100% { box-shadow: 0 0 5px rgba(245, 158, 11, 0.5); }
+}
+
 /* Inline Video Player - REMAINS LARGE & PROMINENT */
 .inline-player {
   background: var(--deep-navy);
@@ -683,6 +696,87 @@
     font-size: 18px;
   }
 }
+
+/* PHASE 1: Continue Watching Section */
+.continue-watching-section {
+  margin-bottom: 30px;
+}
+
+.continue-watching-section .section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+/* Progress overlay on thumbnail */
+.card-thumbnail {
+  position: relative;
+}
+
+.progress-bar-overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 0 0 8px 8px;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--bantu-blue), var(--warm-gold));
+  border-radius: 0 0 8px 8px;
+  transition: width 0.2s ease;
+}
+
+.resume-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: rgba(29, 78, 216, 0.95);
+  color: white;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.resume-badge i {
+  font-size: 10px;
+}
+
+/* Mobile adjustments */
+@media (max-width: 768px) {
+  .progress-bar-overlay {
+    height: 3px;
+  }
+  .resume-badge {
+    padding: 3px 8px;
+    font-size: 10px;
+  }
+}
+
+/* Creator chip for continue watching */
+.creator-chip {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.6);
+  margin-top: 4px;
+}
+
+.creator-chip i {
+  color: var(--warm-gold);
+  font-size: 10px;
+}
+
 /* =================================================================== */
 /* FIXED: Navigation Button - CENTERED ICONS FIX                       */
 /* =================================================================== */
