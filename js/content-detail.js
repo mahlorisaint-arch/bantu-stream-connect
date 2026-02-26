@@ -102,8 +102,9 @@ async function waitForHelpers() {
 // PHASE 2: PLAYLIST MANAGER INITIALIZATION
 // ============================================
 async function initializePlaylistManager() {
-  if (!window.PlaylistManager) {
-    console.warn('⚠️ PlaylistManager not loaded yet');
+  // Check if PlaylistManager class is available
+  if (typeof window.PlaylistManager !== 'function') {
+    console.warn('⚠️ PlaylistManager class not found — check script load order');
     return;
   }
   
@@ -119,29 +120,37 @@ async function initializePlaylistManager() {
       watchLaterTitle: 'Watch Later',
       onPlaylistUpdated: function(data) {
         console.log('📋 Playlist updated:', data);
-        // Update UI optimistically
+        // Update UI immediately
         updateWatchLaterButtonState();
       },
       onError: function(err) {
         console.error('❌ Playlist error:', err);
-        showToast('Playlist error: ' + err.error, 'error');
+        showToast('Playlist error: ' + (err.error || err.message), 'error');
       }
     });
     
-    // Initialize Watch Later button state
+    // Initialize button state after manager is ready
     await updateWatchLaterButtonState();
     
     console.log('✅ PlaylistManager initialized');
     
   } catch (error) {
     console.error('❌ Failed to initialize PlaylistManager:', error);
+    showToast('Watch Later unavailable', 'warning');
   }
 }
 
 // PHASE 2: Update Watch Later button state
 async function updateWatchLaterButtonState() {
   const btn = document.getElementById('watchLaterBtn');
-  if (!btn || !currentContent?.id || !playlistManager) return;
+  if (!btn || !currentContent?.id || !playlistManager) {
+    // Button might not exist yet — try again shortly
+    if (!btn) {
+      console.log('⏳ Watch Later button not in DOM yet, retrying...');
+      setTimeout(updateWatchLaterButtonState, 500);
+    }
+    return;
+  }
   
   try {
     const isInList = await playlistManager.isInWatchLater(currentContent.id);
@@ -150,10 +159,12 @@ async function updateWatchLaterButtonState() {
       btn.classList.add('active');
       btn.innerHTML = '<i class="fas fa-check"></i><span>Saved</span>';
       btn.title = 'Remove from Watch Later';
+      btn.setAttribute('aria-pressed', 'true');
     } else {
       btn.classList.remove('active');
       btn.innerHTML = '<i class="far fa-clock"></i><span>Watch Later</span>';
       btn.title = 'Add to Watch Later';
+      btn.setAttribute('aria-pressed', 'false');
     }
     
   } catch (error) {
@@ -166,6 +177,8 @@ async function updateWatchLaterButtonState() {
 
 // PHASE 2: Handle Watch Later button click
 async function handleWatchLaterToggle() {
+  const btn = document.getElementById('watchLaterBtn');
+  
   if (!currentContent?.id) {
     showToast('No content selected', 'error');
     return;
@@ -184,11 +197,15 @@ async function handleWatchLaterToggle() {
     return;
   }
   
-  const btn = document.getElementById('watchLaterBtn');
-  if (!btn) return;
+  if (!btn) {
+    console.error('❌ Watch Later button not found');
+    return;
+  }
   
   // Show loading state
   const originalHTML = btn.innerHTML;
+  const originalDisabled = btn.disabled;
+  
   btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
   btn.disabled = true;
   
@@ -201,7 +218,7 @@ async function handleWatchLaterToggle() {
       } else if (result.action === 'removed') {
         showToast('🗑️ Removed from Watch Later', 'info');
       }
-      // State updated via callback
+      // State updated via onPlaylistUpdated callback
     } else {
       showToast('❌ ' + (result.error || 'Failed to update'), 'error');
       // Revert button state
@@ -214,8 +231,36 @@ async function handleWatchLaterToggle() {
     await updateWatchLaterButtonState();
     
   } finally {
-    btn.disabled = false;
+    btn.disabled = originalDisabled;
+    // Restore original HTML (will be updated by callback)
+    setTimeout(() => updateWatchLaterButtonState(), 100);
   }
+}
+
+// PHASE 2: Setup Watch Later button event listener
+function setupWatchLaterButton() {
+  const watchLaterBtn = document.getElementById('watchLaterBtn');
+  
+  if (!watchLaterBtn) {
+    console.warn('⚠️ Watch Later button not found in DOM — check HTML');
+    // Retry once after short delay (in case DOM isn't fully ready)
+    setTimeout(setupWatchLaterButton, 300);
+    return;
+  }
+  
+  // Remove any existing listeners by cloning
+  const newBtn = watchLaterBtn.cloneNode(true);
+  watchLaterBtn.parentNode.replaceChild(newBtn, watchLaterBtn);
+  
+  // Add click handler
+  newBtn.addEventListener('click', handleWatchLaterToggle);
+  
+  // Add accessibility attributes
+  newBtn.setAttribute('role', 'button');
+  newBtn.setAttribute('aria-label', 'Add to Watch Later');
+  newBtn.setAttribute('aria-pressed', 'false');
+  
+  console.log('✅ Watch Later button event listener attached');
 }
 
 // Authentication setup
@@ -1538,10 +1583,7 @@ function setupEventListeners() {
   // ============================================
   // PHASE 2: WATCH LATER BUTTON
   // ============================================
-  const watchLaterBtn = document.getElementById('watchLaterBtn');
-  if (watchLaterBtn) {
-    watchLaterBtn.addEventListener('click', handleWatchLaterToggle);
-  }
+  setupWatchLaterButton();
   
   // Refresh comments
   const refreshBtn = document.getElementById('refreshCommentsBtn');
