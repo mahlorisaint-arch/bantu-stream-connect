@@ -786,6 +786,8 @@ function initializeWatchSessionOnPlay() {
       return;
     }
     
+    console.log('🎬 Initializing WatchSession for content:', currentContent.id);
+    
     watchSession = new window.WatchSession({
       contentId: currentContent.id,
       userId: currentUserId,
@@ -830,7 +832,7 @@ function initializeWatchSessionOnPlay() {
     setTimeout(function() {
       if (watchSession && enhancedVideoPlayer && enhancedVideoPlayer.video) {
         watchSession.start(enhancedVideoPlayer.video);
-        console.log('✅ Watch session initialized successfully');
+        console.log('✅ Watch session started successfully');
       }
     }, 500);
     
