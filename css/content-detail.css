@@ -137,11 +137,13 @@
 /* PHASE 2: Watch Later Button States */
 #watchLaterBtn {
   transition: all 0.2s ease;
+  position: relative;
 }
 
 #watchLaterBtn.active {
   background: linear-gradient(135deg, var(--success-color), #2b8a3e);
   border-color: var(--success-color);
+  color: white;
 }
 
 #watchLaterBtn.active i {
@@ -149,15 +151,16 @@
 }
 
 @keyframes checkmark {
-  0% { transform: scale(0); }
-  50% { transform: scale(1.2); }
-  100% { transform: scale(1); }
+  0% { transform: scale(0) rotate(-45deg); }
+  50% { transform: scale(1.2) rotate(0deg); }
+  100% { transform: scale(1) rotate(0deg); }
 }
 
 /* Loading state */
 #watchLaterBtn:disabled {
   opacity: 0.7;
   cursor: wait;
+  pointer-events: none;
 }
 
 #watchLaterBtn:disabled i {
@@ -166,6 +169,18 @@
 
 @keyframes spin {
   to { transform: rotate(360deg); }
+}
+
+/* Mobile adjustments */
+@media (max-width: 768px) {
+  .hero-actions {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  
+  #watchLaterBtn {
+    order: 4; /* Position between Favorite and Share */
+  }
 }
 
 /* PHASE 1: Resume Button Styling */
