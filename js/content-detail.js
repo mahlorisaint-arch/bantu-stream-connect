@@ -59,7 +59,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('app').style.display = 'block';
   
   console.log('✅ Content Detail fully initialized with RLS-compliant fixes');
-}
+}); // <-- FIXED: Added missing closing parenthesis and bracket
 
 // PHASE 1: Import WatchSession class
 // Make sure watch-session.js is loaded before this script
