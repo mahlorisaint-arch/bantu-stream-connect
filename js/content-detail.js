@@ -1,6 +1,6 @@
 // js/content-detail.js - FIXED FOR RLS POLICIES - WITH ACCURATE COUNT BYPASS - VIEWS RECORDED ON PLAY BUTTON CLICK (LIKE MOBILE APP)
 // FIXED: Theme selector conflict resolved, navigation icons properly aligned
-// PHASE 1 UPDATE: Watch Session Lifecycle Integration
+// PHASE 1 UPDATE: Watch Session Lifecycle Integration with syntax-safe WatchSession
 console.log('🎬 Content Detail Initializing with RLS-compliant fixes and view tracking on Play button click...');
 
 // Global variables
@@ -59,7 +59,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('app').style.display = 'block';
   
   console.log('✅ Content Detail fully initialized with RLS-compliant fixes');
-}); // <-- FIXED: Added missing closing parenthesis and bracket
+});
 
 // PHASE 1: Import WatchSession class
 // Make sure watch-session.js is loaded before this script
@@ -105,7 +105,7 @@ function setupAuthListeners() {
       
       // Clean up watch session if active
       if (watchSession) {
-        await watchSession.stop();
+        watchSession.stop();
         watchSession = null;
       }
     }
@@ -767,7 +767,7 @@ function initializeEnhancedVideoPlayer() {
 }
 
 // PHASE 1: Initialize watch session when video plays
-async function initializeWatchSessionOnPlay() {
+function initializeWatchSessionOnPlay() {
   if (!currentContent || !currentUserId || !enhancedVideoPlayer?.video) {
     console.log('⏭️ Cannot initialize watch session: missing content, user, or video');
     return;
@@ -775,13 +775,13 @@ async function initializeWatchSessionOnPlay() {
   
   // Clean up any existing session
   if (watchSession) {
-    await watchSession.stop();
+    watchSession.stop();
     watchSession = null;
   }
   
   try {
     // Make sure WatchSession class is available
-    if (!window.WatchSession) {
+    if (typeof window.WatchSession === 'undefined') {
       console.warn('WatchSession not available, cannot track progress');
       return;
     }
@@ -789,47 +789,50 @@ async function initializeWatchSessionOnPlay() {
     watchSession = new window.WatchSession({
       contentId: currentContent.id,
       userId: currentUserId,
-      supabaseClient: window.supabaseClient,
+      supabase: window.supabaseClient,
       videoElement: enhancedVideoPlayer.video,
       syncInterval: 10000,        // Sync every 10 seconds
       viewThreshold: 20,          // Count view after 20s watched
       completionThreshold: 0.9,   // Mark complete at 90%
       
       // Callbacks
-      onProgressSync: (data) => {
+      onProgressSync: function(data) {
         console.log('📊 Progress synced:', data);
         // Could update UI if needed
       },
-      onViewCounted: async (data) => {
+      onViewCounted: function(data) {
         console.log('👁️ View counted:', data);
         // Refresh view count in UI
-        await refreshCountsFromSource();
+        refreshCountsFromSource();
       },
-      onComplete: (data) => {
+      onComplete: function(data) {
         console.log('🏆 Content completed:', data);
         showToast('✅ You finished this video!', 'success');
         
         // Remove resume button if it exists
-        const resumeBtn = document.getElementById('resumeBtn');
+        var resumeBtn = document.getElementById('resumeBtn');
         if (resumeBtn) {
           resumeBtn.remove();
           // Show play button again
-          const playBtn = document.getElementById('playBtn');
+          var playBtn = document.getElementById('playBtn');
           if (playBtn) playBtn.style.display = 'flex';
         }
       },
-      onError: (error) => {
+      onError: function(error) {
         console.error('❌ Watch session error:', error.context, error.error);
       }
     });
     
-    const success = await watchSession.start(enhancedVideoPlayer.video);
+    // Store reference for cleanup
+    window._watchSession = watchSession;
     
-    if (success) {
-      console.log('✅ Watch session initialized successfully');
-    } else {
-      console.warn('⚠️ Watch session failed to start');
-    }
+    // Start after a short delay to ensure video is ready
+    setTimeout(function() {
+      if (watchSession && enhancedVideoPlayer && enhancedVideoPlayer.video) {
+        watchSession.start(enhancedVideoPlayer.video);
+        console.log('✅ Watch session initialized successfully');
+      }
+    }, 500);
     
   } catch (error) {
     console.error('❌ Failed to initialize watch session:', error);
@@ -993,7 +996,7 @@ function handlePlay() {
     
     // Record view in database
     recordContentView(currentContent.id)
-      .then(async (success) => {
+      .then(async function(success) {
         if (success) {
           markContentAsViewed(currentContent.id);
           
@@ -1011,7 +1014,7 @@ function handlePlay() {
           }
         }
       })
-      .catch((error) => {
+      .catch(function(error) {
         console.error('View recording error:', error);
         // Revert UI on error
         if (viewsEl && viewsFullEl) {
@@ -1074,7 +1077,7 @@ function handlePlay() {
   
   // PHASE 1: Clean up any existing watch session
   if (watchSession) {
-    watchSession.stop().catch(console.warn);
+    watchSession.stop();
     watchSession = null;
   }
   
@@ -1115,13 +1118,13 @@ function handlePlay() {
   setTimeout(() => {
     if (enhancedVideoPlayer) {
       console.log('▶️ Attempting to play...');
-      enhancedVideoPlayer.play().catch(err => {
+      enhancedVideoPlayer.play().catch(function(err) {
         console.error('🔴 Play failed:', err);
         showToast('Click play button in video player', 'info');
       });
     } else {
       console.log('▶️ Using native player...');
-      videoElement.play().catch(err => {
+      videoElement.play().catch(function(err) {
         console.error('🔴 Autoplay failed:', err);
         showToast('Click play button in video player', 'info');
       });
@@ -1165,7 +1168,7 @@ function setupEventListeners() {
       
       // PHASE 1: Stop watch session
       if (watchSession) {
-        watchSession.stop().catch(console.warn);
+        watchSession.stop();
         watchSession = null;
       }
       
@@ -1185,7 +1188,7 @@ function setupEventListeners() {
   const fullPlayerBtn = document.getElementById('fullPlayerBtn');
 
   if (fullscreenBtn) {
-    fullscreenBtn.addEventListener('click', (e) => {
+    fullscreenBtn.addEventListener('click', function(e) {
       e.stopPropagation();
       if (enhancedVideoPlayer) {
         enhancedVideoPlayer.toggleFullscreen();
@@ -1194,7 +1197,7 @@ function setupEventListeners() {
   }
 
   if (fullPlayerBtn) {
-    fullPlayerBtn.addEventListener('click', (e) => {
+    fullPlayerBtn.addEventListener('click', function(e) {
       e.stopPropagation();
       if (enhancedVideoPlayer) {
         enhancedVideoPlayer.toggleFullscreen();
@@ -1207,7 +1210,7 @@ function setupEventListeners() {
   // ============================================
   const likeBtn = document.getElementById('likeBtn');
   if (likeBtn) {
-    likeBtn.addEventListener('click', async () => {
+    likeBtn.addEventListener('click', async function() {
       if (!currentContent) return;
       
       if (!window.AuthHelper?.isAuthenticated?.()) {
@@ -1291,7 +1294,7 @@ function setupEventListeners() {
   // ============================================
   const favoriteBtn = document.getElementById('favoriteBtn');
   if (favoriteBtn) {
-    favoriteBtn.addEventListener('click', async () => {
+    favoriteBtn.addEventListener('click', async function() {
       if (!currentContent) return;
       
       if (!window.AuthHelper?.isAuthenticated?.()) {
@@ -1506,7 +1509,7 @@ function setupEventListeners() {
   // ============================================
   const shareBtn = document.getElementById('shareBtn');
   if (shareBtn) {
-    shareBtn.addEventListener('click', async () => {
+    shareBtn.addEventListener('click', async function() {
       if (!currentContent) return;
       
       const shareText = `📺 ${currentContent.title}\n\n${currentContent.description || 'Check out this amazing content!'}\n\n👉 Watch on Bantu Stream Connect\nNO DNA, JUST RSA\n\n`;
@@ -1550,32 +1553,31 @@ function setupEventListeners() {
 // ====================================================
 function setupConnectButtons() {
     // Helper to check connection status using connectors table
-    async function checkConnectionStatus(creatorId) {
+    function checkConnectionStatus(creatorId) {
         if (!window.AuthHelper?.isAuthenticated() || !creatorId) return false;
         
-        const userProfile = window.AuthHelper.getUserProfile();
+        var userProfile = window.AuthHelper.getUserProfile();
         if (!userProfile?.id) return false;
         
-        try {
-            const { data, error } = await window.supabaseClient
-                .from('connectors')
-                .select('id')
-                .eq('connector_id', userProfile.id)
-                .eq('connected_id', creatorId)
-                .single();
-            
-            return !error && data !== null;
-        } catch (error) {
-            console.error('Error checking connection:', error);
-            return false;
-        }
+        return window.supabaseClient
+            .from('connectors')
+            .select('id')
+            .eq('connector_id', userProfile.id)
+            .eq('connected_id', creatorId)
+            .single()
+            .then(function(result) {
+                return !result.error && result.data !== null;
+            })
+            .catch(function() {
+                return false;
+            });
     }
     
     // PLAYER CONNECT BUTTON
     const connectBtn = document.getElementById('connectBtn');
     if (connectBtn && currentContent?.creator_id) {
         // Check initial connection status
-        checkConnectionStatus(currentContent.creator_id).then(isConnected => {
+        checkConnectionStatus(currentContent.creator_id).then(function(isConnected) {
             if (isConnected) {
                 connectBtn.classList.add('connected');
                 connectBtn.innerHTML = '<i class="fas fa-user-check"></i><span>Connected</span>';
@@ -1584,25 +1586,25 @@ function setupConnectButtons() {
         
         connectBtn.addEventListener('click', async function() {
             if (!window.AuthHelper?.isAuthenticated?.()) {
-                const shouldLogin = confirm('You need to sign in to connect. Would you like to sign in now?');
+                var shouldLogin = confirm('You need to sign in to connect. Would you like to sign in now?');
                 if (shouldLogin) {
                     window.location.href = `login.html?redirect=${encodeURIComponent(window.location.href)}`;
                 }
                 return;
             }
             
-            const userProfile = window.AuthHelper.getUserProfile();
+            var userProfile = window.AuthHelper.getUserProfile();
             if (!userProfile?.id) {
                 showToast('User profile not found', 'error');
                 return;
             }
             
-            const isConnected = connectBtn.classList.contains('connected');
+            var isConnected = connectBtn.classList.contains('connected');
             
             try {
                 if (isConnected) {
                     // Disconnect - remove from connectors table
-                    const { error } = await window.supabaseClient
+                    var { error } = await window.supabaseClient
                         .from('connectors')
                         .delete()
                         .eq('connector_id', userProfile.id)
@@ -1615,7 +1617,7 @@ function setupConnectButtons() {
                     showToast('Disconnected', 'info');
                 } else {
                     // Connect - add to connectors table
-                    const { error } = await window.supabaseClient
+                    var { error } = await window.supabaseClient
                         .from('connectors')
                         .insert({
                             connector_id: userProfile.id,
@@ -1645,7 +1647,7 @@ function setupConnectButtons() {
     const connectCreatorBtn = document.getElementById('connectCreatorBtn');
     if (connectCreatorBtn && currentContent?.creator_id) {
         // Check initial connection status
-        checkConnectionStatus(currentContent.creator_id).then(isConnected => {
+        checkConnectionStatus(currentContent.creator_id).then(function(isConnected) {
             if (isConnected) {
                 connectCreatorBtn.classList.add('connected');
                 connectCreatorBtn.innerHTML = '<i class="fas fa-user-check"></i><span>Connected</span>';
@@ -1654,25 +1656,25 @@ function setupConnectButtons() {
         
         connectCreatorBtn.addEventListener('click', async function() {
             if (!window.AuthHelper?.isAuthenticated?.()) {
-                const shouldLogin = confirm('You need to sign in to connect. Would you like to sign in now?');
+                var shouldLogin = confirm('You need to sign in to connect. Would you like to sign in now?');
                 if (shouldLogin) {
                     window.location.href = `login.html?redirect=${encodeURIComponent(window.location.href)}`;
                 }
                 return;
             }
             
-            const userProfile = window.AuthHelper.getUserProfile();
+            var userProfile = window.AuthHelper.getUserProfile();
             if (!userProfile?.id) {
                 showToast('User profile not found', 'error');
                 return;
             }
             
-            const isConnected = connectCreatorBtn.classList.contains('connected');
+            var isConnected = connectCreatorBtn.classList.contains('connected');
             
             try {
                 if (isConnected) {
                     // Disconnect
-                    const { error } = await window.supabaseClient
+                    var { error } = await window.supabaseClient
                         .from('connectors')
                         .delete()
                         .eq('connector_id', userProfile.id)
@@ -1685,7 +1687,7 @@ function setupConnectButtons() {
                     showToast('Disconnected', 'info');
                 } else {
                     // Connect
-                    const { error } = await window.supabaseClient
+                    var { error } = await window.supabaseClient
                         .from('connectors')
                         .insert({
                             connector_id: userProfile.id,
@@ -1725,19 +1727,19 @@ function initAnalyticsModal() {
   
   if (!analyticsBtn || !analyticsModal) return;
   
-  analyticsBtn.addEventListener('click', (e) => {
+  analyticsBtn.addEventListener('click', function(e) {
     e.stopPropagation();
     analyticsModal.classList.add('active');
     loadContentAnalytics();
   });
   
   if (closeAnalytics) {
-    closeAnalytics.addEventListener('click', () => {
+    closeAnalytics.addEventListener('click', function() {
       analyticsModal.classList.remove('active');
     });
   }
   
-  analyticsModal.addEventListener('click', (e) => {
+  analyticsModal.addEventListener('click', function(e) {
     if (e.target === analyticsModal) {
       analyticsModal.classList.remove('active');
     }
@@ -1853,23 +1855,23 @@ function initSearchModal() {
   
   if (!searchBtn || !searchModal) return;
   
-  searchBtn.addEventListener('click', (e) => {
+  searchBtn.addEventListener('click', function(e) {
     e.stopPropagation();
     searchModal.classList.add('active');
-    setTimeout(() => {
+    setTimeout(function() {
       if (searchInput) searchInput.focus();
     }, 300);
   });
   
   if (closeSearchBtn) {
-    closeSearchBtn.addEventListener('click', () => {
+    closeSearchBtn.addEventListener('click', function() {
       searchModal.classList.remove('active');
       if (searchInput) searchInput.value = '';
       document.getElementById('search-results-grid').innerHTML = '';
     });
   }
   
-  searchModal.addEventListener('click', (e) => {
+  searchModal.addEventListener('click', function(e) {
     if (e.target === searchModal) {
       searchModal.classList.remove('active');
       if (searchInput) searchInput.value = '';
@@ -1879,10 +1881,10 @@ function initSearchModal() {
   
   // Search functionality
   if (searchInput) {
-    searchInput.addEventListener('input', debounce(async (e) => {
-      const query = e.target.value.trim();
-      const category = document.getElementById('category-filter')?.value;
-      const sortBy = document.getElementById('sort-filter')?.value;
+    searchInput.addEventListener('input', debounce(async function(e) {
+      var query = e.target.value.trim();
+      var category = document.getElementById('category-filter')?.value;
+      var sortBy = document.getElementById('sort-filter')?.value;
       
       if (query.length < 2) {
         document.getElementById('search-results-grid').innerHTML = 
@@ -1894,7 +1896,7 @@ function initSearchModal() {
           '<div class="infinite-scroll-loading"><div class="infinite-scroll-spinner"></div><div>Searching...</div></div>';
       
       try {
-        const results = await searchContent(query, category, sortBy);
+        var results = await searchContent(query, category, sortBy);
         renderSearchResults(results);
       } catch (error) {
         console.error('Search error:', error);
@@ -1905,16 +1907,24 @@ function initSearchModal() {
   }
   
   // Filter change handlers
-  document.getElementById('category-filter')?.addEventListener('change', triggerSearch);
-  document.getElementById('sort-filter')?.addEventListener('change', triggerSearch);
+  var categoryFilter = document.getElementById('category-filter');
+  if (categoryFilter) {
+    categoryFilter.addEventListener('change', triggerSearch);
+  }
+  
+  var sortFilter = document.getElementById('sort-filter');
+  if (sortFilter) {
+    sortFilter.addEventListener('change', triggerSearch);
+  }
 }
 
 function debounce(func, wait) {
-  let timeout;
-  return function executedFunction(...args) {
-    const later = () => {
+  var timeout;
+  return function executedFunction() {
+    var args = arguments;
+    var later = function() {
       clearTimeout(timeout);
-      func(...args);
+      func.apply(null, args);
     };
     clearTimeout(timeout);
     timeout = setTimeout(later, wait);
@@ -1922,9 +1932,9 @@ function debounce(func, wait) {
 }
 
 function triggerSearch() {
-  const searchInput = document.getElementById('search-input');
+  var searchInput = document.getElementById('search-input');
   if (searchInput) {
-    const event = new Event('input');
+    var event = new Event('input');
     searchInput.dispatchEvent(event);
   }
 }
@@ -1932,10 +1942,10 @@ function triggerSearch() {
 // ============================================
 // FIXED: Search content with REAL view counts from source table
 // ============================================
-async function searchContent(query, category = '', sortBy = 'newest') {
+async function searchContent(query, category, sortBy) {
   try {
-    let orderBy = 'created_at';
-    let order = 'desc';
+    var orderBy = 'created_at';
+    var order = 'desc';
     
     if (sortBy === 'popular') {
       orderBy = 'views_count';
@@ -1943,7 +1953,7 @@ async function searchContent(query, category = '', sortBy = 'newest') {
       orderBy = 'likes_count';
     }
     
-    let queryBuilder = window.supabaseClient
+    var queryBuilder = window.supabaseClient
       .from('Content')
       .select('*, user_profiles!user_id(*)')
       .ilike('title', `%${query}%`)
@@ -1955,18 +1965,18 @@ async function searchContent(query, category = '', sortBy = 'newest') {
       queryBuilder = queryBuilder.eq('genre', category);
     }
     
-    const { data, error } = await queryBuilder;
+    var { data, error } = await queryBuilder;
     
     if (error) throw error;
     
     // ✅ ENRICH SEARCH RESULTS WITH REAL VIEW COUNTS (like mobile app)
-    const enrichedResults = await Promise.all(
-      (data || []).map(async (item) => {
-        const { count: realViews } = await window.supabaseClient
+    var enrichedResults = await Promise.all(
+      (data || []).map(async function(item) {
+        var { count: realViews } = await window.supabaseClient
           .from('content_views')
           .select('*', { count: 'exact', head: true })
           .eq('content_id', item.id);
-        return { ...item, real_views_count: realViews || 0 };
+        return Object.assign({}, item, { real_views_count: realViews || 0 });
       })
     );
     
@@ -1981,7 +1991,7 @@ async function searchContent(query, category = '', sortBy = 'newest') {
 // FIXED: Render search results with REAL view counts
 // ============================================
 function renderSearchResults(results) {
-  const grid = document.getElementById('search-results-grid');
+  var grid = document.getElementById('search-results-grid');
   if (!grid) return;
   
   if (!results || results.length === 0) {
@@ -1989,10 +1999,10 @@ function renderSearchResults(results) {
     return;
   }
   
-  grid.innerHTML = results.map(item => {
-    const creator = item.user_profiles?.full_name || item.user_profiles?.username || item.creator || 'Creator';
+  grid.innerHTML = results.map(function(item) {
+    var creator = item.user_profiles?.full_name || item.user_profiles?.username || item.creator || 'Creator';
     // ✅ USE REAL VIEW COUNT
-    const viewsCount = item.real_views_count !== undefined ? item.real_views_count : (item.views_count || 0);
+    var viewsCount = item.real_views_count !== undefined ? item.real_views_count : (item.views_count || 0);
     
     return `
       <div class="content-card" data-content-id="${item.id}">
@@ -2018,19 +2028,19 @@ function renderSearchResults(results) {
   }).join('');
   
   // Add click handlers
-  grid.querySelectorAll('.content-card').forEach(card => {
-    card.addEventListener('click', (e) => {
+  grid.querySelectorAll('.content-card').forEach(function(card) {
+    card.addEventListener('click', function(e) {
       if (e.target.closest('.creator-btn')) return;
-      const id = card.dataset.contentId;
+      var id = card.dataset.contentId;
       if (id) window.location.href = `content-detail.html?id=${id}`;
     });
   });
   
-  grid.querySelectorAll('.creator-btn').forEach(btn => {
-    btn.addEventListener('click', (e) => {
+  grid.querySelectorAll('.creator-btn').forEach(function(btn) {
+    btn.addEventListener('click', function(e) {
       e.stopPropagation();
-      const id = btn.dataset.creatorId;
-      const name = btn.dataset.creatorName;
+      var id = btn.dataset.creatorId;
+      var name = btn.dataset.creatorName;
       if (id) window.location.href = `creator-channel.html?id=${id}&name=${encodeURIComponent(name)}`;
     });
   });
@@ -2049,25 +2059,32 @@ function initNotificationsPanel() {
   if (!notificationsBtn || !notificationsPanel) return;
   
   // Both notification buttons should open the panel
-  [notificationsBtn, navNotificationsBtn].forEach(btn => {
-    if (btn) {
-      btn.addEventListener('click', async (e) => {
-        e.stopPropagation();
-        notificationsPanel.classList.add('active');
-        await loadUserNotifications();
-        await markAllNotificationsAsRead();
-      });
-    }
-  });
+  if (notificationsBtn) {
+    notificationsBtn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      notificationsPanel.classList.add('active');
+      loadUserNotifications();
+      markAllNotificationsAsRead();
+    });
+  }
+  
+  if (navNotificationsBtn) {
+    navNotificationsBtn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      notificationsPanel.classList.add('active');
+      loadUserNotifications();
+      markAllNotificationsAsRead();
+    });
+  }
   
   if (closeNotifications) {
-    closeNotifications.addEventListener('click', () => {
+    closeNotifications.addEventListener('click', function() {
       notificationsPanel.classList.remove('active');
     });
   }
   
   // Close when clicking outside
-  document.addEventListener('click', (e) => {
+  document.addEventListener('click', function(e) {
     if (notificationsPanel.classList.contains('active') && 
         !notificationsPanel.contains(e.target) && 
         !notificationsBtn.contains(e.target) && 
@@ -2077,7 +2094,7 @@ function initNotificationsPanel() {
   });
   
   if (markAllReadBtn) {
-    markAllReadBtn.addEventListener('click', async () => {
+    markAllReadBtn.addEventListener('click', async function() {
       await markAllNotificationsAsRead();
       await loadUserNotifications();
     });
@@ -2094,7 +2111,7 @@ function initNotificationsPanel() {
 }
 
 async function loadUserNotifications() {
-  const notificationsList = document.getElementById('notifications-list');
+  var notificationsList = document.getElementById('notifications-list');
   if (!notificationsList) return;
   
   try {
@@ -2110,7 +2127,7 @@ async function loadUserNotifications() {
       return;
     }
     
-    const userProfile = window.AuthHelper.getUserProfile();
+    var userProfile = window.AuthHelper.getUserProfile();
     if (!userProfile?.id) {
       notificationsList.innerHTML = `
         <div class="empty-notifications">
@@ -2122,7 +2139,7 @@ async function loadUserNotifications() {
     }
     
     // Fetch notifications from Supabase
-    const { data, error } = await window.supabaseClient
+    var { data, error } = await window.supabaseClient
       .from('notifications')
       .select('*')
       .eq('user_id', userProfile.id)
@@ -2143,28 +2160,30 @@ async function loadUserNotifications() {
     }
     
     // Render notifications
-    notificationsList.innerHTML = data.map(notification => `
-      <div class="notification-item ${notification.is_read ? 'read' : 'unread'}" data-id="${notification.id}">
-        <div class="notification-icon">
-          <i class="${getNotificationIcon(notification.type)}"></i>
+    notificationsList.innerHTML = data.map(function(notification) {
+      return `
+        <div class="notification-item ${notification.is_read ? 'read' : 'unread'}" data-id="${notification.id}">
+          <div class="notification-icon">
+            <i class="${getNotificationIcon(notification.type)}"></i>
+          </div>
+          <div class="notification-content">
+            <h4>${escapeHtml(notification.title)}</h4>
+            <p>${escapeHtml(notification.message)}</p>
+            <span class="notification-time">${formatNotificationTime(notification.created_at)}</span>
+          </div>
+          ${!notification.is_read ? '<div class="notification-dot"></div>' : ''}
         </div>
-        <div class="notification-content">
-          <h4>${escapeHtml(notification.title)}</h4>
-          <p>${escapeHtml(notification.message)}</p>
-          <span class="notification-time">${formatNotificationTime(notification.created_at)}</span>
-        </div>
-        ${!notification.is_read ? '<div class="notification-dot"></div>' : ''}
-      </div>
-    `).join('');
+      `;
+    }).join('');
     
     // Add click handlers
-    notificationsList.querySelectorAll('.notification-item').forEach(item => {
-      item.addEventListener('click', async () => {
-        const id = item.dataset.id;
+    notificationsList.querySelectorAll('.notification-item').forEach(function(item) {
+      item.addEventListener('click', async function() {
+        var id = item.dataset.id;
         await markNotificationAsRead(id);
         
         // Handle navigation based on notification type
-        const notification = data.find(n => n.id === id);
+        var notification = data.find(function(n) { return n.id === id; });
         if (notification?.content_id) {
           window.location.href = `content-detail.html?id=${notification.content_id}`;
         }
@@ -2173,7 +2192,7 @@ async function loadUserNotifications() {
     });
     
     // Update badge count
-    const unreadCount = data.filter(n => !n.is_read).length;
+    var unreadCount = data.filter(function(n) { return !n.is_read; }).length;
     updateNotificationBadge(unreadCount);
   } catch (error) {
     console.error('Error loading notifications:', error);
@@ -2199,7 +2218,7 @@ function getNotificationIcon(type) {
 
 async function markNotificationAsRead(notificationId) {
   try {
-    const { error } = await window.supabaseClient
+    var { error } = await window.supabaseClient
       .from('notifications')
       .update({ is_read: true })
       .eq('id', notificationId);
@@ -2207,11 +2226,11 @@ async function markNotificationAsRead(notificationId) {
     if (error) throw error;
     
     // Update UI immediately
-    const item = document.querySelector(`.notification-item[data-id="${notificationId}"]`);
+    var item = document.querySelector(`.notification-item[data-id="${notificationId}"]`);
     if (item) {
       item.classList.remove('unread');
       item.classList.add('read');
-      const dot = item.querySelector('.notification-dot');
+      var dot = item.querySelector('.notification-dot');
       if (dot) dot.remove();
     }
     
@@ -2226,10 +2245,10 @@ async function markAllNotificationsAsRead() {
   try {
     if (!window.AuthHelper?.isAuthenticated()) return;
     
-    const userProfile = window.AuthHelper.getUserProfile();
+    var userProfile = window.AuthHelper.getUserProfile();
     if (!userProfile?.id) return;
     
-    const { error } = await window.supabaseClient
+    var { error } = await window.supabaseClient
       .from('notifications')
       .update({ is_read: true })
       .eq('user_id', userProfile.id)
@@ -2238,10 +2257,10 @@ async function markAllNotificationsAsRead() {
     if (error) throw error;
     
     // Update UI
-    document.querySelectorAll('.notification-item.unread').forEach(item => {
+    document.querySelectorAll('.notification-item.unread').forEach(function(item) {
       item.classList.remove('unread');
       item.classList.add('read');
-      const dot = item.querySelector('.notification-dot');
+      var dot = item.querySelector('.notification-dot');
       if (dot) dot.remove();
     });
     
@@ -2251,34 +2270,37 @@ async function markAllNotificationsAsRead() {
   }
 }
 
-function updateNotificationBadge(count = null) {
+function updateNotificationBadge(count) {
   // If count not provided, calculate from DOM
-  if (count === null) {
+  if (count === undefined || count === null) {
     count = document.querySelectorAll('.notification-item.unread').length;
   }
   
-  const mainBadge = document.getElementById('notification-count');
-  const navBadge = document.getElementById('nav-notification-count');
+  var mainBadge = document.getElementById('notification-count');
+  var navBadge = document.getElementById('nav-notification-count');
   
-  [mainBadge, navBadge].forEach(badge => {
-    if (badge) {
-      badge.textContent = count > 99 ? '99+' : count;
-      badge.style.display = count > 0 ? 'flex' : 'none';
-    }
-  });
+  if (mainBadge) {
+    mainBadge.textContent = count > 99 ? '99+' : count;
+    mainBadge.style.display = count > 0 ? 'flex' : 'none';
+  }
+  
+  if (navBadge) {
+    navBadge.textContent = count > 99 ? '99+' : count;
+    navBadge.style.display = count > 0 ? 'flex' : 'none';
+  }
 }
 
 function formatNotificationTime(timestamp) {
-  const now = new Date();
-  const diffMs = now - new Date(timestamp);
-  const diffMins = Math.floor(diffMs / 60000);
-  const diffHours = Math.floor(diffMs / 3600000);
-  const diffDays = Math.floor(diffMs / 86400000);
+  var now = new Date();
+  var diffMs = now - new Date(timestamp);
+  var diffMins = Math.floor(diffMs / 60000);
+  var diffHours = Math.floor(diffMs / 3600000);
+  var diffDays = Math.floor(diffMs / 86400000);
   
   if (diffMins < 1) return 'Just now';
-  if (diffMins < 60) return `${diffMins}m ago`;
-  if (diffHours < 24) return `${diffHours}h ago`;
-  if (diffDays < 7) return `${diffDays}d ago`;
+  if (diffMins < 60) return diffMins + 'm ago';
+  if (diffHours < 24) return diffHours + 'h ago';
+  if (diffDays < 7) return diffDays + 'd ago';
   return new Date(timestamp).toLocaleDateString();
 }
 
@@ -2290,7 +2312,7 @@ function initThemeSelector() {
   
   const themeToggle = document.getElementById('nav-theme-toggle');
   const themeSelector = document.getElementById('theme-selector');
-  const themeOptions = document.querySelectorAll('.theme-option');
+  var themeOptions = document.querySelectorAll('.theme-option');
   
   if (!themeToggle) {
     console.warn('Theme toggle button not found');
@@ -2305,11 +2327,11 @@ function initThemeSelector() {
   console.log('✅ Theme selector elements found');
   
   // Remove any existing listeners by cloning and replacing
-  const newThemeToggle = themeToggle.cloneNode(true);
+  var newThemeToggle = themeToggle.cloneNode(true);
   themeToggle.parentNode.replaceChild(newThemeToggle, themeToggle);
   
   // Toggle theme selector on click
-  newThemeToggle.addEventListener('click', (e) => {
+  newThemeToggle.addEventListener('click', function(e) {
     e.stopPropagation();
     e.preventDefault();
     console.log('🎨 Theme toggle clicked');
@@ -2317,7 +2339,7 @@ function initThemeSelector() {
   });
   
   // Close when clicking outside
-  document.addEventListener('click', (e) => {
+  document.addEventListener('click', function(e) {
     if (themeSelector.classList.contains('active') && 
         !themeSelector.contains(e.target) && 
         !newThemeToggle.contains(e.target)) {
@@ -2327,15 +2349,15 @@ function initThemeSelector() {
   
   // Set up theme options
   if (themeOptions.length > 0) {
-    themeOptions.forEach(option => {
+    themeOptions.forEach(function(option) {
       // Remove existing listeners
-      const newOption = option.cloneNode(true);
+      var newOption = option.cloneNode(true);
       option.parentNode.replaceChild(newOption, option);
       
-      newOption.addEventListener('click', (e) => {
+      newOption.addEventListener('click', function(e) {
         e.stopPropagation();
         e.preventDefault();
-        const theme = newOption.dataset.theme;
+        var theme = newOption.dataset.theme;
         console.log('🎨 Theme selected:', theme);
         applyTheme(theme);
         themeSelector.classList.remove('active');
@@ -2349,7 +2371,7 @@ function initThemeSelector() {
   initCurrentTheme();
   
   // Listen for system theme changes
-  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function(e) {
     if (!localStorage.getItem('theme')) {
       applyTheme(e.matches ? 'dark' : 'light');
     }
@@ -2363,7 +2385,7 @@ function applyTheme(theme) {
   console.log('🎨 Applying theme:', theme);
   
   // Validate theme
-  if (!theme || !['dark', 'light', 'high-contrast'].includes(theme)) {
+  if (!theme || (theme !== 'dark' && theme !== 'light' && theme !== 'high-contrast')) {
     console.warn('Invalid theme:', theme, 'defaulting to dark');
     theme = 'dark';
   }
@@ -2372,15 +2394,19 @@ function applyTheme(theme) {
   document.body.classList.remove('theme-dark', 'theme-light', 'theme-high-contrast');
   
   // Add the new theme class
-  document.body.classList.add(`theme-${theme}`);
+  document.body.classList.add('theme-' + theme);
   
   // Save to localStorage
   localStorage.setItem('theme', theme);
   
   // Update active state on theme options
-  document.querySelectorAll('.theme-option').forEach(option => {
-    const isActive = option.dataset.theme === theme;
-    option.classList.toggle('active', isActive);
+  document.querySelectorAll('.theme-option').forEach(function(option) {
+    var isActive = option.dataset.theme === theme;
+    if (isActive) {
+      option.classList.add('active');
+    } else {
+      option.classList.remove('active');
+    }
   });
   
   // FORCE REPAINT - Multiple techniques for cross-browser compatibility
@@ -2389,7 +2415,7 @@ function applyTheme(theme) {
   document.body.style.display = '';
   
   // Also force repaint on theme selector if active
-  const themeSelector = document.getElementById('theme-selector');
+  var themeSelector = document.getElementById('theme-selector');
   if (themeSelector) {
     themeSelector.style.display = 'none';
     themeSelector.offsetHeight;
@@ -2399,7 +2425,7 @@ function applyTheme(theme) {
   // Update CSS custom properties if needed
   updateThemeCSSVariables(theme);
   
-  showToast(`Theme changed to ${theme}`, 'success');
+  showToast('Theme changed to ' + theme, 'success');
   console.log('✅ Theme applied successfully:', theme);
 }
 
@@ -2407,7 +2433,7 @@ function applyTheme(theme) {
 // NEW: Update CSS variables based on theme
 // ============================================
 function updateThemeCSSVariables(theme) {
-  const root = document.documentElement;
+  var root = document.documentElement;
   
   // Ensure theme CSS variables are applied
   if (theme === 'light') {
@@ -2442,17 +2468,17 @@ function initCurrentTheme() {
   console.log('🎨 Initializing current theme...');
   
   // Get saved theme from localStorage
-  let savedTheme = localStorage.getItem('theme');
+  var savedTheme = localStorage.getItem('theme');
   
   // Check for system preference if no saved theme
   if (!savedTheme) {
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
     savedTheme = prefersDark ? 'dark' : 'light';
     console.log('🎨 Using system theme preference:', savedTheme);
   }
   
   // Validate theme
-  if (!['dark', 'light', 'high-contrast'].includes(savedTheme)) {
+  if (savedTheme !== 'dark' && savedTheme !== 'light' && savedTheme !== 'high-contrast') {
     console.warn('Invalid saved theme:', savedTheme, 'defaulting to dark');
     savedTheme = 'dark';
   }
@@ -2461,8 +2487,8 @@ function initCurrentTheme() {
   applyTheme(savedTheme);
   
   // Set active indicator on theme options
-  setTimeout(() => {
-    document.querySelectorAll('.theme-option').forEach(option => {
+  setTimeout(function() {
+    document.querySelectorAll('.theme-option').forEach(function(option) {
       if (option.dataset.theme === savedTheme) {
         option.classList.add('active');
       } else {
@@ -2479,13 +2505,13 @@ function initCurrentTheme() {
 // ======================
 function initGlobalNavigation() {
   // Home button - redirect to home-feed
-  const homeBtn = document.querySelector('.nav-icon:nth-child(1)');
+  var homeBtn = document.querySelector('.nav-icon:nth-child(1)');
   if (homeBtn) {
     // Remove existing listeners
-    const newHomeBtn = homeBtn.cloneNode(true);
+    var newHomeBtn = homeBtn.cloneNode(true);
     homeBtn.parentNode.replaceChild(newHomeBtn, homeBtn);
     
-    newHomeBtn.addEventListener('click', (e) => {
+    newHomeBtn.addEventListener('click', function(e) {
       e.stopPropagation();
       e.preventDefault();
       window.location.href = 'https://bantustreamconnect.com/';
@@ -2496,12 +2522,12 @@ function initGlobalNavigation() {
   // Don't add duplicate listeners here
   
   // Create Content button
-  const createBtn = document.querySelector('.nav-icon:nth-child(3)');
+  var createBtn = document.querySelector('.nav-icon:nth-child(3)');
   if (createBtn) {
-    const newCreateBtn = createBtn.cloneNode(true);
+    var newCreateBtn = createBtn.cloneNode(true);
     createBtn.parentNode.replaceChild(newCreateBtn, createBtn);
     
-    newCreateBtn.addEventListener('click', (e) => {
+    newCreateBtn.addEventListener('click', function(e) {
       e.stopPropagation();
       e.preventDefault();
       if (window.AuthHelper?.isAuthenticated()) {
@@ -2514,12 +2540,12 @@ function initGlobalNavigation() {
   }
   
   // Creator Dashboard button
-  const dashboardBtn = document.querySelector('.nav-icon:nth-child(4)');
+  var dashboardBtn = document.querySelector('.nav-icon:nth-child(4)');
   if (dashboardBtn) {
-    const newDashboardBtn = dashboardBtn.cloneNode(true);
+    var newDashboardBtn = dashboardBtn.cloneNode(true);
     dashboardBtn.parentNode.replaceChild(newDashboardBtn, dashboardBtn);
     
-    newDashboardBtn.addEventListener('click', (e) => {
+    newDashboardBtn.addEventListener('click', function(e) {
       e.stopPropagation();
       e.preventDefault();
       if (window.AuthHelper?.isAuthenticated()) {
@@ -2538,8 +2564,10 @@ function initGlobalNavigation() {
 // PHASE 1: CONTINUE WATCHING — LOAD & RENDER
 // ============================================
 
-async function loadContinueWatching(userId, limit = 8) {
-  const section = document.getElementById('continueWatchingSection');
+async function loadContinueWatching(userId, limit) {
+  if (limit === undefined) limit = 8;
+  
+  var section = document.getElementById('continueWatchingSection');
   if (!section) return;
   
   if (!userId || !window.supabaseClient) {
@@ -2548,7 +2576,7 @@ async function loadContinueWatching(userId, limit = 8) {
   }
   
   try {
-    const { data, error } = await window.supabaseClient
+    var { data, error } = await window.supabaseClient
       .from('watch_progress')
       .select(`
         content_id,
@@ -2594,26 +2622,26 @@ async function loadContinueWatching(userId, limit = 8) {
 }
 
 function renderContinueWatching(items) {
-  const container = document.getElementById('continueGrid');
+  var container = document.getElementById('continueGrid');
   if (!container) return;
   
-  container.innerHTML = items.map(item => {
-    const content = item.Content;
+  container.innerHTML = items.map(function(item) {
+    var content = item.Content;
     if (!content) return ''; // Skip if content was deleted
     
-    const progress = content.duration > 0 
+    var progress = content.duration > 0 
       ? Math.min(100, Math.round((item.last_position / content.duration) * 100))
       : 0;
     
-    const timeWatched = formatDuration(item.last_position);
-    const totalTime = formatDuration(content.duration);
+    var timeWatched = formatDuration(item.last_position);
+    var totalTime = formatDuration(content.duration);
     
     // Fix media URLs
-    const thumbnailUrl = window.SupabaseHelper?.fixMediaUrl?.(content.thumbnail_url) 
+    var thumbnailUrl = window.SupabaseHelper?.fixMediaUrl?.(content.thumbnail_url) 
       || content.thumbnail_url 
       || 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop';
     
-    const creatorName = content.user_profiles?.full_name 
+    var creatorName = content.user_profiles?.full_name 
       || content.user_profiles?.username 
       || 'Creator';
     
@@ -2651,10 +2679,10 @@ function renderContinueWatching(items) {
   }).join('');
   
   // Add click tracking (optional)
-  container.querySelectorAll('.continue-card').forEach(card => {
-    card.addEventListener('click', (e) => {
+  container.querySelectorAll('.continue-card').forEach(function(card) {
+    card.addEventListener('click', function(e) {
       if (window.track?.continueWatchingClick) {
-        const contentId = card.dataset.contentId;
+        var contentId = card.dataset.contentId;
         window.track.continueWatchingClick(contentId);
       }
     });
@@ -2663,10 +2691,10 @@ function renderContinueWatching(items) {
 
 // PHASE 1: Refresh button handler
 function setupContinueWatchingRefresh() {
-  const refreshBtn = document.getElementById('refreshContinueBtn');
+  var refreshBtn = document.getElementById('refreshContinueBtn');
   if (!refreshBtn) return;
   
-  refreshBtn.addEventListener('click', async () => {
+  refreshBtn.addEventListener('click', async function() {
     if (!currentUserId) return;
     
     showToast('Refreshing...', 'info');
@@ -2688,7 +2716,7 @@ function setupContinueWatchingRefresh() {
 
 // Utility functions
 function safeSetText(id, text) {
-  const el = document.getElementById(id);
+  var el = document.getElementById(id);
   if (el) {
     el.textContent = text || '';
   }
@@ -2697,13 +2725,13 @@ function safeSetText(id, text) {
 function formatDate(dateString) {
   if (!dateString) return '-';
   try {
-    const date = new Date(dateString);
+    var date = new Date(dateString);
     return date.toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
       day: 'numeric'
     });
-  } catch {
+  } catch (e) {
     return '-';
   }
 }
@@ -2714,16 +2742,16 @@ function formatDuration(seconds) {
   }
   
   seconds = Math.floor(seconds);
-  const hours = Math.floor(seconds / 3600);
-  const minutes = Math.floor((seconds % 3600) / 60);
-  const secs = seconds % 60;
+  var hours = Math.floor(seconds / 3600);
+  var minutes = Math.floor((seconds % 3600) / 60);
+  var secs = seconds % 60;
   
   if (hours > 0) {
-    return `${hours}h ${minutes}m`;
+    return hours + 'h ' + minutes + 'm';
   } else if (minutes > 0) {
-    return `${minutes}m ${secs}s`;
+    return minutes + 'm ' + secs + 's';
   } else {
-    return `${secs}s`;
+    return secs + 's';
   }
 }
 
@@ -2746,7 +2774,7 @@ function truncateText(text, maxLength) {
 
 function escapeHtml(text) {
   if (!text) return '';
-  const div = document.createElement('div');
+  var div = document.createElement('div');
   div.textContent = text;
   return div.innerHTML;
 }
@@ -2754,37 +2782,39 @@ function escapeHtml(text) {
 function formatCommentTime(timestamp) {
   if (!timestamp) return 'Just now';
   try {
-    const date = new Date(timestamp);
-    const now = new Date();
-    const diffMs = now - date;
-    const diffMins = Math.floor(diffMs / 60000);
-    const diffHours = Math.floor(diffMs / 3600000);
-    const diffDays = Math.floor(diffMs / 86400000);
+    var date = new Date(timestamp);
+    var now = new Date();
+    var diffMs = now - date;
+    var diffMins = Math.floor(diffMs / 60000);
+    var diffHours = Math.floor(diffMs / 3600000);
+    var diffDays = Math.floor(diffMs / 86400000);
     
     if (diffMins < 1) return 'Just now';
-    if (diffMins < 60) return `${diffMins} min ago`;
-    if (diffHours < 24) return `${diffHours} hour${diffHours !== 1 ? 's' : ''} ago`;
-    if (diffDays < 7) return `${diffDays} day${diffDays !== 1 ? 's' : ''} ago`;
+    if (diffMins < 60) return diffMins + ' min ago';
+    if (diffHours < 24) return diffHours + ' hour' + (diffHours !== 1 ? 's' : '') + ' ago';
+    if (diffDays < 7) return diffDays + ' day' + (diffDays !== 1 ? 's' : '') + ' ago';
     return date.toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric'
     });
-  } catch {
+  } catch (e) {
     return 'Recently';
   }
 }
 
-function showToast(message, type = 'info') {
-  let container = document.getElementById('toast-container');
+function showToast(message, type) {
+  if (type === undefined) type = 'info';
+  
+  var container = document.getElementById('toast-container');
   if (!container) {
     container = document.createElement('div');
     container.id = 'toast-container';
     document.body.appendChild(container);
   }
   
-  const toast = document.createElement('div');
-  toast.className = `toast ${type}`;
-  const icons = {
+  var toast = document.createElement('div');
+  toast.className = 'toast ' + type;
+  var icons = {
     error: 'fas fa-exclamation-triangle',
     success: 'fas fa-check-circle',
     warning: 'fas fa-exclamation-circle',
@@ -2798,7 +2828,7 @@ function showToast(message, type = 'info') {
   
   container.appendChild(toast);
   
-  setTimeout(() => {
+  setTimeout(function() {
     if (toast.parentNode) {
       toast.remove();
     }
@@ -2813,9 +2843,12 @@ window.refreshCountsFromSource = refreshCountsFromSource;
 window.clearViewCache = clearViewCache;
 
 // PHASE 1: Page unload handler - clean up watch session
-window.addEventListener('beforeunload', () => {
+window.addEventListener('beforeunload', function() {
   if (watchSession) {
     watchSession.stop();
+  }
+  if (window._watchSession) {
+    window._watchSession.stop();
   }
 });
 
