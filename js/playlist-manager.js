@@ -1,5 +1,6 @@
 // js/playlist-manager.js — Production Playlist & Watch Later Manager
 // Bantu Stream Connect — Phase 2 Implementation
+// FIXED: Using 'name' column instead of 'title' to match database schema
 
 (function() {
   'use strict';
@@ -14,7 +15,7 @@
 
     this.supabase = config.supabase;
     this.userId = config.userId || null;
-    this.watchLaterTitle = config.watchLaterTitle || 'Watch Later';
+    this.watchLaterName = config.watchLaterName || 'Watch Later'; // CHANGED: from watchLaterTitle
     
     // Callbacks
     this.onPlaylistUpdated = config.onPlaylistUpdated || null;
@@ -205,7 +206,7 @@
   // PUBLIC API — GENERAL PLAYLISTS
   // ============================================
 
-  PlaylistManager.prototype.createPlaylist = async function(title, description = '', isPublic = false) {
+  PlaylistManager.prototype.createPlaylist = async function(name, description = '', isPublic = false) {
     if (!this.userId) {
       this._handleError('createPlaylist', 'User not authenticated');
       return { success: false, error: 'Not authenticated' };
@@ -216,7 +217,7 @@
         .from('playlists')
         .insert({
           user_id: this.userId,
-          title: title.trim(),
+          name: name.trim(), // CHANGED: from 'title' to 'name'
           description: description.trim(),
           is_public: isPublic
         })
@@ -369,7 +370,7 @@
         .from('playlists')
         .select('id')
         .eq('user_id', this.userId)
-        .eq('title', this.watchLaterTitle)
+        .eq('name', this.watchLaterName) // CHANGED: from 'title' to 'name'
         .maybeSingle();
       
       if (error) throw error;
@@ -384,7 +385,7 @@
         .from('playlists')
         .insert({
           user_id: this.userId,
-          title: this.watchLaterTitle,
+          name: this.watchLaterName, // CHANGED: from 'title' to 'name'
           description: 'Videos to watch later',
           is_public: false
         })
@@ -456,5 +457,5 @@
     window.PlaylistManager = PlaylistManager;
   }
   
-  console.log('✅ PlaylistManager module loaded successfully');
+  console.log('✅ PlaylistManager module loaded successfully with name column fix');
 })();
