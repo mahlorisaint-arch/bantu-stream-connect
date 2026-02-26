@@ -117,7 +117,7 @@ async function initializePlaylistManager() {
     playlistManager = new window.PlaylistManager({
       supabase: window.supabaseClient,
       userId: currentUserId,
-      watchLaterTitle: 'Watch Later',
+      watchLaterName: 'Watch Later',
       onPlaylistUpdated: function(data) {
         console.log('📋 Playlist updated:', data);
         // Update UI immediately
