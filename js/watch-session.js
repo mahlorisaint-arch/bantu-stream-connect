@@ -14,8 +14,18 @@ class WatchSession {
     this.viewThreshold = config.viewThreshold || 20; // Count view after 20s
     this.completionThreshold = config.completionThreshold || 0.9; // 90% watched = completed
     
-    // Internal state
-    this.sessionId = crypto.randomUUID?.() || `session_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+    // Internal state - SAFE SESSION ID GENERATION (FIXED)
+    try {
+      if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+        this.sessionId = crypto.randomUUID();
+      } else {
+        this.sessionId = `session_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+      }
+    } catch (e) {
+      console.warn('⚠️ Session ID fallback:', e);
+      this.sessionId = `session_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+    }
+    
     this.lastSyncTime = 0;
     this.lastSavedPosition = 0;
     this.viewCounted = false;
