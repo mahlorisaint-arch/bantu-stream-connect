@@ -4,16 +4,36 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
 <title>Analytics - Creator Dashboard - Bantu Stream Connect</title>
+
 <!-- Google Fonts -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Orbitron:wght@400;500;600;700&display=swap" rel="stylesheet">
+
 <!-- Font Awesome -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
 <!-- Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
 <!-- Supabase JS SDK -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<!-- ============================================ -->
+<!-- INITIALIZE SUPABASE CLIENT (MUST BE FIRST) -->
+<!-- ============================================ -->
+<script>
+const SUPABASE_URL = 'https://ydnxqnbjoshvxteevemc.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U';
+
+// Initialize Supabase client globally
+window.supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+window.SUPABASE_URL = SUPABASE_URL;
+window.SUPABASE_ANON_KEY = SUPABASE_ANON_KEY;
+
+console.log('✅ Supabase client initialized for analytics page');
+</script>
+
 <!-- Custom CSS -->
 <link rel="stylesheet" href="css/creator-dashboard.css">
 <link rel="stylesheet" href="css/creator-analytics.css">
@@ -81,7 +101,6 @@
 <div class="content-filter">
 <select id="contentFilter" class="filter-select">
 <option value="all">All Content</option>
-<!-- Options populated by JS -->
 </select>
 </div>
 </section>
@@ -223,7 +242,7 @@ Creator
 <!-- Toast Container -->
 <div id="toast-container"></div>
 
-<!-- Scripts -->
+<!-- Scripts (IN CORRECT ORDER) -->
 <script src="js/creator-analytics.js"></script>
 <script src="js/creator-analytics-page.js"></script>
 </body>
