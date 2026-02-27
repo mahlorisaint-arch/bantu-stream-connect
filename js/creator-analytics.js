@@ -1,5 +1,6 @@
 // js/creator-analytics.js — Creator Analytics Dashboard
 // Bantu Stream Connect — Phase 4 Implementation
+// FIXED: Supabase .group() method removed, grouping done in JS
 
 (function() {
   'use strict';
@@ -12,7 +13,7 @@
       return;
     }
 
-    this.supabase = config.supabaseClient || window.supabaseClient;
+    this.supabase = config.supabase;
     this.userId = config.userId || null;
     this.contentId = config.contentId || null;
     
@@ -44,8 +45,8 @@
     }
     
     try {
-      // Fetch content analytics
-      const { data: analytics, error } = await this.supabase
+      // Fetch content analytics for this user
+      const {  analytics, error } = await this.supabase
         .from('content_analytics')
         .select('*')
         .eq('creator_id', this.userId)
@@ -55,14 +56,14 @@
       
       // Fetch daily analytics for charts
       const dateFrom = this._getDateFromRange(timeRange);
-      const { data: dailyData } = await this.supabase
+      const {  dailyData } = await this.supabase
         .from('daily_analytics')
         .select('*')
         .in('content_id', analytics.map(a => a.content_id))
         .gte('date', dateFrom)
         .order('date', { ascending: true });
       
-      // Aggregate data
+      // Aggregate data in JavaScript
       const aggregated = this._aggregateAnalytics(analytics, dailyData);
       
       // Cache and return
@@ -95,20 +96,20 @@
     
     try {
       // Get content analytics using SQL function
-      const { data: analytics, error: analyticsError } = await this.supabase
+      const {  analytics, error: analyticsError } = await this.supabase
         .rpc('calculate_content_watch_time', { p_content_id: contentId });
       
       if (analyticsError) throw analyticsError;
       
       // Get content details
-      const { data: content } = await this.supabase
+      const {  content } = await this.supabase
         .from('Content')
         .select('id, title, thumbnail_url, duration, created_at, views_count, likes_count')
         .eq('id', contentId)
         .single();
       
       // Get daily analytics for retention chart
-      const { data: dailyData } = await this.supabase
+      const {  dailyData } = await this.supabase
         .from('daily_analytics')
         .select('date, views, watch_time_seconds')
         .eq('content_id', contentId)
@@ -140,18 +141,32 @@
     const dateFrom = this._getDateFromRange(timeRange);
     
     try {
-      const { data, error } = await this.supabase
+      // ✅ FIXED: Fetch data first, then group in JavaScript
+      const {  data, error } = await this.supabase
         .from('daily_analytics')
-        .select('date, SUM(watch_time_seconds) as total_watch_time')
+        .select('date, watch_time_seconds, content_id')
         .in('content_id', `(
           SELECT id FROM "Content" WHERE user_id = '${this.userId}'
         )`)
         .gte('date', dateFrom)
-        .group('date')
         .order('date', { ascending: true });
       
       if (error) throw error;
-      return data || [];
+      
+      // ✅ Group by date in JavaScript
+      const grouped = {};
+      (data || []).forEach(item => {
+        if (!grouped[item.date]) {
+          grouped[item.date] = 0;
+        }
+        grouped[item.date] += item.watch_time_seconds || 0;
+      });
+      
+      // Convert to array format for charts
+      return Object.entries(grouped).map(([date, total]) => ({
+        date,
+        total_watch_time: total
+      }));
       
     } catch (error) {
       console.error('❌ Watch time by date failed:', error);
@@ -159,32 +174,64 @@
     }
   };
 
+  // ✅ FIXED: getTopContent — Grouping done in JavaScript
   CreatorAnalytics.prototype.getTopContent = async function(limit = 10, timeRange = '30days') {
     if (!this.userId) return [];
     
     const dateFrom = this._getDateFromRange(timeRange);
     
     try {
-      const { data, error } = await this.supabase
+      // ✅ Step 1: Fetch raw daily analytics data (NO .group())
+      const {  data, error } = await this.supabase
         .from('daily_analytics')
-        .select(`
-          content_id,
-          SUM(views) as total_views,
-          SUM(watch_time_seconds) as total_watch_time,
-          Content (
-            id, title, thumbnail_url, duration, created_at
-          )
-        `)
+        .select('content_id, views, watch_time_seconds, date')
         .in('content_id', `(
           SELECT id FROM "Content" WHERE user_id = '${this.userId}'
         )`)
-        .gte('date', dateFrom)
-        .group('content_id')
-        .order('total_views', { ascending: false })
-        .limit(limit);
+        .gte('date', dateFrom);
       
       if (error) throw error;
-      return data || [];
+      
+      // ✅ Step 2: Group and aggregate in JavaScript
+      const aggregated = {};
+      
+      (data || []).forEach(item => {
+        if (!aggregated[item.content_id]) {
+          aggregated[item.content_id] = {
+            content_id: item.content_id,
+            total_views: 0,
+            total_watch_time: 0
+          };
+        }
+        aggregated[item.content_id].total_views += item.views || 0;
+        aggregated[item.content_id].total_watch_time += item.watch_time_seconds || 0;
+      });
+      
+      // ✅ Step 3: Convert to array and sort by views
+      const sorted = Object.values(aggregated)
+        .sort((a, b) => b.total_views - a.total_views)
+        .slice(0, limit);
+      
+      // ✅ Step 4: Fetch content details for each item
+      const contentIds = sorted.map(item => item.content_id);
+      
+      if (contentIds.length === 0) return [];
+      
+      const {  contentDetails } = await this.supabase
+        .from('Content')
+        .select('id, title, thumbnail_url, duration, created_at')
+        .in('id', contentIds);
+      
+      // ✅ Step 5: Merge aggregated stats with content details
+      const contentMap = {};
+      (contentDetails || []).forEach(c => {
+        contentMap[c.id] = c;
+      });
+      
+      return sorted.map(item => ({
+        ...item,
+        Content: contentMap[item.content_id] || null
+      }));
       
     } catch (error) {
       console.error('❌ Top content failed:', error);
