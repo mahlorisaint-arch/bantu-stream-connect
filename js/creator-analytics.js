@@ -46,7 +46,7 @@
     
     try {
       // ✅ FIXED: Query your actual materialized view
-      const {  analytics, error } = await this.supabase
+      const { data: analytics, error } = await this.supabase
         .from('creator_analytics_summary')
         .select('*')
         .eq('creator_id', this.userId)
@@ -77,7 +77,7 @@
       if (this.contentId) {
         try {
           const dateFrom = this._getDateFromRange(timeRange);
-          const {  dailyData } = await this.supabase
+          const { data: dailyData } = await this.supabase
             .from('daily_analytics')
             .select('date, views, watch_time_seconds')
             .eq('content_id', this.contentId)
@@ -143,7 +143,7 @@
     if (this._isCacheValid(key)) return this._cache[key];
     
     try {
-      const {  content } = await this.supabase
+      const { data: content } = await this.supabase
         .from('Content')
         .select('id, title, thumbnail_url, duration, created_at, views_count, likes_count')
         .eq('id', contentId)
@@ -151,7 +151,7 @@
       
       if (!content) return { error: 'Content not found' };
       
-      const {  dailyData } = await this.supabase
+      const { data: dailyData } = await this.supabase
         .from('daily_analytics')
         .select('date, views, watch_time_seconds')
         .eq('content_id', contentId)
@@ -190,7 +190,7 @@
       const contentIds = await this._getContentIdsForUser();
       if (contentIds.length === 0) return [];
       
-      const {  data, error } = await this.supabase
+      const { data, error } = await this.supabase
         .from('daily_analytics')
         .select('date, watch_time_seconds, content_id')
         .in('content_id', contentIds)
@@ -223,7 +223,7 @@
     
     try {
       // ✅ Step 1: Get user's published content IDs
-      const {  userContent } = await this.supabase
+      const { data: userContent } = await this.supabase
         .from('Content')
         .select('id')
         .eq('user_id', this.userId)
@@ -234,7 +234,7 @@
       const contentIds = userContent.map(c => c.id);
       
       // ✅ Step 2: Fetch daily analytics for those IDs
-      const {  data, error } = await this.supabase
+      const { data, error } = await this.supabase
         .from('daily_analytics')
         .select('content_id, views, watch_time_seconds, date')
         .in('content_id', contentIds)
@@ -264,7 +264,7 @@
       if (sorted.length === 0) return [];
       
       // ✅ Step 5: Fetch content details
-      const {  contentDetails } = await this.supabase
+      const { data: contentDetails } = await this.supabase
         .from('Content')
         .select('id, title, thumbnail_url, duration, created_at')
         .in('id', sorted.map(s => s.content_id));
@@ -302,7 +302,7 @@
   CreatorAnalytics.prototype._getContentIdsForUser = async function() {
     if (!this.userId) return [];
     try {
-      const {  content } = await this.supabase
+      const { data: content } = await this.supabase
         .from('Content')
         .select('id')
         .eq('user_id', this.userId)
