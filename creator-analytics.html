@@ -16,17 +16,19 @@
 <!-- Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-<!-- Supabase JS SDK -->
+<!-- ============================================ -->
+<!-- STEP 1: SUPABASE SDK (MUST BE FIRST) -->
+<!-- ============================================ -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <!-- ============================================ -->
-<!-- INITIALIZE SUPABASE CLIENT (MUST BE FIRST) -->
+<!-- STEP 2: INITIALIZE SUPABASE CLIENT -->
 <!-- ============================================ -->
 <script>
+// Initialize Supabase client globally
 const SUPABASE_URL = 'https://ydnxqnbjoshvxteevemc.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U';
 
-// Initialize Supabase client globally
 window.supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 window.SUPABASE_URL = SUPABASE_URL;
 window.SUPABASE_ANON_KEY = SUPABASE_ANON_KEY;
@@ -78,7 +80,7 @@ console.log('✅ Supabase client initialized for analytics page');
 <i class="fas fa-arrow-left"></i>
 </button>
 <button id="refreshBtn" class="icon-btn" title="Refresh">
-<i class="fas fa-redo"></i>
+<i class="fas fa-redo-alt"></i>
 </button>
 <button id="profile-btn" class="profile-btn" title="Profile">
 <div class="profile-placeholder" id="userProfilePlaceholder">
@@ -101,6 +103,7 @@ console.log('✅ Supabase client initialized for analytics page');
 <div class="content-filter">
 <select id="contentFilter" class="filter-select">
 <option value="all">All Content</option>
+<!-- Options populated by JS -->
 </select>
 </div>
 </section>
@@ -144,7 +147,7 @@ console.log('✅ Supabase client initialized for analytics page');
 <!-- Charts Section -->
 <section class="charts-section">
 <div class="chart-card">
-<h3><i class="fas fa-chart-area"></i> Views Over Time</h3>
+<h3><i class="fas fa-chart-line"></i> Views Over Time</h3>
 <canvas id="viewsChart"></canvas>
 </div>
 <div class="chart-card">
@@ -222,19 +225,19 @@ console.log('✅ Supabase client initialized for analytics page');
 <nav class="global-nav">
 <a href="index.html" class="nav-item">
 <i class="fas fa-home"></i>
-Home
+<span>Home</span>
 </a>
 <a href="trending_screen.html" class="nav-item">
 <i class="fas fa-fire"></i>
-Trending
+<span>Trending</span>
 </a>
 <a href="content-library.html" class="nav-item">
 <i class="fas fa-th-large"></i>
-Library
+<span>Library</span>
 </a>
-<a href="creator-dashboard.html" class="nav-item">
+<a href="creator-dashboard.html" class="nav-item active">
 <i class="fas fa-user"></i>
-Creator
+<span>Creator</span>
 </a>
 </nav>
 </div>
@@ -242,7 +245,9 @@ Creator
 <!-- Toast Container -->
 <div id="toast-container"></div>
 
-<!-- Scripts (IN CORRECT ORDER) -->
+<!-- ============================================ -->
+<!-- STEP 3: LOAD MODULES IN CORRECT ORDER -->
+<!-- ============================================ -->
 <script src="js/creator-analytics.js"></script>
 <script src="js/creator-analytics-page.js"></script>
 </body>
