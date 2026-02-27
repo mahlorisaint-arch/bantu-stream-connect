@@ -134,6 +134,96 @@
   flex-wrap: wrap;
 }
 
+/* ============================================ */
+/* PHASE 3: RECOMMENDATION RAIL STYLES */
+/* ============================================ */
+
+/* Recommendation Card Enhancements */
+.recommendation-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.recommendation-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+}
+
+/* Progress Overlay for Continue Watching */
+.progress-bar-overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: rgba(0, 0, 0, 0.4);
+  border-radius: 0 0 8px 8px;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--bantu-blue), var(--warm-gold));
+  border-radius: 0 0 8px 8px;
+  transition: width 0.3s ease;
+}
+
+.resume-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: rgba(29, 78, 216, 0.95);
+  color: white;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.resume-badge i {
+  font-size: 10px;
+}
+
+/* Creator Chip */
+.creator-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 3px 8px;
+  border-radius: 10px;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.8);
+  margin-top: 6px;
+}
+
+.creator-chip i {
+  font-size: 10px;
+  color: var(--bantu-blue);
+}
+
+/* Hide empty sections */
+.related-section:empty,
+.related-section[style*="display: none"] {
+  display: none !important;
+}
+
+/* Mobile adjustments */
+@media (max-width: 768px) {
+  .progress-bar-overlay {
+    height: 2px;
+  }
+  .resume-badge {
+    padding: 3px 8px;
+    font-size: 10px;
+  }
+  .creator-chip {
+    font-size: 10px;
+  }
+}
+
 /* PHASE 2: Watch Later Button States */
 #watchLaterBtn {
   transition: all 0.2s ease;
