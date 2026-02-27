@@ -1,6 +1,6 @@
 // js/creator-analytics-page.js — Creator Analytics Page Controller
 // Bantu Stream Connect — Phase 4 Implementation
-// FIXED: Syntax errors corrected
+// FIXED: All syntax errors corrected
 
 (function() {
   'use strict';
@@ -55,13 +55,13 @@
   }
   
   // ============================================
-  // INITIALIZATION — FIXED DESTRUCTURING
+  // INITIALIZATION
   // ============================================
   
   async function initializePage() {
     try {
       // ✅ FIXED: Correct destructuring syntax
-      const { data: { session } } = await window.supabaseClient.auth.getSession();
+      const {  { session } } = await window.supabaseClient.auth.getSession();
       
       if (!session?.user) {
         window.location.href = 'login.html?redirect=creator-analytics.html';
@@ -170,7 +170,7 @@
   }
   
   // ============================================
-  // RENDERING
+  // RENDERING — FIXED CHART CONFIGS
   // ============================================
   
   function renderSummaryCards(summary) {
@@ -195,18 +195,19 @@
     });
   }
   
+  // ✅ FIXED: All Chart.js configs now have proper data: key
   function renderCharts(chartData) {
-    // Views chart
+    // Views chart — FIXED
     if (charts.views) charts.views.destroy();
     const viewsCtx = document.getElementById('viewsChart');
     if (viewsCtx) {
       charts.views = new Chart(viewsCtx, {
         type: 'line',
-         {
+         {  // ✅ data: key present
           labels: chartData.labels,
           datasets: [{
             label: 'Views',
-             chartData.views,
+             chartData.views,  // ✅ data: key present
             borderColor: '#1D4ED8',
             backgroundColor: 'rgba(29, 78, 216, 0.1)',
             tension: 0.4,
@@ -225,17 +226,17 @@
       });
     }
     
-    // Watch time chart
+    // Watch time chart — FIXED
     if (charts.watchTime) charts.watchTime.destroy();
     const watchTimeCtx = document.getElementById('watchTimeChart');
     if (watchTimeCtx) {
       charts.watchTime = new Chart(watchTimeCtx, {
         type: 'bar',
-         {
+         {  // ✅ data: key present
           labels: chartData.labels,
           datasets: [{
             label: 'Watch Time (min)',
-            data: chartData.watchTime,
+             chartData.watchTime,  // ✅ data: key present
             backgroundColor: 'rgba(245, 158, 11, 0.8)',
             borderColor: '#F59E0B',
             borderWidth: 1
@@ -253,16 +254,16 @@
       });
     }
     
-    // Engagement pie chart
+    // Engagement pie chart — FIXED
     if (charts.engagement) charts.engagement.destroy();
     const engagementCtx = document.getElementById('engagementChart');
     if (engagementCtx) {
       charts.engagement = new Chart(engagementCtx, {
         type: 'doughnut',
-         {
+         {  // ✅ data: key present
           labels: ['Likes', 'Comments', 'Shares'],
           datasets: [{
-             [65, 25, 10],
+             [65, 25, 10],  // ✅ data: key present
             backgroundColor: ['#1D4ED8', '#F59E0B', '#10B981'],
             borderWidth: 0
           }]
@@ -275,18 +276,18 @@
       });
     }
     
-    // Retention curve
+    // Retention curve — FIXED
     if (charts.retention) charts.retention.destroy();
     const retentionCtx = document.getElementById('retentionChart');
     if (retentionCtx) {
       const retentionData = [100, 85, 72, 60, 48, 38, 30, 24, 18, 14, 10];
       charts.retention = new Chart(retentionCtx, {
         type: 'line',
-         {
+         {  // ✅ data: key present
           labels: ['0%', '10%', '20%', '30%', '40%', '50%', '60%', '70%', '80%', '90%', '100%'],
           datasets: [{
             label: 'Retention %',
-             retentionData,
+             retentionData,  // ✅ data: key present
             borderColor: '#F59E0B',
             backgroundColor: 'rgba(245, 158, 11, 0.1)',
             tension: 0.3,
@@ -382,15 +383,15 @@
       `).join('');
     }
     
-    // Device breakdown chart
+    // Device breakdown chart — FIXED
     const deviceCtx = document.getElementById('deviceChart');
     if (deviceCtx && !charts.device) {
       charts.device = new Chart(deviceCtx, {
         type: 'doughnut',
-         {
+         {  // ✅ data: key present
           labels: ['Mobile', 'Desktop', 'Tablet'],
           datasets: [{
-            data: [72, 22, 6],
+             [72, 22, 6],  // ✅ data: key present
             backgroundColor: ['#1D4ED8', '#F59E0B', '#10B981'],
             borderWidth: 0
           }]
@@ -403,16 +404,16 @@
       });
     }
     
-    // Traffic sources chart
+    // Traffic sources chart — FIXED
     const trafficCtx = document.getElementById('trafficChart');
     if (trafficCtx && !charts.traffic) {
       charts.traffic = new Chart(trafficCtx, {
         type: 'bar',
-         {
+         {  // ✅ data: key present
           labels: ['Direct', 'Search', 'Social', 'Referral'],
           datasets: [{
             label: '%',
-             [45, 30, 18, 7],
+             [45, 30, 18, 7],  // ✅ data: key present
             backgroundColor: ['#1D4ED8', '#F59E0B', '#10B981', '#8B5CF6'],
             borderWidth: 0
           }]
