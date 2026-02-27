@@ -1,6 +1,6 @@
 // js/creator-analytics-page.js — Creator Analytics Page Controller
 // Bantu Stream Connect — Phase 4 Implementation
-// FIXED: Authentication + Config issues + Chart syntax errors + Better fallback handling
+// FIXED: Authentication + Config issues + Chart syntax errors + Better fallback handling + Thumbnail fixes
 
 (function() {
   'use strict';
@@ -418,9 +418,13 @@
     renderTopContentTable(mockItems);
   }
   
+  // ✅ FIXED: renderTopContentTable with proper thumbnail fallback
   function renderTopContentTable(items) {
     const tbody = document.getElementById('topContentBody');
     if (!tbody) return;
+    
+    // ✅ Use a reliable fallback image (Unsplash) instead of placeholder
+    const FALLBACK_THUMBNAIL = 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=60&h=34&fit=crop';
     
     if (!items || items.length === 0) {
       tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--slate-grey)">No content data available</td></tr>';
@@ -435,14 +439,18 @@
       const completion = content.duration > 0 ? Math.round((avgDuration / content.duration) * 100) : 0;
       const engagement = views > 0 ? Math.round(((content.likes_count || 0) / views) * 100) : 0;
       
+      // ✅ Safe thumbnail URL with onerror fallback
+      const thumbnailUrl = content.thumbnail_url || FALLBACK_THUMBNAIL;
+      
       return `
         <tr>
           <td>
             <div class="content-cell">
-              <img src="${content.thumbnail_url || 'https://via.placeholder.com/60x34/1D4ED8/FFFFFF?text=Video'}" 
+              <img src="${thumbnailUrl}" 
                    alt="${content.title || 'Content'}" 
                    class="content-thumb"
-                   onerror="this.src='https://via.placeholder.com/60x34/1D4ED8/FFFFFF?text=Video'">
+                   loading="lazy"
+                   onerror="this.src='${FALLBACK_THUMBNAIL}'; this.onerror=null;">
               <span class="content-title" title="${content.title || ''}">${content.title || 'Untitled'}</span>
             </div>
           </td>
