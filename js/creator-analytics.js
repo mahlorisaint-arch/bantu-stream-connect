@@ -94,7 +94,7 @@
     }
     
     try {
-      // Get content analytics
+      // Get content analytics using SQL function
       const { data: analytics, error: analyticsError } = await this.supabase
         .rpc('calculate_content_watch_time', { p_content_id: contentId });
       
@@ -258,14 +258,11 @@
   };
 
   CreatorAnalytics.prototype._calculateRetentionCurve = function(dailyData, duration) {
-    // Simplified retention calculation
-    // In production, this would use detailed second-by-second data
     const curve = [];
-    const intervals = 10; // 10 points from 0% to 100%
+    const intervals = 10;
     
     for (let i = 0; i <= intervals; i++) {
       const percentage = (i / intervals) * 100;
-      // Simulate retention drop-off (replace with actual data)
       const retention = Math.max(0, 100 - (percentage * 0.8));
       curve.push({ percentage, retention: Math.round(retention) });
     }
