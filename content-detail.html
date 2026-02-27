@@ -22,6 +22,93 @@
   <link rel="stylesheet" href="css/content-detail.css">
   <!-- PHASE 1 FIX: New Video Player CSS -->
   <link rel="stylesheet" href="css/video-player.css">
+  <!-- PHASE 4: Additional streaming styles -->
+  <style>
+    /* PHASE 4: Quality Options */
+    .quality-options {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+      margin-bottom: 15px;
+    }
+
+    .quality-option {
+      padding: 6px 10px;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid var(--card-border);
+      border-radius: 6px;
+      color: var(--soft-white);
+      font-size: 12px;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.2s ease;
+    }
+
+    .quality-option:hover {
+      background: rgba(255, 255, 255, 0.2);
+      border-color: var(--bantu-blue);
+    }
+
+    .quality-option.active {
+      background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+      border-color: transparent;
+      color: white;
+      font-weight: 600;
+    }
+
+    /* PHASE 4: Data Saver Toggle */
+    .toggle-switch {
+      position: relative;
+      display: inline-block;
+      width: 50px;
+      height: 26px;
+      margin: 10px 0;
+    }
+
+    .toggle-switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .toggle-slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: rgba(255, 255, 255, 0.2);
+      transition: 0.3s;
+      border-radius: 26px;
+    }
+
+    .toggle-slider:before {
+      position: absolute;
+      content: "";
+      height: 20px;
+      width: 20px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: 0.3s;
+      border-radius: 50%;
+    }
+
+    input:checked + .toggle-slider {
+      background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+    }
+
+    input:checked + .toggle-slider:before {
+      transform: translateX(24px);
+    }
+
+    .toggle-description {
+      font-size: 11px;
+      color: var(--slate-grey);
+      margin-top: 5px;
+    }
+  </style>
 </head>
 <body>
   <!-- Loading Screen -->
@@ -220,7 +307,30 @@
               </button>
             </div>
             
+            <!-- PHASE 4: Updated Settings Menu with Quality Options -->
             <div class="settings-menu">
+              <!-- PHASE 4: Quality Section -->
+              <div class="settings-section">
+                <h4>Quality</h4>
+                <div class="quality-options">
+                  <button class="quality-option active" data-quality="auto">Auto</button>
+                  <button class="quality-option" data-quality="1080p">1080p</button>
+                  <button class="quality-option" data-quality="720p">720p</button>
+                  <button class="quality-option" data-quality="480p">480p</button>
+                  <button class="quality-option" data-quality="360p">360p</button>
+                </div>
+              </div>
+              
+              <!-- PHASE 4: Data Saver Section -->
+              <div class="settings-section">
+                <h4>Data Saver</h4>
+                <label class="toggle-switch">
+                  <input type="checkbox" id="dataSaverToggle">
+                  <span class="toggle-slider"></span>
+                </label>
+                <p class="toggle-description">Reduce data usage by streaming at lower quality</p>
+              </div>
+              
               <div class="settings-section">
                 <h4>Playback Speed</h4>
                 <div class="speed-options">
@@ -558,6 +668,9 @@
   
   <!-- PHASE 3: Recommendation Engine -->
   <script src="js/recommendation-engine.js"></script>
+  
+  <!-- PHASE 4: Streaming Manager -->
+  <script src="js/streaming-manager.js"></script>
   
   <!-- Main Content Detail Script - FIXED: Theme selector and navigation -->
   <script src="js/content-detail.js"></script>
