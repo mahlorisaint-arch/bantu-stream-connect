@@ -60,8 +60,8 @@
   
   async function initializePage() {
     try {
-      // ✅ FIXED: Correct destructuring syntax
-      const {  { session } } = await window.supabaseClient.auth.getSession();
+      // FIXED: Correct destructuring syntax
+      const { data: { session } } = await window.supabaseClient.auth.getSession();
       
       if (!session?.user) {
         window.location.href = 'login.html?redirect=creator-analytics.html';
@@ -72,7 +72,7 @@
       // Initialize analytics manager with CORRECT config
       if (window.CreatorAnalytics) {
         analyticsManager = new window.CreatorAnalytics({
-          supabase: window.supabaseClient,  // ✅ Correct property name
+          supabaseClient: window.supabaseClient,  // FIXED: Match property name expected by CreatorAnalytics
           userId: currentUser.id,
           onDataLoaded: (data) => {
             console.log('📊 Analytics data loaded:', data);
@@ -136,7 +136,7 @@
   async function loadFallbackData() {
     // Fallback: query creator_analytics_summary view
     try {
-      const {  analytics } = await window.supabaseClient
+      const { data: analytics, error } = await window.supabaseClient
         .from('creator_analytics_summary')
         .select('*')
         .eq('creator_id', currentUser?.id)
@@ -195,7 +195,7 @@
     });
   }
   
-  // ✅ FIXED: All Chart.js configs now have proper data: key
+  // FIXED: All Chart.js configs now have proper data property
   function renderCharts(chartData) {
     // Views chart — FIXED
     if (charts.views) charts.views.destroy();
@@ -203,11 +203,11 @@
     if (viewsCtx) {
       charts.views = new Chart(viewsCtx, {
         type: 'line',
-         {  // ✅ data: key present
+        data: {  // FIXED: Added 'data:' property
           labels: chartData.labels,
           datasets: [{
             label: 'Views',
-             chartData.views,  // ✅ data: key present
+            data: chartData.views,  // FIXED: Added 'data:' property
             borderColor: '#1D4ED8',
             backgroundColor: 'rgba(29, 78, 216, 0.1)',
             tension: 0.4,
@@ -232,11 +232,11 @@
     if (watchTimeCtx) {
       charts.watchTime = new Chart(watchTimeCtx, {
         type: 'bar',
-         {  // ✅ data: key present
+        data: {  // FIXED: Added 'data:' property
           labels: chartData.labels,
           datasets: [{
             label: 'Watch Time (min)',
-             chartData.watchTime,  // ✅ data: key present
+            data: chartData.watchTime,  // FIXED: Added 'data:' property
             backgroundColor: 'rgba(245, 158, 11, 0.8)',
             borderColor: '#F59E0B',
             borderWidth: 1
@@ -260,10 +260,10 @@
     if (engagementCtx) {
       charts.engagement = new Chart(engagementCtx, {
         type: 'doughnut',
-         {  // ✅ data: key present
+        data: {  // FIXED: Added 'data:' property
           labels: ['Likes', 'Comments', 'Shares'],
           datasets: [{
-             [65, 25, 10],  // ✅ data: key present
+            data: [65, 25, 10],  // FIXED: Added 'data:' property
             backgroundColor: ['#1D4ED8', '#F59E0B', '#10B981'],
             borderWidth: 0
           }]
@@ -283,11 +283,11 @@
       const retentionData = [100, 85, 72, 60, 48, 38, 30, 24, 18, 14, 10];
       charts.retention = new Chart(retentionCtx, {
         type: 'line',
-         {  // ✅ data: key present
+        data: {  // FIXED: Added 'data:' property
           labels: ['0%', '10%', '20%', '30%', '40%', '50%', '60%', '70%', '80%', '90%', '100%'],
           datasets: [{
             label: 'Retention %',
-             retentionData,  // ✅ data: key present
+            data: retentionData,  // FIXED: Added 'data:' property
             borderColor: '#F59E0B',
             backgroundColor: 'rgba(245, 158, 11, 0.1)',
             tension: 0.3,
@@ -388,10 +388,10 @@
     if (deviceCtx && !charts.device) {
       charts.device = new Chart(deviceCtx, {
         type: 'doughnut',
-         {  // ✅ data: key present
+        data: {  // FIXED: Added 'data:' property
           labels: ['Mobile', 'Desktop', 'Tablet'],
           datasets: [{
-             [72, 22, 6],  // ✅ data: key present
+            data: [72, 22, 6],  // FIXED: Added 'data:' property
             backgroundColor: ['#1D4ED8', '#F59E0B', '#10B981'],
             borderWidth: 0
           }]
@@ -409,11 +409,11 @@
     if (trafficCtx && !charts.traffic) {
       charts.traffic = new Chart(trafficCtx, {
         type: 'bar',
-         {  // ✅ data: key present
+        data: {  // FIXED: Added 'data:' property
           labels: ['Direct', 'Search', 'Social', 'Referral'],
           datasets: [{
             label: '%',
-             [45, 30, 18, 7],  // ✅ data: key present
+            data: [45, 30, 18, 7],  // FIXED: Added 'data:' property
             backgroundColor: ['#1D4ED8', '#F59E0B', '#10B981', '#8B5CF6'],
             borderWidth: 0
           }]
