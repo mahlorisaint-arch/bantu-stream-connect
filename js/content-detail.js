@@ -2,6 +2,7 @@
 // FIXED: Theme selector conflict resolved, navigation icons properly aligned
 // PHASE 1 UPDATE: Watch Session Lifecycle Integration with syntax-safe WatchSession
 // PHASE 2 UPDATE: Watch Later & Playlist System Integration
+// PHASE 3 UPDATE: Complete Recommendation Engine Integration
 console.log('🎬 Content Detail Initializing with RLS-compliant fixes and view tracking on Play button click...');
 
 // Global variables
@@ -9,6 +10,7 @@ let currentContent = null;
 let enhancedVideoPlayer = null;
 let watchSession = null; // PHASE 1: Watch session instance
 let playlistManager = null; // PHASE 2: Playlist manager instance
+let recommendationEngine = null; // PHASE 3: Recommendation engine instance
 let isInitialized = false;
 let currentUserId = null;
 
@@ -61,11 +63,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     await initializePlaylistManager();
   }
   
+  // ============================================
+  // PHASE 3: Initialize Recommendation Engine
+  // ============================================
+  if (currentContent?.id) {
+    await initializeRecommendationEngine();
+  }
+  
   // Show app
   document.getElementById('loading').style.display = 'none';
   document.getElementById('app').style.display = 'block';
   
-  console.log('✅ Content Detail fully initialized with RLS-compliant fixes and PHASE 2 Watch Later');
+  console.log('✅ Content Detail fully initialized with RLS-compliant fixes and PHASE 3 Recommendations');
 });
 
 // PHASE 1: Import WatchSession class
@@ -84,6 +93,15 @@ if (!window.PlaylistManager) {
   // Dynamic load as fallback
   const script = document.createElement('script');
   script.src = 'js/playlist-manager.js';
+  document.head.appendChild(script);
+}
+
+// PHASE 3: Import RecommendationEngine class
+if (!window.RecommendationEngine) {
+  console.warn('⚠️ RecommendationEngine not loaded, will attempt to load dynamically');
+  // Dynamic load as fallback
+  const script = document.createElement('script');
+  script.src = 'js/recommendation-engine.js';
   document.head.appendChild(script);
 }
 
@@ -138,6 +156,138 @@ async function initializePlaylistManager() {
     console.error('❌ Failed to initialize PlaylistManager:', error);
     showToast('Watch Later unavailable', 'warning');
   }
+}
+
+// ============================================
+// PHASE 3: RECOMMENDATION ENGINE INITIALIZATION
+// ============================================
+async function initializeRecommendationEngine() {
+  if (!window.RecommendationEngine) {
+    console.warn('⚠️ RecommendationEngine not loaded');
+    return;
+  }
+  
+  if (!currentContent?.id) {
+    console.warn('⚠️ No content loaded for recommendations');
+    return;
+  }
+  
+  try {
+    recommendationEngine = new window.RecommendationEngine({
+      supabase: window.supabaseClient,
+      userId: currentUserId,
+      currentContentId: currentContent.id,
+      limit: 8,
+      minWatchThreshold: 0.5,
+      cacheDuration: 60000
+    });
+    
+    await loadRecommendationRails();
+    
+    console.log('✅ RecommendationEngine initialized');
+    
+  } catch (error) {
+    console.error('❌ Failed to initialize RecommendationEngine:', error);
+  }
+}
+
+// PHASE 3: Load all recommendation rails
+async function loadRecommendationRails() {
+  if (!recommendationEngine) return;
+  
+  const railConfigs = [
+    {
+      type: recommendationEngine.TYPES.CONTINUE_WATCHING,
+      containerId: 'continueWatchingRail',
+      title: 'Continue Watching',
+      options: { limit: 6 }
+    },
+    {
+      type: recommendationEngine.TYPES.BECAUSE_YOU_WATCHED,
+      containerId: 'becauseYouWatchedRail',
+      title: 'Because You Watched',
+      options: { limit: 8 }
+    },
+    {
+      type: recommendationEngine.TYPES.MORE_FROM_CREATOR,
+      containerId: 'moreFromCreatorRail',
+      title: 'More From This Creator',
+      options: { 
+        creatorId: currentContent?.user_id,
+        excludeContentId: currentContent?.id,
+        limit: 6 
+      }
+    }
+  ];
+  
+  const results = await recommendationEngine.getMultipleRails(railConfigs);
+  
+  results.forEach(({ type, results: items }) => {
+    const config = railConfigs.find(r => r.type === type);
+    if (config && items?.length > 0) {
+      renderRecommendationRail(config.containerId, config.title, items);
+    }
+  });
+}
+
+// PHASE 3: Render a single recommendation rail
+function renderRecommendationRail(containerId, title, items) {
+  const section = document.getElementById(containerId);
+  if (!section) return;
+  
+  if (!section.querySelector('.section-header')) {
+    section.innerHTML = `
+      <div class="section-header">
+        <h2 class="section-title">${title}</h2>
+      </div>
+      <div class="content-grid" id="${containerId}-grid"></div>
+    `;
+  }
+  
+  const grid = section.querySelector('.content-grid');
+  if (!grid) return;
+  
+  grid.innerHTML = items.map(item => {
+    const progress = item.watch_progress ? 
+      Math.min(100, Math.round((item.watch_progress.last_position / (item.duration || 3600)) * 100)) 
+      : null;
+    
+    const viewsCount = item.real_views_count !== undefined ? item.real_views_count : (item.views_count || 0);
+    
+    return `
+      <a href="content-detail.html?id=${item.id}" class="content-card recommendation-card">
+        <div class="card-thumbnail">
+          <img src="${item.thumbnail_url || 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop'}" 
+               alt="${item.title}"
+               loading="lazy"
+               onerror="this.src='https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop'">
+          ${progress ? `
+            <div class="progress-bar-overlay">
+              <div class="progress-fill" style="width:${progress}%"></div>
+            </div>
+            <div class="resume-badge">
+              <i class="fas fa-play"></i> Resume
+            </div>
+          ` : ''}
+        </div>
+        <div class="card-content">
+          <h3 class="card-title">${truncateText(item.title, 45)}</h3>
+          <div class="related-meta">
+            <i class="fas fa-eye"></i>
+            <span>${formatNumber(viewsCount)} views</span>
+          </div>
+          ${item.user_profiles?.full_name ? `
+            <div class="creator-chip">
+              <i class="fas fa-user"></i>
+              ${truncateText(item.user_profiles.full_name, 15)}
+            </div>
+          ` : ''}
+        </div>
+      </a>
+    `;
+  }).join('');
+  
+  section.style.display = 'block';
 }
 
 // PHASE 2: Update Watch Later button state
@@ -281,6 +431,12 @@ function setupAuthListeners() {
       if (window.PlaylistManager && !playlistManager) {
         await initializePlaylistManager();
       }
+      
+      // PHASE 3: Reinitialize recommendations on sign in
+      if (recommendationEngine) {
+        recommendationEngine.userId = currentUserId;
+        await loadRecommendationRails();
+      }
     } else if (event === 'SIGNED_OUT') {
       currentUserId = null;
       playlistManager = null; // PHASE 2: Clear playlist manager
@@ -288,7 +444,8 @@ function setupAuthListeners() {
       showToast('Signed out successfully', 'info');
       
       // PHASE 1: Hide continue watching on sign out
-      document.getElementById('continueWatchingSection').style.display = 'none';
+      const continueSection = document.getElementById('continueWatchingSection');
+      if (continueSection) continueSection.style.display = 'none';
       
       // Clean up watch session if active
       if (watchSession) {
@@ -301,6 +458,12 @@ function setupAuthListeners() {
       if (watchLaterBtn) {
         watchLaterBtn.classList.remove('active');
         watchLaterBtn.innerHTML = '<i class="far fa-clock"></i><span>Watch Later</span>';
+      }
+      
+      // PHASE 3: Update recommendation engine for guest
+      if (recommendationEngine) {
+        recommendationEngine.userId = null;
+        await loadRecommendationRails();
       }
     }
   });
@@ -475,6 +638,7 @@ async function loadContentFromURL() {
       creator_display_name: contentData.user_profiles?.full_name || contentData.user_profiles?.username || 'Creator',
       creator_id: contentData.user_profiles?.id || contentData.user_id,
       user_id: contentData.user_id,
+      user_profiles: contentData.user_profiles,
       // PHASE 1: Add watch progress
       watch_progress: watchProgress?.last_position || 0,
       is_completed: watchProgress?.is_completed || false
@@ -818,7 +982,7 @@ async function loadRelatedContent(contentId) {
     // Fetch related content items
     const { data, error } = await window.supabaseClient
       .from('Content')
-      .select('id, title, thumbnail_url, user_id, genre, duration, media_type, status')
+      .select('id, title, thumbnail_url, user_id, genre, duration, media_type, status, user_profiles!user_id(full_name, username)')
       .neq('id', contentId)
       .eq('status', 'published')
       .limit(6);
@@ -3058,4 +3222,4 @@ window.addEventListener('beforeunload', function() {
   }
 });
 
-console.log('✅ Content detail script loaded with PHASE 1 WATCH SESSION integration - Views recorded on Play button click (matches mobile app)');
+console.log('✅ Content detail script loaded with PHASE 3 RECOMMENDATION ENGINE integration');
