@@ -1,5 +1,6 @@
 // js/creator-analytics-page.js — Creator Analytics Page Controller
 // Bantu Stream Connect — Phase 4 Implementation
+// FIXED: Syntax errors corrected
 
 (function() {
   'use strict';
@@ -42,20 +43,26 @@
     
     const toast = document.createElement('div');
     toast.className = `toast ${type}`;
-    const icons = { error: 'fa-exclamation-triangle', success: 'fa-check-circle', warning: 'fa-exclamation-circle', info: 'fa-info-circle' };
+    const icons = { 
+      error: 'fa-exclamation-triangle', 
+      success: 'fa-check-circle', 
+      warning: 'fa-exclamation-circle', 
+      info: 'fa-info-circle' 
+    };
     toast.innerHTML = `<i class="fas ${icons[type] || 'fa-info-circle'}"></i> ${message}`;
     container.appendChild(toast);
     setTimeout(() => toast.remove(), 3000);
   }
   
   // ============================================
-  // INITIALIZATION
+  // INITIALIZATION — FIXED DESTRUCTURING
   // ============================================
   
   async function initializePage() {
     try {
-      // Check auth
-      const {  { session } } = await window.supabaseClient.auth.getSession();
+      // ✅ FIXED: Correct destructuring syntax
+      const { data: { session } } = await window.supabaseClient.auth.getSession();
+      
       if (!session?.user) {
         window.location.href = 'login.html?redirect=creator-analytics.html';
         return;
@@ -85,14 +92,15 @@
       setupCharts();
       
       // Hide loading
-      loadingScreen.style.display = 'none';
-      app.style.display = 'block';
+      if (loadingScreen) loadingScreen.style.display = 'none';
+      if (app) app.style.display = 'block';
       
       console.log('✅ Creator Analytics Page initialized');
       
     } catch (error) {
       console.error('❌ Page initialization failed:', error);
       showToast('Failed to load analytics page', 'error');
+      if (loadingScreen) loadingScreen.style.display = 'none';
     }
   }
   
@@ -126,12 +134,12 @@
   }
   
   async function loadFallbackData() {
-    // Fallback: query content_analytics_summary view
+    // Fallback: query creator_analytics_summary view
     try {
       const {  analytics } = await window.supabaseClient
         .from('creator_analytics_summary')
         .select('*')
-        .eq('creator_id', currentUser.id)
+        .eq('creator_id', currentUser?.id)
         .maybeSingle();
       
       if (analytics) {
@@ -166,18 +174,23 @@
   // ============================================
   
   function renderSummaryCards(summary) {
-    document.getElementById('totalViews').textContent = formatNumber(summary.totalViews);
-    document.getElementById('totalWatchTime').textContent = formatWatchTime(summary.totalWatchTime);
-    document.getElementById('uniqueViewers').textContent = formatNumber(summary.totalUniqueViewers);
-    document.getElementById('avgCompletion').textContent = Math.round(summary.avgCompletionRate) + '%';
+    const el = (id, text) => {
+      const elem = document.getElementById(id);
+      if (elem) elem.textContent = text;
+    };
+    
+    el('totalViews', formatNumber(summary.totalViews));
+    el('totalWatchTime', formatWatchTime(summary.totalWatchTime));
+    el('uniqueViewers', formatNumber(summary.totalUniqueViewers));
+    el('avgCompletion', Math.round(summary.avgCompletionRate) + '%');
     
     // Update trends (simulated)
     ['viewsTrend', 'watchTimeTrend', 'viewersTrend', 'completionTrend'].forEach(id => {
-      const el = document.getElementById(id);
-      if (el) {
+      const trendEl = document.getElementById(id);
+      if (trendEl) {
         const change = Math.floor(Math.random() * 20) - 5;
-        el.textContent = (change >= 0 ? '+' : '') + change + '%';
-        el.className = 'trend ' + (change >= 0 ? 'positive' : 'negative');
+        trendEl.textContent = (change >= 0 ? '+' : '') + change + '%';
+        trendEl.className = 'trend ' + (change >= 0 ? 'positive' : 'negative');
       }
     });
   }
@@ -193,7 +206,7 @@
           labels: chartData.labels,
           datasets: [{
             label: 'Views',
-            data: chartData.views,
+             chartData.views,
             borderColor: '#1D4ED8',
             backgroundColor: 'rgba(29, 78, 216, 0.1)',
             tension: 0.4,
@@ -249,7 +262,7 @@
          {
           labels: ['Likes', 'Comments', 'Shares'],
           datasets: [{
-            data: [65, 25, 10],
+             [65, 25, 10],
             backgroundColor: ['#1D4ED8', '#F59E0B', '#10B981'],
             borderWidth: 0
           }]
@@ -273,7 +286,7 @@
           labels: ['0%', '10%', '20%', '30%', '40%', '50%', '60%', '70%', '80%', '90%', '100%'],
           datasets: [{
             label: 'Retention %',
-            data: retentionData,
+             retentionData,
             borderColor: '#F59E0B',
             backgroundColor: 'rgba(245, 158, 11, 0.1)',
             tension: 0.3,
@@ -399,7 +412,7 @@
           labels: ['Direct', 'Search', 'Social', 'Referral'],
           datasets: [{
             label: '%',
-            data: [45, 30, 18, 7],
+             [45, 30, 18, 7],
             backgroundColor: ['#1D4ED8', '#F59E0B', '#10B981', '#8B5CF6'],
             borderWidth: 0
           }]
@@ -464,7 +477,6 @@
       btn.addEventListener('click', async (e) => {
         document.querySelectorAll('.table-btn').forEach(b => b.classList.remove('active'));
         e.target.classList.add('active');
-        // Re-sort and re-render (simplified)
         await loadTopContent();
       });
     });
@@ -472,7 +484,6 @@
   
   function setupCharts() {
     // Charts are initialized in renderCharts()
-    // This function is a placeholder for future enhancements
   }
   
   // ============================================
