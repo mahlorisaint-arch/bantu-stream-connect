@@ -344,7 +344,63 @@
     <!-- Toast Container -->
     <div id="toast-container"></div>
 
-    <!-- Custom JavaScript -->
+    <!-- ============================================ -->
+    <!-- PHASE 4: SCRIPT LOADING ORDER (CRITICAL)    -->
+    <!-- ============================================ -->
+
+    <!-- Phase 4: Creator Analytics Module (MUST load BEFORE dashboard) -->
+    <script src="js/creator-analytics.js"></script>
+
+    <!-- Main Dashboard Script (loads AFTER creator-analytics.js) -->
     <script src="js/creator-dashboard.js"></script>
+    
+    <!-- ============================================ -->
+    <!-- PHASE 4: DIAGNOSTIC SCRIPT (REMOVE IN PROD) -->
+    <!-- ============================================ -->
+    <script>
+    // Phase 4: Diagnostic check - Remove this in production
+    (function() {
+        console.log('🔍 Phase 4 Diagnostic Check');
+        console.log('---------------------------');
+        
+        // Check if creator-analytics.js loaded
+        if (typeof window.CreatorAnalytics !== 'undefined') {
+            console.log('✅ CreatorAnalytics module: LOADED');
+            console.log('📊 CreatorAnalytics class:', window.CreatorAnalytics);
+        } else {
+            console.error('❌ CreatorAnalytics module: NOT LOADED');
+            console.log('⚠️ Check that js/creator-analytics.js exists and is loading correctly');
+        }
+        
+        // Check script loading order
+        const scripts = document.querySelectorAll('script[src]');
+        let analyticsIndex = -1;
+        let dashboardIndex = -1;
+        
+        scripts.forEach((script, index) => {
+            if (script.src.includes('creator-analytics.js')) {
+                analyticsIndex = index;
+                console.log(`📄 creator-analytics.js found at position ${index}`);
+            }
+            if (script.src.includes('creator-dashboard.js')) {
+                dashboardIndex = index;
+                console.log(`📄 creator-dashboard.js found at position ${index}`);
+            }
+        });
+        
+        if (analyticsIndex === -1) {
+            console.error('❌ creator-analytics.js script tag not found!');
+        } else if (dashboardIndex === -1) {
+            console.error('❌ creator-dashboard.js script tag not found!');
+        } else if (analyticsIndex < dashboardIndex) {
+            console.log('✅ Script loading order is CORRECT (analytics before dashboard)');
+        } else {
+            console.error('❌ Script loading order is INCORRECT!');
+            console.log('   creator-analytics.js should come BEFORE creator-dashboard.js');
+        }
+        
+        console.log('---------------------------');
+    })();
+    </script>
 </body>
 </html>
