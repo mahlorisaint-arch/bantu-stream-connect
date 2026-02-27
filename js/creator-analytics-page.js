@@ -1,6 +1,6 @@
 // js/creator-analytics-page.js — Creator Analytics Page Controller
 // Bantu Stream Connect — Phase 4 Implementation
-// FIXED: Authentication + Config issues + Chart syntax errors resolved
+// FIXED: Authentication + Config issues + Chart syntax errors + Better fallback handling
 
 (function() {
   'use strict';
@@ -152,7 +152,7 @@
   }
   
   // ============================================
-  // DATA LOADING
+  // DATA LOADING - WITH IMPROVED FALLBACK HANDLING
   // ============================================
   
   async function loadAnalyticsData() {
@@ -172,8 +172,11 @@
     try {
       const dashboardData = await analyticsManager.getDashboardData(currentRange);
       
-      if (dashboardData.error) {
-        throw new Error(dashboardData.error);
+      // ✅ Handle empty/error response gracefully
+      if (!dashboardData || dashboardData.error) {
+        console.warn('⚠️ Analytics returned error, using fallback');
+        await loadFallbackData();
+        return;
       }
       
       renderSummaryCards(dashboardData.summary);
@@ -183,12 +186,13 @@
       
     } catch (error) {
       console.error('❌ Failed to load analytics:', error);
+      // ✅ Always fallback on any error
       await loadFallbackData();
     }
   }
   
+  // ✅ Ensure fallback always works with your schema
   async function loadFallbackData() {
-    // Fallback: query creator_analytics_summary view
     try {
       const { data: analytics, error } = await window.supabaseClient
         .from('creator_analytics_summary')
@@ -198,16 +202,18 @@
       
       if (analytics && !error) {
         renderSummaryCards({
-          totalViews: analytics.total_views || 0,
-          totalWatchTime: analytics.total_watch_seconds || 0,
-          totalUniqueViewers: analytics.unique_viewers || 0,
-          avgCompletionRate: analytics.avg_completion_rate || 0
+          totalViews: Number(analytics.total_views) || 0,
+          totalWatchTime: Number(analytics.total_watch_seconds) || 0,
+          totalUniqueViewers: Number(analytics.total_connectors) || 0,
+          avgCompletionRate: Number(analytics.engagement_percentage) || 0,
+          totalContent: Number(analytics.total_uploads) || 0,
+          totalEarnings: Number(analytics.total_earnings) || 0
         });
         
-        // Generate mock chart data
         renderCharts(generateMockChartData());
         await loadTopContent();
       } else {
+        console.log('ℹ️ No analytics data found, showing empty state');
         renderEmptyState();
       }
     } catch (error) {
@@ -375,7 +381,11 @@
     
     try {
       const topContent = await analyticsManager.getTopContent(10, currentRange);
-      renderTopContentTable(topContent);
+      if (topContent && topContent.length > 0) {
+        renderTopContentTable(topContent);
+      } else {
+        renderMockTopContent();
+      }
     } catch (error) {
       console.error('❌ Failed to load top content:', error);
       // Show mock data for demo
@@ -526,6 +536,12 @@
     document.querySelectorAll('.summary-card p').forEach(el => el.textContent = '0');
     document.getElementById('totalWatchTime').textContent = '0h';
     document.getElementById('avgCompletion').textContent = '0%';
+    
+    // Show mock data in charts even when no real data exists
+    renderCharts(generateMockChartData());
+    renderMockTopContent();
+    loadAudienceInsights();
+    
     showToast('No analytics data available yet', 'warning');
   }
   
