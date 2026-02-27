@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+<title>Analytics - Creator Dashboard - Bantu Stream Connect</title>
+<!-- Google Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Orbitron:wght@400;500;600;700&display=swap" rel="stylesheet">
+<!-- Font Awesome -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<!-- Supabase JS SDK -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<!-- Custom CSS -->
+<link rel="stylesheet" href="css/creator-dashboard.css">
+<link rel="stylesheet" href="css/creator-analytics.css">
+</head>
+<body>
+<!-- Loading Screen -->
+<div id="loading" class="loading-screen">
+<div class="spinner"></div>
+<div id="loading-text">Loading analytics...</div>
+</div>
+
+<!-- Animated Background -->
+<div class="animated-bg">
+<div class="glow-cycle glow-1"></div>
+<div class="glow-cycle glow-2"></div>
+<div class="glow-cycle glow-3"></div>
+<div class="glow-cycle glow-4"></div>
+</div>
+
+<!-- Main App -->
+<div id="app" style="display: none;">
+<!-- Header -->
+<header class="header">
+<div class="logo" onclick="window.location.href='creator-dashboard.html'">
+<div class="logo-icon">
+<svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+<rect width="40" height="40" rx="8" fill="#0F172A"/>
+<path d="M8 20 L12 16 L16 22 L20 18 L24 24 L28 20 L32 26" stroke="url(#pulse-gradient)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="32" cy="26" r="3" fill="#F59E0B"/>
+<defs>
+<linearGradient id="pulse-gradient" x1="8" y1="20" x2="32" y2="26" gradientUnits="userSpaceOnUse">
+<stop stop-color="#1D4ED8"/>
+<stop offset="1" stop-color="#F59E0B"/>
+</linearGradient>
+</defs>
+</svg>
+</div>
+<div class="logo-text">ANALYTICS</div>
+</div>
+<div class="header-actions">
+<button id="backBtn" class="icon-btn" title="Back to Dashboard">
+<i class="fas fa-arrow-left"></i>
+</button>
+<button id="refreshBtn" class="icon-btn" title="Refresh">
+<i class="fas fa-redo"></i>
+</button>
+<button id="profile-btn" class="profile-btn" title="Profile">
+<div class="profile-placeholder" id="userProfilePlaceholder">
+<i class="fas fa-user"></i>
+</div>
+</button>
+</div>
+</header>
+
+<!-- Main Content -->
+<main class="container">
+<!-- Time Range Selector -->
+<section class="analytics-controls">
+<div class="time-range-selector">
+<button class="time-range-btn active" data-range="7days">7 Days</button>
+<button class="time-range-btn" data-range="30days">30 Days</button>
+<button class="time-range-btn" data-range="90days">90 Days</button>
+<button class="time-range-btn" data-range="all">All Time</button>
+</div>
+<div class="content-filter">
+<select id="contentFilter" class="filter-select">
+<option value="all">All Content</option>
+<!-- Options populated by JS -->
+</select>
+</div>
+</section>
+
+<!-- Summary Cards -->
+<section class="summary-grid">
+<div class="summary-card">
+<div class="summary-icon"><i class="fas fa-eye"></i></div>
+<div class="summary-content">
+<h4>Total Views</h4>
+<p id="totalViews">0</p>
+<span id="viewsTrend" class="trend positive">+0%</span>
+</div>
+</div>
+<div class="summary-card">
+<div class="summary-icon"><i class="fas fa-clock"></i></div>
+<div class="summary-content">
+<h4>Watch Time</h4>
+<p id="totalWatchTime">0h</p>
+<span id="watchTimeTrend" class="trend positive">+0%</span>
+</div>
+</div>
+<div class="summary-card">
+<div class="summary-icon"><i class="fas fa-users"></i></div>
+<div class="summary-content">
+<h4>Unique Viewers</h4>
+<p id="uniqueViewers">0</p>
+<span id="viewersTrend" class="trend positive">+0%</span>
+</div>
+</div>
+<div class="summary-card">
+<div class="summary-icon"><i class="fas fa-chart-line"></i></div>
+<div class="summary-content">
+<h4>Avg. Completion</h4>
+<p id="avgCompletion">0%</p>
+<span id="completionTrend" class="trend positive">+0%</span>
+</div>
+</div>
+</section>
+
+<!-- Charts Section -->
+<section class="charts-section">
+<div class="chart-card">
+<h3><i class="fas fa-chart-area"></i> Views Over Time</h3>
+<canvas id="viewsChart"></canvas>
+</div>
+<div class="chart-card">
+<h3><i class="fas fa-chart-bar"></i> Watch Time Distribution</h3>
+<canvas id="watchTimeChart"></canvas>
+</div>
+<div class="chart-card">
+<h3><i class="fas fa-chart-pie"></i> Engagement Rate</h3>
+<canvas id="engagementChart"></canvas>
+</div>
+<div class="chart-card">
+<h3><i class="fas fa-user-clock"></i> Retention Curve</h3>
+<canvas id="retentionChart"></canvas>
+</div>
+</section>
+
+<!-- Top Content Table -->
+<section class="top-content-section">
+<div class="section-header">
+<h3><i class="fas fa-trophy"></i> Top Performing Content</h3>
+<div class="table-controls">
+<button class="table-btn active" data-sort="views">By Views</button>
+<button class="table-btn" data-sort="watchtime">By Watch Time</button>
+<button class="table-btn" data-sort="engagement">By Engagement</button>
+</div>
+</div>
+<div class="table-container">
+<table class="analytics-table">
+<thead>
+<tr>
+<th>Content</th>
+<th>Views</th>
+<th>Watch Time</th>
+<th>Avg. View Duration</th>
+<th>Completion Rate</th>
+<th>Engagement</th>
+<th>Actions</th>
+</tr>
+</thead>
+<tbody id="topContentBody">
+<!-- Rows populated by JS -->
+</tbody>
+</table>
+</div>
+</section>
+
+<!-- Audience Insights -->
+<section class="audience-section">
+<h3><i class="fas fa-users"></i> Audience Insights</h3>
+<div class="audience-grid">
+<div class="audience-card">
+<h4>Top Locations</h4>
+<div id="locationsList" class="locations-list">
+<!-- Populated by JS -->
+</div>
+</div>
+<div class="audience-card">
+<h4>Device Breakdown</h4>
+<canvas id="deviceChart"></canvas>
+</div>
+<div class="audience-card">
+<h4>Traffic Sources</h4>
+<canvas id="trafficChart"></canvas>
+</div>
+</div>
+</section>
+</main>
+
+<!-- Footer -->
+<footer class="footer">
+<p>Bantu Stream Connect © 2025 • Analytics powered by real-time data</p>
+</footer>
+
+<!-- Global Navigation -->
+<nav class="global-nav">
+<a href="index.html" class="nav-item">
+<i class="fas fa-home"></i>
+Home
+</a>
+<a href="trending_screen.html" class="nav-item">
+<i class="fas fa-fire"></i>
+Trending
+</a>
+<a href="content-library.html" class="nav-item">
+<i class="fas fa-th-large"></i>
+Library
+</a>
+<a href="creator-dashboard.html" class="nav-item">
+<i class="fas fa-user"></i>
+Creator
+</a>
+</nav>
+</div>
+
+<!-- Toast Container -->
+<div id="toast-container"></div>
+
+<!-- Scripts -->
+<script src="js/creator-analytics.js"></script>
+<script src="js/creator-analytics-page.js"></script>
+</body>
+</html>
