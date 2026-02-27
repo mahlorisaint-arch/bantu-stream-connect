@@ -1,6 +1,6 @@
 // js/creator-analytics.js — Creator Analytics Dashboard
 // Bantu Stream Connect — Phase 4 Implementation
-// ✅ FIXED: Uses creator_analytics_summary view, handles undefined data, fixes .in() queries
+// ✅ FIXED: Uses creator_analytics_summary view, handles undefined data, fixes .in() queries + Thumbnail URL construction
 
 (function() {
   'use strict';
@@ -216,21 +216,23 @@
     }
   };
 
-  // ✅ FIXED: getTopContent with proper .in() handling
+  // ✅ FIXED: getTopContent — Proper bigint handling + thumbnail URL construction
   CreatorAnalytics.prototype.getTopContent = async function(limit = 10, timeRange = '30days') {
     if (!this.userId) return [];
     const dateFrom = this._getDateFromRange(timeRange);
     
     try {
-      // ✅ Step 1: Get user's published content IDs
-      const { data: userContent } = await this.supabase
+      // ✅ Step 1: Get user's published content IDs (bigint) and their details
+      const { data: userContent, error: contentError } = await this.supabase
         .from('Content')
-        .select('id')
+        .select('id, title, thumbnail_url, duration, created_at, likes_count')
         .eq('user_id', this.userId)
         .eq('status', 'published');
       
+      if (contentError) throw contentError;
       if (!userContent || userContent.length === 0) return [];
       
+      // Extract bigint IDs
       const contentIds = userContent.map(c => c.id);
       
       // ✅ Step 2: Fetch daily analytics for those IDs
@@ -263,19 +265,49 @@
       
       if (sorted.length === 0) return [];
       
-      // ✅ Step 5: Fetch content details
-      const { data: contentDetails } = await this.supabase
-        .from('Content')
-        .select('id, title, thumbnail_url, duration, created_at')
-        .in('id', sorted.map(s => s.content_id));
-      
+      // ✅ Step 5: Create content map from the userContent we already fetched
       const contentMap = {};
-      (contentDetails || []).forEach(c => { contentMap[c.id] = c; });
+      userContent.forEach(c => {
+        contentMap[c.id] = {
+          id: c.id,
+          title: c.title || 'Untitled',
+          thumbnail_url: c.thumbnail_url,
+          duration: c.duration,
+          created_at: c.created_at,
+          likes_count: c.likes_count || 0
+        };
+      });
       
-      return sorted.map(item => ({
-        ...item,
-        Content: contentMap[item.content_id] || null
-      }));
+      // ✅ Step 6: Build final result with FIXED thumbnail URLs
+      return sorted.map(item => {
+        const content = contentMap[item.content_id];
+        
+        // ✅ Fix thumbnail URL using Supabase Storage format
+        let thumbnailUrl = null;
+        
+        if (content?.thumbnail_url) {
+          // Handle various URL formats
+          if (content.thumbnail_url.startsWith('http')) {
+            thumbnailUrl = content.thumbnail_url;
+          } else {
+            // Construct Supabase Storage URL
+            let cleanPath = content.thumbnail_url;
+            if (cleanPath.startsWith('/')) cleanPath = cleanPath.substring(1);
+            if (!cleanPath.includes('content-thumbnails/')) {
+              cleanPath = `content-thumbnails/${cleanPath}`;
+            }
+            thumbnailUrl = `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/${cleanPath}`;
+          }
+        }
+        
+        return {
+          ...item,
+          Content: {
+            ...content,
+            thumbnail_url: thumbnailUrl
+          }
+        };
+      });
       
     } catch (error) {
       console.error('❌ Top content failed:', error);
