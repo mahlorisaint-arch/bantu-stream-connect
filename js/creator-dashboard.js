@@ -222,7 +222,7 @@
     // PHASE 4: ANALYTICS INTEGRATION
     // ============================================
 
-    // ✅ Initialize Analytics Manager (Phase 4)
+    // ✅ Initialize Analytics Manager (Phase 4) - FIXED CONFIG
     async function initializeAnalyticsManager() {
         if (!window.CreatorAnalytics) {
             console.warn('⚠️ CreatorAnalytics module not loaded, using fallback');
@@ -233,7 +233,7 @@
         
         try {
             const analytics = new window.CreatorAnalytics({
-                supabaseClient: window.supabaseClient,
+                supabase: window.supabaseClient,  // ✅ CORRECT property name (was supabaseClient)
                 userId: currentUser.id,
                 onDataLoaded: (data) => {
                     console.log('📊 Analytics data loaded:', data);
@@ -1174,15 +1174,11 @@
             });
         }
         
-        // View analytics button - Phase 4 enhancement
+        // View analytics button - Phase 4 enhancement (FIXED: Navigate to creator-analytics.html)
         if (viewAnalytics) {
             viewAnalytics.addEventListener('click', () => {
-                if (analyticsManager) {
-                    // Navigate to detailed analytics page if available
-                    window.location.href = 'creator-analytics.html';
-                } else {
-                    showToast('Analytics dashboard coming soon!', 'info');
-                }
+                // Navigate to the NEW analytics page
+                window.location.href = 'creator-analytics.html';
             });
         }
         
@@ -1267,7 +1263,7 @@
             return;
         }
         
-        // Initialize Phase 4 Analytics Manager
+        // Initialize Phase 4 Analytics Manager (FIXED: Now uses correct config)
         analyticsManager = await initializeAnalyticsManager();
         
         // Load dashboard data (now using materialized view)
