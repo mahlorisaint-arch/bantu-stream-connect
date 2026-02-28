@@ -339,63 +339,104 @@ async function fetchConnectorCounts(creatorIds) {
 }
 
 // ============================================
-// SECTION 1: CONTINUE WATCHING
+// SECTION 1: CONTINUE WATCHING - FIXED
 // ============================================
 async function loadContinueWatchingSection() {
     const section = document.getElementById('continue-watching-section');
     const container = document.getElementById('continue-watching-grid');
-    
     if (!section || !container) return;
     
     // Hide section if user not logged in
-    if (!window.currentUser || !window.currentProfile) {
+    if (!window.currentUser) {
         section.style.display = 'none';
         return;
     }
     
     try {
-        // 1️⃣ Fetch raw content
-        const { data: views, error } = await supabaseAuth
-            .from('content_views')
+        console.log('📺 Loading Continue Watching for user:', window.currentUser.id);
+        
+        // ✅ 1️⃣ Fetch from watch_progress table (NOT content_views)
+        const { data: watchProgress, error } = await supabaseAuth
+            .from('watch_progress')
             .select(`
-                *,
-                content:content_id (*, user_profiles!user_id(*))
+                content_id,
+                last_position,
+                total_watch_time,
+                is_completed,
+                updated_at,
+                Content (
+                    id,
+                    title,
+                    thumbnail_url,
+                    duration,
+                    genre,
+                    status,
+                    user_profiles!user_id (
+                        id,
+                        full_name,
+                        username,
+                        avatar_url
+                    )
+                )
             `)
-            .eq('profile_id', window.currentProfile.id)
-            .is('completed_at', null)
+            .eq('user_id', window.currentUser.id)
+            .eq('is_completed', false)
+            .neq('last_position', 0)
+            .eq('Content.status', 'published')
             .order('updated_at', { ascending: false })
             .limit(20);
         
-        if (error) throw error;
+        if (error) {
+            console.error('❌ Continue Watching query error:', error);
+            throw error;
+        }
         
-        const contentList = views?.map(v => v.content).filter(Boolean) || [];
+        console.log('📊 Watch progress data:', watchProgress);
+        
+        // Filter out null content
+        const contentList = (watchProgress || [])
+            .filter(item => item.Content !== null)
+            .map(item => ({
+                ...item.Content,
+                watch_progress: {
+                    last_position: item.last_position,
+                    total_watch_time: item.total_watch_time,
+                    updated_at: item.updated_at
+                }
+            }));
         
         if (contentList.length === 0) {
+            console.log('ℹ️ No continue watching content found');
             section.style.display = 'none';
             return;
         }
         
-        // 2️⃣ Build complete dataset with metrics
+        // ✅ 2️⃣ Build complete dataset with metrics
         const sectionData = await buildSectionData(contentList);
         
-        // 3️⃣ Create progress map for continue watching
+        // ✅ 3️⃣ Create progress map with ACTUAL watch times
         const progressMap = {};
-        views.forEach(view => {
-            if (view.content_id && view.content) {
-                const progress = Math.min(100, Math.floor(
-                    (view.view_duration || view.progress_seconds || 0) / 
-                    (view.content.duration || 1) * 100
-                )) || 0;
+        watchProgress.forEach(item => {
+            if (item.content_id && item.Content) {
+                const duration = item.Content.duration || 1;
+                const position = item.last_position || 0;
+                const progress = Math.min(100, Math.floor((position / duration) * 100)) || 0;
                 
-                progressMap[view.content_id] = {
-                    progress,
-                    current: view.view_duration || view.progress_seconds || 0,
-                    total: view.content.duration || 0
+                progressMap[item.content_id] = {
+                    progress: progress,
+                    current: position,
+                    total: duration
                 };
+                
+                console.log('📍 Progress for content', item.content_id, ':', {
+                    position: position,
+                    duration: duration,
+                    progress: progress + '%'
+                });
             }
         });
         
-        // 4️⃣ Render once with progress data
+        // ✅ 4️⃣ Render with correct progress data
         section.style.display = 'block';
         renderContinueWatchingCards(container, sectionData, progressMap);
         
@@ -409,10 +450,16 @@ async function loadContinueWatchingSection() {
 function renderContinueWatchingCards(container, contents, progressMap) {
     container.innerHTML = '';
     
+    console.log('🎨 Rendering', contents.length, 'continue watching cards');
+    console.log('📊 Progress map:', progressMap);
+    
     contents.forEach(content => {
         if (!content) return;
         
+        // ✅ Get ACTUAL progress from watch_progress table
         const progress = progressMap[content.id] || { progress: 0, current: 0, total: 0 };
+        
+        console.log('📍 Card progress for', content.id, ':', progress);
         
         const thumbnailUrl = content.thumbnail_url
             ? contentSupabase.fixMediaUrl(content.thumbnail_url)
@@ -422,8 +469,8 @@ function renderContinueWatchingCards(container, contents, progressMap) {
         const creatorName = creatorProfile?.full_name || creatorProfile?.username || 'Creator';
         const initials = getInitials(creatorName);
         
-        const durationFormatted = formatDuration(content.duration || 0);
-        const currentFormatted = formatDuration(progress.current);
+        const durationFormatted = formatDuration(progress.total || content.duration || 0);
+        const currentFormatted = formatDuration(progress.current || 0);
         
         let avatarHtml = '';
         if (creatorProfile?.avatar_url) {
@@ -440,7 +487,7 @@ function renderContinueWatchingCards(container, contents, progressMap) {
         card.dataset.language = content.language || 'en';
         card.dataset.category = content.genre || '';
         
-        // ✅ CRITICAL: This HTML includes progress bar AND resume time display
+        // ✅ HTML with CORRECT progress bar and resume time
         card.innerHTML = `
             <div class="card-thumbnail">
                 <img src="${thumbnailUrl}" alt="${escapeHtml(content.title)}" loading="lazy">
@@ -451,7 +498,7 @@ function renderContinueWatchingCards(container, contents, progressMap) {
                 </div>
                 <div class="thumbnail-overlay"></div>
                 
-                <!-- ✅ PROGRESS BAR (visible on thumbnail) -->
+                <!-- ✅ PROGRESS BAR with ACTUAL width -->
                 <div class="watch-progress-container">
                     <div class="watch-progress-bar" style="width: ${progress.progress}%"></div>
                 </div>
@@ -459,32 +506,23 @@ function renderContinueWatchingCards(container, contents, progressMap) {
                 <div class="play-overlay">
                     <div class="play-icon"><i class="fas fa-play"></i></div>
                 </div>
-                
                 ${content.duration > 0 ? `<div class="duration-badge">${durationFormatted}</div>` : ''}
             </div>
-            
             <div class="card-content">
-                <h3 class="card-title" title="${escapeHtml(content.title)}">
-                    ${truncateText(escapeHtml(content.title), 50)}
-                </h3>
-                
+                <h3 class="card-title" title="${escapeHtml(content.title)}">${truncateText(escapeHtml(content.title), 50)}</h3>
                 <div class="creator-info">
                     <div class="creator-avatar-small">${avatarHtml}</div>
                     <div class="creator-name-small">${escapeHtml(creatorName)}</div>
                 </div>
                 
-                <!-- ✅ RESUME TIME DISPLAY (shows where user stopped) -->
+                <!-- ✅ ACTUAL RESUME TIME (not 0:00) -->
                 <div class="card-meta">
-                    <span class="resume-time">
-                        <i class="fas fa-clock"></i> 
-                        ${currentFormatted} / ${durationFormatted}
-                    </span>
-                    <span class="progress-percent">${progress.progress}%</span>
+                    <span><i class="fas fa-clock"></i> ${currentFormatted} / ${durationFormatted}</span>
+                    <span>${progress.progress}%</span>
                 </div>
                 
                 <div class="connector-info">
-                    <i class="fas fa-user-friends"></i> 
-                    ${formatNumber(content.metrics.connectors)} Connectors
+                    <i class="fas fa-user-friends"></i> ${formatNumber(content.metrics?.connectors || 0)} Connectors
                 </div>
             </div>
         `;
