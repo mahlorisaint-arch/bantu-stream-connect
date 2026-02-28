@@ -213,7 +213,7 @@ async function initializeHomeFeed() {
 }
 
 // ============================================
-// METRICS AGGREGATOR - NO SIDE EFFECTS
+// METRICS AGGREGATOR - FIXED CONNECTOR COUNTS
 // ============================================
 
 // Master builder - composes complete dataset for a section
@@ -223,8 +223,11 @@ async function buildSectionData(contentList) {
     const contentIds = contentList.map(c => c.id);
     const creatorIds = [...new Set(contentList.map(c => c.user_id).filter(Boolean))];
     
+    console.log('📊 Fetching metrics for', contentIds.length, 'content items and', creatorIds.length, 'creators');
+    
     const metrics = await fetchAllMetrics(contentIds, creatorIds);
     
+    // Enrich content with metrics
     return contentList.map(item => ({
         ...item,
         metrics: {
@@ -232,20 +235,25 @@ async function buildSectionData(contentList) {
             likes: metrics.likes[item.id] || 0,
             shares: metrics.shares[item.id] || 0,
             favorites: item.favorites_count || 0,
-            connectors: metrics.connectors[item.user_id] || 0
+            connectors: metrics.connectors[item.user_id] || 0  // ✅ Ensure this is set
         }
     }));
 }
 
 // Fetch all metrics in parallel
 async function fetchAllMetrics(contentIds, creatorIds) {
+    console.log('📊 Fetching metrics - Content IDs:', contentIds, 'Creator IDs:', creatorIds);
+    
     const [viewsRes, likesRes, sharesRes, connectorsRes] = await Promise.all([
         fetchViewCounts(contentIds),
         fetchLikeCounts(contentIds),
         fetchShareCounts(contentIds),
         fetchConnectorCounts(creatorIds)
     ]);
-
+    
+    console.log('📊 Metrics fetched - Views:', Object.keys(viewsRes).length, 
+                'Connectors:', Object.keys(connectorsRes).length);
+    
     return {
         views: viewsRes,
         likes: likesRes,
@@ -317,20 +325,33 @@ async function fetchShareCounts(contentIds) {
     }
 }
 
-// Connector counts per creator
+// Connector counts per creator - FIXED
 async function fetchConnectorCounts(creatorIds) {
-    if (!creatorIds.length) return {};
+    if (!creatorIds || creatorIds.length === 0) {
+        console.log('⚠️ No creator IDs to fetch connector counts for');
+        return {};
+    }
     
     try {
-        const { data } = await supabaseAuth
+        console.log('📊 Fetching connector counts for creators:', creatorIds);
+        
+        const { data, error } = await supabaseAuth
             .from("connectors")
             .select("connected_id")
-            .in("connected_id", creatorIds);
-
+            .in("connected_id", creatorIds)
+            .eq("connection_type", "creator");  // ✅ Ensure we're only counting creator connections
+        
+        if (error) {
+            console.error('Error fetching connector counts:', error);
+            return {};
+        }
+        
         const counts = {};
         data?.forEach(row => {
             counts[row.connected_id] = (counts[row.connected_id] || 0) + 1;
         });
+        
+        console.log('📊 Connector counts result:', counts);
         return counts;
     } catch (error) {
         console.error('Error fetching connector counts:', error);
@@ -411,7 +432,8 @@ async function loadContinueWatchingSection() {
             return;
         }
         
-        // ✅ 2️⃣ Build complete dataset with metrics
+        // ✅ 2️⃣ Build complete dataset with metrics (including connectors)
+        console.log('📊 Building section data with metrics for', contentList.length, 'items');
         const sectionData = await buildSectionData(contentList);
         
         // ✅ 3️⃣ Create progress map with ACTUAL watch times
@@ -436,7 +458,17 @@ async function loadContinueWatchingSection() {
             }
         });
         
-        // ✅ 4️⃣ Render with correct progress data
+        // ✅ 4️⃣ Debug: Log connector counts
+        console.log('📊 Connector counts in section data:', 
+            sectionData.map(item => ({
+                id: item.id,
+                title: item.title,
+                creator: item.user_profiles?.username,
+                connectors: item.metrics?.connectors
+            }))
+        );
+        
+        // ✅ 5️⃣ Render with correct progress data
         section.style.display = 'block';
         renderContinueWatchingCards(container, sectionData, progressMap);
         
@@ -458,8 +490,9 @@ function renderContinueWatchingCards(container, contents, progressMap) {
         
         // ✅ Get ACTUAL progress from watch_progress table
         const progress = progressMap[content.id] || { progress: 0, current: 0, total: 0 };
+        const connectorCount = content.metrics?.connectors || 0;
         
-        console.log('📍 Card progress for', content.id, ':', progress);
+        console.log('🎨 Card:', content.id, '- Connectors:', connectorCount);
         
         const thumbnailUrl = content.thumbnail_url
             ? contentSupabase.fixMediaUrl(content.thumbnail_url)
@@ -522,7 +555,7 @@ function renderContinueWatchingCards(container, contents, progressMap) {
                 </div>
                 
                 <div class="connector-info">
-                    <i class="fas fa-user-friends"></i> ${formatNumber(content.metrics?.connectors || 0)} Connectors
+                    <i class="fas fa-user-friends"></i> ${formatNumber(connectorCount)} Connectors
                 </div>
             </div>
         `;
