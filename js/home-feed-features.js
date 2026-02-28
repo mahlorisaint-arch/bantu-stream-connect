@@ -413,6 +413,7 @@ function renderContinueWatchingCards(container, contents, progressMap) {
         if (!content) return;
         
         const progress = progressMap[content.id] || { progress: 0, current: 0, total: 0 };
+        
         const thumbnailUrl = content.thumbnail_url
             ? contentSupabase.fixMediaUrl(content.thumbnail_url)
             : 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop';
@@ -420,6 +421,7 @@ function renderContinueWatchingCards(container, contents, progressMap) {
         const creatorProfile = content.user_profiles;
         const creatorName = creatorProfile?.full_name || creatorProfile?.username || 'Creator';
         const initials = getInitials(creatorName);
+        
         const durationFormatted = formatDuration(content.duration || 0);
         const currentFormatted = formatDuration(progress.current);
         
@@ -438,6 +440,7 @@ function renderContinueWatchingCards(container, contents, progressMap) {
         card.dataset.language = content.language || 'en';
         card.dataset.category = content.genre || '';
         
+        // ✅ CRITICAL: This HTML includes progress bar AND resume time display
         card.innerHTML = `
             <div class="card-thumbnail">
                 <img src="${thumbnailUrl}" alt="${escapeHtml(content.title)}" loading="lazy">
@@ -447,26 +450,41 @@ function renderContinueWatchingCards(container, contents, progressMap) {
                     </div>
                 </div>
                 <div class="thumbnail-overlay"></div>
+                
+                <!-- ✅ PROGRESS BAR (visible on thumbnail) -->
                 <div class="watch-progress-container">
                     <div class="watch-progress-bar" style="width: ${progress.progress}%"></div>
                 </div>
+                
                 <div class="play-overlay">
                     <div class="play-icon"><i class="fas fa-play"></i></div>
                 </div>
+                
                 ${content.duration > 0 ? `<div class="duration-badge">${durationFormatted}</div>` : ''}
             </div>
+            
             <div class="card-content">
-                <h3 class="card-title" title="${escapeHtml(content.title)}">${truncateText(escapeHtml(content.title), 50)}</h3>
+                <h3 class="card-title" title="${escapeHtml(content.title)}">
+                    ${truncateText(escapeHtml(content.title), 50)}
+                </h3>
+                
                 <div class="creator-info">
                     <div class="creator-avatar-small">${avatarHtml}</div>
                     <div class="creator-name-small">${escapeHtml(creatorName)}</div>
                 </div>
+                
+                <!-- ✅ RESUME TIME DISPLAY (shows where user stopped) -->
                 <div class="card-meta">
-                    <span><i class="fas fa-clock"></i> ${currentFormatted} / ${durationFormatted}</span>
-                    <span>${progress.progress}%</span>
+                    <span class="resume-time">
+                        <i class="fas fa-clock"></i> 
+                        ${currentFormatted} / ${durationFormatted}
+                    </span>
+                    <span class="progress-percent">${progress.progress}%</span>
                 </div>
+                
                 <div class="connector-info">
-                    <i class="fas fa-user-friends"></i> ${formatNumber(content.metrics.connectors)} Connectors
+                    <i class="fas fa-user-friends"></i> 
+                    ${formatNumber(content.metrics.connectors)} Connectors
                 </div>
             </div>
         `;
