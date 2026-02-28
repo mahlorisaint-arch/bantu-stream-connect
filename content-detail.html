@@ -109,6 +109,30 @@
       margin-top: 5px;
     }
   </style>
+  <!-- FIXED: Conditional preloads to prevent warnings on content-detail page -->
+  <script>
+    // Only preload home-feed resources if on home page
+    (function() {
+      if (window.location.pathname.includes('index.html') || window.location.pathname === '/') {
+        // Home page - preload resources
+        const link1 = document.createElement('link');
+        link1.rel = 'preload';
+        link1.href = 'js/home-feed.js';
+        link1.as = 'script';
+        document.head.appendChild(link1);
+        
+        const link2 = document.createElement('link');
+        link2.rel = 'preload';
+        link2.href = 'css/home-feed.css';
+        link2.as = 'style';
+        document.head.appendChild(link2);
+        
+        console.log('🏠 Home page detected - preloading home-feed resources');
+      } else {
+        console.log('📄 Content detail page detected - skipping home-feed preloads');
+      }
+    })();
+  </script>
 </head>
 <body>
   <!-- Loading Screen -->
@@ -669,7 +693,7 @@
   <!-- PHASE 3: Recommendation Engine -->
   <script src="js/recommendation-engine.js"></script>
   
-  <!-- PHASE 4: Streaming Manager -->
+  <!-- PHASE 4: Streaming Manager (UPDATED with network test fix) -->
   <script src="js/streaming-manager.js"></script>
   
   <!-- Main Content Detail Script - FIXED: Theme selector and navigation -->
