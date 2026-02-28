@@ -4,6 +4,8 @@
 // PHASE 2 UPDATE: Watch Later & Playlist System Integration
 // PHASE 3 UPDATE: Complete Recommendation Engine Integration
 // PHASE 4 UPDATE: HLS Streaming & Quality Selector Integration
+// FIXED: Added video load confirmation events
+
 console.log('🎬 Content Detail Initializing with RLS-compliant fixes and view tracking on Play button click...');
 
 // Global variables
@@ -1099,7 +1101,7 @@ function renderRelatedContent(items) {
 }
 
 // ====================================================
-// VIDEO PLAYER INITIALIZATION
+// VIDEO PLAYER INITIALIZATION - WITH LOAD CONFIRMATION
 // ====================================================
 function initializeEnhancedVideoPlayer() {
   const videoElement = document.getElementById('inlineVideoPlayer');
@@ -1157,6 +1159,18 @@ function initializeEnhancedVideoPlayer() {
     enhancedVideoPlayer.on('error', (error) => {
       console.error('🔴 Video player error:', error);
       showToast('Playback error occurred', 'error');
+    });
+    
+    // ✅ FIXED: Add video load confirmation events
+    enhancedVideoPlayer.on('loadeddata', () => {
+      console.log('✅ Video metadata loaded, ready to play');
+      // Hide any loading indicators
+      const placeholder = document.getElementById('videoPlaceholder');
+      if (placeholder) placeholder.style.display = 'none';
+    });
+    
+    enhancedVideoPlayer.on('canplay', () => {
+      console.log('✅ Video can start playing');
     });
     
     console.log('✅ Enhanced video player initialized successfully');
