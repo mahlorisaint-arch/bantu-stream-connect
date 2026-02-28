@@ -187,22 +187,48 @@
     color: var(--slate-grey);
 }
 
-/* Continue Watching Progress Bar */
+/* ✅ CONTINUE WATCHING - Progress Bar Styles */
 .watch-progress-container {
     position: absolute;
     bottom: 0;
     left: 0;
     width: 100%;
-    height: calc(0.25rem * var(--ui-scale));
-    background: rgba(255, 255, 255, 0.2);
+    height: 4px;
+    background: rgba(0, 0, 0, 0.5);
     z-index: 5;
 }
 
 .watch-progress-bar {
     height: 100%;
     background: var(--warm-gold);
-    border-radius: 0 calc(0.125rem * var(--ui-scale)) calc(0.125rem * var(--ui-scale)) 0;
+    border-radius: 0 2px 2px 0;
     transition: width 0.3s ease;
+}
+
+/* ✅ RESUME TIME DISPLAY */
+.resume-time {
+    color: var(--warm-gold);
+    font-weight: 600;
+    font-size: var(--font-xs);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.resume-time i {
+    font-size: 10px;
+}
+
+.progress-percent {
+    color: var(--slate-grey);
+    font-size: var(--font-xs);
+}
+
+/* Continue Badge */
+.continue-badge {
+    background: rgba(245, 158, 11, 0.9);
+    color: var(--deep-black);
+    font-weight: 600;
 }
 
 /* ============================================
