@@ -1,6 +1,6 @@
 // js/streaming-manager.js — HLS Streaming & Quality Control Manager
 // Bantu Stream Connect — Phase 4 Implementation
-// FIXED: Network speed test now uses health endpoint instead of missing test.bin
+// FIXED: Network speed test now uses REST endpoint instead of health endpoint (401 fix)
 
 (function() {
   'use strict';
@@ -230,9 +230,9 @@
     }
   };
 
-  // ✅ FIXED: Start network monitoring less aggressively
+  // ✅ Start network monitoring less aggressively
   StreamingManager.prototype._startNetworkMonitoring = function() {
-    // Check network speed every 60 seconds (not 30) to reduce requests
+    // Check network speed every 60 seconds to reduce requests
     this._networkCheckInterval = setInterval(() => {
       this._measureNetworkSpeed();
     }, 60000); // 60 seconds
@@ -243,20 +243,22 @@
     }, 5000);
   };
 
-  // ✅ FIXED: Safe network speed test (no more 400 errors)
+  // ✅ FIXED: Safe network speed test (no more 401 errors)
   StreamingManager.prototype._measureNetworkSpeed = async function() {
     try {
-      // Use a reliable, always-available endpoint for testing
-      // Instead of a non-existent test.bin, use the Supabase health endpoint
       const startTime = Date.now();
       
-      // Try fetching a small, reliable resource
+      // ✅ Use a simple, public REST endpoint that doesn't require auth
+      // The base REST API endpoint returns a 200 with no auth required for OPTIONS/HEAD
       const response = await fetch(
-        'https://ydnxqnbjoshvxteevemc.supabase.co/health',
+        'https://ydnxqnbjoshvxteevemc.supabase.co/rest/v1/',
         { 
           method: 'HEAD',
           cache: 'no-store',
-          mode: 'no-cors' // Prevent CORS issues
+          mode: 'cors',
+          headers: {
+            'Accept': 'application/json'
+          }
         }
       );
       
