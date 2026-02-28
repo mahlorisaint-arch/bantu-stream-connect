@@ -1,5 +1,6 @@
 // js/video-player.js - Bantu Stream Connect Enhanced Video Player
 // COMPLETE FIXED VERSION WITH ALL REQUIRED METHODS AND NULL CHECKS
+// FIXED: Video source preservation and error handling
 
 class EnhancedVideoPlayer {
   constructor(options = {}) {
@@ -151,6 +152,12 @@ class EnhancedVideoPlayer {
         // Add source to video element
         this.video.appendChild(source);
         
+        // Add error handling for video loading
+        this.video.addEventListener('error', (e) => {
+          console.error('❌ Video load error:', e);
+          this.showErrorOverlay('Unable to load video. Please check your connection.');
+        }, { once: true });
+        
         // Force reload
         this.video.load();
         
@@ -218,6 +225,10 @@ class EnhancedVideoPlayer {
       case 'canplay':
       case 'canplaythrough':
         this.handleCanPlay();
+        break;
+      case 'loadeddata':
+        console.log('✅ Video metadata loaded, ready to play');
+        this.emit('loadeddata', this.video);
         break;
     }
   }
@@ -298,7 +309,8 @@ class EnhancedVideoPlayer {
     this.isBuffering = false;
     clearTimeout(this.bufferingTimeout);
     this.hideBufferingIndicator();
-    
+    console.log('✅ Video can start playing');
+    this.emit('canplay', this.video);
     this.emit('bufferingend');
   }
   
