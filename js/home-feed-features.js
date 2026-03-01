@@ -1670,6 +1670,7 @@ function updateSidebarProfile() {
 }
 
 function setupSidebarNavigation() {
+    // Analytics
     document.getElementById('sidebar-analytics')?.addEventListener('click', (e) => {
         e.preventDefault();
         document.getElementById('sidebar-close')?.click();
@@ -1684,6 +1685,7 @@ function setupSidebarNavigation() {
         }
     });
     
+    // Notifications
     document.getElementById('sidebar-notifications')?.addEventListener('click', (e) => {
         e.preventDefault();
         document.getElementById('sidebar-close')?.click();
@@ -1694,6 +1696,7 @@ function setupSidebarNavigation() {
         }
     });
     
+    // Badges
     document.getElementById('sidebar-badges')?.addEventListener('click', (e) => {
         e.preventDefault();
         document.getElementById('sidebar-close')?.click();
@@ -1708,6 +1711,7 @@ function setupSidebarNavigation() {
         }
     });
     
+    // Watch Party
     document.getElementById('sidebar-watch-party')?.addEventListener('click', (e) => {
         e.preventDefault();
         document.getElementById('sidebar-close')?.click();
@@ -1722,6 +1726,7 @@ function setupSidebarNavigation() {
         }
     });
     
+    // Create Content
     document.getElementById('sidebar-create')?.addEventListener('click', async (e) => {
         e.preventDefault();
         document.getElementById('sidebar-close')?.click();
@@ -1734,6 +1739,7 @@ function setupSidebarNavigation() {
         }
     });
     
+    // Dashboard
     document.getElementById('sidebar-dashboard')?.addEventListener('click', async (e) => {
         e.preventDefault();
         document.getElementById('sidebar-close')?.click();
@@ -1744,6 +1750,18 @@ function setupSidebarNavigation() {
         } else {
             window.location.href = 'creator-dashboard.html';
         }
+    });
+    
+    // ✅ NEW: Watch History
+    document.getElementById('sidebar-watch-history')?.addEventListener('click', (e) => {
+        e.preventDefault();
+        document.getElementById('sidebar-close')?.click();
+        if (!window.currentUser) {
+            showToast('Please sign in to view watch history', 'warning');
+            window.location.href = `login.html?redirect=watch-history.html`;
+            return;
+        }
+        window.location.href = 'watch-history.html';
     });
 }
 
@@ -1806,6 +1824,7 @@ function setupNavigationButtons() {
     const navHomeBtn = document.getElementById('nav-home-btn');
     const navCreateBtn = document.getElementById('nav-create-btn');
     const navMenuBtn = document.getElementById('nav-menu-btn');
+    const navHistoryBtn = document.getElementById('nav-history-btn'); // ✅ NEW
     
     if (navHomeBtn) {
         navHomeBtn.addEventListener('click', () => {
@@ -1822,6 +1841,18 @@ function setupNavigationButtons() {
                 showToast('Please sign in to create content', 'warning');
                 window.location.href = 'login.html?redirect=creator-upload.html';
             }
+        });
+    }
+    
+    // ✅ NEW: Watch History navigation
+    if (navHistoryBtn) {
+        navHistoryBtn.addEventListener('click', () => {
+            if (!window.currentUser) {
+                showToast('Please sign in to view watch history', 'warning');
+                window.location.href = `login.html?redirect=watch-history.html`;
+                return;
+            }
+            window.location.href = 'watch-history.html';
         });
     }
     
