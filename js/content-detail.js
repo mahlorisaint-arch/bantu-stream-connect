@@ -3,10 +3,11 @@
 // PHASE 1 UPDATE: Watch Session Lifecycle Integration with syntax-safe WatchSession
 // PHASE 2 UPDATE: Watch Later & Playlist System Integration
 // PHASE 3 UPDATE: Complete Recommendation Engine Integration
-// PHASE 4 UPDATE: HLS Streaming & Quality Selector Integration
+// PHASE 4 UPDATE: HLS Streaming & Quality Selector Integration - COMPLETE
 // FIXED: Added video load confirmation events
 // PHASE 1-3 POLISH: Keyboard Shortcuts, Playlist Modal, Loading States
 // FIXED: Playlist duplicate key constraint error handling
+// PHASE 4 ENHANCEMENTS: Quality badge, network speed indicator, HLS.js integration
 
 console.log('🎬 Content Detail Initializing with RLS-compliant fixes and view tracking on Play button click...');
 
@@ -136,6 +137,52 @@ if (!window.StreamingManager) {
   const script = document.createElement('script');
   script.src = 'js/streaming-manager.js';
   document.head.appendChild(script);
+}
+
+// ============================================
+// PHASE 4: QUALITY BADGE UPDATE FUNCTION
+// ============================================
+function updateQualityBadge(quality) {
+  const badge = document.getElementById('qualityBadge');
+  if (!badge) return;
+  
+  if (quality && quality !== 'auto') {
+    badge.textContent = quality.toUpperCase();
+    badge.classList.add('visible');
+    
+    // Hide after 3 seconds
+    setTimeout(() => {
+      badge.classList.remove('visible');
+    }, 3000);
+  } else {
+    badge.classList.remove('visible');
+  }
+}
+
+// ============================================
+// PHASE 4: NETWORK SPEED INDICATOR UPDATE
+// ============================================
+function updateNetworkSpeedIndicator(speedMbps) {
+  const indicator = document.getElementById('networkSpeedIndicator');
+  const valueSpan = document.getElementById('networkSpeedValue');
+  if (!indicator || !valueSpan) return;
+  
+  if (speedMbps) {
+    valueSpan.textContent = speedMbps.toFixed(1) + ' Mbps';
+    indicator.classList.add('visible');
+    
+    // Update color based on speed
+    indicator.classList.remove('good', 'fair', 'poor');
+    if (speedMbps > 5) {
+      indicator.classList.add('good');
+    } else if (speedMbps > 2) {
+      indicator.classList.add('fair');
+    } else {
+      indicator.classList.add('poor');
+    }
+  } else {
+    indicator.classList.remove('visible');
+  }
 }
 
 // ============================================
@@ -315,6 +362,7 @@ async function initializeStreamingManager() {
       userId: currentUserId,
       onQualityChange: function(data) {
         console.log('📺 Quality changed:', data);
+        updateQualityBadge(data.quality);
         showToast('Quality: ' + data.quality, 'info');
       },
       onDataSaverToggle: function(data) {
@@ -327,6 +375,16 @@ async function initializeStreamingManager() {
     });
     
     await streamingManager.initialize();
+    
+    // Set up periodic network speed updates
+    setInterval(() => {
+      if (streamingManager) {
+        const speed = streamingManager.getNetworkSpeed();
+        if (speed) {
+          updateNetworkSpeedIndicator(speed / 1000000);
+        }
+      }
+    }, 5000);
     
     setupQualitySelector();
     setupDataSaverToggle();
@@ -1592,6 +1650,20 @@ function handlePlay() {
       });
   }
   
+  // PHASE 4: Check if HLS is available and use streaming manager
+  if (currentContent.hls_manifest_url && streamingManager) {
+    player.style.display = 'block';
+    const placeholder = document.getElementById('videoPlaceholder');
+    if (placeholder) placeholder.style.display = 'none';
+    
+    // Streaming manager will handle HLS playback
+    streamingManager.initialize();
+    
+    player.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    return;
+  }
+  
+  // Fallback to MP4 if no HLS
   let videoUrl = currentContent.file_url;
   console.log('📥 Raw file_url from database:', videoUrl);
   
