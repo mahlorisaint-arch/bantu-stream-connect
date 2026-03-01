@@ -368,6 +368,9 @@ async function fetchConnectorCounts(creatorIds) {
 // ============================================
 // SECTION 1: CONTINUE WATCHING - FIXED WITH USER_ID SELECTION
 // ============================================
+// ============================================
+// SECTION 1: CONTINUE WATCHING - FIXED EMBED SYNTAX
+// ============================================
 async function loadContinueWatchingSection() {
     const section = document.getElementById('continue-watching-section');
     const container = document.getElementById('continue-watching-grid');
@@ -380,12 +383,15 @@ async function loadContinueWatchingSection() {
     }
     
     try {
-        // ✅ FIXED: Clean select parameter - NO inline comments in query string
-        const {  views, error } = await supabaseAuth
+        console.log('📺 Loading Continue Watching for profile:', window.currentProfile.id);
+        
+        // ✅ FIXED: Use correct embed syntax for Content table (capital C)
+        // Option A: Use !Content to specify the target table name
+        const { data: views, error } = await supabaseAuth
             .from('content_views')
             .select(`
                 *,
-                content:content_id (
+                content:content_id!Content (
                     id,
                     title,
                     thumbnail_url,
@@ -408,33 +414,104 @@ async function loadContinueWatchingSection() {
             .order('updated_at', { ascending: false })
             .limit(20);
         
-        if (error) throw error;
+        // Option B (if Option A fails): Fetch in two steps
+        // Uncomment this block if the query above still fails:
+        /*
+        const { data: viewIds, error: viewError } = await supabaseAuth
+            .from('content_views')
+            .select('content_id, view_duration, progress_seconds, updated_at')
+            .eq('profile_id', window.currentProfile.id)
+            .is('completed_at', null)
+            .neq('last_position', 0)
+            .order('updated_at', { ascending: false })
+            .limit(20);
+        
+        if (viewError) throw viewError;
+        
+        if (!viewIds || viewIds.length === 0) {
+            section.style.display = 'none';
+            return;
+        }
+        
+        const contentIds = viewIds.map(v => v.content_id).filter(Boolean);
+        
+        const { data: contentList, error: contentError } = await supabaseAuth
+            .from('Content')
+            .select(`
+                id,
+                title,
+                thumbnail_url,
+                genre,
+                duration,
+                status,
+                user_id,
+                user_profiles!user_id (
+                    id,
+                    full_name,
+                    username,
+                    avatar_url
+                )
+            `)
+            .in('id', contentIds)
+            .eq('status', 'published');
+        
+        if (contentError) throw contentError;
+        
+        // Merge views with content
+        const views = viewIds.map(view => {
+            const content = contentList?.find(c => c.id === view.content_id);
+            return content ? { ...view, content } : null;
+        }).filter(Boolean);
+        */
+        
+        if (error) {
+            console.error('Continue Watching query error:', error);
+            throw error;
+        }
         
         const contentList = views?.map(v => v.content).filter(Boolean) || [];
         
         if (contentList.length === 0) {
+            console.log('ℹ️ No continue watching content found');
             section.style.display = 'none';
             return;
         }
         
         // Build complete dataset with metrics
+        console.log('📊 Building section data with metrics for', contentList.length, 'items');
         const sectionData = await buildSectionData(contentList);
         
         // Create progress map for continue watching
         const progressMap = {};
         views.forEach(view => {
             if (view.content_id && view.content) {
-                const progress = Math.min(100, Math.floor(
-                    (view.view_duration || view.progress_seconds || 0) /
-                    (view.content.duration || 1) * 100
-                )) || 0;
+                const duration = view.content.duration || 1;
+                const position = view.view_duration || view.progress_seconds || 0;
+                const progress = Math.min(100, Math.floor((position / duration) * 100)) || 0;
+                
                 progressMap[view.content_id] = {
-                    progress,
-                    current: view.view_duration || view.progress_seconds || 0,
-                    total: view.content.duration || 0
+                    progress: progress,
+                    current: position,
+                    total: duration
                 };
+                
+                console.log('📍 Progress for content', view.content_id, ':', {
+                    position: position,
+                    duration: duration,
+                    progress: progress + '%'
+                });
             }
         });
+        
+        // Debug: Log connector counts
+        console.log('📊 Connector counts in section ', 
+            sectionData.map(item => ({
+                id: item.id,
+                title: item.title,
+                creator: item.user_profiles?.username,
+                connectors: item.metrics?.connectors
+            }))
+        );
         
         // Render once with progress data
         section.style.display = 'block';
