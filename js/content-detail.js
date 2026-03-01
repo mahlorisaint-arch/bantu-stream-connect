@@ -5,6 +5,7 @@
 // PHASE 3 UPDATE: Complete Recommendation Engine Integration
 // PHASE 4 UPDATE: HLS Streaming & Quality Selector Integration
 // FIXED: Added video load confirmation events
+// PHASE 1-3 POLISH: Keyboard Shortcuts, Playlist Modal, Loading States
 
 console.log('🎬 Content Detail Initializing with RLS-compliant fixes and view tracking on Play button click...');
 
@@ -15,6 +16,8 @@ let watchSession = null; // PHASE 1: Watch session instance
 let playlistManager = null; // PHASE 2: Playlist manager instance
 let recommendationEngine = null; // PHASE 3: Recommendation engine instance
 let streamingManager = null; // PHASE 4: Streaming manager instance
+let keyboardShortcuts = null; // PHASE 1 POLISH: Keyboard shortcuts
+let playlistModal = null; // PHASE 2 POLISH: Playlist modal
 let isInitialized = false;
 let currentUserId = null;
 
@@ -77,6 +80,24 @@ document.addEventListener('DOMContentLoaded', async () => {
     await initializeRecommendationEngine();
   }
   
+  // ============================================
+  // PHASE 1 POLISH: Initialize keyboard shortcuts after video player
+  // ============================================
+  setTimeout(() => {
+    if (enhancedVideoPlayer?.video) {
+      initializeKeyboardShortcuts();
+    }
+  }, 1000);
+  
+  // ============================================
+  // PHASE 2 POLISH: Initialize playlist modal
+  // ============================================
+  if (currentUserId && currentContent?.id) {
+    setTimeout(() => {
+      initializePlaylistModal();
+    }, 500);
+  }
+  
   // Show app
   document.getElementById('loading').style.display = 'none';
   document.getElementById('app').style.display = 'block';
@@ -114,6 +135,82 @@ if (!window.StreamingManager) {
   const script = document.createElement('script');
   script.src = 'js/streaming-manager.js';
   document.head.appendChild(script);
+}
+
+// ============================================
+// PHASE 1 POLISH: Initialize Keyboard Shortcuts
+// ============================================
+function initializeKeyboardShortcuts() {
+  if (!window.KeyboardShortcuts) {
+    console.warn('⚠️ KeyboardShortcuts not loaded yet');
+    return;
+  }
+  
+  if (!enhancedVideoPlayer?.video) {
+    console.warn('⚠️ Video player not ready for keyboard shortcuts');
+    return;
+  }
+  
+  try {
+    keyboardShortcuts = new window.KeyboardShortcuts({
+      videoElement: enhancedVideoPlayer.video,
+      supabaseClient: window.supabaseClient,
+      contentId: currentContent?.id
+    });
+    
+    window.keyboardShortcuts = keyboardShortcuts;
+    console.log('✅ Keyboard shortcuts initialized');
+  } catch (error) {
+    console.error('❌ Failed to initialize keyboard shortcuts:', error);
+  }
+}
+
+// ============================================
+// PHASE 2 POLISH: Initialize Playlist Modal
+// ============================================
+function initializePlaylistModal() {
+  if (!window.PlaylistModal) {
+    console.warn('⚠️ PlaylistModal not loaded yet');
+    return;
+  }
+  
+  if (!currentUserId || !currentContent?.id) {
+    console.warn('⚠️ Cannot initialize playlist modal: missing user or content');
+    return;
+  }
+  
+  try {
+    playlistModal = new window.PlaylistModal({
+      supabase: window.supabaseClient,
+      userId: currentUserId,
+      contentId: currentContent.id
+    });
+    
+    window.playlistModal = playlistModal;
+    
+    // Update Watch Later button to open modal
+    const watchLaterBtn = document.getElementById('watchLaterBtn');
+    if (watchLaterBtn) {
+      // Clone to remove existing listeners
+      const newBtn = watchLaterBtn.cloneNode(true);
+      watchLaterBtn.parentNode.replaceChild(newBtn, watchLaterBtn);
+      
+      newBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        if (!currentUserId) {
+          showToast('Please sign in to use playlists', 'warning');
+          const redirect = encodeURIComponent(window.location.href);
+          window.location.href = `login.html?redirect=${redirect}`;
+          return;
+        }
+        playlistModal.open();
+      });
+    }
+    
+    console.log('✅ Playlist modal initialized');
+  } catch (error) {
+    console.error('❌ Failed to initialize playlist modal:', error);
+  }
 }
 
 async function waitForHelpers() {
@@ -280,7 +377,9 @@ function setupDataSaverToggle() {
   });
 }
 
-// PHASE 3: Load all recommendation rails
+// ============================================
+// PHASE 3 POLISH: Load all recommendation rails with loading states
+// ============================================
 async function loadRecommendationRails() {
   if (!recommendationEngine) return;
   
@@ -309,14 +408,77 @@ async function loadRecommendationRails() {
     }
   ];
   
+  // Show skeleton loaders for each rail
+  railConfigs.forEach(config => {
+    showRailSkeleton(config.containerId);
+  });
+  
   const results = await recommendationEngine.getMultipleRails(railConfigs);
   
   results.forEach(({ type, results: items }) => {
     const config = railConfigs.find(r => r.type === type);
     if (config && items?.length > 0) {
       renderRecommendationRail(config.containerId, config.title, items);
+    } else if (config) {
+      showRailEmpty(config.containerId, config.title);
     }
   });
+}
+
+// PHASE 3 POLISH: Show skeleton loader for rail
+function showRailSkeleton(containerId) {
+  const section = document.getElementById(containerId);
+  if (!section) return;
+  
+  section.style.display = 'block';
+  
+  if (!section.querySelector('.section-header')) {
+    section.innerHTML = `
+      <div class="section-header">
+        <h2 class="section-title">Loading...</h2>
+      </div>
+      <div class="content-grid" id="${containerId}-grid">
+        ${Array(6).fill().map(() => `
+          <div class="skeleton-card">
+            <div class="skeleton-thumbnail"></div>
+            <div class="skeleton-title"></div>
+            <div class="skeleton-creator"></div>
+            <div class="skeleton-stats"></div>
+          </div>
+        `).join('')}
+      </div>
+    `;
+  }
+}
+
+// PHASE 3 POLISH: Show empty state for rail
+function showRailEmpty(containerId, title) {
+  const section = document.getElementById(containerId);
+  if (!section) return;
+  
+  section.style.display = 'block';
+  
+  const grid = section.querySelector('.content-grid');
+  if (!grid) return;
+  
+  grid.innerHTML = `
+    <div class="empty-state" style="grid-column: 1 / -1; padding: 40px;">
+      <div class="empty-icon">
+        <i class="fas fa-magic" style="font-size: 48px; color: var(--slate-grey); opacity: 0.5;"></i>
+      </div>
+      <h3 style="color: var(--soft-white); margin: 15px 0 10px;">No ${title}</h3>
+      <p style="color: var(--slate-grey); font-size: 14px;">
+        ${title === 'Continue Watching' ? 'Start watching content to pick up where you left off' : 
+          title === 'Because You Watched' ? 'Watch more content to get personalized recommendations' :
+          'Check back later for more content'}
+      </p>
+      ${title === 'Because You Watched' ? `
+        <button class="btn btn-secondary" onclick="document.getElementById('relatedGrid').scrollIntoView({behavior:'smooth'})" style="margin-top: 15px;">
+          Browse Related Content
+        </button>
+      ` : ''}
+    </div>
+  `;
 }
 
 // PHASE 3: Render a single recommendation rail
@@ -412,7 +574,7 @@ async function updateWatchLaterButtonState() {
   }
 }
 
-// PHASE 2: Handle Watch Later button click
+// PHASE 2: Handle Watch Later button click (legacy, replaced by modal)
 async function handleWatchLaterToggle() {
   const btn = document.getElementById('watchLaterBtn');
   
@@ -469,7 +631,7 @@ async function handleWatchLaterToggle() {
   }
 }
 
-// PHASE 2: Setup Watch Later button event listener
+// PHASE 2: Setup Watch Later button event listener (legacy, kept for fallback)
 function setupWatchLaterButton() {
   const watchLaterBtn = document.getElementById('watchLaterBtn');
   
@@ -516,9 +678,15 @@ function setupAuthListeners() {
       if (streamingManager) {
         streamingManager.userId = currentUserId;
       }
+      
+      // Re-initialize playlist modal if needed
+      if (currentContent?.id && !playlistModal) {
+        setTimeout(initializePlaylistModal, 500);
+      }
     } else if (event === 'SIGNED_OUT') {
       currentUserId = null;
       playlistManager = null;
+      playlistModal = null;
       resetProfileUI();
       showToast('Signed out successfully', 'info');
       
@@ -1756,8 +1924,10 @@ function setupEventListeners() {
   }
   
   // ============================================
-  // PHASE 2: WATCH LATER BUTTON
+  // PHASE 2: WATCH LATER BUTTON (uses modal now)
   // ============================================
+  // The Watch Later button is now handled in initializePlaylistModal
+  // This is a fallback in case modal isn't initialized yet
   setupWatchLaterButton();
   
   const refreshBtn = document.getElementById('refreshCommentsBtn');
@@ -3139,6 +3309,8 @@ window.recordContentView = recordContentView;
 window.refreshCountsFromSource = refreshCountsFromSource;
 window.clearViewCache = clearViewCache;
 window.streamingManager = streamingManager;
+window.keyboardShortcuts = keyboardShortcuts;
+window.playlistModal = playlistModal;
 
 // PHASE 1: Page unload handler - clean up watch session
 window.addEventListener('beforeunload', function() {
@@ -3153,4 +3325,4 @@ window.addEventListener('beforeunload', function() {
   }
 });
 
-console.log('✅ Content detail script loaded with PHASE 4 STREAMING MANAGER integration');
+console.log('✅ Content detail script loaded with PHASE 4 STREAMING MANAGER integration and PHASE 1-3 POLISH');
