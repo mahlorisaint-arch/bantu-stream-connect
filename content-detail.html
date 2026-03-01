@@ -109,6 +109,27 @@
       margin-top: 5px;
     }
   </style>
+  <!-- PHASE 2 POLISH: Additional modal styles -->
+  <style>
+    /* PHASE 2 POLISH: Playlist Modal Styles */
+    .playlist-modal {
+      animation: modalFadeIn 0.3s ease;
+    }
+
+    @keyframes modalFadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    .playlist-modal-content {
+      animation: modalSlideIn 0.3s ease;
+    }
+
+    @keyframes modalSlideIn {
+      from { transform: translateY(-20px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+  </style>
   <!-- FIXED: Conditional preloads to prevent warnings on content-detail page -->
   <script>
     // Only preload home-feed resources if on home page
@@ -203,17 +224,17 @@
 
       <!-- Continue Watching Rail (PHASE 3 enhanced version) -->
       <section class="related-section" id="continueWatchingRail" style="display:none;">
-        <!-- Content injected by JS -->
+        <!-- Content injected by JS with skeleton loaders -->
       </section>
 
       <!-- Because You Watched Rail -->
       <section class="related-section" id="becauseYouWatchedRail" style="display:none;">
-        <!-- Content injected by JS -->
+        <!-- Content injected by JS with skeleton loaders -->
       </section>
 
       <!-- More From Creator Rail -->
       <section class="related-section" id="moreFromCreatorRail" style="display:none;">
-        <!-- Content injected by JS -->
+        <!-- Content injected by JS with skeleton loaders -->
       </section>
 
       <!-- Hero Section -->
@@ -695,6 +716,16 @@
   
   <!-- PHASE 4: Streaming Manager (UPDATED with network test fix) -->
   <script src="js/streaming-manager.js"></script>
+  
+  <!-- ============================================ -->
+  <!-- PHASE 1-3 POLISH: New Modules              -->
+  <!-- ============================================ -->
+  
+  <!-- PHASE 1 POLISH: Keyboard Shortcuts -->
+  <script src="js/keyboard-shortcuts.js"></script>
+  
+  <!-- PHASE 2 POLISH: Playlist Modal UI -->
+  <script src="js/playlist-modal.js"></script>
   
   <!-- Main Content Detail Script - FIXED: Theme selector and navigation -->
   <script src="js/content-detail.js"></script>
