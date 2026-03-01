@@ -380,10 +380,8 @@ async function loadContinueWatchingSection() {
     }
     
     try {
-        console.log('📺 Loading Continue Watching for user:', window.currentUser.id);
-        
-        // ✅ 1️⃣ Fetch raw content WITH EXPLICIT user_id selection
-        const { data: views, error } = await supabaseAuth
+        // ✅ FIXED: Clean select parameter - NO inline comments in query string
+        const {  views, error } = await supabaseAuth
             .from('content_views')
             .select(`
                 *,
@@ -394,7 +392,7 @@ async function loadContinueWatchingSection() {
                     genre,
                     duration,
                     status,
-                    user_id,  // ✅ CRITICAL: Explicitly select user_id
+                    user_id,
                     user_profiles!user_id (
                         id,
                         full_name,
@@ -410,66 +408,35 @@ async function loadContinueWatchingSection() {
             .order('updated_at', { ascending: false })
             .limit(20);
         
-        if (error) {
-            console.error('❌ Continue Watching query error:', error);
-            throw error;
-        }
+        if (error) throw error;
         
-        // ✅ 2️⃣ Map content WITH user_id preserved
-        const contentList = (views || [])
-            .map(v => {
-                if (!v.content) return null;
-                // Ensure user_id is on the content object for buildSectionData
-                return {
-                    ...v.content,
-                    user_id: v.content.user_id || (v.content.user_profiles?.id)
-                };
-            })
-            .filter(Boolean);
+        const contentList = views?.map(v => v.content).filter(Boolean) || [];
         
         if (contentList.length === 0) {
-            console.log('ℹ️ No continue watching content found');
             section.style.display = 'none';
             return;
         }
         
-        // ✅ 3️⃣ Build complete dataset with metrics (now has creatorIds)
-        console.log('📊 Building section data with metrics for', contentList.length, 'items');
+        // Build complete dataset with metrics
         const sectionData = await buildSectionData(contentList);
         
-        // ✅ 4️⃣ Create progress map for continue watching
+        // Create progress map for continue watching
         const progressMap = {};
         views.forEach(view => {
             if (view.content_id && view.content) {
-                const duration = view.content.duration || 1;
-                const position = view.last_position || 0;
-                const progress = Math.min(100, Math.floor((position / duration) * 100)) || 0;
-                
+                const progress = Math.min(100, Math.floor(
+                    (view.view_duration || view.progress_seconds || 0) /
+                    (view.content.duration || 1) * 100
+                )) || 0;
                 progressMap[view.content_id] = {
-                    progress: progress,
-                    current: position,
-                    total: duration
+                    progress,
+                    current: view.view_duration || view.progress_seconds || 0,
+                    total: view.content.duration || 0
                 };
-                
-                console.log('📍 Progress for content', view.content_id, ':', {
-                    position: position,
-                    duration: duration,
-                    progress: progress + '%'
-                });
             }
         });
         
-        // ✅ 5️⃣ Debug: Log connector counts
-        console.log('📊 Connector counts in section data:', 
-            sectionData.map(item => ({
-                id: item.id,
-                title: item.title,
-                creator: item.user_profiles?.username,
-                connectors: item.metrics?.connectors
-            }))
-        );
-        
-        // ✅ 6️⃣ Render with correct connector counts
+        // Render once with progress data
         section.style.display = 'block';
         renderContinueWatchingCards(container, sectionData, progressMap);
         
