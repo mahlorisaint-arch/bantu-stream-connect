@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+<title>Watch History - Bantu Stream Connect</title>
+<!-- Google Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Orbitron:wght@400;500;600;700&display=swap" rel="stylesheet">
+<!-- Font Awesome -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<!-- Supabase JS SDK -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<!-- Base Styles -->
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/components.css">
+<link rel="stylesheet" href="css/content-detail.css">
+<!-- Watch History Specific Styles -->
+<link rel="stylesheet" href="css/watch-history.css">
+</head>
+<body>
+<!-- Loading Screen -->
+<div id="loading" class="loading-screen">
+<div class="spinner"></div>
+<div id="loading-text">Loading your watch history...</div>
+</div>
+
+<!-- Animated Background -->
+<div class="animated-bg">
+<div class="glow-cycle glow-1"></div>
+<div class="glow-cycle glow-2"></div>
+<div class="glow-cycle glow-3"></div>
+<div class="glow-cycle glow-4"></div>
+</div>
+
+<!-- Main App (hidden until loaded) -->
+<div id="app" style="display: none;">
+<!-- Header (same as content-detail.html) -->
+<header class="header">
+<div class="logo" onclick="window.location.href='index.html'">
+<div class="logo-icon">
+<img src="assets/icon/bantu_stream_connect_icon.png" alt="Bantu Stream Connect Logo">
+</div>
+<div class="logo-text">BANTU STREAM CONNECT</div>
+</div>
+<div class="header-actions">
+<button id="search-btn" class="icon-btn" title="Search"><i class="fas fa-search"></i></button>
+<button id="notifications-btn" class="icon-btn" title="Notifications">
+<i class="fas fa-bell"></i>
+<span class="notification-badge" id="notification-count" style="display: none;">0</span>
+</button>
+<button id="profile-btn" class="profile-btn" title="Profile">
+<div class="profile-placeholder" id="userProfilePlaceholder"><i class="fas fa-user"></i></div>
+</button>
+</div>
+</header>
+
+<!-- Main Content -->
+<main class="container">
+<!-- Page Header -->
+<section class="page-header">
+<h1><i class="fas fa-history" style="color: var(--warm-gold);"></i> Watch History</h1>
+<p class="page-subtitle">All the content you've watched</p>
+</section>
+
+<!-- Filters Bar -->
+<section class="filters-bar">
+<div class="filter-group">
+<label>Sort By</label>
+<select id="sortFilter" class="filter-select">
+<option value="recent">Most Recent</option>
+<option value="oldest">Oldest First</option>
+<option value="duration">Longest Watched</option>
+<option value="title">Title A-Z</option>
+</select>
+</div>
+<div class="filter-group">
+<label>Status</label>
+<select id="statusFilter" class="filter-select">
+<option value="all">All</option>
+<option value="in-progress">In Progress</option>
+<option value="completed">Completed</option>
+</select>
+</div>
+<div class="filter-group">
+<label>Time Period</label>
+<select id="timeFilter" class="filter-select">
+<option value="all">All Time</option>
+<option value="today">Today</option>
+<option value="week">This Week</option>
+<option value="month">This Month</option>
+</select>
+</div>
+<button id="clearHistoryBtn" class="btn btn-danger">
+<i class="fas fa-trash"></i> Clear History
+</button>
+</section>
+
+<!-- Stats Summary -->
+<section class="history-stats">
+<div class="stat-card">
+<i class="fas fa-clock"></i>
+<div>
+<div class="stat-value" id="totalWatchTime">0h 0m</div>
+<div class="stat-label">Total Watch Time</div>
+</div>
+</div>
+<div class="stat-card">
+<i class="fas fa-video"></i>
+<div>
+<div class="stat-value" id="totalVideos">0</div>
+<div class="stat-label">Videos Watched</div>
+</div>
+</div>
+<div class="stat-card">
+<i class="fas fa-check-circle"></i>
+<div>
+<div class="stat-value" id="completedCount">0</div>
+<div class="stat-label">Completed</div>
+</div>
+</div>
+</section>
+
+<!-- Watch History Grid -->
+<section class="history-section">
+<div class="section-header">
+<h2>Your Watch History</h2>
+<span id="historyCount" class="history-count">0 items</span>
+</div>
+<div class="content-grid" id="historyGrid">
+<!-- History items will be loaded here -->
+</div>
+</section>
+
+<!-- Empty State (hidden by default) -->
+<div id="emptyState" class="empty-state" style="display: none;">
+<i class="fas fa-history" style="font-size: 4rem; color: var(--slate-grey); margin-bottom: 1rem;"></i>
+<h3>No Watch History Yet</h3>
+<p>Start watching content to build your history</p>
+<a href="index.html" class="btn btn-primary" style="margin-top: 1rem;">
+<i class="fas fa-home"></i> Go to Home
+</a>
+</div>
+</main>
+
+<!-- Footer -->
+<footer class="footer">
+<p>Bantu Stream Connect © 2025 • Built in South Africa</p>
+</footer>
+
+<!-- Global Navigation (same as other pages) -->
+<div class="navigation-button-container">
+<div class="navigation-button">
+<div class="nav-icon" onclick="window.location.href='index.html'" title="Home"><i class="fas fa-home"></i></div>
+<div class="nav-icon" id="nav-theme-toggle" title="Change Theme"><i class="fas fa-palette"></i></div>
+<div class="nav-icon" onclick="window.location.href='creator-upload.html'" title="Create"><i class="fas fa-plus-circle"></i></div>
+<div class="nav-icon" onclick="window.location.href='creator-dashboard.html'" title="Dashboard"><i class="fas fa-tachometer-alt"></i></div>
+<div class="nav-icon" id="nav-notifications-btn" title="Notifications"><i class="fas fa-bell"></i></div>
+</div>
+</div>
+
+<!-- Toast Container -->
+<div id="toast-container"></div>
+</div>
+
+<!-- Initialize Supabase -->
+<script>
+const SUPABASE_URL = 'https://ydnxqnbjoshvxteevemc.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U';
+window.supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+</script>
+
+<!-- Scripts -->
+<script src="js/state-manager.js"></script>
+<script src="js/supabase-helper.js"></script>
+<script src="js/auth-helper.js"></script>
+<script src="js/watch-history.js"></script>
+</body>
+</html>
