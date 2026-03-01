@@ -224,6 +224,300 @@
   }
 }
 
+/* ============================================ */
+/* PHASE 3 POLISH: Skeleton Loading States */
+/* ============================================ */
+.skeleton-card {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  overflow: hidden;
+  animation: skeleton-pulse 1.5s ease-in-out infinite;
+}
+
+.skeleton-thumbnail {
+  width: 100%;
+  aspect-ratio: 16/9;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.skeleton-title {
+  height: 20px;
+  width: 80%;
+  margin: 15px 10px 10px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+}
+
+.skeleton-creator {
+  height: 16px;
+  width: 60%;
+  margin: 0 10px 10px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+}
+
+.skeleton-stats {
+  height: 14px;
+  width: 90%;
+  margin: 0 10px 10px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+}
+
+@keyframes skeleton-pulse {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 0.3; }
+}
+
+/* ============================================ */
+/* PHASE 3 POLISH: Empty State Enhancements */
+/* ============================================ */
+.empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--slate-grey);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--card-border);
+  border-radius: 16px;
+  backdrop-filter: blur(10px);
+  grid-column: 1 / -1;
+}
+
+.empty-state .empty-icon {
+  margin-bottom: 20px;
+}
+
+.empty-state h3 {
+  color: var(--soft-white);
+  font-size: 18px;
+  margin: 15px 0 10px;
+}
+
+.empty-state p {
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* ============================================ */
+/* PHASE 3 POLISH: Retry Button */
+/* ============================================ */
+.retry-recommendations-btn {
+  margin-top: 15px;
+  padding: 10px 20px;
+  background: rgba(29, 78, 216, 0.2);
+  border: 1px solid var(--bantu-blue);
+  border-radius: 8px;
+  color: var(--bantu-blue);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.retry-recommendations-btn:hover {
+  background: rgba(29, 78, 216, 0.3);
+  transform: translateY(-2px);
+}
+
+/* ============================================ */
+/* PHASE 1 POLISH: Keyboard Shortcut Feedback */
+/* ============================================ */
+.shortcut-feedback {
+  position: fixed;
+  bottom: 100px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--card-bg);
+  color: var(--soft-white);
+  padding: 12px 24px;
+  border-radius: 8px;
+  border: 1px solid var(--card-border);
+  font-weight: 500;
+  z-index: 1000;
+  animation: fadeInOut 2s ease;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+@keyframes fadeInOut {
+  0% { opacity: 0; transform: translateX(-50%) translateY(20px); }
+  15% { opacity: 1; transform: translateX(-50%) translateY(0); }
+  85% { opacity: 1; transform: translateX(-50%) translateY(0); }
+  100% { opacity: 0; transform: translateX(-50%) translateY(-20px); }
+}
+
+/* ============================================ */
+/* PHASE 2 POLISH: Playlist Modal Styles */
+/* ============================================ */
+.playlist-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(10px);
+  z-index: 2000;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  animation: modalFadeIn 0.3s ease;
+}
+
+.playlist-modal.active {
+  display: flex;
+}
+
+@keyframes modalFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.playlist-modal-content {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 16px;
+  padding: 30px;
+  max-width: 500px;
+  width: 90%;
+  max-height: 80vh;
+  overflow-y: auto;
+  animation: modalSlideIn 0.3s ease;
+}
+
+@keyframes modalSlideIn {
+  from { transform: translateY(-20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.playlist-modal-content h2 {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 20px;
+  color: var(--soft-white);
+  margin: 0;
+}
+
+.playlist-modal-close {
+  background: transparent;
+  border: none;
+  color: var(--slate-grey);
+  font-size: 20px;
+  cursor: pointer;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.playlist-modal-close:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--soft-white);
+}
+
+.playlist-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 15px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--card-border);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-bottom: 10px;
+}
+
+.playlist-item:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.playlist-item i {
+  color: var(--warm-gold);
+  margin-right: 10px;
+}
+
+.playlist-item span {
+  color: var(--soft-white);
+  font-size: 14px;
+}
+
+.add-to-playlist-btn {
+  padding: 6px 12px;
+  background: var(--bantu-blue);
+  border: none;
+  border-radius: 6px;
+  color: white;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.add-to-playlist-btn:hover {
+  background: var(--warm-gold);
+  transform: scale(1.05);
+}
+
+#quick-watch-later-btn {
+  width: 100%;
+  padding: 12px;
+  background: rgba(245, 158, 11, 0.2);
+  border: 1px solid var(--warm-gold);
+  border-radius: 8px;
+  color: var(--warm-gold);
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+}
+
+#quick-watch-later-btn:hover {
+  background: rgba(245, 158, 11, 0.3);
+  transform: translateY(-2px);
+}
+
+#new-playlist-name {
+  flex: 1;
+  padding: 10px 15px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--card-border);
+  border-radius: 8px;
+  color: var(--soft-white);
+  font-size: 14px;
+  outline: none;
+}
+
+#new-playlist-name:focus {
+  border-color: var(--bantu-blue);
+}
+
+#create-playlist-btn {
+  padding: 10px 20px;
+  background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+  border: none;
+  border-radius: 8px;
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+#create-playlist-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(29, 78, 216, 0.3);
+}
+
 /* PHASE 2: Watch Later Button States */
 #watchLaterBtn {
   transition: all 0.2s ease;
