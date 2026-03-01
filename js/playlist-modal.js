@@ -1,5 +1,6 @@
 // js/playlist-modal.js — Watch Later Modal & Playlist Management
 // Bantu Stream Connect — Phase 2 Polish
+// FIXED: Duplicate key constraint error handling with pre-check
 
 (function() {
   'use strict';
@@ -272,8 +273,9 @@
         return;
       }
       
+      // ✅ FIXED: Render playlists with proper click handlers and XSS protection
       container.innerHTML = this.playlists.map(playlist => {
-        const isInPlaylist = playlist.name === 'Watch Later' ? 'quick-add' : 'add';
+        const isWatchLater = playlist.name === 'Watch Later';
         return `
           <div class="playlist-item" data-playlist-id="${playlist.id}" data-playlist-name="${playlist.name}" style="
             display: flex;
@@ -287,10 +289,10 @@
             transition: all 0.2s ease;
           " onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='rgba(255,255,255,0.05)'">
             <div style="display:flex;align-items:center;gap:10px">
-              <i class="fas fa-list" style="color:var(--warm-gold)"></i>
-              <span style="color:var(--soft-white);font-size:14px">${playlist.name}</span>
+              <i class="fas ${isWatchLater ? 'fa-clock' : 'fa-list'}" style="color:var(--warm-gold)"></i>
+              <span style="color:var(--soft-white);font-size:14px">${this._escapeHtml(playlist.name)}</span>
             </div>
-            <button class="add-to-playlist-btn" data-action="${isInPlaylist}" style="
+            <button class="add-to-playlist-btn" data-playlist-id="${playlist.id}" data-playlist-name="${playlist.name}" style="
               padding: 6px 12px;
               background: var(--bantu-blue);
               border: none;
@@ -304,13 +306,12 @@
         `;
       }).join('');
       
-      // Add click handlers
+      // ✅ FIXED: Add click handlers to buttons
       container.querySelectorAll('.add-to-playlist-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
           e.stopPropagation();
-          const playlistItem = btn.closest('.playlist-item');
-          const playlistId = playlistItem.dataset.playlistId;
-          const playlistName = playlistItem.dataset.playlistName;
+          const playlistId = btn.dataset.playlistId;
+          const playlistName = btn.dataset.playlistName;
           this.addToPlaylist(playlistId, playlistName);
         });
       });
@@ -354,6 +355,35 @@
     }
   };
   
+  // ✅ FIXED: Add helper method for HTML escaping to prevent XSS
+  PlaylistModal.prototype._escapeHtml = function(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  };
+  
+  // ✅ FIXED: Helper method to get next position in playlist
+  PlaylistModal.prototype._getNextPosition = async function(playlistId) {
+    try {
+      const { data, error } = await this.supabase
+        .from('playlist_items')
+        .select('position')
+        .eq('playlist_id', playlistId)
+        .order('position', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      
+      if (error) throw error;
+      
+      return data ? (data.position + 1) : 0;
+    } catch (error) {
+      console.warn('Error getting next position:', error);
+      return 0;
+    }
+  };
+  
+  // ✅ FIXED: Check if item exists before adding (prevents 409 conflict)
   PlaylistModal.prototype.addToPlaylist = async function(playlistId, playlistName) {
     if (!this.contentId) {
       showToast('No content selected', 'error');
@@ -361,25 +391,52 @@
     }
     
     try {
-      const { error } = await this.supabase
+      // ✅ STEP 1: Check if content already exists in this playlist
+      const { data: existing, error: checkError } = await this.supabase
+        .from('playlist_items')
+        .select('id')
+        .eq('playlist_id', playlistId)
+        .eq('content_id', this.contentId)
+        .maybeSingle();
+      
+      if (checkError) throw checkError;
+      
+      // ✅ STEP 2: If exists, show message instead of error
+      if (existing) {
+        showToast(`Already in ${playlistName}`, 'info');
+        this.close();
+        return;
+      }
+      
+      // ✅ STEP 3: Add item if not exists
+      const { data, error } = await this.supabase
         .from('playlist_items')
         .insert({
           playlist_id: playlistId,
           content_id: this.contentId,
-          position: 0
-        });
+          position: await this._getNextPosition(playlistId)
+        })
+        .select()
+        .single();
       
       if (error) throw error;
       
-      showToast(`Added to ${playlistName}`, 'success');
+      showToast(`✅ Added to ${playlistName}`, 'success');
       this.close();
       
     } catch (error) {
       console.error('Error adding to playlist:', error);
-      showToast('Failed to add to playlist', 'error');
+      // ✅ STEP 4: Handle duplicate key error gracefully
+      if (error.code === '23505') {
+        showToast(`Already in ${playlistName}`, 'info');
+      } else {
+        showToast('Failed to add to playlist', 'error');
+      }
+      this.close();
     }
   };
   
+  // ✅ FIXED: Quick add to Watch Later with duplicate check
   PlaylistModal.prototype.quickAddToWatchLater = async function() {
     if (!this.contentId) {
       showToast('No content selected', 'error');
@@ -411,13 +468,29 @@
         watchLater = newPlaylist;
       }
       
+      // ✅ Check if already exists
+      const { data: existing, error: checkError } = await this.supabase
+        .from('playlist_items')
+        .select('id')
+        .eq('playlist_id', watchLater.id)
+        .eq('content_id', this.contentId)
+        .maybeSingle();
+      
+      if (checkError) throw checkError;
+      
+      if (existing) {
+        showToast('Already in Watch Later', 'info');
+        this.close();
+        return;
+      }
+      
       // Add to Watch Later
       const { error } = await this.supabase
         .from('playlist_items')
         .insert({
           playlist_id: watchLater.id,
           content_id: this.contentId,
-          position: 0
+          position: await this._getNextPosition(watchLater.id)
         });
       
       if (error) throw error;
@@ -427,7 +500,11 @@
       
     } catch (error) {
       console.error('Error adding to Watch Later:', error);
-      showToast('Failed to add to Watch Later', 'error');
+      if (error.code === '23505') {
+        showToast('Already in Watch Later', 'info');
+      } else {
+        showToast('Failed to add to Watch Later', 'error');
+      }
     }
   };
   
