@@ -221,13 +221,7 @@ async function buildSectionData(contentList) {
     if (!contentList || contentList.length === 0) return [];
     
     const contentIds = contentList.map(c => c.id);
-    
-    // ✅ FIX: Extract user_id from content OR from nested user_profiles
-    const creatorIds = [...new Set(
-        contentList
-            .map(c => c.user_id || c.user_profiles?.id)
-            .filter(Boolean)
-    )];
+    const creatorIds = [...new Set(contentList.map(c => c.user_id).filter(Boolean))];
     
     console.log('📊 Fetching metrics for', contentIds.length, 'content items and', creatorIds.length, 'creators');
     
@@ -241,7 +235,7 @@ async function buildSectionData(contentList) {
             likes: metrics.likes[item.id] || 0,
             shares: metrics.shares[item.id] || 0,
             favorites: item.favorites_count || 0,
-            connectors: metrics.connectors[item.user_id || item.user_profiles?.id] || 0  // ✅ FIX: Use fallback
+            connectors: metrics.connectors[item.user_id] || 0  // ✅ Ensure this is set
         }
     }));
 }
@@ -331,7 +325,7 @@ async function fetchShareCounts(contentIds) {
     }
 }
 
-// Connector counts per creator
+// Connector counts per creator - FIXED
 async function fetchConnectorCounts(creatorIds) {
     if (!creatorIds || creatorIds.length === 0) {
         console.log('⚠️ No creator IDs to fetch connector counts for');
@@ -366,10 +360,7 @@ async function fetchConnectorCounts(creatorIds) {
 }
 
 // ============================================
-// SECTION 1: CONTINUE WATCHING - FIXED WITH USER_ID SELECTION
-// ============================================
-// ============================================
-// SECTION 1: CONTINUE WATCHING - FIXED EMBED SYNTAX
+// SECTION 1: CONTINUE WATCHING - FIXED
 // ============================================
 async function loadContinueWatchingSection() {
     const section = document.getElementById('continue-watching-section');
@@ -377,69 +368,63 @@ async function loadContinueWatchingSection() {
     if (!section || !container) return;
     
     // Hide section if user not logged in
-    if (!window.currentUser || !window.currentProfile) {
+    if (!window.currentUser) {
         section.style.display = 'none';
         return;
     }
     
     try {
-        console.log('📺 Loading Continue Watching for profile:', window.currentProfile.id);
+        console.log('📺 Loading Continue Watching for user:', window.currentUser.id);
         
-        // ✅ FIXED: Use correct embed syntax for Content table (capital C)
-        // Option A: Use !Content to specify the target table name
-        const { data: viewIds, error: viewError } = await supabaseAuth
-            .from('content_views')
-            .select('content_id, view_duration, progress_seconds, updated_at')
-            .eq('profile_id', window.currentProfile.id)
-            .is('completed_at', null)
+        // ✅ 1️⃣ Fetch from watch_progress table (NOT content_views)
+        const { data: watchProgress, error } = await supabaseAuth
+            .from('watch_progress')
+            .select(`
+                content_id,
+                last_position,
+                total_watch_time,
+                is_completed,
+                updated_at,
+                Content (
+                    id,
+                    title,
+                    thumbnail_url,
+                    duration,
+                    genre,
+                    status,
+                    user_profiles!user_id (
+                        id,
+                        full_name,
+                        username,
+                        avatar_url
+                    )
+                )
+            `)
+            .eq('user_id', window.currentUser.id)
+            .eq('is_completed', false)
             .neq('last_position', 0)
+            .eq('Content.status', 'published')
             .order('updated_at', { ascending: false })
             .limit(20);
         
-        if (viewError) throw viewError;
-        
-        if (!viewIds || viewIds.length === 0) {
-            section.style.display = 'none';
-            return;
-        }
-        
-        const contentIds = viewIds.map(v => v.content_id).filter(Boolean);
-        
-        const { data: contentList, error: contentError } = await supabaseAuth
-            .from('Content')
-            .select(`
-                id,
-                title,
-                thumbnail_url,
-                genre,
-                duration,
-                status,
-                user_id,
-                user_profiles!user_id (
-                    id,
-                    full_name,
-                    username,
-                    avatar_url
-                )
-            `)
-            .in('id', contentIds)
-            .eq('status', 'published');
-        
-        if (contentError) throw contentError;
-        
-        // Merge views with content
-        const views = viewIds.map(view => {
-            const content = contentList?.find(c => c.id === view.content_id);
-            return content ? { ...view, content } : null;
-        }).filter(Boolean);
-        */
-        
         if (error) {
-            console.error('Continue Watching query error:', error);
+            console.error('❌ Continue Watching query error:', error);
             throw error;
         }
         
-        const contentList = views?.map(v => v.content).filter(Boolean) || [];
+        console.log('📊 Watch progress data:', watchProgress);
+        
+        // Filter out null content
+        const contentList = (watchProgress || [])
+            .filter(item => item.Content !== null)
+            .map(item => ({
+                ...item.Content,
+                watch_progress: {
+                    last_position: item.last_position,
+                    total_watch_time: item.total_watch_time,
+                    updated_at: item.updated_at
+                }
+            }));
         
         if (contentList.length === 0) {
             console.log('ℹ️ No continue watching content found');
@@ -447,25 +432,25 @@ async function loadContinueWatchingSection() {
             return;
         }
         
-        // Build complete dataset with metrics
+        // ✅ 2️⃣ Build complete dataset with metrics (including connectors)
         console.log('📊 Building section data with metrics for', contentList.length, 'items');
         const sectionData = await buildSectionData(contentList);
         
-        // Create progress map for continue watching
+        // ✅ 3️⃣ Create progress map with ACTUAL watch times
         const progressMap = {};
-        views.forEach(view => {
-            if (view.content_id && view.content) {
-                const duration = view.content.duration || 1;
-                const position = view.view_duration || view.progress_seconds || 0;
+        watchProgress.forEach(item => {
+            if (item.content_id && item.Content) {
+                const duration = item.Content.duration || 1;
+                const position = item.last_position || 0;
                 const progress = Math.min(100, Math.floor((position / duration) * 100)) || 0;
                 
-                progressMap[view.content_id] = {
+                progressMap[item.content_id] = {
                     progress: progress,
                     current: position,
                     total: duration
                 };
                 
-                console.log('📍 Progress for content', view.content_id, ':', {
+                console.log('📍 Progress for content', item.content_id, ':', {
                     position: position,
                     duration: duration,
                     progress: progress + '%'
@@ -473,8 +458,8 @@ async function loadContinueWatchingSection() {
             }
         });
         
-        // Debug: Log connector counts
-        console.log('📊 Connector counts in section ', 
+        // ✅ 4️⃣ Debug: Log connector counts
+        console.log('📊 Connector counts in section data:', 
             sectionData.map(item => ({
                 id: item.id,
                 title: item.title,
@@ -483,7 +468,7 @@ async function loadContinueWatchingSection() {
             }))
         );
         
-        // Render once with progress data
+        // ✅ 5️⃣ Render with correct progress data
         section.style.display = 'block';
         renderContinueWatchingCards(container, sectionData, progressMap);
         
@@ -503,9 +488,9 @@ function renderContinueWatchingCards(container, contents, progressMap) {
     contents.forEach(content => {
         if (!content) return;
         
-        // ✅ Get ACTUAL connector count from metrics
-        const connectorCount = content.metrics?.connectors || 0;
+        // ✅ Get ACTUAL progress from watch_progress table
         const progress = progressMap[content.id] || { progress: 0, current: 0, total: 0 };
+        const connectorCount = content.metrics?.connectors || 0;
         
         console.log('🎨 Card:', content.id, '- Connectors:', connectorCount);
         
@@ -517,8 +502,8 @@ function renderContinueWatchingCards(container, contents, progressMap) {
         const creatorName = creatorProfile?.full_name || creatorProfile?.username || 'Creator';
         const initials = getInitials(creatorName);
         
-        const durationFormatted = formatDuration(content.duration || 0);
-        const currentFormatted = formatDuration(progress.current);
+        const durationFormatted = formatDuration(progress.total || content.duration || 0);
+        const currentFormatted = formatDuration(progress.current || 0);
         
         let avatarHtml = '';
         if (creatorProfile?.avatar_url) {
@@ -535,7 +520,7 @@ function renderContinueWatchingCards(container, contents, progressMap) {
         card.dataset.language = content.language || 'en';
         card.dataset.category = content.genre || '';
         
-        // ✅ HTML with CORRECT connector count display
+        // ✅ HTML with CORRECT progress bar and resume time
         card.innerHTML = `
             <div class="card-thumbnail">
                 <img src="${thumbnailUrl}" alt="${escapeHtml(content.title)}" loading="lazy">
@@ -545,9 +530,12 @@ function renderContinueWatchingCards(container, contents, progressMap) {
                     </div>
                 </div>
                 <div class="thumbnail-overlay"></div>
+                
+                <!-- ✅ PROGRESS BAR with ACTUAL width -->
                 <div class="watch-progress-container">
                     <div class="watch-progress-bar" style="width: ${progress.progress}%"></div>
                 </div>
+                
                 <div class="play-overlay">
                     <div class="play-icon"><i class="fas fa-play"></i></div>
                 </div>
@@ -559,10 +547,13 @@ function renderContinueWatchingCards(container, contents, progressMap) {
                     <div class="creator-avatar-small">${avatarHtml}</div>
                     <div class="creator-name-small">${escapeHtml(creatorName)}</div>
                 </div>
+                
+                <!-- ✅ ACTUAL RESUME TIME (not 0:00) -->
                 <div class="card-meta">
                     <span><i class="fas fa-clock"></i> ${currentFormatted} / ${durationFormatted}</span>
                     <span>${progress.progress}%</span>
                 </div>
+                
                 <div class="connector-info">
                     <i class="fas fa-user-friends"></i> ${formatNumber(connectorCount)} Connectors
                 </div>
@@ -801,7 +792,7 @@ function renderShortsCards(container, contents) {
                 <h4>${truncateText(escapeHtml(content.title), 30)}</h4>
                 <p>${escapeHtml(creatorName)}</p>
                 <div class="connector-info-small">
-                    <i class="fas fa-user-friends"></i> ${formatNumber(content.metrics?.connectors || 0)}
+                    <i class="fas fa-user-friends"></i> ${formatNumber(content.metrics.connectors)}
                 </div>
             </div>
         `;
@@ -1378,7 +1369,7 @@ function renderContentCards(container, contents) {
                     <span><i class="fas fa-eye"></i> ${formatNumber(content.metrics?.views || 0)}</span>
                     <span><i class="fas fa-heart"></i> ${formatNumber(content.metrics?.likes || 0)}</span>
                     <span><i class="fas fa-share"></i> ${formatNumber(content.metrics?.shares || 0)}</span>
-                    <span><i class="fas fa-language"></i> ${window.languageMap?.[content.language] || 'English'}</span>
+                    <span><i class="fas fa-language"></i> ${window.languageMap[content.language] || 'English'}</span>
                 </div>
                 <div class="connector-info">
                     <i class="fas fa-user-friends"></i> ${formatNumber(content.metrics?.connectors || 0)} Connectors
@@ -1889,7 +1880,7 @@ function setupLanguageFilter() {
                     const newChip = document.createElement('button');
                     newChip.className = 'language-chip';
                     newChip.dataset.lang = lang;
-                    newChip.textContent = window.languageMap?.[lang] || lang;
+                    newChip.textContent = languageMap[lang] || lang;
                     
                     newChip.addEventListener('click', (e) => {
                         e.preventDefault();
@@ -1897,7 +1888,7 @@ function setupLanguageFilter() {
                         document.querySelectorAll('.language-chip').forEach(c => c.classList.remove('active'));
                         newChip.classList.add('active');
                         filterContentByLanguage(lang);
-                        showToast(`Showing: ${window.languageMap?.[lang]}`, 'info');
+                        showToast(`Showing: ${languageMap[lang]}`, 'info');
                     });
                     
                     languageContainer.insertBefore(newChip, newMoreBtn);
@@ -1916,7 +1907,7 @@ function setupLanguageFilter() {
 }
 
 function getLanguageName(code) {
-    return window.languageMap?.[code] || code || 'All Languages';
+    return languageMap[code] || code || 'All Languages';
 }
 
 function filterContentByLanguage(lang) {
