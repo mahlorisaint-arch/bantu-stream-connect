@@ -6,6 +6,7 @@
 // PHASE 4 UPDATE: HLS Streaming & Quality Selector Integration
 // FIXED: Added video load confirmation events
 // PHASE 1-3 POLISH: Keyboard Shortcuts, Playlist Modal, Loading States
+// FIXED: Playlist duplicate key constraint error handling
 
 console.log('🎬 Content Detail Initializing with RLS-compliant fixes and view tracking on Play button click...');
 
@@ -574,7 +575,7 @@ async function updateWatchLaterButtonState() {
   }
 }
 
-// PHASE 2: Handle Watch Later button click (legacy, replaced by modal)
+// PHASE 2: Handle Watch Later button click - UPDATED to use modal
 async function handleWatchLaterToggle() {
   const btn = document.getElementById('watchLaterBtn');
   
@@ -590,6 +591,14 @@ async function handleWatchLaterToggle() {
     return;
   }
   
+  // ✅ FIXED: Open playlist modal for selection if available
+  if (window.playlistModal) {
+    window.playlistModal.contentId = currentContent.id;
+    window.playlistModal.open();
+    return;
+  }
+  
+  // Fallback to direct Watch Later add
   if (!playlistManager) {
     showToast('Playlist system loading...', 'info');
     return;
@@ -614,24 +623,24 @@ async function handleWatchLaterToggle() {
         showToast('✅ Added to Watch Later', 'success');
       } else if (result.action === 'removed') {
         showToast('🗑️ Removed from Watch Later', 'info');
+      } else if (result.action === 'already_exists') {
+        showToast('Already in Watch Later', 'info');
       }
     } else {
       showToast('❌ ' + (result.error || 'Failed to update'), 'error');
       await updateWatchLaterButtonState();
     }
-    
   } catch (error) {
     console.error('❌ Watch Later toggle failed:', error);
     showToast('Failed to update Watch Later', 'error');
     await updateWatchLaterButtonState();
-    
   } finally {
     btn.disabled = originalDisabled;
     setTimeout(() => updateWatchLaterButtonState(), 100);
   }
 }
 
-// PHASE 2: Setup Watch Later button event listener (legacy, kept for fallback)
+// PHASE 2: Setup Watch Later button event listener - UPDATED to use modal
 function setupWatchLaterButton() {
   const watchLaterBtn = document.getElementById('watchLaterBtn');
   
