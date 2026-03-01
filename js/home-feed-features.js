@@ -387,36 +387,6 @@ async function loadContinueWatchingSection() {
         
         // ✅ FIXED: Use correct embed syntax for Content table (capital C)
         // Option A: Use !Content to specify the target table name
-        const { data: views, error } = await supabaseAuth
-            .from('content_views')
-            .select(`
-                *,
-                content:content_id!Content (
-                    id,
-                    title,
-                    thumbnail_url,
-                    genre,
-                    duration,
-                    status,
-                    user_id,
-                    user_profiles!user_id (
-                        id,
-                        full_name,
-                        username,
-                        avatar_url
-                    )
-                )
-            `)
-            .eq('profile_id', window.currentProfile.id)
-            .is('completed_at', null)
-            .neq('last_position', 0)
-            .eq('Content.status', 'published')
-            .order('updated_at', { ascending: false })
-            .limit(20);
-        
-        // Option B (if Option A fails): Fetch in two steps
-        // Uncomment this block if the query above still fails:
-        /*
         const { data: viewIds, error: viewError } = await supabaseAuth
             .from('content_views')
             .select('content_id, view_duration, progress_seconds, updated_at')
