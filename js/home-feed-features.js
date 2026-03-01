@@ -221,7 +221,13 @@ async function buildSectionData(contentList) {
     if (!contentList || contentList.length === 0) return [];
     
     const contentIds = contentList.map(c => c.id);
-    const creatorIds = [...new Set(contentList.map(c => c.user_id).filter(Boolean))];
+    
+    // ✅ FIX: Extract user_id from content OR from nested user_profiles
+    const creatorIds = [...new Set(
+        contentList
+            .map(c => c.user_id || c.user_profiles?.id)
+            .filter(Boolean)
+    )];
     
     console.log('📊 Fetching metrics for', contentIds.length, 'content items and', creatorIds.length, 'creators');
     
@@ -235,7 +241,7 @@ async function buildSectionData(contentList) {
             likes: metrics.likes[item.id] || 0,
             shares: metrics.shares[item.id] || 0,
             favorites: item.favorites_count || 0,
-            connectors: metrics.connectors[item.user_id] || 0  // ✅ Ensure this is set
+            connectors: metrics.connectors[item.user_id || item.user_profiles?.id] || 0  // ✅ FIX: Use fallback
         }
     }));
 }
@@ -325,7 +331,7 @@ async function fetchShareCounts(contentIds) {
     }
 }
 
-// Connector counts per creator - FIXED
+// Connector counts per creator
 async function fetchConnectorCounts(creatorIds) {
     if (!creatorIds || creatorIds.length === 0) {
         console.log('⚠️ No creator IDs to fetch connector counts for');
@@ -360,7 +366,7 @@ async function fetchConnectorCounts(creatorIds) {
 }
 
 // ============================================
-// SECTION 1: CONTINUE WATCHING - FIXED
+// SECTION 1: CONTINUE WATCHING - FIXED WITH USER_ID SELECTION
 // ============================================
 async function loadContinueWatchingSection() {
     const section = document.getElementById('continue-watching-section');
@@ -368,7 +374,7 @@ async function loadContinueWatchingSection() {
     if (!section || !container) return;
     
     // Hide section if user not logged in
-    if (!window.currentUser) {
+    if (!window.currentUser || !window.currentProfile) {
         section.style.display = 'none';
         return;
     }
@@ -376,22 +382,19 @@ async function loadContinueWatchingSection() {
     try {
         console.log('📺 Loading Continue Watching for user:', window.currentUser.id);
         
-        // ✅ 1️⃣ Fetch from watch_progress table (NOT content_views)
-        const { data: watchProgress, error } = await supabaseAuth
-            .from('watch_progress')
+        // ✅ 1️⃣ Fetch raw content WITH EXPLICIT user_id selection
+        const { data: views, error } = await supabaseAuth
+            .from('content_views')
             .select(`
-                content_id,
-                last_position,
-                total_watch_time,
-                is_completed,
-                updated_at,
-                Content (
+                *,
+                content:content_id (
                     id,
                     title,
                     thumbnail_url,
-                    duration,
                     genre,
+                    duration,
                     status,
+                    user_id,  // ✅ CRITICAL: Explicitly select user_id
                     user_profiles!user_id (
                         id,
                         full_name,
@@ -400,8 +403,8 @@ async function loadContinueWatchingSection() {
                     )
                 )
             `)
-            .eq('user_id', window.currentUser.id)
-            .eq('is_completed', false)
+            .eq('profile_id', window.currentProfile.id)
+            .is('completed_at', null)
             .neq('last_position', 0)
             .eq('Content.status', 'published')
             .order('updated_at', { ascending: false })
@@ -412,19 +415,17 @@ async function loadContinueWatchingSection() {
             throw error;
         }
         
-        console.log('📊 Watch progress data:', watchProgress);
-        
-        // Filter out null content
-        const contentList = (watchProgress || [])
-            .filter(item => item.Content !== null)
-            .map(item => ({
-                ...item.Content,
-                watch_progress: {
-                    last_position: item.last_position,
-                    total_watch_time: item.total_watch_time,
-                    updated_at: item.updated_at
-                }
-            }));
+        // ✅ 2️⃣ Map content WITH user_id preserved
+        const contentList = (views || [])
+            .map(v => {
+                if (!v.content) return null;
+                // Ensure user_id is on the content object for buildSectionData
+                return {
+                    ...v.content,
+                    user_id: v.content.user_id || (v.content.user_profiles?.id)
+                };
+            })
+            .filter(Boolean);
         
         if (contentList.length === 0) {
             console.log('ℹ️ No continue watching content found');
@@ -432,25 +433,25 @@ async function loadContinueWatchingSection() {
             return;
         }
         
-        // ✅ 2️⃣ Build complete dataset with metrics (including connectors)
+        // ✅ 3️⃣ Build complete dataset with metrics (now has creatorIds)
         console.log('📊 Building section data with metrics for', contentList.length, 'items');
         const sectionData = await buildSectionData(contentList);
         
-        // ✅ 3️⃣ Create progress map with ACTUAL watch times
+        // ✅ 4️⃣ Create progress map for continue watching
         const progressMap = {};
-        watchProgress.forEach(item => {
-            if (item.content_id && item.Content) {
-                const duration = item.Content.duration || 1;
-                const position = item.last_position || 0;
+        views.forEach(view => {
+            if (view.content_id && view.content) {
+                const duration = view.content.duration || 1;
+                const position = view.last_position || 0;
                 const progress = Math.min(100, Math.floor((position / duration) * 100)) || 0;
                 
-                progressMap[item.content_id] = {
+                progressMap[view.content_id] = {
                     progress: progress,
                     current: position,
                     total: duration
                 };
                 
-                console.log('📍 Progress for content', item.content_id, ':', {
+                console.log('📍 Progress for content', view.content_id, ':', {
                     position: position,
                     duration: duration,
                     progress: progress + '%'
@@ -458,7 +459,7 @@ async function loadContinueWatchingSection() {
             }
         });
         
-        // ✅ 4️⃣ Debug: Log connector counts
+        // ✅ 5️⃣ Debug: Log connector counts
         console.log('📊 Connector counts in section data:', 
             sectionData.map(item => ({
                 id: item.id,
@@ -468,7 +469,7 @@ async function loadContinueWatchingSection() {
             }))
         );
         
-        // ✅ 5️⃣ Render with correct progress data
+        // ✅ 6️⃣ Render with correct connector counts
         section.style.display = 'block';
         renderContinueWatchingCards(container, sectionData, progressMap);
         
@@ -488,9 +489,9 @@ function renderContinueWatchingCards(container, contents, progressMap) {
     contents.forEach(content => {
         if (!content) return;
         
-        // ✅ Get ACTUAL progress from watch_progress table
-        const progress = progressMap[content.id] || { progress: 0, current: 0, total: 0 };
+        // ✅ Get ACTUAL connector count from metrics
         const connectorCount = content.metrics?.connectors || 0;
+        const progress = progressMap[content.id] || { progress: 0, current: 0, total: 0 };
         
         console.log('🎨 Card:', content.id, '- Connectors:', connectorCount);
         
@@ -502,8 +503,8 @@ function renderContinueWatchingCards(container, contents, progressMap) {
         const creatorName = creatorProfile?.full_name || creatorProfile?.username || 'Creator';
         const initials = getInitials(creatorName);
         
-        const durationFormatted = formatDuration(progress.total || content.duration || 0);
-        const currentFormatted = formatDuration(progress.current || 0);
+        const durationFormatted = formatDuration(content.duration || 0);
+        const currentFormatted = formatDuration(progress.current);
         
         let avatarHtml = '';
         if (creatorProfile?.avatar_url) {
@@ -520,7 +521,7 @@ function renderContinueWatchingCards(container, contents, progressMap) {
         card.dataset.language = content.language || 'en';
         card.dataset.category = content.genre || '';
         
-        // ✅ HTML with CORRECT progress bar and resume time
+        // ✅ HTML with CORRECT connector count display
         card.innerHTML = `
             <div class="card-thumbnail">
                 <img src="${thumbnailUrl}" alt="${escapeHtml(content.title)}" loading="lazy">
@@ -530,12 +531,9 @@ function renderContinueWatchingCards(container, contents, progressMap) {
                     </div>
                 </div>
                 <div class="thumbnail-overlay"></div>
-                
-                <!-- ✅ PROGRESS BAR with ACTUAL width -->
                 <div class="watch-progress-container">
                     <div class="watch-progress-bar" style="width: ${progress.progress}%"></div>
                 </div>
-                
                 <div class="play-overlay">
                     <div class="play-icon"><i class="fas fa-play"></i></div>
                 </div>
@@ -547,13 +545,10 @@ function renderContinueWatchingCards(container, contents, progressMap) {
                     <div class="creator-avatar-small">${avatarHtml}</div>
                     <div class="creator-name-small">${escapeHtml(creatorName)}</div>
                 </div>
-                
-                <!-- ✅ ACTUAL RESUME TIME (not 0:00) -->
                 <div class="card-meta">
                     <span><i class="fas fa-clock"></i> ${currentFormatted} / ${durationFormatted}</span>
                     <span>${progress.progress}%</span>
                 </div>
-                
                 <div class="connector-info">
                     <i class="fas fa-user-friends"></i> ${formatNumber(connectorCount)} Connectors
                 </div>
@@ -792,7 +787,7 @@ function renderShortsCards(container, contents) {
                 <h4>${truncateText(escapeHtml(content.title), 30)}</h4>
                 <p>${escapeHtml(creatorName)}</p>
                 <div class="connector-info-small">
-                    <i class="fas fa-user-friends"></i> ${formatNumber(content.metrics.connectors)}
+                    <i class="fas fa-user-friends"></i> ${formatNumber(content.metrics?.connectors || 0)}
                 </div>
             </div>
         `;
@@ -1369,7 +1364,7 @@ function renderContentCards(container, contents) {
                     <span><i class="fas fa-eye"></i> ${formatNumber(content.metrics?.views || 0)}</span>
                     <span><i class="fas fa-heart"></i> ${formatNumber(content.metrics?.likes || 0)}</span>
                     <span><i class="fas fa-share"></i> ${formatNumber(content.metrics?.shares || 0)}</span>
-                    <span><i class="fas fa-language"></i> ${window.languageMap[content.language] || 'English'}</span>
+                    <span><i class="fas fa-language"></i> ${window.languageMap?.[content.language] || 'English'}</span>
                 </div>
                 <div class="connector-info">
                     <i class="fas fa-user-friends"></i> ${formatNumber(content.metrics?.connectors || 0)} Connectors
@@ -1880,7 +1875,7 @@ function setupLanguageFilter() {
                     const newChip = document.createElement('button');
                     newChip.className = 'language-chip';
                     newChip.dataset.lang = lang;
-                    newChip.textContent = languageMap[lang] || lang;
+                    newChip.textContent = window.languageMap?.[lang] || lang;
                     
                     newChip.addEventListener('click', (e) => {
                         e.preventDefault();
@@ -1888,7 +1883,7 @@ function setupLanguageFilter() {
                         document.querySelectorAll('.language-chip').forEach(c => c.classList.remove('active'));
                         newChip.classList.add('active');
                         filterContentByLanguage(lang);
-                        showToast(`Showing: ${languageMap[lang]}`, 'info');
+                        showToast(`Showing: ${window.languageMap?.[lang]}`, 'info');
                     });
                     
                     languageContainer.insertBefore(newChip, newMoreBtn);
@@ -1907,7 +1902,7 @@ function setupLanguageFilter() {
 }
 
 function getLanguageName(code) {
-    return languageMap[code] || code || 'All Languages';
+    return window.languageMap?.[code] || code || 'All Languages';
 }
 
 function filterContentByLanguage(lang) {
