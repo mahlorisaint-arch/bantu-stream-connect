@@ -1,4 +1,4 @@
-/* Creator Analytics Page Styles */
+/* css/creator-analytics.css — Creator Analytics Page Styles */
 
 /* Analytics Controls */
 .analytics-controls {
@@ -72,46 +72,27 @@
   transform: translateY(-3px);
 }
 
-.summary-icon {
-  width: 50px;
-  height: 50px;
-  border-radius: 12px;
-  background: rgba(29, 78, 216, 0.2);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--bantu-blue);
+.summary-card i {
+  font-size: 2rem;
+  color: var(--warm-gold);
+  width: 3rem;
+  text-align: center;
+}
+
+.summary-value {
   font-size: 1.5rem;
-}
-
-.summary-content h4 {
-  color: var(--slate-grey);
-  font-size: 13px;
-  margin-bottom: 5px;
-}
-
-.summary-content p {
-  font-size: 24px;
   font-weight: 700;
   color: var(--soft-white);
-  margin: 0;
+  font-family: 'Orbitron', sans-serif;
 }
 
-.trend {
-  font-size: 12px;
-  font-weight: 500;
+.summary-label {
+  font-size: 13px;
+  color: var(--slate-grey);
 }
 
-.trend.positive {
-  color: var(--success-color);
-}
-
-.trend.negative {
-  color: var(--error-color);
-}
-
-/* Charts Section */
-.charts-section {
+/* Charts Grid */
+.charts-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
   gap: 20px;
@@ -140,7 +121,7 @@
   max-height: 250px;
 }
 
-/* Top Content Table */
+/* Top Content Section */
 .top-content-section {
   margin-bottom: 30px;
 }
@@ -223,7 +204,6 @@
   background: rgba(255, 255, 255, 0.05);
 }
 
-/* Content thumbnail in table - FIXED with better fallback styling */
 .content-cell {
   display: flex;
   align-items: center;
@@ -237,32 +217,6 @@
   border-radius: 6px;
   object-fit: cover;
   background: var(--deep-navy);
-  border: 1px solid var(--card-border);
-}
-
-/* ✅ FIXED: Improved fallback styling for missing thumbnails */
-.content-thumb[src=""],
-.content-thumb:not([src]),
-.content-thumb[src="null"] {
-  background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  font-size: 10px;
-  position: relative;
-}
-
-.content-thumb[src=""]::before,
-.content-thumb:not([src])::before,
-.content-thumb[src="null"]::before {
-  content: '🎬';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  font-size: 18px;
-  opacity: 0.8;
 }
 
 .content-title {
@@ -274,7 +228,6 @@
   white-space: nowrap;
 }
 
-/* Action buttons in table */
 .action-btn {
   padding: 6px 12px;
   background: rgba(29, 78, 216, 0.2);
@@ -364,7 +317,7 @@
     justify-content: center;
   }
   
-  .charts-section {
+  .charts-grid {
     grid-template-columns: 1fr;
   }
   
@@ -389,6 +342,10 @@
     width: 50px;
     height: 28px;
   }
+  
+  .content-title {
+    max-width: 120px;
+  }
 }
 
 @media (max-width: 480px) {
@@ -400,20 +357,20 @@
     padding: 16px;
   }
   
-  .summary-content p {
-    font-size: 20px;
+  .summary-value {
+    font-size: 1.25rem;
   }
   
   .chart-card {
     padding: 16px;
   }
   
-  .analytics-table th,
-  .analytics-table td {
-    padding: 10px 6px;
+  .table-controls {
+    flex-direction: column;
+    width: 100%;
   }
   
-  .content-title {
-    max-width: 120px;
+  .table-btn {
+    width: 100%;
   }
 }
