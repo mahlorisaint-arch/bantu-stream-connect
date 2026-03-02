@@ -1,6 +1,8 @@
 // js/video-player.js - Bantu Stream Connect Enhanced Video Player
 // COMPLETE FIXED VERSION WITH ALL REQUIRED METHODS AND NULL CHECKS
 // FIXED: Video source preservation and error handling
+// FIXED: Settings menu toggle with quality selector integration
+// FIXED: Fullscreen toggle with proper container
 
 class EnhancedVideoPlayer {
   constructor(options = {}) {
@@ -409,6 +411,25 @@ class EnhancedVideoPlayer {
       </div>
       
       <div class="settings-menu" style="display: none;">
+        <!-- PHASE 4: Quality Section - This will be populated by streaming-manager.js -->
+        <div class="settings-section" id="qualitySection">
+          <h4>Quality</h4>
+          <div class="quality-options" id="qualityOptions">
+            <!-- Quality options will be dynamically populated -->
+          </div>
+        </div>
+        
+        <!-- PHASE 4: Data Saver Section -->
+        <div class="settings-section" id="dataSaverSection">
+          <h4>Data Saver</h4>
+          <label class="toggle-switch">
+            <input type="checkbox" id="dataSaverToggle">
+            <span class="toggle-slider"></span>
+          </label>
+          <p class="toggle-description">Reduce data usage by streaming at lower quality</p>
+        </div>
+        
+        <!-- Playback Speed Section -->
         <div class="settings-section">
           <h4>Playback Speed</h4>
           <div class="speed-options">
@@ -473,13 +494,17 @@ class EnhancedVideoPlayer {
       });
     }
     
-    // Settings button
+    // Settings button - FIXED: Proper toggle with event propagation
     var settingsBtn = this.controls.querySelector('.settings-btn');
     var settingsMenu = this.controls.querySelector('.settings-menu');
     
     if (settingsBtn && settingsMenu) {
-      settingsBtn.addEventListener('click', function() {
-        settingsMenu.style.display = settingsMenu.style.display === 'none' ? 'block' : 'none';
+      settingsBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        e.preventDefault();
+        var isVisible = settingsMenu.style.display === 'block';
+        settingsMenu.style.display = isVisible ? 'none' : 'block';
+        console.log('⚙️ Settings menu:', isVisible ? 'closed' : 'opened');
       });
       
       // Close settings when clicking outside
@@ -510,7 +535,7 @@ class EnhancedVideoPlayer {
       });
     });
     
-    // Fullscreen button
+    // Fullscreen button - FIXED: Use proper container
     var fullscreenBtn = this.controls.querySelector('.fullscreen-btn');
     if (fullscreenBtn) {
       fullscreenBtn.addEventListener('click', function() {
@@ -607,13 +632,14 @@ class EnhancedVideoPlayer {
   
   toggleFullscreen() {
     // Use the player container, not video element
-    var playerContainer = document.querySelector('.inline-player');
+    var playerContainer = this.container || document.querySelector('.inline-player');
     if (!playerContainer) {
       console.error('Player container not found for fullscreen');
       return;
     }
     
     if (!this.isFullscreen) {
+      // Enter fullscreen
       if (playerContainer.requestFullscreen) {
         playerContainer.requestFullscreen();
       } else if (playerContainer.webkitRequestFullscreen) {
@@ -623,7 +649,9 @@ class EnhancedVideoPlayer {
       } else if (playerContainer.msRequestFullscreen) {
         playerContainer.msRequestFullscreen();
       }
+      this.isFullscreen = true;
     } else {
+      // Exit fullscreen
       if (document.exitFullscreen) {
         document.exitFullscreen();
       } else if (document.webkitExitFullscreen) {
@@ -633,15 +661,24 @@ class EnhancedVideoPlayer {
       } else if (document.msExitFullscreen) {
         document.msExitFullscreen();
       }
+      this.isFullscreen = false;
     }
     
-    this.isFullscreen = !this.isFullscreen;
+    // Update fullscreen button icon
+    if (this.controls) {
+      var fullscreenBtn = this.controls.querySelector('.fullscreen-btn i');
+      if (fullscreenBtn) {
+        fullscreenBtn.className = this.isFullscreen ? 'fas fa-compress' : 'fas fa-expand';
+      }
+    }
     
     // Force custom controls to show in fullscreen
     var self = this;
     setTimeout(function() {
       if (self.controls) self.controls.style.opacity = '1';
     }, 100);
+    
+    this.emit('fullscreenchange', this.isFullscreen);
   }
   
   // ======================
@@ -943,4 +980,4 @@ class EnhancedVideoPlayer {
 window.EnhancedVideoPlayer = EnhancedVideoPlayer;
 window.BantuVideoPlayer = EnhancedVideoPlayer; // For compatibility
 
-console.log('✅ Enhanced Video Player loaded successfully with null checks');
+console.log('✅ Enhanced Video Player loaded successfully with null checks and quality selector support');
