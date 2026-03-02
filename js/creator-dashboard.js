@@ -1,5 +1,5 @@
 // js/creator-dashboard.js - Creator Dashboard JavaScript
-// WITH ALL CRITICAL FIXES APPLIED INCLUDING PHASE 4 ENHANCEMENTS
+// WITH ALL CRITICAL FIXES APPLIED INCLUDING PHASE 5A + 5B ENHANCEMENTS
 
 (function() {
     'use strict';
@@ -13,7 +13,7 @@
     let dashboardData = null;
     let isLoading = true;
     let notifications = [];
-    let analyticsManager = null; // For Phase 4 analytics integration
+    let analyticsManager = null; // For Phase 5 analytics integration
 
     // ============================================
     // DOM ELEMENTS
@@ -146,6 +146,15 @@
         return (num || 0).toString();
     }
 
+    // ✅ FORMAT WATCH TIME
+    function formatWatchTime(seconds) {
+        if (!seconds) return '0h 0m';
+        const hours = Math.floor(seconds / 3600);
+        const mins = Math.floor((seconds % 3600) / 60);
+        if (hours > 0) return hours + 'h ' + mins + 'm';
+        return mins + 'm';
+    }
+
     // ✅ GET INITIALS FROM EMAIL
     function getInitials(email) {
         if (!email) return 'U';
@@ -219,10 +228,10 @@
     }
 
     // ============================================
-    // PHASE 4: ANALYTICS INTEGRATION
+    // PHASE 5: ANALYTICS INTEGRATION
     // ============================================
 
-    // ✅ Initialize Analytics Manager (Phase 4) - FIXED CONFIG
+    // ✅ Initialize Analytics Manager (Phase 5) - FIXED CONFIG
     async function initializeAnalyticsManager() {
         if (!window.CreatorAnalytics) {
             console.warn('⚠️ CreatorAnalytics module not loaded, using fallback');
@@ -233,7 +242,7 @@
         
         try {
             const analytics = new window.CreatorAnalytics({
-                supabase: window.supabaseClient,  // ✅ CORRECT property name (was supabaseClient)
+                supabase: window.supabaseClient,  // ✅ CORRECT property name
                 userId: currentUser.id,
                 onDataLoaded: (data) => {
                     console.log('📊 Analytics data loaded:', data);
@@ -251,7 +260,7 @@
         }
     }
 
-    // ✅ Load detailed analytics for a content item (Phase 4)
+    // ✅ Load detailed analytics for a content item (Phase 5)
     async function loadContentAnalytics(contentId) {
         if (!analyticsManager) return null;
         
@@ -260,6 +269,49 @@
             return data;
         } catch (error) {
             console.error('❌ Failed to load content analytics:', error);
+            return null;
+        }
+    }
+
+    // ✅ Get top performing content (Phase 5)
+    async function getTopContent(limit = 5, timeRange = '30days') {
+        if (!analyticsManager) return [];
+        
+        try {
+            const data = await analyticsManager.getTopContent(limit, timeRange);
+            return data;
+        } catch (error) {
+            console.error('❌ Failed to get top content:', error);
+            return [];
+        }
+    }
+
+    // ✅ Export analytics (Phase 5)
+    async function exportAnalytics(format = 'csv', timeRange = '30days') {
+        if (!analyticsManager) {
+            showToast('Analytics manager not initialized', 'error');
+            return null;
+        }
+        
+        try {
+            const result = await analyticsManager.exportAnalytics(format, timeRange);
+            
+            if (format === 'csv' && result.csv) {
+                const blob = new Blob([result.csv], { type: 'text/csv' });
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = result.filename || 'analytics-export.csv';
+                a.click();
+                window.URL.revokeObjectURL(url);
+                showToast('Analytics exported successfully', 'success');
+                return true;
+            }
+            
+            return result;
+        } catch (error) {
+            console.error('❌ Export failed:', error);
+            showToast('Export failed', 'error');
             return null;
         }
     }
@@ -276,71 +328,101 @@
             let analyticsData = null;
             let content = [];
             
-            // STEP 1: Try to get analytics from creator_analytics_summary materialized view
-            try {
-                console.log('Attempting to fetch from creator_analytics_summary...');
-                const { data, error } = await window.supabaseClient
-                    .from('creator_analytics_summary')
-                    .select('*')
-                    .eq('creator_id', currentUser.id)
-                    .maybeSingle();
-                
-                if (error) {
-                    console.warn('Analytics view query error:', error);
-                    throw new Error('View unavailable');
+            // STEP 1: Try to use analytics manager if available (Phase 5)
+            if (analyticsManager) {
+                try {
+                    const dashboardResult = await analyticsManager.getDashboardData('30days');
+                    if (dashboardResult && !dashboardResult.error) {
+                        analyticsData = {
+                            total_uploads: dashboardResult.summary.totalUploads,
+                            total_views: dashboardResult.summary.totalViews,
+                            total_earnings: dashboardResult.summary.totalEarnings,
+                            total_connectors: dashboardResult.summary.totalConnectors,
+                            engagement_percentage: dashboardResult.summary.engagementPercentage,
+                            is_eligible_for_monetization: dashboardResult.summary.isEligibleForMonetization
+                        };
+                        content = dashboardResult.content || [];
+                        console.log('✅ Analytics data loaded via analytics manager');
+                    }
+                } catch (analyticsError) {
+                    console.warn('Analytics manager failed, falling back:', analyticsError);
                 }
-                
-                if (data) {
-                    analyticsData = data;
-                    console.log('✅ Analytics data loaded from materialized view:', analyticsData);
-                } else {
-                    console.warn('No analytics data found in view');
-                    throw new Error('No data in view');
-                }
-            } catch (viewError) {
-                console.warn('Falling back to Content table query:', viewError);
-                
-                // STEP 2: Fallback method using Content table (original approach)
-                const { data: contentData, error: contentError } = await window.supabaseClient
-                    .from('Content')
-                    .select('*, user_profiles!user_id(*)')
-                    .eq('user_id', currentUser.id)
-                    .eq('status', 'published')
-                    .order('created_at', { ascending: false })
-                    .limit(50);
-                
-                if (contentError) throw contentError;
-                
-                content = contentData || [];
-                
-                // Calculate analytics manually with REAL view counts
-                let totalViewsCount = 0;
-                let totalEarningsAmount = 0;
-                
-                // Enrich with real view counts
-                for (const item of content) {
-                    const { count } = await window.supabaseClient
-                        .from('content_views')
-                        .select('*', { count: 'exact', head: true })
-                        .eq('content_id', item.id);
-                    
-                    const viewsCount = count || 0;
-                    totalViewsCount += viewsCount;
-                    totalEarningsAmount += viewsCount * 0.01; // R0.01 per view
-                    item.real_views = viewsCount;
-                }
-                
-                analyticsData = {
-                    total_uploads: content.length || 0,
-                    total_views: totalViewsCount,
-                    total_earnings: totalEarningsAmount,
-                    total_connectors: Math.max(10, Math.floor(totalViewsCount / 100)),
-                    engagement_percentage: content.length > 0 ? (totalViewsCount / content.length) : 0,
-                    is_eligible_for_monetization: content.length >= 10 && totalViewsCount >= 1000
-                };
             }
             
-            // STEP 3: If we didn't get content from fallback, get it now for display
+            // STEP 2: If analytics manager failed, try materialized view
+            if (!analyticsData) {
+                try {
+                    console.log('Attempting to fetch from creator_analytics_summary...');
+                    const { data, error } = await window.supabaseClient
+                        .from('creator_analytics_summary')
+                        .select('*')
+                        .eq('creator_id', currentUser.id)
+                        .maybeSingle();
+                    
+                    if (error) {
+                        console.warn('Analytics view query error:', error);
+                        throw new Error('View unavailable');
+                    }
+                    
+                    if (data) {
+                        analyticsData = data;
+                        console.log('✅ Analytics data loaded from materialized view:', analyticsData);
+                    } else {
+                        console.warn('No analytics data found in view');
+                        throw new Error('No data in view');
+                    }
+                } catch (viewError) {
+                    console.warn('Falling back to Content table query:', viewError);
+                    
+                    // STEP 3: Fallback method using Content table
+                    const { data: contentData, error: contentError } = await window.supabaseClient
+                        .from('Content')
+                        .select('*, user_profiles!user_id(*)')
+                        .eq('user_id', currentUser.id)
+                        .eq('status', 'published')
+                        .order('created_at', { ascending: false })
+                        .limit(50);
+                    
+                    if (contentError) throw contentError;
+                    
+                    content = contentData || [];
+                    
+                    // Calculate analytics manually with REAL view counts
+                    let totalViewsCount = 0;
+                    let totalEarningsAmount = 0;
+                    
+                    // Enrich with real view counts
+                    for (const item of content) {
+                        const { count } = await window.supabaseClient
+                            .from('content_views')
+                            .select('*', { count: 'exact', head: true })
+                            .eq('content_id', item.id);
+                        
+                        const viewsCount = count || 0;
+                        totalViewsCount += viewsCount;
+                        totalEarningsAmount += viewsCount * 0.01; // R0.01 per view
+                        item.real_views = viewsCount;
+                    }
+                    
+                    // Get connectors count
+                    const { count: connectorsCount } = await window.supabaseClient
+                        .from('connectors')
+                        .select('*', { count: 'exact', head: true })
+                        .eq('connected_id', currentUser.id)
+                        .eq('connection_type', 'creator');
+                    
+                    analyticsData = {
+                        total_uploads: content.length || 0,
+                        total_views: totalViewsCount,
+                        total_earnings: totalEarningsAmount,
+                        total_connectors: connectorsCount || Math.max(10, Math.floor(totalViewsCount / 100)),
+                        engagement_percentage: content.length > 0 ? (totalViewsCount / content.length) : 0,
+                        is_eligible_for_monetization: content.length >= 10 && totalViewsCount >= 1000
+                    };
+                }
+            }
+            
+            // STEP 4: If we didn't get content from fallback, get it now for display
             if (content.length === 0) {
                 const { data: contentData, error: contentError } = await window.supabaseClient
                     .from('Content')
@@ -365,14 +447,14 @@
                 }
             }
             
-            // STEP 4: Get user profile for display name/avatar
+            // STEP 5: Get user profile for display name/avatar
             const { data: userProfile } = await window.supabaseClient
                 .from('user_profiles')
                 .select('*')
                 .eq('id', currentUser.id)
                 .maybeSingle();
             
-            // STEP 5: Build dashboard data
+            // STEP 6: Build dashboard data
             dashboardData = {
                 user: {
                     name: userProfile?.full_name || 
@@ -504,12 +586,12 @@
             `;
         }).join('');
         
-        // Add click handlers to upload cards (Phase 4 enhancement)
+        // Add click handlers to upload cards (Phase 5 enhancement)
         document.querySelectorAll('.upload-card').forEach(card => {
             card.addEventListener('click', async () => {
                 const contentId = card.dataset.contentId;
                 if (contentId) {
-                    // Try to use Phase 4 analytics
+                    // Try to use Phase 5 analytics
                     if (analyticsManager) {
                         const analytics = await loadContentAnalytics(contentId);
                         if (analytics) {
@@ -1174,10 +1256,9 @@
             });
         }
         
-        // View analytics button - Phase 4 enhancement (FIXED: Navigate to creator-analytics.html)
+        // View analytics button - Phase 5 enhancement (Navigate to dedicated analytics page)
         if (viewAnalytics) {
             viewAnalytics.addEventListener('click', () => {
-                // Navigate to the NEW analytics page
                 window.location.href = 'creator-analytics.html';
             });
         }
@@ -1255,7 +1336,7 @@
 
     // ✅ Initialize dashboard
     async function initializeDashboard() {
-        console.log('👑 Initializing Creator Dashboard...');
+        console.log('👑 Initializing Creator Dashboard with Phase 5 enhancements...');
         
         // Check authentication FIRST
         const isAuthenticated = await checkAuthentication();
@@ -1263,10 +1344,10 @@
             return;
         }
         
-        // Initialize Phase 4 Analytics Manager (FIXED: Now uses correct config)
+        // Initialize Phase 5 Analytics Manager
         analyticsManager = await initializeAnalyticsManager();
         
-        // Load dashboard data (now using materialized view)
+        // Load dashboard data (now using analytics manager)
         await loadDashboardData();
         
         // Load notifications for summary
@@ -1279,7 +1360,7 @@
         // Setup event listeners
         setupEventListeners();
         
-        console.log('✅ Creator Dashboard initialized successfully');
+        console.log('✅ Creator Dashboard initialized successfully with Phase 5');
     }
 
     // Start initialization when DOM is ready
