@@ -224,12 +224,15 @@
           </video>
           
           <!-- PHASE 4: Quality Badge and Network Speed Indicator -->
-          <div class="quality-badge" id="qualityBadge">Auto</div>
+          <div class="quality-indicator" id="qualityBadge">Auto</div>
           <div class="network-speed-indicator" id="networkSpeedIndicator">
             <i class="fas fa-wifi"></i> <span id="networkSpeedValue">-- Mbps</span>
           </div>
           <div class="hls-badge" id="hlsBadge" style="display: none;">
             <i class="fas fa-microchip"></i> HLS
+          </div>
+          <div class="data-saver-badge" id="dataSaverBadge" style="display: none;">
+            <i class="fas fa-leaf"></i> Data Saver
           </div>
           
           <!-- SIMPLE Loading Placeholder Only -->
@@ -628,6 +631,9 @@
   <!-- PHASE 2: Playlist Manager MUST load before content-detail.js -->
   <script src="js/playlist-manager.js"></script>
   
+  <!-- PHASE 4: Streaming Manager (MUST load before video-player.js) -->
+  <script src="js/streaming-manager.js"></script>
+  
   <!-- Video Player Scripts -->
   <script src="js/video-player.js"></script>
   <script src="js/virtual-scroll.js"></script>
@@ -638,9 +644,6 @@
   
   <!-- PHASE 3: Recommendation Engine -->
   <script src="js/recommendation-engine.js"></script>
-  
-  <!-- PHASE 4: Streaming Manager (UPDATED with network test fix) -->
-  <script src="js/streaming-manager.js"></script>
   
   <!-- ============================================ -->
   <!-- PHASE 1-3 POLISH: New Modules              -->
@@ -660,9 +663,29 @@
     // PHASE 4: Function to update quality options dynamically
     window.updateQualityOptions = function() {
       const qualityContainer = document.getElementById('qualityOptions');
-      if (!qualityContainer || !window.streamingManager) return;
+      if (!qualityContainer) {
+        console.warn('⚠️ Quality options container not found');
+        return;
+      }
       
-      const qualities = window.streamingManager.getAvailableQualities();
+      // Get qualities from streaming manager
+      let qualities = [];
+      if (window.streamingManager && typeof window.streamingManager.getAvailableQualities === 'function') {
+        qualities = window.streamingManager.getAvailableQualities();
+      }
+      
+      // Fallback qualities if none available
+      if (!qualities || qualities.length === 0) {
+        qualities = [
+          { label: 'Auto', value: 'auto' },
+          { label: '1080p', value: '1080p' },
+          { label: '720p', value: '720p' },
+          { label: '480p', value: '480p' },
+          { label: '360p', value: '360p' }
+        ];
+      }
+      
+      console.log('📺 Updating quality options with', qualities.length, 'qualities');
       
       // Clear container
       qualityContainer.innerHTML = '';
@@ -670,7 +693,10 @@
       // Add quality options
       qualities.forEach(q => {
         const button = document.createElement('button');
-        button.className = `quality-option ${q.value === window.streamingManager.getCurrentQuality() ? 'active' : ''}`;
+        button.className = 'quality-option';
+        if (window.streamingManager && q.value === window.streamingManager.getCurrentQuality()) {
+          button.classList.add('active');
+        }
         button.dataset.quality = q.value;
         button.textContent = q.label;
         qualityContainer.appendChild(button);
@@ -688,25 +714,36 @@
           this.classList.add('active');
           
           // Change quality
-          if (window.streamingManager) {
+          if (window.streamingManager && typeof window.streamingManager.setQuality === 'function') {
             await window.streamingManager.setQuality(quality);
             
             // Update quality badge
             const qualityBadge = document.getElementById('qualityBadge');
             if (qualityBadge) {
               qualityBadge.textContent = quality === 'auto' ? 'Auto' : quality;
+              qualityBadge.classList.add('visible');
+              
+              // Update badge class
+              qualityBadge.classList.remove('auto', 'hd');
+              if (quality === 'auto') {
+                qualityBadge.classList.add('auto');
+              } else if (quality === '1080p' || quality === '720p') {
+                qualityBadge.classList.add('hd');
+              }
             }
           }
           
           // Close settings menu
           const settingsMenu = document.querySelector('.settings-menu');
           if (settingsMenu) {
-            settingsMenu.classList.remove('active');
+            settingsMenu.style.display = 'none';
           }
           
           // Show toast notification
           if (window.showToast) {
             window.showToast('Quality: ' + (quality === 'auto' ? 'Auto' : quality), 'info');
+          } else {
+            console.log('📺 Quality changed to:', quality);
           }
         });
       });
@@ -716,7 +753,17 @@
     document.addEventListener('qualityChanged', function(e) {
       const qualityBadge = document.getElementById('qualityBadge');
       if (qualityBadge && e.detail) {
-        qualityBadge.textContent = e.detail.quality === 'auto' ? 'Auto' : e.detail.quality;
+        const quality = e.detail.quality;
+        qualityBadge.textContent = quality === 'auto' ? 'Auto' : quality;
+        qualityBadge.classList.add('visible');
+        
+        // Update badge class
+        qualityBadge.classList.remove('auto', 'hd');
+        if (quality === 'auto') {
+          qualityBadge.classList.add('auto');
+        } else if (quality === '1080p' || quality === '720p') {
+          qualityBadge.classList.add('hd');
+        }
       }
     });
 
@@ -728,6 +775,7 @@
       if (speedIndicator && speedValue && e.detail) {
         const speedMbps = (e.detail.speed / 1000000).toFixed(1);
         speedValue.textContent = speedMbps + ' Mbps';
+        speedIndicator.classList.add('visible');
         
         // Update indicator color based on speed
         speedIndicator.classList.remove('good', 'fair', 'poor');
@@ -749,13 +797,45 @@
       }
     });
 
+    // Update data saver badge
+    document.addEventListener('dataSaverToggled', function(e) {
+      const dataSaverBadge = document.getElementById('dataSaverBadge');
+      if (dataSaverBadge && e.detail) {
+        dataSaverBadge.style.display = e.detail.enabled ? 'block' : 'none';
+      }
+    });
+
     // Data Saver toggle handler
     document.addEventListener('DOMContentLoaded', function() {
       const dataSaverToggle = document.getElementById('dataSaverToggle');
       if (dataSaverToggle) {
         dataSaverToggle.addEventListener('change', function() {
-          if (window.streamingManager) {
+          if (window.streamingManager && typeof window.streamingManager.toggleDataSaver === 'function') {
             window.streamingManager.toggleDataSaver(this.checked);
+          }
+        });
+      }
+    });
+
+    // Settings button toggle handler
+    document.addEventListener('DOMContentLoaded', function() {
+      const settingsBtn = document.querySelector('.settings-btn');
+      const settingsMenu = document.querySelector('.settings-menu');
+      
+      if (settingsBtn && settingsMenu) {
+        settingsBtn.addEventListener('click', function(e) {
+          e.stopPropagation();
+          const isVisible = settingsMenu.style.display === 'block';
+          settingsMenu.style.display = isVisible ? 'none' : 'block';
+          console.log('⚙️ Settings menu:', isVisible ? 'closed' : 'opened');
+        });
+        
+        // Close when clicking outside
+        document.addEventListener('click', function(e) {
+          if (settingsMenu.style.display === 'block' &&
+              !settingsMenu.contains(e.target) &&
+              !settingsBtn.contains(e.target)) {
+            settingsMenu.style.display = 'none';
           }
         });
       }
@@ -796,18 +876,18 @@
       
       // Update quality options
       if (window.updateQualityOptions) {
-        window.updateQualityOptions();
+        setTimeout(window.updateQualityOptions, 100);
       }
       
       // Load saved data saver preference
       const dataSaverToggle = document.getElementById('dataSaverToggle');
-      if (dataSaverToggle && window.streamingManager) {
+      if (dataSaverToggle && window.streamingManager && typeof window.streamingManager.isDataSaverEnabled === 'function') {
         dataSaverToggle.checked = window.streamingManager.isDataSaverEnabled();
       }
       
       // Show network speed indicator
       const speedIndicator = document.getElementById('networkSpeedIndicator');
-      if (speedIndicator && window.streamingManager) {
+      if (speedIndicator && window.streamingManager && typeof window.streamingManager.getNetworkSpeed === 'function') {
         speedIndicator.classList.add('visible');
         
         // Trigger initial network speed update
@@ -832,16 +912,76 @@
       
       // Show quality badge
       const qualityBadge = document.getElementById('qualityBadge');
-      if (qualityBadge && window.streamingManager) {
+      if (qualityBadge && window.streamingManager && typeof window.streamingManager.getCurrentQuality === 'function') {
         qualityBadge.classList.add('visible');
-        qualityBadge.textContent = window.streamingManager.getCurrentQuality() === 'auto' ? 
-          'Auto' : window.streamingManager.getCurrentQuality();
+        const quality = window.streamingManager.getCurrentQuality();
+        qualityBadge.textContent = quality === 'auto' ? 'Auto' : quality;
+        
+        // Update badge class
+        qualityBadge.classList.remove('auto', 'hd');
+        if (quality === 'auto') {
+          qualityBadge.classList.add('auto');
+        } else if (quality === '1080p' || quality === '720p') {
+          qualityBadge.classList.add('hd');
+        }
+      }
+      
+      // Show data saver badge if enabled
+      const dataSaverBadge = document.getElementById('dataSaverBadge');
+      if (dataSaverBadge && window.streamingManager && typeof window.streamingManager.isDataSaverEnabled === 'function') {
+        if (window.streamingManager.isDataSaverEnabled()) {
+          dataSaverBadge.style.display = 'block';
+        }
       }
     });
 
     // If streamingManager already exists, trigger immediately
     if (window.streamingManager) {
-      document.dispatchEvent(new CustomEvent('streamingManagerReady'));
+      setTimeout(function() {
+        document.dispatchEvent(new CustomEvent('streamingManagerReady'));
+      }, 500);
+    }
+
+    // Also listen for content detail initialization
+    document.addEventListener('contentDetailReady', function() {
+      console.log('📄 Content Detail Ready - checking streaming manager');
+      if (window.streamingManager) {
+        document.dispatchEvent(new CustomEvent('streamingManagerReady'));
+      }
+    });
+
+    // Toast notification function if not defined
+    if (!window.showToast) {
+      window.showToast = function(message, type = 'info') {
+        console.log(`📢 Toast (${type}): ${message}`);
+        
+        // Create toast container if needed
+        let toastContainer = document.getElementById('toast-container');
+        if (!toastContainer) {
+          toastContainer = document.createElement('div');
+          toastContainer.id = 'toast-container';
+          document.body.appendChild(toastContainer);
+        }
+        
+        // Create toast
+        const toast = document.createElement('div');
+        toast.className = `toast-notification ${type}`;
+        toast.innerHTML = `
+          <i class="fas ${type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-exclamation-circle' : 'fa-info-circle'}"></i>
+          <span>${message}</span>
+        `;
+        
+        toastContainer.appendChild(toast);
+        
+        // Show toast
+        setTimeout(() => toast.classList.add('show'), 10);
+        
+        // Remove after 3 seconds
+        setTimeout(() => {
+          toast.classList.remove('show');
+          setTimeout(() => toast.remove(), 300);
+        }, 3000);
+      };
     }
   </script>
 </body>
