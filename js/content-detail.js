@@ -140,23 +140,42 @@ if (!window.StreamingManager) {
 }
 
 // ============================================
-// PHASE 4: QUALITY BADGE UPDATE FUNCTION
+// PHASE 4: QUALITY INDICATOR UPDATE FUNCTION
 // ============================================
-function updateQualityBadge(quality) {
-  const badge = document.getElementById('qualityBadge');
-  if (!badge) return;
+function updateQualityIndicator(quality) {
+  const indicator = document.getElementById('qualityIndicator');
+  const label = document.getElementById('qualityLabel');
+  const dataSaverBadge = document.getElementById('dataSaverBadge');
   
-  if (quality && quality !== 'auto') {
-    badge.textContent = quality.toUpperCase();
-    badge.classList.add('visible');
-    
-    // Hide after 3 seconds
-    setTimeout(() => {
-      badge.classList.remove('visible');
-    }, 3000);
-  } else {
-    badge.classList.remove('visible');
+  if (!indicator || !label) return;
+  
+  // Show indicator
+  indicator.classList.add('visible');
+  
+  // Update label
+  label.textContent = quality.toUpperCase();
+  
+  // Update styling based on quality
+  indicator.classList.remove('auto', 'hd');
+  if (quality === 'auto') {
+    indicator.classList.add('auto');
+  } else if (['720p', '1080p'].includes(quality)) {
+    indicator.classList.add('hd');
   }
+  
+  // Update data saver badge
+  if (streamingManager?.isDataSaverEnabled()) {
+    dataSaverBadge?.classList.add('visible');
+  } else {
+    dataSaverBadge?.classList.remove('visible');
+  }
+  
+  // Hide after 5 seconds
+  setTimeout(() => {
+    if (indicator && !streamingManager?.isDataSaverEnabled()) {
+      indicator.classList.remove('visible');
+    }
+  }, 5000);
 }
 
 // ============================================
@@ -362,11 +381,12 @@ async function initializeStreamingManager() {
       userId: currentUserId,
       onQualityChange: function(data) {
         console.log('📺 Quality changed:', data);
-        updateQualityBadge(data.quality);
+        updateQualityIndicator(data.quality);
         showToast('Quality: ' + data.quality, 'info');
       },
       onDataSaverToggle: function(data) {
         console.log('💾 Data saver:', data.enabled ? 'ON' : 'OFF');
+        updateQualityIndicator(streamingManager.getCurrentQuality());
         showToast('Data Saver: ' + (data.enabled ? 'ON' : 'OFF'), 'info');
       },
       onError: function(err) {
@@ -388,6 +408,13 @@ async function initializeStreamingManager() {
     
     setupQualitySelector();
     setupDataSaverToggle();
+    
+    // Initialize quality indicator with current quality
+    setTimeout(() => {
+      if (streamingManager) {
+        updateQualityIndicator(streamingManager.getCurrentQuality());
+      }
+    }, 1000);
     
     console.log('✅ StreamingManager initialized');
     
@@ -1660,6 +1687,14 @@ function handlePlay() {
     streamingManager.initialize();
     
     player.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    
+    // Initialize quality indicator
+    setTimeout(() => {
+      if (streamingManager) {
+        updateQualityIndicator(streamingManager.getCurrentQuality());
+      }
+    }, 1000);
+    
     return;
   }
   
