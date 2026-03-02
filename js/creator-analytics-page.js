@@ -1,162 +1,133 @@
-// js/creator-analytics-page.js — Creator Analytics Page Controller
-// Bantu Stream Connect — Phase 5 Implementation
+// js/creator-analytics-page.js — Dedicated Analytics Page Controller
+// Bantu Stream Connect — Phase 5B Implementation
+// FIXED: Syntax errors resolved
 
 (function() {
   'use strict';
   
-  console.log('📊 Creator Analytics Page initializing...');
-  
-  // Global state
-  let currentUser = null;
-  let analyticsManager = null;
-  let currentTimeRange = '30days';
-  let charts = {};
-  
-  // ============================================
-  // INITIALIZATION
-  // ============================================
-  
-  async function initializePage() {
-    try {
-      // Check auth
-      const {  { session } } = await window.supabaseClient.auth.getSession();
-      if (!session?.user) {
-        window.location.href = 'login.html?redirect=creator-analytics.html';
-        return;
-      }
-      currentUser = session.user;
-      
-      // Initialize analytics manager
-      if (window.CreatorAnalytics) {
-        analyticsManager = new window.CreatorAnalytics({
-          supabase: window.supabaseClient,
-          userId: currentUser.id,
-          onDataLoaded: (data) => {
-            console.log('📊 Analytics data loaded:', data);
-          },
-          onError: (err) => {
-            console.error('❌ Analytics error:', err);
-            showToast('Analytics error', 'error');
-          }
-        });
-      }
-      
-      // Load data
-      await loadDashboardData();
-      
-      // Setup UI
-      setupEventListeners();
-      
-      // Hide loading, show app
-      document.getElementById('loading').style.display = 'none';
-      document.getElementById('app').style.display = 'block';
-      
-      console.log('✅ Creator Analytics Page initialized');
-      
-    } catch (error) {
-      console.error('❌ Page initialization failed:', error);
-      showToast('Failed to load analytics', 'error');
-    }
-  }
-  
-  // ============================================
-  // DATA LOADING
-  // ============================================
-  
-  async function loadDashboardData() {
-    if (!analyticsManager) return;
+  console.log('📈 Creator Analytics Page loading...');
+
+  // Wait for DOM and dependencies
+  document.addEventListener('DOMContentLoaded', async () => {
+    console.log('✅ DOM ready, initializing analytics page...');
     
-    try {
-      const data = await analyticsManager.getDashboardData(currentTimeRange);
-      
-      if (data.error) throw new Error(data.error);
-      
-      // Update summary cards
-      updateSummaryCards(data.summary);
-      
-      // Load charts
-      await loadCharts(data.summary);
-      
-      // Load top content
-      await loadTopContent();
-      
-      // Load audience insights
-      await loadAudienceInsights();
-      
-      // Populate content filter
-      await populateContentFilter(data.content);
-      
-    } catch (error) {
-      console.error('❌ Failed to load dashboard data:', error);
-      showToast('Failed to load analytics', 'error');
+    // Check auth first
+    if (!window.AuthHelper?.isAuthenticated?.()) {
+      window.location.href = 'login.html?redirect=creator-analytics.html';
+      return;
     }
+    
+    const userProfile = window.AuthHelper.getUserProfile();
+    if (!userProfile?.id) {
+      console.error('❌ No user profile found');
+      return;
+    }
+    
+    // Initialize analytics module
+    if (!window.CreatorAnalytics) {
+      console.error('❌ CreatorAnalytics module not loaded');
+      document.getElementById('analytics-loading').style.display = 'none';
+      document.getElementById('analytics-error').style.display = 'flex';
+      return;
+    }
+    
+    const analytics = new window.CreatorAnalytics({
+      supabase: window.supabaseClient,
+      userId: userProfile.id,
+      onDataLoaded: function(data) {
+        console.log('📊 Analytics data loaded:', data);
+        renderDashboard(data);
+      },
+      onError: function(err) {
+        console.error('❌ Analytics error:', err);
+        document.getElementById('analytics-loading').style.display = 'none';
+        document.getElementById('analytics-error').style.display = 'flex';
+        document.getElementById('error-message').textContent = err.error || 'Failed to load analytics';
+      }
+    });
+    
+    // Setup UI
+    setupTimeRangeSelector(analytics);
+    setupExportButton(analytics);
+    setupBackButton();
+    
+    // Load initial data
+    await analytics.getDashboardData('30days');
+  });
+
+  // ============================================
+  // RENDER FUNCTIONS
+  // ============================================
+
+  function renderDashboard(data) {
+    // Hide loading, show content
+    document.getElementById('analytics-loading').style.display = 'none';
+    document.getElementById('analytics-content').style.display = 'block';
+    
+    // Update summary cards
+    updateSummaryCards(data.summary);
+    
+    // Render charts
+    renderViewsChart(data.content);
+    renderEarningsChart(data.content);
+    
+    // Render top content table
+    renderTopContentTable(data.content);
+    
+    // Update time range label
+    document.getElementById('time-range-label').textContent = data.timeRange;
   }
-  
+
   function updateSummaryCards(summary) {
-    document.getElementById('totalViews').textContent = formatNumber(summary.totalViews || 0);
-    document.getElementById('totalWatchTime').textContent = formatWatchTime(summary.totalWatchTime || 0);
-    document.getElementById('uniqueViewers').textContent = formatNumber(summary.uniqueViewers || 0);
-    document.getElementById('avgCompletion').textContent = Math.round(summary.avgCompletionRate || 0) + '%';
+    const cards = [
+      { id: 'total-uploads', value: summary.totalUploads, icon: 'fa-cloud-upload-alt' },
+      { id: 'total-views', value: formatNumber(summary.totalViews), icon: 'fa-eye' },
+      { id: 'total-earnings', value: 'R' + (summary.totalEarnings || 0).toFixed(2), icon: 'fa-money-bill-wave' },
+      { id: 'total-connectors', value: formatNumber(summary.totalConnectors), icon: 'fa-users' }
+    ];
+    
+    cards.forEach(card => {
+      const el = document.getElementById(card.id);
+      if (el) {
+        el.innerHTML = `<i class="fas ${card.icon}"></i> ${card.value}`;
+      }
+    });
+    
+    // Monetization badge
+    const badge = document.getElementById('monetization-badge');
+    if (badge) {
+      if (summary.isEligibleForMonetization) {
+        badge.className = 'monetization-badge eligible';
+        badge.innerHTML = '<i class="fas fa-check-circle"></i> Monetization Ready';
+      } else {
+        badge.className = 'monetization-badge';
+        badge.innerHTML = '<i class="fas fa-clock"></i> Working Toward Monetization';
+      }
+    }
   }
-  
-  async function loadCharts(summary) {
-    // Views over time chart
-    const viewsData = await analyticsManager.getWatchTimeByDate(currentTimeRange);
-    renderViewsChart(viewsData);
+
+  function renderViewsChart(content) {
+    const ctx = document.getElementById('views-chart');
+    if (!ctx || typeof Chart === 'undefined') return;
     
-    // Watch time chart
-    renderWatchTimeChart(viewsData);
+    // Destroy existing chart
+    if (window.viewsChart) {
+      window.viewsChart.destroy();
+    }
     
-    // Engagement chart
-    renderEngagementChart(summary);
+    // Prepare data (last 7 days)
+    const labels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    const data = content.slice(0, 7).map(c => c.views || 0);
     
-    // Retention chart
-    renderRetentionChart();
-  }
-  
-  async function loadTopContent() {
-    if (!analyticsManager) return;
-    
-    const topContent = await analyticsManager.getTopContent(10, currentTimeRange);
-    renderTopContentTable(topContent);
-  }
-  
-  async function loadAudienceInsights() {
-    // Mock data for now (replace with actual queries)
-    renderLocationsChart();
-    renderDeviceChart();
-    renderTrafficChart();
-  }
-  
-  async function populateContentFilter(content) {
-    const select = document.getElementById('contentFilter');
-    if (!select || !content) return;
-    
-    select.innerHTML = '<option value="all">All Content</option>' +
-      content.slice(0, 20).map(item => 
-        `<option value="${item.id}">${escapeHtml(item.title?.substring(0, 50) || 'Untitled')}</option>`
-      ).join('');
-  }
-  
-  // ============================================
-  // CHART RENDERING
-  // ============================================
-  
-  function renderViewsChart(viewsData) {
-    const ctx = document.getElementById('viewsChart');
-    if (!ctx) return;
-    
-    if (charts.views) charts.views.destroy();
-    
-    charts.views = new Chart(ctx, {
+    window.viewsChart = new Chart(ctx, {
       type: 'line',
-       {
-        labels: viewsData.map(d => new Date(d.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })),
+      data: {
+        labels: labels,
         datasets: [{
           label: 'Views',
-          data: viewsData.map(d => d.watchTime > 0 ? 1 : 0), // Simplified
-          borderColor: '#F59E0B',
-          backgroundColor: 'rgba(245, 158, 11, 0.1)',
+          data: data,
+          borderColor: '#1D4ED8',
+          backgroundColor: 'rgba(29, 78, 216, 0.1)',
           tension: 0.4,
           fill: true
         }]
@@ -164,213 +135,94 @@
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        plugins: { legend: { display: false } },
+        plugins: {
+          legend: { display: false }
+        },
         scales: {
-          x: { grid: { display: false }, ticks: { color: '#94A3B8' } },
-          y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { color: '#94A3B8' } }
+          y: {
+            beginAtZero: true,
+            grid: { color: 'rgba(255, 255, 255, 0.1)' },
+            ticks: { color: 'var(--slate-grey)' }
+          },
+          x: {
+            grid: { display: false },
+            ticks: { color: 'var(--slate-grey)' }
+          }
         }
       }
     });
   }
-  
-  function renderWatchTimeChart(viewsData) {
-    const ctx = document.getElementById('watchTimeChart');
-    if (!ctx) return;
+
+  function renderEarningsChart(content) {
+    const ctx = document.getElementById('earnings-chart');
+    if (!ctx || typeof Chart === 'undefined') return;
     
-    if (charts.watchTime) charts.watchTime.destroy();
+    if (window.earningsChart) {
+      window.earningsChart.destroy();
+    }
     
-    charts.watchTime = new Chart(ctx, {
+    const labels = content.slice(0, 7).map((_, i) => `Day ${i + 1}`);
+    const data = content.slice(0, 7).map(c => (c.views || 0) * 0.01);
+    
+    window.earningsChart = new Chart(ctx, {
       type: 'bar',
-       {
-        labels: viewsData.map(d => new Date(d.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })),
+      data: {
+        labels: labels,
         datasets: [{
-          label: 'Watch Time (hours)',
-          data: viewsData.map(d => d.watchTimeHours),
-          backgroundColor: 'rgba(29, 78, 216, 0.8)',
-          borderColor: '#1D4ED8',
+          label: 'Earnings (R)',
+          data: data,
+          backgroundColor: 'rgba(245, 158, 11, 0.6)',
+          borderColor: '#F59E0B',
           borderWidth: 1
         }]
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        plugins: { legend: { display: false } },
+        plugins: {
+          legend: { display: false }
+        },
         scales: {
-          x: { grid: { display: false }, ticks: { color: '#94A3B8' } },
-          y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { color: '#94A3B8' } }
+          y: {
+            beginAtZero: true,
+            grid: { color: 'rgba(255, 255, 255, 0.1)' },
+            ticks: { 
+              color: 'var(--slate-grey)',
+              callback: value => 'R' + value.toFixed(2)
+            }
+          },
+          x: {
+            grid: { display: false },
+            ticks: { color: 'var(--slate-grey)' }
+          }
         }
       }
     });
   }
-  
-  function renderEngagementChart(summary) {
-    const ctx = document.getElementById('engagementChart');
-    if (!ctx) return;
-    
-    if (charts.engagement) charts.engagement.destroy();
-    
-    charts.engagement = new Chart(ctx, {
-      type: 'doughnut',
-       {
-        labels: ['Likes', 'Comments', 'Shares'],
-        datasets: [{
-          data: [65, 25, 10], // Mock data
-          backgroundColor: ['#1D4ED8', '#F59E0B', '#10B981'],
-          borderWidth: 0
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: { legend: { position: 'bottom', labels: { color: '#F8FAFC' } } }
-      }
-    });
-  }
-  
-  function renderRetentionChart() {
-    const ctx = document.getElementById('retentionChart');
-    if (!ctx) return;
-    
-    if (charts.retention) charts.retention.destroy();
-    
-    const retentionData = [100, 85, 72, 60, 48, 38, 30, 24, 18, 14, 10];
-    
-    charts.retention = new Chart(ctx, {
-      type: 'line',
-       {
-        labels: ['0%', '10%', '20%', '30%', '40%', '50%', '60%', '70%', '80%', '90%', '100%'],
-        datasets: [{
-          label: 'Retention %',
-          data: retentionData,
-          borderColor: '#F59E0B',
-          backgroundColor: 'rgba(245, 158, 11, 0.1)',
-          tension: 0.3,
-          fill: true,
-          pointRadius: 3,
-          pointBackgroundColor: '#F59E0B'
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: { legend: { display: false } },
-        scales: {
-          x: { grid: { display: false }, ticks: { color: '#94A3B8' } },
-          y: { beginAtZero: true, max: 100, grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { color: '#94A3B8', callback: v => v + '%' } }
-        }
-      }
-    });
-  }
-  
-  function renderLocationsChart() {
-    const locations = [
-      { name: 'South Africa', percent: 68 },
-      { name: 'Nigeria', percent: 12 },
-      { name: 'Kenya', percent: 8 },
-      { name: 'Ghana', percent: 5 },
-      { name: 'Other', percent: 7 }
-    ];
-    
-    const list = document.getElementById('locationsList');
-    if (!list) return;
-    
-    list.innerHTML = locations.map(loc => `
-      <div class="location-item">
-        <span class="location-name">${loc.name}</span>
-        <span class="location-percent">${loc.percent}%</span>
-      </div>
-    `).join('');
-  }
-  
-  function renderDeviceChart() {
-    const ctx = document.getElementById('deviceChart');
-    if (!ctx) return;
-    
-    if (charts.device) charts.device.destroy();
-    
-    charts.device = new Chart(ctx, {
-      type: 'doughnut',
-       {
-        labels: ['Mobile', 'Desktop', 'Tablet'],
-        datasets: [{
-          data: [72, 22, 6],
-          backgroundColor: ['#1D4ED8', '#F59E0B', '#10B981'],
-          borderWidth: 0
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: { legend: { position: 'bottom', labels: { color: '#F8FAFC' } } }
-      }
-    });
-  }
-  
-  function renderTrafficChart() {
-    const ctx = document.getElementById('trafficChart');
-    if (!ctx) return;
-    
-    if (charts.traffic) charts.traffic.destroy();
-    
-    charts.traffic = new Chart(ctx, {
-      type: 'bar',
-       {
-        labels: ['Direct', 'Search', 'Social', 'Referral'],
-        datasets: [{
-          label: '%',
-          data: [45, 30, 18, 7],
-          backgroundColor: ['#1D4ED8', '#F59E0B', '#10B981', '#8B5CF6'],
-          borderWidth: 0
-        }]
-      },
-      options: {
-        indexAxis: 'y',
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: { legend: { display: false } },
-        scales: {
-          x: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { color: '#94A3B8', callback: v => v + '%' } },
-          y: { grid: { display: false }, ticks: { color: '#F8FAFC' } }
-        }
-      }
-    });
-  }
-  
-  function renderTopContentTable(items) {
-    const tbody = document.getElementById('topContentBody');
+
+  function renderTopContentTable(content) {
+    const tbody = document.getElementById('top-content-body');
     if (!tbody) return;
     
-    if (!items || items.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--slate-grey)">No content data available</td></tr>';
-      return;
-    }
-    
-    tbody.innerHTML = items.map(item => {
-      const content = item.Content || {};
-      const views = item.totalViews || 0;
-      const watchTime = item.totalWatchTime || 0;
-      const avgDuration = Math.round(item.avgWatchTime || 0);
-      const completion = item.avgCompletionRate || 0;
-      const engagement = Math.round((views > 0 ? 1 : 0) * 100); // Simplified
+    tbody.innerHTML = content.slice(0, 10).map((item, index) => {
+      const thumbnail = item.thumbnail_url 
+        ? window.SupabaseHelper?.fixMediaUrl?.(item.thumbnail_url) || item.thumbnail_url
+        : 'https://via.placeholder.com/60x34';
       
       return `
         <tr>
+          <td>${index + 1}</td>
           <td>
             <div class="content-cell">
-              <img src="${content.thumbnail_url || 'https://via.placeholder.com/60x34'}" 
-                   alt="${content.title || 'Content'}" 
-                   class="content-thumb"
-                   onerror="this.src='https://via.placeholder.com/60x34'">
-              <span class="content-title" title="${content.title || ''}">${content.title || 'Untitled'}</span>
+              <img src="${thumbnail}" alt="${item.title}" class="content-thumb" onerror="this.src='https://via.placeholder.com/60x34'">
+              <span class="content-title">${truncateText(item.title, 40)}</span>
             </div>
           </td>
-          <td>${formatNumber(views)}</td>
-          <td>${formatWatchTime(watchTime)}</td>
-          <td>${formatWatchTime(avgDuration)}</td>
-          <td>${completion}%</td>
-          <td>${engagement}%</td>
+          <td>${formatNumber(item.views || 0)}</td>
+          <td>${formatDuration(item.avgWatchTime || 0)}</td>
+          <td>${item.avgCompletionRate || 0}%</td>
           <td>
-            <button class="action-btn" onclick="window.location.href='content-detail.html?id=${content.id}'">
+            <button class="action-btn" onclick="window.location.href='content-detail.html?id=${item.content_id}'">
               View
             </button>
           </td>
@@ -378,112 +230,126 @@
       `;
     }).join('');
   }
-  
+
   // ============================================
-  // EVENT LISTENERS
+  // UI SETUP FUNCTIONS
   // ============================================
-  
-  function setupEventListeners() {
-    // Back button
-    document.getElementById('backBtn')?.addEventListener('click', () => {
-      window.location.href = 'creator-dashboard.html';
-    });
+
+  function setupTimeRangeSelector(analytics) {
+    const buttons = document.querySelectorAll('.time-range-btn');
     
-    // Refresh button
-    document.getElementById('refreshBtn')?.addEventListener('click', async () => {
-      showToast('Refreshing...', 'info');
-      await loadDashboardData();
-      showToast('Analytics refreshed', 'success');
-    });
-    
-    // Export button
-    document.getElementById('exportBtn')?.addEventListener('click', async () => {
-      if (!analyticsManager) return;
-      
-      showToast('Exporting...', 'info');
-      const result = await analyticsManager.exportAnalytics('csv', currentTimeRange);
-      
-      if (result.csv) {
-        const blob = new Blob([result.csv], { type: 'text/csv' });
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = result.filename || 'analytics-export.csv';
-        a.click();
-        window.URL.revokeObjectURL(url);
-        showToast('Export downloaded', 'success');
-      } else {
-        showToast('Export failed', 'error');
-      }
-    });
-    
-    // Time range buttons
-    document.querySelectorAll('.time-range-btn').forEach(btn => {
-      btn.addEventListener('click', async (e) => {
-        document.querySelectorAll('.time-range-btn').forEach(b => b.classList.remove('active'));
-        e.target.classList.add('active');
-        currentTimeRange = e.target.dataset.range;
-        showToast('Loading data for ' + currentTimeRange + '...', 'info');
-        await loadDashboardData();
-      });
-    });
-    
-    // Table sort buttons
-    document.querySelectorAll('.table-btn').forEach(btn => {
-      btn.addEventListener('click', async (e) => {
-        document.querySelectorAll('.table-btn').forEach(b => b.classList.remove('active'));
-        e.target.classList.add('active');
-        await loadTopContent(); // Would implement sorting logic here
+    buttons.forEach(btn => {
+      btn.addEventListener('click', async function() {
+        // Update active state
+        buttons.forEach(b => b.classList.remove('active'));
+        this.classList.add('active');
+        
+        // Show loading
+        document.getElementById('analytics-content').style.opacity = '0.5';
+        
+        // Fetch new data
+        const timeRange = this.dataset.range;
+        const data = await analytics.getDashboardData(timeRange);
+        
+        // Render
+        if (data && !data.error) {
+          renderDashboard(data);
+        }
+        
+        // Hide loading
+        document.getElementById('analytics-content').style.opacity = '1';
       });
     });
   }
-  
+
+  function setupExportButton(analytics) {
+    const exportBtn = document.getElementById('export-csv-btn');
+    if (!exportBtn) return;
+    
+    exportBtn.addEventListener('click', async function() {
+      const timeRange = document.querySelector('.time-range-btn.active')?.dataset.range || '30days';
+      
+      exportBtn.disabled = true;
+      exportBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Exporting...';
+      
+      try {
+        const csv = await analytics.exportAnalytics('csv', timeRange);
+        
+        // Download
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `bantu-analytics-${timeRange}-${new Date().toISOString().split('T')[0]}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
+        
+        showToast('Analytics exported successfully!', 'success');
+      } catch (error) {
+        console.error('Export failed:', error);
+        showToast('Failed to export analytics', 'error');
+      } finally {
+        exportBtn.disabled = false;
+        exportBtn.innerHTML = '<i class="fas fa-download"></i> Export CSV';
+      }
+    });
+  }
+
+  function setupBackButton() {
+    const backBtn = document.getElementById('back-to-dashboard');
+    if (backBtn) {
+      backBtn.addEventListener('click', () => {
+        window.location.href = 'creator-dashboard.html';
+      });
+    }
+  }
+
   // ============================================
   // UTILITY FUNCTIONS
   // ============================================
-  
+
   function formatNumber(num) {
-    if (!num) return '0';
+    if (!num && num !== 0) return '0';
     if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
     if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
     return num.toString();
   }
-  
-  function formatWatchTime(seconds) {
-    if (!seconds) return '0h 0m';
-    const hours = Math.floor(seconds / 3600);
+
+  function formatDuration(seconds) {
+    if (!seconds || seconds <= 0) return '0m 0s';
+    const hrs = Math.floor(seconds / 3600);
     const mins = Math.floor((seconds % 3600) / 60);
-    if (hours > 0) return hours + 'h ' + mins + 'm';
-    return mins + 'm';
+    const secs = Math.floor(seconds % 60);
+    if (hrs > 0) return `${hrs}h ${mins}m`;
+    if (mins > 0) return `${mins}m ${secs}s`;
+    return `${secs}s`;
   }
-  
-  function escapeHtml(text) {
+
+  function truncateText(text, maxLength) {
     if (!text) return '';
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
+    if (text.length <= maxLength) return text;
+    return text.substring(0, maxLength) + '...';
   }
-  
+
   function showToast(message, type = 'info') {
-    const container = document.getElementById('toast-container');
-    if (!container) return;
+    let container = document.getElementById('toast-container');
+    if (!container) {
+      container = document.createElement('div');
+      container.id = 'toast-container';
+      document.body.appendChild(container);
+    }
     
     const toast = document.createElement('div');
     toast.className = `toast ${type}`;
-    const icons = { error: 'fa-exclamation-triangle', success: 'fa-check-circle', info: 'fa-info-circle' };
-    toast.innerHTML = `<i class="fas ${icons[type] || 'fa-info-circle'}"></i> ${message}`;
+    toast.innerHTML = `<i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i> ${message}`;
+    
     container.appendChild(toast);
-    setTimeout(() => toast.remove(), 3000);
+    
+    setTimeout(() => {
+      toast.style.opacity = '0';
+      setTimeout(() => toast.remove(), 300);
+    }, 3000);
   }
-  
-  // ============================================
-  // START
-  // ============================================
-  
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initializePage);
-  } else {
-    initializePage();
-  }
-  
+
+  console.log('✅ Creator Analytics Page module loaded successfully');
 })();
