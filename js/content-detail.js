@@ -8,6 +8,7 @@
 // PHASE 1-3 POLISH: Keyboard Shortcuts, Playlist Modal, Loading States
 // FIXED: Playlist duplicate key constraint error handling
 // PHASE 4 ENHANCEMENTS: Quality badge, network speed indicator, HLS.js integration
+// FIXED: Quality selector initialization and rendering issue
 
 console.log('🎬 Content Detail Initializing with RLS-compliant fixes and view tracking on Play button click...');
 
@@ -383,6 +384,8 @@ async function initializeStreamingManager() {
         console.log('📺 Quality changed:', data);
         updateQualityIndicator(data.quality);
         showToast('Quality: ' + data.quality, 'info');
+        // Refresh quality selector UI
+        setupQualitySelector();
       },
       onDataSaverToggle: function(data) {
         console.log('💾 Data saver:', data.enabled ? 'ON' : 'OFF');
@@ -406,6 +409,7 @@ async function initializeStreamingManager() {
       }
     }, 5000);
     
+    // ✅ CRITICAL: Setup quality selector AFTER streaming manager is ready
     setupQualitySelector();
     setupDataSaverToggle();
     
@@ -423,28 +427,62 @@ async function initializeStreamingManager() {
   }
 }
 
-// PHASE 4: Setup quality selector UI
+// ============================================
+// PHASE 4: Setup quality selector UI with streaming manager integration
+// ============================================
 function setupQualitySelector() {
-  const qualityOptions = document.querySelectorAll('.quality-option');
-  if (!qualityOptions.length) return;
+  const qualityContainer = document.getElementById('qualityOptions');
+  if (!qualityContainer) {
+    console.warn('⚠️ Quality options container not found');
+    return;
+  }
   
-  qualityOptions.forEach(btn => {
+  // Get available qualities from streaming manager
+  const qualities = streamingManager?.getAvailableQualities?.() || [
+    { label: 'Auto', value: 'auto' },
+    { label: '1080p', value: '1080p' },
+    { label: '720p', value: '720p' },
+    { label: '480p', value: '480p' },
+    { label: '360p', value: '360p' }
+  ];
+  
+  console.log('📺 Setting up quality selector with', qualities.length, 'qualities');
+  
+  // Render quality options
+  qualityContainer.innerHTML = qualities.map(q => `
+    <button class="quality-option ${q.value === streamingManager?.getCurrentQuality?.() ? 'active' : ''}" 
+            data-quality="${q.value}">
+      ${q.label}
+    </button>
+  `).join('');
+  
+  // Attach click handlers
+  qualityContainer.querySelectorAll('.quality-option').forEach(btn => {
     btn.addEventListener('click', async function() {
       const quality = this.dataset.quality;
       
-      qualityOptions.forEach(b => b.classList.remove('active'));
+      // Update UI
+      qualityContainer.querySelectorAll('.quality-option').forEach(b => 
+        b.classList.remove('active')
+      );
       this.classList.add('active');
       
+      // Change quality via streaming manager
       if (streamingManager) {
         await streamingManager.setQuality(quality);
+        console.log('📺 Quality changed to:', quality);
+        showToast('Quality: ' + quality.toUpperCase(), 'info');
       }
       
+      // Close settings menu
       const settingsMenu = document.querySelector('.settings-menu');
       if (settingsMenu) {
         settingsMenu.style.display = 'none';
       }
     });
   });
+  
+  console.log('✅ Quality selector initialized');
 }
 
 // PHASE 4: Setup data saver toggle
