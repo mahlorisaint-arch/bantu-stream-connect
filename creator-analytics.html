@@ -3,39 +3,17 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
-<title>Analytics - Creator Dashboard - Bantu Stream Connect</title>
-
+<title>Creator Analytics - Bantu Stream Connect</title>
 <!-- Google Fonts -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Orbitron:wght@400;500;600;700&display=swap" rel="stylesheet">
-
 <!-- Font Awesome -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
 <!-- Chart.js -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-<!-- ============================================ -->
-<!-- STEP 1: SUPABASE SDK (MUST BE FIRST) -->
-<!-- ============================================ -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<!-- Supabase JS SDK -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-<!-- ============================================ -->
-<!-- STEP 2: INITIALIZE SUPABASE CLIENT -->
-<!-- ============================================ -->
-<script>
-// Initialize Supabase client globally
-const SUPABASE_URL = 'https://ydnxqnbjoshvxteevemc.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U';
-
-window.supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-window.SUPABASE_URL = SUPABASE_URL;
-window.SUPABASE_ANON_KEY = SUPABASE_ANON_KEY;
-
-console.log('✅ Supabase client initialized for analytics page');
-</script>
-
 <!-- Custom CSS -->
 <link rel="stylesheet" href="css/creator-dashboard.css">
 <link rel="stylesheet" href="css/creator-analytics.css">
@@ -44,7 +22,7 @@ console.log('✅ Supabase client initialized for analytics page');
 <!-- Loading Screen -->
 <div id="loading" class="loading-screen">
 <div class="spinner"></div>
-<div id="loading-text">Loading analytics...</div>
+<div id="loading-text">Loading Analytics...</div>
 </div>
 
 <!-- Animated Background -->
@@ -55,37 +33,25 @@ console.log('✅ Supabase client initialized for analytics page');
 <div class="glow-cycle glow-4"></div>
 </div>
 
-<!-- Main App -->
+<!-- Main App (hidden until loaded) -->
 <div id="app" style="display: none;">
 <!-- Header -->
 <header class="header">
 <div class="logo" onclick="window.location.href='creator-dashboard.html'">
 <div class="logo-icon">
-<svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-<rect width="40" height="40" rx="8" fill="#0F172A"/>
-<path d="M8 20 L12 16 L16 22 L20 18 L24 24 L28 20 L32 26" stroke="url(#pulse-gradient)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-<circle cx="32" cy="26" r="3" fill="#F59E0B"/>
-<defs>
-<linearGradient id="pulse-gradient" x1="8" y1="20" x2="32" y2="26" gradientUnits="userSpaceOnUse">
-<stop stop-color="#1D4ED8"/>
-<stop offset="1" stop-color="#F59E0B"/>
-</linearGradient>
-</defs>
-</svg>
+<i class="fas fa-chart-line" style="color: var(--warm-gold);"></i>
 </div>
-<div class="logo-text">ANALYTICS</div>
+<div class="logo-text">CREATOR ANALYTICS</div>
 </div>
 <div class="header-actions">
 <button id="backBtn" class="icon-btn" title="Back to Dashboard">
 <i class="fas fa-arrow-left"></i>
 </button>
 <button id="refreshBtn" class="icon-btn" title="Refresh">
-<i class="fas fa-redo-alt"></i>
+<i class="fas fa-redo"></i>
 </button>
-<button id="profile-btn" class="profile-btn" title="Profile">
-<div class="profile-placeholder" id="userProfilePlaceholder">
-<i class="fas fa-user"></i>
-</div>
+<button id="exportBtn" class="icon-btn" title="Export CSV">
+<i class="fas fa-download"></i>
 </button>
 </div>
 </header>
@@ -95,10 +61,9 @@ console.log('✅ Supabase client initialized for analytics page');
 <!-- Time Range Selector -->
 <section class="analytics-controls">
 <div class="time-range-selector">
-<button class="time-range-btn active" data-range="7days">7 Days</button>
-<button class="time-range-btn" data-range="30days">30 Days</button>
+<button class="time-range-btn" data-range="7days">7 Days</button>
+<button class="time-range-btn active" data-range="30days">30 Days</button>
 <button class="time-range-btn" data-range="90days">90 Days</button>
-<button class="time-range-btn" data-range="all">All Time</button>
 </div>
 <div class="content-filter">
 <select id="contentFilter" class="filter-select">
@@ -111,43 +76,39 @@ console.log('✅ Supabase client initialized for analytics page');
 <!-- Summary Cards -->
 <section class="summary-grid">
 <div class="summary-card">
-<div class="summary-icon"><i class="fas fa-eye"></i></div>
-<div class="summary-content">
-<h4>Total Views</h4>
-<p id="totalViews">0</p>
-<span id="viewsTrend" class="trend positive">+0%</span>
+<i class="fas fa-eye"></i>
+<div>
+<div class="summary-value" id="totalViews">0</div>
+<div class="summary-label">Total Views</div>
 </div>
 </div>
 <div class="summary-card">
-<div class="summary-icon"><i class="fas fa-clock"></i></div>
-<div class="summary-content">
-<h4>Watch Time</h4>
-<p id="totalWatchTime">0h</p>
-<span id="watchTimeTrend" class="trend positive">+0%</span>
+<i class="fas fa-clock"></i>
+<div>
+<div class="summary-value" id="totalWatchTime">0h</div>
+<div class="summary-label">Watch Time</div>
 </div>
 </div>
 <div class="summary-card">
-<div class="summary-icon"><i class="fas fa-users"></i></div>
-<div class="summary-content">
-<h4>Unique Viewers</h4>
-<p id="uniqueViewers">0</p>
-<span id="viewersTrend" class="trend positive">+0%</span>
+<i class="fas fa-users"></i>
+<div>
+<div class="summary-value" id="uniqueViewers">0</div>
+<div class="summary-label">Unique Viewers</div>
 </div>
 </div>
 <div class="summary-card">
-<div class="summary-icon"><i class="fas fa-chart-line"></i></div>
-<div class="summary-content">
-<h4>Avg. Completion</h4>
-<p id="avgCompletion">0%</p>
-<span id="completionTrend" class="trend positive">+0%</span>
+<i class="fas fa-chart-line"></i>
+<div>
+<div class="summary-value" id="avgCompletion">0%</div>
+<div class="summary-label">Avg. Completion</div>
 </div>
 </div>
 </section>
 
-<!-- Charts Section -->
-<section class="charts-section">
+<!-- Charts -->
+<section class="charts-grid">
 <div class="chart-card">
-<h3><i class="fas fa-chart-line"></i> Views Over Time</h3>
+<h3><i class="fas fa-chart-area"></i> Views Over Time</h3>
 <canvas id="viewsChart"></canvas>
 </div>
 <div class="chart-card">
@@ -155,7 +116,7 @@ console.log('✅ Supabase client initialized for analytics page');
 <canvas id="watchTimeChart"></canvas>
 </div>
 <div class="chart-card">
-<h3><i class="fas fa-chart-pie"></i> Engagement Rate</h3>
+<h3><i class="fas fa-chart-pie"></i> Engagement Breakdown</h3>
 <canvas id="engagementChart"></canvas>
 </div>
 <div class="chart-card">
@@ -164,7 +125,7 @@ console.log('✅ Supabase client initialized for analytics page');
 </div>
 </section>
 
-<!-- Top Content Table -->
+<!-- Top Content -->
 <section class="top-content-section">
 <div class="section-header">
 <h3><i class="fas fa-trophy"></i> Top Performing Content</h3>
@@ -181,7 +142,7 @@ console.log('✅ Supabase client initialized for analytics page');
 <th>Content</th>
 <th>Views</th>
 <th>Watch Time</th>
-<th>Avg. View Duration</th>
+<th>Avg. Duration</th>
 <th>Completion Rate</th>
 <th>Engagement</th>
 <th>Actions</th>
@@ -218,36 +179,16 @@ console.log('✅ Supabase client initialized for analytics page');
 
 <!-- Footer -->
 <footer class="footer">
-<p>Bantu Stream Connect © 2025 • Analytics powered by real-time data</p>
+<p>Bantu Stream Connect © 2025 • Creator Analytics</p>
 </footer>
-
-<!-- Global Navigation -->
-<nav class="global-nav">
-<a href="index.html" class="nav-item">
-<i class="fas fa-home"></i>
-<span>Home</span>
-</a>
-<a href="trending_screen.html" class="nav-item">
-<i class="fas fa-fire"></i>
-<span>Trending</span>
-</a>
-<a href="content-library.html" class="nav-item">
-<i class="fas fa-th-large"></i>
-<span>Library</span>
-</a>
-<a href="creator-dashboard.html" class="nav-item active">
-<i class="fas fa-user"></i>
-<span>Creator</span>
-</a>
-</nav>
 </div>
 
 <!-- Toast Container -->
 <div id="toast-container"></div>
 
-<!-- ============================================ -->
-<!-- STEP 3: LOAD MODULES IN CORRECT ORDER -->
-<!-- ============================================ -->
+<!-- Scripts -->
+<script src="js/supabase-helper.js"></script>
+<script src="js/auth-helper.js"></script>
 <script src="js/creator-analytics.js"></script>
 <script src="js/creator-analytics-page.js"></script>
 </body>
