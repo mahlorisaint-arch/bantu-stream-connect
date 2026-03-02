@@ -345,23 +345,23 @@
     <div id="toast-container"></div>
 
     <!-- ============================================ -->
-    <!-- PHASE 4: SCRIPT LOADING ORDER (CRITICAL)    -->
+    <!-- PHASE 5A + 5B: SCRIPT LOADING ORDER         -->
     <!-- ============================================ -->
 
-    <!-- Phase 4: Creator Analytics Module (MUST load BEFORE dashboard) -->
+    <!-- Phase 5: Creator Analytics Module (MUST load BEFORE dashboard) -->
     <script src="js/creator-analytics.js"></script>
 
     <!-- Main Dashboard Script (loads AFTER creator-analytics.js) -->
     <script src="js/creator-dashboard.js"></script>
     
     <!-- ============================================ -->
-    <!-- PHASE 4: DIAGNOSTIC SCRIPT (REMOVE IN PROD) -->
+    <!-- PHASE 5: DIAGNOSTIC SCRIPT (REMOVE IN PROD) -->
     <!-- ============================================ -->
     <script>
-    // Phase 4: Diagnostic check - Remove this in production
+    // Phase 5: Diagnostic check - Remove this in production
     (function() {
-        console.log('🔍 Phase 4 Diagnostic Check');
-        console.log('---------------------------');
+        console.log('🔍 Phase 5A + 5B Diagnostic Check');
+        console.log('----------------------------------');
         
         // Check if creator-analytics.js loaded
         if (typeof window.CreatorAnalytics !== 'undefined') {
@@ -399,7 +399,7 @@
             console.log('   creator-analytics.js should come BEFORE creator-dashboard.js');
         }
         
-        console.log('---------------------------');
+        console.log('----------------------------------');
     })();
     </script>
 </body>
