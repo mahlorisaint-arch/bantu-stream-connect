@@ -1,5 +1,5 @@
 // js/creator-analytics.js — Creator Analytics Module
-// Bantu Stream Connect — Phase 5 Implementation
+// Bantu Stream Connect — Phase 5A + 5B Complete Implementation
 
 (function() {
   'use strict';
@@ -93,7 +93,7 @@
     
     try {
       // Get content details
-      const {  content, error: contentError } = await this.supabase
+      const { data: content, error: contentError } = await this.supabase
         .from('Content')
         .select('*, user_profiles!user_id(full_name, username)')
         .eq('id', contentId)
@@ -249,7 +249,7 @@
         return this._generateCSV(dashboardData, topContent);
       }
       
-      return {  { dashboardData, topContent }, format };
+      return { data: { dashboardData, topContent }, format };
       
     } catch (error) {
       console.error('❌ Export failed:', error);
@@ -387,7 +387,7 @@
         .eq('content_id', contentId);
       
       // Unique viewers
-      const {  viewers } = await this.supabase
+      const { data: viewers } = await this.supabase
         .from('content_views')
         .select('viewer_id')
         .eq('content_id', contentId);
@@ -395,7 +395,7 @@
       const unique = new Set(viewers?.map(v => v.viewer_id).filter(Boolean)).size;
       
       // Watch time
-      const {  viewsData } = await this.supabase
+      const { data: viewsData } = await this.supabase
         .from('content_views')
         .select('view_duration')
         .eq('content_id', contentId);
@@ -404,7 +404,7 @@
       const avgWatchTime = total > 0 ? Math.round(totalWatchTime / total) : 0;
       
       // Completion rate from watch_progress
-      const {  progressData } = await this.supabase
+      const { data: progressData } = await this.supabase
         .from('watch_progress')
         .select('last_position')
         .eq('content_id', contentId);
