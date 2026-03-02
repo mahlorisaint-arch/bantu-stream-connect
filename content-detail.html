@@ -1,881 +1,745 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
-    <title>Content Detail - Bantu Stream Connect</title>
-    
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Orbitron:wght@400;500;600;700&display=swap" rel="stylesheet">
-    
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    <!-- Chart.js for analytics -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-    
-    <!-- Supabase JS SDK -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    
-    <!-- PHASE 4: HLS.js Library for Adaptive Streaming -->
-    <script src="https://cdn.jsdelivr.net/npm/hls.js@1.4.12/dist/hls.min.js"></script>
-    
-    <!-- CSS Files -->
-    <link rel="stylesheet" href="css/main.css">
-    <link rel="stylesheet" href="css/video-player.css">
-    <link rel="stylesheet" href="css/content-detail.css">
-    <link rel="stylesheet" href="css/notifications.css">
-    <link rel="stylesheet" href="css/enhanced-video-player.css">
-    
-    <!-- Inline critical CSS -->
-    <style>
-        /* Loading screen */
-        .loading-screen {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: var(--deep-black);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            z-index: 9999;
-        }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+  <title>Bantu Stream Connect - Content Detail</title>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Orbitron:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Chart.js for Analytics -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Supabase JS SDK -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- PHASE 4: HLS.js Library for Adaptive Streaming -->
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@1.4.12/dist/hls.min.js"></script>
+  <!-- FIXED: Theme CSS - MUST be loaded before content-detail.css -->
+  <link rel="stylesheet" href="css/home-feed-themes.css">
+  <!-- Base Styles -->
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/content-detail.css">
+  <!-- PHASE 1 FIX: New Video Player CSS -->
+  <link rel="stylesheet" href="css/video-player.css">
+  <!-- PHASE 2 POLISH: Additional modal styles -->
+  <style>
+    /* PHASE 2 POLISH: Playlist Modal Styles */
+    .playlist-modal {
+      animation: modalFadeIn 0.3s ease;
+    }
+
+    @keyframes modalFadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    .playlist-modal-content {
+      animation: modalSlideIn 0.3s ease;
+    }
+
+    @keyframes modalSlideIn {
+      from { transform: translateY(-20px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+  </style>
+  <!-- FIXED: Conditional preloads to prevent warnings on content-detail page -->
+  <script>
+    // Only preload home-feed resources if on home page
+    (function() {
+      if (window.location.pathname.includes('index.html') || window.location.pathname === '/') {
+        // Home page - preload resources
+        const link1 = document.createElement('link');
+        link1.rel = 'preload';
+        link1.href = 'js/home-feed.js';
+        link1.as = 'script';
+        document.head.appendChild(link1);
         
-        .spinner {
-            width: 50px;
-            height: 50px;
-            border: 3px solid rgba(255, 255, 255, 0.1);
-            border-top-color: var(--warm-gold);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-bottom: 20px;
-        }
+        const link2 = document.createElement('link');
+        link2.rel = 'preload';
+        link2.href = 'css/home-feed.css';
+        link2.as = 'style';
+        document.head.appendChild(link2);
         
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-        
-        :root {
-            --bantu-blue: #1D4ED8;
-            --warm-gold: #F59E0B;
-            --deep-black: #0A0E12;
-            --deep-navy: #0F172A;
-            --soft-white: #F8FAFC;
-            --slate-grey: #94A3B8;
-            --success-color: #10B981;
-            --error-color: #EF4444;
-            --card-bg: rgba(15, 23, 42, 0.6);
-            --card-border: rgba(148, 163, 184, 0.2);
-        }
-        
-        body.theme-light {
-            --deep-black: #F8FAFC;
-            --deep-navy: #FFFFFF;
-            --soft-white: #0F172A;
-            --slate-grey: #64748B;
-            --card-bg: rgba(255, 255, 255, 0.9);
-            --card-border: rgba(100, 116, 139, 0.2);
-        }
-        
-        body.theme-high-contrast {
-            --deep-black: #000000;
-            --deep-navy: #111827;
-            --soft-white: #FFFFFF;
-            --slate-grey: #E5E7EB;
-            --card-bg: rgba(17, 24, 39, 0.95);
-            --card-border: #FFFFFF;
-        }
-        
-        /* Base styles */
-        body {
-            font-family: 'Inter', sans-serif;
-            background: var(--deep-black);
-            color: var(--soft-white);
-            margin: 0;
-            padding: 0;
-            min-height: 100vh;
-            transition: background-color 0.3s ease, color 0.3s ease;
-        }
-        
-        * {
-            box-sizing: border-box;
-        }
-        
-        /* Toast container */
-        #toast-container {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            z-index: 9999;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-        
-        .toast {
-            background: var(--card-bg);
-            border: 1px solid var(--card-border);
-            border-radius: 8px;
-            padding: 12px 20px;
-            color: var(--soft-white);
-            font-size: 14px;
-            backdrop-filter: blur(10px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            animation: slideIn 0.3s ease;
-            max-width: 350px;
-        }
-        
-        .toast i {
-            font-size: 18px;
-        }
-        
-        .toast.success i { color: var(--success-color); }
-        .toast.error i { color: var(--error-color); }
-        .toast.warning i { color: var(--warm-gold); }
-        .toast.info i { color: var(--bantu-blue); }
-        
-        @keyframes slideIn {
-            from {
-                transform: translateX(100%);
-                opacity: 0;
-            }
-            to {
-                transform: translateX(0);
-                opacity: 1;
-            }
-        }
-    </style>
+        console.log('🏠 Home page detected - preloading home-feed resources');
+      } else {
+        console.log('📄 Content detail page detected - skipping home-feed preloads');
+      }
+    })();
+  </script>
 </head>
 <body>
-    <!-- Loading Screen -->
-    <div id="loading" class="loading-screen">
-        <div class="spinner"></div>
-        <div id="loading-text">Loading content...</div>
-    </div>
+  <!-- Loading Screen -->
+  <div id="loading" class="loading-screen">
+    <div class="spinner"></div>
+    <div id="loading-text">Loading content details...</div>
+  </div>
+  
+  <!-- Animated Background -->
+  <div class="animated-bg">
+    <div class="glow-cycle glow-1"></div>
+    <div class="glow-cycle glow-2"></div>
+    <div class="glow-cycle glow-3"></div>
+    <div class="glow-cycle glow-4"></div>
+  </div>
 
-    <!-- Animated Background -->
-    <div class="animated-bg">
-        <div class="glow-cycle glow-1"></div>
-        <div class="glow-cycle glow-2"></div>
-        <div class="glow-cycle glow-3"></div>
-        <div class="glow-cycle glow-4"></div>
-    </div>
+  <!-- Main App (hidden until loaded) -->
+  <div id="app" style="display: none;">
+    <!-- Header -->
+    <header class="header">
+      <div class="logo" onclick="window.location.href='https://bantustreamconnect.com/'">
+        <div class="logo-icon">
+          <img src="assets/icon/bantu_stream_connect_icon.png" alt="Bantu Stream Connect Logo">
+        </div>
+        <div class="logo-text">BANTU STREAM CONNECT</div>
+      </div>
+      <div class="header-actions">
+        <!-- Analytics Button -->
+        <button id="analytics-btn" class="icon-btn" title="Analytics">
+          <i class="fas fa-chart-line"></i>
+        </button>
+        <!-- Search Button -->
+        <button id="search-btn" class="icon-btn search-btn" title="Search">
+          <i class="fas fa-search"></i>
+        </button>
+        <!-- Notifications Button -->
+        <button id="notifications-btn" class="icon-btn" title="Notifications">
+          <i class="fas fa-bell"></i>
+          <span class="notification-badge" id="notification-count" style="display: none;">0</span>
+        </button>
+        <!-- Profile Button -->
+        <button id="profile-btn" class="profile-btn" title="Profile">
+          <div class="profile-placeholder" id="userProfilePlaceholder">
+            <i class="fas fa-user"></i>
+          </div>
+        </button>
+      </div>
+    </header>
 
     <!-- Main Content -->
-    <div id="app" style="display: none;">
-        <!-- Header -->
-        <header class="header">
-            <div class="logo" onclick="window.location.href='index.html'">
-                <button class="menu-toggle" id="menu-toggle" title="Open Menu" aria-label="Open navigation menu">
-                    <i class="fas fa-bars"></i>
-                </button>
-                <div class="logo-icon">
-                    <i class="fas fa-film" style="color: var(--warm-gold); font-size: 20px;"></i>
-                </div>
-                <div class="logo-text">BANTU STREAM CONNECT</div>
-            </div>
-            
-            <div class="header-actions">
-                <!-- Voice Search Button -->
-                <button id="voice-search-btn" class="icon-btn" title="Voice Search">
-                    <i class="fas fa-microphone"></i>
-                </button>
-                
-                <!-- Analytics Button -->
-                <button id="analytics-btn" class="icon-btn" title="Analytics (Alt+A)">
-                    <i class="fas fa-chart-line"></i>
-                </button>
-                
-                <!-- Search Button -->
-                <button id="search-btn" class="icon-btn search-btn" title="Search (Ctrl+K)">
-                    <i class="fas fa-search"></i>
-                </button>
-                
-                <!-- Theme Toggle Button -->
-                <button id="nav-theme-toggle" class="icon-btn" title="Toggle Theme">
-                    <i class="fas fa-palette"></i>
-                </button>
-                
-                <!-- Notifications Button -->
-                <button id="notifications-btn" class="icon-btn" title="Notifications (Alt+N)">
-                    <i class="fas fa-bell"></i>
-                    <span class="notification-badge" id="notification-count" style="display: none;">0</span>
-                </button>
-                
-                <!-- Profile Button with Dropdown -->
-                <div class="profile-switcher">
-                    <button id="current-profile-btn" class="profile-btn" title="Profile (Alt+P)">
-                        <div class="profile-placeholder" id="userProfilePlaceholder">
-                            <i class="fas fa-user"></i>
-                        </div>
-                        <span class="profile-name" id="current-profile-name">Guest</span>
-                        <i class="fas fa-chevron-down"></i>
-                    </button>
-                    <div class="profile-dropdown" id="profile-dropdown">
-                        <div class="profile-dropdown-header">
-                            <h4>Switch Profile</h4>
-                        </div>
-                        <div class="profile-list" id="profile-list"></div>
-                        <div class="profile-dropdown-footer">
-                            <button class="text-btn" id="manage-profiles-btn">
-                                <i class="fas fa-user-cog"></i> Manage Profiles
-                            </button>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- "Built in South Africa" Badge -->
-                <div class="rsa-badge" title="Proudly South African">
-                    <i class="fas fa-map-marker-alt"></i>
-                    <span>RSA</span>
-                </div>
-            </div>
-        </header>
+    <main class="container">
+      <!-- PHASE 1: Continue Watching Section -->
+      <section class="continue-watching-section" id="continueWatchingSection" style="display:none;">
+        <div class="section-header">
+          <h2 class="section-title">Continue Watching</h2>
+          <button class="refresh-btn" id="refreshContinueBtn" title="Refresh">
+            <i class="fas fa-redo"></i>
+          </button>
+        </div>
+        <div class="content-grid" id="continueGrid">
+          <!-- Items injected by JS -->
+        </div>
+      </section>
 
-        <!-- Back Button -->
-        <div class="back-button-container">
-            <button class="back-button" onclick="window.history.back()">
-                <i class="fas fa-arrow-left"></i>
-                <span>Back</span>
+      <!-- ============================================ -->
+      <!-- PHASE 3: RECOMMENDATION RAILS -->
+      <!-- ============================================ -->
+
+      <!-- Continue Watching Rail (PHASE 3 enhanced version) -->
+      <section class="related-section" id="continueWatchingRail" style="display:none;">
+        <!-- Content injected by JS with skeleton loaders -->
+      </section>
+
+      <!-- Because You Watched Rail -->
+      <section class="related-section" id="becauseYouWatchedRail" style="display:none;">
+        <!-- Content injected by JS with skeleton loaders -->
+      </section>
+
+      <!-- More From Creator Rail -->
+      <section class="related-section" id="moreFromCreatorRail" style="display:none;">
+        <!-- Content injected by JS with skeleton loaders -->
+      </section>
+
+      <!-- Hero Section -->
+      <section class="content-hero">
+        <div class="hero-poster" id="heroPoster">
+          <div class="poster-placeholder" id="posterPlaceholder">
+            <i class="fas fa-film"></i>
+          </div>
+        </div>
+        <div class="hero-info">
+          <h1 id="contentTitle">Loading Content...</h1>
+          <div class="hero-meta">
+            <div class="meta-item">
+              <i class="fas fa-user"></i>
+              <span id="creatorName">Creator</span>
+            </div>
+            <div class="meta-item">
+              <i class="fas fa-eye"></i>
+              <span id="viewsCount">0 views</span>
+            </div>
+            <div class="meta-item">
+              <i class="fas fa-clock"></i>
+              <span id="durationText">0m 0s</span>
+            </div>
+            <div class="meta-item">
+              <i class="fas fa-calendar"></i>
+              <span id="uploadDate">--</span>
+            </div>
+          </div>
+          <div class="hero-description" id="contentDescriptionShort">
+            Loading description...
+          </div>
+          <div class="hero-actions">
+            <!-- Resume button will be added dynamically here -->
+            <button class="btn btn-primary" id="playBtn">
+              <i class="fas fa-play"></i>
+              <span>Play Now</span>
             </button>
-        </div>
-
-        <!-- ============================================ -->
-        <!-- VIDEO PLAYER SECTION                         -->
-        <!-- ============================================ -->
-        <div class="video-section">
-            <!-- Hero Poster (shown before play) -->
-            <div class="hero-poster" id="heroPoster">
-                <div class="poster-placeholder" id="posterPlaceholder">
-                    <!-- Poster image will be loaded here -->
-                </div>
-            </div>
-            
-            <!-- Inline Video Player (hidden initially) -->
-            <div class="inline-player" id="inlinePlayer" style="display: none;">
-                <div class="video-container" id="videoContainer">
-                    <video id="inlineVideoPlayer" class="video-js" preload="metadata" playsinline></video>
-                    
-                    <!-- PHASE 4: Quality Badge - Shows current quality briefly -->
-                    <div class="quality-badge" id="qualityBadge">1080p</div>
-                    
-                    <!-- PHASE 4: Network Speed Indicator -->
-                    <div class="network-speed-indicator" id="networkSpeedIndicator">
-                        <i class="fas fa-wifi"></i> <span id="networkSpeedValue">-- Mbps</span>
-                    </div>
-                    
-                    <!-- PHASE 4: HLS Badge (shown when HLS streaming is active) -->
-                    <div class="hls-badge" id="hlsBadge" style="display: none;">
-                        <i class="fas fa-stream"></i> HLS
-                    </div>
-                    
-                    <!-- Video Placeholder (shown while loading) -->
-                    <div class="video-placeholder" id="videoPlaceholder">
-                        <i class="fas fa-spinner fa-spin"></i>
-                        <span>Loading video...</span>
-                    </div>
-                    
-                    <!-- Settings Menu (Quality, Speed, etc.) -->
-                    <div class="settings-menu" id="settingsMenu">
-                        <div class="settings-section">
-                            <h4>Playback Speed</h4>
-                            <div class="speed-options">
-                                <button class="speed-option" data-speed="0.5">0.5x</button>
-                                <button class="speed-option active" data-speed="1.0">1x</button>
-                                <button class="speed-option" data-speed="1.5">1.5x</button>
-                                <button class="speed-option" data-speed="2.0">2x</button>
-                            </div>
-                        </div>
-                        
-                        <!-- PHASE 4: Quality Section (Dynamic) -->
-                        <div class="settings-section">
-                            <h4>Quality</h4>
-                            <div class="quality-options" id="qualityOptions">
-                                <!-- Quality buttons will be populated by JS -->
-                                <button class="quality-option active" data-quality="auto">Auto</button>
-                                <button class="quality-option" data-quality="1080p">1080p</button>
-                                <button class="quality-option" data-quality="720p">720p</button>
-                                <button class="quality-option" data-quality="480p">480p</button>
-                                <button class="quality-option" data-quality="360p">360p</button>
-                            </div>
-                        </div>
-                        
-                        <!-- PHASE 4: Data Saver Toggle -->
-                        <div class="settings-section">
-                            <h4>Data Saver</h4>
-                            <label class="toggle-switch">
-                                <input type="checkbox" id="dataSaverToggle">
-                                <span class="toggle-slider"></span>
-                            </label>
-                            <div class="toggle-description">
-                                Limits quality to 360p to save data
-                            </div>
-                        </div>
-                        
-                        <div class="settings-section">
-                            <h4>More</h4>
-                            <button class="quality-option" id="pipBtn" style="width: 100%;">
-                                <i class="fas fa-closed-captioning"></i> Picture-in-Picture
-                            </button>
-                        </div>
-                    </div>
-                    
-                    <!-- Close Player Button -->
-                    <button class="close-player" id="closePlayerBtn">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </div>
-            </div>
-        </div>
-
-        <!-- ============================================ -->
-        <!-- CONTENT INFO SECTION                         -->
-        <!-- ============================================ -->
-        <div class="content-info-section">
-            <div class="content-header">
-                <h1 class="content-title" id="contentTitle">Loading...</h1>
-                
-                <div class="content-meta">
-                    <span class="meta-item">
-                        <i class="fas fa-eye"></i>
-                        <span id="viewsCount">0 views</span>
-                    </span>
-                    <span class="meta-item">
-                        <i class="fas fa-clock"></i>
-                        <span id="durationText">0:00</span>
-                    </span>
-                    <span class="meta-item">
-                        <i class="fas fa-tag"></i>
-                        <span id="contentGenre">General</span>
-                    </span>
-                    <span class="meta-item">
-                        <i class="fas fa-calendar"></i>
-                        <span id="uploadDate">Just now</span>
-                    </span>
-                </div>
-            </div>
-            
-            <!-- Creator Info -->
-            <div class="creator-info">
-                <div class="creator-avatar">
-                    <i class="fas fa-user-circle"></i>
-                </div>
-                <div class="creator-details">
-                    <div class="creator-name" id="creatorName">Creator</div>
-                    <div class="creator-stats">
-                        <span><i class="fas fa-users"></i> <span id="creatorConnectors">0</span> connectors</span>
-                        <span><i class="fas fa-video"></i> <span id="creatorVideos">0</span> videos</span>
-                    </div>
-                </div>
-                <div class="creator-actions">
-                    <button class="btn btn-secondary" id="connectBtn">
-                        <i class="fas fa-user-plus"></i>
-                        <span>Connect</span>
-                    </button>
-                </div>
-            </div>
-            
-            <!-- Action Buttons -->
-            <div class="action-buttons">
-                <button class="action-btn" id="playBtn">
-                    <i class="fas fa-play"></i>
-                    <span>Play</span>
-                </button>
-                
-                <button class="action-btn" id="likeBtn">
-                    <i class="far fa-heart"></i>
-                    <span>Like</span>
-                </button>
-                <span class="action-count" id="likesCount">0</span>
-                
-                <button class="action-btn" id="favoriteBtn">
-                    <i class="far fa-star"></i>
-                    <span>Favorite</span>
-                </button>
-                <span class="action-count" id="favoritesCount">0</span>
-                
-                <button class="action-btn" id="watchLaterBtn">
-                    <i class="far fa-clock"></i>
-                    <span>Watch Later</span>
-                </button>
-                
-                <button class="action-btn" id="shareBtn">
-                    <i class="far fa-share-square"></i>
-                    <span>Share</span>
-                </button>
-                
-                <button class="action-btn" id="fullscreenBtn">
-                    <i class="fas fa-expand"></i>
-                    <span>Fullscreen</span>
-                </button>
-                
-                <!-- Settings Toggle Button -->
-                <button class="action-btn" id="settingsBtn">
-                    <i class="fas fa-cog"></i>
-                    <span>Settings</span>
-                </button>
-            </div>
-            
-            <!-- Description -->
-            <div class="content-description">
-                <div class="description-short" id="contentDescriptionShort">
-                    Loading description...
-                </div>
-                <div class="description-full" id="contentDescriptionFull" style="display: none;"></div>
-                <button class="show-more-btn" id="showMoreBtn">Show more</button>
-            </div>
-        </div>
-
-        <!-- ============================================ -->
-        <!-- COMMENTS SECTION                             -->
-        <!-- ============================================ -->
-        <div class="comments-section">
-            <div class="comments-header">
-                <h3>
-                    <i class="fas fa-comments"></i>
-                    Comments <span id="commentsCount">(0)</span>
-                </h3>
-                <button class="refresh-btn" id="refreshCommentsBtn">
-                    <i class="fas fa-sync-alt"></i>
-                </button>
-            </div>
-            
-            <!-- Comment Input -->
-            <div class="comment-input-container">
-                <div class="comment-avatar" id="userCommentAvatar">
-                    <i class="fas fa-user"></i>
-                </div>
-                <div class="comment-input-wrapper">
-                    <textarea 
-                        id="commentInput" 
-                        class="comment-input" 
-                        placeholder="Write a comment..."
-                        rows="1"
-                        disabled
-                    ></textarea>
-                    <button class="send-comment-btn" id="sendCommentBtn" disabled>
-                        <i class="fas fa-paper-plane"></i>
-                    </button>
-                </div>
-            </div>
-            
-            <!-- Comments List -->
-            <div class="comments-list" id="commentsList">
-                <!-- Comments will be loaded here -->
-            </div>
-            
-            <!-- No Comments Placeholder -->
-            <div class="no-comments" id="noComments" style="display: none;">
-                <i class="fas fa-comment-slash"></i>
-                <p>No comments yet. Be the first to comment!</p>
-            </div>
-        </div>
-
-        <!-- ============================================ -->
-        <!-- RELATED CONTENT                               -->
-        <!-- ============================================ -->
-        <div class="related-content-section">
-            <div class="section-header">
-                <h2 class="section-title">
-                    <i class="fas fa-film" style="color: var(--warm-gold);"></i>
-                    More Like This
-                </h2>
-            </div>
-            <div class="content-grid" id="relatedGrid">
-                <!-- Related content will be loaded here -->
-            </div>
-        </div>
-
-        <!-- ============================================ -->
-        <!-- PHASE 1: CONTINUE WATCHING SECTION           -->
-        <!-- ============================================ -->
-        <section class="section" id="continueWatchingSection" style="display: none;">
-            <div class="section-header">
-                <h2 class="section-title">
-                    <i class="fas fa-play-circle" style="color: var(--warm-gold);"></i>
-                    Continue Watching
-                </h2>
-                <button class="refresh-btn" id="refreshContinueBtn">
-                    <i class="fas fa-redo"></i>
-                </button>
-            </div>
-            <div class="content-grid" id="continueGrid">
-                <!-- Continue watching content will be loaded here -->
-            </div>
-        </section>
-
-        <!-- ============================================ -->
-        <!-- PHASE 3: RECOMMENDATION RAILS                 -->
-        <!-- ============================================ -->
-        
-        <!-- Because You Watched Rail -->
-        <section class="section" id="becauseYouWatchedRail" style="display: none;">
-            <div class="section-header">
-                <h2 class="section-title">
-                    <i class="fas fa-magic" style="color: var(--bantu-blue);"></i>
-                    Because You Watched
-                </h2>
-            </div>
-            <div class="content-grid" id="becauseYouWatchedRail-grid"></div>
-        </section>
-        
-        <!-- More From This Creator Rail -->
-        <section class="section" id="moreFromCreatorRail" style="display: none;">
-            <div class="section-header">
-                <h2 class="section-title">
-                    <i class="fas fa-user" style="color: var(--warm-gold);"></i>
-                    More From This Creator
-                </h2>
-            </div>
-            <div class="content-grid" id="moreFromCreatorRail-grid"></div>
-        </section>
-
-        <!-- Back to Top Button -->
-        <button id="backToTopBtn" class="back-to-top">
-            <i class="fas fa-arrow-up"></i>
-        </button>
-
-        <!-- Footer -->
-        <footer class="footer">
-            <p>Bantu Stream Connect © 2025 • <i class="fas fa-heart" style="color: var(--warm-gold);"></i> Built in South Africa • NO DNA, JUST RSA</p>
-            <div class="footer-links">
-                <a href="privacy-policy.html">Privacy Policy</a>
-                <a href="terms-of-service.html">Terms of Service</a>
-                <a href="support.html">Support</a>
-            </div>
-        </footer>
-    </div>
-
-    <!-- ============================================ -->
-    <!-- SIDEBAR MENU                                 -->
-    <!-- ============================================ -->
-    <div class="sidebar-overlay" id="sidebar-overlay"></div>
-    <div class="sidebar-menu" id="sidebar-menu">
-        <div class="sidebar-header">
-            <div class="sidebar-logo" onclick="window.location.href='index.html'">
-                <div class="logo-icon">
-                    <i class="fas fa-film" style="color: var(--warm-gold); font-size: 18px;"></i>
-                </div>
-                <span class="sidebar-logo-text">BANTU</span>
-            </div>
-            <button class="sidebar-close" id="sidebar-close" aria-label="Close menu">
-                <i class="fas fa-times"></i>
+            <button class="btn btn-secondary" id="likeBtn">
+              <i class="far fa-heart"></i>
+              <span>Like</span>
             </button>
+            <button class="btn btn-secondary" id="favoriteBtn">
+              <i class="far fa-star"></i>
+              <span>Favorite</span>
+            </button>
+            <!-- ✅ PHASE 2: WATCH LATER BUTTON ADDED HERE -->
+            <button class="btn btn-secondary" id="watchLaterBtn">
+              <i class="far fa-clock"></i>
+              <span>Watch Later</span>
+            </button>
+            <button class="btn btn-secondary" id="shareBtn">
+              <i class="fas fa-share"></i>
+              <span>Share</span>
+            </button>
+          </div>
         </div>
-        
-        <!-- Profile Section -->
-        <div class="sidebar-profile" id="sidebar-profile">
-            <div class="sidebar-profile-avatar" id="sidebar-profile-avatar">
-                <i class="fas fa-user"></i>
-            </div>
-            <div class="sidebar-profile-info">
-                <div class="sidebar-profile-name" id="sidebar-profile-name">Guest</div>
-                <div class="sidebar-profile-email" id="sidebar-profile-email">Sign in to continue</div>
-            </div>
-            <i class="fas fa-chevron-right" style="color: var(--slate-grey);"></i>
+      </section>
+
+      <!-- BANTU STREAM CONNECT BRANDED VIDEO PLAYER - PHASE 1 FIXED -->
+      <div class="inline-player" id="inlinePlayer" style="display: none;">
+        <div class="player-header">
+          <h3 id="playerTitle">Now Playing</h3>
+          <button class="icon-btn close-player" id="closePlayerBtn" title="Close Player">
+            <i class="fas fa-times"></i>
+          </button>
         </div>
-        
-        <!-- Navigation Items -->
-        <nav class="sidebar-nav">
-            <a href="index.html" class="sidebar-nav-item active">
-                <i class="fas fa-home"></i>
-                <span>Home</span>
-            </a>
-            <a href="explore-screen.html" class="sidebar-nav-item">
-                <i class="fas fa-compass"></i>
-                <span>Explore</span>
-            </a>
-            <a href="#" class="sidebar-nav-item" id="sidebar-watch-history">
-                <i class="fas fa-history"></i>
-                <span>Watch History</span>
-            </a>
-            <a href="#" class="sidebar-nav-item" id="sidebar-analytics">
-                <i class="fas fa-chart-line"></i>
-                <span>Analytics</span>
-            </a>
-            <a href="#" class="sidebar-nav-item" id="sidebar-notifications">
-                <i class="fas fa-bell"></i>
-                <span>Notifications</span>
-                <span class="badge" id="sidebar-notification-count" style="display: none;">0</span>
-            </a>
-            <a href="#" class="sidebar-nav-item" id="sidebar-badges">
-                <i class="fas fa-medal"></i>
-                <span>My Badges</span>
-            </a>
-            <a href="#" class="sidebar-nav-item" id="sidebar-watch-party">
-                <i class="fas fa-users"></i>
-                <span>Watch Party</span>
-            </a>
-            <a href="creator-upload.html" class="sidebar-nav-item" id="sidebar-create">
-                <i class="fas fa-plus-circle"></i>
-                <span>Create</span>
-            </a>
-            <a href="creator-dashboard.html" class="sidebar-nav-item" id="sidebar-dashboard">
-                <i class="fas fa-tachometer-alt"></i>
-                <span>Dashboard</span>
-            </a>
-            <a href="manage-profiles.html" class="sidebar-nav-item">
-                <i class="fas fa-user-cog"></i>
-                <span>Manage Profiles</span>
-            </a>
-        </nav>
-        
-        <!-- Footer: Theme & Scale -->
-        <div class="sidebar-footer">
-            <div class="sidebar-theme-toggle" id="sidebar-theme-toggle">
-                <span><i class="fas fa-palette"></i> Theme</span>
-                <i class="fas fa-chevron-right" style="color: var(--slate-grey);"></i>
+        <div class="video-container" id="bantuVideoContainer">
+          <!-- Video element WITHOUT any duplicate controls - Phase 1 Fix -->
+          <video id="inlineVideoPlayer" playsinline webkit-playsinline>
+            Your browser does not support the video tag.
+          </video>
+          
+          <!-- PHASE 4: Quality Badge and Network Speed Indicator -->
+          <div class="quality-badge" id="qualityBadge">Auto</div>
+          <div class="network-speed-indicator" id="networkSpeedIndicator">
+            <i class="fas fa-wifi"></i> <span id="networkSpeedValue">-- Mbps</span>
+          </div>
+          <div class="hls-badge" id="hlsBadge" style="display: none;">
+            <i class="fas fa-microchip"></i> HLS
+          </div>
+          
+          <!-- SIMPLE Loading Placeholder Only -->
+          <div class="bantu-player-placeholder" id="videoPlaceholder">
+            <div class="bantu-logo-spinner">
+              <div class="bantu-logo">
+                <i class="fas fa-film"></i>
+              </div>
+              <div class="bantu-brand-text">BANTU STREAM CONNECT</div>
+            </div>
+            <p class="loading-text">Ready to play...</p>
+          </div>
+          
+          <!-- PHASE 1 FIX: Enhanced Video Player Controls (only these will show) -->
+          <div class="enhanced-video-controls">
+            <div class="controls-bar">
+              <button class="control-btn play-pause" title="Play/Pause">
+                <i class="fas fa-play"></i>
+              </button>
+              
+              <div class="time-display">
+                <span class="current-time">0:00</span>
+                <span> / </span>
+                <span class="duration">0:00</span>
+              </div>
+              
+              <div class="progress-container">
+                <input type="range" class="progress-bar" min="0" max="100" value="0">
+              </div>
+              
+              <div class="volume-controls">
+                <button class="control-btn volume-btn" title="Volume">
+                  <i class="fas fa-volume-up"></i>
+                </button>
+                <input type="range" class="volume-bar" min="0" max="100" value="100">
+              </div>
+              
+              <button class="control-btn settings-btn" title="Settings">
+                <i class="fas fa-cog"></i>
+              </button>
+              
+              <button class="control-btn fullscreen-btn" title="Fullscreen">
+                <i class="fas fa-expand"></i>
+              </button>
             </div>
             
-            <div class="sidebar-scale-control">
-                <div class="scale-control-row">
-                    <span><i class="fas fa-text-height"></i> UI Size</span>
-                    <div style="display: flex; align-items: center; gap: 8px;">
-                        <button class="scale-btn" id="sidebar-scale-decrease" title="Smaller">
-                            <i class="fas fa-minus"></i>
-                        </button>
-                        <span class="scale-value" id="sidebar-scale-value">100%</span>
-                        <button class="scale-btn" id="sidebar-scale-increase" title="Larger">
-                            <i class="fas fa-plus"></i>
-                        </button>
-                    </div>
+            <!-- PHASE 4: Updated Settings Menu with Dynamic Quality Options -->
+            <div class="settings-menu">
+              <!-- PHASE 4: Quality Section -->
+              <div class="settings-section">
+                <h4>Quality</h4>
+                <div class="quality-options" id="qualityOptions">
+                  <!-- Quality buttons will be populated by JS -->
+                  <button class="quality-option active" data-quality="auto">Auto</button>
+                  <button class="quality-option" data-quality="1080p">1080p</button>
+                  <button class="quality-option" data-quality="720p">720p</button>
+                  <button class="quality-option" data-quality="480p">480p</button>
+                  <button class="quality-option" data-quality="360p">360p</button>
                 </div>
-                <div class="scale-control-row">
-                    <button class="scale-btn" id="sidebar-scale-reset" title="Reset" style="width: 100%;">
-                        <i class="fas fa-undo"></i> Reset to Default
-                    </button>
+              </div>
+              
+              <!-- PHASE 4: Data Saver Section -->
+              <div class="settings-section">
+                <h4>Data Saver</h4>
+                <label class="toggle-switch">
+                  <input type="checkbox" id="dataSaverToggle">
+                  <span class="toggle-slider"></span>
+                </label>
+                <p class="toggle-description">Reduce data usage by streaming at lower quality</p>
+              </div>
+              
+              <div class="settings-section">
+                <h4>Playback Speed</h4>
+                <div class="speed-options">
+                  <button class="speed-option" data-speed="0.5">0.5x</button>
+                  <button class="speed-option" data-speed="0.75">0.75x</button>
+                  <button class="speed-option active" data-speed="1">1x</button>
+                  <button class="speed-option" data-speed="1.25">1.25x</button>
+                  <button class="speed-option" data-speed="1.5">1.5x</button>
+                  <button class="speed-option" data-speed="2">2x</button>
                 </div>
+              </div>
             </div>
+          </div>
+          
+          <!-- Buffering Indicator -->
+          <div class="buffering-indicator">
+            <div class="spinner"></div>
+            <p>Buffering...</p>
+          </div>
+          
+          <!-- Error Overlay -->
+          <div class="error-overlay">
+            <div class="error-content">
+              <i class="fas fa-exclamation-triangle"></i>
+              <h3>Playback Error</h3>
+              <p class="error-message">Unable to play video. Please check your connection.</p>
+              <button class="retry-btn">Retry</button>
+            </div>
+          </div>
         </div>
-    </div>
-
-    <!-- ============================================ -->
-    <!-- MODALS & PANELS                              -->
-    <!-- ============================================ -->
-
-    <!-- Analytics Modal -->
-    <div id="analytics-modal" class="analytics-modal">
-        <div class="analytics-content">
-            <div class="analytics-header">
-                <h2>Content Analytics</h2>
-                <button id="close-analytics" class="close-search-btn">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <div class="analytics-body">
-                <div class="analytics-grid">
-                    <div class="analytics-card">
-                        <h3>Total Views</h3>
-                        <div class="analytics-value" id="content-total-views">0</div>
-                        <div class="analytics-trend" id="views-trend">+0%</div>
-                    </div>
-                    <div class="analytics-card">
-                        <h3>Comments</h3>
-                        <div class="analytics-value" id="total-comments">0</div>
-                        <div class="analytics-trend" id="comments-trend">+0%</div>
-                    </div>
-                    <div class="analytics-card">
-                        <h3>Avg Watch Time</h3>
-                        <div class="analytics-value" id="avg-watch-time">0m</div>
-                        <div class="analytics-trend" id="watch-time-trend">+0%</div>
-                    </div>
-                    <div class="analytics-card">
-                        <h3>Engagement</h3>
-                        <div class="analytics-value" id="engagement-rate">0%</div>
-                        <div class="analytics-trend" id="engagement-trend">+0%</div>
-                    </div>
-                </div>
-                <div class="charts-container">
-                    <canvas id="content-engagement-chart"></canvas>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Search Modal -->
-    <div id="search-modal" class="search-modal">
-        <div class="search-modal-header">
-            <div class="search-input-container">
-                <i class="search-icon fas fa-search"></i>
-                <input type="text" id="search-input" class="search-input" placeholder="Search content, creators, or categories..." autocomplete="off">
-                <button id="voice-search-modal-btn" class="voice-search-btn" title="Voice Search">
-                    <i class="fas fa-microphone"></i>
-                </button>
-            </div>
-            <button id="close-search-btn" class="close-search-btn">
-                <i class="fas fa-times"></i>
+        <div class="player-actions">
+          <div class="player-controls">
+            <button class="control-btn" id="pipBtn" title="Picture-in-Picture">
+              <i class="fas fa-images"></i>
             </button>
-        </div>
-        <div class="search-filters">
-            <div class="filter-group">
-                <label class="filter-label">Category</label>
-                <select id="category-filter" class="filter-select">
-                    <option value="">All Categories</option>
-                    <option value="Music">Music</option>
-                    <option value="STEM">STEM</option>
-                    <option value="Culture">Culture</option>
-                    <option value="News">News</option>
-                    <option value="Sports">Sports</option>
-                    <option value="Movies">Movies</option>
-                    <option value="Documentaries">Documentaries</option>
-                    <option value="Podcasts">Podcasts</option>
-                </select>
-            </div>
-            <div class="filter-group">
-                <label class="filter-label">Sort By</label>
-                <select id="sort-filter" class="filter-select">
-                    <option value="newest">Newest First</option>
-                    <option value="popular">Most Popular</option>
-                    <option value="trending">Trending</option>
-                </select>
-            </div>
-            <div class="filter-group">
-                <label class="filter-label">Language</label>
-                <select id="language-filter" class="filter-select">
-                    <option value="">All Languages</option>
-                    <option value="en">English</option>
-                    <option value="zu">IsiZulu</option>
-                    <option value="xh">IsiXhosa</option>
-                    <option value="af">Afrikaans</option>
-                </select>
-            </div>
-        </div>
-        <div id="search-results" class="search-results">
-            <div id="search-results-grid" class="search-results-grid">
-                <!-- Results loaded here -->
-            </div>
-        </div>
-    </div>
-
-    <!-- Notifications Panel -->
-    <div id="notifications-panel" class="notifications-panel">
-        <div class="notifications-header">
-            <h2>Notifications</h2>
-            <button id="close-notifications" class="icon-btn">
-                <i class="fas fa-times"></i>
+            <button class="control-btn" id="fullscreenBtn" title="Fullscreen">
+              <i class="fas fa-expand"></i>
             </button>
+          </div>
+          <button id="connectBtn" class="btn connect-btn">
+            <i class="fas fa-user-plus"></i>
+            <span>Connect</span>
+          </button>
         </div>
-        <div class="notifications-list" id="notifications-list">
-            <!-- Notifications loaded here -->
-        </div>
-        <div class="notifications-footer">
-            <button id="mark-all-read" class="text-btn">Mark all as read</button>
-        </div>
-    </div>
+      </div>
 
-    <!-- Theme Selector -->
-    <div id="theme-selector" class="theme-selector">
-        <button class="theme-option" data-theme="dark">
-            <i class="fas fa-moon"></i> Dark
-        </button>
-        <button class="theme-option" data-theme="light">
-            <i class="fas fa-sun"></i> Light
-        </button>
-        <button class="theme-option" data-theme="high-contrast">
-            <i class="fas fa-eye"></i> High Contrast
-        </button>
+      <!-- Creator Section -->
+      <section class="creator-section">
+        <div class="creator-info">
+          <div class="creator-avatar" id="creatorAvatar">
+            <i class="fas fa-user"></i>
+          </div>
+          <div class="creator-details">
+            <h3 id="creatorDisplayName">Creator Name</h3>
+            <p>Verified Creator • Joined 2024</p>
+          </div>
+          <button id="connectCreatorBtn" class="connect-btn">
+            <i class="fas fa-user-plus"></i>
+            <span>Connect</span>
+          </button>
+        </div>
+      </section>
+
+      <!-- Stats Grid -->
+      <section class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-icon">
+            <i class="fas fa-eye"></i>
+          </div>
+          <div class="stat-content">
+            <h4>Total Views</h4>
+            <p id="viewsCountFull">0</p>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">
+            <i class="fas fa-heart"></i>
+          </div>
+          <div class="stat-content">
+            <h4>Likes</h4>
+            <p id="likesCount">0</p>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">
+            <i class="fas fa-clock"></i>
+          </div>
+          <div class="stat-content">
+            <h4>Duration</h4>
+            <p id="contentDurationFull">0m 0s</p>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">
+            <i class="fas fa-tag"></i>
+          </div>
+          <div class="stat-content">
+            <h4>Genre</h4>
+            <p id="contentGenre">--</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Description Section -->
+      <section class="description-section">
+        <h2>Description</h2>
+        <div class="description-content" id="contentDescriptionFull">
+          Loading full description...
+        </div>
+      </section>
+
+      <!-- Comments Section -->
+      <section class="comments-section">
+        <div class="section-header">
+          <h2 class="section-title">Comments <span id="commentsCount">(0)</span></h2>
+          <button id="refreshCommentsBtn" class="refresh-btn">
+            <i class="fas fa-redo"></i> Refresh
+          </button>
+        </div>
+        <div class="add-comment">
+          <div class="comment-avatar" id="userCommentAvatar">
+            <i class="fas fa-user"></i>
+          </div>
+          <div class="comment-input-container">
+            <textarea id="commentInput" placeholder="Sign in to add a comment..." disabled></textarea>
+            <button id="sendCommentBtn" class="send-comment-btn">
+              <i class="fas fa-paper-plane"></i>
+            </button>
+          </div>
+        </div>
+        <div class="comments-list" id="commentsList">
+          <div class="no-comments" id="noComments">
+            <i class="fas fa-comment-slash"></i>
+            <p>No comments yet. Be the first to comment!</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Related Content -->
+      <section class="related-section">
+        <div class="section-header">
+          <h2 class="section-title">Related Content</h2>
+        </div>
+        <div class="content-grid" id="relatedGrid">
+          <!-- Related content will be loaded here -->
+        </div>
+      </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <p>Bantu Stream Connect © 2025 • Built in South Africa</p>
+      <div class="footer-links">
+        <a href="privacy-policy.html">Privacy Policy</a>
+        <a href="terms-of-service.html">Terms of Service</a>
+        <a href="support.html">Support</a>
+      </div>
+    </footer>
+
+    <!-- Global Navigation Button - FIXED: Centered Icons -->
+    <div class="navigation-button-container">
+      <div class="navigation-button">
+        <div class="nav-icon" id="nav-home-btn" title="Home">
+          <i class="fas fa-home"></i>
+        </div>
+        <div class="nav-icon" id="nav-theme-toggle" title="Change Theme">
+          <i class="fas fa-palette"></i>
+        </div>
+        <div class="nav-icon" id="nav-create-btn" title="Create Content">
+          <i class="fas fa-plus-circle"></i>
+        </div>
+        <div class="nav-icon" id="nav-dashboard-btn" title="Creator Dashboard">
+          <i class="fas fa-tachometer-alt"></i>
+        </div>
+        <div class="nav-icon" id="nav-notifications-btn" title="Notifications">
+          <i class="fas fa-bell"></i>
+          <span class="nav-notification-badge" id="nav-notification-count" style="display: none;">0</span>
+        </div>
+      </div>
     </div>
 
     <!-- Toast Container -->
     <div id="toast-container"></div>
+    
+    <!-- Back to Top Button -->
+    <button id="backToTopBtn" class="back-to-top">
+      <i class="fas fa-arrow-up"></i>
+    </button>
 
-    <!-- UI Scale Control Widget -->
-    <div class="ui-scale-control" id="ui-scale-control">
-        <div class="scale-control-bar">
-            <button class="scale-btn" id="scale-decrease" title="Make Smaller (Ctrl+-)">
-                <i class="fas fa-minus"></i>
-            </button>
-            <span class="scale-value" id="scale-value">100%</span>
-            <button class="scale-btn" id="scale-increase" title="Make Larger (Ctrl++)">
-                <i class="fas fa-plus"></i>
-            </button>
-            <button class="scale-btn" id="scale-reset" title="Reset (Ctrl+0)">
-                <i class="fas fa-undo"></i>
-            </button>
+    <!-- =================================================================== -->
+    <!-- MODALS & PANELS                                                     -->
+    <!-- =================================================================== -->
+
+    <!-- Analytics Modal -->
+    <div id="analytics-modal" class="analytics-modal">
+      <div class="analytics-content">
+        <div class="analytics-header">
+          <h2>Content Analytics</h2>
+          <button id="close-analytics" class="close-search-btn">
+            <i class="fas fa-times"></i>
+          </button>
         </div>
+        <div class="analytics-body">
+          <div class="analytics-grid">
+            <div class="analytics-card">
+              <h3>Total Views</h3>
+              <div class="analytics-value" id="content-total-views">0</div>
+              <div class="analytics-trend" id="views-trend">+0%</div>
+            </div>
+            <div class="analytics-card">
+              <h3>Avg. Watch Time</h3>
+              <div class="analytics-value" id="avg-watch-time">0m</div>
+              <div class="analytics-trend" id="watch-time-trend">+0%</div>
+            </div>
+            <div class="analytics-card">
+              <h3>Engagement Rate</h3>
+              <div class="analytics-value" id="engagement-rate">0%</div>
+              <div class="analytics-trend" id="engagement-trend">+0%</div>
+            </div>
+            <div class="analytics-card">
+              <h3>Comments</h3>
+              <div class="analytics-value" id="total-comments">0</div>
+              <div class="analytics-trend" id="comments-trend">+0%</div>
+            </div>
+          </div>
+          <div class="charts-container">
+            <canvas id="content-engagement-chart"></canvas>
+          </div>
+        </div>
+      </div>
     </div>
 
-    <!-- ============================================ -->
-    <!-- SCRIPTS                                      -->
-    <!-- ============================================ -->
-    
-    <!-- Environment Config -->
-    <script src="env.js"></script>
-    
-    <!-- Helper Scripts -->
-    <script src="js/rate-limiter.js"></script>
-    <script src="js/supabase-helper.js"></script>
-    <script src="js/auth-helper.js"></script>
-    
-    <!-- PHASE 1: Watch Session -->
-    <script src="js/watch-session.js"></script>
-    
-    <!-- PHASE 2: Playlist System -->
-    <script src="js/playlist-manager.js"></script>
-    <script src="js/playlist-modal.js"></script>
-    
-    <!-- PHASE 3: Recommendation Engine -->
-    <script src="js/recommendation-engine.js"></script>
-    
-    <!-- PHASE 4: Streaming Manager (HLS + Quality) -->
-    <script src="js/streaming-manager.js"></script>
-    
-    <!-- PHASE 1 POLISH: Keyboard Shortcuts -->
-    <script src="js/keyboard-shortcuts.js"></script>
-    
-    <!-- Video Player (Base) -->
-    <script src="js/enhanced-video-player.js"></script>
-    
-    <!-- Main Content Detail Script (PHASE 4 Enhanced) -->
-    <script src="js/content-detail.js"></script>
+    <!-- Search Modal -->
+    <div id="search-modal" class="search-modal">
+      <div class="search-modal-header">
+        <div class="search-input-container">
+          <i class="search-icon fas fa-search"></i>
+          <input type="text" id="search-input" class="search-input" placeholder="Search content, creators, or categories..." autocomplete="off">
+        </div>
+        <button id="close-search-btn" class="close-search-btn">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="search-filters">
+        <div class="filter-group">
+          <label class="filter-label">Category</label>
+          <select id="category-filter" class="filter-select">
+            <option value="">All Categories</option>
+            <option value="Music">Music</option>
+            <option value="STEM">STEM</option>
+            <option value="Culture">Culture</option>
+            <option value="News">News</option>
+            <option value="Sports">Sports</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label class="filter-label">Sort By</label>
+          <select id="sort-filter" class="filter-select">
+            <option value="newest">Newest First</option>
+            <option value="popular">Most Popular</option>
+            <option value="trending">Trending</option>
+          </select>
+        </div>
+      </div>
+      <div id="search-results" class="search-results">
+        <div id="search-results-grid" class="search-results-grid">
+          <!-- Results loaded here -->
+        </div>
+      </div>
+    </div>
 
-    <script>
-        // Initialize theme on page load
-        (function() {
-            const savedTheme = localStorage.getItem('theme') || 'dark';
-            document.body.classList.add('theme-' + savedTheme);
-        })();
-        
-        // Service Worker Registration
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/sw.js').catch(error => {
-                    console.log('ServiceWorker registration failed:', error);
-                });
-            });
-        }
-        
-        // Debug info for Phase 4
-        console.log('📺 HLS.js available:', typeof Hls !== 'undefined');
-        console.log('🎬 StreamingManager available:', typeof StreamingManager !== 'undefined');
-        
-        // Keyboard shortcuts for scaling
-        document.addEventListener('keydown', function(e) {
-            if ((e.ctrlKey || e.metaKey) && (e.key === '+' || e.key === '=')) {
-                e.preventDefault();
-                if (window.uiScaleController) {
-                    window.uiScaleController.increase();
-                }
+    <!-- Notifications Panel -->
+    <div id="notifications-panel" class="notifications-panel">
+      <div class="notifications-header">
+        <h2>Notifications</h2>
+        <button id="close-notifications" class="icon-btn">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="notifications-list" id="notifications-list">
+        <!-- Notifications loaded here -->
+      </div>
+      <div class="notifications-footer">
+        <button id="mark-all-read" class="text-btn">Mark all as read</button>
+        <button id="notification-settings" class="text-btn">Settings</button>
+      </div>
+    </div>
+
+    <!-- Theme Selector -->
+    <div id="theme-selector" class="theme-selector">
+      <button class="theme-option" data-theme="dark">
+        <i class="fas fa-moon"></i> Dark
+      </button>
+      <button class="theme-option" data-theme="light">
+        <i class="fas fa-sun"></i> Light
+      </button>
+      <button class="theme-option" data-theme="high-contrast">
+        <i class="fas fa-eye"></i> High Contrast
+      </button>
+    </div>
+
+  </div> <!-- Closing div for #app -->
+
+  <!-- Initialize Supabase Client -->
+  <script>
+    // PHASE 1 FIX: Store in window for global access
+    const SUPABASE_URL = 'https://ydnxqnbjoshvxteevemc.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U';
+    
+    // Initialize Supabase client
+    window.supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    
+    // Make constants available globally for other scripts
+    window.SUPABASE_URL = SUPABASE_URL;
+    window.SUPABASE_ANON_KEY = SUPABASE_ANON_KEY;
+  </script>
+  
+  <!-- Utility Scripts -->
+  <script src="js/state-manager.js"></script>
+  <script src="js/supabase-helper.js"></script>
+  <script src="js/auth-helper.js"></script>
+  <script src="js/security.js"></script>
+  <script src="js/analytics.js"></script>
+  
+  <!-- PHASE 2: Playlist Manager MUST load before content-detail.js -->
+  <script src="js/playlist-manager.js"></script>
+  
+  <!-- Video Player Scripts -->
+  <script src="js/video-player.js"></script>
+  <script src="js/virtual-scroll.js"></script>
+  <script src="js/video-player-features.js"></script>
+  
+  <!-- PHASE 1: Watch Session Lifecycle Manager -->
+  <script src="js/watch-session.js"></script>
+  
+  <!-- PHASE 3: Recommendation Engine -->
+  <script src="js/recommendation-engine.js"></script>
+  
+  <!-- PHASE 4: Streaming Manager (UPDATED with network test fix) -->
+  <script src="js/streaming-manager.js"></script>
+  
+  <!-- ============================================ -->
+  <!-- PHASE 1-3 POLISH: New Modules              -->
+  <!-- ============================================ -->
+  
+  <!-- PHASE 1 POLISH: Keyboard Shortcuts -->
+  <script src="js/keyboard-shortcuts.js"></script>
+  
+  <!-- PHASE 2 POLISH: Playlist Modal UI -->
+  <script src="js/playlist-modal.js"></script>
+  
+  <!-- Main Content Detail Script - FIXED: Theme selector and navigation -->
+  <script src="js/content-detail.js"></script>
+  
+  <!-- PHASE 4: Quality Options Update Function (will be called by content-detail.js) -->
+  <script>
+    // PHASE 4: Function to update quality options dynamically
+    window.updateQualityOptions = function() {
+      const qualityContainer = document.getElementById('qualityOptions');
+      if (!qualityContainer || !window.streamingManager) return;
+      
+      const qualities = window.streamingManager.getAvailableQualities();
+      
+      qualityContainer.innerHTML = qualities.map(q => `
+        <button class="quality-option ${q.value === window.streamingManager.getCurrentQuality() ? 'active' : ''}" 
+                data-quality="${q.value}">
+          ${q.label}
+        </button>
+      `).join('');
+      
+      // Re-attach event listeners
+      qualityContainer.querySelectorAll('.quality-option').forEach(btn => {
+        btn.addEventListener('click', async function() {
+          const quality = this.dataset.quality;
+          
+          // Update UI
+          qualityContainer.querySelectorAll('.quality-option').forEach(b => 
+            b.classList.remove('active')
+          );
+          this.classList.add('active');
+          
+          // Change quality
+          if (window.streamingManager) {
+            await window.streamingManager.setQuality(quality);
+            
+            // Update quality badge
+            const qualityBadge = document.getElementById('qualityBadge');
+            if (qualityBadge) {
+              qualityBadge.textContent = quality === 'auto' ? 'Auto' : quality;
             }
-            if ((e.ctrlKey || e.metaKey) && e.key === '-') {
-                e.preventDefault();
-                if (window.uiScaleController) {
-                    window.uiScaleController.decrease();
-                }
-            }
-            if ((e.ctrlKey || e.metaKey) && e.key === '0') {
-                e.preventDefault();
-                if (window.uiScaleController) {
-                    window.uiScaleController.reset();
-                }
-            }
+          }
+          
+          // Close settings menu
+          const settingsMenu = document.querySelector('.settings-menu');
+          if (settingsMenu) {
+            settingsMenu.style.display = 'none';
+          }
+          
+          // Show toast notification
+          if (window.showToast) {
+            window.showToast('Quality: ' + (quality === 'auto' ? 'Auto' : quality), 'info');
+          }
         });
-    </script>
+      });
+    };
+
+    // Update quality badge when quality changes
+    document.addEventListener('qualityChanged', function(e) {
+      const qualityBadge = document.getElementById('qualityBadge');
+      if (qualityBadge && e.detail) {
+        qualityBadge.textContent = e.detail.quality === 'auto' ? 'Auto' : e.detail.quality;
+      }
+    });
+  </script>
+  
+  <!-- PHASE 1 FIX: Initialize View Deduplication -->
+  <script>
+    // Initialize view deduplication when page loads
+    document.addEventListener('DOMContentLoaded', function() {
+      // Clean up any old view data (older than 30 days)
+      try {
+        const viewedContent = JSON.parse(localStorage.getItem('bantu_viewed_content') || '{}');
+        const thirtyDaysAgo = Date.now() - (30 * 24 * 60 * 60 * 1000);
+        let needsCleanup = false;
+        
+        Object.keys(viewedContent).forEach(id => {
+          if (viewedContent[id] < thirtyDaysAgo) {
+            delete viewedContent[id];
+            needsCleanup = true;
+          }
+        });
+        
+        if (needsCleanup) {
+          localStorage.setItem('bantu_viewed_content', JSON.stringify(viewedContent));
+        }
+      } catch (error) {
+        console.warn('Error cleaning up view data:', error);
+      }
+    });
+  </script>
 </body>
 </html>
