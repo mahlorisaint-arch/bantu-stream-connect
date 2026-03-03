@@ -1,6 +1,6 @@
 // js/creator-analytics.js — Creator Analytics Module
 // Bantu Stream Connect — Phase 5 Implementation
-// FIXED: Syntax errors resolved
+// FIXED: More flexible supabase client handling and constructor checks
 
 (function() {
   'use strict';
@@ -8,12 +8,26 @@
   console.log('📊 CreatorAnalytics module loading...');
 
   function CreatorAnalytics(config) {
-    if (!config || !config.supabase) {
-      console.error('❌ CreatorAnalytics: Missing required config (supabase)');
+    // ✅ More flexible config check
+    if (!config) {
+      console.error('❌ CreatorAnalytics: Missing config object');
+      return;
+    }
+    
+    // Try multiple possible supabase client locations
+    this.supabase = config.supabase || 
+                    config.supabaseClient || 
+                    window.supabaseClient || 
+                    (typeof supabase !== 'undefined' ? supabase.createClient(
+                      'https://ydnxqnbjoshvxteevemc.supabase.co',
+                      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U'
+                    ) : null);
+    
+    if (!this.supabase) {
+      console.error('❌ CreatorAnalytics: Could not initialize Supabase client');
       return;
     }
 
-    this.supabase = config.supabase;
     this.userId = config.userId || null;
     this.contentId = config.contentId || null;
     
@@ -443,16 +457,32 @@
   };
 
   CreatorAnalytics.prototype._generateCSV = function(dashboardData, topContent) {
-    const headers = ['Content ID', 'Title', 'Views', 'Watch Time (hrs)', 'Engagement'];
-    const rows = topContent.map(item => [
-      item.content_id,
-      `"${item.Content?.title?.replace(/"/g, '""') || 'Untitled'}"`,
-      item.totalViews,
-      (item.totalWatchTime / 3600).toFixed(2),
-      `${item.avgCompletionRate}%`
-    ]);
+    const csvRows = [];
     
-    return [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+    // Add summary section
+    csvRows.push('Analytics Summary');
+    csvRows.push(`Total Views,${dashboardData?.summary?.totalViews || 0}`);
+    csvRows.push(`Total Watch Time (hrs),${Math.round((dashboardData?.summary?.totalWatchTime || 0) / 3600 * 100) / 100}`);
+    csvRows.push(`Unique Viewers,${dashboardData?.summary?.uniqueViewers || 0}`);
+    csvRows.push(`Avg Completion Rate,${dashboardData?.summary?.avgCompletionRate || 0}%`);
+    csvRows.push('');
+    
+    // Add content section headers
+    csvRows.push('Content Performance');
+    csvRows.push('Content ID,Title,Views,Watch Time (hrs),Avg Completion Rate');
+    
+    // Add content rows
+    (topContent || []).forEach(item => {
+      csvRows.push([
+        item.content_id,
+        `"${(item.Content?.title || 'Untitled').replace(/"/g, '""')}"`,
+        item.totalViews || 0,
+        ((item.totalWatchTime || 0) / 3600).toFixed(2),
+        `${item.avgCompletionRate || 0}%`
+      ].join(','));
+    });
+    
+    return csvRows.join('\n');
   };
 
   CreatorAnalytics.prototype._isCacheValid = function(key) {
