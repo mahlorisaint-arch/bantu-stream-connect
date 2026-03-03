@@ -1,6 +1,7 @@
 // js/creator-analytics-page.js — Dedicated Analytics Page Controller
 // Bantu Stream Connect — Phase 5B Implementation
 // ✅ FIXED: Watch time, avg duration, completion rate display
+// ✅ FIXED: Proper error handling in loadTopContent
 
 (function() {
   'use strict';
@@ -251,7 +252,11 @@
     }
     
     // Load top content table
-    loadTopContent();
+    if (data.content) {
+      loadTopContent(data.content);
+    } else {
+      loadTopContent([]);
+    }
     
     // Load audience insights
     loadAudienceInsights();
@@ -316,33 +321,31 @@
     });
   }
 
-  // ✅ FIXED: Load top content with detailed analytics per item
-  async function loadTopContent() {
+  // ✅ FIXED: Load top content with proper error handling
+  function loadTopContent(contentList) {
     const tbody = dom.topContentBody;
-    if (!tbody) return;
-    
-    if (!analyticsManager) {
-      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--slate-grey)">Analytics manager not initialized</td></tr>';
+    if (!tbody) {
+      console.warn('⚠️ topContentBody element not found');
       return;
     }
     
-    try {
-      const topContent = await analyticsManager.getTopContent(10, currentTimeRange);
-      
-      if (!topContent || topContent.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--slate-grey)">No content data available</td></tr>';
-        return;
-      }
-      
-      console.log('📊 Loading top content table with', topContent.length, 'items');
-      
-      // Render table rows
-      renderTopContentTable(topContent);
-      
-    } catch (err) {
-      console.error('❌ Failed to load top content:', err);
-      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--slate-grey)">Failed to load content data</td></tr>';
+    // Handle empty or invalid content list
+    if (!contentList || !Array.isArray(contentList) || contentList.length === 0) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="7" style="text-align:center;padding:40px;color:var(--slate-grey)">
+            <i class="fas fa-chart-bar" style="font-size:2rem;margin-bottom:10px;opacity:0.5"></i>
+            <br>No content data available yet. Upload content to see analytics.
+          </td>
+        </tr>
+      `;
+      return;
     }
+    
+    console.log('📊 Loading top content table with', contentList.length, 'items');
+    
+    // Render table rows with analytics
+    renderTopContentTable(contentList.slice(0, 10));
   }
 
   // ✅ FIXED: Render table with proper metric columns
@@ -356,18 +359,19 @@
     }
     
     tbody.innerHTML = items.map((item, index) => {
-      const content = item.Content || {};
+      const content = item.Content || item;
+      const analytics = item.analytics || {};
       
       const title = content.title || 'Untitled';
       const thumbnail = content.thumbnail_url 
         ? (window.SupabaseHelper?.fixMediaUrl?.(content.thumbnail_url) || content.thumbnail_url)
         : 'https://via.placeholder.com/60x34';
       
-      const views = item.totalViews || 0;
-      const watchTime = item.totalWatchTime || 0;
-      const avgDuration = item.avgWatchTime || 0;
-      const completion = item.avgCompletionRate || 0;
-      const engagement = item.uniqueViewers || 0;
+      const views = analytics.totalViews || content.views_count || 0;
+      const watchTime = analytics.totalWatchTime || 0;
+      const avgDuration = analytics.avgWatchTime || 0;
+      const completion = analytics.avgCompletionRate || 0;
+      const engagement = analytics.uniqueViewers || 0;
       
       return `
         <tr>
@@ -742,10 +746,10 @@
       
       switch(sortBy) {
         case 'views':
-          sorted.sort((a, b) => b.totalViews - a.totalViews);
+          sorted.sort((a, b) => (b.totalViews || 0) - (a.totalViews || 0));
           break;
         case 'watchtime':
-          sorted.sort((a, b) => b.totalWatchTime - a.totalWatchTime);
+          sorted.sort((a, b) => (b.totalWatchTime || 0) - (a.totalWatchTime || 0));
           break;
         case 'engagement':
           sorted.sort((a, b) => (b.uniqueViewers || 0) - (a.uniqueViewers || 0));
