@@ -2,6 +2,7 @@
 // Bantu Stream Connect — Phase 5 Implementation
 // ✅ FIXED: Added watch time, avg duration, completion rate calculations
 // ✅ FIXED: SQL query syntax error in _getContentList
+// ✅ ADDED: CSV export functionality (Phase 5D)
 
 (function() {
   'use strict';
@@ -176,16 +177,18 @@
       (data || []).forEach(item => {
         const date = new Date(item.created_at).toISOString().split('T')[0];
         if (!grouped[date]) {
-          grouped[date] = 0;
+          grouped[date] = { views: 0, watchTime: 0 };
         }
-        grouped[date] += item.view_duration || 0;
+        grouped[date].views++;
+        grouped[date].watchTime += item.view_duration || 0;
       });
       
-      return Object.entries(grouped).map(([date, seconds]) => ({
+      return Object.entries(grouped).map(([date, values]) => ({
         date,
-        watchTime: seconds,
-        watchTimeHours: Math.round(seconds / 3600 * 100) / 100
-      }));
+        views: values.views,
+        watchTime: values.watchTime,
+        watchTimeHours: Math.round((values.watchTime / 3600) * 100) / 100
+      })).sort((a, b) => a.date.localeCompare(b.date));
       
     } catch (error) {
       console.error('❌ Watch time by date failed:', error);
@@ -212,25 +215,173 @@
     }
   };
 
-  CreatorAnalytics.prototype.exportAnalytics = async function(format = 'csv', timeRange = '30days') {
+  // ============================================
+  // ✅ EXPORT ANALYTICS TO CSV (Phase 5D)
+  // ============================================
+  CreatorAnalytics.prototype.exportToCSV = async function(timeRange = '30days', includeContent = true) {
     if (!this.userId) {
-      return { error: 'User not authenticated' };
+      throw new Error('User not authenticated');
     }
     
     try {
-      const dashboardData = await this.getDashboardData(timeRange);
-      const topContent = await this.getTopContent(50, timeRange);
+      console.log('📊 Exporting analytics for time range:', timeRange);
       
-      if (format === 'csv') {
-        return this._generateCSV(dashboardData, topContent);
+      // Fetch dashboard summary
+      let summary = await this._getFromMaterializedView();
+      
+      // If view fails, calculate from source
+      if (!summary) {
+        summary = await this._calculateFromSource(timeRange);
       }
       
-      return { data: { dashboardData, topContent }, format };
+      // Fetch content list with analytics
+      const content = includeContent ? await this._getContentList(timeRange) : [];
+      
+      // Fetch daily data
+      const dailyData = await this.getWatchTimeByDate(timeRange);
+      
+      // Build CSV rows
+      const rows = [];
+      
+      // Header: Report Metadata
+      rows.push(['Bantu Stream Connect - Analytics Export']);
+      rows.push(['Generated:', new Date().toISOString()]);
+      rows.push(['Time Range:', this._getTimeRangeLabel(timeRange)]);
+      rows.push(['Creator ID:', this.userId]);
+      rows.push([]); // Empty row
+      
+      // Section: Summary Metrics
+      rows.push(['=== SUMMARY METRICS ===']);
+      rows.push(['Metric', 'Value']);
+      rows.push(['Total Uploads', summary?.totalUploads || summary?.total_uploads || 0]);
+      rows.push(['Total Views', summary?.totalViews || summary?.total_views || 0]);
+      rows.push(['Total Watch Time (seconds)', summary?.totalWatchTime || summary?.total_watch_time || 0]);
+      rows.push(['Total Watch Time (hours)', (summary?.totalWatchTime || summary?.total_watch_time || 0) ? Math.round(((summary.totalWatchTime || summary.total_watch_time || 0) / 3600) * 100) / 100 : 0]);
+      rows.push(['Unique Viewers', summary?.uniqueViewers || summary?.unique_viewers || 0]);
+      rows.push(['Avg. Completion Rate (%)', summary?.avgCompletionRate || summary?.avg_completion_rate || 0]);
+      rows.push(['Total Earnings (ZAR)', (summary?.totalEarnings || summary?.total_earnings || 0).toFixed(2)]);
+      rows.push(['Total Connectors', summary?.totalConnectors || summary?.total_connectors || 0]);
+      rows.push(['Engagement Percentage (%)', (summary?.engagementPercentage || summary?.engagement_percentage || 0).toFixed(2)]);
+      rows.push(['Monetization Eligible', (summary?.isEligibleForMonetization || summary?.is_eligible_for_monetization) ? 'Yes' : 'No']);
+      rows.push([]); // Empty row
+      
+      // Section: Content Performance (if included)
+      if (includeContent && content.length > 0) {
+        rows.push(['=== CONTENT PERFORMANCE ===']);
+        rows.push([
+          'Content ID',
+          'Title',
+          'Published Date',
+          'Duration (seconds)',
+          'Views',
+          'Unique Viewers',
+          'Total Watch Time (seconds)',
+          'Avg. Watch Time (seconds)',
+          'Avg. Completion Rate (%)',
+          'Likes',
+          'Comments',
+          'Shares',
+          'Earnings (ZAR)'
+        ]);
+        
+        // Enrich content with engagement data
+        for (const item of content) {
+          const analytics = item.analytics || {};
+          const engagement = await this._getContentEngagement(item.id);
+          
+          const earnings = (analytics.totalViews || 0) * 0.01; // R0.01 per view
+          
+          rows.push([
+            item.id,
+            `"${(item.title || 'Untitled').replace(/"/g, '""')}"`, // Escape quotes for CSV
+            item.created_at ? new Date(item.created_at).toISOString().split('T')[0] : '',
+            item.duration || 0,
+            analytics.totalViews || 0,
+            analytics.uniqueViewers || 0,
+            analytics.totalWatchTime || 0,
+            analytics.avgWatchTime || 0,
+            analytics.avgCompletionRate || 0,
+            engagement.likes || 0,
+            engagement.comments || 0,
+            engagement.shares || 0,
+            earnings.toFixed(2)
+          ]);
+        }
+        rows.push([]); // Empty row
+      }
+      
+      // Section: Daily Breakdown
+      rows.push(['=== DAILY VIEW BREAKDOWN ===']);
+      rows.push(['Date', 'Views', 'Watch Time (seconds)', 'Watch Time (hours)']);
+      
+      if (dailyData.length > 0) {
+        dailyData.forEach(day => {
+          rows.push([
+            day.date,
+            day.views || 0,
+            day.watchTime || 0,
+            day.watchTimeHours || 0
+          ]);
+        });
+      } else {
+        rows.push(['No daily data available', '', '', '']);
+      }
+      
+      // Convert rows to CSV string
+      const csv = this._convertToCSV(rows);
+      
+      // Generate filename
+      const dateStr = new Date().toISOString().split('T')[0];
+      const filename = `bantu-analytics-${timeRange}-${dateStr}.csv`;
+      
+      console.log('✅ CSV export generated:', filename);
+      
+      return { csv, filename };
       
     } catch (error) {
-      console.error('❌ Export failed:', error);
-      this._handleError('exportAnalytics', error);
-      return { error: error.message };
+      console.error('❌ CSV export failed:', error);
+      throw error;
+    }
+  };
+
+  // ============================================
+  // ✅ CONVERT ROWS TO CSV STRING (RFC 4180)
+  // ============================================
+  CreatorAnalytics.prototype._convertToCSV = function(rows) {
+    return rows.map(row => {
+      return row.map(field => {
+        // Handle null/undefined
+        if (field === null || field === undefined) return '';
+        
+        // Convert to string
+        const str = String(field);
+        
+        // Escape quotes and wrap in quotes if contains comma, quote, or newline
+        if (str.includes(',') || str.includes('"') || str.includes('\n') || str.includes('\r')) {
+          return `"${str.replace(/"/g, '""')}"`;
+        }
+        return str;
+      }).join(',');
+    }).join('\r\n'); // RFC 4180 uses CRLF line endings
+  };
+
+  // ✅ GET CONTENT ENGAGEMENT (Helper for export)
+  CreatorAnalytics.prototype._getContentEngagement = async function(contentId) {
+    try {
+      const [likes, comments, shares] = await Promise.all([
+        this.supabase.from('content_likes').select('*', { count: 'exact', head: true }).eq('content_id', contentId),
+        this.supabase.from('comments').select('*', { count: 'exact', head: true }).eq('content_id', contentId),
+        this.supabase.from('content_shares').select('*', { count: 'exact', head: true }).eq('content_id', contentId)
+      ]);
+      
+      return {
+        likes: likes.count || 0,
+        comments: comments.count || 0,
+        shares: shares.count || 0
+      };
+    } catch (error) {
+      console.warn('⚠️ Could not fetch engagement:', error);
+      return { likes: 0, comments: 0, shares: 0 };
     }
   };
 
@@ -257,7 +408,11 @@
         totalEarnings: data.total_earnings || 0,
         totalConnectors: data.total_connectors || 0,
         engagementPercentage: data.engagement_percentage || 0,
-        isEligibleForMonetization: data.is_eligible_for_monetization || false
+        isEligibleForMonetization: data.is_eligible_for_monetization || false,
+        // Map fields for export
+        total_watch_time: data.total_watch_time || 0,
+        unique_viewers: data.unique_viewers || 0,
+        avg_completion_rate: data.avg_completion_rate || 0
       };
       
     } catch (error) {
@@ -512,27 +667,6 @@
     }
   };
 
-  CreatorAnalytics.prototype._getContentEngagement = async function(contentId) {
-    try {
-      const [likes, comments, shares, favorites] = await Promise.all([
-        this.supabase.from('content_likes').select('*', { count: 'exact', head: true }).eq('content_id', contentId),
-        this.supabase.from('comments').select('*', { count: 'exact', head: true }).eq('content_id', contentId),
-        this.supabase.from('content_shares').select('*', { count: 'exact', head: true }).eq('content_id', contentId),
-        this.supabase.from('favorites').select('*', { count: 'exact', head: true }).eq('content_id', contentId)
-      ]);
-      
-      return {
-        likes: likes.count || 0,
-        comments: comments.count || 0,
-        shares: shares.count || 0,
-        favorites: favorites.count || 0
-      };
-    } catch (error) {
-      console.error('❌ Get engagement failed:', error);
-      return { likes: 0, comments: 0, shares: 0, favorites: 0 };
-    }
-  };
-
   // ✅ ENHANCED: Get retention data from watch_progress
   CreatorAnalytics.prototype._getContentRetention = async function(contentId, duration) {
     try {
@@ -610,7 +744,7 @@
     };
   };
 
-  // ✅ ENHANCED: Generate CSV with all metrics
+  // ✅ ENHANCED: Generate CSV with all metrics (kept for backward compatibility)
   CreatorAnalytics.prototype._generateCSV = function(dashboardData, topContent) {
     const csvRows = [];
     const summary = dashboardData?.summary || {};
