@@ -73,7 +73,7 @@
       }
       
       if (supabaseClient) {
-        const {  { session }, error } = await supabaseClient.auth.getSession();
+        const { data: { session }, error } = await supabaseClient.auth.getSession();
         
         if (error) {
           console.warn('⚠️ Supabase session error:', error.message);
@@ -85,7 +85,7 @@
           
           // Also try to get profile
           try {
-            const {  profile } = await supabaseClient
+            const { data: profile } = await supabaseClient
               .from('user_profiles')
               .select('*')
               .eq('id', currentUser.id)
@@ -277,11 +277,11 @@
     
     charts.views = new Chart(ctx, {
       type: 'line',
-       {
+      data: {
         labels: labels,
         datasets: [{
           label: 'Views',
-           data.length > 0 ? data : [12, 19, 15, 22, 18, 25, 30],
+          data: data.length > 0 ? data : [12, 19, 15, 22, 18, 25, 30],
           borderColor: '#1D4ED8',
           backgroundColor: 'rgba(29, 78, 216, 0.1)',
           tension: 0.4,
@@ -322,11 +322,11 @@
     
     charts.watchTime = new Chart(ctx, {
       type: 'bar',
-       {
+      data: {
         labels: labels.length > 0 ? labels : ['Day 1', 'Day 2', 'Day 3', 'Day 4', 'Day 5', 'Day 6', 'Day 7'],
         datasets: [{
           label: 'Watch Time (hrs)',
-           data.length > 0 ? data : [0.12, 0.19, 0.15, 0.22, 0.18, 0.25, 0.30],
+          data: data.length > 0 ? data : [0.12, 0.19, 0.15, 0.22, 0.18, 0.25, 0.30],
           backgroundColor: 'rgba(245, 158, 11, 0.6)',
           borderColor: '#F59E0B',
           borderWidth: 1
@@ -366,10 +366,10 @@
     
     charts.engagement = new Chart(ctx, {
       type: 'doughnut',
-       {
+      data: {
         labels: ['Likes', 'Comments', 'Shares'],
         datasets: [{
-           [65, 25, 10],
+          data: [65, 25, 10],
           backgroundColor: ['#1D4ED8', '#F59E0B', '#10B981'],
           borderWidth: 0
         }]
@@ -394,11 +394,11 @@
     
     charts.retention = new Chart(ctx, {
       type: 'line',
-       {
+      data: {
         labels: ['0%', '10%', '20%', '30%', '40%', '50%', '60%', '70%', '80%', '90%', '100%'],
         datasets: [{
           label: 'Retention %',
-           retentionData,
+          data: retentionData,
           borderColor: '#F59E0B',
           backgroundColor: 'rgba(245, 158, 11, 0.1)',
           tension: 0.3,
@@ -445,6 +445,7 @@
             </div>
           </td>
           <td>${formatNumber(views)}</td>
+          <td>-</td>
           <td>-</td>
           <td>-</td>
           <td>
