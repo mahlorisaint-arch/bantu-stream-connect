@@ -2,6 +2,7 @@
 // Bantu Stream Connect — Phase 5B Implementation
 // ✅ FIXED: Watch time, avg duration, completion rate display
 // ✅ FIXED: Proper error handling in loadTopContent
+// ✅ ADDED: CSV export button handler (Phase 5D)
 
 (function() {
   'use strict';
@@ -50,7 +51,7 @@
       tableSortBtns: document.querySelectorAll('.table-btn'),
       backBtn: document.getElementById('backBtn'),
       refreshBtn: document.getElementById('refreshBtn'),
-      exportBtn: document.getElementById('exportBtn'),
+      exportBtn: document.getElementById('export-csv-btn'), // Updated ID
       toastContainer: document.getElementById('toast-container'),
       // Locations list
       locationsList: document.getElementById('locationsList')
@@ -183,7 +184,7 @@
       // Setup UI
       setupTimeRangeSelector(analyticsManager);
       setupTableSorting();
-      setupExportButton(analyticsManager);
+      setupExportButton(analyticsManager); // ✅ New export handler
       setupRefreshButton();
       setupBackButton();
       
@@ -402,6 +403,80 @@
   }
 
   // ============================================
+  // ✅ EXPORT BUTTON SETUP (Phase 5D)
+  // ============================================
+  function setupExportButton(analytics) {
+    if (!dom.exportBtn) {
+      console.warn('⚠️ Export button not found');
+      return;
+    }
+    
+    dom.exportBtn.addEventListener('click', async function() {
+      if (!analytics) {
+        showToast('Analytics not ready', 'warning');
+        return;
+      }
+      
+      // Get selected time range from active button
+      const activeRangeBtn = document.querySelector('.time-range-btn.active');
+      const timeRange = activeRangeBtn?.dataset.range || currentTimeRange;
+      
+      // Show loading state
+      const originalHTML = dom.exportBtn.innerHTML;
+      dom.exportBtn.disabled = true;
+      dom.exportBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating...';
+      
+      try {
+        // Generate CSV using the new export method
+        const result = await analytics.exportToCSV(timeRange, true);
+        
+        // Trigger download
+        downloadCSV(result.csv, result.filename);
+        
+        // Show success
+        showToast(`✅ Exported ${timeRange} analytics`, 'success');
+        
+      } catch (error) {
+        console.error('❌ Export failed:', error);
+        showToast('Failed to export: ' + (error.message || 'Unknown error'), 'error');
+      } finally {
+        // Restore button
+        dom.exportBtn.disabled = false;
+        dom.exportBtn.innerHTML = originalHTML;
+      }
+    });
+  }
+
+  // ============================================
+  // ✅ DOWNLOAD CSV FILE (Phase 5D)
+  // ============================================
+  function downloadCSV(csvContent, filename) {
+    // Create blob with UTF-8 BOM for Excel compatibility
+    const BOM = '\uFEFF';
+    const blob = new Blob([BOM + csvContent], { 
+      type: 'text/csv;charset=utf-8;' 
+    });
+    
+    // Create download link
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    
+    link.setAttribute('href', url);
+    link.setAttribute('download', filename);
+    link.style.visibility = 'hidden';
+    
+    // Trigger download
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    // Clean up
+    URL.revokeObjectURL(url);
+    
+    console.log('📥 CSV downloaded:', filename);
+  }
+
+  // ============================================
   // AUDIENCE INSIGHTS
   // ============================================
   
@@ -418,9 +493,9 @@
     ];
     
     dom.locationsList.innerHTML = locations.map(loc => 
-      `<div style="display:flex;justify-content:space-between;margin-bottom:10px">
-        <span>${loc.country}</span>
-        <span style="color:var(--warm-gold)">${loc.percentage}%</span>
+      `<div class="location-item">
+        <span class="location-name">${loc.country}</span>
+        <span class="location-percent">${loc.percentage}%</span>
       </div>`
     ).join('');
     
@@ -763,45 +838,6 @@
     } catch (err) {
       console.error('❌ Failed to sort content:', err);
     }
-  }
-
-  function setupExportButton(analytics) {
-    if (!dom.exportBtn) return;
-    
-    dom.exportBtn.addEventListener('click', async function() {
-      if (!analytics) {
-        showToast('Analytics not ready', 'warning');
-        return;
-      }
-      
-      dom.exportBtn.disabled = true;
-      dom.exportBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-      
-      try {
-        const result = await analytics.exportAnalytics('csv', currentTimeRange);
-        
-        if (result?.csv || typeof result === 'string') {
-          // Download
-          const csv = result.csv || result;
-          const blob = new Blob([csv], { type: 'text/csv' });
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = `bantu-analytics-${currentTimeRange}-${new Date().toISOString().split('T')[0]}.csv`;
-          a.click();
-          URL.revokeObjectURL(url);
-          showToast('Analytics exported successfully!', 'success');
-        } else {
-          showToast('Export failed: ' + (result?.error || 'Unknown error'), 'error');
-        }
-      } catch (error) {
-        console.error('Export error:', error);
-        showToast('Failed to export: ' + error.message, 'error');
-      } finally {
-        dom.exportBtn.disabled = false;
-        dom.exportBtn.innerHTML = '<i class="fas fa-download"></i>';
-      }
-    });
   }
 
   function setupRefreshButton() {
