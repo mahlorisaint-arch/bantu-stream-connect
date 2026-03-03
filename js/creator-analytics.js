@@ -1,6 +1,6 @@
 // js/creator-analytics.js — Creator Analytics Module
 // Bantu Stream Connect — Phase 5 Implementation
-// FIXED: More flexible supabase client handling and constructor checks
+// ✅ FIXED: Added watch time, avg duration, and completion rate calculations
 
 (function() {
   'use strict';
@@ -63,7 +63,7 @@
       // Try materialized view first (fast)
       let analyticsData = await this._getFromMaterializedView();
       
-      // If view fails, calculate from source tables
+      // If view fails, calculate from source tables (enhanced with watch time)
       if (!analyticsData) {
         analyticsData = await this._calculateFromSource(timeRange);
       }
@@ -123,7 +123,7 @@
       const engagement = await this._getContentEngagement(contentId);
       
       // Get retention data
-      const retention = await this._getContentRetention(contentId);
+      const retention = await this._getContentRetention(contentId, content.duration);
       
       const result = {
         content: content,
@@ -203,6 +203,8 @@
         .select(`
           content_id,
           view_duration,
+          viewer_id,
+          created_at,
           Content (
             id,
             title,
@@ -226,24 +228,56 @@
             content_id: item.content_id,
             totalViews: 0,
             totalWatchTime: 0,
+            uniqueViewers: new Set(),
             Content: item.Content
           };
         }
         aggregated[item.content_id].totalViews++;
         aggregated[item.content_id].totalWatchTime += item.view_duration || 0;
+        if (item.viewer_id) {
+          aggregated[item.content_id].uniqueViewers.add(item.viewer_id);
+        }
       });
+      
+      // Get completion rates from watch_progress
+      const contentIds = Object.keys(aggregated);
+      const completionRates = {};
+      
+      if (contentIds.length > 0) {
+        const { data: progressData } = await this.supabase
+          .from('watch_progress')
+          .select('content_id, last_position')
+          .in('content_id', contentIds)
+          .gte('updated_at', dateFrom);
+        
+        // Calculate average completion per content
+        const progressByContent = {};
+        (progressData || []).forEach(p => {
+          if (!progressByContent[p.content_id]) {
+            progressByContent[p.content_id] = [];
+          }
+          progressByContent[p.content_id].push(p.last_position);
+        });
+        
+        Object.entries(progressByContent).forEach(([contentId, positions]) => {
+          const content = aggregated[contentId]?.Content;
+          if (content?.duration > 0) {
+            const avgPosition = positions.reduce((a, b) => a + b, 0) / positions.length;
+            completionRates[contentId] = Math.min(100, Math.round((avgPosition / content.duration) * 100));
+          }
+        });
+      }
       
       // Sort by views and limit
       return Object.values(aggregated)
-        .sort((a, b) => b.totalViews - a.totalViews)
-        .slice(0, limit)
         .map(item => ({
           ...item,
-          avgWatchTime: Math.round(item.totalWatchTime / item.totalViews),
-          avgCompletionRate: item.Content?.duration > 0 
-            ? Math.round((item.totalWatchTime / item.totalViews / item.Content.duration) * 100)
-            : 0
-        }));
+          uniqueViewers: item.uniqueViewers.size,
+          avgWatchTime: item.totalViews > 0 ? Math.round(item.totalWatchTime / item.totalViews) : 0,
+          avgCompletionRate: completionRates[item.content_id] || 0
+        }))
+        .sort((a, b) => b.totalViews - a.totalViews)
+        .slice(0, limit);
       
     } catch (error) {
       console.error('❌ Top content failed:', error);
@@ -305,47 +339,96 @@
     }
   };
 
+  // ✅ ENHANCED: Calculate watch time, avg duration, completion rate from source tables
   CreatorAnalytics.prototype._calculateFromSource = async function(timeRange) {
     const dateFrom = this._getDateFromRange(timeRange);
     
     try {
-      // Get all creator's content
-      const { data: contentData } = await this.supabase
+      // Get all creator's published content
+      const { data: contentData, error: contentError } = await this.supabase
         .from('Content')
-        .select('id')
+        .select('id, title, duration')
         .eq('user_id', this.userId)
         .eq('status', 'published');
       
-      if (!contentData || contentData.length === 0) {
+      if (contentError || !contentData?.length) {
         return this._getEmptyAnalytics();
       }
       
       const contentIds = contentData.map(c => c.id);
       
-      // Get views
+      // ============================================
+      // ✅ CALCULATE WATCH TIME FROM content_views
+      // ============================================
       const { data: viewsData } = await this.supabase
         .from('content_views')
-        .select('view_duration')
+        .select('view_duration, viewer_id, content_id')
         .in('content_id', contentIds)
         .gte('created_at', dateFrom);
       
       const totalViews = viewsData?.length || 0;
       const totalWatchTime = viewsData?.reduce((sum, v) => sum + (v.view_duration || 0), 0) || 0;
+      const avgWatchTime = totalViews > 0 ? Math.round(totalWatchTime / totalViews) : 0;
+      
+      // Unique viewers
+      const uniqueViewers = viewsData 
+        ? [...new Set(viewsData.map(v => v.viewer_id).filter(Boolean))].length 
+        : 0;
+      
+      // ============================================
+      // ✅ CALCULATE COMPLETION RATE FROM watch_progress
+      // ============================================
+      const { data: progressData } = await this.supabase
+        .from('watch_progress')
+        .select('last_position, content_id')
+        .in('content_id', contentIds)
+        .gte('updated_at', dateFrom);
+      
+      // Calculate completion rate: (last_position / content_duration) * 100
+      let totalCompletion = 0;
+      let completionCount = 0;
+      
+      if (progressData?.length) {
+        for (const progress of progressData) {
+          const content = contentData.find(c => c.id === progress.content_id);
+          if (content?.duration > 0) {
+            const completion = Math.min(100, (progress.last_position / content.duration) * 100);
+            totalCompletion += completion;
+            completionCount++;
+          }
+        }
+      }
+      
+      const avgCompletionRate = completionCount > 0 
+        ? Math.round(totalCompletion / completionCount) 
+        : 0;
+      
+      // ============================================
+      // ✅ CALCULATE EARNINGS & CONNECTORS
+      // ============================================
       const totalEarnings = totalViews * 0.01; // R0.01 per view
       
-      // Get connectors
       const { count: connectorsCount } = await this.supabase
         .from('connectors')
         .select('*', { count: 'exact', head: true })
         .eq('connected_id', this.userId)
         .eq('connection_type', 'creator');
       
+      // ============================================
+      // ✅ RETURN COMPLETE ANALYTICS OBJECT
+      // ============================================
       return {
         totalUploads: contentData.length,
         totalViews: totalViews,
+        totalWatchTime: totalWatchTime,        // ✅ NEW: Total watch time in seconds
+        avgWatchTime: avgWatchTime,            // ✅ NEW: Average watch time in seconds
+        uniqueViewers: uniqueViewers,          // ✅ NEW: Unique viewer count
+        avgCompletionRate: avgCompletionRate,  // ✅ NEW: Average completion percentage
         totalEarnings: totalEarnings,
         totalConnectors: connectorsCount || 0,
-        engagementPercentage: contentData.length > 0 ? Math.round((totalViews / contentData.length) * 100) : 0,
+        engagementPercentage: contentData.length > 0 
+          ? Math.round((totalViews / contentData.length) * 100) 
+          : 0,
         isEligibleForMonetization: contentData.length >= 10 && totalViews >= 1000
       };
       
@@ -374,6 +457,7 @@
     }
   };
 
+  // ✅ ENHANCED: Get content views with watch time metrics
   CreatorAnalytics.prototype._getContentViews = async function(contentId) {
     try {
       const { data, error } = await this.supabase
@@ -386,13 +470,37 @@
       const total = data?.length || 0;
       const unique = [...new Set(data?.map(d => d.viewer_id).filter(Boolean))].length;
       const totalWatchTime = data?.reduce((sum, d) => sum + (d.view_duration || 0), 0) || 0;
+      const avgWatchTime = total > 0 ? Math.round(totalWatchTime / total) : 0;
+      
+      // Get content duration for completion rate
+      const { data: contentData } = await this.supabase
+        .from('Content')
+        .select('duration')
+        .eq('id', contentId)
+        .single();
+      
+      // Get watch progress for completion rate
+      let avgCompletionRate = 0;
+      if (contentData?.duration > 0) {
+        const { data: progressData } = await this.supabase
+          .from('watch_progress')
+          .select('last_position')
+          .eq('content_id', contentId);
+        
+        if (progressData?.length) {
+          const totalCompletion = progressData.reduce((sum, p) => {
+            return sum + Math.min(100, (p.last_position / contentData.duration) * 100);
+          }, 0);
+          avgCompletionRate = Math.round(totalCompletion / progressData.length);
+        }
+      }
       
       return {
         total,
         unique,
         totalWatchTime,
-        avgWatchTime: total > 0 ? Math.round(totalWatchTime / total) : 0,
-        avgCompletionRate: 0 // Would need content duration to calculate
+        avgWatchTime,
+        avgCompletionRate
       };
     } catch (error) {
       console.error('❌ Get content views failed:', error);
@@ -421,9 +529,47 @@
     }
   };
 
-  CreatorAnalytics.prototype._getContentRetention = async function(contentId) {
-    // Placeholder - would need watch_progress data
-    return { retentionCurve: [], dropOffPoints: [] };
+  // ✅ ENHANCED: Get retention data from watch_progress
+  CreatorAnalytics.prototype._getContentRetention = async function(contentId, duration) {
+    try {
+      if (!duration || duration <= 0) {
+        return { retentionCurve: [], dropOffPoints: [] };
+      }
+      
+      // Get all watch progress for this content
+      const { data: progressData } = await this.supabase
+        .from('watch_progress')
+        .select('last_position')
+        .eq('content_id', contentId);
+      
+      if (!progressData?.length) {
+        return { retentionCurve: [], dropOffPoints: [] };
+      }
+      
+      // Create retention curve at 10% intervals
+      const intervals = [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100];
+      const retention = intervals.map(percent => {
+        const threshold = (percent / 100) * duration;
+        const viewersBeyond = progressData.filter(p => p.last_position >= threshold).length;
+        return Math.round((viewersBeyond / progressData.length) * 100);
+      });
+      
+      // Calculate drop-off points (where retention drops significantly)
+      const dropOffPoints = [];
+      for (let i = 1; i < retention.length; i++) {
+        if (retention[i-1] - retention[i] > 15) {
+          dropOffPoints.push(intervals[i]);
+        }
+      }
+      
+      return {
+        retentionCurve: retention,
+        dropOffPoints
+      };
+    } catch (error) {
+      console.error('❌ Get retention failed:', error);
+      return { retentionCurve: [], dropOffPoints: [] };
+    }
   };
 
   CreatorAnalytics.prototype._getDateFromRange = function(timeRange) {
@@ -449,6 +595,10 @@
     return {
       totalUploads: 0,
       totalViews: 0,
+      totalWatchTime: 0,
+      avgWatchTime: 0,
+      uniqueViewers: 0,
+      avgCompletionRate: 0,
       totalEarnings: 0,
       totalConnectors: 0,
       engagementPercentage: 0,
@@ -456,20 +606,25 @@
     };
   };
 
+  // ✅ ENHANCED: Generate CSV with all metrics
   CreatorAnalytics.prototype._generateCSV = function(dashboardData, topContent) {
     const csvRows = [];
+    const summary = dashboardData?.summary || {};
     
     // Add summary section
     csvRows.push('Analytics Summary');
-    csvRows.push(`Total Views,${dashboardData?.summary?.totalViews || 0}`);
-    csvRows.push(`Total Watch Time (hrs),${Math.round((dashboardData?.summary?.totalWatchTime || 0) / 3600 * 100) / 100}`);
-    csvRows.push(`Unique Viewers,${dashboardData?.summary?.uniqueViewers || 0}`);
-    csvRows.push(`Avg Completion Rate,${dashboardData?.summary?.avgCompletionRate || 0}%`);
+    csvRows.push(`Total Views,${summary.totalViews || 0}`);
+    csvRows.push(`Total Watch Time (hrs),${Math.round((summary.totalWatchTime || 0) / 3600 * 100) / 100}`);
+    csvRows.push(`Average Watch Time (min),${Math.round((summary.avgWatchTime || 0) / 60 * 10) / 10}`);
+    csvRows.push(`Unique Viewers,${summary.uniqueViewers || 0}`);
+    csvRows.push(`Average Completion Rate,${summary.avgCompletionRate || 0}%`);
+    csvRows.push(`Total Earnings,R${(summary.totalEarnings || 0).toFixed(2)}`);
+    csvRows.push(`Total Connectors,${summary.totalConnectors || 0}`);
     csvRows.push('');
     
     // Add content section headers
     csvRows.push('Content Performance');
-    csvRows.push('Content ID,Title,Views,Watch Time (hrs),Avg Completion Rate');
+    csvRows.push('Content ID,Title,Views,Watch Time (hrs),Avg Duration (min),Completion Rate,Engagement');
     
     // Add content rows
     (topContent || []).forEach(item => {
@@ -478,7 +633,9 @@
         `"${(item.Content?.title || 'Untitled').replace(/"/g, '""')}"`,
         item.totalViews || 0,
         ((item.totalWatchTime || 0) / 3600).toFixed(2),
-        `${item.avgCompletionRate || 0}%`
+        ((item.avgWatchTime || 0) / 60).toFixed(1),
+        `${item.avgCompletionRate || 0}%`,
+        item.engagement || 0
       ].join(','));
     });
     
