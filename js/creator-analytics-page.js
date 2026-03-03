@@ -1,6 +1,6 @@
 // js/creator-analytics-page.js — Dedicated Analytics Page Controller
 // Bantu Stream Connect — Phase 5B Implementation
-// ✅ FIXED: Proper data mapping for summary cards and top content table
+// ✅ FIXED: Chart.js configuration syntax errors
 
 (function() {
   'use strict';
@@ -76,7 +76,7 @@
       }
       
       if (supabaseClient) {
-        const {  { session }, error } = await supabaseClient.auth.getSession();
+        const { data: { session }, error } = await supabaseClient.auth.getSession();
         
         if (error) {
           console.warn('⚠️ Supabase session error:', error.message);
@@ -88,7 +88,7 @@
           
           // Also try to get profile
           try {
-            const {  profile } = await supabaseClient
+            const { data: profile } = await supabaseClient
               .from('user_profiles')
               .select('*')
               .eq('id', currentUser.id)
@@ -324,6 +324,9 @@
     
     console.log('📊 Loading top content table with', contentList.length, 'items');
     
+    // Get supabase client
+    const supabaseClient = window.supabaseClient;
+    
     // Enrich content with view analytics if not already included
     const enrichedContent = await Promise.all(
       contentList.slice(0, 10).map(async (item) => {
@@ -334,10 +337,12 @@
         
         // Fetch view analytics for this content
         try {
-          const {  viewsData } = await window.supabaseClient
+          const { data: viewsData, error } = await supabaseClient
             .from('content_views')
             .select('view_duration, viewer_id')
             .eq('content_id', item.id);
+          
+          if (error) throw error;
           
           const total = viewsData?.length || 0;
           const unique = [...new Set(viewsData?.map(v => v.viewer_id).filter(Boolean))].length;
@@ -415,7 +420,7 @@
   }
 
   // ============================================
-  // CHART RENDERING
+  // CHART RENDERING - FIXED SYNTAX ERRORS
   // ============================================
   
   function loadCharts(dashboardData) {
@@ -452,11 +457,11 @@
     
     charts.views = new Chart(ctx, {
       type: 'line',
-       {
+      data: {
         labels: labels,
         datasets: [{
           label: 'Views',
-           data.length > 0 ? data : [12, 19, 15, 22, 18, 25, 30],
+          data: data.length > 0 ? data : [12, 19, 15, 22, 18, 25, 30],
           borderColor: '#1D4ED8',
           backgroundColor: 'rgba(29, 78, 216, 0.1)',
           tension: 0.4,
@@ -500,11 +505,11 @@
     
     charts.watchTime = new Chart(ctx, {
       type: 'bar',
-       {
+      data: {
         labels: labels.length > 0 ? labels : ['Day 1', 'Day 2', 'Day 3', 'Day 4', 'Day 5', 'Day 6', 'Day 7'],
         datasets: [{
           label: 'Watch Time (hrs)',
-           data.length > 0 ? data : [0.12, 0.19, 0.15, 0.22, 0.18, 0.25, 0.30],
+          data: data.length > 0 ? data : [0.12, 0.19, 0.15, 0.22, 0.18, 0.25, 0.30],
           backgroundColor: 'rgba(245, 158, 11, 0.6)',
           borderColor: '#F59E0B',
           borderWidth: 1
@@ -544,10 +549,10 @@
     
     charts.engagement = new Chart(ctx, {
       type: 'doughnut',
-       {
+      data: {
         labels: ['Likes', 'Comments', 'Shares'],
         datasets: [{
-           [65, 25, 10],
+          data: [65, 25, 10],
           backgroundColor: ['#1D4ED8', '#F59E0B', '#10B981'],
           borderWidth: 0
         }]
@@ -555,7 +560,12 @@
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        plugins: { legend: { position: 'bottom', labels: { color: '#F8FAFC' } } }
+        plugins: { 
+          legend: { 
+            position: 'bottom', 
+            labels: { color: '#F8FAFC' } 
+          } 
+        }
       }
     });
   }
@@ -572,11 +582,11 @@
     
     charts.retention = new Chart(ctx, {
       type: 'line',
-       {
+      data: {
         labels: ['0%', '10%', '20%', '30%', '40%', '50%', '60%', '70%', '80%', '90%', '100%'],
         datasets: [{
           label: 'Retention %',
-           retentionData,
+          data: retentionData,
           borderColor: '#F59E0B',
           backgroundColor: 'rgba(245, 158, 11, 0.1)',
           tension: 0.3,
@@ -588,10 +598,23 @@
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        plugins: { legend: { display: false } },
+        plugins: { 
+          legend: { display: false } 
+        },
         scales: {
-          x: { grid: { display: false }, ticks: { color: 'var(--slate-grey)' } },
-          y: { beginAtZero: true, max: 100, grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { color: 'var(--slate-grey)', callback: v => v + '%' } }
+          x: { 
+            grid: { display: false }, 
+            ticks: { color: 'var(--slate-grey)' } 
+          },
+          y: { 
+            beginAtZero: true, 
+            max: 100, 
+            grid: { color: 'rgba(255,255,255,0.1)' }, 
+            ticks: { 
+              color: 'var(--slate-grey)', 
+              callback: v => v + '%' 
+            } 
+          }
         }
       }
     });
