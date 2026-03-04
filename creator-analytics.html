@@ -255,7 +255,7 @@
   <!-- Toast Container -->
   <div id="toast-container"></div>
 
-   <!-- ============================================ -->
+  <!-- ============================================ -->
   <!-- SCRIPTS - CRITICAL ORDER WITH INITIALIZATION LOCK -->
   <!-- ============================================ -->
   
@@ -271,7 +271,7 @@
   <!-- 4. Analytics Page Controller (loads LAST) -->
   <script src="js/creator-analytics-page.js"></script>
   
-  <!-- 5. Minimal inline initialization (no retry loops) -->
+  <!-- 5. Minimal inline initialization with longer timeout -->
   <script>
     (function() {
       'use strict';
@@ -279,7 +279,7 @@
       console.log('📊 Analytics page DOM ready - waiting for initialization...');
 
       // Simple check - if not initialized after timeout, show error
-      setTimeout(function() {
+      const timeoutId = setTimeout(function() {
         if (!window.analyticsPageInitialized) {
           console.error('❌ Analytics page failed to initialize after timeout');
           
@@ -294,7 +294,16 @@
             if (errorMessage) errorMessage.textContent = 'Analytics failed to load. Please refresh the page.';
           }
         }
-      }, 10000); // 10 second timeout
+      }, 20000); // 20 second timeout (increased from 10s)
+
+      // Clear timeout if page initializes successfully
+      const checkInterval = setInterval(function() {
+        if (window.analyticsPageInitialized) {
+          clearTimeout(timeoutId);
+          clearInterval(checkInterval);
+          console.log('✅ Analytics page initialized, clearing timeout');
+        }
+      }, 500);
     })();
   </script>
 
