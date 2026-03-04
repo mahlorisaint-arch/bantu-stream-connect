@@ -1,10 +1,8 @@
 // js/creator-analytics-page.js — Dedicated Analytics Page Controller
-// Bantu Stream Connect — Phase 5B Implementation + Phase 5E Audience Insights
-// ✅ FIXED: Multiple auth client instances prevented
-// ✅ FIXED: Timeout properly cleared on success/error
-// ✅ FIXED: Error state only shows on actual failure
-// ✅ FIXED: Multiple initialization attempts prevented
-// ✅ FIXED: Page stuck on "Loading Analytics" issue resolved
+// Bantu Stream Connect — Phase 5 Complete (5E + 5F + 5G)
+// ✅ Audience Insights (5E)
+// ✅ Scheduled Email Reports (5F)  
+// ✅ Advanced Filtering (5G)
 
 (function() {
   'use strict';
@@ -21,7 +19,7 @@
     return;
   }
   
-  console.log('📈 Creator Analytics Page initializing...');
+  console.log('📈 Creator Analytics Page initializing with Phase 5 features...');
   
   // Set initializing flag
   window._analyticsPageInitializing = true;
@@ -33,12 +31,12 @@
   let charts = {};
   let dom = {};
   let initializationAttempts = 0;
-  const MAX_INIT_ATTEMPTS = 1; // Only try once
+  const MAX_INIT_ATTEMPTS = 1;
   
   // Mark as not initialized yet
   window.analyticsPageInitialized = false;
   
-  // Add timeout ID variable
+  // Timeout ID
   let initializationTimeout = null;
 
   // ============================================
@@ -67,34 +65,53 @@
       backBtn: document.getElementById('back-to-dashboard'),
       exportBtn: document.getElementById('export-csv-btn'),
       toastContainer: document.getElementById('toast-container'),
-      // Audience Insights Elements
+      // ✅ 5G: Filter elements
+      contentTypeFilter: document.getElementById('contentTypeFilter'),
+      audienceSegmentFilter: document.getElementById('audienceSegmentFilter'),
+      customStartDate: document.getElementById('customStartDate'),
+      customEndDate: document.getElementById('customEndDate'),
+      applyCustomDate: document.getElementById('applyCustomDate'),
+      resetDateFilter: document.getElementById('resetDateFilter'),
+      clearAllFilters: document.getElementById('clearAllFilters'),
+      // ✅ 5E: Audience Insights elements
       audienceTimeRange: document.getElementById('audienceTimeRange'),
       locationsList: document.getElementById('locationsList'),
       deviceChart: document.getElementById('deviceChart'),
       trafficChart: document.getElementById('trafficChart'),
       peakTimesInfo: document.getElementById('peakTimesInfo'),
-      peakHoursChart: document.getElementById('peakHoursChart')
+      peakHoursChart: document.getElementById('peakHoursChart'),
+      // ✅ 5F: Scheduled reports elements
+      scheduleReportBtn: document.getElementById('scheduleReportBtn'),
+      scheduledReportsList: document.getElementById('scheduledReportsList'),
+      scheduleModal: document.getElementById('schedule-report-modal'),
+      closeScheduleModal: document.getElementById('closeScheduleModal'),
+      cancelSchedule: document.getElementById('cancelSchedule'),
+      scheduleForm: document.getElementById('scheduleReportForm'),
+      reportFrequency: document.getElementById('reportFrequency'),
+      weeklyOptions: document.getElementById('weeklyOptions'),
+      monthlyOptions: document.getElementById('monthlyOptions'),
+      reportDay: document.getElementById('reportDay'),
+      reportDayOfMonth: document.getElementById('reportDayOfMonth'),
+      reportTime: document.getElementById('reportTime'),
+      reportEmail: document.getElementById('reportEmail')
     };
     return dom;
   }
 
   // ============================================
-  // ✅ FIXED: MAIN INITIALIZATION WITH PROPER ASYNC HANDLING
+  // MAIN INITIALIZATION
   // ============================================
   let isInitializing = false;
   let initializationComplete = false;
 
   async function initializeAnalyticsPage() {
-    // If already fully initialized, skip
     if (initializationComplete) {
       console.log('✅ Analytics page already fully initialized');
       return;
     }
     
-    // If initializing but not complete, wait for it to finish
     if (isInitializing) {
       console.log('⏳ Analytics page initialization in progress, waiting...');
-      // Wait up to 10 seconds for completion
       let waitCount = 0;
       while (isInitializing && waitCount < 20) {
         await new Promise(resolve => setTimeout(resolve, 500));
@@ -107,12 +124,10 @@
     isInitializing = true;
     initializationComplete = false;
     
-    // Clear any existing timeout
     if (initializationTimeout) {
       clearTimeout(initializationTimeout);
     }
     
-    // Set timeout for safety
     initializationTimeout = setTimeout(() => {
       if (!initializationComplete) {
         console.error('❌ Initialization timeout after 30 seconds');
@@ -125,10 +140,8 @@
     try {
       console.log('🚀 Starting analytics page initialization...');
       
-      // Cache DOM first
       cacheDOMElements();
       
-      // Check auth
       const isAuthenticated = await checkAuthAndInitialize();
       if (!isAuthenticated) {
         console.log('⏳ Redirecting to login...');
@@ -138,7 +151,6 @@
       
       console.log('✅ User authenticated:', currentUser?.email || currentUser?.id);
       
-      // Initialize analytics manager
       analyticsManager = await initializeAnalyticsManager();
       if (!analyticsManager) {
         throw new Error('Failed to initialize analytics manager');
@@ -148,6 +160,12 @@
       setupTimeRangeSelector(analyticsManager);
       setupExportButton(analyticsManager);
       setupBackButton();
+      
+      // ✅ 5G: Setup filter bar
+      setupFilterBar();
+      
+      // ✅ 5F: Setup scheduled reports
+      setupScheduledReports();
       
       // Load initial data
       console.log('📊 Fetching dashboard data...');
@@ -160,8 +178,11 @@
         throw new Error(data?.error || 'Failed to load dashboard data');
       }
       
-      // Load audience insights
-      await loadAudienceInsights();
+      // ✅ 5E: Load audience insights
+      if (document.querySelector('.audience-section')) {
+        await loadAudienceInsights();
+        setupAudienceTimeRange();
+      }
       
       // ✅ CRITICAL: Mark complete BEFORE showing content
       initializationComplete = true;
@@ -173,52 +194,43 @@
       // Run diagnostic
       checkDisplayStatus();
       
-      console.log('✅ Creator Analytics Page fully initialized');
+      console.log('✅ Creator Analytics Page fully initialized with Phase 5 features');
       
     } catch (error) {
       console.error('❌ Page initialization failed:', error);
       isInitializing = false;
       initializationComplete = false;
       
-      // Show error state
       hideLoading();
       showError(error.message || 'Failed to initialize analytics');
       
     } finally {
-      // Clear timeout
       if (initializationTimeout) {
         clearTimeout(initializationTimeout);
         initializationTimeout = null;
       }
-      // Only reset flag if not complete
       if (!initializationComplete) {
         isInitializing = false;
       }
     }
   }
   
-  // Export for fallback
   window.initializeAnalyticsPage = initializeAnalyticsPage;
-  window.isInitializing = isInitializing;
-  window.initializationComplete = initializationComplete;
 
   // ============================================
-  // AUTH CHECK - FIXED: Use global Supabase client
+  // AUTH CHECK
   // ============================================
   async function checkAuthAndInitialize() {
     console.log('🔐 Checking authentication...');
     
-    // Use the GLOBAL Supabase client - don't create a new one!
     const supabaseClient = window.supabaseClient || window.SupabaseHelper?.client;
     
-    // Method 1: AuthHelper (if available)
     if (window.AuthHelper && typeof window.AuthHelper.isAuthenticated === 'function' && window.AuthHelper.isAuthenticated()) {
       console.log('✅ Authenticated via AuthHelper');
       currentUser = window.AuthHelper.getUserProfile?.() || window.AuthHelper.getCurrentUser?.() || null;
       if (currentUser) return true;
     }
     
-    // Method 2: Direct Supabase session check
     if (supabaseClient) {
       try {
         const { data: { session }, error } = await supabaseClient.auth.getSession();
@@ -227,7 +239,6 @@
           console.log('✅ Authenticated via Supabase session');
           currentUser = session.user;
           
-          // Try to get profile using the SAME client
           try {
             const { data: profile } = await supabaseClient
               .from('user_profiles')
@@ -247,7 +258,6 @@
       }
     }
     
-    // Not authenticated - redirect
     console.warn('⚠️ Not authenticated, redirecting');
     const redirect = encodeURIComponent(window.location.pathname + window.location.search);
     window.location.href = `login.html?redirect=${redirect}`;
@@ -303,7 +313,7 @@
   }
 
   // ============================================
-  // DOM HELPERS - FINAL FIX WITH !IMPORTANT
+  // DOM HELPERS
   // ============================================
   function hideLoading() {
     if (dom.loading) {
@@ -314,22 +324,18 @@
   
   function showContent() {
     if (dom.content) {
-      // Force inline style with !important to override any CSS
       dom.content.setAttribute('style', 'display: block !important');
       console.log('✅ Content displayed with !important');
     }
   }
   
   function showError(message) {
-    // ✅ CRITICAL: Don't show error if page is already initialized
     if (initializationComplete) {
       console.warn('⚠️ Attempting to show error after successful initialization:', message);
-      // Don't show error overlay if page is already initialized
       return;
     }
     
     if (dom.error) {
-      // Force inline style with !important to override any CSS
       dom.error.setAttribute('style', 'display: flex !important');
     }
     if (dom.errorMessage) {
@@ -339,7 +345,6 @@
       dom.loading.style.display = 'none';
     }
     if (dom.content) {
-      // Hide content if showing error
       dom.content.setAttribute('style', 'display: none !important');
     }
     console.error('❌ Error displayed:', message);
@@ -374,31 +379,25 @@
     
     console.log('📊 Rendering dashboard with data:', data);
     
-    // Update summary cards with PROPER field mapping
     updateSummaryCards(data.summary);
     
-    // Render charts
     if (typeof Chart !== 'undefined') {
       loadCharts(data);
     }
     
-    // Load top content
     loadTopContent(data.content);
     
-    // Update time range label
     const timeRangeLabel = document.getElementById('time-range-label');
     if (timeRangeLabel) {
       timeRangeLabel.textContent = data.timeRange || 'Last 30 Days';
     }
   }
 
-  // ✅ FIXED: Update summary cards with correct field mapping
   function updateSummaryCards(summary) {
     if (!summary) return;
     
     console.log('📊 Updating summary cards:', summary);
     
-    // Map materialized view fields (snake_case) to UI fields
     const totalViews = summary.total_views || summary.totalViews || 0;
     const totalWatchTime = summary.total_watch_time || summary.totalWatchTime || 0;
     const uniqueViewers = summary.unique_viewers || summary.uniqueViewers || 
@@ -406,13 +405,11 @@
     const avgCompletion = summary.avg_completion_rate || summary.avgCompletionRate || 
                          summary.engagement_percentage || 0;
     
-    // Update DOM with null checks
     if (dom.totalViews) dom.totalViews.textContent = formatNumber(totalViews);
     if (dom.totalWatchTime) dom.totalWatchTime.textContent = formatWatchTime(totalWatchTime);
     if (dom.uniqueViewers) dom.uniqueViewers.textContent = formatNumber(uniqueViewers);
     if (dom.avgCompletion) dom.avgCompletion.textContent = Math.round(avgCompletion) + '%';
     
-    // Update other fields if they exist
     const otherFields = [
       { id: 'totalUploads', field: 'total_uploads' },
       { id: 'totalEarnings', field: 'total_earnings', format: 'currency' },
@@ -435,10 +432,9 @@
   }
 
   // ============================================
-  // CHARTS - ALL SYNTAX ERRORS FIXED
+  // CHARTS
   // ============================================
   function loadCharts(dashboardData) {
-    // Clear existing charts
     if (charts.views) charts.views.destroy();
     if (charts.watchTime) charts.watchTime.destroy();
     if (charts.engagement) charts.engagement.destroy();
@@ -450,7 +446,6 @@
     renderRetentionChart();
   }
 
-  // ✅ FIXED: Proper Chart.js data structure
   function renderViewsChart(content) {
     const ctx = dom.viewsChart;
     if (!ctx || typeof Chart === 'undefined') return;
@@ -499,7 +494,6 @@
     });
   }
 
-  // ✅ FIXED: Proper Chart.js data structure
   function renderWatchTimeChart(content) {
     const ctx = dom.watchTimeChart;
     if (!ctx || typeof Chart === 'undefined') return;
@@ -559,7 +553,6 @@
     });
   }
 
-  // ✅ FIXED: Proper Chart.js data structure
   function renderEngagementChart(summary) {
     const ctx = dom.engagementChart;
     if (!ctx || typeof Chart === 'undefined') return;
@@ -587,7 +580,6 @@
     });
   }
 
-  // ✅ FIXED: Proper Chart.js data structure
   function renderRetentionChart() {
     const ctx = dom.retentionChart;
     if (!ctx || typeof Chart === 'undefined') return;
@@ -637,7 +629,7 @@
   }
 
   // ============================================
-  // ✅ FIXED: TOP CONTENT TABLE RENDERING
+  // TOP CONTENT TABLE
   // ============================================
   async function loadTopContent(contentList) {
     const tbody = dom.topContentBody;
@@ -659,12 +651,9 @@
     }
     
     console.log('📊 Rendering', contentList.length, 'content items');
-    
-    // Render the table with proper metric extraction
     renderTopContentTable(contentList);
   }
 
-  // ✅ NEW: Dedicated function for rendering the table
   function renderTopContentTable(items) {
     const tbody = dom.topContentBody;
     if (!tbody) return;
@@ -672,48 +661,35 @@
     console.log('📊 Rendering top content table with', items.length, 'items');
     
     tbody.innerHTML = items.map(function(item, index) {
-      // Handle both nested and flat data structures
       const content = item.Content || item;
-      const analytics = item.analytics || item; // Fallback to item if analytics not nested
+      const analytics = item.analytics || item;
       
       const title = content.title || 'Untitled';
       const contentId = content.id || item.id;
       
-      // Get thumbnail with proper URL fixing
       const thumbnail = content.thumbnail_url
         ? (window.SupabaseHelper && typeof window.SupabaseHelper.fixMediaUrl === 'function' 
             ? window.SupabaseHelper.fixMediaUrl(content.thumbnail_url) 
             : content.thumbnail_url)
         : 'https://via.placeholder.com/60x34';
       
-      // ✅ Extract metrics with proper fallbacks for both data structures
-      const views = analytics.totalViews || analytics.views || content.views_count || content.real_views || 0;
-      
-      // Watch Time: totalWatchTime from analytics OR watchTime from flat structure
+      const views = analytics.totalViews || analytics.views || content.views_count || 0;
       const totalWatchTime = analytics.totalWatchTime !== undefined ? analytics.totalWatchTime : 
                             (analytics.watchTime !== undefined ? analytics.watchTime : 0);
-      
-      // Avg Duration: avgWatchTime from analytics OR avgDuration from flat structure  
       const avgWatchTime = analytics.avgWatchTime !== undefined ? analytics.avgWatchTime : 
                           (analytics.avgDuration !== undefined ? analytics.avgDuration : 0);
-      
-      // Completion Rate
       const completionRate = analytics.avgCompletionRate !== undefined ? analytics.avgCompletionRate : 
                             (analytics.completionRate !== undefined ? analytics.completionRate : 0);
-      
-      // ✅ Engagement Rate: calculate from likes + comments / views
       const totalLikes = analytics.totalLikes || content.likes_count || 0;
       const totalComments = analytics.totalComments || content.comments_count || 0;
       const engagementRate = analytics.engagementRate !== undefined ? analytics.engagementRate :
                             (views > 0 ? Math.round(((totalLikes + totalComments) / views) * 100) : 0);
       
-      // Format for display
       const watchTimeDisplay = formatWatchTime(totalWatchTime);
       const avgDurationDisplay = formatWatchTime(avgWatchTime);
       const completionDisplay = Math.round(completionRate) + '%';
       const engagementDisplay = Math.round(engagementRate) + '%';
       
-      // Debug log for first item
       if (index === 0) {
         console.log('🔍 Table row debug:', {
           title: title,
@@ -721,8 +697,7 @@
           totalWatchTime: totalWatchTime,
           avgWatchTime: avgWatchTime,
           completionRate: completionRate,
-          engagementRate: engagementRate,
-          analytics: analytics
+          engagementRate: engagementRate
         });
       }
       
@@ -750,15 +725,80 @@
   }
 
   // ============================================
-  // AUDIENCE INSIGHTS FUNCTIONS
+  // ✅ 5G: FILTER BAR HANDLERS
+  // ============================================
+  function setupFilterBar() {
+    if (!dom.contentTypeFilter) return;
+    
+    // Content type filter
+    dom.contentTypeFilter.addEventListener('change', async function() {
+      analyticsManager.setFilters({ contentType: this.value });
+      await refreshDashboard();
+    });
+    
+    // Audience segment filter
+    if (dom.audienceSegmentFilter) {
+      dom.audienceSegmentFilter.addEventListener('change', async function() {
+        analyticsManager.setFilters({ audienceSegment: this.value });
+        await refreshDashboard();
+      });
+    }
+    
+    // Custom date range
+    if (dom.applyCustomDate && dom.customStartDate && dom.customEndDate) {
+      dom.applyCustomDate.addEventListener('click', async function() {
+        const start = dom.customStartDate?.value;
+        const end = dom.customEndDate?.value;
+        if (start && end) {
+          analyticsManager.setFilters({ 
+            customDateRange: { start, end } 
+          });
+          await refreshDashboard();
+          showToast('Custom date range applied', 'success');
+        } else {
+          showToast('Please select both start and end dates', 'warning');
+        }
+      });
+    }
+    
+    // Reset date filter
+    if (dom.resetDateFilter) {
+      dom.resetDateFilter.addEventListener('click', function() {
+        if (dom.customStartDate) dom.customStartDate.value = '';
+        if (dom.customEndDate) dom.customEndDate.value = '';
+        analyticsManager.setFilters({ customDateRange: null });
+        refreshDashboard();
+        showToast('Date filter reset', 'info');
+      });
+    }
+    
+    // Clear all filters
+    if (dom.clearAllFilters) {
+      dom.clearAllFilters.addEventListener('click', async function() {
+        analyticsManager.setFilters({
+          contentType: 'all',
+          audienceSegment: 'all',
+          customDateRange: null
+        });
+        if (dom.contentTypeFilter) dom.contentTypeFilter.value = 'all';
+        if (dom.audienceSegmentFilter) dom.audienceSegmentFilter.value = 'all';
+        if (dom.customStartDate) dom.customStartDate.value = '';
+        if (dom.customEndDate) dom.customEndDate.value = '';
+        await refreshDashboard();
+        showToast('All filters cleared', 'info');
+      });
+    }
+  }
+
+  // ============================================
+  // ✅ 5E: AUDIENCE INSIGHTS LOADING
   // ============================================
   async function loadAudienceInsights() {
     if (!analyticsManager) return;
     
     const timeRange = dom.audienceTimeRange?.value || '30days';
     
-    // Check if audience elements exist
-    if (!dom.locationsList && !dom.deviceChart && !dom.trafficChart && !dom.peakTimesInfo) {
+    if (!dom.locationsList && !dom.deviceChart && !dom.trafficChart) {
       console.log('📊 Audience insights section not found in DOM, skipping');
       return;
     }
@@ -766,7 +806,6 @@
     console.log('📊 Loading audience insights for range:', timeRange);
     
     try {
-      // Load all audience data in parallel
       const [locations, devices, traffic, peakTimes] = await Promise.all([
         analyticsManager.getAudienceLocations(timeRange),
         analyticsManager.getDeviceBreakdown(timeRange),
@@ -916,7 +955,6 @@
     
     chartCtx.parentNode.style.display = 'block';
     
-    // Show peak info
     container.innerHTML = `
       <div class="peak-info-cards">
         <div class="peak-info-card">
@@ -930,7 +968,6 @@
       </div>
     `;
     
-    // Render hourly chart
     if (charts.peakHours) charts.peakHours.destroy();
     
     const peakHourIndex = peakTimes.byHour.findIndex(h => h.isPeak);
@@ -971,6 +1008,235 @@
     });
   }
 
+  function setupAudienceTimeRange() {
+    if (!dom.audienceTimeRange) return;
+    
+    dom.audienceTimeRange.addEventListener('change', async function() {
+      showToast('Loading audience insights...', 'info');
+      await loadAudienceInsights();
+    });
+  }
+
+  // ============================================
+  // ✅ 5F: SCHEDULED REPORTS UI
+  // ============================================
+  function setupScheduledReports() {
+    if (!dom.scheduleReportBtn || !dom.scheduleModal) return;
+    
+    // Populate day of month options
+    if (dom.reportDayOfMonth) {
+      for (let i = 1; i <= 31; i++) {
+        const opt = document.createElement('option');
+        opt.value = i;
+        opt.textContent = `Day ${i}`;
+        dom.reportDayOfMonth.appendChild(opt);
+      }
+    }
+    
+    // Toggle frequency options
+    if (dom.reportFrequency) {
+      dom.reportFrequency.addEventListener('change', function() {
+        if (this.value === 'weekly') {
+          if (dom.weeklyOptions) dom.weeklyOptions.style.display = 'block';
+          if (dom.monthlyOptions) dom.monthlyOptions.style.display = 'none';
+        } else {
+          if (dom.weeklyOptions) dom.weeklyOptions.style.display = 'none';
+          if (dom.monthlyOptions) dom.monthlyOptions.style.display = 'block';
+        }
+      });
+    }
+    
+    // Open modal
+    dom.scheduleReportBtn.addEventListener('click', function() {
+      dom.scheduleModal.classList.add('active');
+      if (dom.scheduleForm) dom.scheduleForm.reset();
+      if (dom.reportFrequency) dom.reportFrequency.value = 'weekly';
+      if (dom.weeklyOptions) dom.weeklyOptions.style.display = 'block';
+      if (dom.monthlyOptions) dom.monthlyOptions.style.display = 'none';
+    });
+    
+    // Close modal
+    const closeModal = () => {
+      if (dom.scheduleModal) dom.scheduleModal.classList.remove('active');
+    };
+    
+    if (dom.closeScheduleModal) {
+      dom.closeScheduleModal.addEventListener('click', closeModal);
+    }
+    
+    if (dom.cancelSchedule) {
+      dom.cancelSchedule.addEventListener('click', closeModal);
+    }
+    
+    if (dom.scheduleModal) {
+      dom.scheduleModal.addEventListener('click', function(e) {
+        if (e.target === dom.scheduleModal) closeModal();
+      });
+    }
+    
+    // Handle form submit
+    if (dom.scheduleForm) {
+      dom.scheduleForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const frequency = dom.reportFrequency.value;
+        const dayParam = frequency === 'weekly' 
+          ? dom.reportDay.value 
+          : dom.reportDayOfMonth.value;
+        const time = dom.reportTime.value;
+        const email = dom.reportEmail.value;
+        const reportTypes = Array.from(document.querySelectorAll('input[name="reportType"]:checked'))
+          .map(cb => cb.value);
+        
+        if (reportTypes.length === 0) {
+          showToast('Please select at least one report type', 'warning');
+          return;
+        }
+        
+        const result = await analyticsManager.scheduleReport({
+          frequency,
+          dayOfWeek: parseInt(dayParam),
+          time,
+          reportTypes,
+          email: email || null
+        });
+        
+        if (result.success) {
+          showToast('Report scheduled successfully!', 'success');
+          closeModal();
+          loadScheduledReports();
+        } else {
+          showToast('Failed to schedule: ' + result.error, 'error');
+        }
+      });
+    }
+    
+    // Load initial list
+    loadScheduledReports();
+  }
+
+  async function loadScheduledReports() {
+    const container = dom.scheduledReportsList;
+    if (!container || !analyticsManager) return;
+    
+    try {
+      const reports = await analyticsManager.getScheduledReports();
+      
+      if (!reports || reports.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <i class="fas fa-envelope"></i>
+            <p>No scheduled reports yet</p>
+            <button id="createFirstReport" class="btn btn-primary" style="margin-top: 15px;">
+              <i class="fas fa-plus"></i> Schedule Your First Report
+            </button>
+          </div>
+        `;
+        document.getElementById('createFirstReport')?.addEventListener('click', () => {
+          if (dom.scheduleModal) dom.scheduleModal.classList.add('active');
+        });
+        return;
+      }
+      
+      container.innerHTML = reports.map(report => `
+        <div class="scheduled-report-item">
+          <div class="report-info">
+            <h4>${report.frequency === 'weekly' ? 'Weekly' : 'Monthly'} Report</h4>
+            <p>
+              ${report.frequency === 'weekly' 
+                ? `Every ${getDayName(report.day_of_week)} at ${report.time_of_day}`
+                : `Day ${report.day_of_month} of each month at ${report.time_of_day}`
+              }
+            </p>
+            <p class="report-types">
+              ${(report.report_types || []).map(t => `<span class="badge">${t}</span>`).join(' ')}
+            </p>
+            ${report.recipient_email ? `<p class="report-email">📧 ${escapeHtml(report.recipient_email)}</p>` : ''}
+            <p class="report-next">Next: ${formatDateTime(report.next_run_at)}</p>
+          </div>
+          <div class="report-actions">
+            <button class="action-btn ${report.is_active ? 'active' : ''} toggle-report" data-id="${report.id}">
+              ${report.is_active ? 'Pause' : 'Resume'}
+            </button>
+            <button class="action-btn danger delete-report" data-id="${report.id}">Delete</button>
+          </div>
+        </div>
+      `).join('');
+      
+      // Add event listeners
+      container.querySelectorAll('.toggle-report').forEach(btn => {
+        btn.addEventListener('click', async function() {
+          const id = this.dataset.id;
+          const report = reports.find(r => r.id === id);
+          const current = report?.is_active;
+          const result = await analyticsManager.updateScheduledReport(id, { is_active: !current });
+          if (result.success) {
+            showToast(`Report ${!current ? 'resumed' : 'paused'}`, 'success');
+            loadScheduledReports();
+          }
+        });
+      });
+      
+      container.querySelectorAll('.delete-report').forEach(btn => {
+        btn.addEventListener('click', async function() {
+          if (confirm('Delete this scheduled report?')) {
+            const result = await analyticsManager.deleteScheduledReport(this.dataset.id);
+            if (result.success) {
+              showToast('Report deleted', 'info');
+              loadScheduledReports();
+            }
+          }
+        });
+      });
+      
+    } catch (error) {
+      console.error('❌ Error loading scheduled reports:', error);
+      container.innerHTML = '<div class="empty-message">Failed to load schedules</div>';
+    }
+  }
+
+  function getDayName(dayNum) {
+    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    return days[dayNum] || 'Unknown';
+  }
+
+  function formatDateTime(isoString) {
+    if (!isoString) return 'N/A';
+    return new Date(isoString).toLocaleString('en-US', {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  }
+
+  // ============================================
+  // REFRESH DASHBOARD WITH FILTERS
+  // ============================================
+  async function refreshDashboard() {
+    if (!analyticsManager) return;
+    
+    try {
+      if (dom.content) dom.content.style.opacity = '0.5';
+      
+      const filters = analyticsManager.getFilters();
+      const data = await analyticsManager.getDashboardData(currentTimeRange, filters);
+      
+      if (data && !data.error) {
+        renderDashboard(data);
+        if (document.querySelector('.audience-section')) {
+          await loadAudienceInsights();
+        }
+      }
+    } catch (error) {
+      console.error('❌ Refresh failed:', error);
+      showToast('Failed to refresh data', 'error');
+    } finally {
+      if (dom.content) dom.content.style.opacity = '1';
+    }
+  }
+
   // ============================================
   // UI SETUP
   // ============================================
@@ -978,7 +1244,6 @@
     if (!dom.timeRangeBtns || !dom.timeRangeBtns.length) return;
     
     dom.timeRangeBtns.forEach(function(btn) {
-      // Remove existing listeners to prevent duplicates
       btn.removeEventListener('click', handleTimeRangeChange);
       btn.addEventListener('click', handleTimeRangeChange);
     });
@@ -1001,7 +1266,6 @@
           if (data && !data.error) {
             renderDashboard(data);
           }
-          // Also reload audience insights with new time range
           await loadAudienceInsights();
         } catch (error) {
           console.error('Error loading data for time range:', error);
@@ -1013,19 +1277,9 @@
     }
   }
 
-  function setupAudienceTimeRange() {
-    if (!dom.audienceTimeRange) return;
-    
-    dom.audienceTimeRange.addEventListener('change', async function() {
-      showToast('Loading audience insights...', 'info');
-      await loadAudienceInsights();
-    });
-  }
-
   function setupExportButton(analytics) {
     if (!dom.exportBtn) return;
     
-    // Remove existing listeners to prevent duplicates
     dom.exportBtn.removeEventListener('click', handleExport);
     dom.exportBtn.addEventListener('click', handleExport);
     
@@ -1066,7 +1320,6 @@
   function setupBackButton() {
     if (!dom.backBtn) return;
     
-    // Remove existing listeners to prevent duplicates
     dom.backBtn.removeEventListener('click', handleBack);
     dom.backBtn.addEventListener('click', handleBack);
     
@@ -1113,9 +1366,7 @@
     return div.innerHTML;
   }
 
-  function showToast(message, type) {
-    if (type === undefined) type = 'info';
-    
+  function showToast(message, type = 'info') {
     let container = dom.toastContainer;
     if (!container) {
       container = document.createElement('div');
@@ -1154,7 +1405,7 @@
       background:${bgColor};
     `;
     
-    var icon;
+    let icon;
     if (type === 'success') {
       icon = 'fa-check-circle';
     } else if (type === 'error') {
@@ -1181,16 +1432,13 @@
   // START
   // ============================================
   
-  // Only initialize once when DOM is ready
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', function() {
-      // Small delay to ensure all scripts are loaded
       setTimeout(initializeAnalyticsPage, 100);
     });
   } else {
-    // Small delay to ensure all scripts are loaded
     setTimeout(initializeAnalyticsPage, 100);
   }
   
-  console.log('✅ Creator Analytics Page module loaded');
+  console.log('✅ Creator Analytics Page module loaded with Phase 5 features');
 })();
