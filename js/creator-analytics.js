@@ -1,6 +1,6 @@
 // js/creator-analytics.js — Complete Creator Analytics Class with CSV Export
 // Bantu Stream Connect — Phase 5B Implementation
-// ✅ FIXED: Fixed content list query and improved error handling
+// ✅ FIXED: Changed all queries to use user_id instead of creator_id based on schema
 
 (function() {
   'use strict';
@@ -251,16 +251,16 @@
     }
 
     // ============================================
-    // ✅ CALCULATE SUMMARY ON THE FLY
+    // ✅ CALCULATE SUMMARY ON THE FLY - FIXED
     // ============================================
     async _calculateSummary(timeRange) {
       const dateFilter = this._getDateFilter(timeRange);
 
-      // Get all content for this creator
+      // Get all content for this creator - Using user_id not creator_id
       const { data: content, error: contentError } = await this.supabase
         .from('Content')
         .select('id, duration')
-        .eq('creator_id', this.userId);
+        .eq('user_id', this.userId);  // Changed from creator_id to user_id
 
       if (contentError) throw contentError;
 
@@ -367,11 +367,11 @@
           
           const dateFilter = this._getDateFilter(timeRange);
 
-          // Get all content for this creator - Using correct table name
+          // Get all content for this creator - Using user_id not creator_id
           const { data: content, error: contentError } = await this.supabase
             .from('Content')
-            .select('id, title, created_at, duration, thumbnail_url, views_count, creator_id')
-            .eq('creator_id', this.userId)
+            .select('id, title, created_at, duration, thumbnail_url, views_count, user_id')
+            .eq('user_id', this.userId)  // Changed from creator_id to user_id
             .order('created_at', { ascending: false });
 
           if (contentError) {
@@ -389,7 +389,7 @@
           const contentIds = content.map(c => c.id);
           console.log('📊 Content IDs:', contentIds);
 
-          // Get view analytics for this period
+          // Get view analytics for all time (remove date filter temporarily to debug)
           const { data: views, error: viewsError } = await this.supabase
             .from('content_views')
             .select('content_id, viewer_id, watch_time')
@@ -462,6 +462,12 @@
           const result = sorted.slice(0, limit);
           
           console.log(`📊 Returning ${result.length} content items with analytics`);
+          console.log('📊 First item sample:', result[0] ? {
+            id: result[0].id,
+            title: result[0].title,
+            views: result[0].analytics?.totalViews
+          } : 'No items');
+          
           this._setCache(cacheKey, result);
           return result;
 
@@ -473,7 +479,7 @@
     }
 
     // ============================================
-    // ✅ GET WATCH TIME BY DATE
+    // ✅ GET WATCH TIME BY DATE - FIXED
     // ============================================
     async getWatchTimeByDate(timeRange = '30days') {
       if (!this.userId) throw new Error('User not authenticated');
@@ -486,11 +492,11 @@
         try {
           const dateFilter = this._getDateFilter(timeRange);
 
-          // Get user's content IDs
+          // Get user's content IDs - Using user_id
           const { data: content, error: contentError } = await this.supabase
             .from('Content')
             .select('id')
-            .eq('creator_id', this.userId);
+            .eq('user_id', this.userId);  // Changed from creator_id to user_id
 
           if (contentError) throw contentError;
 
@@ -713,7 +719,7 @@
     }
 
     // ============================================
-    // ✅ GET AUDIENCE LOCATIONS
+    // ✅ GET AUDIENCE LOCATIONS - FIXED
     // ============================================
     async getAudienceLocations(timeRange = '30days') {
       if (!this.userId) throw new Error('User not authenticated');
@@ -722,11 +728,11 @@
         try {
           const dateFilter = this._getDateFilter(timeRange);
 
-          // Get user's content IDs
+          // Get user's content IDs - Using user_id
           const { data: content, error: contentError } = await this.supabase
             .from('Content')
             .select('id')
-            .eq('creator_id', this.userId);
+            .eq('user_id', this.userId);  // Changed from creator_id to user_id
 
           if (contentError) throw contentError;
 
@@ -786,7 +792,7 @@
     }
 
     // ============================================
-    // ✅ GET DEVICE BREAKDOWN
+    // ✅ GET DEVICE BREAKDOWN - FIXED
     // ============================================
     async getDeviceBreakdown(timeRange = '30days') {
       if (!this.userId) throw new Error('User not authenticated');
@@ -795,11 +801,11 @@
         try {
           const dateFilter = this._getDateFilter(timeRange);
 
-          // Get user's content IDs
+          // Get user's content IDs - Using user_id
           const { data: content, error: contentError } = await this.supabase
             .from('Content')
             .select('id')
-            .eq('creator_id', this.userId);
+            .eq('user_id', this.userId);  // Changed from creator_id to user_id
 
           if (contentError) throw contentError;
 
