@@ -1,6 +1,6 @@
 // js/creator-analytics.js — Complete Creator Analytics Class with CSV Export
 // Bantu Stream Connect — Phase 5B Implementation
-// ✅ FIXED: Added initialization lock to prevent multiple instances
+// ✅ FIXED: Added fetch queue to prevent deadlocks
 
 (function() {
   'use strict';
@@ -62,7 +62,8 @@
       this.onDataLoaded = options.onDataLoaded || null;
       this.onError = options.onError || null;
       
-      // Flag to prevent multiple fetches
+      // Fetch queue to prevent deadlocks
+      this._fetchQueue = new Map();
       this._isFetching = false;
       
       console.log('✅ CreatorAnalytics initialized for user: ' + (this.userId || 'guest'));
@@ -117,54 +118,39 @@
       const cached = this._getCache(cacheKey);
       if (cached) return cached;
 
-      // Prevent multiple simultaneous fetches
-      if (this._isFetching) {
-        console.log('⏳ Waiting for existing fetch to complete...');
-        return new Promise((resolve) => {
-          const checkInterval = setInterval(() => {
-            if (!this._isFetching) {
-              clearInterval(checkInterval);
-              resolve(this._getCache(cacheKey) || this._getEmptySummary());
-            }
-          }, 100);
-        });
-      }
-
-      this._isFetching = true;
-
-      try {
-        // First try materialized view (fastest)
-        let summary = await this._getFromMaterializedView();
-
-        // If materialized view not ready, calculate on the fly
-        if (!summary) {
-          summary = await this._calculateSummary(timeRange);
-        }
-
-        // Add monetization status (handle 404 gracefully)
+      // Use fetch queue to prevent multiple simultaneous requests
+      return this._queueRequest('summary_' + timeRange, async () => {
         try {
-          summary.is_eligible_for_monetization = await this._checkMonetizationEligibility();
-        } catch (e) {
-          console.warn('⚠️ Monetization check not available:', e.message);
-          summary.is_eligible_for_monetization = false;
-        }
+          // First try materialized view (fastest)
+          let summary = await this._getFromMaterializedView();
 
-        this._setCache(cacheKey, summary);
-        
-        // Trigger callback
-        if (this.onDataLoaded) {
-          this.onDataLoaded({ summary, timeRange });
-        }
-        
-        return summary;
+          // If materialized view not ready, calculate on the fly
+          if (!summary) {
+            summary = await this._calculateSummary(timeRange);
+          }
 
-      } catch (error) {
-        console.error('❌ Error fetching dashboard summary:', error);
-        if (this.onError) this.onError(error);
-        return this._getEmptySummary();
-      } finally {
-        this._isFetching = false;
-      }
+          // Add monetization status (handle 404 gracefully)
+          try {
+            summary.is_eligible_for_monetization = await this._checkMonetizationEligibility();
+          } catch (e) {
+            console.warn('⚠️ Monetization check not available:', e.message);
+            summary.is_eligible_for_monetization = false;
+          }
+
+          this._setCache(cacheKey, summary);
+          
+          // Trigger callback
+          if (this.onDataLoaded) {
+            this.onDataLoaded({ summary, timeRange });
+          }
+          
+          return summary;
+        } catch (error) {
+          console.error('❌ Error fetching dashboard summary:', error);
+          if (this.onError) this.onError(error);
+          return this._getEmptySummary();
+        }
+      });
     }
 
     // ============================================
@@ -173,70 +159,75 @@
     async getDashboardData(timeRange = '30days') {
       if (!this.userId) throw new Error('User not authenticated');
       
-      // Prevent multiple simultaneous fetches
-      if (this._isFetching) {
-        console.log('⏳ Waiting for existing fetch to complete...');
-        return new Promise((resolve) => {
-          const checkInterval = setInterval(() => {
-            if (!this._isFetching) {
-              clearInterval(checkInterval);
-              resolve(this._getCache(`dashboard_${timeRange}`) || {
-                summary: this._getEmptySummary(),
-                content: [],
-                timeRange,
-                timestamp: new Date().toISOString()
-              });
-            }
-          }, 100);
-        });
-      }
-
-      this._isFetching = true;
+      const cacheKey = `dashboard_${timeRange}`;
+      const cached = this._getCache(cacheKey);
+      if (cached) return cached;
       
-      try {
-        console.log('📊 Fetching dashboard data for range:', timeRange);
-        
-        // Get summary
-        const summary = await this.getDashboardSummary(timeRange);
-        
-        // Get content list with analytics - FIXED: Changed 'content' to 'Content'
-        let content = [];
+      // Use fetch queue to prevent multiple simultaneous requests
+      return this._queueRequest('dashboard_' + timeRange, async () => {
         try {
-          content = await this.getContentList(timeRange, 'views', 50);
-        } catch (e) {
-          console.warn('⚠️ Could not fetch content list:', e.message);
-          content = [];
+          console.log('📊 Fetching dashboard data for range:', timeRange);
+          
+          // Get summary
+          const summary = await this.getDashboardSummary(timeRange);
+          
+          // Get content list with analytics - FIXED: Changed 'content' to 'Content'
+          let content = [];
+          try {
+            content = await this.getContentList(timeRange, 'views', 50);
+          } catch (e) {
+            console.warn('⚠️ Could not fetch content list:', e.message);
+            content = [];
+          }
+          
+          const result = {
+            summary,
+            content,
+            timeRange,
+            timestamp: new Date().toISOString()
+          };
+          
+          // Cache the full dashboard data
+          this._setCache(cacheKey, result);
+          
+          // Trigger callback
+          if (this.onDataLoaded) {
+            this.onDataLoaded(result);
+          }
+          
+          return result;
+        } catch (error) {
+          console.error('❌ Error fetching dashboard data:', error);
+          if (this.onError) this.onError(error);
+          return {
+            summary: this._getEmptySummary(),
+            content: [],
+            timeRange,
+            error: error.message
+          };
         }
-        
-        const result = {
-          summary,
-          content,
-          timeRange,
-          timestamp: new Date().toISOString()
-        };
-        
-        // Cache the full dashboard data
-        this._setCache(`dashboard_${timeRange}`, result);
-        
-        // Trigger callback
-        if (this.onDataLoaded) {
-          this.onDataLoaded(result);
-        }
-        
-        return result;
-        
-      } catch (error) {
-        console.error('❌ Error fetching dashboard data:', error);
-        if (this.onError) this.onError(error);
-        return {
-          summary: this._getEmptySummary(),
-          content: [],
-          timeRange,
-          error: error.message
-        };
-      } finally {
-        this._isFetching = false;
+      });
+    }
+
+    // ============================================
+    // ✅ FETCH QUEUE SYSTEM (Prevents deadlocks)
+    // ============================================
+    _queueRequest(key, fn) {
+      // If there's already a request in progress for this key, return its promise
+      if (this._fetchQueue.has(key)) {
+        console.log(`⏳ Waiting for existing ${key} request...`);
+        return this._fetchQueue.get(key);
       }
+      
+      // Create new promise for this request
+      const promise = fn().finally(() => {
+        // Remove from queue when done
+        this._fetchQueue.delete(key);
+      });
+      
+      // Store in queue
+      this._fetchQueue.set(key, promise);
+      return promise;
     }
 
     // ============================================
@@ -370,90 +361,92 @@
       const cached = this._getCache(cacheKey);
       if (cached) return cached;
 
-      try {
-        const dateFilter = this._getDateFilter(timeRange);
+      return this._queueRequest('content_' + timeRange + '_' + sortBy, async () => {
+        try {
+          const dateFilter = this._getDateFilter(timeRange);
 
-        // Get all content - FIXED: Changed 'content' to 'Content'
-        const { data: content, error: contentError } = await this.supabase
-          .from('Content')
-          .select('id, title, created_at, duration, thumbnail_url, views_count')
-          .eq('creator_id', this.userId)
-          .order('created_at', { ascending: false });
+          // Get all content - FIXED: Changed 'content' to 'Content'
+          const { data: content, error: contentError } = await this.supabase
+            .from('Content')
+            .select('id, title, created_at, duration, thumbnail_url, views_count')
+            .eq('creator_id', this.userId)
+            .order('created_at', { ascending: false });
 
-        if (contentError) throw contentError;
+          if (contentError) throw contentError;
 
-        if (content.length === 0) {
-          return [];
-        }
+          if (content.length === 0) {
+            return [];
+          }
 
-        const contentIds = content.map(c => c.id);
+          const contentIds = content.map(c => c.id);
 
-        // Get view analytics for this period
-        const { data: views, error: viewsError } = await this.supabase
-          .from('content_views')
-          .select('content_id, viewer_id, watch_time')
-          .in('content_id', contentIds)
-          .gte('viewed_at', dateFilter);
+          // Get view analytics for this period
+          const { data: views, error: viewsError } = await this.supabase
+            .from('content_views')
+            .select('content_id, viewer_id, watch_time')
+            .in('content_id', contentIds)
+            .gte('viewed_at', dateFilter);
 
-        if (viewsError) throw viewsError;
+          if (viewsError) throw viewsError;
 
-        // Group views by content
-        const viewsByContent = {};
-        views.forEach(view => {
-          if (!viewsByContent[view.content_id]) {
-            viewsByContent[view.content_id] = {
+          // Group views by content
+          const viewsByContent = {};
+          views.forEach(view => {
+            if (!viewsByContent[view.content_id]) {
+              viewsByContent[view.content_id] = {
+                totalViews: 0,
+                uniqueViewers: new Set(),
+                totalWatchTime: 0,
+                avgWatchTime: 0
+              };
+            }
+            viewsByContent[view.content_id].totalViews++;
+            viewsByContent[view.content_id].uniqueViewers.add(view.viewer_id);
+            viewsByContent[view.content_id].totalWatchTime += view.watch_time || 0;
+          });
+
+          // Calculate averages and completion rates
+          const contentWithAnalytics = content.map(item => {
+            const analytics = viewsByContent[item.id] || {
               totalViews: 0,
               uniqueViewers: new Set(),
-              totalWatchTime: 0,
-              avgWatchTime: 0
+              totalWatchTime: 0
             };
-          }
-          viewsByContent[view.content_id].totalViews++;
-          viewsByContent[view.content_id].uniqueViewers.add(view.viewer_id);
-          viewsByContent[view.content_id].totalWatchTime += view.watch_time || 0;
-        });
 
-        // Calculate averages and completion rates
-        const contentWithAnalytics = content.map(item => {
-          const analytics = viewsByContent[item.id] || {
-            totalViews: 0,
-            uniqueViewers: new Set(),
-            totalWatchTime: 0
-          };
+            const avgWatchTime = analytics.totalViews > 0 
+              ? analytics.totalWatchTime / analytics.totalViews 
+              : 0;
 
-          const avgWatchTime = analytics.totalViews > 0 
-            ? analytics.totalWatchTime / analytics.totalViews 
-            : 0;
+            const avgCompletionRate = item.duration && item.duration > 0
+              ? (avgWatchTime / item.duration) * 100
+              : 0;
 
-          const avgCompletionRate = item.duration && item.duration > 0
-            ? (avgWatchTime / item.duration) * 100
-            : 0;
+            return {
+              ...item,
+              analytics: {
+                totalViews: analytics.totalViews,
+                uniqueViewers: analytics.uniqueViewers.size,
+                totalWatchTime: analytics.totalWatchTime,
+                avgWatchTime: Math.round(avgWatchTime * 100) / 100,
+                avgCompletionRate: Math.round(avgCompletionRate * 100) / 100
+              }
+            };
+          });
 
-          return {
-            ...item,
-            analytics: {
-              totalViews: analytics.totalViews,
-              uniqueViewers: analytics.uniqueViewers.size,
-              totalWatchTime: analytics.totalWatchTime,
-              avgWatchTime: Math.round(avgWatchTime * 100) / 100,
-              avgCompletionRate: Math.round(avgCompletionRate * 100) / 100
-            }
-          };
-        });
+          // Sort based on criteria
+          const sorted = this._sortContent(contentWithAnalytics, sortBy);
+          
+          // Apply limit
+          const result = sorted.slice(0, limit);
+          
+          this._setCache(cacheKey, result);
+          return result;
 
-        // Sort based on criteria
-        const sorted = this._sortContent(contentWithAnalytics, sortBy);
-        
-        // Apply limit
-        const result = sorted.slice(0, limit);
-        
-        this._setCache(cacheKey, result);
-        return result;
-
-      } catch (error) {
-        console.error('❌ Error fetching content list:', error);
-        return [];
-      }
+        } catch (error) {
+          console.error('❌ Error fetching content list:', error);
+          return [];
+        }
+      });
     }
 
     // ============================================
@@ -466,62 +459,64 @@
       const cached = this._getCache(cacheKey);
       if (cached) return cached;
 
-      try {
-        const dateFilter = this._getDateFilter(timeRange);
+      return this._queueRequest('watchtime_' + timeRange, async () => {
+        try {
+          const dateFilter = this._getDateFilter(timeRange);
 
-        // Get user's content IDs - FIXED: Changed 'content' to 'Content'
-        const { data: content, error: contentError } = await this.supabase
-          .from('Content')
-          .select('id')
-          .eq('creator_id', this.userId);
+          // Get user's content IDs - FIXED: Changed 'content' to 'Content'
+          const { data: content, error: contentError } = await this.supabase
+            .from('Content')
+            .select('id')
+            .eq('creator_id', this.userId);
 
-        if (contentError) throw contentError;
+          if (contentError) throw contentError;
 
-        if (content.length === 0) {
+          if (content.length === 0) {
+            return [];
+          }
+
+          const contentIds = content.map(c => c.id);
+
+          // Get daily watch time
+          const { data: views, error: viewsError } = await this.supabase
+            .from('content_views')
+            .select('viewed_at, watch_time')
+            .in('content_id', contentIds)
+            .gte('viewed_at', dateFilter)
+            .order('viewed_at');
+
+          if (viewsError) throw viewsError;
+
+          // Group by date
+          const dailyData = {};
+          views.forEach(view => {
+            const date = new Date(view.viewed_at).toISOString().split('T')[0];
+            if (!dailyData[date]) {
+              dailyData[date] = {
+                date,
+                views: 0,
+                watchTime: 0
+              };
+            }
+            dailyData[date].views++;
+            dailyData[date].watchTime += view.watch_time || 0;
+          });
+
+          // Convert to array and fill missing dates
+          const result = this._fillMissingDates(
+            Object.values(dailyData),
+            dateFilter,
+            new Date().toISOString().split('T')[0]
+          );
+
+          this._setCache(cacheKey, result);
+          return result;
+
+        } catch (error) {
+          console.error('❌ Error fetching watch time by date:', error);
           return [];
         }
-
-        const contentIds = content.map(c => c.id);
-
-        // Get daily watch time
-        const { data: views, error: viewsError } = await this.supabase
-          .from('content_views')
-          .select('viewed_at, watch_time')
-          .in('content_id', contentIds)
-          .gte('viewed_at', dateFilter)
-          .order('viewed_at');
-
-        if (viewsError) throw viewsError;
-
-        // Group by date
-        const dailyData = {};
-        views.forEach(view => {
-          const date = new Date(view.viewed_at).toISOString().split('T')[0];
-          if (!dailyData[date]) {
-            dailyData[date] = {
-              date,
-              views: 0,
-              watchTime: 0
-            };
-          }
-          dailyData[date].views++;
-          dailyData[date].watchTime += view.watch_time || 0;
-        });
-
-        // Convert to array and fill missing dates
-        const result = this._fillMissingDates(
-          Object.values(dailyData),
-          dateFilter,
-          new Date().toISOString().split('T')[0]
-        );
-
-        this._setCache(cacheKey, result);
-        return result;
-
-      } catch (error) {
-        console.error('❌ Error fetching watch time by date:', error);
-        return [];
-      }
+      });
     }
 
     // ============================================
@@ -562,114 +557,115 @@
         throw new Error('User not authenticated');
       }
       
-      try {
-        console.log('📊 Exporting analytics for time range:', timeRange);
-        
-        // Fetch dashboard summary
-        const summary = await this._getFromMaterializedView() || await this._calculateSummary(timeRange);
-        
-        // Fetch content list with analytics
-        const content = includeContent ? await this.getContentList(timeRange, 'views', 100) : [];
-        
-        // Build CSV rows
-        const rows = [];
-        
-        // Header: Report Metadata
-        rows.push(['Bantu Stream Connect - Analytics Export']);
-        rows.push(['Generated:', new Date().toISOString()]);
-        rows.push(['Time Range:', this._getTimeRangeLabel(timeRange)]);
-        rows.push(['Creator ID:', this.userId]);
-        rows.push([]); // Empty row
-        
-        // Section: Summary Metrics
-        rows.push(['=== SUMMARY METRICS ===']);
-        rows.push(['Metric', 'Value']);
-        rows.push(['Total Uploads', summary?.total_uploads || 0]);
-        rows.push(['Total Views', summary?.total_views || 0]);
-        rows.push(['Total Watch Time (seconds)', summary?.total_watch_time || 0]);
-        rows.push(['Total Watch Time (hours)', summary?.total_watch_time ? Math.round((summary.total_watch_time / 3600) * 100) / 100 : 0]);
-        rows.push(['Unique Viewers', summary?.unique_viewers || 0]);
-        rows.push(['Avg. Completion Rate (%)', summary?.avg_completion_rate || 0]);
-        rows.push(['Total Earnings (ZAR)', summary?.total_earnings?.toFixed(2) || '0.00']);
-        rows.push(['Total Connectors', summary?.total_connectors || 0]);
-        rows.push(['Engagement Percentage (%)', summary?.engagement_percentage?.toFixed(2) || '0.00']);
-        rows.push(['Monetization Eligible', summary?.is_eligible_for_monetization ? 'Yes' : 'No']);
-        rows.push([]); // Empty row
-        
-        // Section: Content Performance (if included)
-        if (includeContent && content.length > 0) {
-          rows.push(['=== CONTENT PERFORMANCE ===']);
-          rows.push([
-            'Content ID',
-            'Title',
-            'Published Date',
-            'Duration (seconds)',
-            'Views',
-            'Unique Viewers',
-            'Total Watch Time (seconds)',
-            'Avg. Watch Time (seconds)',
-            'Avg. Completion Rate (%)',
-            'Likes',
-            'Comments',
-            'Shares',
-            'Earnings (ZAR)'
-          ]);
+      return this._queueRequest('export_' + timeRange, async () => {
+        try {
+          console.log('📊 Exporting analytics for time range:', timeRange);
           
-          // Enrich content with engagement data
-          for (const item of content) {
-            const analytics = item.analytics || {};
-            const engagement = await this._getContentEngagement(item.id);
-            
-            const earnings = (analytics.totalViews || 0) * 0.01; // R0.01 per view
-            
-            rows.push([
-              item.id,
-              `"${(item.title || 'Untitled').replace(/"/g, '""')}"`, // Escape quotes for CSV
-              item.created_at ? new Date(item.created_at).toISOString().split('T')[0] : '',
-              item.duration || 0,
-              analytics.totalViews || 0,
-              analytics.uniqueViewers || 0,
-              analytics.totalWatchTime || 0,
-              analytics.avgWatchTime || 0,
-              analytics.avgCompletionRate || 0,
-              engagement.likes || 0,
-              engagement.comments || 0,
-              engagement.shares || 0,
-              earnings.toFixed(2)
-            ]);
-          }
+          // Fetch dashboard summary
+          const summary = await this._getFromMaterializedView() || await this._calculateSummary(timeRange);
+          
+          // Fetch content list with analytics
+          const content = includeContent ? await this.getContentList(timeRange, 'views', 100) : [];
+          
+          // Build CSV rows
+          const rows = [];
+          
+          // Header: Report Metadata
+          rows.push(['Bantu Stream Connect - Analytics Export']);
+          rows.push(['Generated:', new Date().toISOString()]);
+          rows.push(['Time Range:', this._getTimeRangeLabel(timeRange)]);
+          rows.push(['Creator ID:', this.userId]);
           rows.push([]); // Empty row
+          
+          // Section: Summary Metrics
+          rows.push(['=== SUMMARY METRICS ===']);
+          rows.push(['Metric', 'Value']);
+          rows.push(['Total Uploads', summary?.total_uploads || 0]);
+          rows.push(['Total Views', summary?.total_views || 0]);
+          rows.push(['Total Watch Time (seconds)', summary?.total_watch_time || 0]);
+          rows.push(['Total Watch Time (hours)', summary?.total_watch_time ? Math.round((summary.total_watch_time / 3600) * 100) / 100 : 0]);
+          rows.push(['Unique Viewers', summary?.unique_viewers || 0]);
+          rows.push(['Avg. Completion Rate (%)', summary?.avg_completion_rate || 0]);
+          rows.push(['Total Earnings (ZAR)', summary?.total_earnings?.toFixed(2) || '0.00']);
+          rows.push(['Total Connectors', summary?.total_connectors || 0]);
+          rows.push(['Engagement Percentage (%)', summary?.engagement_percentage?.toFixed(2) || '0.00']);
+          rows.push(['Monetization Eligible', summary?.is_eligible_for_monetization ? 'Yes' : 'No']);
+          rows.push([]); // Empty row
+          
+          // Section: Content Performance (if included)
+          if (includeContent && content.length > 0) {
+            rows.push(['=== CONTENT PERFORMANCE ===']);
+            rows.push([
+              'Content ID',
+              'Title',
+              'Published Date',
+              'Duration (seconds)',
+              'Views',
+              'Unique Viewers',
+              'Total Watch Time (seconds)',
+              'Avg. Watch Time (seconds)',
+              'Avg. Completion Rate (%)',
+              'Likes',
+              'Comments',
+              'Shares',
+              'Earnings (ZAR)'
+            ]);
+            
+            // Enrich content with engagement data
+            for (const item of content) {
+              const analytics = item.analytics || {};
+              const engagement = await this._getContentEngagement(item.id);
+              
+              const earnings = (analytics.totalViews || 0) * 0.01; // R0.01 per view
+              
+              rows.push([
+                item.id,
+                `"${(item.title || 'Untitled').replace(/"/g, '""')}"`, // Escape quotes for CSV
+                item.created_at ? new Date(item.created_at).toISOString().split('T')[0] : '',
+                item.duration || 0,
+                analytics.totalViews || 0,
+                analytics.uniqueViewers || 0,
+                analytics.totalWatchTime || 0,
+                analytics.avgWatchTime || 0,
+                analytics.avgCompletionRate || 0,
+                engagement.likes || 0,
+                engagement.comments || 0,
+                engagement.shares || 0,
+                earnings.toFixed(2)
+              ]);
+            }
+            rows.push([]); // Empty row
+          }
+          
+          // Section: Daily Breakdown (optional)
+          rows.push(['=== DAILY VIEW BREAKDOWN ===']);
+          rows.push(['Date', 'Views', 'Watch Time (seconds)', 'Watch Time (hours)']);
+          
+          const dailyData = await this.getWatchTimeByDate(timeRange);
+          dailyData.forEach(day => {
+            rows.push([
+              day.date,
+              day.views || 0,
+              day.watchTime || 0,
+              day.watchTimeHours || 0
+            ]);
+          });
+          
+          // Convert rows to CSV string
+          const csv = this._convertToCSV(rows);
+          
+          // Generate filename
+          const dateStr = new Date().toISOString().split('T')[0];
+          const filename = `bantu-analytics-${timeRange}-${dateStr}.csv`;
+          
+          console.log('✅ CSV export generated:', filename);
+          
+          return { csv, filename };
+        } catch (error) {
+          console.error('❌ CSV export failed:', error);
+          throw error;
         }
-        
-        // Section: Daily Breakdown (optional)
-        rows.push(['=== DAILY VIEW BREAKDOWN ===']);
-        rows.push(['Date', 'Views', 'Watch Time (seconds)', 'Watch Time (hours)']);
-        
-        const dailyData = await this.getWatchTimeByDate(timeRange);
-        dailyData.forEach(day => {
-          rows.push([
-            day.date,
-            day.views || 0,
-            day.watchTime || 0,
-            day.watchTimeHours || 0
-          ]);
-        });
-        
-        // Convert rows to CSV string
-        const csv = this._convertToCSV(rows);
-        
-        // Generate filename
-        const dateStr = new Date().toISOString().split('T')[0];
-        const filename = `bantu-analytics-${timeRange}-${dateStr}.csv`;
-        
-        console.log('✅ CSV export generated:', filename);
-        
-        return { csv, filename };
-        
-      } catch (error) {
-        console.error('❌ CSV export failed:', error);
-        throw error;
-      }
+      });
     }
 
     // ============================================
@@ -699,69 +695,71 @@
     async getAudienceLocations(timeRange = '30days') {
       if (!this.userId) throw new Error('User not authenticated');
 
-      try {
-        const dateFilter = this._getDateFilter(timeRange);
+      return this._queueRequest('locations_' + timeRange, async () => {
+        try {
+          const dateFilter = this._getDateFilter(timeRange);
 
-        // Get user's content IDs - FIXED: Changed 'content' to 'Content'
-        const { data: content, error: contentError } = await this.supabase
-          .from('Content')
-          .select('id')
-          .eq('creator_id', this.userId);
+          // Get user's content IDs - FIXED: Changed 'content' to 'Content'
+          const { data: content, error: contentError } = await this.supabase
+            .from('Content')
+            .select('id')
+            .eq('creator_id', this.userId);
 
-        if (contentError) throw contentError;
+          if (contentError) throw contentError;
 
-        if (content.length === 0) {
+          if (content.length === 0) {
+            return [];
+          }
+
+          const contentIds = content.map(c => c.id);
+
+          // Get viewer locations from profiles
+          const { data: views, error: viewsError } = await this.supabase
+            .from('content_views')
+            .select('viewer_id')
+            .in('content_id', contentIds)
+            .gte('viewed_at', dateFilter);
+
+          if (viewsError) throw viewsError;
+
+          const viewerIds = [...new Set(views.map(v => v.viewer_id))];
+
+          if (viewerIds.length === 0) {
+            return [];
+          }
+
+          // Get profiles with location data
+          const { data: profiles, error: profilesError } = await this.supabase
+            .from('profiles')
+            .select('country, city')
+            .in('id', viewerIds);
+
+          if (profilesError) throw profilesError;
+
+          // Count by country
+          const countryCount = {};
+          profiles.forEach(p => {
+            const country = p.country || 'Unknown';
+            countryCount[country] = (countryCount[country] || 0) + 1;
+          });
+
+          // Convert to array and calculate percentages
+          const total = profiles.length;
+          const result = Object.entries(countryCount)
+            .map(([country, count]) => ({
+              country,
+              count,
+              percentage: Math.round((count / total) * 100)
+            }))
+            .sort((a, b) => b.count - a.count);
+
+          return result;
+
+        } catch (error) {
+          console.error('❌ Error fetching audience locations:', error);
           return [];
         }
-
-        const contentIds = content.map(c => c.id);
-
-        // Get viewer locations from profiles
-        const { data: views, error: viewsError } = await this.supabase
-          .from('content_views')
-          .select('viewer_id')
-          .in('content_id', contentIds)
-          .gte('viewed_at', dateFilter);
-
-        if (viewsError) throw viewsError;
-
-        const viewerIds = [...new Set(views.map(v => v.viewer_id))];
-
-        if (viewerIds.length === 0) {
-          return [];
-        }
-
-        // Get profiles with location data
-        const { data: profiles, error: profilesError } = await this.supabase
-          .from('profiles')
-          .select('country, city')
-          .in('id', viewerIds);
-
-        if (profilesError) throw profilesError;
-
-        // Count by country
-        const countryCount = {};
-        profiles.forEach(p => {
-          const country = p.country || 'Unknown';
-          countryCount[country] = (countryCount[country] || 0) + 1;
-        });
-
-        // Convert to array and calculate percentages
-        const total = profiles.length;
-        const result = Object.entries(countryCount)
-          .map(([country, count]) => ({
-            country,
-            count,
-            percentage: Math.round((count / total) * 100)
-          }))
-          .sort((a, b) => b.count - a.count);
-
-        return result;
-
-      } catch (error) {
-        console.error('❌ Error fetching audience locations:', error);
-        return [];
-      }
+      });
     }
 
     // ============================================
@@ -770,55 +768,57 @@
     async getDeviceBreakdown(timeRange = '30days') {
       if (!this.userId) throw new Error('User not authenticated');
 
-      try {
-        const dateFilter = this._getDateFilter(timeRange);
+      return this._queueRequest('devices_' + timeRange, async () => {
+        try {
+          const dateFilter = this._getDateFilter(timeRange);
 
-        // Get user's content IDs - FIXED: Changed 'content' to 'Content'
-        const { data: content, error: contentError } = await this.supabase
-          .from('Content')
-          .select('id')
-          .eq('creator_id', this.userId);
+          // Get user's content IDs - FIXED: Changed 'content' to 'Content'
+          const { data: content, error: contentError } = await this.supabase
+            .from('Content')
+            .select('id')
+            .eq('creator_id', this.userId);
 
-        if (contentError) throw contentError;
+          if (contentError) throw contentError;
 
-        if (content.length === 0) {
+          if (content.length === 0) {
+            return [];
+          }
+
+          const contentIds = content.map(c => c.id);
+
+          // Get views with device info
+          const { data: views, error: viewsError } = await this.supabase
+            .from('content_views')
+            .select('device_type')
+            .in('content_id', contentIds)
+            .gte('viewed_at', dateFilter);
+
+          if (viewsError) throw viewsError;
+
+          // Count by device type
+          const deviceCount = {};
+          views.forEach(v => {
+            const device = v.device_type || 'desktop';
+            deviceCount[device] = (deviceCount[device] || 0) + 1;
+          });
+
+          // Convert to array and calculate percentages
+          const total = views.length;
+          const result = Object.entries(deviceCount)
+            .map(([device, count]) => ({
+              device,
+              count,
+              percentage: Math.round((count / total) * 100)
+            }))
+            .sort((a, b) => b.count - a.count);
+
+          return result;
+
+        } catch (error) {
+          console.error('❌ Error fetching device breakdown:', error);
           return [];
         }
-
-        const contentIds = content.map(c => c.id);
-
-        // Get views with device info
-        const { data: views, error: viewsError } = await this.supabase
-          .from('content_views')
-          .select('device_type')
-          .in('content_id', contentIds)
-          .gte('viewed_at', dateFilter);
-
-        if (viewsError) throw viewsError;
-
-        // Count by device type
-        const deviceCount = {};
-        views.forEach(v => {
-          const device = v.device_type || 'desktop';
-          deviceCount[device] = (deviceCount[device] || 0) + 1;
-        });
-
-        // Convert to array and calculate percentages
-        const total = views.length;
-        const result = Object.entries(deviceCount)
-          .map(([device, count]) => ({
-            device,
-            count,
-            percentage: Math.round((count / total) * 100)
-          }))
-          .sort((a, b) => b.count - a.count);
-
-        return result;
-
-      } catch (error) {
-        console.error('❌ Error fetching device breakdown:', error);
-        return [];
-      }
+      });
     }
 
     // ============================================
@@ -967,6 +967,7 @@
     // ============================================
     clearCache() {
       this.cache.clear();
+      this._fetchQueue.clear();
       console.log('🧹 Analytics cache cleared');
     }
   }
