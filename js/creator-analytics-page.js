@@ -1,6 +1,9 @@
 // js/creator-analytics-page.js — Dedicated Analytics Page Controller
 // Bantu Stream Connect — Phase 5B Implementation + Phase 5E Audience Insights
-// ✅ FIXED: Top content table now correctly displays all metrics (Watch Time, Avg Duration, Completion Rate, Engagement)
+// ✅ FIXED: Multiple auth client instances prevented
+// ✅ FIXED: Timeout properly cleared on success/error
+// ✅ FIXED: Error state only shows on actual failure
+// ✅ FIXED: Top content table now correctly displays all metrics
 
 (function() {
   'use strict';
@@ -33,6 +36,9 @@
   
   // Mark as not initialized yet
   window.analyticsPageInitialized = false;
+  
+  // Add timeout ID variable
+  let initializationTimeout = null;
 
   // ============================================
   // DOM ELEMENTS CACHE
@@ -89,6 +95,11 @@
       return;
     }
     
+    // Clear any existing timeout first
+    if (initializationTimeout) {
+      clearTimeout(initializationTimeout);
+    }
+    
     try {
       console.log('🚀 Starting analytics page initialization (attempt ' + initializationAttempts + ')...');
       
@@ -96,7 +107,7 @@
       cacheDOMElements();
       
       // Set a timeout for the entire initialization
-      const initTimeout = setTimeout(() => {
+      initializationTimeout = setTimeout(() => {
         console.error('❌ Initialization timed out after 15 seconds');
         if (!window.analyticsPageInitialized) {
           hideLoading();
@@ -107,7 +118,8 @@
       // Check auth
       const isAuthenticated = await checkAuthAndInitialize();
       if (!isAuthenticated) {
-        clearTimeout(initTimeout);
+        clearTimeout(initializationTimeout);
+        initializationTimeout = null;
         console.log('⏳ Redirecting to login...');
         return;
       }
@@ -117,7 +129,8 @@
       // Initialize analytics manager
       analyticsManager = await initializeAnalyticsManager();
       if (!analyticsManager) {
-        clearTimeout(initTimeout);
+        clearTimeout(initializationTimeout);
+        initializationTimeout = null;
         throw new Error('Failed to initialize analytics manager');
       }
       
@@ -132,31 +145,44 @@
       if (data && !data.error) {
         renderDashboard(data);
       } else {
-        clearTimeout(initTimeout);
+        clearTimeout(initializationTimeout);
+        initializationTimeout = null;
         throw new Error(data?.error || 'Failed to load dashboard data');
       }
       
       // Load audience insights
       await loadAudienceInsights();
       
-      clearTimeout(initTimeout);
+      // Clear timeout on success
+      if (initializationTimeout) {
+        clearTimeout(initializationTimeout);
+        initializationTimeout = null;
+      }
       
-      // ✅ FINAL FIX: Hide loading, show content with !important
+      // Mark as initialized BEFORE hiding loading
+      window.analyticsPageInitialized = true;
+      
+      // Hide loading and show content
       hideLoading();
       showContent();
       
       // Run diagnostic to confirm display status
       checkDisplayStatus();
       
-      // Mark as initialized
-      window.analyticsPageInitialized = true;
       window._analyticsPageInitializing = false;
       
       console.log('✅ Creator Analytics Page fully initialized');
       
     } catch (error) {
       console.error('❌ Page initialization failed:', error);
-      // ✅ Show error state if loading fails
+      
+      // Clear timeout on error too
+      if (initializationTimeout) {
+        clearTimeout(initializationTimeout);
+        initializationTimeout = null;
+      }
+      
+      // Show error state if loading fails
       hideLoading();
       showError(error.message || 'Failed to initialize analytics');
       
@@ -169,57 +195,48 @@
   window.initializeAnalyticsPage = initializeAnalyticsPage;
 
   // ============================================
-  // AUTH CHECK
+  // AUTH CHECK - FIXED: Use global Supabase client
   // ============================================
   async function checkAuthAndInitialize() {
     console.log('🔐 Checking authentication...');
     
-    // Method 1: AuthHelper
+    // Use the GLOBAL Supabase client - don't create a new one!
+    const supabaseClient = window.supabaseClient || window.SupabaseHelper?.client;
+    
+    // Method 1: AuthHelper (if available)
     if (window.AuthHelper && typeof window.AuthHelper.isAuthenticated === 'function' && window.AuthHelper.isAuthenticated()) {
       console.log('✅ Authenticated via AuthHelper');
-      currentUser = (window.AuthHelper.getUserProfile && window.AuthHelper.getUserProfile()) || 
-                    (window.AuthHelper.getCurrentUser && window.AuthHelper.getCurrentUser()) || null;
+      currentUser = window.AuthHelper.getUserProfile?.() || window.AuthHelper.getCurrentUser?.() || null;
       if (currentUser) return true;
     }
     
-    // Method 2: Direct Supabase
-    try {
-      let supabaseClient = window.supabaseClient;
-      
-      if (!supabaseClient && typeof supabase !== 'undefined') {
-        supabaseClient = supabase.createClient(
-          'https://ydnxqnbjoshvxteevemc.supabase.co',
-          'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U'
-        );
-      }
-      
-      if (supabaseClient) {
+    // Method 2: Direct Supabase session check
+    if (supabaseClient) {
+      try {
         const { data: { session }, error } = await supabaseClient.auth.getSession();
         
         if (session?.user) {
           console.log('✅ Authenticated via Supabase session');
           currentUser = session.user;
           
-          // Try to get profile
+          // Try to get profile using the SAME client
           try {
             const { data: profile } = await supabaseClient
               .from('user_profiles')
               .select('*')
               .eq('id', currentUser.id)
               .maybeSingle();
-            
             if (profile) {
               currentUser = { ...currentUser, ...profile };
             }
           } catch (e) {
             console.warn('⚠️ Could not fetch profile:', e);
           }
-          
           return true;
         }
+      } catch (err) {
+        console.error('❌ Session check failed:', err);
       }
-    } catch (err) {
-      console.error('❌ Session check failed:', err);
     }
     
     // Not authenticated - redirect
@@ -238,7 +255,7 @@
       return null;
     }
     
-    let supabaseClient = window.supabaseClient;
+    let supabaseClient = window.supabaseClient || window.SupabaseHelper?.client;
     
     if (!supabaseClient && typeof supabase !== 'undefined') {
       supabaseClient = supabase.createClient(
@@ -296,6 +313,13 @@
   }
   
   function showError(message) {
+    // Only show error if content hasn't been successfully rendered
+    if (window.analyticsPageInitialized) {
+      console.warn('⚠️ Attempting to show error after successful initialization:', message);
+      // Don't show error overlay if page is already initialized
+      return;
+    }
+    
     if (dom.error) {
       // Force inline style with !important to override any CSS
       dom.error.setAttribute('style', 'display: flex !important');
@@ -305,6 +329,10 @@
     }
     if (dom.loading) {
       dom.loading.style.display = 'none';
+    }
+    if (dom.content) {
+      // Hide content if showing error
+      dom.content.setAttribute('style', 'display: none !important');
     }
     console.error('❌ Error displayed:', message);
   }
@@ -717,6 +745,8 @@
   // AUDIENCE INSIGHTS FUNCTIONS
   // ============================================
   async function loadAudienceInsights() {
+    if (!analyticsManager) return;
+    
     const timeRange = dom.audienceTimeRange?.value || '30days';
     
     // Check if audience elements exist
@@ -727,20 +757,24 @@
     
     console.log('📊 Loading audience insights for range:', timeRange);
     
-    // Load all audience data in parallel
-    const [locations, devices, traffic, peakTimes] = await Promise.all([
-      analyticsManager.getAudienceLocations(timeRange),
-      analyticsManager.getDeviceBreakdown(timeRange),
-      analyticsManager.getTrafficSources(timeRange),
-      analyticsManager.getPeakViewingTimes(timeRange)
-    ]);
-    
-    renderLocations(locations);
-    renderDeviceChart(devices);
-    renderTrafficChart(traffic);
-    renderPeakTimes(peakTimes);
-    
-    console.log('✅ Audience insights loaded');
+    try {
+      // Load all audience data in parallel
+      const [locations, devices, traffic, peakTimes] = await Promise.all([
+        analyticsManager.getAudienceLocations(timeRange),
+        analyticsManager.getDeviceBreakdown(timeRange),
+        analyticsManager.getTrafficSources(timeRange),
+        analyticsManager.getPeakViewingTimes(timeRange)
+      ]);
+      
+      renderLocations(locations);
+      renderDeviceChart(devices);
+      renderTrafficChart(traffic);
+      renderPeakTimes(peakTimes);
+      
+      console.log('✅ Audience insights loaded');
+    } catch (error) {
+      console.error('❌ Error loading audience insights:', error);
+    }
   }
 
   function renderLocations(locations) {
@@ -872,6 +906,8 @@
       return;
     }
     
+    chartCtx.parentNode.style.display = 'block';
+    
     // Show peak info
     container.innerHTML = `
       <div class="peak-info-cards">
@@ -952,12 +988,17 @@
       currentTimeRange = timeRange;
       
       if (analytics) {
-        const data = await analytics.getDashboardData(timeRange);
-        if (data && !data.error) {
-          renderDashboard(data);
+        try {
+          const data = await analytics.getDashboardData(timeRange);
+          if (data && !data.error) {
+            renderDashboard(data);
+          }
+          // Also reload audience insights with new time range
+          await loadAudienceInsights();
+        } catch (error) {
+          console.error('Error loading data for time range:', error);
+          showToast('Failed to load data for selected time range', 'error');
         }
-        // Also reload audience insights with new time range
-        await loadAudienceInsights();
       }
       
       if (dom.content) dom.content.style.opacity = '1';
