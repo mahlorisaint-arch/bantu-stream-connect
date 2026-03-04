@@ -1,4 +1,18 @@
 /* css/creator-analytics.css — Complete Creator Analytics Page Styles */
+/* Phase 5E: Audience Insights Implementation */
+
+/* ============================================
+   ✅ CSS VARIABLES (if not defined globally)
+   ============================================ */
+:root {
+  --bantu-blue: #1E4AE9;
+  --warm-gold: #FFB347;
+  --deep-navy: #0A192F;
+  --slate-grey: #94A3B8;
+  --soft-white: #F8FAFC;
+  --card-bg: rgba(30, 41, 59, 0.7);
+  --card-border: rgba(255, 255, 255, 0.1);
+}
 
 /* ============================================
    ✅ ANALYTICS CONTROLS
@@ -188,6 +202,10 @@
   gap: 10px;
 }
 
+.chart-card h3 i {
+  color: var(--warm-gold);
+}
+
 .chart-card canvas {
   max-height: 250px;
   width: 100% !important;
@@ -216,6 +234,10 @@
   display: flex;
   align-items: center;
   gap: 10px;
+}
+
+.section-header h3 i {
+  color: var(--warm-gold);
 }
 
 .table-controls {
@@ -336,25 +358,47 @@
 }
 
 /* ============================================
-   ✅ AUDIENCE SECTION
+   ✅ AUDIENCE INSIGHTS SECTION
    ============================================ */
 .audience-section {
   margin-bottom: 30px;
 }
 
-.audience-section h3 {
+.audience-section .section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 15px;
+}
+
+.audience-section .section-header h3 {
   color: var(--soft-white);
   font-size: 18px;
   font-weight: 600;
-  margin-bottom: 20px;
   display: flex;
   align-items: center;
   gap: 10px;
 }
 
+.audience-section .section-header h3 i {
+  color: var(--warm-gold);
+}
+
+.audience-section .filter-select {
+  padding: 8px 16px;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 8px;
+  color: var(--soft-white);
+  font-size: 14px;
+  cursor: pointer;
+}
+
 .audience-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
   gap: 20px;
 }
 
@@ -364,51 +408,157 @@
   border-radius: 16px;
   padding: 24px;
   backdrop-filter: blur(10px);
+  transition: transform 0.2s ease;
+}
+
+.audience-card:hover {
+  transform: translateY(-3px);
 }
 
 .audience-card h4 {
   color: var(--soft-white);
   font-size: 16px;
   font-weight: 600;
-  margin-bottom: 15px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-bottom: 1px solid var(--card-border);
+  padding-bottom: 12px;
 }
 
+.audience-card h4 i {
+  color: var(--warm-gold);
+}
+
+.audience-card canvas {
+  max-height: 200px;
+  width: 100% !important;
+}
+
+/* Locations List */
 .locations-list {
   display: flex;
   flex-direction: column;
   gap: 10px;
+  max-height: 300px;
+  overflow-y: auto;
+  padding-right: 5px;
+}
+
+.locations-list::-webkit-scrollbar {
+  width: 4px;
+}
+
+.locations-list::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
+}
+
+.locations-list::-webkit-scrollbar-thumb {
+  background: var(--warm-gold);
+  border-radius: 4px;
 }
 
 .location-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 10px;
+  padding: 12px;
   background: rgba(255, 255, 255, 0.05);
-  border-radius: 8px;
+  border-radius: 10px;
+  transition: all 0.2s ease;
+}
+
+.location-item:hover {
+  background: rgba(255, 255, 255, 0.1);
+  transform: translateX(3px);
 }
 
 .location-name {
   color: var(--soft-white);
   font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .location-name i {
-  margin-right: 8px;
   color: var(--warm-gold);
+  font-size: 14px;
   width: 20px;
 }
 
 .location-percent {
   color: var(--warm-gold);
-  font-weight: 600;
+  font-weight: 700;
+  font-size: 16px;
+  background: rgba(255, 179, 71, 0.1);
+  padding: 4px 12px;
+  border-radius: 20px;
+  min-width: 50px;
+  text-align: center;
 }
 
-.empty-message {
-  color: var(--slate-grey);
+/* Peak Times Info */
+.peak-times-info {
+  margin-bottom: 20px;
+}
+
+.peak-info-cards {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 15px;
+}
+
+.peak-info-card {
+  background: rgba(255, 255, 255, 0.05);
+  padding: 16px;
+  border-radius: 12px;
   text-align: center;
-  padding: 20px;
-  font-style: italic;
+  border: 1px solid rgba(255, 179, 71, 0.2);
+  transition: all 0.2s ease;
+}
+
+.peak-info-card:hover {
+  background: rgba(255, 179, 71, 0.1);
+  border-color: var(--warm-gold);
+}
+
+.peak-info-label {
+  font-size: 12px;
+  color: var(--slate-grey);
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.peak-info-value {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--warm-gold);
+  font-family: 'Orbitron', sans-serif;
+}
+
+/* Loading & Empty States */
+.loading-state,
+.empty-message {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--slate-grey);
+}
+
+.loading-state i,
+.empty-message i {
+  font-size: 40px;
+  margin-bottom: 15px;
+  opacity: 0.5;
+}
+
+.loading-state p,
+.empty-message p {
+  font-size: 14px;
+  margin: 0;
 }
 
 /* ============================================
@@ -630,6 +780,19 @@
   .toast {
     max-width: none;
   }
+  
+  .peak-info-cards {
+    grid-template-columns: 1fr;
+  }
+  
+  .audience-section .section-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .audience-section .filter-select {
+    width: 100%;
+  }
 }
 
 @media (max-width: 480px) {
@@ -657,17 +820,13 @@
   .table-btn {
     width: 100%;
   }
-}
-
-/* ============================================
-   ✅ CSS VARIABLES (if not defined globally)
-   ============================================ */
-:root {
-  --bantu-blue: #1E4AE9;
-  --warm-gold: #FFB347;
-  --deep-navy: #0A192F;
-  --slate-grey: #94A3B8;
-  --soft-white: #F8FAFC;
-  --card-bg: rgba(30, 41, 59, 0.7);
-  --card-border: rgba(255, 255, 255, 0.1);
+  
+  .location-item {
+    padding: 8px;
+  }
+  
+  .location-percent {
+    font-size: 14px;
+    padding: 2px 8px;
+  }
 }
