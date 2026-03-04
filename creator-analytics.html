@@ -223,19 +223,19 @@
       <!-- Charts Grid -->
       <section class="charts-grid">
         <div class="chart-card">
-          <h4>Views Over Time</h4>
+          <h4><i class="fas fa-chart-line"></i> Views Over Time</h4>
           <canvas id="viewsChart"></canvas>
         </div>
         <div class="chart-card">
-          <h4>Watch Time (Hours)</h4>
+          <h4><i class="fas fa-clock"></i> Watch Time (Hours)</h4>
           <canvas id="watchTimeChart"></canvas>
         </div>
         <div class="chart-card">
-          <h4>Engagement Breakdown</h4>
+          <h4><i class="fas fa-heart"></i> Engagement Breakdown</h4>
           <canvas id="engagementChart"></canvas>
         </div>
         <div class="chart-card">
-          <h4>Retention Rate</h4>
+          <h4><i class="fas fa-chart-bar"></i> Retention Rate</h4>
           <canvas id="retentionChart"></canvas>
         </div>
       </section>
@@ -262,6 +262,57 @@
               <!-- Rows populated by JS -->
             </tbody>
           </table>
+        </div>
+      </section>
+
+      <!-- ============================================ -->
+      <!-- ✅ AUDIENCE INSIGHTS SECTION (Phase 5E) -->
+      <!-- ============================================ -->
+      <section class="audience-section">
+        <div class="section-header">
+          <h3><i class="fas fa-users"></i> Audience Insights</h3>
+          <select id="audienceTimeRange" class="filter-select">
+            <option value="7days">Last 7 Days</option>
+            <option value="30days" selected>Last 30 Days</option>
+            <option value="90days">Last 90 Days</option>
+          </select>
+        </div>
+        
+        <div class="audience-grid">
+          <!-- Top Locations -->
+          <div class="audience-card">
+            <h4><i class="fas fa-map-marker-alt"></i> Top Locations</h4>
+            <div id="locationsList" class="locations-list">
+              <div class="loading-state">
+                <i class="fas fa-spinner fa-spin"></i>
+                <p>Loading locations...</p>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Device Breakdown -->
+          <div class="audience-card">
+            <h4><i class="fas fa-laptop"></i> Device Breakdown</h4>
+            <canvas id="deviceChart"></canvas>
+          </div>
+          
+          <!-- Traffic Sources -->
+          <div class="audience-card">
+            <h4><i class="fas fa-share-alt"></i> Traffic Sources</h4>
+            <canvas id="trafficChart"></canvas>
+          </div>
+          
+          <!-- Peak Viewing Times -->
+          <div class="audience-card">
+            <h4><i class="fas fa-clock"></i> Peak Viewing Times</h4>
+            <div id="peakTimesInfo" class="peak-times-info">
+              <div class="loading-state">
+                <i class="fas fa-spinner fa-spin"></i>
+                <p>Loading peak times...</p>
+              </div>
+            </div>
+            <canvas id="peakHoursChart" style="margin-top: 15px;"></canvas>
+          </div>
         </div>
       </section>
 
