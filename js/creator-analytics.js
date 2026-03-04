@@ -1,5 +1,5 @@
 // js/creator-analytics.js — Complete Creator Analytics Class with CSV Export
-// Bantu Stream Connect — Phase 5B Implementation
+// Bantu Stream Connect — Phase 5B Implementation + Phase 5E Audience Insights
 // ✅ FIXED: Changed all instances of 'viewed_at' to 'created_at' to match database schema
 // ✅ FIXED: Using correct column 'view_duration' for watch time
 
@@ -876,7 +876,8 @@
               count,
               percentage: Math.round((count / total) * 100)
             }))
-            .sort((a, b) => b.count - a.count);
+            .sort((a, b) => b.count - a.count)
+            .slice(0, 10); // Top 10 countries
 
           return result;
 
@@ -921,19 +922,30 @@
           if (viewsError) throw viewsError;
 
           // Count by device type
-          const deviceCount = {};
+          const deviceCount = {
+            mobile: 0,
+            desktop: 0,
+            tablet: 0,
+            other: 0
+          };
+          
           views.forEach(v => {
-            const device = v.device_type || 'desktop';
-            deviceCount[device] = (deviceCount[device] || 0) + 1;
+            const device = (v.device_type || 'desktop').toLowerCase();
+            if (deviceCount[device] !== undefined) {
+              deviceCount[device]++;
+            } else {
+              deviceCount.other++;
+            }
           });
 
           // Convert to array and calculate percentages
           const total = views.length;
           const result = Object.entries(deviceCount)
+            .filter(([_, count]) => count > 0)
             .map(([device, count]) => ({
-              device,
+              device: device.charAt(0).toUpperCase() + device.slice(1),
               count,
-              percentage: Math.round((count / total) * 100)
+              percentage: total > 0 ? Math.round((count / total) * 100) : 0
             }))
             .sort((a, b) => b.count - a.count);
 
@@ -942,6 +954,160 @@
         } catch (error) {
           console.error('❌ Error fetching device breakdown:', error);
           return [];
+        }
+      });
+    }
+
+    // ============================================
+    // ✅ GET TRAFFIC SOURCES
+    // ============================================
+    async getTrafficSources(timeRange = '30days') {
+      if (!this.userId) throw new Error('User not authenticated');
+
+      return this._queueRequest('traffic_' + timeRange, async () => {
+        try {
+          const dateFilter = this._getDateFilter(timeRange);
+
+          // Get user's content IDs
+          const { data: content, error: contentError } = await this.supabase
+            .from('Content')
+            .select('id')
+            .eq('user_id', this.userId);
+
+          if (contentError) throw contentError;
+
+          if (content.length === 0) {
+            return [];
+          }
+
+          const contentIds = content.map(c => c.id);
+
+          // Get views with referrer/source data
+          const { data: views, error: viewsError } = await this.supabase
+            .from('content_views')
+            .select('referrer')
+            .in('content_id', contentIds)
+            .gte('created_at', dateFilter);
+
+          if (viewsError) throw viewsError;
+
+          // Categorize traffic sources
+          const sourceCount = {
+            direct: 0,
+            search: 0,
+            social: 0,
+            referral: 0,
+            other: 0
+          };
+
+          views.forEach(v => {
+            const referrer = (v.referrer || '').toLowerCase();
+            
+            if (!referrer || referrer === 'direct' || referrer === 'none') {
+              sourceCount.direct++;
+            } else if (referrer.includes('google') || referrer.includes('bing') || referrer.includes('yahoo')) {
+              sourceCount.search++;
+            } else if (referrer.includes('facebook') || referrer.includes('twitter') || 
+                       referrer.includes('instagram') || referrer.includes('tiktok') ||
+                       referrer.includes('whatsapp')) {
+              sourceCount.social++;
+            } else {
+              sourceCount.referral++;
+            }
+          });
+
+          // Convert to array and calculate percentages
+          const total = views.length;
+          const result = Object.entries(sourceCount)
+            .filter(([_, count]) => count > 0)
+            .map(([source, count]) => ({
+              source: source.charAt(0).toUpperCase() + source.slice(1),
+              count,
+              percentage: total > 0 ? Math.round((count / total) * 100) : 0
+            }))
+            .sort((a, b) => b.count - a.count);
+
+          return result;
+
+        } catch (error) {
+          console.error('❌ Error fetching traffic sources:', error);
+          return [];
+        }
+      });
+    }
+
+    // ============================================
+    // ✅ GET PEAK VIEWING TIMES
+    // ============================================
+    async getPeakViewingTimes(timeRange = '30days') {
+      if (!this.userId) throw new Error('User not authenticated');
+
+      return this._queueRequest('peaktimes_' + timeRange, async () => {
+        try {
+          const dateFilter = this._getDateFilter(timeRange);
+
+          // Get user's content IDs
+          const { data: content, error: contentError } = await this.supabase
+            .from('Content')
+            .select('id')
+            .eq('user_id', this.userId);
+
+          if (contentError) throw contentError;
+
+          if (content.length === 0) {
+            return { byHour: [], byDay: [], peakHour: 'N/A', peakDay: 'N/A' };
+          }
+
+          const contentIds = content.map(c => c.id);
+
+          // Get views with timestamps
+          const { data: views, error: viewsError } = await this.supabase
+            .from('content_views')
+            .select('created_at')
+            .in('content_id', contentIds)
+            .gte('created_at', dateFilter);
+
+          if (viewsError) throw viewsError;
+
+          // Count views by hour of day
+          const hourCount = new Array(24).fill(0);
+          const dayCount = new Array(7).fill(0); // 0 = Sunday, 6 = Saturday
+          
+          const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+          views.forEach(v => {
+            const date = new Date(v.created_at);
+            const hour = date.getHours();
+            const day = date.getDay();
+            
+            hourCount[hour]++;
+            dayCount[day]++;
+          });
+
+          // Find peak hour and day
+          const peakHour = hourCount.indexOf(Math.max(...hourCount));
+          const peakDay = dayCount.indexOf(Math.max(...dayCount));
+
+          const result = {
+            byHour: hourCount.map((count, hour) => ({
+              hour: `${hour}:00`,
+              count,
+              isPeak: hour === peakHour
+            })),
+            byDay: dayCount.map((count, day) => ({
+              day: dayNames[day],
+              count,
+              isPeak: day === peakDay
+            })),
+            peakHour: peakHour >= 0 ? `${peakHour}:00` : 'N/A',
+            peakDay: peakDay >= 0 ? dayNames[peakDay] : 'N/A'
+          };
+
+          return result;
+
+        } catch (error) {
+          console.error('❌ Error fetching peak viewing times:', error);
+          return { byHour: [], byDay: [], peakHour: 'N/A', peakDay: 'N/A' };
         }
       });
     }
