@@ -1,11 +1,18 @@
 // js/creator-analytics.js — Complete Creator Analytics Class with CSV Export
 // Bantu Stream Connect — Phase 5B Implementation
-// ✅ FIXED: Table names corrected to 'Content' (capital C)
+// ✅ FIXED: Added initialization lock to prevent multiple instances
 
 (function() {
   'use strict';
   
   console.log('📊 CreatorAnalytics module loading...');
+
+  // Global lock to prevent multiple initializations
+  if (window._creatorAnalyticsLoading) {
+    console.log('⚠️ CreatorAnalytics already loading, skipping duplicate');
+    return;
+  }
+  window._creatorAnalyticsLoading = true;
 
   class CreatorAnalytics {
     constructor(config) {
@@ -54,6 +61,9 @@
       // Callbacks
       this.onDataLoaded = options.onDataLoaded || null;
       this.onError = options.onError || null;
+      
+      // Flag to prevent multiple fetches
+      this._isFetching = false;
       
       console.log('✅ CreatorAnalytics initialized for user: ' + (this.userId || 'guest'));
     }
@@ -107,6 +117,21 @@
       const cached = this._getCache(cacheKey);
       if (cached) return cached;
 
+      // Prevent multiple simultaneous fetches
+      if (this._isFetching) {
+        console.log('⏳ Waiting for existing fetch to complete...');
+        return new Promise((resolve) => {
+          const checkInterval = setInterval(() => {
+            if (!this._isFetching) {
+              clearInterval(checkInterval);
+              resolve(this._getCache(cacheKey) || this._getEmptySummary());
+            }
+          }, 100);
+        });
+      }
+
+      this._isFetching = true;
+
       try {
         // First try materialized view (fastest)
         let summary = await this._getFromMaterializedView();
@@ -137,6 +162,8 @@
         console.error('❌ Error fetching dashboard summary:', error);
         if (this.onError) this.onError(error);
         return this._getEmptySummary();
+      } finally {
+        this._isFetching = false;
       }
     }
 
@@ -145,6 +172,26 @@
     // ============================================
     async getDashboardData(timeRange = '30days') {
       if (!this.userId) throw new Error('User not authenticated');
+      
+      // Prevent multiple simultaneous fetches
+      if (this._isFetching) {
+        console.log('⏳ Waiting for existing fetch to complete...');
+        return new Promise((resolve) => {
+          const checkInterval = setInterval(() => {
+            if (!this._isFetching) {
+              clearInterval(checkInterval);
+              resolve(this._getCache(`dashboard_${timeRange}`) || {
+                summary: this._getEmptySummary(),
+                content: [],
+                timeRange,
+                timestamp: new Date().toISOString()
+              });
+            }
+          }, 100);
+        });
+      }
+
+      this._isFetching = true;
       
       try {
         console.log('📊 Fetching dashboard data for range:', timeRange);
@@ -168,6 +215,9 @@
           timestamp: new Date().toISOString()
         };
         
+        // Cache the full dashboard data
+        this._setCache(`dashboard_${timeRange}`, result);
+        
         // Trigger callback
         if (this.onDataLoaded) {
           this.onDataLoaded(result);
@@ -184,6 +234,8 @@
           timeRange,
           error: error.message
         };
+      } finally {
+        this._isFetching = false;
       }
     }
 
@@ -921,6 +973,9 @@
 
   // Make available globally
   window.CreatorAnalytics = CreatorAnalytics;
+  
+  // Release the lock
+  window._creatorAnalyticsLoading = false;
   
   console.log('✅ CreatorAnalytics module loaded successfully');
   
