@@ -255,8 +255,8 @@
   <!-- Toast Container -->
   <div id="toast-container"></div>
 
-  <!-- ============================================ -->
-  <!-- SCRIPTS - CRITICAL ORDER -->
+   <!-- ============================================ -->
+  <!-- SCRIPTS - CRITICAL ORDER WITH INITIALIZATION LOCK -->
   <!-- ============================================ -->
   
   <!-- 1. Supabase Helper (MUST load first) -->
@@ -271,86 +271,30 @@
   <!-- 4. Analytics Page Controller (loads LAST) -->
   <script src="js/creator-analytics-page.js"></script>
   
-  <!-- 5. Inline initialization and error recovery -->
+  <!-- 5. Minimal inline initialization (no retry loops) -->
   <script>
     (function() {
       'use strict';
 
-      console.log('📊 Analytics page DOM ready - running initialization checks');
+      console.log('📊 Analytics page DOM ready - waiting for initialization...');
 
-      // Helper function to safely get elements
-      function getElement(id) {
-        return document.getElementById(id);
-      }
-
-      // Helper function to hide loading and show error
-      function showError(message) {
-        console.error('❌ Analytics error:', message);
-
-        const loading = getElement('analytics-loading');
-        const error = getElement('analytics-error');
-        const errorMessage = getElement('error-message');
-
-        if (loading) loading.style.display = 'none';
-        if (error) {
-          error.style.display = 'flex';
-          if (errorMessage) errorMessage.textContent = message;
-        }
-      }
-
-      // Check if critical modules are loaded
+      // Simple check - if not initialized after timeout, show error
       setTimeout(function() {
-        // Check if CreatorAnalytics module is loaded
-        if (typeof window.CreatorAnalytics === 'undefined') {
-          console.error('❌ CreatorAnalytics module not found after timeout');
-          showError('Analytics module failed to load. Please refresh the page.');
-          return;
-        }
-
-        // Check if page script is initialized
         if (!window.analyticsPageInitialized) {
-          console.log('🔄 Page script not auto-initialized, attempting manual initialization...');
-
-          // Try to initialize if function exists
-          if (typeof window.initializeAnalyticsPage === 'function') {
-            window.initializeAnalyticsPage().catch(function(err) {
-              console.error('❌ Manual initialization failed:', err);
-              showError('Failed to initialize analytics: ' + err.message);
-            });
-          } else {
-            console.error('❌ initializeAnalyticsPage function not found');
-            showError('Analytics controller failed to load. Please refresh the page.');
+          console.error('❌ Analytics page failed to initialize after timeout');
+          
+          // Show error message
+          const loading = document.getElementById('analytics-loading');
+          const error = document.getElementById('analytics-error');
+          const errorMessage = document.getElementById('error-message');
+          
+          if (loading) loading.style.display = 'none';
+          if (error) {
+            error.style.display = 'flex';
+            if (errorMessage) errorMessage.textContent = 'Analytics failed to load. Please refresh the page.';
           }
-        } else {
-          console.log('✅ Analytics page already initialized successfully');
         }
-      }, 3000); // 3 second timeout for initialization
-
-      // Also check after DOM is fully loaded
-      document.addEventListener('DOMContentLoaded', function() {
-        console.log('📊 DOM fully loaded');
-
-        // If after 1 second the page still isn't initialized, check again
-        setTimeout(function() {
-          if (!window.analyticsPageInitialized) {
-            console.log('⚠️ Page not initialized 1s after DOM ready, checking status...');
-
-            // Check if we're stuck on loading screen
-            const loading = getElement('analytics-loading');
-            if (loading && loading.style.display !== 'none') {
-              console.warn('⚠️ Still on loading screen, attempting recovery...');
-
-              // Try to initialize again
-              if (typeof window.initializeAnalyticsPage === 'function') {
-                window.initializeAnalyticsPage().catch(function(err) {
-                  console.error('❌ Recovery initialization failed:', err);
-                });
-              }
-            }
-          }
-        }, 1000);
-      });
-
+      }, 10000); // 10 second timeout
     })();
   </script>
 
