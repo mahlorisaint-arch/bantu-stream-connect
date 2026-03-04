@@ -1,6 +1,6 @@
 // js/creator-analytics.js — Complete Creator Analytics Class with CSV Export
 // Bantu Stream Connect — Phase 5B Implementation
-// ✅ FIXED: Changed all queries to use user_id instead of creator_id based on schema
+// ✅ FIXED: All metrics now show correct data (Watch Time, Avg Duration, Completion Rate, Engagement)
 
 (function() {
   'use strict';
@@ -127,14 +127,9 @@
           // If materialized view not ready, calculate on the fly
           if (!summary) {
             summary = await this._calculateSummary(timeRange);
-          }
-
-          // Add monetization status (handle 404 gracefully)
-          try {
-            summary.is_eligible_for_monetization = await this._checkMonetizationEligibility();
-          } catch (e) {
-            console.warn('⚠️ Monetization check not available:', e.message);
-            summary.is_eligible_for_monetization = false;
+          } else {
+            // Add calculated fields that might not be in materialized view
+            summary = await this._enrichSummaryWithWatchTime(summary, timeRange);
           }
 
           this._setCache(cacheKey, summary);
@@ -151,6 +146,91 @@
           return this._getEmptySummary();
         }
       });
+    }
+
+    // ============================================
+    // ✅ ENRICH SUMMARY WITH WATCH TIME DATA
+    // ============================================
+    async _enrichSummaryWithWatchTime(summary, timeRange) {
+      try {
+        const dateFilter = this._getDateFilter(timeRange);
+        
+        // Get all content IDs for this user
+        const { data: content, error: contentError } = await this.supabase
+          .from('Content')
+          .select('id, duration')
+          .eq('user_id', this.userId);
+
+        if (contentError) throw contentError;
+        
+        if (content.length === 0) {
+          return {
+            ...summary,
+            total_watch_time: 0,
+            avg_completion_rate: 0
+          };
+        }
+
+        const contentIds = content.map(c => c.id);
+
+        // Get watch time data for the time period
+        const { data: views, error: viewsError } = await this.supabase
+          .from('content_views')
+          .select('watch_time, content_id')
+          .in('content_id', contentIds)
+          .gte('viewed_at', dateFilter);
+
+        if (viewsError) throw viewsError;
+
+        const totalWatchTime = views.reduce((sum, v) => sum + (v.watch_time || 0), 0);
+        
+        // Calculate average completion rate
+        let avgCompletionRate = 0;
+        if (views.length > 0 && content.length > 0) {
+          // Group views by content to calculate per-content completion
+          const viewsByContent = {};
+          views.forEach(view => {
+            if (!viewsByContent[view.content_id]) {
+              viewsByContent[view.content_id] = {
+                totalWatchTime: 0,
+                viewCount: 0
+              };
+            }
+            viewsByContent[view.content_id].totalWatchTime += view.watch_time || 0;
+            viewsByContent[view.content_id].viewCount++;
+          });
+
+          // Calculate average completion rate across all views
+          let totalCompletionRate = 0;
+          let validContentCount = 0;
+
+          content.forEach(item => {
+            const contentViews = viewsByContent[item.id];
+            if (contentViews && item.duration > 0) {
+              const avgWatchTimePerView = contentViews.totalWatchTime / contentViews.viewCount;
+              const completionRate = (avgWatchTimePerView / item.duration) * 100;
+              totalCompletionRate += Math.min(100, completionRate);
+              validContentCount++;
+            }
+          });
+
+          avgCompletionRate = validContentCount > 0 ? totalCompletionRate / validContentCount : 0;
+        }
+
+        return {
+          ...summary,
+          total_watch_time: totalWatchTime,
+          avg_completion_rate: Math.round(avgCompletionRate * 100) / 100
+        };
+
+      } catch (error) {
+        console.warn('⚠️ Could not enrich summary with watch time:', error);
+        return {
+          ...summary,
+          total_watch_time: 0,
+          avg_completion_rate: 0
+        };
+      }
     }
 
     // ============================================
@@ -242,6 +322,11 @@
           .maybeSingle();
 
         if (error) throw error;
+        
+        if (data) {
+          console.log('📊 Materialized view data:', data);
+        }
+        
         return data || null;
 
       } catch (error) {
@@ -251,16 +336,16 @@
     }
 
     // ============================================
-    // ✅ CALCULATE SUMMARY ON THE FLY - FIXED
+    // ✅ CALCULATE SUMMARY ON THE FLY
     // ============================================
     async _calculateSummary(timeRange) {
       const dateFilter = this._getDateFilter(timeRange);
 
-      // Get all content for this creator - Using user_id not creator_id
+      // Get all content for this creator - Using user_id
       const { data: content, error: contentError } = await this.supabase
         .from('Content')
-        .select('id, duration')
-        .eq('user_id', this.userId);  // Changed from creator_id to user_id
+        .select('id, duration, views_count, likes_count, comments_count')
+        .eq('user_id', this.userId);
 
       if (contentError) throw contentError;
 
@@ -283,13 +368,16 @@
       const uniqueViewers = new Set(viewsData.map(v => v.viewer_id)).size;
       const totalWatchTime = viewsData.reduce((sum, v) => sum + (v.watch_time || 0), 0);
       
-      // Get total connectors (unique users who engaged)
+      // Calculate total likes and comments from content table
+      const totalLikes = content.reduce((sum, c) => sum + (c.likes_count || 0), 0);
+      const totalComments = content.reduce((sum, c) => sum + (c.comments_count || 0), 0);
+      
+      // Get total connectors
       const { count: connectorsCount, error: connectorsError } = await this.supabase
-        .from('content_views')
-        .select('viewer_id', { count: 'exact', head: true })
-        .in('content_id', contentIds)
-        .gte('viewed_at', dateFilter)
-        .eq('is_connector', true);
+        .from('connectors')
+        .select('*', { count: 'exact', head: true })
+        .eq('connected_id', this.userId)
+        .eq('connection_type', 'creator');
 
       if (connectorsError) throw connectorsError;
 
@@ -306,17 +394,44 @@
 
       // Calculate engagement percentage
       const engagementPercentage = totalViews > 0 
-        ? ((connectorsCount || 0) / totalViews) * 100 
+        ? ((totalLikes + totalComments) / totalViews) * 100 
         : 0;
 
       // Calculate average completion rate
       let avgCompletionRate = 0;
-      if (totalViews > 0 && content.length > 0) {
-        const totalPossibleWatchTime = content.reduce((sum, c) => sum + (c.duration || 0), 0) * totalViews;
-        avgCompletionRate = totalPossibleWatchTime > 0 
-          ? (totalWatchTime / totalPossibleWatchTime) * 100 
-          : 0;
+      if (viewsData.length > 0 && content.length > 0) {
+        // Group views by content
+        const viewsByContent = {};
+        viewsData.forEach(view => {
+          if (!viewsByContent[view.content_id]) {
+            viewsByContent[view.content_id] = {
+              totalWatchTime: 0,
+              viewCount: 0
+            };
+          }
+          viewsByContent[view.content_id].totalWatchTime += view.watch_time || 0;
+          viewsByContent[view.content_id].viewCount++;
+        });
+
+        // Calculate average completion rate across all views
+        let totalCompletionRate = 0;
+        let validContentCount = 0;
+
+        content.forEach(item => {
+          const contentViews = viewsByContent[item.id];
+          if (contentViews && item.duration > 0) {
+            const avgWatchTimePerView = contentViews.totalWatchTime / contentViews.viewCount;
+            const completionRate = (avgWatchTimePerView / item.duration) * 100;
+            totalCompletionRate += Math.min(100, completionRate);
+            validContentCount++;
+          }
+        });
+
+        avgCompletionRate = validContentCount > 0 ? totalCompletionRate / validContentCount : 0;
       }
+
+      // Check monetization eligibility
+      const isEligibleForMonetization = content.length >= 10 && totalViews >= 1000;
 
       return {
         creator_id: this.userId,
@@ -324,31 +439,15 @@
         total_views: totalViews,
         total_watch_time: totalWatchTime,
         unique_viewers: uniqueViewers,
+        total_likes: totalLikes,
+        total_comments: totalComments,
         total_connectors: connectorsCount || 0,
-        avg_completion_rate: Math.round(avgCompletionRate * 100) / 100,
         total_earnings: totalEarnings,
         engagement_percentage: Math.round(engagementPercentage * 100) / 100,
+        avg_completion_rate: Math.round(avgCompletionRate * 100) / 100,
+        is_eligible_for_monetization: isEligibleForMonetization,
         calculated_at: new Date().toISOString()
       };
-    }
-
-    // ============================================
-    // ✅ CHECK MONETIZATION ELIGIBILITY
-    // ============================================
-    async _checkMonetizationEligibility() {
-      try {
-        const { data, error } = await this.supabase
-          .rpc('check_monetization_eligibility', {
-            p_creator_id: this.userId
-          });
-
-        if (error) throw error;
-        return data || false;
-
-      } catch (error) {
-        console.warn('⚠️ Could not check monetization eligibility:', error);
-        return false;
-      }
     }
 
     // ============================================
@@ -367,11 +466,11 @@
           
           const dateFilter = this._getDateFilter(timeRange);
 
-          // Get all content for this creator - Using user_id not creator_id
+          // Get all content for this creator - Using user_id
           const { data: content, error: contentError } = await this.supabase
             .from('Content')
-            .select('id, title, created_at, duration, thumbnail_url, views_count, user_id')
-            .eq('user_id', this.userId)  // Changed from creator_id to user_id
+            .select('id, title, created_at, duration, thumbnail_url, views_count, likes_count, comments_count, user_id')
+            .eq('user_id', this.userId)
             .order('created_at', { ascending: false });
 
           if (contentError) {
@@ -389,11 +488,12 @@
           const contentIds = content.map(c => c.id);
           console.log('📊 Content IDs:', contentIds);
 
-          // Get view analytics for all time (remove date filter temporarily to debug)
+          // Get view analytics for the time period
           const { data: views, error: viewsError } = await this.supabase
             .from('content_views')
             .select('content_id, viewer_id, watch_time')
-            .in('content_id', contentIds);
+            .in('content_id', contentIds)
+            .gte('viewed_at', dateFilter);
 
           if (viewsError) {
             console.warn('⚠️ Error fetching views:', viewsError);
@@ -405,12 +505,15 @@
                 uniqueViewers: 0,
                 totalWatchTime: 0,
                 avgWatchTime: 0,
-                avgCompletionRate: 0
+                avgCompletionRate: 0,
+                totalLikes: item.likes_count || 0,
+                totalComments: item.comments_count || 0,
+                engagementRate: 0
               }
             }));
           }
 
-          console.log(`📊 Found ${views?.length || 0} view records`);
+          console.log(`📊 Found ${views?.length || 0} view records for time range`);
 
           // Group views by content
           const viewsByContent = {};
@@ -427,7 +530,7 @@
             viewsByContent[view.content_id].totalWatchTime += view.watch_time || 0;
           });
 
-          // Calculate averages and completion rates
+          // Calculate averages, completion rates, and engagement
           const contentWithAnalytics = content.map(item => {
             const analytics = viewsByContent[item.id] || {
               totalViews: 0,
@@ -443,6 +546,12 @@
               ? (avgWatchTime / item.duration) * 100
               : 0;
 
+            // Calculate engagement rate (likes + comments) / views * 100
+            const totalEngagements = (item.likes_count || 0) + (item.comments_count || 0);
+            const engagementRate = analytics.totalViews > 0
+              ? (totalEngagements / analytics.totalViews) * 100
+              : 0;
+
             return {
               ...item,
               analytics: {
@@ -450,7 +559,10 @@
                 uniqueViewers: analytics.uniqueViewers.size,
                 totalWatchTime: analytics.totalWatchTime,
                 avgWatchTime: Math.round(avgWatchTime * 100) / 100,
-                avgCompletionRate: Math.min(100, Math.round(avgCompletionRate * 100) / 100) // Cap at 100%
+                avgCompletionRate: Math.min(100, Math.round(avgCompletionRate * 100) / 100), // Cap at 100%
+                totalLikes: item.likes_count || 0,
+                totalComments: item.comments_count || 0,
+                engagementRate: Math.round(engagementRate * 100) / 100
               }
             };
           });
@@ -462,11 +574,17 @@
           const result = sorted.slice(0, limit);
           
           console.log(`📊 Returning ${result.length} content items with analytics`);
-          console.log('📊 First item sample:', result[0] ? {
-            id: result[0].id,
-            title: result[0].title,
-            views: result[0].analytics?.totalViews
-          } : 'No items');
+          if (result.length > 0) {
+            console.log('📊 First item sample:', {
+              id: result[0].id,
+              title: result[0].title,
+              views: result[0].analytics?.totalViews,
+              watchTime: result[0].analytics?.totalWatchTime,
+              avgDuration: result[0].analytics?.avgWatchTime,
+              completionRate: result[0].analytics?.avgCompletionRate,
+              engagementRate: result[0].analytics?.engagementRate
+            });
+          }
           
           this._setCache(cacheKey, result);
           return result;
@@ -479,7 +597,7 @@
     }
 
     // ============================================
-    // ✅ GET WATCH TIME BY DATE - FIXED
+    // ✅ GET WATCH TIME BY DATE
     // ============================================
     async getWatchTimeByDate(timeRange = '30days') {
       if (!this.userId) throw new Error('User not authenticated');
@@ -492,11 +610,11 @@
         try {
           const dateFilter = this._getDateFilter(timeRange);
 
-          // Get user's content IDs - Using user_id
+          // Get user's content IDs
           const { data: content, error: contentError } = await this.supabase
             .from('Content')
             .select('id')
-            .eq('user_id', this.userId);  // Changed from creator_id to user_id
+            .eq('user_id', this.userId);
 
           if (contentError) throw contentError;
 
@@ -615,9 +733,11 @@
           rows.push(['Total Watch Time (hours)', summary?.total_watch_time ? Math.round((summary.total_watch_time / 3600) * 100) / 100 : 0]);
           rows.push(['Unique Viewers', summary?.unique_viewers || 0]);
           rows.push(['Avg. Completion Rate (%)', summary?.avg_completion_rate || 0]);
+          rows.push(['Total Likes', summary?.total_likes || 0]);
+          rows.push(['Total Comments', summary?.total_comments || 0]);
+          rows.push(['Engagement Rate (%)', summary?.engagement_percentage || 0]);
           rows.push(['Total Earnings (ZAR)', summary?.total_earnings?.toFixed(2) || '0.00']);
           rows.push(['Total Connectors', summary?.total_connectors || 0]);
-          rows.push(['Engagement Percentage (%)', summary?.engagement_percentage?.toFixed(2) || '0.00']);
           rows.push(['Monetization Eligible', summary?.is_eligible_for_monetization ? 'Yes' : 'No']);
           rows.push([]); // Empty row
           
@@ -636,6 +756,7 @@
               'Avg. Completion Rate (%)',
               'Likes',
               'Comments',
+              'Engagement Rate (%)',
               'Shares',
               'Earnings (ZAR)'
             ]);
@@ -657,8 +778,9 @@
                 analytics.totalWatchTime || 0,
                 analytics.avgWatchTime || 0,
                 analytics.avgCompletionRate || 0,
-                engagement.likes || 0,
-                engagement.comments || 0,
+                analytics.totalLikes || 0,
+                analytics.totalComments || 0,
+                analytics.engagementRate || 0,
                 engagement.shares || 0,
                 earnings.toFixed(2)
               ]);
@@ -719,7 +841,7 @@
     }
 
     // ============================================
-    // ✅ GET AUDIENCE LOCATIONS - FIXED
+    // ✅ GET AUDIENCE LOCATIONS
     // ============================================
     async getAudienceLocations(timeRange = '30days') {
       if (!this.userId) throw new Error('User not authenticated');
@@ -728,11 +850,11 @@
         try {
           const dateFilter = this._getDateFilter(timeRange);
 
-          // Get user's content IDs - Using user_id
+          // Get user's content IDs
           const { data: content, error: contentError } = await this.supabase
             .from('Content')
             .select('id')
-            .eq('user_id', this.userId);  // Changed from creator_id to user_id
+            .eq('user_id', this.userId);
 
           if (contentError) throw contentError;
 
@@ -792,7 +914,7 @@
     }
 
     // ============================================
-    // ✅ GET DEVICE BREAKDOWN - FIXED
+    // ✅ GET DEVICE BREAKDOWN
     // ============================================
     async getDeviceBreakdown(timeRange = '30days') {
       if (!this.userId) throw new Error('User not authenticated');
@@ -801,11 +923,11 @@
         try {
           const dateFilter = this._getDateFilter(timeRange);
 
-          // Get user's content IDs - Using user_id
+          // Get user's content IDs
           const { data: content, error: contentError } = await this.supabase
             .from('Content')
             .select('id')
-            .eq('user_id', this.userId);  // Changed from creator_id to user_id
+            .eq('user_id', this.userId);
 
           if (contentError) throw contentError;
 
@@ -939,7 +1061,7 @@
     }
 
     // ============================================
-    // ✅ HELPER: Sort content by metric - FIXED
+    // ✅ HELPER: Sort content by metric
     // ============================================
     _sortContent(content, sortBy) {
       return [...content].sort((a, b) => {
@@ -954,7 +1076,7 @@
           case 'completion':
             return (bAnalytics.avgCompletionRate || 0) - (aAnalytics.avgCompletionRate || 0);
           case 'engagement':
-            return (bAnalytics.totalViews || 0) - (aAnalytics.totalViews || 0);
+            return (bAnalytics.engagementRate || 0) - (aAnalytics.engagementRate || 0);
           default:
             return (bAnalytics.totalViews || 0) - (aAnalytics.totalViews || 0);
         }
@@ -971,10 +1093,12 @@
         total_views: 0,
         total_watch_time: 0,
         unique_viewers: 0,
+        total_likes: 0,
+        total_comments: 0,
         total_connectors: 0,
-        avg_completion_rate: 0,
         total_earnings: 0,
         engagement_percentage: 0,
+        avg_completion_rate: 0,
         is_eligible_for_monetization: false,
         calculated_at: new Date().toISOString()
       };
