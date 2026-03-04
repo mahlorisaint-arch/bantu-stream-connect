@@ -1,6 +1,6 @@
 // js/creator-analytics.js — Complete Creator Analytics Class with CSV Export
 // Bantu Stream Connect — Phase 5B Implementation
-// ✅ FIXED: Using correct column names from database schema
+// ✅ FIXED: All metrics now show correct data (Watch Time, Avg Duration, Completion Rate, Engagement)
 
 (function() {
   'use strict';
@@ -173,93 +173,41 @@
 
         const contentIds = content.map(c => c.id);
 
-        // Try to determine the correct column name for watch duration
-        // First, try to get a sample row to see available columns
-        try {
-          const { data: sampleView } = await this.supabase
-            .from('content_views')
-            .select('*')
-            .limit(1);
-          
-          if (sampleView && sampleView.length > 0) {
-            console.log('📊 Sample content_views columns:', Object.keys(sampleView[0]));
-          }
-        } catch (e) {
-          console.warn('⚠️ Could not get sample view:', e);
-        }
-
-        // Try different possible column names for watch duration
-        const possibleColumns = ['view_duration', 'duration', 'watch_time', 'time_watched', 'seconds_viewed'];
-        let watchTimeData = [];
-        let usedColumn = null;
-        
-        for (const column of possibleColumns) {
-          try {
-            const { data, error } = await this.supabase
-              .from('content_views')
-              .select(`content_id, ${column}`)
-              .in('content_id', contentIds)
-              .gte('viewed_at', dateFilter);
-            
-            if (!error && data) {
-              console.log(`✅ Found watch time column: ${column}`);
-              watchTimeData = data;
-              usedColumn = column;
-              break;
-            }
-          } catch (e) {
-            // Try next column
-          }
-        }
-
-        if (!usedColumn) {
-          console.warn('⚠️ Could not find watch time column, using default value 0');
-          return {
-            ...summary,
-            total_watch_time: 0,
-            avg_completion_rate: 0
-          };
-        }
-
-        // Calculate total watch time
-        const totalWatchTime = watchTimeData.reduce((sum, v) => sum + (v[usedColumn] || 0), 0);
-        
-        // Calculate average completion rate
-        let avgCompletionRate = 0;
-        
-        // Get view counts per content
-        const { data: viewCounts, error: countError } = await this.supabase
+        // Get watch time data for the time period
+        const { data: views, error: viewsError } = await this.supabase
           .from('content_views')
-          .select('content_id, count')
+          .select('watch_time, content_id')
           .in('content_id', contentIds)
           .gte('viewed_at', dateFilter);
 
-        if (!countError && viewCounts) {
-          // Group watch time by content
-          const watchTimeByContent = {};
-          watchTimeData.forEach(item => {
-            if (!watchTimeByContent[item.content_id]) {
-              watchTimeByContent[item.content_id] = 0;
+        if (viewsError) throw viewsError;
+
+        const totalWatchTime = views.reduce((sum, v) => sum + (v.watch_time || 0), 0);
+        
+        // Calculate average completion rate
+        let avgCompletionRate = 0;
+        if (views.length > 0 && content.length > 0) {
+          // Group views by content to calculate per-content completion
+          const viewsByContent = {};
+          views.forEach(view => {
+            if (!viewsByContent[view.content_id]) {
+              viewsByContent[view.content_id] = {
+                totalWatchTime: 0,
+                viewCount: 0
+              };
             }
-            watchTimeByContent[item.content_id] += item[usedColumn] || 0;
+            viewsByContent[view.content_id].totalWatchTime += view.watch_time || 0;
+            viewsByContent[view.content_id].viewCount++;
           });
 
-          // Group view counts by content
-          const viewCountByContent = {};
-          viewCounts.forEach(item => {
-            viewCountByContent[item.content_id] = item.count;
-          });
-
-          // Calculate completion rate for each content
+          // Calculate average completion rate across all views
           let totalCompletionRate = 0;
           let validContentCount = 0;
 
           content.forEach(item => {
-            const totalWatchTimeForContent = watchTimeByContent[item.id] || 0;
-            const viewCount = viewCountByContent[item.id] || 0;
-            
-            if (viewCount > 0 && item.duration > 0) {
-              const avgWatchTimePerView = totalWatchTimeForContent / viewCount;
+            const contentViews = viewsByContent[item.id];
+            if (contentViews && item.duration > 0) {
+              const avgWatchTimePerView = contentViews.totalWatchTime / contentViews.viewCount;
               const completionRate = (avgWatchTimePerView / item.duration) * 100;
               totalCompletionRate += Math.min(100, completionRate);
               validContentCount++;
@@ -409,7 +357,7 @@
       // Get total views and unique viewers
       const { data: viewsData, error: viewsError } = await this.supabase
         .from('content_views')
-        .select('content_id, viewer_id, viewed_at')
+        .select('content_id, viewer_id, watch_time, viewed_at')
         .in('content_id', contentIds)
         .gte('viewed_at', dateFilter);
 
@@ -418,6 +366,7 @@
       // Calculate metrics
       const totalViews = viewsData.length;
       const uniqueViewers = new Set(viewsData.map(v => v.viewer_id)).size;
+      const totalWatchTime = viewsData.reduce((sum, v) => sum + (v.watch_time || 0), 0);
       
       // Calculate total likes and comments from content table
       const totalLikes = content.reduce((sum, c) => sum + (c.likes_count || 0), 0);
@@ -448,6 +397,39 @@
         ? ((totalLikes + totalComments) / totalViews) * 100 
         : 0;
 
+      // Calculate average completion rate
+      let avgCompletionRate = 0;
+      if (viewsData.length > 0 && content.length > 0) {
+        // Group views by content
+        const viewsByContent = {};
+        viewsData.forEach(view => {
+          if (!viewsByContent[view.content_id]) {
+            viewsByContent[view.content_id] = {
+              totalWatchTime: 0,
+              viewCount: 0
+            };
+          }
+          viewsByContent[view.content_id].totalWatchTime += view.watch_time || 0;
+          viewsByContent[view.content_id].viewCount++;
+        });
+
+        // Calculate average completion rate across all views
+        let totalCompletionRate = 0;
+        let validContentCount = 0;
+
+        content.forEach(item => {
+          const contentViews = viewsByContent[item.id];
+          if (contentViews && item.duration > 0) {
+            const avgWatchTimePerView = contentViews.totalWatchTime / contentViews.viewCount;
+            const completionRate = (avgWatchTimePerView / item.duration) * 100;
+            totalCompletionRate += Math.min(100, completionRate);
+            validContentCount++;
+          }
+        });
+
+        avgCompletionRate = validContentCount > 0 ? totalCompletionRate / validContentCount : 0;
+      }
+
       // Check monetization eligibility
       const isEligibleForMonetization = content.length >= 10 && totalViews >= 1000;
 
@@ -455,14 +437,14 @@
         creator_id: this.userId,
         total_uploads: content.length,
         total_views: totalViews,
-        total_watch_time: 0, // Will be enriched later
+        total_watch_time: totalWatchTime,
         unique_viewers: uniqueViewers,
         total_likes: totalLikes,
         total_comments: totalComments,
         total_connectors: connectorsCount || 0,
         total_earnings: totalEarnings,
         engagement_percentage: Math.round(engagementPercentage * 100) / 100,
-        avg_completion_rate: 0, // Will be enriched later
+        avg_completion_rate: Math.round(avgCompletionRate * 100) / 100,
         is_eligible_for_monetization: isEligibleForMonetization,
         calculated_at: new Date().toISOString()
       };
@@ -506,35 +488,16 @@
           const contentIds = content.map(c => c.id);
           console.log('📊 Content IDs:', contentIds);
 
-          // Try to determine the correct column name for watch duration
-          let watchTimeColumn = null;
-          let watchTimeData = [];
-          
-          // Try different possible column names
-          const possibleColumns = ['view_duration', 'duration', 'watch_time', 'time_watched', 'seconds_viewed'];
-          
-          for (const column of possibleColumns) {
-            try {
-              const { data, error } = await this.supabase
-                .from('content_views')
-                .select(`content_id, viewer_id, ${column}`)
-                .in('content_id', contentIds)
-                .gte('viewed_at', dateFilter);
-              
-              if (!error && data) {
-                console.log(`✅ Found watch time column for content: ${column}`);
-                watchTimeColumn = column;
-                watchTimeData = data;
-                break;
-              }
-            } catch (e) {
-              // Try next column
-            }
-          }
+          // Get view analytics for the time period
+          const { data: views, error: viewsError } = await this.supabase
+            .from('content_views')
+            .select('content_id, viewer_id, watch_time')
+            .in('content_id', contentIds)
+            .gte('viewed_at', dateFilter);
 
-          if (!watchTimeColumn) {
-            console.warn('⚠️ Could not find watch time column, returning content without watch time data');
-            // Return content with basic analytics
+          if (viewsError) {
+            console.warn('⚠️ Error fetching views:', viewsError);
+            // Return content without analytics if views fetch fails
             return content.map(item => ({
               ...item,
               analytics: {
@@ -545,31 +508,16 @@
                 avgCompletionRate: 0,
                 totalLikes: item.likes_count || 0,
                 totalComments: item.comments_count || 0,
-                engagementRate: item.views_count > 0 
-                  ? (((item.likes_count || 0) + (item.comments_count || 0)) / item.views_count) * 100 
-                  : 0
+                engagementRate: 0
               }
             }));
           }
 
-          console.log(`📊 Found ${watchTimeData?.length || 0} view records for time range`);
+          console.log(`📊 Found ${views?.length || 0} view records for time range`);
 
-          // Get view counts per content
-          const { data: viewCounts, error: countError } = await this.supabase
-            .from('content_views')
-            .select('content_id, count')
-            .in('content_id', contentIds)
-            .gte('viewed_at', dateFilter);
-
-          if (countError) {
-            console.warn('⚠️ Error fetching view counts:', countError);
-          }
-
-          // Group watch time and views by content
+          // Group views by content
           const viewsByContent = {};
-          
-          // Process watch time data
-          watchTimeData.forEach(view => {
+          views.forEach(view => {
             if (!viewsByContent[view.content_id]) {
               viewsByContent[view.content_id] = {
                 totalViews: 0,
@@ -577,24 +525,10 @@
                 totalWatchTime: 0
               };
             }
+            viewsByContent[view.content_id].totalViews++;
             viewsByContent[view.content_id].uniqueViewers.add(view.viewer_id);
-            viewsByContent[view.content_id].totalWatchTime += view[watchTimeColumn] || 0;
+            viewsByContent[view.content_id].totalWatchTime += view.watch_time || 0;
           });
-
-          // Add view counts
-          if (viewCounts) {
-            viewCounts.forEach(item => {
-              if (viewsByContent[item.content_id]) {
-                viewsByContent[item.content_id].totalViews = item.count;
-              } else {
-                viewsByContent[item.content_id] = {
-                  totalViews: item.count,
-                  uniqueViewers: new Set(),
-                  totalWatchTime: 0
-                };
-              }
-            });
-          }
 
           // Calculate averages, completion rates, and engagement
           const contentWithAnalytics = content.map(item => {
@@ -690,70 +624,19 @@
 
           const contentIds = content.map(c => c.id);
 
-          // Try to find the watch duration column
-          let watchTimeColumn = null;
-          let viewsData = [];
-          
-          const possibleColumns = ['view_duration', 'duration', 'watch_time', 'time_watched', 'seconds_viewed'];
-          
-          for (const column of possibleColumns) {
-            try {
-              const { data, error } = await this.supabase
-                .from('content_views')
-                .select(`viewed_at, ${column}`)
-                .in('content_id', contentIds)
-                .gte('viewed_at', dateFilter)
-                .order('viewed_at');
-              
-              if (!error && data) {
-                watchTimeColumn = column;
-                viewsData = data;
-                break;
-              }
-            } catch (e) {
-              // Try next column
-            }
-          }
+          // Get daily watch time
+          const { data: views, error: viewsError } = await this.supabase
+            .from('content_views')
+            .select('viewed_at, watch_time')
+            .in('content_id', contentIds)
+            .gte('viewed_at', dateFilter)
+            .order('viewed_at');
 
-          if (!watchTimeColumn) {
-            // If no watch time column, just get view counts
-            const { data: views, error: viewsError } = await this.supabase
-              .from('content_views')
-              .select('viewed_at')
-              .in('content_id', contentIds)
-              .gte('viewed_at', dateFilter)
-              .order('viewed_at');
+          if (viewsError) throw viewsError;
 
-            if (viewsError) throw viewsError;
-
-            // Group by date with zero watch time
-            const dailyData = {};
-            views.forEach(view => {
-              const date = new Date(view.viewed_at).toISOString().split('T')[0];
-              if (!dailyData[date]) {
-                dailyData[date] = {
-                  date,
-                  views: 0,
-                  watchTime: 0
-                };
-              }
-              dailyData[date].views++;
-            });
-
-            // Convert to array and fill missing dates
-            const result = this._fillMissingDates(
-              Object.values(dailyData),
-              dateFilter,
-              new Date().toISOString().split('T')[0]
-            );
-
-            this._setCache(cacheKey, result);
-            return result;
-          }
-
-          // Group by date with watch time
+          // Group by date
           const dailyData = {};
-          viewsData.forEach(view => {
+          views.forEach(view => {
             const date = new Date(view.viewed_at).toISOString().split('T')[0];
             if (!dailyData[date]) {
               dailyData[date] = {
@@ -763,7 +646,7 @@
               };
             }
             dailyData[date].views++;
-            dailyData[date].watchTime += view[watchTimeColumn] || 0;
+            dailyData[date].watchTime += view.watch_time || 0;
           });
 
           // Convert to array and fill missing dates
