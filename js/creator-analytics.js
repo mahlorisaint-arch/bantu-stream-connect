@@ -1,6 +1,6 @@
 // js/creator-analytics.js — Complete Creator Analytics Class with CSV Export
 // Bantu Stream Connect — Phase 5B Implementation
-// ✅ FIXED: Proper constructor initialization, field mapping, and error handling
+// ✅ FIXED: Table names corrected to 'Content' (capital C)
 
 (function() {
   'use strict';
@@ -116,8 +116,13 @@
           summary = await this._calculateSummary(timeRange);
         }
 
-        // Add monetization status
-        summary.is_eligible_for_monetization = await this._checkMonetizationEligibility();
+        // Add monetization status (handle 404 gracefully)
+        try {
+          summary.is_eligible_for_monetization = await this._checkMonetizationEligibility();
+        } catch (e) {
+          console.warn('⚠️ Monetization check not available:', e.message);
+          summary.is_eligible_for_monetization = false;
+        }
 
         this._setCache(cacheKey, summary);
         
@@ -147,8 +152,14 @@
         // Get summary
         const summary = await this.getDashboardSummary(timeRange);
         
-        // Get content list with analytics
-        const content = await this.getContentList(timeRange, 'views', 50);
+        // Get content list with analytics - FIXED: Changed 'content' to 'Content'
+        let content = [];
+        try {
+          content = await this.getContentList(timeRange, 'views', 50);
+        } catch (e) {
+          console.warn('⚠️ Could not fetch content list:', e.message);
+          content = [];
+        }
         
         const result = {
           summary,
@@ -202,9 +213,9 @@
     async _calculateSummary(timeRange) {
       const dateFilter = this._getDateFilter(timeRange);
 
-      // Get all content for this creator
+      // Get all content for this creator - FIXED: Changed 'content' to 'Content'
       const { data: content, error: contentError } = await this.supabase
-        .from('content')
+        .from('Content')
         .select('id, duration')
         .eq('creator_id', this.userId);
 
@@ -310,9 +321,9 @@
       try {
         const dateFilter = this._getDateFilter(timeRange);
 
-        // Get all content
+        // Get all content - FIXED: Changed 'content' to 'Content'
         const { data: content, error: contentError } = await this.supabase
-          .from('content')
+          .from('Content')
           .select('id, title, created_at, duration, thumbnail_url, views_count')
           .eq('creator_id', this.userId)
           .order('created_at', { ascending: false });
@@ -406,9 +417,9 @@
       try {
         const dateFilter = this._getDateFilter(timeRange);
 
-        // Get user's content IDs
+        // Get user's content IDs - FIXED: Changed 'content' to 'Content'
         const { data: content, error: contentError } = await this.supabase
-          .from('content')
+          .from('Content')
           .select('id')
           .eq('creator_id', this.userId);
 
@@ -639,9 +650,9 @@
       try {
         const dateFilter = this._getDateFilter(timeRange);
 
-        // Get user's content IDs
+        // Get user's content IDs - FIXED: Changed 'content' to 'Content'
         const { data: content, error: contentError } = await this.supabase
-          .from('content')
+          .from('Content')
           .select('id')
           .eq('creator_id', this.userId);
 
@@ -710,9 +721,9 @@
       try {
         const dateFilter = this._getDateFilter(timeRange);
 
-        // Get user's content IDs
+        // Get user's content IDs - FIXED: Changed 'content' to 'Content'
         const { data: content, error: contentError } = await this.supabase
-          .from('content')
+          .from('Content')
           .select('id')
           .eq('creator_id', this.userId);
 
