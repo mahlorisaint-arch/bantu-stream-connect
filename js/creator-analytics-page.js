@@ -1,6 +1,6 @@
 // js/creator-analytics-page.js — Dedicated Analytics Page Controller
 // Bantu Stream Connect — Phase 5B Implementation
-// ✅ FIXED: Increased timeout and improved error handling
+// ✅ FIXED: Top content table now correctly displays all metrics (Watch Time, Avg Duration, Completion Rate, Engagement)
 
 (function() {
   'use strict';
@@ -590,7 +590,7 @@
   }
 
   // ============================================
-  // TOP CONTENT TABLE - IMPROVED VERSION
+  // ✅ FIXED: TOP CONTENT TABLE RENDERING
   // ============================================
   async function loadTopContent(contentList) {
     const tbody = dom.topContentBody;
@@ -613,25 +613,71 @@
     
     console.log('📊 Rendering', contentList.length, 'content items');
     
-    // Use the analytics data directly from the content items
-    const itemsToRender = contentList.slice(0, 10);
+    // Render the table with proper metric extraction
+    renderTopContentTable(contentList);
+  }
+
+  // ✅ NEW: Dedicated function for rendering the table
+  function renderTopContentTable(items) {
+    const tbody = dom.topContentBody;
+    if (!tbody) return;
     
-    tbody.innerHTML = itemsToRender.map(function(item) {
-      // The item might have the content data directly or in a Content property
+    console.log('📊 Rendering top content table with', items.length, 'items');
+    
+    tbody.innerHTML = items.map(function(item, index) {
+      // Handle both nested and flat data structures
       const content = item.Content || item;
-      const analytics = item.analytics || {};
+      const analytics = item.analytics || item; // Fallback to item if analytics not nested
       
       const title = content.title || 'Untitled';
-      const thumbnail = content.thumbnail_url || 'https://via.placeholder.com/60x34';
-      const views = analytics.totalViews || content.views_count || 0;
-      const watchTime = analytics.totalWatchTime || 0;
-      const avgDuration = analytics.avgWatchTime || 0;
-      const completion = analytics.avgCompletionRate || 0;
-      const contentId = content.id || 'unknown';
+      const contentId = content.id || item.id;
       
-      // Format the watch time properly
-      const formattedWatchTime = formatWatchTime(watchTime);
-      const formattedAvgDuration = formatWatchTime(avgDuration);
+      // Get thumbnail with proper URL fixing
+      const thumbnail = content.thumbnail_url
+        ? (window.SupabaseHelper && typeof window.SupabaseHelper.fixMediaUrl === 'function' 
+            ? window.SupabaseHelper.fixMediaUrl(content.thumbnail_url) 
+            : content.thumbnail_url)
+        : 'https://via.placeholder.com/60x34';
+      
+      // ✅ Extract metrics with proper fallbacks for both data structures
+      const views = analytics.totalViews || analytics.views || content.views_count || content.real_views || 0;
+      
+      // Watch Time: totalWatchTime from analytics OR watchTime from flat structure
+      const totalWatchTime = analytics.totalWatchTime !== undefined ? analytics.totalWatchTime : 
+                            (analytics.watchTime !== undefined ? analytics.watchTime : 0);
+      
+      // Avg Duration: avgWatchTime from analytics OR avgDuration from flat structure  
+      const avgWatchTime = analytics.avgWatchTime !== undefined ? analytics.avgWatchTime : 
+                          (analytics.avgDuration !== undefined ? analytics.avgDuration : 0);
+      
+      // Completion Rate
+      const completionRate = analytics.avgCompletionRate !== undefined ? analytics.avgCompletionRate : 
+                            (analytics.completionRate !== undefined ? analytics.completionRate : 0);
+      
+      // ✅ Engagement Rate: calculate from likes + comments / views
+      const totalLikes = analytics.totalLikes || content.likes_count || 0;
+      const totalComments = analytics.totalComments || content.comments_count || 0;
+      const engagementRate = analytics.engagementRate !== undefined ? analytics.engagementRate :
+                            (views > 0 ? Math.round(((totalLikes + totalComments) / views) * 100) : 0);
+      
+      // Format for display
+      const watchTimeDisplay = formatWatchTime(totalWatchTime);
+      const avgDurationDisplay = formatWatchTime(avgWatchTime);
+      const completionDisplay = Math.round(completionRate) + '%';
+      const engagementDisplay = Math.round(engagementRate) + '%';
+      
+      // Debug log for first item
+      if (index === 0) {
+        console.log('🔍 Table row debug:', {
+          title: title,
+          views: views,
+          totalWatchTime: totalWatchTime,
+          avgWatchTime: avgWatchTime,
+          completionRate: completionRate,
+          engagementRate: engagementRate,
+          analytics: analytics
+        });
+      }
       
       return `
         <tr>
@@ -642,10 +688,10 @@
             </div>
           </td>
           <td>${formatNumber(views)}</td>
-          <td>${formattedWatchTime}</td>
-          <td>${formattedAvgDuration}</td>
-          <td>${Math.min(100, Math.round(completion))}%</td>
-          <td>-</td>
+          <td>${watchTimeDisplay}</td>
+          <td>${avgDurationDisplay}</td>
+          <td>${completionDisplay}</td>
+          <td>${engagementDisplay}</td>
           <td>
             <button class="action-btn" onclick="window.location.href='content-detail.html?id=${contentId}'">View</button>
           </td>
@@ -653,7 +699,7 @@
       `;
     }).join('');
     
-    console.log('✅ Top content table rendered with', itemsToRender.length, 'items');
+    console.log('✅ Top content table rendered with', items.length, 'rows');
   }
 
   // ============================================
@@ -755,11 +801,18 @@
   }
 
   function formatWatchTime(seconds) {
-    if (!seconds) return '0h 0m';
+    if (!seconds || seconds === 0) return '0m';
     const hours = Math.floor(seconds / 3600);
     const mins = Math.floor((seconds % 3600) / 60);
-    if (hours > 0) return hours + 'h ' + mins + 'm';
-    return mins + 'm';
+    const secs = Math.floor(seconds % 60);
+    
+    if (hours > 0) {
+      return mins > 0 ? hours + 'h ' + mins + 'm' : hours + 'h';
+    } else if (mins > 0) {
+      return secs > 0 ? mins + 'm ' + secs + 's' : mins + 'm';
+    } else {
+      return secs + 's';
+    }
   }
 
   function truncateText(text, maxLength) {
