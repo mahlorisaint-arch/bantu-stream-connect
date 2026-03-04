@@ -325,7 +325,7 @@
       return;
     }
     
-    console.log('📊 Rendering dashboard with ', data);
+    console.log('📊 Rendering dashboard with data:', data);
     
     // Update summary cards with PROPER field mapping
     updateSummaryCards(data.summary);
@@ -590,13 +590,16 @@
   }
 
   // ============================================
-  // TOP CONTENT TABLE
+  // TOP CONTENT TABLE - IMPROVED VERSION
   // ============================================
   async function loadTopContent(contentList) {
     const tbody = dom.topContentBody;
     if (!tbody) return;
     
+    console.log('📊 Loading top content table with data:', contentList);
+    
     if (!contentList || !Array.isArray(contentList) || contentList.length === 0) {
+      console.log('📊 No content data available, showing empty state');
       tbody.innerHTML = `
         <tr>
           <td colspan="7" style="text-align:center;padding:40px;color:var(--slate-grey)">
@@ -608,85 +611,27 @@
       return;
     }
     
-    console.log('📊 Loading top content table with', contentList.length, 'items');
+    console.log('📊 Rendering', contentList.length, 'content items');
     
-    // Enrich content with analytics if not already included
-    const enrichedContent = await Promise.all(
-      contentList.slice(0, 10).map(async function(item) {
-        const content = item.Content || item;
-        const contentId = content.id || item.id;
-        
-        if (!contentId) return item;
-        
-        // If already has analytics, use it
-        if (item.analytics) return item;
-        
-        try {
-          // Fetch view analytics for this content
-          const { data: viewsData } = await window.supabaseClient
-            .from('content_views')
-            .select('view_duration')
-            .eq('content_id', contentId);
-          
-          const totalViews = viewsData?.length || 0;
-          const totalWatchTime = viewsData?.reduce(function(sum, v) {
-            return sum + (v.view_duration || 0);
-          }, 0) || 0;
-          const avgWatchTime = totalViews > 0 ? Math.round(totalWatchTime / totalViews) : 0;
-          const avgCompletionRate = content.duration > 0 
-            ? Math.round((avgWatchTime / content.duration) * 100) 
-            : 0;
-          
-          return {
-            ...item,
-            analytics: {
-              totalViews: totalViews,
-              totalWatchTime: totalWatchTime,
-              avgWatchTime: avgWatchTime,
-              avgCompletionRate: avgCompletionRate
-            }
-          };
-        } catch (err) {
-          console.warn('⚠️ Could not fetch analytics for content', contentId, err);
-          return {
-            ...item,
-            analytics: {
-              totalViews: item.views_count || item.real_views || 0,
-              totalWatchTime: 0,
-              avgWatchTime: 0,
-              avgCompletionRate: 0
-            }
-          };
-        }
-      })
-    );
+    // Use the analytics data directly from the content items
+    const itemsToRender = contentList.slice(0, 10);
     
-    // Render table
-    renderTopContentTable(enrichedContent);
-  }
-
-  function renderTopContentTable(items) {
-    const tbody = dom.topContentBody;
-    if (!tbody) return;
-    
-    if (!items || items.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--slate-grey)">No content data available</td></tr>';
-      return;
-    }
-    
-    tbody.innerHTML = items.map(function(item) {
+    tbody.innerHTML = itemsToRender.map(function(item) {
+      // The item might have the content data directly or in a Content property
       const content = item.Content || item;
       const analytics = item.analytics || {};
       
       const title = content.title || 'Untitled';
-      const thumbnail = content.thumbnail_url 
-        ? (window.SupabaseHelper && typeof window.SupabaseHelper.fixMediaUrl === 'function' ? window.SupabaseHelper.fixMediaUrl(content.thumbnail_url) : content.thumbnail_url)
-        : 'https://via.placeholder.com/60x34';
-      
+      const thumbnail = content.thumbnail_url || 'https://via.placeholder.com/60x34';
       const views = analytics.totalViews || content.views_count || 0;
       const watchTime = analytics.totalWatchTime || 0;
       const avgDuration = analytics.avgWatchTime || 0;
       const completion = analytics.avgCompletionRate || 0;
+      const contentId = content.id || 'unknown';
+      
+      // Format the watch time properly
+      const formattedWatchTime = formatWatchTime(watchTime);
+      const formattedAvgDuration = formatWatchTime(avgDuration);
       
       return `
         <tr>
@@ -697,18 +642,18 @@
             </div>
           </td>
           <td>${formatNumber(views)}</td>
-          <td>${formatWatchTime(watchTime)}</td>
-          <td>${formatWatchTime(avgDuration)}</td>
-          <td>${completion}%</td>
+          <td>${formattedWatchTime}</td>
+          <td>${formattedAvgDuration}</td>
+          <td>${Math.min(100, Math.round(completion))}%</td>
           <td>-</td>
           <td>
-            <button class="action-btn" onclick="window.location.href='content-detail.html?id=${content.id}'">View</button>
+            <button class="action-btn" onclick="window.location.href='content-detail.html?id=${contentId}'">View</button>
           </td>
         </tr>
       `;
     }).join('');
     
-    console.log('✅ Top content table rendered');
+    console.log('✅ Top content table rendered with', itemsToRender.length, 'items');
   }
 
   // ============================================
