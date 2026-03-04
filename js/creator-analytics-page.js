@@ -3,7 +3,7 @@
 // ✅ FIXED: Multiple auth client instances prevented
 // ✅ FIXED: Timeout properly cleared on success/error
 // ✅ FIXED: Error state only shows on actual failure
-// ✅ FIXED: Top content table now correctly displays all metrics
+// ✅ FIXED: Multiple initialization attempts prevented
 
 (function() {
   'use strict';
@@ -78,27 +78,41 @@
   }
 
   // ============================================
-  // MAIN INITIALIZATION (Exported for fallback)
+  // ✅ FIXED: MAIN INITIALIZATION WITH PROPER TIMEOUT HANDLING
   // ============================================
   async function initializeAnalyticsPage() {
-    // Increment attempt counter
-    initializationAttempts++;
-    
-    // Check if already initialized or max attempts reached
-    if (window.analyticsPageInitialized) {
-      console.log('⚠️ Analytics page already initialized, skipping duplicate initialization');
+    // Prevent multiple simultaneous initializations
+    if (window._analyticsPageInitializing || window.analyticsPageInitialized) {
+      console.log('⚠️ Analytics page already initializing or initialized, skipping');
       return;
     }
     
+    // Increment attempt counter
+    initializationAttempts++;
+    
+    // Check if max attempts reached
     if (initializationAttempts > MAX_INIT_ATTEMPTS) {
       console.log('⚠️ Max initialization attempts reached, stopping');
       return;
     }
     
+    window._analyticsPageInitializing = true;
+    
     // Clear any existing timeout first
     if (initializationTimeout) {
       clearTimeout(initializationTimeout);
+      initializationTimeout = null;
     }
+    
+    // Set NEW timeout that will be cleared on success
+    initializationTimeout = setTimeout(() => {
+      if (!window.analyticsPageInitialized) {
+        console.error('❌ Initialization timed out after 15 seconds');
+        hideLoading();
+        showError('Initialization timed out. Please refresh the page.');
+        window._analyticsPageInitializing = false;
+      }
+    }, 15000);
     
     try {
       console.log('🚀 Starting analytics page initialization (attempt ' + initializationAttempts + ')...');
@@ -106,21 +120,11 @@
       // Cache DOM first
       cacheDOMElements();
       
-      // Set a timeout for the entire initialization
-      initializationTimeout = setTimeout(() => {
-        console.error('❌ Initialization timed out after 15 seconds');
-        if (!window.analyticsPageInitialized) {
-          hideLoading();
-          showError('Initialization timed out. Please refresh the page.');
-        }
-      }, 15000);
-      
       // Check auth
       const isAuthenticated = await checkAuthAndInitialize();
       if (!isAuthenticated) {
-        clearTimeout(initializationTimeout);
-        initializationTimeout = null;
         console.log('⏳ Redirecting to login...');
+        window._analyticsPageInitializing = false;
         return;
       }
       
@@ -129,8 +133,6 @@
       // Initialize analytics manager
       analyticsManager = await initializeAnalyticsManager();
       if (!analyticsManager) {
-        clearTimeout(initializationTimeout);
-        initializationTimeout = null;
         throw new Error('Failed to initialize analytics manager');
       }
       
@@ -145,30 +147,27 @@
       if (data && !data.error) {
         renderDashboard(data);
       } else {
-        clearTimeout(initializationTimeout);
-        initializationTimeout = null;
         throw new Error(data?.error || 'Failed to load dashboard data');
       }
       
       // Load audience insights
       await loadAudienceInsights();
       
-      // Clear timeout on success
+      // ✅ CRITICAL: Clear timeout BEFORE showing content
       if (initializationTimeout) {
         clearTimeout(initializationTimeout);
         initializationTimeout = null;
       }
       
-      // Mark as initialized BEFORE hiding loading
-      window.analyticsPageInitialized = true;
-      
-      // Hide loading and show content
+      // ✅ FINAL FIX: Hide loading, show content with !important
       hideLoading();
       showContent();
       
       // Run diagnostic to confirm display status
       checkDisplayStatus();
       
+      // Mark as initialized
+      window.analyticsPageInitialized = true;
       window._analyticsPageInitializing = false;
       
       console.log('✅ Creator Analytics Page fully initialized');
@@ -313,7 +312,7 @@
   }
   
   function showError(message) {
-    // Only show error if content hasn't been successfully rendered
+    // ✅ CRITICAL: Don't show error if page is already initialized
     if (window.analyticsPageInitialized) {
       console.warn('⚠️ Attempting to show error after successful initialization:', message);
       // Don't show error overlay if page is already initialized
