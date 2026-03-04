@@ -1,8 +1,7 @@
 // js/creator-analytics-page.js — Dedicated Analytics Page Controller
 // Bantu Stream Connect — Phase 5 Complete (5E + 5F + 5G)
-// ✅ Audience Insights (5E)
-// ✅ Scheduled Email Reports (5F)  
-// ✅ Advanced Filtering (5G)
+// ✅ FIXED: Added fallback content fetch when analytics fail
+// ✅ FIXED: Better error handling for missing columns
 
 (function() {
   'use strict';
@@ -629,7 +628,7 @@
   }
 
   // ============================================
-  // TOP CONTENT TABLE
+  // ✅ TOP CONTENT TABLE - FIXED WITH FALLBACK
   // ============================================
   async function loadTopContent(contentList) {
     const tbody = dom.topContentBody;
@@ -637,8 +636,50 @@
     
     console.log('📊 Loading top content table with data:', contentList);
     
-    if (!contentList || !Array.isArray(contentList) || contentList.length === 0) {
-      console.log('📊 No content data available, showing empty state');
+    // Fallback if contentList is empty or undefined
+    if (!contentList || contentList.length === 0) {
+      console.log('📊 Fetching basic content as fallback...');
+      
+      // Try to fetch basic content directly from Content table
+      try {
+        const supabaseClient = window.supabaseClient || window.SupabaseHelper?.client;
+        if (supabaseClient && currentUser?.id) {
+          const { data: basicContent, error } = await supabaseClient
+            .from('Content')
+            .select('id, title, thumbnail_url, views_count, likes_count, comments_count, duration, created_at')
+            .eq('user_id', currentUser.id)
+            .eq('status', 'published')
+            .order('views_count', { ascending: false })
+            .limit(10);
+          
+          if (!error && basicContent?.length > 0) {
+            console.log('📊 Found', basicContent.length, 'basic content items for fallback');
+            
+            // Transform to match expected format
+            const transformedContent = basicContent.map(item => ({
+              ...item,
+              analytics: {
+                totalViews: item.views_count || 0,
+                totalWatchTime: 0,
+                avgWatchTime: 0,
+                avgCompletionRate: 0,
+                totalLikes: item.likes_count || 0,
+                totalComments: item.comments_count || 0,
+                engagementRate: item.views_count > 0 
+                  ? Math.round(((item.likes_count || 0) + (item.comments_count || 0)) / item.views_count * 100) 
+                  : 0
+              }
+            }));
+            
+            renderTopContentTable(transformedContent);
+            return;
+          }
+        }
+      } catch (e) {
+        console.warn('⚠️ Fallback fetch failed:', e);
+      }
+      
+      // Show empty state if no content found
       tbody.innerHTML = `
         <tr>
           <td colspan="7" style="text-align:center;padding:40px;color:var(--slate-grey)">
