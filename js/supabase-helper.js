@@ -1,5 +1,17 @@
 console.log('📡 Supabase Helper Initializing with Video URL fixes...');
 
+// Add this at the TOP of the file to prevent multiple initializations
+if (window._supabaseHelperInitialized) {
+  console.log('⚠️ Supabase Helper already initialized, skipping duplicate');
+  // If already initialized, just return the existing instance
+  if (!window.SupabaseHelper && window._supabaseHelperInstance) {
+    window.SupabaseHelper = window._supabaseHelperInstance;
+  }
+  // Exit the IIFE that will wrap this code
+  throw new Error('Supabase Helper already initialized');
+}
+window._supabaseHelperInitialized = true;
+
 // Simple Supabase helper object
 const SupabaseHelper = {
     isInitialized: false,
@@ -392,5 +404,10 @@ if (document.readyState === 'loading') {
     SupabaseHelper.initialize();
 }
 
+// Store instance for later reference
+window._supabaseHelperInstance = SupabaseHelper;
+
 // Make available globally
 window.SupabaseHelper = SupabaseHelper;
+
+console.log('✅ Supabase Helper fully loaded and ready');
