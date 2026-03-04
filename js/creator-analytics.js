@@ -3,18 +3,19 @@
 // ✅ FIXED: All database column errors resolved with graceful fallbacks
 // ✅ FIXED: Traffic sources and audience locations now work without missing columns
 // ✅ FIXED: Added empty data fallbacks to prevent UI breaking
+// ✅ FIXED: Global lock to prevent multiple module loads
 
 (function() {
   'use strict';
   
-  console.log('📊 CreatorAnalytics module loading...');
-
-  // Global lock to prevent multiple initializations
+  // ✅ Global lock to prevent multiple initializations
   if (window._creatorAnalyticsLoading) {
     console.log('⚠️ CreatorAnalytics already loading, skipping duplicate');
     return;
   }
   window._creatorAnalyticsLoading = true;
+  
+  console.log('📊 CreatorAnalytics module loading...');
 
   class CreatorAnalytics {
     constructor(config) {
