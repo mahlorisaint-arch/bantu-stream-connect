@@ -1,6 +1,6 @@
 // js/creator-analytics-page.js — Dedicated Analytics Page Controller
 // Bantu Stream Connect — Phase 5B Implementation
-// ✅ FIXED: All syntax errors resolved, proper initialization, data fetching, and rendering
+// ✅ FIXED: Proper loading state management
 
 (function() {
   'use strict';
@@ -90,7 +90,7 @@
         throw new Error(data?.error || 'Failed to load dashboard data');
       }
       
-      // Show content, hide loading
+      // ✅ CRITICAL FIX: Hide loading, show content
       hideLoading();
       showContent();
       
@@ -101,6 +101,7 @@
       
     } catch (error) {
       console.error('❌ Page initialization failed:', error);
+      // ✅ Show error state if loading fails
       hideLoading();
       showError(error.message || 'Failed to initialize analytics');
     }
@@ -116,10 +117,10 @@
     console.log('🔐 Checking authentication...');
     
     // Method 1: AuthHelper
-    if (window.AuthHelper && typeof window.AuthHelper.isAuthenticated === 'function' && window.AuthHelper.isAuthenticated()) {
+    if (window.AuthHelper?.isAuthenticated?.()) {
       console.log('✅ Authenticated via AuthHelper');
-      currentUser = (window.AuthHelper.getUserProfile && window.AuthHelper.getUserProfile()) || 
-                    (window.AuthHelper.getCurrentUser && window.AuthHelper.getCurrentUser()) || null;
+      currentUser = window.AuthHelper.getUserProfile?.() || 
+                    window.AuthHelper.getCurrentUser?.() || null;
       if (currentUser) return true;
     }
     
@@ -135,7 +136,7 @@
       }
       
       if (supabaseClient) {
-        const { data: { session }, error } = await supabaseClient.auth.getSession();
+        const {  { session }, error } = await supabaseClient.auth.getSession();
         
         if (session?.user) {
           console.log('✅ Authenticated via Supabase session');
@@ -143,7 +144,7 @@
           
           // Try to get profile
           try {
-            const { data: profile } = await supabaseClient
+            const {  profile } = await supabaseClient
               .from('user_profiles')
               .select('*')
               .eq('id', currentUser.id)
@@ -222,16 +223,27 @@
   // DOM HELPERS
   // ============================================
   function hideLoading() {
-    if (dom.loading) dom.loading.style.display = 'none';
+    if (dom.loading) {
+      dom.loading.style.display = 'none';
+      console.log('✅ Loading screen hidden');
+    }
   }
   
   function showContent() {
-    if (dom.content) dom.content.style.display = 'block';
+    if (dom.content) {
+      dom.content.style.display = 'block';
+      console.log('✅ Content displayed');
+    }
   }
   
   function showError(message) {
-    if (dom.error) dom.error.style.display = 'flex';
-    if (dom.errorMessage) dom.errorMessage.textContent = message;
+    if (dom.error) {
+      dom.error.style.display = 'flex';
+    }
+    if (dom.errorMessage) {
+      dom.errorMessage.textContent = message;
+    }
+    console.error('❌ Error displayed:', message);
   }
 
   // ============================================
@@ -264,7 +276,7 @@
     }
   }
 
-  // ✅ FIXED: Update summary cards with correct field mapping (NO SYNTAX ERRORS)
+  // ✅ FIXED: Update summary cards with correct field mapping
   function updateSummaryCards(summary) {
     if (!summary) return;
     
@@ -274,7 +286,7 @@
     const totalViews = summary.total_views || summary.totalViews || 0;
     const totalWatchTime = summary.total_watch_time || summary.totalWatchTime || 0;
     const uniqueViewers = summary.unique_viewers || summary.uniqueViewers || 
-                         Math.round(totalViews * 0.7) || 0;
+                         Math.round(totalViews * 0.7) || 0; // Fallback estimate
     const avgCompletion = summary.avg_completion_rate || summary.avgCompletionRate || 
                          summary.engagement_percentage || 0;
     
@@ -291,10 +303,7 @@
       { id: 'totalConnectors', field: 'total_connectors' }
     ];
     
-    otherFields.forEach(function(item) {
-      const id = item.id;
-      const field = item.field;
-      const format = item.format;
+    otherFields.forEach(({ id, field, format }) => {
       const el = document.getElementById(id);
       if (el && summary[field] !== undefined) {
         if (format === 'currency') {
@@ -323,22 +332,18 @@
     if (charts.views) charts.views.destroy();
     
     const labels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    let data = (content || []).slice(0, 7).map(function(c) {
+    const data = (content || []).slice(0, 7).map(c => {
       const analytics = c.analytics || c;
       return analytics.totalViews || analytics.views || 0;
     });
     
-    if (data.length === 0) {
-      data = [12, 19, 15, 22, 18, 25, 30];
-    }
-    
     charts.views = new Chart(ctx, {
       type: 'line',
-      data: {
+       {
         labels: labels,
         datasets: [{
           label: 'Views',
-          data: data,
+           data.length > 0 ? data : [12, 19, 15, 22, 18, 25, 30],
           borderColor: '#1D4ED8',
           backgroundColor: 'rgba(29, 78, 216, 0.1)',
           tension: 0.4,
@@ -363,30 +368,19 @@
     
     if (charts.watchTime) charts.watchTime.destroy();
     
-    let labels = (content || []).slice(0, 7).map(function(_, i) {
-      return `Day ${i + 1}`;
-    });
-    
-    if (labels.length === 0) {
-      labels = ['Day 1', 'Day 2', 'Day 3', 'Day 4', 'Day 5', 'Day 6', 'Day 7'];
-    }
-    
-    let data = (content || []).slice(0, 7).map(function(c) {
+    const labels = (content || []).slice(0, 7).map((_, i) => `Day ${i + 1}`);
+    const data = (content || []).slice(0, 7).map(c => {
       const analytics = c.analytics || c;
       return Math.round((analytics.totalWatchTime || 0) / 3600 * 10) / 10;
     });
     
-    if (data.length === 0) {
-      data = [0.12, 0.19, 0.15, 0.22, 0.18, 0.25, 0.30];
-    }
-    
     charts.watchTime = new Chart(ctx, {
       type: 'bar',
-      data: {
-        labels: labels,
+       {
+        labels: labels.length > 0 ? labels : ['Day 1', 'Day 2', 'Day 3', 'Day 4', 'Day 5', 'Day 6', 'Day 7'],
         datasets: [{
           label: 'Watch Time (hrs)',
-          data: data,
+           data.length > 0 ? data : [0.12, 0.19, 0.15, 0.22, 0.18, 0.25, 0.30],
           backgroundColor: 'rgba(245, 158, 11, 0.6)',
           borderColor: '#F59E0B',
           borderWidth: 1
@@ -398,16 +392,7 @@
         plugins: { legend: { display: false } },
         scales: {
           x: { grid: { display: false }, ticks: { color: 'var(--slate-grey)' } },
-          y: { 
-            beginAtZero: true, 
-            grid: { color: 'rgba(255,255,255,0.1)' }, 
-            ticks: { 
-              color: 'var(--slate-grey)', 
-              callback: function(value) {
-                return value.toFixed(1) + 'h';
-              }
-            } 
-          }
+          y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { color: 'var(--slate-grey)', callback: v => v.toFixed(1) + 'h' } }
         }
       }
     });
@@ -421,10 +406,10 @@
     
     charts.engagement = new Chart(ctx, {
       type: 'doughnut',
-      data: {
+       {
         labels: ['Likes', 'Comments', 'Shares'],
         datasets: [{
-          data: [65, 25, 10],
+           [65, 25, 10],
           backgroundColor: ['#1D4ED8', '#F59E0B', '#10B981'],
           borderWidth: 0
         }]
@@ -447,11 +432,11 @@
     
     charts.retention = new Chart(ctx, {
       type: 'line',
-      data: {
+       {
         labels: ['0%', '10%', '20%', '30%', '40%', '50%', '60%', '70%', '80%', '90%', '100%'],
         datasets: [{
           label: 'Retention %',
-          data: retentionData,
+           retentionData,
           borderColor: '#F59E0B',
           backgroundColor: 'rgba(245, 158, 11, 0.1)',
           tension: 0.3,
@@ -466,17 +451,7 @@
         plugins: { legend: { display: false } },
         scales: {
           x: { grid: { display: false }, ticks: { color: 'var(--slate-grey)' } },
-          y: { 
-            beginAtZero: true, 
-            max: 100, 
-            grid: { color: 'rgba(255,255,255,0.1)' }, 
-            ticks: { 
-              color: 'var(--slate-grey)', 
-              callback: function(value) {
-                return value + '%';
-              }
-            } 
-          }
+          y: { beginAtZero: true, max: 100, grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { color: 'var(--slate-grey)', callback: v => v + '%' } }
         }
       }
     });
@@ -505,7 +480,7 @@
     
     // Enrich content with analytics if not already included
     const enrichedContent = await Promise.all(
-      contentList.slice(0, 10).map(async function(item) {
+      contentList.slice(0, 10).map(async (item) => {
         const content = item.Content || item;
         const contentId = content.id || item.id;
         
@@ -516,15 +491,13 @@
         
         try {
           // Fetch view analytics for this content
-          const { data: viewsData } = await window.supabaseClient
+          const {  viewsData } = await window.supabaseClient
             .from('content_views')
             .select('view_duration')
             .eq('content_id', contentId);
           
           const totalViews = viewsData?.length || 0;
-          const totalWatchTime = viewsData?.reduce(function(sum, v) {
-            return sum + (v.view_duration || 0);
-          }, 0) || 0;
+          const totalWatchTime = viewsData?.reduce((sum, v) => sum + (v.view_duration || 0), 0) || 0;
           const avgWatchTime = totalViews > 0 ? Math.round(totalWatchTime / totalViews) : 0;
           const avgCompletionRate = content.duration > 0 
             ? Math.round((avgWatchTime / content.duration) * 100) 
@@ -533,10 +506,10 @@
           return {
             ...item,
             analytics: {
-              totalViews: totalViews,
-              totalWatchTime: totalWatchTime,
-              avgWatchTime: avgWatchTime,
-              avgCompletionRate: avgCompletionRate
+              totalViews,
+              totalWatchTime,
+              avgWatchTime,
+              avgCompletionRate
             }
           };
         } catch (err) {
@@ -567,13 +540,13 @@
       return;
     }
     
-    tbody.innerHTML = items.map(function(item) {
+    tbody.innerHTML = items.map((item, index) => {
       const content = item.Content || item;
       const analytics = item.analytics || {};
       
       const title = content.title || 'Untitled';
       const thumbnail = content.thumbnail_url 
-        ? (window.SupabaseHelper && typeof window.SupabaseHelper.fixMediaUrl === 'function' ? window.SupabaseHelper.fixMediaUrl(content.thumbnail_url) : content.thumbnail_url)
+        ? (window.SupabaseHelper?.fixMediaUrl?.(content.thumbnail_url) || content.thumbnail_url)
         : 'https://via.placeholder.com/60x34';
       
       const views = analytics.totalViews || content.views_count || 0;
@@ -608,13 +581,11 @@
   // UI SETUP
   // ============================================
   function setupTimeRangeSelector(analytics) {
-    if (!dom.timeRangeBtns || !dom.timeRangeBtns.length) return;
+    if (!dom.timeRangeBtns?.length) return;
     
-    dom.timeRangeBtns.forEach(function(btn) {
+    dom.timeRangeBtns.forEach(btn => {
       btn.addEventListener('click', async function() {
-        dom.timeRangeBtns.forEach(function(b) {
-          b.classList.remove('active');
-        });
+        dom.timeRangeBtns.forEach(b => b.classList.remove('active'));
         this.classList.add('active');
         
         if (dom.content) dom.content.style.opacity = '0.5';
@@ -649,17 +620,17 @@
       try {
         const result = await analytics.exportToCSV(currentTimeRange, true);
         
-        if (result && result.csv) {
+        if (result?.csv) {
           const blob = new Blob([result.csv], { type: 'text/csv' });
           const url = URL.createObjectURL(blob);
           const a = document.createElement('a');
           a.href = url;
-          a.download = result.filename || 'bantu-analytics-' + currentTimeRange + '-' + new Date().toISOString().split('T')[0] + '.csv';
+          a.download = result.filename || `bantu-analytics-${currentTimeRange}-${new Date().toISOString().split('T')[0]}.csv`;
           a.click();
           URL.revokeObjectURL(url);
           showToast('Analytics exported successfully!', 'success');
         } else {
-          showToast('Export failed: ' + ((result && result.error) || 'Unknown error'), 'error');
+          showToast('Export failed: ' + (result?.error || 'Unknown error'), 'error');
         }
       } catch (error) {
         console.error('Export error:', error);
@@ -674,7 +645,7 @@
   function setupBackButton() {
     if (!dom.backBtn) return;
     
-    dom.backBtn.addEventListener('click', function() {
+    dom.backBtn.addEventListener('click', () => {
       window.location.href = 'creator-dashboard.html';
     });
   }
@@ -710,9 +681,7 @@
     return div.innerHTML;
   }
 
-  function showToast(message, type) {
-    if (type === undefined) type = 'info';
-    
+  function showToast(message, type = 'info') {
     let container = dom.toastContainer;
     if (!container) {
       container = document.createElement('div');
@@ -723,19 +692,7 @@
     }
     
     const toast = document.createElement('div');
-    toast.className = 'toast ' + type;
-    
-    let bgColor;
-    if (type === 'success') {
-      bgColor = 'rgba(16,185,129,0.9)';
-    } else if (type === 'error') {
-      bgColor = 'rgba(239,68,68,0.9)';
-    } else if (type === 'warning') {
-      bgColor = 'rgba(245,158,11,0.9)';
-    } else {
-      bgColor = 'var(--card-bg, rgba(15,23,42,0.9))';
-    }
-    
+    toast.className = `toast ${type}`;
     toast.style.cssText = `
       padding:12px 20px;
       border-radius:10px;
@@ -748,29 +705,23 @@
       align-items:center;
       gap:10px;
       animation:slideIn 0.3s ease;
-      background:${bgColor};
+      background:${type === 'success' ? 'rgba(16,185,129,0.9)' : type === 'error' ? 'rgba(239,68,68,0.9)' : type === 'warning' ? 'rgba(245,158,11,0.9)' : 'var(--card-bg, rgba(15,23,42,0.9))'};
     `;
     
-    var icon;
-    if (type === 'success') {
-      icon = 'fa-check-circle';
-    } else if (type === 'error') {
-      icon = 'fa-exclamation-circle';
-    } else if (type === 'warning') {
-      icon = 'fa-exclamation-triangle';
-    } else {
-      icon = 'fa-info-circle';
-    }
+    const icons = {
+      success: 'fa-check-circle',
+      error: 'fa-exclamation-circle', 
+      warning: 'fa-exclamation-triangle',
+      info: 'fa-info-circle'
+    };
     
-    toast.innerHTML = '<i class="fas ' + icon + '"></i> <span>' + escapeHtml(message) + '</span>';
+    toast.innerHTML = `<i class="fas ${icons[type] || 'fa-info-circle'}"></i> <span>${escapeHtml(message)}</span>`;
     container.appendChild(toast);
     
-    setTimeout(function() {
+    setTimeout(() => {
       toast.style.opacity = '0';
       toast.style.transform = 'translateY(100%)';
-      setTimeout(function() {
-        toast.remove();
-      }, 300);
+      setTimeout(() => toast.remove(), 300);
     }, 3000);
   }
 
