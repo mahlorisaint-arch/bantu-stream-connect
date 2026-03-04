@@ -423,36 +423,84 @@
     justify-content: space-between;
     align-items: center;
     margin-bottom: 30px;
+    flex-wrap: wrap;
+    gap: 15px;
   }
 
   .time-range-selector {
     display: flex;
     gap: 10px;
+    background: var(--card-bg);
+    padding: 5px;
+    border-radius: 30px;
+    border: 1px solid var(--card-border);
   }
 
   .time-range-btn {
     background: transparent;
-    border: 1px solid var(--card-border);
+    border: none;
     color: var(--slate-grey);
-    padding: 10px 20px;
+    padding: 8px 16px;
     border-radius: 25px;
     cursor: pointer;
     transition: all 0.3s ease;
+    font-size: 14px;
+    font-weight: 500;
   }
 
   .time-range-btn.active {
-    background: var(--warm-gold);
-    color: var(--deep-space);
-    border-color: var(--warm-gold);
+    background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+    color: white;
+  }
+
+  /* ✅ NEW: Export Button Styles */
+  .export-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 20px;
+    background: linear-gradient(135deg, var(--bantu-blue), #3b82f6);
+    color: white;
+    border: none;
+    border-radius: 25px;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(29, 78, 216, 0.3);
+    margin-left: auto;
+  }
+
+  .export-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(29, 78, 216, 0.5);
+    background: linear-gradient(135deg, #2563eb, #60a5fa);
+  }
+
+  .export-btn:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  .export-btn i {
+    font-size: 16px;
   }
 
   .filter-select {
     background: var(--card-bg);
     border: 1px solid var(--card-border);
     color: white;
-    padding: 10px 20px;
+    padding: 8px 20px;
     border-radius: 25px;
     cursor: pointer;
+    font-size: 14px;
+    min-width: 150px;
+  }
+
+  .filter-select option {
+    background: var(--deep-space);
+    color: white;
   }
 
   /* Footer */
@@ -461,6 +509,52 @@
     padding: 20px;
     color: var(--slate-grey);
     border-top: 1px solid var(--card-border);
+  }
+
+  /* Toast Container */
+  #toast-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 10000;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .toast {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 20px;
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 10px;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    animation: slideIn 0.3s ease;
+    max-width: 400px;
+    color: white;
+  }
+
+  .toast i {
+    font-size: 20px;
+  }
+
+  .toast-success i {
+    color: #10b981;
+  }
+
+  .toast-error i {
+    color: #ef4444;
+  }
+
+  .toast-warning i {
+    color: #f59e0b;
+  }
+
+  .toast-info i {
+    color: #3b82f6;
   }
 
   /* Responsive */
@@ -479,7 +573,47 @@
 
     .analytics-controls {
       flex-direction: column;
-      gap: 15px;
+      align-items: stretch;
+    }
+
+    .time-range-selector {
+      width: 100%;
+      justify-content: center;
+    }
+
+    .export-btn {
+      width: 100%;
+      justify-content: center;
+      margin-left: 0;
+    }
+
+    .filter-select {
+      width: 100%;
+    }
+
+    #toast-container {
+      left: 20px;
+      right: 20px;
+    }
+
+    .toast {
+      max-width: none;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .summary-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .time-range-selector {
+      flex-wrap: wrap;
+    }
+
+    .time-range-btn {
+      flex: 1;
+      text-align: center;
+      padding: 8px 10px;
     }
   }
 </style>
@@ -522,31 +656,40 @@
 <div class="logo-text">CREATOR ANALYTICS</div>
 </div>
 <div class="header-actions">
-<button id="backBtn" class="icon-btn" title="Back to Dashboard">
+<button id="backBtn" class="icon-btn" title="Back to Dashboard" onclick="window.location.href='creator-dashboard.html'">
 <i class="fas fa-arrow-left"></i>
 </button>
-<button id="refreshBtn" class="icon-btn" title="Refresh">
+<button id="refreshBtn" class="icon-btn" title="Refresh" onclick="location.reload()">
 <i class="fas fa-redo-alt"></i>
 </button>
-<button id="exportBtn" class="icon-btn" title="Export CSV">
-<i class="fas fa-download"></i>
+<button id="printBtn" class="icon-btn" title="Print Report" onclick="window.print()">
+<i class="fas fa-print"></i>
 </button>
 </div>
 </header>
 
 <!-- Main Content -->
 <main class="container">
-<!-- Time Range Selector -->
+<!-- Time Range Selector and Export Button -->
 <section class="analytics-controls">
 <div class="time-range-selector">
 <button class="time-range-btn" data-range="7days">7 Days</button>
 <button class="time-range-btn active" data-range="30days">30 Days</button>
 <button class="time-range-btn" data-range="90days">90 Days</button>
 </div>
+
+<!-- ✅ NEW: Export CSV Button -->
+<button id="export-csv-btn" class="export-btn" title="Export Analytics as CSV">
+<i class="fas fa-download"></i>
+<span>Export CSV</span>
+</button>
+
 <div class="content-filter">
 <select id="contentFilter" class="filter-select">
 <option value="all">All Content</option>
-<!-- Options populated by JS -->
+<option value="video">Videos</option>
+<option value="live">Live Streams</option>
+<option value="short">Shorts</option>
 </select>
 </div>
 </section>
@@ -588,6 +731,8 @@
 <div id="totalUploads"></div>
 <div id="totalEarnings"></div>
 <div id="totalConnectors"></div>
+<div id="engagementRate"></div>
+<div id="monetizationEligible"></div>
 </div>
 
 <!-- Charts -->
@@ -681,5 +826,37 @@ Loading content data...
 <script src="js/auth-helper.js"></script>
 <script src="js/creator-analytics.js"></script>
 <script src="js/creator-analytics-page.js"></script>
+<script src="js/analytics.js"></script>
+
+<!-- ✅ NEW: Additional Script for Export Button Functionality -->
+<script>
+// Fallback initialization in case the main page script doesn't load
+document.addEventListener('DOMContentLoaded', function() {
+  console.log('📊 Analytics HTML loaded');
+  
+  // Check if main analytics page script is present
+  if (typeof initAnalyticsPage !== 'function') {
+    console.warn('⚠️ initAnalyticsPage not found, using fallback');
+    
+    // Simple fallback for export button
+    const exportBtn = document.getElementById('export-csv-btn');
+    if (exportBtn) {
+      exportBtn.addEventListener('click', function() {
+        alert('Analytics module not fully loaded. Please refresh the page.');
+      });
+    }
+  }
+  
+  // Hide loading screen after timeout (fallback)
+  setTimeout(function() {
+    const loadingScreen = document.getElementById('analytics-loading');
+    const content = document.getElementById('analytics-content');
+    if (loadingScreen && content) {
+      loadingScreen.style.display = 'none';
+      content.style.display = 'block';
+    }
+  }, 5000);
+});
+</script>
 </body>
 </html>
