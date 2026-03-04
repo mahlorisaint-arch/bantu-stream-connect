@@ -26,9 +26,97 @@
   
   <style>
     /* Inline critical styles for loading state */
-    .loading-screen { display: flex !important; }
-    #analytics-content { display: none; }
-    #analytics-error { display: none; }
+    .loading-screen { 
+      display: flex !important; 
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: var(--bg-primary, #0A0F1E);
+      z-index: 9999;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+    }
+    
+    #analytics-content { 
+      display: none; 
+    }
+    
+    #analytics-error { 
+      display: none; 
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: var(--bg-primary, #0A0F1E);
+      z-index: 9998;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      padding: 20px;
+    }
+    
+    .spinner {
+      width: 50px;
+      height: 50px;
+      border: 3px solid var(--card-border, rgba(148,163,184,0.2));
+      border-top-color: var(--warm-gold, #FFB347);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-bottom: 20px;
+    }
+    
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    
+    #loading-text {
+      color: var(--text-primary, #F8FAFC);
+      font-size: 1.2rem;
+      font-weight: 500;
+    }
+    
+    .error-icon {
+      font-size: 4rem;
+      color: #EF4444;
+      margin-bottom: 20px;
+    }
+    
+    .error-title {
+      color: var(--text-primary, #F8FAFC);
+      font-size: 2rem;
+      margin-bottom: 10px;
+    }
+    
+    .error-message {
+      color: var(--text-secondary, #94A3B8);
+      margin-bottom: 30px;
+      max-width: 400px;
+    }
+    
+    .retry-btn {
+      background: var(--warm-gold, #FFB347);
+      color: #0A0F1E;
+      border: none;
+      padding: 12px 30px;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+    
+    .retry-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(255, 179, 71, 0.3);
+    }
+    
+    .retry-btn i {
+      margin-right: 8px;
+    }
   </style>
 </head>
 <body>
@@ -39,17 +127,17 @@
   </div>
 
   <!-- Error State -->
-  <div id="analytics-error" class="error-state" style="display: none;">
+  <div id="analytics-error" class="error-state">
     <div class="error-icon"><i class="fas fa-exclamation-triangle"></i></div>
     <h2 class="error-title">Loading Error</h2>
     <p class="error-message" id="error-message">Failed to load analytics data.</p>
-    <button class="action-btn retry-btn" onclick="window.location.reload()">
+    <button class="retry-btn" onclick="window.location.reload()">
       <i class="fas fa-redo"></i> Retry
     </button>
   </div>
 
   <!-- Main Content -->
-  <div id="analytics-content" style="display: none;">
+  <div id="analytics-content">
     
     <!-- Header -->
     <header class="header">
@@ -186,30 +274,109 @@
   <!-- 4. Analytics Page Controller (loads LAST) -->
   <script src="js/creator-analytics-page.js"></script>
   
-  <!-- 5. Inline initialization fallback -->
+  <!-- 5. Inline initialization and error recovery -->
   <script>
-    // Fallback: Initialize if module didn't auto-start
-    document.addEventListener('DOMContentLoaded', function() {
-      console.log('📊 Analytics page DOM ready');
+    (function() {
+      'use strict';
       
-      // Check if analytics module is loaded
-      if (typeof window.CreatorAnalytics === 'undefined') {
-        console.error('❌ CreatorAnalytics module not found!');
-        document.getElementById('analytics-loading').style.display = 'none';
-        document.getElementById('analytics-error').style.display = 'flex';
-        document.getElementById('error-message').textContent = 'Analytics module failed to load';
-        return;
+      console.log('📊 Analytics page DOM ready - running initialization checks');
+      
+      // Helper function to safely get elements
+      function getElement(id) {
+        return document.getElementById(id);
       }
       
-      // Check if page script initialized
-      if (!window.analyticsPageInitialized) {
-        console.log('🔄 Attempting manual initialization...');
-        if (typeof initializeAnalyticsPage === 'function') {
-          initializeAnalyticsPage();
+      // Helper function to hide loading and show error
+      function showError(message) {
+        console.error('❌ Analytics error:', message);
+        
+        const loading = getElement('analytics-loading');
+        const error = getElement('analytics-error');
+        const errorMessage = getElement('error-message');
+        
+        if (loading) loading.style.display = 'none';
+        if (error) {
+          error.style.display = 'flex';
+          if (errorMessage) errorMessage.textContent = message;
         }
       }
-    });
+      
+      // Check if critical modules are loaded
+      setTimeout(function() {
+        // Check if CreatorAnalytics module is loaded
+        if (typeof window.CreatorAnalytics === 'undefined') {
+          console.error('❌ CreatorAnalytics module not found after timeout');
+          showError('Analytics module failed to load. Please refresh the page.');
+          return;
+        }
+        
+        // Check if page script is initialized
+        if (!window.analyticsPageInitialized) {
+          console.log('🔄 Page script not auto-initialized, attempting manual initialization...');
+          
+          // Try to initialize if function exists
+          if (typeof window.initializeAnalyticsPage === 'function') {
+            window.initializeAnalyticsPage().catch(function(err) {
+              console.error('❌ Manual initialization failed:', err);
+              showError('Failed to initialize analytics: ' + err.message);
+            });
+          } else {
+            console.error('❌ initializeAnalyticsPage function not found');
+            showError('Analytics controller failed to load. Please refresh the page.');
+          }
+        } else {
+          console.log('✅ Analytics page already initialized successfully');
+        }
+      }, 3000); // 3 second timeout for initialization
+      
+      // Also check after DOM is fully loaded
+      document.addEventListener('DOMContentLoaded', function() {
+        console.log('📊 DOM fully loaded');
+        
+        // If after 1 second the page still isn't initialized, check again
+        setTimeout(function() {
+          if (!window.analyticsPageInitialized) {
+            console.log('⚠️ Page not initialized 1s after DOM ready, checking status...');
+            
+            // Check if we're stuck on loading screen
+            const loading = getElement('analytics-loading');
+            if (loading && loading.style.display !== 'none') {
+              console.warn('⚠️ Still on loading screen, attempting recovery...');
+              
+              // Try to initialize again
+              if (typeof window.initializeAnalyticsPage === 'function') {
+                window.initializeAnalyticsPage().catch(function(err) {
+                  console.error('❌ Recovery initialization failed:', err);
+                });
+              }
+            }
+          }
+        }, 1000);
+      });
+      
+    })();
   </script>
+  
+  <!-- 6. Final fallback for extremely slow connections -->
+  <noscript>
+    <style>
+      #analytics-loading { display: none !important; }
+      #analytics-error { 
+        display: flex !important; 
+        background: #0A0F1E;
+        color: white;
+        text-align: center;
+        padding: 20px;
+      }
+      #analytics-error .error-message {
+        color: #94A3B8;
+      }
+    </style>
+    <div style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;">
+      <h2 style="color:#F8FAFC;">JavaScript Required</h2>
+      <p style="color:#94A3B8;">Please enable JavaScript to view analytics.</p>
+    </div>
+  </noscript>
   
 </body>
 </html>
