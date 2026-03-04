@@ -1,6 +1,6 @@
 // js/creator-analytics-page.js — Dedicated Analytics Page Controller
 // Bantu Stream Connect — Phase 5B Implementation
-// ✅ FIXED: All chart syntax errors resolved, proper loading state management
+// ✅ FINAL FIX: Added !important to DOM helpers to override any CSS conflicts
 
 (function() {
   'use strict';
@@ -90,9 +90,12 @@
         throw new Error(data?.error || 'Failed to load dashboard data');
       }
       
-      // ✅ CRITICAL FIX: Hide loading, show content
+      // ✅ FINAL FIX: Hide loading, show content with !important
       hideLoading();
       showContent();
+      
+      // Run diagnostic to confirm display status
+      checkDisplayStatus();
       
       // Mark as initialized
       window.analyticsPageInitialized = true;
@@ -220,7 +223,7 @@
   }
 
   // ============================================
-  // DOM HELPERS
+  // DOM HELPERS - FINAL FIX WITH !IMPORTANT
   // ============================================
   function hideLoading() {
     if (dom.loading) {
@@ -231,19 +234,41 @@
   
   function showContent() {
     if (dom.content) {
-      dom.content.style.display = 'block';
-      console.log('✅ Content displayed');
+      // Force inline style with !important to override any CSS
+      dom.content.setAttribute('style', 'display: block !important');
+      console.log('✅ Content displayed with !important');
     }
   }
   
   function showError(message) {
     if (dom.error) {
-      dom.error.style.display = 'flex';
+      // Force inline style with !important to override any CSS
+      dom.error.setAttribute('style', 'display: flex !important');
     }
     if (dom.errorMessage) {
       dom.errorMessage.textContent = message;
     }
+    if (dom.loading) {
+      dom.loading.style.display = 'none';
+    }
     console.error('❌ Error displayed:', message);
+  }
+
+  // ============================================
+  // DIAGNOSTIC FUNCTION
+  // ============================================
+  function checkDisplayStatus() {
+    console.log('🔍 DISPLAY DIAGNOSTIC:');
+    if (dom.loading) {
+      console.log('- Loading display:', window.getComputedStyle(dom.loading).display);
+    }
+    if (dom.content) {
+      console.log('- Content display:', window.getComputedStyle(dom.content).display);
+      console.log('- Content inline style:', dom.content.getAttribute('style'));
+    }
+    if (dom.error) {
+      console.log('- Error display:', window.getComputedStyle(dom.error).display);
+    }
   }
 
   // ============================================
