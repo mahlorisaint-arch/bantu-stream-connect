@@ -1,3 +1,5 @@
+// js/analytics.js — Complete Analytics Tracking with CSV Export Support
+
 class Analytics {
   constructor() {
     this.sessionId = this.generateSessionId();
@@ -285,6 +287,134 @@ const track = {
     analytics.trackUserAction('button_click', { buttonId, location });
   },
   
+  // ============================================
+  // ✅ ✅ NEW: ANALYTICS EXPORT TRACKING
+  // ============================================
+  /**
+   * Track when user exports analytics data
+   * @param {string} timeRange - The time range exported (7days, 30days, 90days)
+   * @param {string} filename - The generated filename
+   * @param {number} rowCount - Number of rows in export
+   */
+  analyticsExport: (timeRange, filename, rowCount = 0) => {
+    analytics.trackEvent('analytics_export', {
+      time_range: timeRange,
+      filename: filename,
+      row_count: rowCount,
+      export_timestamp: new Date().toISOString()
+    });
+    
+    // Also track as user action
+    analytics.trackUserAction('analytics_export', { 
+      timeRange, 
+      filename,
+      rowCount 
+    });
+  },
+  
+  /**
+   * Track export failures
+   * @param {string} timeRange - The time range attempted
+   * @param {string} error - Error message
+   */
+  analyticsExportFailed: (timeRange, error) => {
+    analytics.trackEvent('analytics_export_failed', {
+      time_range: timeRange,
+      error: error,
+      export_timestamp: new Date().toISOString()
+    });
+  },
+  
+  /**
+   * Track when user views analytics dashboard
+   * @param {string} timeRange - Current selected time range
+   */
+  analyticsDashboardView: (timeRange) => {
+    analytics.trackEvent('analytics_dashboard_view', {
+      time_range: timeRange,
+      view_timestamp: new Date().toISOString()
+    });
+  },
+  
+  /**
+   * Track time range changes on analytics dashboard
+   * @param {string} fromRange - Previous time range
+   * @param {string} toRange - New time range
+   */
+  analyticsTimeRangeChange: (fromRange, toRange) => {
+    analytics.trackEvent('analytics_time_range_change', {
+      from_range: fromRange,
+      to_range: toRange,
+      change_timestamp: new Date().toISOString()
+    });
+  },
+  
+  /**
+   * Track when user clicks on content details from analytics
+   * @param {string} contentId - ID of the content
+   * @param {string} contentType - Type of content
+   */
+  analyticsContentDetails: (contentId, contentType) => {
+    analytics.trackUserAction('analytics_content_details', { 
+      contentId, 
+      contentType 
+    });
+  },
+  
+  /**
+   * Track when user changes sort metric in analytics
+   * @param {string} sortMetric - The metric being sorted by
+   */
+  analyticsSortChange: (sortMetric) => {
+    analytics.trackEvent('analytics_sort_change', {
+      sort_metric: sortMetric,
+      change_timestamp: new Date().toISOString()
+    });
+  },
+  
+  /**
+   * Track when user toggles table view
+   * @param {string} viewMode - 'grid' or 'list'
+   */
+  analyticsViewToggle: (viewMode) => {
+    analytics.trackEvent('analytics_view_toggle', {
+      view_mode: viewMode,
+      toggle_timestamp: new Date().toISOString()
+    });
+  },
+  
+  // ============================================
+  // ✅ ✅ NEW: AUDIENCE INSIGHTS TRACKING
+  // ============================================
+  /**
+   * Track when user views audience insights
+   * @param {string} insightType - Type of insight (locations, devices, etc.)
+   */
+  audienceInsightView: (insightType) => {
+    analytics.trackEvent('audience_insight_view', {
+      insight_type: insightType,
+      view_timestamp: new Date().toISOString()
+    });
+  },
+  
+  // ============================================
+  // ✅ ✅ NEW: PERFORMANCE TRACKING
+  // ============================================
+  /**
+   * Track analytics data load performance
+   * @param {string} dataType - Type of data loaded
+   * @param {number} loadTimeMs - Load time in milliseconds
+   * @param {boolean} success - Whether load was successful
+   */
+  analyticsDataLoad: (dataType, loadTimeMs, success = true) => {
+    analytics.trackEvent('analytics_data_load', {
+      data_type: dataType,
+      load_time_ms: loadTimeMs,
+      success: success,
+      load_timestamp: new Date().toISOString()
+    });
+  },
+  
   // Errors
   error: (errorType, context, details) => {
     analytics.trackEvent('error_occurred', {
@@ -296,9 +426,158 @@ const track = {
   }
 };
 
+// ============================================
+// ✅ ✅ NEW: ANALYTICS HELPER FUNCTIONS
+// ============================================
+
+/**
+ * Track export completion with performance metrics
+ * @param {string} timeRange - Time range exported
+ * @param {string} filename - Generated filename
+ * @param {Object} metrics - Performance metrics
+ */
+function trackExportWithMetrics(timeRange, filename, metrics = {}) {
+  track.analyticsExport(timeRange, filename, metrics.rowCount || 0);
+  
+  // Track performance if available
+  if (metrics.generationTimeMs) {
+    analytics.trackEvent('analytics_export_performance', {
+      time_range: timeRange,
+      generation_time_ms: metrics.generationTimeMs,
+      row_count: metrics.rowCount || 0,
+      file_size_kb: metrics.fileSizeKb || 0
+    });
+  }
+}
+
+/**
+ * Track analytics dashboard session
+ * @param {Function} callback - Function to execute while tracking
+ */
+async function trackAnalyticsSession(callback) {
+  const sessionStart = Date.now();
+  const initialRange = document.querySelector('.time-range-btn.active')?.dataset.range || '30days';
+  
+  // Track session start
+  track.analyticsDashboardView(initialRange);
+  
+  try {
+    await callback();
+    
+    // Track session duration
+    const sessionDuration = Date.now() - sessionStart;
+    analytics.trackEvent('analytics_session_complete', {
+      duration_ms: sessionDuration,
+      time_range: initialRange,
+      session_timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    // Track session error
+    analytics.trackEvent('analytics_session_error', {
+      duration_ms: Date.now() - sessionStart,
+      error: error.message,
+      time_range: initialRange
+    });
+    
+    throw error;
+  }
+}
+
+// ============================================
+// ✅ ✅ NEW: AUTO-TRACK ANALYTICS PAGE INTERACTIONS
+// ============================================
+
+// Auto-track when analytics page loads
+document.addEventListener('DOMContentLoaded', () => {
+  // Check if we're on analytics page
+  if (window.location.pathname.includes('creator-analytics')) {
+    // Track initial page view with analytics specific data
+    analytics.trackEvent('analytics_page_load', {
+      page_title: document.title,
+      url: window.location.href,
+      load_timestamp: new Date().toISOString()
+    });
+    
+    // Set up mutation observer to track time range changes
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        if (mutation.target.classList.contains('time-range-btn') && 
+            mutation.target.classList.contains('active')) {
+          // Time range changed, but we'll track through the button click handler
+          // This is just a backup
+        }
+      });
+    });
+    
+    // Observe time range buttons
+    document.querySelectorAll('.time-range-btn').forEach(btn => {
+      observer.observe(btn, { attributes: true, attributeFilter: ['class'] });
+    });
+  }
+});
+
+// Track time range changes via click handlers
+document.addEventListener('click', (e) => {
+  if (e.target.classList.contains('time-range-btn')) {
+    const newRange = e.target.dataset.range;
+    const activeBtn = document.querySelector('.time-range-btn.active');
+    const oldRange = activeBtn?.dataset.range || 'unknown';
+    
+    if (oldRange !== newRange) {
+      track.analyticsTimeRangeChange(oldRange, newRange);
+    }
+  }
+  
+  // Track export button clicks
+  if (e.target.id === 'export-csv-btn' || e.target.closest('#export-csv-btn')) {
+    // Export tracking is handled in the button's click handler
+    // This is just a backup
+    analytics.trackEvent('analytics_export_button_click', {
+      click_timestamp: new Date().toISOString()
+    });
+  }
+});
+
+// ============================================
+// ✅ ✅ NEW: EXPORT PERFORMANCE MONITORING
+// ============================================
+
+/**
+ * Monitor export performance
+ * @returns {Object} Performance monitoring functions
+ */
+const exportMonitor = {
+  start: () => Date.now(),
+  
+  end: (startTime, timeRange, filename, rowCount) => {
+    const generationTime = Date.now() - startTime;
+    
+    trackExportWithMetrics(timeRange, filename, {
+      generationTimeMs: generationTime,
+      rowCount: rowCount
+    });
+    
+    return generationTime;
+  },
+  
+  trackError: (timeRange, error, stage) => {
+    track.analyticsExportFailed(timeRange, error);
+    
+    analytics.trackEvent('analytics_export_error', {
+      time_range: timeRange,
+      error_stage: stage,
+      error_message: error.message || error,
+      error_timestamp: new Date().toISOString()
+    });
+  }
+};
+
 // Make available globally
 window.analytics = analytics;
 window.track = track;
+window.trackExportWithMetrics = trackExportWithMetrics;
+window.trackAnalyticsSession = trackAnalyticsSession;
+window.exportMonitor = exportMonitor;
 
 // Auto-initialize analytics
 document.addEventListener('DOMContentLoaded', () => {
