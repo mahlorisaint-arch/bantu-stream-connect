@@ -1,5 +1,5 @@
 // js/creator-analytics-page.js — Dedicated Analytics Page Controller
-// Bantu Stream Connect — Phase 5B Implementation
+// Bantu Stream Connect — Phase 5B Implementation + Phase 5E Audience Insights
 // ✅ FIXED: Top content table now correctly displays all metrics (Watch Time, Avg Duration, Completion Rate, Engagement)
 
 (function() {
@@ -59,7 +59,14 @@
       timeRangeBtns: document.querySelectorAll('.time-range-btn'),
       backBtn: document.getElementById('back-to-dashboard'),
       exportBtn: document.getElementById('export-csv-btn'),
-      toastContainer: document.getElementById('toast-container')
+      toastContainer: document.getElementById('toast-container'),
+      // Audience Insights Elements
+      audienceTimeRange: document.getElementById('audienceTimeRange'),
+      locationsList: document.getElementById('locationsList'),
+      deviceChart: document.getElementById('deviceChart'),
+      trafficChart: document.getElementById('trafficChart'),
+      peakTimesInfo: document.getElementById('peakTimesInfo'),
+      peakHoursChart: document.getElementById('peakHoursChart')
     };
     return dom;
   }
@@ -118,6 +125,7 @@
       setupTimeRangeSelector(analyticsManager);
       setupExportButton(analyticsManager);
       setupBackButton();
+      setupAudienceTimeRange();
       
       // Load initial data
       const data = await analyticsManager.getDashboardData(currentTimeRange);
@@ -127,6 +135,9 @@
         clearTimeout(initTimeout);
         throw new Error(data?.error || 'Failed to load dashboard data');
       }
+      
+      // Load audience insights
+      await loadAudienceInsights();
       
       clearTimeout(initTimeout);
       
@@ -703,6 +714,220 @@
   }
 
   // ============================================
+  // AUDIENCE INSIGHTS FUNCTIONS
+  // ============================================
+  async function loadAudienceInsights() {
+    const timeRange = dom.audienceTimeRange?.value || '30days';
+    
+    // Check if audience elements exist
+    if (!dom.locationsList && !dom.deviceChart && !dom.trafficChart && !dom.peakTimesInfo) {
+      console.log('📊 Audience insights section not found in DOM, skipping');
+      return;
+    }
+    
+    console.log('📊 Loading audience insights for range:', timeRange);
+    
+    // Load all audience data in parallel
+    const [locations, devices, traffic, peakTimes] = await Promise.all([
+      analyticsManager.getAudienceLocations(timeRange),
+      analyticsManager.getDeviceBreakdown(timeRange),
+      analyticsManager.getTrafficSources(timeRange),
+      analyticsManager.getPeakViewingTimes(timeRange)
+    ]);
+    
+    renderLocations(locations);
+    renderDeviceChart(devices);
+    renderTrafficChart(traffic);
+    renderPeakTimes(peakTimes);
+    
+    console.log('✅ Audience insights loaded');
+  }
+
+  function renderLocations(locations) {
+    const container = dom.locationsList;
+    if (!container) return;
+    
+    if (!locations || locations.length === 0) {
+      container.innerHTML = `
+        <div class="empty-message">
+          <i class="fas fa-map-marker-alt"></i>
+          <p>No location data available yet</p>
+        </div>
+      `;
+      return;
+    }
+    
+    container.innerHTML = locations.map(loc => `
+      <div class="location-item">
+        <span class="location-name">
+          <i class="fas fa-flag"></i> ${escapeHtml(loc.country)}
+        </span>
+        <span class="location-percent">${loc.percentage}%</span>
+      </div>
+    `).join('');
+  }
+
+  function renderDeviceChart(devices) {
+    const ctx = dom.deviceChart;
+    if (!ctx || typeof Chart === 'undefined') return;
+    
+    if (charts.device) charts.device.destroy();
+    
+    if (!devices || devices.length === 0) {
+      ctx.parentNode.innerHTML = '<div class="empty-message">No device data available</div>';
+      return;
+    }
+    
+    const colors = {
+      Mobile: '#1D4ED8',
+      Desktop: '#F59E0B',
+      Tablet: '#10B981',
+      Other: '#6B7280'
+    };
+    
+    charts.device = new Chart(ctx, {
+      type: 'doughnut',
+      data: {
+        labels: devices.map(d => d.device),
+        datasets: [{
+          data: devices.map(d => d.percentage),
+          backgroundColor: devices.map(d => colors[d.device] || '#6B7280'),
+          borderWidth: 0
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: 'bottom',
+            labels: { color: '#F8FAFC' }
+          }
+        }
+      }
+    });
+  }
+
+  function renderTrafficChart(traffic) {
+    const ctx = dom.trafficChart;
+    if (!ctx || typeof Chart === 'undefined') return;
+    
+    if (charts.traffic) charts.traffic.destroy();
+    
+    if (!traffic || traffic.length === 0) {
+      ctx.parentNode.innerHTML = '<div class="empty-message">No traffic data available</div>';
+      return;
+    }
+    
+    const colors = {
+      Direct: '#1D4ED8',
+      Search: '#F59E0B',
+      Social: '#10B981',
+      Referral: '#8B5CF6',
+      Other: '#6B7280'
+    };
+    
+    charts.traffic = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: traffic.map(t => t.source),
+        datasets: [{
+          label: '%',
+          data: traffic.map(t => t.percentage),
+          backgroundColor: traffic.map(t => colors[t.source] || '#6B7280'),
+          borderWidth: 0
+        }]
+      },
+      options: {
+        indexAxis: 'y',
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false }
+        },
+        scales: {
+          x: {
+            beginAtZero: true,
+            grid: { color: 'rgba(255,255,255,0.1)' },
+            ticks: { color: '#94A3B8', callback: v => v + '%' }
+          },
+          y: {
+            grid: { display: false },
+            ticks: { color: '#F8FAFC' }
+          }
+        }
+      }
+    });
+  }
+
+  function renderPeakTimes(peakTimes) {
+    const container = dom.peakTimesInfo;
+    const chartCtx = dom.peakHoursChart;
+    
+    if (!container || !chartCtx) return;
+    
+    if (!peakTimes || !peakTimes.byHour || peakTimes.byHour.length === 0) {
+      container.innerHTML = '<div class="empty-message">No viewing time data available</div>';
+      chartCtx.parentNode.style.display = 'none';
+      return;
+    }
+    
+    // Show peak info
+    container.innerHTML = `
+      <div class="peak-info-cards">
+        <div class="peak-info-card">
+          <div class="peak-info-label">Peak Hour</div>
+          <div class="peak-info-value">${peakTimes.peakHour}</div>
+        </div>
+        <div class="peak-info-card">
+          <div class="peak-info-label">Peak Day</div>
+          <div class="peak-info-value">${peakTimes.peakDay}</div>
+        </div>
+      </div>
+    `;
+    
+    // Render hourly chart
+    if (charts.peakHours) charts.peakHours.destroy();
+    
+    const peakHourIndex = peakTimes.byHour.findIndex(h => h.isPeak);
+    
+    charts.peakHours = new Chart(chartCtx, {
+      type: 'line',
+      data: {
+        labels: peakTimes.byHour.map(h => h.hour),
+        datasets: [{
+          label: 'Views',
+          data: peakTimes.byHour.map(h => h.count),
+          borderColor: '#F59E0B',
+          backgroundColor: 'rgba(245, 158, 11, 0.1)',
+          tension: 0.3,
+          fill: true,
+          pointBackgroundColor: peakTimes.byHour.map((h, i) => i === peakHourIndex ? '#F59E0B' : '#1D4ED8'),
+          pointRadius: peakTimes.byHour.map((h, i) => i === peakHourIndex ? 6 : 3)
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false }
+        },
+        scales: {
+          x: {
+            grid: { display: false },
+            ticks: { color: '#94A3B8' }
+          },
+          y: {
+            beginAtZero: true,
+            grid: { color: 'rgba(255,255,255,0.1)' },
+            ticks: { color: '#94A3B8' }
+          }
+        }
+      }
+    });
+  }
+
+  // ============================================
   // UI SETUP
   // ============================================
   function setupTimeRangeSelector(analytics) {
@@ -731,10 +956,21 @@
         if (data && !data.error) {
           renderDashboard(data);
         }
+        // Also reload audience insights with new time range
+        await loadAudienceInsights();
       }
       
       if (dom.content) dom.content.style.opacity = '1';
     }
+  }
+
+  function setupAudienceTimeRange() {
+    if (!dom.audienceTimeRange) return;
+    
+    dom.audienceTimeRange.addEventListener('change', async function() {
+      showToast('Loading audience insights...', 'info');
+      await loadAudienceInsights();
+    });
   }
 
   function setupExportButton(analytics) {
