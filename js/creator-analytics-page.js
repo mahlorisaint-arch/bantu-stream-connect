@@ -1,6 +1,6 @@
 // js/creator-analytics-page.js — Dedicated Analytics Page Controller
 // Bantu Stream Connect — Phase 5B Implementation
-// ✅ FIXED: Added initialization lock to prevent multiple initializations
+// ✅ FIXED: Increased timeout and improved error handling
 
 (function() {
   'use strict';
@@ -88,9 +88,19 @@
       // Cache DOM first
       cacheDOMElements();
       
+      // Set a timeout for the entire initialization
+      const initTimeout = setTimeout(() => {
+        console.error('❌ Initialization timed out after 15 seconds');
+        if (!window.analyticsPageInitialized) {
+          hideLoading();
+          showError('Initialization timed out. Please refresh the page.');
+        }
+      }, 15000);
+      
       // Check auth
       const isAuthenticated = await checkAuthAndInitialize();
       if (!isAuthenticated) {
+        clearTimeout(initTimeout);
         console.log('⏳ Redirecting to login...');
         return;
       }
@@ -100,6 +110,7 @@
       // Initialize analytics manager
       analyticsManager = await initializeAnalyticsManager();
       if (!analyticsManager) {
+        clearTimeout(initTimeout);
         throw new Error('Failed to initialize analytics manager');
       }
       
@@ -113,8 +124,11 @@
       if (data && !data.error) {
         renderDashboard(data);
       } else {
+        clearTimeout(initTimeout);
         throw new Error(data?.error || 'Failed to load dashboard data');
       }
+      
+      clearTimeout(initTimeout);
       
       // ✅ FINAL FIX: Hide loading, show content with !important
       hideLoading();
