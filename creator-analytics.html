@@ -188,6 +188,48 @@
         </button>
       </div>
 
+      <!-- ============================================ -->
+      <!-- ✅ 5G: ADVANCED FILTERING BAR -->
+      <!-- ============================================ -->
+      <div class="filter-bar">
+        <div class="filter-group">
+          <label><i class="fas fa-film"></i> Content Type</label>
+          <select id="contentTypeFilter" class="filter-select">
+            <option value="all">All Types</option>
+            <option value="videos">Videos</option>
+            <option value="shorts">Shorts</option>
+            <option value="live">Live Streams</option>
+          </select>
+        </div>
+        
+        <div class="filter-group">
+          <label><i class="fas fa-users"></i> Audience Segment</label>
+          <select id="audienceSegmentFilter" class="filter-select">
+            <option value="all">All Viewers</option>
+            <option value="new">New Viewers</option>
+            <option value="returning">Returning Viewers</option>
+            <option value="connectors">Connectors Only</option>
+          </select>
+        </div>
+        
+        <div class="filter-group">
+          <label><i class="fas fa-calendar"></i> Date Range</label>
+          <div class="date-range-inputs">
+            <input type="date" id="customStartDate" class="date-input" placeholder="Start">
+            <span>to</span>
+            <input type="date" id="customEndDate" class="date-input" placeholder="End">
+            <button id="applyCustomDate" class="btn-small">Apply</button>
+            <button id="resetDateFilter" class="btn-small secondary">Reset</button>
+          </div>
+        </div>
+        
+        <div class="filter-group" style="justify-content: flex-end;">
+          <button id="clearAllFilters" class="btn-small secondary">
+            <i class="fas fa-times"></i> Clear All
+          </button>
+        </div>
+      </div>
+
       <!-- Summary Cards -->
       <section class="summary-grid">
         <div class="summary-card">
@@ -244,6 +286,12 @@
       <section class="top-content-section">
         <div class="section-header">
           <h3><i class="fas fa-trophy"></i> Top Performing Content</h3>
+          <div class="table-controls">
+            <button class="table-btn active" data-sort="views">Views</button>
+            <button class="table-btn" data-sort="watchTime">Watch Time</button>
+            <button class="table-btn" data-sort="completion">Completion</button>
+            <button class="table-btn" data-sort="engagement">Engagement</button>
+          </div>
         </div>
         <div class="table-container">
           <table class="analytics-table">
@@ -266,7 +314,7 @@
       </section>
 
       <!-- ============================================ -->
-      <!-- ✅ AUDIENCE INSIGHTS SECTION (Phase 5E) -->
+      <!-- ✅ 5E: AUDIENCE INSIGHTS SECTION -->
       <!-- ============================================ -->
       <section class="audience-section">
         <div class="section-header">
@@ -311,7 +359,26 @@
                 <p>Loading peak times...</p>
               </div>
             </div>
-            <canvas id="peakHoursChart" style="margin-top: 15px;"></canvas>
+            <canvas id="peakHoursChart" style="margin-top: 15px; display: none;"></canvas>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================ -->
+      <!-- ✅ 5F: SCHEDULED REPORTS SECTION -->
+      <!-- ============================================ -->
+      <section class="scheduled-reports-section">
+        <div class="section-header">
+          <h3><i class="fas fa-envelope"></i> Scheduled Email Reports</h3>
+          <button id="scheduleReportBtn" class="btn btn-primary">
+            <i class="fas fa-plus"></i> Schedule New Report
+          </button>
+        </div>
+        
+        <div id="scheduledReportsList" class="scheduled-reports-list">
+          <div class="loading-state">
+            <i class="fas fa-spinner fa-spin"></i>
+            <p>Loading schedules...</p>
           </div>
         </div>
       </section>
@@ -329,6 +396,84 @@
   <div id="toast-container"></div>
 
   <!-- ============================================ -->
+  <!-- ✅ 5F: SCHEDULE REPORT MODAL -->
+  <!-- ============================================ -->
+  <div id="schedule-report-modal" class="modal-overlay">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3><i class="fas fa-calendar-plus"></i> Schedule Analytics Report</h3>
+        <button id="closeScheduleModal" class="modal-close"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="modal-body">
+        <form id="scheduleReportForm">
+          <div class="form-group">
+            <label>Frequency</label>
+            <select id="reportFrequency" class="form-select" required>
+              <option value="weekly">Weekly</option>
+              <option value="monthly">Monthly</option>
+            </select>
+          </div>
+          
+          <div class="form-group" id="weeklyOptions">
+            <label>Day of Week</label>
+            <select id="reportDay" class="form-select">
+              <option value="1">Monday</option>
+              <option value="2">Tuesday</option>
+              <option value="3">Wednesday</option>
+              <option value="4">Thursday</option>
+              <option value="5">Friday</option>
+              <option value="6">Saturday</option>
+              <option value="0">Sunday</option>
+            </select>
+          </div>
+          
+          <div class="form-group" id="monthlyOptions" style="display: none;">
+            <label>Day of Month</label>
+            <select id="reportDayOfMonth" class="form-select">
+              <!-- Generated by JS -->
+            </select>
+          </div>
+          
+          <div class="form-group">
+            <label>Time of Day</label>
+            <input type="time" id="reportTime" class="form-input" value="09:00" required>
+          </div>
+          
+          <div class="form-group">
+            <label>Report Types</label>
+            <div class="checkbox-group">
+              <label>
+                <input type="checkbox" name="reportType" value="summary" checked> 
+                <i class="fas fa-chart-pie"></i> Summary Overview
+              </label>
+              <label>
+                <input type="checkbox" name="reportType" value="content" checked> 
+                <i class="fas fa-video"></i> Top Content
+              </label>
+              <label>
+                <input type="checkbox" name="reportType" value="audience"> 
+                <i class="fas fa-users"></i> Audience Insights
+              </label>
+            </div>
+          </div>
+          
+          <div class="form-group">
+            <label>Recipient Email (optional)</label>
+            <input type="email" id="reportEmail" class="form-input" placeholder="your@email.com or team@company.com">
+            <small>Leave blank to send to your account email</small>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" id="cancelSchedule" class="btn btn-secondary">Cancel</button>
+        <button type="submit" form="scheduleReportForm" class="btn btn-primary">
+          <i class="fas fa-calendar-check"></i> Schedule Report
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================ -->
   <!-- SCRIPTS - CRITICAL ORDER -->
   <!-- ============================================ -->
   
@@ -338,10 +483,10 @@
   <!-- 2. Auth Helper -->
   <script src="js/auth-helper.js"></script>
   
-  <!-- 3. Creator Analytics Module -->
+  <!-- 3. Creator Analytics Module (Phase 5 Complete) -->
   <script src="js/creator-analytics.js"></script>
   
-  <!-- 4. Analytics Page Controller -->
+  <!-- 4. Analytics Page Controller (Phase 5 Complete) -->
   <script src="js/creator-analytics-page.js"></script>
   
   <!-- 5. Emergency display fix (runs immediately) -->
