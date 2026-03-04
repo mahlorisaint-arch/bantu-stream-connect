@@ -34,14 +34,14 @@ async function initAnalyticsPage() {
       return;
     }
 
-    // Update user info
-    await updateUserInfo();
+    console.log('✅ Analytics instance created for user:', analyticsInstance.userId);
 
     // Setup UI components
     setupTimeRangeButtons();
     setupContentFilters();
     setupTableViewToggle();
-    setupExportButton(); // ✅ NEW: Added export button setup
+    setupExportButton();
+    setupSortButtons();
 
     // Load initial data
     await loadDashboardData();
@@ -58,37 +58,14 @@ async function initAnalyticsPage() {
 }
 
 // ============================================
-// ✅ UPDATE USER INFO
-// ============================================
-async function updateUserInfo() {
-  try {
-    const { data: { user } } = await window.supabaseClient.auth.getUser();
-    if (user) {
-      const { data: profile } = await window.supabaseClient
-        .from('profiles')
-        .select('full_name, username, avatar_url')
-        .eq('id', user.id)
-        .single();
-
-      if (profile) {
-        document.getElementById('creator-name').textContent = profile.full_name || profile.username || 'Creator';
-        if (profile.avatar_url) {
-          document.getElementById('creator-avatar').src = profile.avatar_url;
-        }
-      }
-    }
-  } catch (error) {
-    console.error('Error updating user info:', error);
-  }
-}
-
-// ============================================
 // ✅ LOAD DASHBOARD DATA
 // ============================================
 async function loadDashboardData() {
   if (!analyticsInstance) return;
 
   try {
+    console.log('📊 Loading dashboard data for time range:', currentTimeRange);
+    
     // Show content loading states
     showContentLoading();
 
@@ -101,12 +78,16 @@ async function loadDashboardData() {
       analyticsInstance.getDeviceBreakdown(currentTimeRange)
     ]);
 
+    console.log('📊 Data loaded:', { summary, topContent, watchTimeData });
+
     // Update UI
     updateSummaryCards(summary);
     updateTopContentTable(topContent);
     createWatchTimeChart(watchTimeData);
     updateAudienceLocations(locations);
     updateDeviceBreakdown(devices);
+    updateEngagementChart(summary);
+    updateRetentionChart(watchTimeData);
 
     // Hide content loading states
     hideContentLoading();
@@ -119,132 +100,112 @@ async function loadDashboardData() {
 }
 
 // ============================================
-// ✅ SUMMARY CARDS
+// ✅ UPDATE SUMMARY CARDS
 // ============================================
 function updateSummaryCards(summary) {
   if (!summary) return;
 
+  console.log('Updating summary cards with:', summary);
+
   // Total Views
-  animateValue('total-views', 0, summary.total_views || 0, 1000);
+  const totalViews = summary.total_views || 0;
+  setElementValue('totalViews', totalViews.toLocaleString());
   
-  // Watch Time (convert seconds to hours)
-  const watchTimeHours = summary.total_watch_time ? 
-    Math.round((summary.total_watch_time / 3600) * 10) / 10 : 0;
-  animateValue('watch-time-hours', 0, watchTimeHours, 1000, 'h');
+  // Watch Time (convert seconds to hours and minutes)
+  const watchTimeSeconds = summary.total_watch_time || 0;
+  const hours = Math.floor(watchTimeSeconds / 3600);
+  const minutes = Math.floor((watchTimeSeconds % 3600) / 60);
+  setElementValue('totalWatchTime', `${hours}h ${minutes}m`);
   
   // Unique Viewers
-  animateValue('unique-viewers', 0, summary.unique_viewers || 0, 1000);
-  
-  // Total Earnings
-  animateValue('total-earnings', 0, summary.total_earnings || 0, 1000, 'R');
-  
-  // Total Connectors
-  animateValue('total-connectors', 0, summary.total_connectors || 0, 1000);
+  const uniqueViewers = summary.unique_viewers || 0;
+  setElementValue('uniqueViewers', uniqueViewers.toLocaleString());
   
   // Average Completion Rate
-  animateValue('completion-rate', 0, summary.avg_completion_rate || 0, 1000, '%');
+  const completionRate = summary.avg_completion_rate || 0;
+  setElementValue('avgCompletion', completionRate.toFixed(1) + '%');
   
-  // Engagement Rate
-  animateValue('engagement-rate', 0, summary.engagement_percentage || 0, 1000, '%');
+  // Hidden fields for other data
+  setElementValue('totalUploads', summary.total_uploads || 0);
+  setElementValue('totalEarnings', 'R' + (summary.total_earnings || 0).toFixed(2));
+  setElementValue('totalConnectors', summary.total_connectors || 0);
+  setElementValue('engagementRate', (summary.engagement_percentage || 0).toFixed(1) + '%');
   
-  // Monetization Eligibility
-  const eligibilityElement = document.getElementById('monetization-eligible');
-  if (eligibilityElement) {
-    eligibilityElement.textContent = summary.is_eligible_for_monetization ? 'Eligible' : 'Not Eligible';
-    eligibilityElement.className = summary.is_eligible_for_monetization ? 'eligibility-badge eligible' : 'eligibility-badge not-eligible';
+  // Monetization eligibility
+  const eligible = summary.is_eligible_for_monetization || false;
+  const eligibleElement = document.getElementById('monetizationEligible');
+  if (eligibleElement) {
+    eligibleElement.textContent = eligible ? 'Eligible' : 'Not Eligible';
+    eligibleElement.className = eligible ? 'badge success' : 'badge warning';
   }
 }
 
 // ============================================
-// ✅ ANIMATE VALUE (Counter Animation)
-// ============================================
-function animateValue(elementId, start, end, duration, suffix = '') {
-  const element = document.getElementById(elementId);
-  if (!element) return;
-
-  const range = end - start;
-  const increment = range / (duration / 10);
-  let current = start;
-
-  const timer = setInterval(() => {
-    current += increment;
-    if (current >= end) {
-      current = end;
-      clearInterval(timer);
-    }
-    
-    if (typeof end === 'number') {
-      if (Number.isInteger(end)) {
-        element.textContent = suffix + Math.round(current).toLocaleString();
-      } else {
-        element.textContent = suffix + current.toFixed(1);
-      }
-    }
-  }, 10);
-}
-
-// ============================================
-// ✅ TOP CONTENT TABLE
+// ✅ UPDATE TOP CONTENT TABLE
 // ============================================
 function updateTopContentTable(content) {
-  const tbody = document.getElementById('top-content-body');
-  if (!tbody) return;
+  const tbody = document.getElementById('topContentBody');
+  if (!tbody) {
+    console.error('Top content body element not found');
+    return;
+  }
 
   if (!content || content.length === 0) {
     tbody.innerHTML = `
       <tr>
-        <td colspan="9" class="text-center py-8">
-          <i class="fas fa-video text-4xl text-gray-500 mb-4"></i>
-          <p class="text-gray-400">No content found for this period</p>
+        <td colspan="7" style="text-align:center;padding:40px;color:var(--slate-grey)">
+          <i class="fas fa-video" style="font-size: 48px; margin-bottom: 16px; opacity: 0.5;"></i>
+          <p>No content found for this period</p>
         </td>
       </tr>
     `;
     return;
   }
 
+  console.log('Updating top content table with:', content.length, 'items');
+
   let html = '';
   content.forEach((item, index) => {
-    const rank = index + 1;
     const thumbnail = item.thumbnail_url || 'https://via.placeholder.com/60x34?text=No+Thumb';
     const title = item.title || 'Untitled';
     const views = item.analytics?.totalViews || 0;
-    const uniqueViewers = item.analytics?.uniqueViewers || 0;
     const watchTime = item.analytics?.totalWatchTime || 0;
+    const avgWatchTime = item.analytics?.avgWatchTime || 0;
     const completion = item.analytics?.avgCompletionRate || 0;
-    const earnings = views * 0.01; // R0.01 per view
+    
+    // Format watch time
+    const watchTimeHours = Math.floor(watchTime / 3600);
+    const watchTimeMinutes = Math.floor((watchTime % 3600) / 60);
+    const watchTimeFormatted = watchTimeHours > 0 
+      ? `${watchTimeHours}h ${watchTimeMinutes}m` 
+      : `${watchTimeMinutes}m`;
+    
+    // Format average duration
+    const avgMinutes = Math.floor(avgWatchTime / 60);
+    const avgSeconds = Math.floor(avgWatchTime % 60);
+    const avgFormatted = avgMinutes > 0 
+      ? `${avgMinutes}m ${avgSeconds}s` 
+      : `${avgSeconds}s`;
 
     html += `
-      <tr class="hover:bg-gray-800/50 transition-colors">
-        <td class="px-6 py-4 whitespace-nowrap">
-          <span class="text-sm font-medium text-gray-400">#${rank}</span>
-        </td>
-        <td class="px-6 py-4">
-          <div class="flex items-center gap-3">
-            <img src="${thumbnail}" alt="${title}" class="w-15 h-10 rounded object-cover bg-gray-800" onerror="this.src='https://via.placeholder.com/60x34?text=Error'">
-            <span class="text-sm font-medium text-white truncate max-w-[200px]" title="${title}">${title}</span>
+      <tr>
+        <td>
+          <div class="content-cell">
+            <img src="${thumbnail}" alt="${title}" class="content-thumb" onerror="this.src='https://via.placeholder.com/60x34?text=Error'">
+            <span class="content-title" title="${title}">${title}</span>
           </div>
         </td>
-        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
-          ${item.created_at ? new Date(item.created_at).toLocaleDateString() : 'N/A'}
+        <td>${views.toLocaleString()}</td>
+        <td>${watchTimeFormatted}</td>
+        <td>${avgFormatted}</td>
+        <td>${completion.toFixed(1)}%</td>
+        <td>
+          <i class="fas fa-heart" style="color: #ef4444;"></i> ${item.analytics?.likes || 0}<br>
+          <i class="fas fa-comment" style="color: #3b82f6;"></i> ${item.analytics?.comments || 0}
         </td>
-        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
-          ${views.toLocaleString()}
-        </td>
-        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
-          ${uniqueViewers.toLocaleString()}
-        </td>
-        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
-          ${Math.round(watchTime / 60)} min
-        </td>
-        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
-          ${completion.toFixed(1)}%
-        </td>
-        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
-          R${earnings.toFixed(2)}
-        </td>
-        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-          <button onclick="viewContentDetails('${item.id}')" class="text-bantu-blue hover:text-bantu-gold transition-colors">
-            <i class="fas fa-chart-line mr-1"></i> Details
+        <td>
+          <button class="action-btn" onclick="viewContentDetails('${item.id}')">
+            <i class="fas fa-chart-line"></i> Details
           </button>
         </td>
       </tr>
@@ -255,15 +216,24 @@ function updateTopContentTable(content) {
 }
 
 // ============================================
-// ✅ WATCH TIME CHART
+// ✅ CREATE WATCH TIME CHART
 // ============================================
 function createWatchTimeChart(data) {
   const ctx = document.getElementById('watchTimeChart')?.getContext('2d');
-  if (!ctx) return;
+  if (!ctx) {
+    console.error('Watch time chart canvas not found');
+    return;
+  }
 
   // Destroy existing chart
   if (charts.watchTime) {
     charts.watchTime.destroy();
+  }
+
+  if (!data || data.length === 0) {
+    // Show empty state
+    ctx.canvas.parentNode.innerHTML = '<p class="empty-message">No data available for this period</p>';
+    return;
   }
 
   // Format dates for display
@@ -355,11 +325,6 @@ function createWatchTimeChart(data) {
             callback: function(value) {
               return value.toLocaleString();
             }
-          },
-          title: {
-            display: true,
-            text: 'Views',
-            color: '#94A3B8'
           }
         },
         y1: {
@@ -375,10 +340,50 @@ function createWatchTimeChart(data) {
             callback: function(value) {
               return value + 'h';
             }
-          },
-          title: {
-            display: true,
-            text: 'Watch Time (hours)',
+          }
+        }
+      }
+    }
+  });
+}
+
+// ============================================
+// ✅ UPDATE ENGAGEMENT CHART
+// ============================================
+function updateEngagementChart(summary) {
+  const ctx = document.getElementById('engagementChart')?.getContext('2d');
+  if (!ctx) return;
+
+  if (charts.engagement) {
+    charts.engagement.destroy();
+  }
+
+  const data = {
+    labels: ['Views', 'Unique Viewers', 'Connectors'],
+    datasets: [{
+      data: [
+        summary?.total_views || 0,
+        summary?.unique_viewers || 0,
+        summary?.total_connectors || 0
+      ],
+      backgroundColor: [
+        '#FFB347',
+        '#1E4AE9',
+        '#10b981'
+      ],
+      borderWidth: 0
+    }]
+  };
+
+  charts.engagement = new Chart(ctx, {
+    type: 'doughnut',
+    data: data,
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          labels: {
             color: '#94A3B8'
           }
         }
@@ -388,28 +393,87 @@ function createWatchTimeChart(data) {
 }
 
 // ============================================
-// ✅ AUDIENCE LOCATIONS
+// ✅ UPDATE RETENTION CHART
+// ============================================
+function updateRetentionChart(data) {
+  const ctx = document.getElementById('retentionChart')?.getContext('2d');
+  if (!ctx) return;
+
+  if (charts.retention) {
+    charts.retention.destroy();
+  }
+
+  // Create sample retention data (in production, this would come from actual analytics)
+  const retentionData = [100, 65, 45, 30, 20, 15, 10, 8, 5, 3];
+  const labels = ['0%', '10%', '20%', '30%', '40%', '50%', '60%', '70%', '80%', '90%', '100%'];
+
+  charts.retention = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: 'Audience Retention',
+        data: retentionData,
+        borderColor: '#FFB347',
+        backgroundColor: 'rgba(255, 179, 71, 0.1)',
+        borderWidth: 2,
+        fill: true,
+        tension: 0.4
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          labels: {
+            color: '#94A3B8'
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid: {
+            color: 'rgba(255,255,255,0.1)'
+          },
+          ticks: {
+            color: '#94A3B8'
+          }
+        },
+        y: {
+          grid: {
+            color: 'rgba(255,255,255,0.1)'
+          },
+          ticks: {
+            color: '#94A3B8',
+            callback: function(value) {
+              return value + '%';
+            }
+          }
+        }
+      }
+    }
+  });
+}
+
+// ============================================
+// ✅ UPDATE AUDIENCE LOCATIONS
 // ============================================
 function updateAudienceLocations(locations) {
-  const container = document.getElementById('top-locations');
+  const container = document.getElementById('locationsList');
   if (!container) return;
 
   if (!locations || locations.length === 0) {
-    container.innerHTML = '<p class="text-gray-400 text-center py-4">No location data available</p>';
+    container.innerHTML = '<p style="color: var(--slate-grey); text-align: center;">No location data available</p>';
     return;
   }
 
   let html = '';
   locations.slice(0, 5).forEach(loc => {
     html += `
-      <div class="flex items-center justify-between p-3 bg-gray-800/50 rounded-lg">
-        <span class="text-gray-300">
-          <i class="fas fa-map-marker-alt text-bantu-gold mr-2"></i>
-          ${loc.country}
-        </span>
-        <span class="text-bantu-gold font-semibold">
-          ${loc.percentage}% (${loc.count})
-        </span>
+      <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.1);">
+        <span><i class="fas fa-map-marker-alt" style="color: #FFB347; margin-right: 8px;"></i>${loc.country}</span>
+        <span style="color: #FFB347;">${loc.percentage}% (${loc.count})</span>
       </div>
     `;
   });
@@ -418,57 +482,45 @@ function updateAudienceLocations(locations) {
 }
 
 // ============================================
-// ✅ DEVICE BREAKDOWN
+// ✅ UPDATE DEVICE BREAKDOWN
 // ============================================
 function updateDeviceBreakdown(devices) {
-  const container = document.getElementById('device-breakdown');
-  if (!container) return;
+  const ctx = document.getElementById('deviceChart')?.getContext('2d');
+  if (!ctx) return;
+
+  if (charts.device) {
+    charts.device.destroy();
+  }
 
   if (!devices || devices.length === 0) {
-    container.innerHTML = '<p class="text-gray-400 text-center py-4">No device data available</p>';
+    ctx.canvas.parentNode.innerHTML = '<p class="empty-message">No device data available</p>';
     return;
   }
 
-  let html = '';
-  devices.forEach(device => {
-    const deviceIcon = getDeviceIcon(device.device);
-    html += `
-      <div class="flex items-center justify-between p-3 bg-gray-800/50 rounded-lg">
-        <span class="text-gray-300">
-          <i class="fas ${deviceIcon} text-bantu-gold mr-2"></i>
-          ${device.device}
-        </span>
-        <span class="text-bantu-gold font-semibold">
-          ${device.percentage}% (${device.count})
-        </span>
-      </div>
-    `;
+  const data = {
+    labels: devices.map(d => d.device),
+    datasets: [{
+      data: devices.map(d => d.percentage),
+      backgroundColor: ['#FFB347', '#1E4AE9', '#10b981', '#8b5cf6'],
+      borderWidth: 0
+    }]
+  };
+
+  charts.device = new Chart(ctx, {
+    type: 'pie',
+    data: data,
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          labels: {
+            color: '#94A3B8'
+          }
+        }
+      }
+    }
   });
-
-  container.innerHTML = html;
-}
-
-// ============================================
-// ✅ GET DEVICE ICON
-// ============================================
-function getDeviceIcon(device) {
-  const deviceLower = (device || '').toLowerCase();
-  if (deviceLower.includes('mobile') || deviceLower.includes('phone')) {
-    return 'fa-mobile-alt';
-  } else if (deviceLower.includes('tablet')) {
-    return 'fa-tablet-alt';
-  } else if (deviceLower.includes('desktop') || deviceLower.includes('pc')) {
-    return 'fa-desktop';
-  } else {
-    return 'fa-laptop';
-  }
-}
-
-// ============================================
-// ✅ VIEW CONTENT DETAILS
-// ============================================
-function viewContentDetails(contentId) {
-  window.location.href = `/creator/content-analytics.html?id=${contentId}`;
 }
 
 // ============================================
@@ -486,6 +538,8 @@ function setupTimeRangeButtons() {
       // Update current time range
       currentTimeRange = this.dataset.range;
       
+      console.log('Time range changed to:', currentTimeRange);
+      
       // Reload data with new time range
       showContentLoading();
       await loadDashboardData();
@@ -495,16 +549,50 @@ function setupTimeRangeButtons() {
 }
 
 // ============================================
+// ✅ SETUP SORT BUTTONS
+// ============================================
+function setupSortButtons() {
+  const sortButtons = document.querySelectorAll('.table-btn[data-sort]');
+  
+  sortButtons.forEach(btn => {
+    btn.addEventListener('click', async function() {
+      // Update active state
+      sortButtons.forEach(b => b.classList.remove('active'));
+      this.classList.add('active');
+      
+      // Update sort metric
+      currentSortMetric = this.dataset.sort;
+      
+      console.log('Sort changed to:', currentSortMetric);
+      
+      // Reload content with new sort
+      showContentLoading();
+      const topContent = await analyticsInstance.getTopContent(
+        currentTimeRange, 
+        currentSortMetric, 
+        10
+      );
+      updateTopContentTable(topContent);
+      hideContentLoading();
+    });
+  });
+}
+
+// ============================================
 // ✅ SETUP CONTENT FILTERS
 // ============================================
 function setupContentFilters() {
-  const filterSelect = document.querySelector('.content-filter .filter-select');
+  const filterSelect = document.getElementById('contentFilter');
   if (!filterSelect) return;
 
   filterSelect.addEventListener('change', async function() {
-    currentSortMetric = this.value;
+    const filterValue = this.value;
+    console.log('Filter changed to:', filterValue);
     
-    // Reload content with new sort
+    // In a real implementation, you'd filter the content by type
+    showToast(`Filtering by: ${filterValue}`, 'info');
+    
+    // For now, just reload with current sort
     showContentLoading();
     const topContent = await analyticsInstance.getTopContent(
       currentTimeRange, 
@@ -551,7 +639,7 @@ function setupTableViewToggle() {
 }
 
 // ============================================
-// ✅ ✅ NEW: SETUP EXPORT BUTTON
+// ✅ SETUP EXPORT BUTTON
 // ============================================
 function setupExportButton() {
   const exportBtn = document.getElementById('export-csv-btn');
@@ -585,14 +673,6 @@ function setupExportButton() {
       // Show success
       showToast(`✅ Exported ${timeRange} analytics`, 'success');
       
-      // Track export event
-      if (window.gtag) {
-        window.gtag('event', 'analytics_export', {
-          'time_range': timeRange,
-          'filename': result.filename
-        });
-      }
-      
     } catch (error) {
       console.error('❌ Export failed:', error);
       showToast('Failed to export: ' + (error.message || 'Unknown error'), 'error');
@@ -605,7 +685,7 @@ function setupExportButton() {
 }
 
 // ============================================
-// ✅ ✅ NEW: DOWNLOAD CSV FILE
+// ✅ DOWNLOAD CSV FILE
 // ============================================
 function downloadCSV(csvContent, filename) {
   // Create blob with UTF-8 BOM for Excel compatibility
@@ -634,56 +714,87 @@ function downloadCSV(csvContent, filename) {
 }
 
 // ============================================
+// ✅ VIEW CONTENT DETAILS
+// ============================================
+function viewContentDetails(contentId) {
+  window.location.href = `/creator/content-analytics.html?id=${contentId}`;
+}
+
+// ============================================
+// ✅ HELPER: Set element value
+// ============================================
+function setElementValue(id, value) {
+  const element = document.getElementById(id);
+  if (element) {
+    element.textContent = value;
+  } else {
+    console.warn(`Element with id '${id}' not found`);
+  }
+}
+
+// ============================================
 // ✅ LOADING STATES
 // ============================================
 function showLoading() {
-  document.getElementById('loading-overlay')?.classList.remove('hidden');
+  const loadingScreen = document.getElementById('analytics-loading');
+  const content = document.getElementById('analytics-content');
+  if (loadingScreen) loadingScreen.style.display = 'flex';
+  if (content) content.style.display = 'none';
 }
 
 function hideLoading() {
-  document.getElementById('loading-overlay')?.classList.add('hidden');
+  const loadingScreen = document.getElementById('analytics-loading');
+  const content = document.getElementById('analytics-content');
+  const error = document.getElementById('analytics-error');
+  
+  if (loadingScreen) loadingScreen.style.display = 'none';
+  if (content) content.style.display = 'block';
+  if (error) error.style.display = 'none';
 }
 
 function showContentLoading() {
-  document.getElementById('content-loading')?.classList.remove('hidden');
+  const tbody = document.getElementById('topContentBody');
+  if (tbody) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="7" style="text-align:center;padding:40px;color:var(--slate-grey)">
+          <div class="spinner" style="width:30px;height:30px;margin:0 auto 16px;"></div>
+          <p>Loading content data...</p>
+        </td>
+      </tr>
+    `;
+  }
 }
 
 function hideContentLoading() {
-  document.getElementById('content-loading')?.classList.add('hidden');
+  // Content will be updated by the update function
 }
 
 // ============================================
 // ✅ ERROR HANDLING
 // ============================================
 function showError(message) {
-  const errorContainer = document.getElementById('error-container');
-  if (errorContainer) {
-    errorContainer.classList.remove('hidden');
-    errorContainer.querySelector('.error-message').textContent = message;
-  }
+  const errorContainer = document.getElementById('analytics-error');
+  const errorMessage = document.getElementById('error-message');
+  const loadingScreen = document.getElementById('analytics-loading');
+  const content = document.getElementById('analytics-content');
   
-  hideLoading();
-  hideContentLoading();
+  if (errorMessage) errorMessage.textContent = message;
+  if (errorContainer) errorContainer.style.display = 'block';
+  if (loadingScreen) loadingScreen.style.display = 'none';
+  if (content) content.style.display = 'none';
 }
 
 // ============================================
-// ✅ ✅ NEW: TOAST NOTIFICATIONS
+// ✅ TOAST NOTIFICATIONS
 // ============================================
 function showToast(message, type = 'info') {
-  // Check if toast container exists
-  let container = document.querySelector('.toast-container');
-  
-  if (!container) {
-    container = document.createElement('div');
-    container.className = 'toast-container';
-    document.body.appendChild(container);
-  }
+  const container = document.getElementById('toast-container');
+  if (!container) return;
 
-  // Create toast
   const toast = document.createElement('div');
   toast.className = `toast toast-${type}`;
   
-  // Add icon based on type
   let icon = 'fa-info-circle';
   if (type === 'success') icon = 'fa-check-circle';
   if (type === 'error') icon = 'fa-exclamation-circle';
@@ -694,17 +805,13 @@ function showToast(message, type = 'info') {
     <span>${message}</span>
   `;
 
-  // Add to container
   container.appendChild(toast);
 
-  // Remove after 3 seconds
   setTimeout(() => {
-    toast.style.animation = 'slideOut 0.3s ease';
+    toast.style.opacity = '0';
+    toast.style.transform = 'translateX(100%)';
     setTimeout(() => {
       toast.remove();
-      if (container.children.length === 0) {
-        container.remove();
-      }
     }, 300);
   }, 3000);
 }
@@ -720,18 +827,13 @@ async function refreshData() {
 }
 
 // ============================================
-// ✅ PRINT REPORT
-// ============================================
-function printReport() {
-  window.print();
-}
-
-// ============================================
 // ✅ INITIALIZE ON PAGE LOAD
 // ============================================
 document.addEventListener('DOMContentLoaded', function() {
+  console.log('DOM loaded - initializing analytics page');
+  
   // Check if we're on the analytics page
-  if (document.getElementById('analytics-dashboard')) {
+  if (document.getElementById('analytics-content')) {
     initAnalyticsPage();
   }
 });
@@ -739,5 +841,4 @@ document.addEventListener('DOMContentLoaded', function() {
 // Make functions available globally
 window.viewContentDetails = viewContentDetails;
 window.refreshData = refreshData;
-window.printReport = printReport;
 window.showToast = showToast;
