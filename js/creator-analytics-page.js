@@ -1,11 +1,26 @@
 // js/creator-analytics-page.js — Dedicated Analytics Page Controller
 // Bantu Stream Connect — Phase 5B Implementation
-// ✅ FINAL FIX: Added !important to DOM helpers to override any CSS conflicts
+// ✅ FIXED: Added initialization lock to prevent multiple initializations
 
 (function() {
   'use strict';
   
+  // Check if already initialized
+  if (window.analyticsPageInitialized) {
+    console.log('⚠️ Analytics page already initialized, skipping');
+    return;
+  }
+  
+  // Check if currently initializing
+  if (window._analyticsPageInitializing) {
+    console.log('⚠️ Analytics page already initializing, skipping');
+    return;
+  }
+  
   console.log('📈 Creator Analytics Page initializing...');
+  
+  // Set initializing flag
+  window._analyticsPageInitializing = true;
 
   // Global state
   let currentUser = null;
@@ -13,8 +28,10 @@
   let currentTimeRange = '30days';
   let charts = {};
   let dom = {};
+  let initializationAttempts = 0;
+  const MAX_INIT_ATTEMPTS = 1; // Only try once
   
-  // Mark as initialized for fallback check
+  // Mark as not initialized yet
   window.analyticsPageInitialized = false;
 
   // ============================================
@@ -51,13 +68,22 @@
   // MAIN INITIALIZATION (Exported for fallback)
   // ============================================
   async function initializeAnalyticsPage() {
+    // Increment attempt counter
+    initializationAttempts++;
+    
+    // Check if already initialized or max attempts reached
     if (window.analyticsPageInitialized) {
-      console.log('⚠️ Analytics page already initialized');
+      console.log('⚠️ Analytics page already initialized, skipping duplicate initialization');
+      return;
+    }
+    
+    if (initializationAttempts > MAX_INIT_ATTEMPTS) {
+      console.log('⚠️ Max initialization attempts reached, stopping');
       return;
     }
     
     try {
-      console.log('🚀 Starting analytics page initialization...');
+      console.log('🚀 Starting analytics page initialization (attempt ' + initializationAttempts + ')...');
       
       // Cache DOM first
       cacheDOMElements();
@@ -99,6 +125,7 @@
       
       // Mark as initialized
       window.analyticsPageInitialized = true;
+      window._analyticsPageInitializing = false;
       
       console.log('✅ Creator Analytics Page fully initialized');
       
@@ -107,6 +134,9 @@
       // ✅ Show error state if loading fails
       hideLoading();
       showError(error.message || 'Failed to initialize analytics');
+      
+      // Clear initializing flag on error
+      window._analyticsPageInitializing = false;
     }
   }
   
@@ -347,6 +377,12 @@
   // CHARTS - ALL SYNTAX ERRORS FIXED
   // ============================================
   function loadCharts(dashboardData) {
+    // Clear existing charts
+    if (charts.views) charts.views.destroy();
+    if (charts.watchTime) charts.watchTime.destroy();
+    if (charts.engagement) charts.engagement.destroy();
+    if (charts.retention) charts.retention.destroy();
+    
     renderViewsChart(dashboardData.content);
     renderWatchTimeChart(dashboardData.content);
     renderEngagementChart(dashboardData.summary);
@@ -357,8 +393,6 @@
   function renderViewsChart(content) {
     const ctx = dom.viewsChart;
     if (!ctx || typeof Chart === 'undefined') return;
-    
-    if (charts.views) charts.views.destroy();
     
     const labels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
     let data = (content || []).slice(0, 7).map(function(c) {
@@ -408,8 +442,6 @@
   function renderWatchTimeChart(content) {
     const ctx = dom.watchTimeChart;
     if (!ctx || typeof Chart === 'undefined') return;
-    
-    if (charts.watchTime) charts.watchTime.destroy();
     
     let labels = (content || []).slice(0, 7).map(function(_, i) {
       return `Day ${i + 1}`;
@@ -471,8 +503,6 @@
     const ctx = dom.engagementChart;
     if (!ctx || typeof Chart === 'undefined') return;
     
-    if (charts.engagement) charts.engagement.destroy();
-    
     charts.engagement = new Chart(ctx, {
       type: 'doughnut',
       data: {
@@ -500,8 +530,6 @@
   function renderRetentionChart() {
     const ctx = dom.retentionChart;
     if (!ctx || typeof Chart === 'undefined') return;
-    
-    if (charts.retention) charts.retention.destroy();
     
     const retentionData = [100, 85, 72, 60, 48, 38, 30, 24, 18, 14, 10];
     
@@ -676,33 +704,42 @@
     if (!dom.timeRangeBtns || !dom.timeRangeBtns.length) return;
     
     dom.timeRangeBtns.forEach(function(btn) {
-      btn.addEventListener('click', async function() {
-        dom.timeRangeBtns.forEach(function(b) {
-          b.classList.remove('active');
-        });
-        this.classList.add('active');
-        
-        if (dom.content) dom.content.style.opacity = '0.5';
-        
-        const timeRange = this.dataset.range;
-        currentTimeRange = timeRange;
-        
-        if (analytics) {
-          const data = await analytics.getDashboardData(timeRange);
-          if (data && !data.error) {
-            renderDashboard(data);
-          }
-        }
-        
-        if (dom.content) dom.content.style.opacity = '1';
-      });
+      // Remove existing listeners to prevent duplicates
+      btn.removeEventListener('click', handleTimeRangeChange);
+      btn.addEventListener('click', handleTimeRangeChange);
     });
+    
+    async function handleTimeRangeChange(e) {
+      const btn = e.currentTarget;
+      dom.timeRangeBtns.forEach(function(b) {
+        b.classList.remove('active');
+      });
+      btn.classList.add('active');
+      
+      if (dom.content) dom.content.style.opacity = '0.5';
+      
+      const timeRange = btn.dataset.range;
+      currentTimeRange = timeRange;
+      
+      if (analytics) {
+        const data = await analytics.getDashboardData(timeRange);
+        if (data && !data.error) {
+          renderDashboard(data);
+        }
+      }
+      
+      if (dom.content) dom.content.style.opacity = '1';
+    }
   }
 
   function setupExportButton(analytics) {
     if (!dom.exportBtn) return;
     
-    dom.exportBtn.addEventListener('click', async function() {
+    // Remove existing listeners to prevent duplicates
+    dom.exportBtn.removeEventListener('click', handleExport);
+    dom.exportBtn.addEventListener('click', handleExport);
+    
+    async function handleExport() {
       if (!analytics) {
         showToast('Analytics not ready', 'warning');
         return;
@@ -733,15 +770,19 @@
         dom.exportBtn.disabled = false;
         dom.exportBtn.innerHTML = '<i class="fas fa-download"></i> Export CSV';
       }
-    });
+    }
   }
 
   function setupBackButton() {
     if (!dom.backBtn) return;
     
-    dom.backBtn.addEventListener('click', function() {
+    // Remove existing listeners to prevent duplicates
+    dom.backBtn.removeEventListener('click', handleBack);
+    dom.backBtn.addEventListener('click', handleBack);
+    
+    function handleBack() {
       window.location.href = 'creator-dashboard.html';
-    });
+    }
   }
 
   // ============================================
@@ -843,10 +884,15 @@
   // START
   // ============================================
   
+  // Only initialize once when DOM is ready
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initializeAnalyticsPage);
+    document.addEventListener('DOMContentLoaded', function() {
+      // Small delay to ensure all scripts are loaded
+      setTimeout(initializeAnalyticsPage, 100);
+    });
   } else {
-    initializeAnalyticsPage();
+    // Small delay to ensure all scripts are loaded
+    setTimeout(initializeAnalyticsPage, 100);
   }
   
   console.log('✅ Creator Analytics Page module loaded');
