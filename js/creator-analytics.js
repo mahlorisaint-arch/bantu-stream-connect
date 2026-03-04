@@ -4,6 +4,7 @@
 // ✅ FIXED: Traffic sources and audience locations now work without missing columns
 // ✅ FIXED: Added empty data fallbacks to prevent UI breaking
 // ✅ FIXED: Global lock to prevent multiple module loads
+// ✅ FIXED: getDashboardData now returns data even if parts fail
 
 (function() {
   'use strict';
@@ -244,7 +245,7 @@
     }
 
     // ============================================
-    // ✅ GET FULL DASHBOARD DATA (Summary + Content)
+    // ✅ GET FULL DASHBOARD DATA (Summary + Content) - FIXED with error handling
     // ============================================
     async getDashboardData(timeRange = '30days') {
       if (!this.userId) throw new Error('User not authenticated');
@@ -253,20 +254,25 @@
       const cached = this._getCache(cacheKey);
       if (cached) return cached;
       
-      // Use fetch queue to prevent multiple simultaneous requests
       return this._queueRequest('dashboard_' + timeRange, async () => {
         try {
           console.log('📊 Fetching dashboard data for range:', timeRange);
           
-          // Get summary
-          const summary = await this.getDashboardSummary(timeRange);
+          // Get summary (with fallback)
+          let summary;
+          try {
+            summary = await this.getDashboardSummary(timeRange);
+          } catch (e) {
+            console.warn('⚠️ Summary fetch failed, using empty:', e.message);
+            summary = this._getEmptySummary();
+          }
           
-          // Get content list with analytics
+          // Get content list (with fallback)
           let content = [];
           try {
             content = await this.getContentList(timeRange, 'views', 50);
           } catch (e) {
-            console.warn('⚠️ Could not fetch content list:', e.message);
+            console.warn('⚠️ Content list fetch failed:', e.message);
             content = [];
           }
           
@@ -277,10 +283,8 @@
             timestamp: new Date().toISOString()
           };
           
-          // Cache the full dashboard data
           this._setCache(cacheKey, result);
           
-          // Trigger callback
           if (this.onDataLoaded) {
             this.onDataLoaded(result);
           }
@@ -289,6 +293,8 @@
         } catch (error) {
           console.error('❌ Error fetching dashboard data:', error);
           if (this.onError) this.onError(error);
+          
+          // Return fallback data instead of throwing
           return {
             summary: this._getEmptySummary(),
             content: [],
