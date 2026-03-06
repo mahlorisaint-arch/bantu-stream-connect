@@ -811,7 +811,7 @@ Shorts are vertical videos under 60 seconds that appear in the Quick Bits sectio
 </div>
 <div class="checklist-item" id="check-title"><i class="far fa-circle"></i> Compelling Title</div>
 <div class="checklist-item" id="check-desc"><i class="far fa-circle"></i> Detailed Description</div>
-<div class="checklist-item" id="check-media"><i class="far fa-circle"></i> Video File Uploaded</div>
+<div class="checklist-item" id="check-media"><i class="far fa-circle"></i> Video/Audio File Uploaded</div>
 <div class="checklist-item" id="check-thumb"><i class="far fa-circle"></i> Custom Thumbnail <span style="color:var(--warm-gold);font-size:12px;margin-left:5px">(2x more clicks)</span></div>
 <div class="checklist-item" id="check-genre"><i class="far fa-circle"></i> Category Selected</div>
 </div>
@@ -1001,6 +1001,8 @@ let uploadStartTime = 0;
 let uploadedBytes = 0;
 let lastLoadedBytes = 0;
 let lastUpdateTime = 0;
+let speedSamples = []; // Store speed samples for averaging
+
 // UI Helpers
 function setLoading(loading) {
 loadingScreen.style.display = loading ? 'flex' : 'none';
@@ -1037,12 +1039,21 @@ function updateUploadSpeed(loadedBytes) {
 const now = Date.now();
 const timeDiff = (now - lastUpdateTime) / 1000; // seconds
 const bytesDiff = loadedBytes - lastLoadedBytes;
-if (timeDiff > 0.5) { // Update every 0.5s
-const speedMBps = (bytesDiff / timeDiff / (1024 * 1024)).toFixed(2);
+
+if (timeDiff >= 0.5 && bytesDiff > 0) { // Update every 0.5s
+const speedBytesPerSec = bytesDiff / timeDiff;
+const speedMBps = (speedBytesPerSec / (1024 * 1024)).toFixed(2);
 const remainingBytes = selectedMediaFile.size - loadedBytes;
-const etaSeconds = speedMBps > 0 ? remainingBytes / (speedMBps * 1024 * 1024) : 0;
-progressSpeed.textContent = `Speed: ${speedMBps} MB/s`;
+const etaSeconds = speedBytesPerSec > 0 ? remainingBytes / speedBytesPerSec : 0;
+
+// Store speed sample for averaging
+speedSamples.push(parseFloat(speedMBps));
+if (speedSamples.length > 5) speedSamples.shift(); // Keep last 5 samples
+const avgSpeed = (speedSamples.reduce((a, b) => a + b, 0) / speedSamples.length).toFixed(2);
+
+progressSpeed.textContent = `Speed: ${avgSpeed} MB/s`;
 progressEta.textContent = `ETA: ${formatTime(etaSeconds)}`;
+
 lastLoadedBytes = loadedBytes;
 lastUpdateTime = now;
 }
@@ -1204,36 +1215,36 @@ updateChecklist();
 });
 });
 }
-// NEW: Extract duration from file when selected
+// UPDATED: Extract duration from file (Video OR Audio)
 function extractDurationFromFile(file) {
 return new Promise((resolve, reject) => {
-// Only video files have duration we care about
-if (!file.type.includes('video')) {
+// Support both video AND audio files
+if (!file.type.includes('video') && !file.type.includes('audio')) {
 resolve(null);
 return;
 }
-const video = document.createElement('video');
-video.preload = 'metadata';
+const mediaElement = file.type.includes('video') ? document.createElement('video') : document.createElement('audio');
+mediaElement.preload = 'metadata';
 // Set timeout in case metadata loading hangs
 const timeout = setTimeout(() => {
-URL.revokeObjectURL(video.src);
+URL.revokeObjectURL(mediaElement.src);
 reject(new Error('Duration extraction timeout'));
 }, 10000);
-video.onloadedmetadata = () => {
+mediaElement.onloadedmetadata = () => {
 clearTimeout(timeout);
-const duration = Math.floor(video.duration);
-URL.revokeObjectURL(video.src);
+const duration = Math.floor(mediaElement.duration);
+URL.revokeObjectURL(mediaElement.src);
 resolve(duration);
 };
-video.onerror = () => {
+mediaElement.onerror = () => {
 clearTimeout(timeout);
-URL.revokeObjectURL(video.src);
-reject(new Error('Failed to load video metadata'));
+URL.revokeObjectURL(mediaElement.src);
+reject(new Error('Failed to load media metadata'));
 };
-video.src = URL.createObjectURL(file);
+mediaElement.src = URL.createObjectURL(file);
 });
 }
-// UPDATED: Validate media file and extract duration
+// UPDATED: Validate media file and extract duration (Video OR Audio)
 async function validateMediaFile(file) {
 const durationDisplay = document.getElementById('duration-display');
 const durationText = document.getElementById('duration-text');
@@ -1241,13 +1252,13 @@ const durationStatus = document.getElementById('duration-status');
 const durationBadge = document.getElementById('duration-badge');
 // Reset extracted duration
 extractedDuration = null;
-if (file.type.includes('video')) {
+if (file.type.includes('video') || file.type.includes('audio')) {
 durationDisplay.style.display = 'flex';
 durationText.textContent = `Duration: extracting...`;
 durationStatus.textContent = '';
 durationBadge.style.display = 'none';
 try {
-// Extract real duration from video metadata
+// Extract real duration from media metadata
 const duration = await extractDurationFromFile(file);
 extractedDuration = duration;
 durationText.textContent = `Duration: ${formatTime(duration)}`;
@@ -1257,14 +1268,14 @@ if (duration > 60) {
 durationDisplay.classList.add('invalid');
 durationDisplay.classList.remove('valid');
 durationStatus.textContent = '⚠️ Too long for Shorts (max 60s)';
-showToast('Video is too long for Shorts (max 60 seconds)', 'error');
+showToast('Media is too long for Shorts (max 60 seconds)', 'error');
 } else {
 durationDisplay.classList.add('valid');
 durationDisplay.classList.remove('invalid');
 durationStatus.textContent = '✓ Valid for Shorts';
 }
 } else {
-// Regular video - just show duration
+// Regular media - just show duration
 durationDisplay.classList.remove('valid', 'invalid');
 durationStatus.textContent = '';
 }
@@ -1273,10 +1284,10 @@ console.error('Duration extraction failed:', error);
 durationText.textContent = `Duration: unknown`;
 durationStatus.textContent = '⚠️ Could not read duration';
 durationDisplay.classList.add('invalid');
-showToast('Could not read video duration. File may be corrupted.', 'error');
+showToast('Could not read media duration. File may be corrupted.', 'error');
 }
 } else {
-// Audio file - hide duration display
+// Other file type - hide duration display
 durationDisplay.style.display = 'none';
 extractedDuration = null;
 }
@@ -1319,8 +1330,8 @@ showToast('File size must be less than 800MB');
 return;
 }
 const videoTypes = ['video/mp4', 'video/quicktime', 'video/x-msvideo', 'video/x-matroska', 'video/webm'];
-const audioTypes = ['audio/mpeg', 'audio/mp3', 'audio/aac', 'audio/wav'];
-const isValidType = [...videoTypes, ...audioTypes].some(type => file.type.includes(type.replace('video/', '')));
+const audioTypes = ['audio/mpeg', 'audio/mp3', 'audio/aac', 'audio/wav', 'audio/ogg'];
+const isValidType = [...videoTypes, ...audioTypes].some(type => file.type.includes(type.replace('video/', '').replace('audio/', '')));
 if (!isValidType) {
 showToast('Please select a valid video or audio file');
 return;
@@ -1435,11 +1446,11 @@ document.getElementById('check-desc').innerHTML = '<i class="far fa-circle"></i>
 // Media
 if (selectedMediaFile) {
 document.getElementById('check-media').classList.add('completed');
-document.getElementById('check-media').innerHTML = '<i class="fas fa-check-circle"></i> Video File Uploaded';
+document.getElementById('check-media').innerHTML = '<i class="fas fa-check-circle"></i> Video/Audio File Uploaded';
 score += 20;
 } else {
 document.getElementById('check-media').classList.remove('completed');
-document.getElementById('check-media').innerHTML = '<i class="far fa-circle"></i> Video File Uploaded';
+document.getElementById('check-media').innerHTML = '<i class="far fa-circle"></i> Video/Audio File Uploaded';
 }
 // Thumbnail
 if (selectedThumbnailFile) {
@@ -1468,7 +1479,7 @@ const desc = document.getElementById('content-description').value.trim();
 // For shorts, check duration validation (must have duration and be <= 60s)
 const isShortValid = selectedMediaType !== 'short' ||
 (extractedDuration !== null && extractedDuration <= 60);
-// For regular videos, duration is optional but nice to have
+// For regular media, duration is optional but nice to have
 const hasRequiredDuration = selectedMediaType !== 'short' || isShortValid;
 saveDraftBtn.disabled = !title || isUploading || !currentUserId;
 publishBtn.disabled = !title || !desc || !selectedMediaFile || isUploading || !currentUserId || !hasRequiredDuration;
@@ -1517,7 +1528,7 @@ showToast(`Draft recovered: ${draft.mediaName}`, 'success');
 }
 }
 }
-// Upload to Storage
+// Upload to Storage with REAL Progress Tracking
 async function uploadFileToStorage(file, bucket, basePath) {
 // Sanitize filename
 const cleanFileName = file.name
@@ -1531,33 +1542,62 @@ const fileName = `${timestamp}_${random}_${cleanFileName}`;
 const filePath = `${currentUserId}/${basePath}/${fileName}`;
 console.log(`📤 Uploading to ${bucket}: ${filePath}`);
 try {
-// Upload file with progress tracking
-const { data, error } = await window.supabaseClient.storage
-.from(bucket)
-.upload(filePath, file, {
-contentType: file.type,
-cacheControl: '3600',
-upsert: false,
-// Progress callback
-duplex: 'half',
-onProgress: (progress) => {
-const loaded = progress.loaded;
-updateUploadSpeed(loaded);
-const percent = (loaded / file.size) * 100;
-updateProgress(percent, `Uploading ${Math.round(percent)}%`);
-}
-});
-if (error) throw error;
-// Get public URL
-const urlResponse = window.supabaseClient.storage
-.from(bucket)
-.getPublicUrl(filePath);
-console.log(`✅ Upload successful. Public URL: ${urlResponse.data.publicUrl}`);
-return urlResponse.data.publicUrl;
+// Reset speed tracking
+speedSamples = [];
+lastLoadedBytes = 0;
+lastUpdateTime = Date.now();
+uploadStartTime = Date.now();
+
+// Upload file with progress tracking using XHR for real progress
+const publicUrl = await uploadWithXHR(file, filePath, bucket);
+console.log(`✅ Upload successful. Public URL: ${publicUrl}`);
+return publicUrl;
 } catch (error) {
 console.error(`❌ ${bucket} upload failed:`, error);
 throw error;
 }
+}
+// XHR-based upload for real progress tracking
+function uploadWithXHR(file, filePath, bucket) {
+return new Promise((resolve, reject) => {
+const xhr = new XMLHttpRequest();
+const uploadUrl = `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/${bucket}/${filePath}`;
+xhr.open('POST', uploadUrl, true);
+// Set auth headers
+window.supabaseClient.auth.getSession().then(({ data: { session } }) => {
+if (session) {
+xhr.setRequestHeader('Authorization', `Bearer ${session.access_token}`);
+}
+xhr.setRequestHeader('Content-Type', file.type);
+xhr.setRequestHeader('x-upsert', 'false');
+xhr.setRequestHeader('cache-control', '3600');
+// Track upload progress
+xhr.upload.addEventListener('progress', (e) => {
+if (e.lengthComputable) {
+const percentComplete = (e.loaded / e.total) * 100;
+updateProgress(percentComplete, `Uploading ${Math.round(percentComplete)}%`);
+updateUploadSpeed(e.loaded);
+}
+});
+xhr.addEventListener('load', () => {
+if (xhr.status >= 200 && xhr.status < 300) {
+// Get public URL
+const publicUrl = `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/${filePath}`;
+resolve(publicUrl);
+} else {
+reject(new Error(xhr.responseText || `Upload failed with status ${xhr.status}`));
+}
+});
+xhr.addEventListener('error', () => {
+reject(new Error('Network error during upload'));
+});
+xhr.addEventListener('abort', () => {
+reject(new Error('Upload was cancelled'));
+});
+// Send the file
+xhr.send(file);
+});
+});
 }
 // UPDATED: Create Content Record with duration
 async function createContentRecord(data) {
@@ -1574,7 +1614,7 @@ status: data.status,
 user_id: currentUserId,
 created_at: new Date().toISOString()
 };
-// ✅ CRITICAL: Add duration if we have it (for video files)
+// ✅ CRITICAL: Add duration if we have it (for video AND audio files)
 if (data.duration !== null && data.duration !== undefined) {
 insertData.duration = data.duration;
 console.log(`🎬 Setting duration to ${data.duration} seconds`);
@@ -1615,8 +1655,8 @@ showToast('Shorts must be under 60 seconds', 'error');
 return;
 }
 }
-// For regular videos, duration is optional but we have it
-if (selectedMediaFile.type.includes('video') && extractedDuration === null) {
+// For regular media, duration is optional but we have it
+if ((selectedMediaFile.type.includes('video') || selectedMediaFile.type.includes('audio')) && extractedDuration === null) {
 showToast('Duration not ready yet. Please wait.', 'error');
 return;
 }
@@ -1626,9 +1666,10 @@ updateButtonsState();
 uploadStartTime = Date.now();
 lastLoadedBytes = 0;
 lastUpdateTime = Date.now();
+speedSamples = [];
 try {
 // STEP 1: Upload media file to content-media bucket
-updateProgress(20, 'Uploading media file...');
+updateProgress(0, 'Starting upload...');
 const mediaType = selectedMediaFile.type.includes('video') ? 'video' : 'audio';
 // Set media_type to 'short' if shorts mode is selected
 const finalMediaType = selectedMediaType === 'short' ? 'short' : mediaType;
@@ -1636,7 +1677,7 @@ const mediaUrl = await uploadFileToStorage(selectedMediaFile, 'content-media', '
 // STEP 2: Upload thumbnail to content-thumbnails bucket
 let thumbnailUrl = null;
 if (selectedThumbnailFile) {
-updateProgress(60, 'Uploading thumbnail...');
+updateProgress(90, 'Uploading thumbnail...');
 thumbnailUrl = await uploadFileToStorage(selectedThumbnailFile, 'content-thumbnails', 'thumbnails');
 } else {
 // Default thumbnails based on media type
@@ -1647,7 +1688,7 @@ thumbnailUrl = finalMediaType === 'short'
 : 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=800&q=80';
 }
 // STEP 3: Create content record with media_type and duration
-updateProgress(85, 'Creating content record...');
+updateProgress(95, 'Creating content record...');
 await createContentRecord({
 title,
 description: desc,
@@ -1998,204 +2039,4 @@ const { error } = await window.supabaseClient
 .eq('id', notificationId);
 if (error) throw error;
 // Update UI
-const item = document.querySelector(`.notification-item[data-id="${notificationId}"]`);
-if (item) {
-item.classList.remove('unread');
-item.classList.add('read');
-const dot = item.querySelector('.notification-dot');
-if (dot) dot.remove();
-}
-await loadNotifications();
-} catch (error) {
-console.error('Error marking notification as read:', error);
-}
-}
-async function markAllNotificationsAsRead() {
-try {
-if (!currentUserId) return;
-const { error } = await window.supabaseClient
-.from('notifications')
-.update({ is_read: true })
-.eq('user_id', currentUserId)
-.eq('is_read', false);
-if (error) throw error;
-// Update UI
-document.querySelectorAll('.notification-item.unread').forEach(item => {
-item.classList.remove('unread');
-item.classList.add('read');
-const dot = item.querySelector('.notification-dot');
-if (dot) dot.remove();
-});
-updateNotificationBadge(0);
-showToast('All notifications marked as read', 'success');
-} catch (error) {
-console.error('Error marking all notifications as read:', error);
-showToast('Failed to mark notifications as read', 'error');
-}
-}
-function updateNotificationBadge(count = null) {
-if (count === null) {
-count = document.querySelectorAll('.notification-item.unread').length;
-}
-const badge = document.getElementById('notification-count');
-if (badge) {
-badge.textContent = count > 99 ? '99+' : count;
-badge.style.display = count > 0 ? 'flex' : 'none';
-}
-}
-function formatNotificationTime(timestamp) {
-if (!timestamp) return 'Just now';
-const diffMs = Date.now() - new Date(timestamp).getTime();
-const diffMins = Math.floor(diffMs / 60000);
-const diffHours = Math.floor(diffMs / 3600000);
-const diffDays = Math.floor(diffMs / 86400000);
-if (diffMins < 1) return 'Just now';
-if (diffMins < 60) return `${diffMins}m ago`;
-if (diffHours < 24) return `${diffHours}h ago`;
-if (diffDays < 7) return `${diffDays}d ago`;
-return new Date(timestamp).toLocaleDateString();
-}
-// 🔑 CRITICAL FIX: Setup Notifications Panel
-function setupNotificationsPanel() {
-const notificationsPanel = document.getElementById('notifications-panel');
-const closeNotifications = document.getElementById('close-notifications');
-const markAllReadBtn = document.getElementById('mark-all-read');
-if (!notificationsPanel || !closeNotifications || !markAllReadBtn) return;
-// Open notifications panel
-notificationsBtn.addEventListener('click', () => {
-notificationsPanel.classList.add('active');
-loadNotifications();
-});
-// Close notifications panel
-closeNotifications.addEventListener('click', () => {
-notificationsPanel.classList.remove('active');
-});
-// Close when clicking outside panel
-document.addEventListener('click', (e) => {
-if (notificationsPanel.classList.contains('active') &&
-!notificationsPanel.contains(e.target) &&
-!notificationsBtn.contains(e.target)) {
-notificationsPanel.classList.remove('active');
-}
-});
-// Mark all as read
-markAllReadBtn.addEventListener('click', markAllNotificationsAsRead);
-}
-// Event Listeners
-function setupListeners() {
-// Form submission
-document.getElementById('upload-form').addEventListener('submit', (e) => {
-e.preventDefault();
-if (!isUploading) uploadContent(false);
-});
-// Save draft
-document.getElementById('save-draft-btn').addEventListener('click', () => {
-if (!isUploading) uploadContent(true);
-});
-// Input listeners
-['content-title', 'content-description'].forEach(id => {
-document.getElementById(id).addEventListener('input', () => {
-updateButtonsState();
-updateChecklist();
-saveDraftToLocalStorage(); // Auto-save on typing
-});
-});
-document.getElementById('content-genre').addEventListener('change', () => {
-updateButtonsState();
-updateChecklist();
-saveDraftToLocalStorage();
-});
-// Auth modal
-document.getElementById('auth-login-btn').addEventListener('click', () => {
-window.location.href = `login.html?redirect=${encodeURIComponent('creator-upload.html')}`;
-});
-document.getElementById('auth-cancel-btn').addEventListener('click', () => {
-authModal.classList.remove('active');
-window.history.back();
-});
-// Navigation
-backBtn.addEventListener('click', () => window.history.back());
-profileBtn.addEventListener('click', () => {
-if (currentUserId) {
-window.location.href = 'profile.html';
-} else {
-window.location.href = `login.html?redirect=${encodeURIComponent('creator-upload.html')}`;
-}
-});
-// Setup search and notifications
-setupSearchModal();
-setupNotificationsPanel();
-// Setup media type selector
-setupMediaTypeSelector();
-}
-// Initialize
-async function initialize() {
-setLoading(true);
-// Check auth
-const user = await checkAuthentication();
-if (!user) authModal.classList.add('active');
-// Setup UI
-setupMediaUpload();
-setupThumbnailUpload();
-setupListeners();
-updateButtonsState();
-updateChecklist();
-// Load Draft Recovery
-loadDraftFromLocalStorage();
-// Load notifications if authenticated
-if (currentUserId) {
-loadNotifications();
-}
-setLoading(false);
-console.log('✅ Creator Upload initialized with Psychology Features');
-}
-initialize();
-// Auth state listener
-window.supabaseClient.auth.onAuthStateChange(async (event, session) => {
-console.log('Auth state changed:', event);
-if (event === 'SIGNED_IN' && session?.user) {
-currentUserId = session.user.id;
-currentUserEmail = session.user.email;
-await loadUserProfilePicture(session.user);
-await loadNotifications();
-await loadCreatorStreak();
-authModal.classList.remove('active');
-showToast('Welcome back!', 'success');
-} else if (event === 'SIGNED_OUT') {
-currentUserId = null;
-currentUserEmail = null;
-document.getElementById('userProfilePlaceholder').innerHTML = `
-<div class="profile-placeholder">
-<i class="fas fa-user"></i>
-</div>
-`;
-updateNotificationBadge(0);
-showToast('Signed out successfully', 'info');
-}
-});
-});
-// Global functions for onclick handlers
-window.removeMediaFile = function() {
-document.getElementById('media-file-input').value = '';
-document.getElementById('media-file-info').style.display = 'none';
-document.getElementById('media-zone-text').textContent = 'Click or drag video/audio files here';
-// Reset extracted duration
-if (window.selectedMediaFile) {
-window.selectedMediaFile = null;
-window.extractedDuration = null;
-const durationDisplay = document.getElementById('duration-display');
-if (durationDisplay) durationDisplay.style.display = 'none';
-}
-// Call update function if available
-if (typeof updateButtonsState === 'function') updateButtonsState();
-if (typeof updateChecklist === 'function') updateChecklist();
-};
-window.openImagePicker = function() {
-document.getElementById('thumbnail-file-input').click();
-};
-window.captureCameraImage = function() {
-document.getElementById('camera-file-input').click();
-};
-</script>
-</body>
-</html>
+const item = document.querySelector(`.notification-item[data-id="${notificationId}
