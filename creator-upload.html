@@ -961,1670 +961,1643 @@ Share your content with your community to boost early engagement.
 <script>
 // Initialize shared Supabase client BEFORE DOMContentLoaded
 if (!window.supabaseClient) {
-window.supabaseClient = supabase.createClient(
-'https://ydnxqnbjoshvxteevemc.supabase.co',
-'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U'
-);
-console.log('✅ Global Supabase client initialized');
+    window.supabaseClient = supabase.createClient(
+        'https://ydnxqnbjoshvxteevemc.supabase.co',
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U'
+    );
+    console.log('✅ Global Supabase client initialized');
 }
 </script>
+
 <script>
 document.addEventListener('DOMContentLoaded', async () => {
-// DOM Elements
-const loadingScreen = document.getElementById('loading');
-const app = document.getElementById('app');
-const authModal = document.getElementById('auth-modal');
-const publishBtn = document.getElementById('publish-btn');
-const saveDraftBtn = document.getElementById('save-draft-btn');
-const profileBtn = document.getElementById('profile-btn');
-const backBtn = document.getElementById('back-btn');
-const notificationsBtn = document.getElementById('notifications-btn');
-const searchBtn = document.getElementById('search-btn');
-const progressSection = document.getElementById('upload-progress');
-const progressFill = document.getElementById('progress-fill');
-const progressPercentage = document.getElementById('progress-percentage');
-const progressText = document.getElementById('progress-text');
-const progressSpeed = document.getElementById('progress-speed');
-const progressEta = document.getElementById('progress-eta');
-
-// State Screens
-const uploadFormState = document.getElementById('upload-form-state');
-const processingState = document.getElementById('processing-state');
-const successState = document.getElementById('success-state');
-
-// State variables
-let selectedMediaFile = null;
-let selectedThumbnailFile = null;
-let currentUserId = null;
-let isUploading = false;
-let currentUserEmail = null;
-let selectedMediaType = 'regular'; // 'regular' or 'short'
-let extractedDuration = null;
-
-// Upload tracking variables
-let uploadStartTime = 0;
-let uploadStartBytes = 0;
-let lastLoadedBytes = 0;
-let lastUpdateTime = 0;
-let uploadSpeedInterval = null;
-let uploadAbortController = null;
-
-// UI Helpers
-function setLoading(loading) {
-loadingScreen.style.display = loading ? 'flex' : 'none';
-app.style.display = loading ? 'none' : 'block';
-}
-
-function showToast(message, type = 'error') {
-const toast = document.createElement('div');
-toast.className = `toast ${type}`;
-toast.innerHTML = `<i class="fas fa-${type === 'success' ? 'check-circle' : type === 'info' ? 'info-circle' : 'exclamation-triangle'}"></i> ${message}`;
-document.getElementById('toast-container').appendChild(toast);
-setTimeout(() => toast.remove(), 3000);
-}
-
-function formatFileSize(bytes) {
-if (bytes === 0) return '0 Bytes';
-const k = 1024;
-const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-const i = Math.floor(Math.log(bytes) / Math.log(k));
-return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-}
-
-function formatTime(seconds) {
-if (!seconds && seconds !== 0) return '--:--';
-const mins = Math.floor(seconds / 60);
-const secs = Math.floor(seconds % 60);
-return `${mins}:${secs.toString().padStart(2, '0')}`;
-}
-
-// Reset progress display to initial state
-function resetProgress() {
-progressFill.style.width = '0%';
-progressPercentage.textContent = '0%';
-progressSpeed.textContent = 'Speed: 0 MB/s';
-progressEta.textContent = 'ETA: --:--';
-progressText.textContent = 'Preparing upload...';
-progressSection.classList.remove('active');
-
-// Reset tracking variables
-uploadStartTime = 0;
-uploadStartBytes = 0;
-lastLoadedBytes = 0;
-lastUpdateTime = 0;
-
-// Clear speed update interval if exists
-if (uploadSpeedInterval) {
-clearInterval(uploadSpeedInterval);
-uploadSpeedInterval = null;
-}
-}
-
-function updateProgress(loaded, total) {
-if (!total) return;
-
-const percentage = (loaded / total) * 100;
-progressFill.style.width = `${percentage}%`;
-progressPercentage.textContent = `${Math.round(percentage)}%`;
-
-// Show progress section when upload starts
-if (percentage > 0 && !progressSection.classList.contains('active')) {
-progressSection.classList.add('active');
-}
-
-// Update speed and ETA in real-time
-updateUploadStats(loaded);
-}
-
-function updateUploadStats(loaded) {
-const now = Date.now();
-
-if (uploadStartTime === 0) {
-uploadStartTime = now;
-uploadStartBytes = loaded;
-lastUpdateTime = now;
-lastLoadedBytes = loaded;
-return;
-}
-
-const timeElapsed = (now - uploadStartTime) / 1000; // seconds
-const timeSinceLastUpdate = (now - lastUpdateTime) / 1000; // seconds
-
-if (timeSinceLastUpdate > 0.2) { // Update every 200ms for smoother display
-// Calculate average speed since start (more stable)
-const avgSpeedBps = (loaded - uploadStartBytes) / timeElapsed;
-const avgSpeedMBps = avgSpeedBps / (1024 * 1024);
-
-// Calculate instantaneous speed (more responsive)
-const instantSpeedBps = (loaded - lastLoadedBytes) / timeSinceLastUpdate;
-const instantSpeedMBps = instantSpeedBps / (1024 * 1024);
-
-// Use a weighted average for smoother speed display
-const displaySpeedMBps = avgSpeedMBps * 0.3 + instantSpeedMBps * 0.7;
-
-// Calculate ETA
-const remainingBytes = selectedMediaFile.size - loaded;
-const etaSeconds = displaySpeedMBps > 0 ? remainingBytes / (displaySpeedMBps * 1024 * 1024) : 0;
-
-progressSpeed.textContent = `Speed: ${displaySpeedMBps.toFixed(2)} MB/s`;
-progressEta.textContent = `ETA: ${formatTime(etaSeconds)}`;
-
-lastLoadedBytes = loaded;
-lastUpdateTime = now;
-}
-}
-
-// NEW: Extract duration from any media file (video OR audio)
-function extractMediaDuration(file) {
-return new Promise((resolve, reject) => {
-// For audio files
-if (file.type.includes('audio')) {
-const audio = document.createElement('audio');
-audio.preload = 'metadata';
-
-const timeout = setTimeout(() => {
-URL.revokeObjectURL(audio.src);
-reject(new Error('Duration extraction timeout'));
-}, 10000);
-
-audio.onloadedmetadata = () => {
-clearTimeout(timeout);
-const duration = Math.floor(audio.duration);
-URL.revokeObjectURL(audio.src);
-resolve(duration);
-};
-
-audio.onerror = () => {
-clearTimeout(timeout);
-URL.revokeObjectURL(audio.src);
-reject(new Error('Failed to load audio metadata'));
-};
-
-audio.src = URL.createObjectURL(file);
-}
-// For video files
-else if (file.type.includes('video')) {
-const video = document.createElement('video');
-video.preload = 'metadata';
-
-const timeout = setTimeout(() => {
-URL.revokeObjectURL(video.src);
-reject(new Error('Duration extraction timeout'));
-}, 10000);
-
-video.onloadedmetadata = () => {
-clearTimeout(timeout);
-const duration = Math.floor(video.duration);
-URL.revokeObjectURL(video.src);
-resolve(duration);
-};
-
-video.onerror = () => {
-clearTimeout(timeout);
-URL.revokeObjectURL(video.src);
-reject(new Error('Failed to load video metadata'));
-};
-
-video.src = URL.createObjectURL(file);
-} else {
-reject(new Error('Unsupported file type'));
-}
-});
-}
-
-// NEW: Generate thumbnail from video
-async function generateVideoThumbnail(file) {
-return new Promise((resolve, reject) => {
-if (!file.type.includes('video')) {
-reject(new Error('Not a video file'));
-return;
-}
-
-const video = document.createElement('video');
-video.preload = 'metadata';
-
-const timeout = setTimeout(() => {
-URL.revokeObjectURL(video.src);
-reject(new Error('Thumbnail generation timeout'));
-}, 10000);
-
-video.onloadeddata = () => {
-clearTimeout(timeout);
-
-// Seek to 10% of video or 1 second, whichever is smaller
-const seekTime = Math.min(1, video.duration * 0.1);
-
-video.currentTime = seekTime;
-};
-
-video.onseeked = () => {
-// Create canvas and draw video frame
-const canvas = document.createElement('canvas');
-canvas.width = video.videoWidth;
-canvas.height = video.videoHeight;
-
-const ctx = canvas.getContext('2d');
-ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-// Convert to blob
-canvas.toBlob((blob) => {
-URL.revokeObjectURL(video.src);
-
-// Create file from blob
-const thumbnailFile = new File([blob], 'thumbnail.jpg', { 
-type: 'image/jpeg',
-lastModified: Date.now()
-});
-
-resolve(thumbnailFile);
-}, 'image/jpeg', 0.9);
-};
-
-video.onerror = () => {
-clearTimeout(timeout);
-URL.revokeObjectURL(video.src);
-reject(new Error('Failed to load video for thumbnail'));
-};
-
-video.src = URL.createObjectURL(file);
-});
-}
-
-// Helper Functions for Profile Display
-function getInitials(email) {
-if (!email) return 'U';
-const parts = email.split('@')[0];
-return parts.substring(0, 2).toUpperCase();
-}
-
-function getInitialsFromName(fullName) {
-if (!fullName) return 'U';
-const names = fullName.split(' ');
-if (names.length >= 2) {
-return (names[0].charAt(0) + names[names.length - 1].charAt(0)).toUpperCase();
-}
-return fullName.charAt(0).toUpperCase();
-}
-
-// Load profile picture with proper avatar handling
-async function loadUserProfilePicture(user) {
-try {
-if (!user || !profileBtn) return;
-const placeholder = document.getElementById('userProfilePlaceholder');
-const displayName = user.email || 'User';
-const fallbackInitials = getInitials(user.email);
-
-// Clear placeholder FIRST
-while (placeholder.firstChild) {
-placeholder.removeChild(placeholder.firstChild);
-}
-
-// Set temporary initial placeholder while loading
-const tempDiv = document.createElement('div');
-tempDiv.className = 'profile-placeholder';
-tempDiv.style.cssText = 'width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,#1D4ED8,#F59E0B);display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:16px';
-tempDiv.textContent = fallbackInitials;
-placeholder.appendChild(tempDiv);
-
-// Fetch user profile from database
-const { data: profile, error: profileError } = await window.supabaseClient
-.from('user_profiles')
-.select('*')
-.eq('id', user.id)
-.maybeSingle();
-
-if (profileError) {
-console.log('Profile query error:', profileError);
-return;
-}
-
-if (profile && profile.avatar_url) {
-let avatarUrl = profile.avatar_url;
-
-// Construct full URL if needed
-if (!avatarUrl.startsWith('http')) {
-if (avatarUrl.startsWith('avatars/')) {
-avatarUrl = `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/${avatarUrl}`;
-} else {
-avatarUrl = `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/avatars/${avatarUrl}`;
-}
-}
-
-// Clear placeholder FIRST again before adding image
-while (placeholder.firstChild) {
-placeholder.removeChild(placeholder.firstChild);
-}
-
-// Create image with proper styling
-const img = document.createElement('img');
-img.className = 'profile-img';
-img.alt = displayName;
-img.style.cssText = 'width: 100%; height: 100%; border-radius: 50%; object-fit: cover;';
-img.src = avatarUrl;
-
-// Fallback on image load failure
-img.onerror = () => {
-const fallback = document.createElement('div');
-fallback.className = 'profile-placeholder';
-fallback.style.cssText = 'width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,#1D4ED8,#F59E0B);display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:16px';
-const finalInitials = profile.full_name ? getInitialsFromName(profile.full_name) : fallbackInitials;
-fallback.textContent = finalInitials;
-while (placeholder.firstChild) {
-placeholder.removeChild(placeholder.firstChild);
-}
-placeholder.appendChild(fallback);
-};
-placeholder.appendChild(img);
-}
-// If no avatar but full name exists, update the temporary placeholder with name initials
-else if (profile && profile.full_name) {
-const nameInitials = getInitialsFromName(profile.full_name);
-while (placeholder.firstChild) {
-placeholder.removeChild(placeholder.firstChild);
-}
-const nameDiv = document.createElement('div');
-nameDiv.className = 'profile-placeholder';
-nameDiv.style.cssText = 'width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,#1D4ED8,#F59E0B);display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:16px';
-nameDiv.textContent = nameInitials;
-placeholder.appendChild(nameDiv);
-}
-} catch (error) {
-console.error('Error loading user profile picture:', error);
-}
-}
-
-// Authentication
-async function checkAuthentication() {
-try {
-const sessionResponse = await window.supabaseClient.auth.getSession();
-const session = sessionResponse.data.session;
-const error = sessionResponse.error;
-
-if (error || !session?.user) {
-console.log('⚠️ User not authenticated');
-return null;
-}
-
-currentUserId = session.user.id;
-currentUserEmail = session.user.email;
-console.log('✅ Authenticated user ID:', currentUserId);
-
-// Load profile picture
-await loadUserProfilePicture(session.user);
-
-// Load Streak
-await loadCreatorStreak();
-
-return session.user;
-} catch (error) {
-console.error('Auth check failed:', error);
-return null;
-}
-}
-
-// Load Creator Streak (Mocked for now, ready for DB)
-async function loadCreatorStreak() {
-try {
-// In future: Fetch from user_profiles or uploads table
-// For now, simulate based on localStorage
-const streak = localStorage.getItem('creator_streak') || 0;
-const streakEl = document.getElementById('creator-streak');
-const streakCount = document.getElementById('streak-count');
-if (streakEl && streakCount) {
-streakCount.textContent = streak;
-streakEl.style.display = 'flex';
-}
-} catch (error) {
-console.error('Error loading streak:', error);
-}
-}
-
-// Media Type Selector
-function setupMediaTypeSelector() {
-const options = document.querySelectorAll('.media-type-option');
-const shortsInfo = document.getElementById('shorts-info');
-
-options.forEach(option => {
-option.addEventListener('click', () => {
-// Update selected state
-options.forEach(o => o.classList.remove('selected'));
-option.classList.add('selected');
-
-// Set selected media type
-selectedMediaType = option.dataset.type;
-
-// Show/hide shorts info box
-if (selectedMediaType === 'short') {
-shortsInfo.classList.add('active');
-showToast('Shorts mode enabled - max 60 seconds', 'info');
-} else {
-shortsInfo.classList.remove('active');
-}
-
-// Re-validate media file if already selected
-if (selectedMediaFile) {
-validateMediaFile(selectedMediaFile);
-}
-updateButtonsState();
-updateChecklist();
-});
-});
-}
-
-// UPDATED: Validate media file with proper duration display for audio
-async function validateMediaFile(file) {
-const durationDisplay = document.getElementById('duration-display');
-const durationText = document.getElementById('duration-text');
-const durationStatus = document.getElementById('duration-status');
-const durationBadge = document.getElementById('duration-badge');
-
-// Reset extracted duration
-extractedDuration = null;
-
-// Handle both video and audio
-if (file.type.includes('video') || file.type.includes('audio')) {
-durationDisplay.style.display = 'flex';
-durationText.textContent = `Duration: extracting...`;
-durationStatus.textContent = '';
-durationBadge.style.display = 'none';
-
-try {
-// Extract real duration from media metadata
-const duration = await extractMediaDuration(file);
-extractedDuration = duration;
-
-// Update display with file type indicator
-const mediaIcon = file.type.includes('audio') ? '🎵' : '🎬';
-durationText.textContent = `Duration: ${formatTime(duration)} ${mediaIcon}`;
-durationBadge.style.display = 'inline-block';
-
-if (file.type.includes('audio')) {
-// Audio file - always valid
-durationDisplay.classList.remove('invalid');
-durationDisplay.classList.add('valid');
-durationStatus.textContent = '✓ Audio file';
-
-// Show toast with audio info
-showToast(`Audio duration: ${formatTime(duration)}`, 'success');
-} else {
-// Video file - check shorts constraints
-if (selectedMediaType === 'short') {
-if (duration > 60) {
-durationDisplay.classList.add('invalid');
-durationDisplay.classList.remove('valid');
-durationStatus.textContent = '⚠️ Too long for Shorts (max 60s)';
-showToast('Video is too long for Shorts (max 60 seconds)', 'error');
-} else {
-durationDisplay.classList.add('valid');
-durationDisplay.classList.remove('invalid');
-durationStatus.textContent = '✓ Valid for Shorts';
-}
-} else {
-// Regular video - just show duration
-durationDisplay.classList.remove('valid', 'invalid');
-durationStatus.textContent = '';
-}
-}
-
-// Auto-generate thumbnail for videos if no thumbnail selected
-if (file.type.includes('video') && !selectedThumbnailFile) {
-try {
-showToast('Generating thumbnail from video...', 'info');
-const thumbnail = await generateVideoThumbnail(file);
-handleThumbnailFile(thumbnail, true); // Pass true to indicate auto-generated
-} catch (thumbError) {
-console.error('Auto-thumbnail generation failed:', thumbError);
-// Don't show error to user, just continue without thumbnail
-}
-}
-
-} catch (error) {
-console.error('Duration extraction failed:', error);
-durationText.textContent = `Duration: unknown`;
-durationStatus.textContent = '⚠️ Could not read duration';
-durationDisplay.classList.add('invalid');
-showToast('Could not read media duration. File may be corrupted.', 'error');
-}
-} else {
-// Invalid file type
-durationDisplay.style.display = 'none';
-extractedDuration = null;
-}
-
-updateButtonsState();
-updateChecklist();
-}
-
-// Media Upload Handlers
-function setupMediaUpload() {
-const zone = document.getElementById('media-upload-zone');
-const input = document.getElementById('media-file-input');
-
-zone.addEventListener('click', () => input.click());
-
-input.addEventListener('change', (e) => {
-if (e.target.files.length > 0) {
-handleMediaFile(e.target.files[0]);
-}
-});
-
-// Drag and drop
-zone.addEventListener('dragover', (e) => {
-e.preventDefault();
-zone.style.borderColor = 'var(--warm-gold)';
-zone.style.background = 'rgba(245,158,11,.05)';
-});
-
-zone.addEventListener('dragleave', () => {
-zone.style.borderColor = 'rgba(255,255,255,.3)';
-zone.style.background = 'transparent';
-});
-
-zone.addEventListener('drop', (e) => {
-e.preventDefault();
-zone.style.borderColor = 'rgba(255,255,255,.3)';
-zone.style.background = 'transparent';
-if (e.dataTransfer.files.length > 0) {
-handleMediaFile(e.dataTransfer.files[0]);
-}
-});
-}
-
-function handleMediaFile(file) {
-const maxSize = 800 * 1024 * 1024; // 800MB
-
-if (file.size > maxSize) {
-showToast('File size must be less than 800MB');
-return;
-}
-
-const videoTypes = ['video/mp4', 'video/quicktime', 'video/x-msvideo', 'video/x-matroska', 'video/webm'];
-const audioTypes = ['audio/mpeg', 'audio/mp3', 'audio/aac', 'audio/wav', 'audio/ogg'];
-
-const isValidType = [...videoTypes, ...audioTypes].some(type => 
-file.type.includes(type.split('/')[1]) || file.type === type
-);
-
-if (!isValidType) {
-showToast('Please select a valid video or audio file');
-return;
-}
-
-selectedMediaFile = file;
-
-// Update UI
-const fileIcon = file.type.includes('audio') ? 'fa-music' : 'fa-video';
-document.getElementById('file-icon').innerHTML = `<i class="fas ${fileIcon}"></i>`;
-document.getElementById('media-file-name').textContent = file.name;
-document.getElementById('media-file-size').textContent = formatFileSize(file.size);
-document.getElementById('media-file-info').style.display = 'flex';
-document.getElementById('media-zone-text').textContent = 'Click to change file';
-
-// Validate and extract duration
-validateMediaFile(file);
-
-// Save to localStorage for recovery
-saveDraftToLocalStorage();
-}
-
-function removeMediaFile() {
-selectedMediaFile = null;
-extractedDuration = null;
-document.getElementById('media-file-info').style.display = 'none';
-document.getElementById('media-zone-text').textContent = 'Click or drag video/audio files here';
-
-// Reset duration display
-const durationDisplay = document.getElementById('duration-display');
-durationDisplay.style.display = 'none';
-
-updateButtonsState();
-updateChecklist();
-resetProgress();
-}
-
-// UPDATED: Thumbnail handler with auto-generated flag
-function handleThumbnailFile(file, isAutoGenerated = false) {
-const imageTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
-
-if (!imageTypes.includes(file.type)) {
-showToast('Please select a valid image file (JPG, PNG, GIF)');
-return;
-}
-
-selectedThumbnailFile = file;
-
-// Create preview
-const reader = new FileReader();
-reader.onload = function(e) {
-document.getElementById('thumbnail-image').src = e.target.result;
-document.getElementById('thumbnail-preview').style.display = 'block';
-};
-reader.readAsDataURL(file);
-
-if (!isAutoGenerated) {
-showToast('Thumbnail image selected', 'success');
-} else {
-showToast('Auto thumbnail generated from video', 'success');
-}
-
-updateChecklist();
-saveDraftToLocalStorage();
-}
-
-// Thumbnail Upload Handlers
-function setupThumbnailUpload() {
-const zone = document.getElementById('thumbnail-upload-zone');
-const input = document.getElementById('thumbnail-file-input');
-const preview = document.getElementById('thumbnail-preview');
-
-zone.addEventListener('click', () => openImagePicker());
-
-input.addEventListener('change', (e) => {
-if (e.target.files.length > 0) {
-handleThumbnailFile(e.target.files[0], false);
-}
-});
-
-// Drag and drop
-zone.addEventListener('dragover', (e) => {
-e.preventDefault();
-zone.style.borderColor = 'var(--warm-gold)';
-zone.style.background = 'rgba(245,158,11,.05)';
-});
-
-zone.addEventListener('dragleave', () => {
-zone.style.borderColor = 'rgba(255,255,255,.3)';
-zone.style.background = 'transparent';
-});
-
-zone.addEventListener('drop', (e) => {
-e.preventDefault();
-zone.style.borderColor = 'rgba(255,255,255,.3)';
-zone.style.background = 'transparent';
-if (e.dataTransfer.files.length > 0) {
-handleThumbnailFile(e.dataTransfer.files[0], false);
-}
-});
-
-// Camera input
-document.getElementById('camera-file-input').addEventListener('change', (e) => {
-if (e.target.files.length > 0) {
-handleThumbnailFile(e.target.files[0], false);
-}
-});
-}
-
-function openImagePicker() {
-document.getElementById('thumbnail-file-input').click();
-}
-
-function captureCameraImage() {
-document.getElementById('camera-file-input').click();
-}
-
-// Checklist Logic
-function updateChecklist() {
-const title = document.getElementById('content-title').value.trim();
-const desc = document.getElementById('content-description').value.trim();
-const genre = document.getElementById('content-genre').value;
-
-let score = 0;
-
-// Title
-if (title.length > 5) {
-document.getElementById('check-title').classList.add('completed');
-document.getElementById('check-title').innerHTML = '<i class="fas fa-check-circle"></i> Compelling Title';
-score += 20;
-} else {
-document.getElementById('check-title').classList.remove('completed');
-document.getElementById('check-title').innerHTML = '<i class="far fa-circle"></i> Compelling Title';
-}
-
-// Description
-if (desc.length > 20) {
-document.getElementById('check-desc').classList.add('completed');
-document.getElementById('check-desc').innerHTML = '<i class="fas fa-check-circle"></i> Detailed Description';
-score += 20;
-} else {
-document.getElementById('check-desc').classList.remove('completed');
-document.getElementById('check-desc').innerHTML = '<i class="far fa-circle"></i> Detailed Description';
-}
-
-// Media
-if (selectedMediaFile) {
-document.getElementById('check-media').classList.add('completed');
-document.getElementById('check-media').innerHTML = '<i class="fas fa-check-circle"></i> Media File Uploaded';
-score += 20;
-} else {
-document.getElementById('check-media').classList.remove('completed');
-document.getElementById('check-media').innerHTML = '<i class="far fa-circle"></i> Media File Uploaded';
-}
-
-// Thumbnail
-if (selectedThumbnailFile) {
-document.getElementById('check-thumb').classList.add('completed');
-document.getElementById('check-thumb').innerHTML = '<i class="fas fa-check-circle"></i> Custom Thumbnail <span style="color:var(--warm-gold);font-size:12px;margin-left:5px">(2x more clicks)</span>';
-score += 20;
-} else {
-document.getElementById('check-thumb').classList.remove('completed');
-document.getElementById('check-thumb').innerHTML = '<i class="far fa-circle"></i> Custom Thumbnail <span style="color:var(--warm-gold);font-size:12px;margin-left:5px">(2x more clicks)</span>';
-}
-
-// Genre
-if (genre) {
-document.getElementById('check-genre').classList.add('completed');
-document.getElementById('check-genre').innerHTML = '<i class="fas fa-check-circle"></i> Category Selected';
-score += 20;
-} else {
-document.getElementById('check-genre').classList.remove('completed');
-document.getElementById('check-genre').innerHTML = '<i class="far fa-circle"></i> Category Selected';
-}
-
-document.getElementById('quality-score').textContent = `${score}%`;
-}
-
-// Button State Management
-function updateButtonsState() {
-const title = document.getElementById('content-title').value.trim();
-const desc = document.getElementById('content-description').value.trim();
-
-// For shorts, check duration validation (must have duration and be <= 60s)
-const isShortValid = selectedMediaType !== 'short' ||
-(extractedDuration !== null && extractedDuration <= 60);
-
-// For regular videos, duration is optional but nice to have
-const hasRequiredDuration = selectedMediaType !== 'short' || isShortValid;
-
-saveDraftBtn.disabled = !title || isUploading || !currentUserId;
-publishBtn.disabled = !title || !desc || !selectedMediaFile || isUploading || !currentUserId || !hasRequiredDuration;
-
-if (isUploading) {
-publishBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Publishing...';
-saveDraftBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
-} else {
-publishBtn.innerHTML = '<i class="fas fa-cloud-upload-alt"></i> Publish Content';
-saveDraftBtn.innerHTML = '<i class="fas fa-save"></i> Save Draft';
-}
-}
-
-// Auto-Save & Recovery (Hidden Technical Feature)
-function saveDraftToLocalStorage() {
-if (!currentUserId) return;
-
-const draft = {
-title: document.getElementById('content-title').value,
-description: document.getElementById('content-description').value,
-genre: document.getElementById('content-genre').value,
-mediaType: selectedMediaType,
-// Note: Files cannot be stored in localStorage, only metadata
-hasMedia: !!selectedMediaFile,
-mediaName: selectedMediaFile ? selectedMediaFile.name : null,
-hasThumbnail: !!selectedThumbnailFile
-};
-
-localStorage.setItem(`draft_${currentUserId}`, JSON.stringify(draft));
-}
-
-function loadDraftFromLocalStorage() {
-if (!currentUserId) return;
-
-const draftStr = localStorage.getItem(`draft_${currentUserId}`);
-if (draftStr) {
-const draft = JSON.parse(draftStr);
-
-document.getElementById('content-title').value = draft.title || '';
-document.getElementById('content-description').value = draft.description || '';
-document.getElementById('content-genre').value = draft.genre || '';
-
-if (draft.mediaType) {
-selectedMediaType = draft.mediaType;
-document.querySelectorAll('.media-type-option').forEach(o => {
-o.classList.remove('selected');
-if (o.dataset.type === draft.mediaType) o.classList.add('selected');
-});
-}
-
-updateChecklist();
-updateButtonsState();
-
-if (draft.hasMedia) {
-showToast(`Draft recovered: ${draft.mediaName}`, 'success');
-}
-}
-}
-
-// UPDATED: Upload to Storage with real progress tracking
-async function uploadFileToStorage(file, bucket, basePath) {
-// Sanitize filename
-const cleanFileName = file.name
-.replace(/[^a-z0-9.]/gi, '_')
-.replace(/_{2,}/g, '_')
-.toLowerCase();
-
-const timestamp = Date.now();
-const random = Math.random().toString(36).substring(7);
-const fileName = `${timestamp}_${random}_${cleanFileName}`;
-
-// Path structure: {user_id}/{basePath}/{filename}
-const filePath = `${currentUserId}/${basePath}/${fileName}`;
-
-console.log(`📤 Uploading to ${bucket}: ${filePath}`);
-
-try {
-// Create abort controller for potential cancellation
-uploadAbortController = new AbortController();
-
-// Upload file with XMLHttpRequest for true progress tracking
-return await new Promise((resolve, reject) => {
-const xhr = new XMLHttpRequest();
-
-xhr.upload.addEventListener('progress', (e) => {
-if (e.lengthComputable) {
-const loaded = e.loaded;
-updateProgress(loaded, file.size);
-progressText.textContent = `Uploading ${Math.round((loaded / file.size) * 100)}%`;
-}
-});
-
-xhr.addEventListener('load', async () => {
-if (xhr.status >= 200 && xhr.status < 300) {
-try {
-const response = JSON.parse(xhr.responseText);
-
-// Get public URL
-const urlResponse = window.supabaseClient.storage
-.from(bucket)
-.getPublicUrl(filePath);
-
-console.log(`✅ Upload successful. Public URL: ${urlResponse.data.publicUrl}`);
-resolve(urlResponse.data.publicUrl);
-} catch (e) {
-reject(new Error('Failed to parse upload response'));
-}
-} else {
-reject(new Error(`Upload failed with status ${xhr.status}`));
-}
-});
-
-xhr.addEventListener('error', () => reject(new Error('Network error during upload')));
-xhr.addEventListener('abort', () => reject(new Error('Upload aborted')));
-
-// Get upload URL from Supabase
-window.supabaseClient.storage
-.from(bucket)
-.createSignedUploadUrl(filePath)
-.then(({ data, error }) => {
-if (error) throw error;
-
-xhr.open('PUT', data.url);
-xhr.setRequestHeader('Content-Type', file.type);
-xhr.send(file);
-})
-.catch(reject);
-});
-
-} catch (error) {
-console.error(`❌ ${bucket} upload failed:`, error);
-throw error;
-} finally {
-uploadAbortController = null;
-}
-}
-
-// UPDATED: Create Content Record with duration
-async function createContentRecord(data) {
-try {
-// Prepare insert data
-const insertData = {
-title: data.title,
-description: data.description,
-file_url: data.media_url,
-thumbnail_url: data.thumbnail_url || '',
-media_type: data.media_type,
-genre: data.genre || null,
-status: data.status,
-user_id: currentUserId,
-created_at: new Date().toISOString()
-};
-
-// Add duration if we have it (for video/audio files)
-if (data.duration !== null && data.duration !== undefined) {
-insertData.duration = data.duration;
-console.log(`🎬 Setting duration to ${data.duration} seconds`);
-}
-
-const insertResponse = await window.supabaseClient
-.from('Content')
-.insert([insertData]);
-
-if (insertResponse.error) throw insertResponse.error;
-
-console.log('✅ Content record created with duration:', data.duration);
-return true;
-} catch (error) {
-console.error('DB insert failed:', error);
-throw error;
-}
-}
-
-// UPDATED: Main Upload Flow with correct progress tracking
-async function uploadContent(isDraft = false) {
-if (!currentUserId) {
-showToast('Please sign in to upload content');
-authModal.classList.add('active');
-return;
-}
-
-const title = document.getElementById('content-title').value.trim();
-const desc = document.getElementById('content-description').value.trim();
-const genre = document.getElementById('content-genre').value;
-
-if (!title || !desc || !selectedMediaFile) {
-showToast('Please fill all required fields');
-return;
-}
-
-// Validate shorts duration
-if (selectedMediaType === 'short') {
-if (extractedDuration === null) {
-showToast('Please wait for duration to be extracted', 'error');
-return;
-}
-if (extractedDuration > 60) {
-showToast('Shorts must be under 60 seconds', 'error');
-return;
-}
-}
-
-// Wait for duration if still extracting
-if (selectedMediaFile.type.includes('video') && extractedDuration === null) {
-showToast('Duration not ready yet. Please wait.', 'error');
-return;
-}
-
-isUploading = true;
-updateButtonsState();
-
-// Reset and initialize upload tracking
-resetProgress();
-uploadStartTime = Date.now();
-lastLoadedBytes = 0;
-lastUpdateTime = Date.now();
-
-try {
-// STEP 1: Upload media file to content-media bucket
-progressText.textContent = 'Starting upload...';
-const mediaType = selectedMediaFile.type.includes('video') ? 'video' : 'audio';
-
-// Set media_type to 'short' if shorts mode is selected
-const finalMediaType = selectedMediaType === 'short' ? 'short' : mediaType;
-
-const mediaUrl = await uploadFileToStorage(selectedMediaFile, 'content-media', 'media');
-
-// STEP 2: Upload thumbnail to content-thumbnails bucket
-let thumbnailUrl = null;
-if (selectedThumbnailFile) {
-progressText.textContent = 'Uploading thumbnail...';
-thumbnailUrl = await uploadFileToStorage(selectedThumbnailFile, 'content-thumbnails', 'thumbnails');
-} else {
-// Default thumbnails based on media type
-if (mediaType === 'video') {
-thumbnailUrl = 'https://images.unsplash.com/photo-1574717024653-61fd2cf4d44d?w=800&q=80';
-} else {
-thumbnailUrl = 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=800&q=80';
-}
-}
-
-// STEP 3: Create content record with media_type and duration
-progressText.textContent = 'Creating content record...';
-updateProgress(selectedMediaFile.size, selectedMediaFile.size); // Show 100%
-
-await createContentRecord({
-title,
-description: desc,
-media_url: mediaUrl,
-thumbnail_url: thumbnailUrl,
-media_type: finalMediaType,
-genre,
-status: isDraft ? 'draft' : 'published',
-duration: extractedDuration // Pass the extracted duration
-});
-
-// Complete Upload
-progressText.textContent = 'Upload complete!';
-
-// Clear Draft
-localStorage.removeItem(`draft_${currentUserId}`);
-
-// Increment Streak (Mock)
-let streak = parseInt(localStorage.getItem('creator_streak') || '0') + 1;
-localStorage.setItem('creator_streak', streak);
-
-// SHOW PROCESSING STATE
-uploadFormState.style.display = 'none';
-processingState.classList.add('active');
-
-// Hide progress section
-progressSection.classList.remove('active');
-
-// Simulate Processing Time
-setTimeout(() => {
-processingState.classList.remove('active');
-successState.classList.add('active');
-triggerConfetti();
-}, 3000);
-
-} catch (error) {
-console.error('Upload failed:', error);
-showToast(`Upload failed: ${error.message || 'Unknown error'}`, 'error');
-resetProgress();
-isUploading = false;
-updateButtonsState();
-}
-}
-
-// Confetti Animation
-function triggerConfetti() {
-const colors = ['#F59E0B', '#1D4ED8', '#10B981', '#EF4444'];
-for (let i = 0; i < 50; i++) {
-const confetti = document.createElement('div');
-confetti.className = 'confetti';
-confetti.style.left = Math.random() * 100 + 'vw';
-confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
-confetti.style.animationDuration = (Math.random() * 2 + 2) + 's';
-document.body.appendChild(confetti);
-setTimeout(() => confetti.remove(), 4000);
-}
-}
-
-// Post-Upload Actions
-window.viewContent = function() {
-window.location.href = 'content-library.html';
-}
-
-window.shareContent = function() {
-if (navigator.share) {
-navigator.share({
-title: 'Check out my content on Bantu Stream Connect!',
-url: window.location.origin
-});
-} else {
-showToast('Link copied to clipboard', 'success');
-}
-}
-
-window.uploadAnother = function() {
-// Reset Form
-document.getElementById('upload-form').reset();
-selectedMediaFile = null;
-selectedThumbnailFile = null;
-extractedDuration = null;
-document.getElementById('media-file-info').style.display = 'none';
-document.getElementById('thumbnail-preview').style.display = 'none';
-document.getElementById('duration-display').style.display = 'none';
-resetProgress();
-updateChecklist();
-updateButtonsState();
-
-// Show Form
-successState.classList.remove('active');
-uploadFormState.style.display = 'block';
-showToast('Ready for next upload!', 'success');
-}
-
-window.goToDashboard = function() {
-window.location.href = 'creator-dashboard.html';
-}
-
-// Search functionality
-function debounce(func, wait) {
-let timeout;
-return function executedFunction(...args) {
-const later = () => {
-clearTimeout(timeout);
-func(...args);
-};
-clearTimeout(timeout);
-timeout = setTimeout(later, wait);
-};
-}
-
-async function searchContent(query, category = '', sortBy = 'newest') {
-try {
-let queryBuilder = window.supabaseClient
-.from('Content')
-.select('*, user_profiles!user_id(*)')
-.ilike('title', `%${query}%`)
-.eq('status', 'published');
-
-if (category) {
-queryBuilder = queryBuilder.eq('genre', category);
-}
-
-if (sortBy === 'newest') {
-queryBuilder = queryBuilder.order('created_at', { ascending: false });
-}
-
-const { data, error } = await queryBuilder.limit(50);
-if (error) throw error;
-
-// Enrich with real counts from source tables
-const enriched = await Promise.all(
-(data || []).map(async (item) => {
-const { count: viewsCount } = await window.supabaseClient
-.from('content_views')
-.select('*', { count: 'exact', head: true })
-.eq('content_id', item.id);
-
-const { count: likesCount } = await window.supabaseClient
-.from('content_likes')
-.select('*', { count: 'exact', head: true })
-.eq('content_id', item.id);
-
-return {
-...item,
-real_views: viewsCount || 0,
-real_likes: likesCount || 0
-};
-})
-);
-
-// Additional sorting for popularity/trending
-if (sortBy === 'popular') {
-enriched.sort((a, b) => (b.real_views || 0) - (a.real_views || 0));
-} else if (sortBy === 'trending') {
-enriched.sort((a, b) => {
-const aScore = (a.real_views || 0) + ((a.real_likes || 0) * 2);
-const bScore = (b.real_views || 0) + ((b.real_likes || 0) * 2);
-return bScore - aScore;
-});
-}
-
-return enriched;
-} catch (error) {
-console.error('Search error:', error);
-return [];
-}
-}
-
-function escapeHtml(text) {
-if (!text) return '';
-const div = document.createElement('div');
-div.textContent = text;
-return div.innerHTML;
-}
-
-function truncateText(text, maxLength) {
-if (!text) return '';
-if (text.length <= maxLength) return text;
-return text.substring(0, maxLength) + '...';
-}
-
-function formatNumber(num) {
-if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
-if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
-return num.toString();
-}
-
-// Render search results
-function renderSearchResults(results) {
-const grid = document.getElementById('search-results-grid');
-if (!grid) return;
-
-if (!results || results.length === 0) {
-grid.innerHTML = '<div class="no-results">No results found. Try different keywords.</div>';
-return;
-}
-
-grid.innerHTML = results.map(item => {
-const creator = item.user_profiles?.full_name ||
-item.user_profiles?.username ||
-item.creator ||
-'Creator';
-const creatorId = item.user_profiles?.id || item.user_id;
-const thumbnailUrl = item.thumbnail_url
-? `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/${item.thumbnail_url.replace(/^\/+/, '')}`
-: 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop';
-
-return `
-<div class="content-card" data-content-id="${item.id}">
-<div class="card-thumbnail">
-<img src="${thumbnailUrl}"
-alt="${escapeHtml(item.title)}"
-loading="lazy"
-onerror="this.src='https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop'">
-<div class="thumbnail-overlay"></div>
-<div class="play-overlay">
-<div class="play-icon">
-<i class="fas fa-play"></i>
-</div>
-</div>
-</div>
-<div class="card-content">
-<h3 class="card-title">${truncateText(escapeHtml(item.title), 45)}</h3>
-<button class="creator-btn"
-onclick="event.stopPropagation(); window.location.href='creator-channel.html?id=${creatorId}&name=${encodeURIComponent(creator)}'">
-<i class="fas fa-user"></i>
-${truncateText(escapeHtml(creator), 15)}
-</button>
-<div class="card-stats">
-<div class="card-stat">
-<i class="fas fa-eye"></i>
-${formatNumber(item.real_views || item.views_count || 0)}
-</div>
-<div class="card-stat">
-<i class="fas fa-heart"></i>
-${formatNumber(item.real_likes || 0)}
-</div>
-</div>
-</div>
-</div>
-`;
-}).join('');
-
-// Add click handlers to cards
-grid.querySelectorAll('.content-card').forEach(card => {
-card.addEventListener('click', (e) => {
-if (e.target.closest('.creator-btn')) return;
-const id = card.dataset.contentId;
-if (id) window.location.href = `content-detail.html?id=${id}`;
-});
-});
-}
-
-// Setup Search Modal
-function setupSearchModal() {
-const searchModal = document.getElementById('search-modal');
-const searchInput = document.getElementById('search-input');
-const closeSearchBtn = document.getElementById('close-search-btn');
-
-if (!searchModal || !searchInput || !closeSearchBtn) return;
-
-// Open search modal
-searchBtn.addEventListener('click', () => {
-searchModal.classList.add('active');
-setTimeout(() => searchInput.focus(), 300);
-});
-
-// Close search modal
-closeSearchBtn.addEventListener('click', () => {
-searchModal.classList.remove('active');
-searchInput.value = '';
-document.getElementById('search-results-grid').innerHTML = '';
-});
-
-// Close when clicking outside modal content
-searchModal.addEventListener('click', (e) => {
-if (e.target === searchModal) {
-searchModal.classList.remove('active');
-searchInput.value = '';
-document.getElementById('search-results-grid').innerHTML = '';
-}
-});
-
-// Live search with debounce
-searchInput.addEventListener('input', debounce(async (e) => {
-const query = e.target.value.trim();
-const category = document.getElementById('category-filter')?.value;
-const sortBy = document.getElementById('sort-filter')?.value;
-const resultsGrid = document.getElementById('search-results-grid');
-
-if (!resultsGrid) return;
-
-if (query.length < 2) {
-resultsGrid.innerHTML = '<div class="no-results">Start typing to search...</div>';
-return;
-}
-
-resultsGrid.innerHTML = `
-<div class="infinite-scroll-loading">
-<div class="infinite-scroll-spinner"></div>
-<div>Searching...</div>
-</div>
-`;
-
-const results = await searchContent(query, category, sortBy);
-renderSearchResults(results);
-}, 300));
-
-// Filter change triggers search
-document.getElementById('category-filter')?.addEventListener('change', () => {
-if (searchInput.value.trim().length >= 2) {
-searchInput.dispatchEvent(new Event('input'));
-}
-});
-
-document.getElementById('sort-filter')?.addEventListener('change', () => {
-if (searchInput.value.trim().length >= 2) {
-searchInput.dispatchEvent(new Event('input'));
-}
-});
-}
-
-// Notifications functions
-async function loadNotifications() {
-try {
-if (!currentUserId) {
-updateNotificationBadge(0);
-return;
-}
-
-const { data, error } = await window.supabaseClient
-.from('notifications')
-.select('*')
-.eq('user_id', currentUserId)
-.order('created_at', { ascending: false })
-.limit(20);
-
-if (error) throw error;
-
-const unreadCount = (data || []).filter(n => !n.is_read).length;
-updateNotificationBadge(unreadCount);
-
-// Render notifications
-const notificationsList = document.getElementById('notifications-list');
-if (!notificationsList) return;
-
-if (!data || data.length === 0) {
-notificationsList.innerHTML = `
-<div class="empty-notifications">
-<i class="fas fa-bell-slash"></i>
-<p>No notifications yet</p>
-</div>
-`;
-return;
-}
-
-notificationsList.innerHTML = data.map(notification => `
-<div class="notification-item ${notification.is_read ? 'read' : 'unread'}" data-id="${notification.id}" data-content-id="${notification.content_id || ''}">
-<div class="notification-icon">
-<i class="${getNotificationIcon(notification.type)}"></i>
-</div>
-<div class="notification-content">
-<h4>${escapeHtml(notification.title)}</h4>
-<p>${escapeHtml(notification.message)}</p>
-<span class="notification-time">${formatNotificationTime(notification.created_at)}</span>
-</div>
-${!notification.is_read ? '<div class="notification-dot"></div>' : ''}
-</div>
-`).join('');
-
-// Add click handlers
-notificationsList.querySelectorAll('.notification-item').forEach(item => {
-item.addEventListener('click', async () => {
-const id = item.dataset.id;
-await markNotificationAsRead(id);
-if (item.dataset.contentId) {
-window.location.href = `content-detail.html?id=${item.dataset.contentId}`;
-}
-document.getElementById('notifications-panel').classList.remove('active');
-});
-});
-} catch (error) {
-console.error('Error loading notifications:', error);
-updateNotificationBadge(0);
-}
-}
-
-function getNotificationIcon(type) {
-switch(type) {
-case 'like': return 'fas fa-heart';
-case 'comment': return 'fas fa-comment';
-case 'follow': return 'fas fa-user-plus';
-case 'view_milestone': return 'fas fa-trophy';
-case 'system': return 'fas fa-bell';
-default: return 'fas fa-bell';
-}
-}
-
-async function markNotificationAsRead(notificationId) {
-try {
-const { error } = await window.supabaseClient
-.from('notifications')
-.update({ is_read: true })
-.eq('id', notificationId);
-
-if (error) throw error;
-
-// Update UI
-const item = document.querySelector(`.notification-item[data-id="${notificationId}"]`);
-if (item) {
-item.classList.remove('unread');
-item.classList.add('read');
-const dot = item.querySelector('.notification-dot');
-if (dot) dot.remove();
-}
-
-await loadNotifications();
-} catch (error) {
-console.error('Error marking notification as read:', error);
-}
-}
-
-async function markAllNotificationsAsRead() {
-try {
-if (!currentUserId) return;
-
-const { error } = await window.supabaseClient
-.from('notifications')
-.update({ is_read: true })
-.eq('user_id', currentUserId)
-.eq('is_read', false);
-
-if (error) throw error;
-
-// Update UI
-document.querySelectorAll('.notification-item.unread').forEach(item => {
-item.classList.remove('unread');
-item.classList.add('read');
-const dot = item.querySelector('.notification-dot');
-if (dot) dot.remove();
-});
-
-updateNotificationBadge(0);
-showToast('All notifications marked as read', 'success');
-} catch (error) {
-console.error('Error marking all notifications as read:', error);
-showToast('Failed to mark notifications as read', 'error');
-}
-}
-
-function updateNotificationBadge(count = null) {
-if (count === null) {
-count = document.querySelectorAll('.notification-item.unread').length;
-}
-const badge = document.getElementById('notification-count');
-if (badge) {
-badge.textContent = count > 99 ? '99+' : count;
-badge.style.display = count > 0 ? 'flex' : 'none';
-}
-}
-
-function formatNotificationTime(timestamp) {
-if (!timestamp) return 'Just now';
-const diffMs = Date.now() - new Date(timestamp).getTime();
-const diffMins = Math.floor(diffMs / 60000);
-const diffHours = Math.floor(diffMs / 3600000);
-const diffDays = Math.floor(diffMs / 86400000);
-
-if (diffMins < 1) return 'Just now';
-if (diffMins < 60) return `${diffMins}m ago`;
-if (diffHours < 24) return `${diffHours}h ago`;
-if (diffDays < 7) return `${diffDays}d ago`;
-return new Date(timestamp).toLocaleDateString();
-}
-
-// Setup Notifications Panel
-function setupNotificationsPanel() {
-const notificationsPanel = document.getElementById('notifications-panel');
-const closeNotifications = document.getElementById('close-notifications');
-const markAllReadBtn = document.getElementById('mark-all-read');
-
-if (!notificationsPanel || !closeNotifications || !markAllReadBtn) return;
-
-// Open notifications panel
-notificationsBtn.addEventListener('click', () => {
-notificationsPanel.classList.add('active');
-loadNotifications();
-});
-
-// Close notifications panel
-closeNotifications.addEventListener('click', () => {
-notificationsPanel.classList.remove('active');
-});
-
-// Close when clicking outside panel
-document.addEventListener('click', (e) => {
-if (notificationsPanel.classList.contains('active') &&
-!notificationsPanel.contains(e.target) &&
-!notificationsBtn.contains(e.target)) {
-notificationsPanel.classList.remove('active');
-}
-});
-
-// Mark all as read
-markAllReadBtn.addEventListener('click', markAllNotificationsAsRead);
-}
-
-// Event Listeners
-function setupListeners() {
-// Form submission
-document.getElementById('upload-form').addEventListener('submit', (e) => {
-e.preventDefault();
-if (!isUploading) uploadContent(false);
-});
-
-// Save draft
-document.getElementById('save-draft-btn').addEventListener('click', () => {
-if (!isUploading) uploadContent(true);
-});
-
-// Input listeners
-['content-title', 'content-description'].forEach(id => {
-document.getElementById(id).addEventListener('input', () => {
-updateButtonsState();
-updateChecklist();
-saveDraftToLocalStorage(); // Auto-save on typing
-});
-});
-
-document.getElementById('content-genre').addEventListener('change', () => {
-updateButtonsState();
-updateChecklist();
-saveDraftToLocalStorage();
-});
-
-// Auth modal
-document.getElementById('auth-login-btn').addEventListener('click', () => {
-window.location.href = `login.html?redirect=${encodeURIComponent('creator-upload.html')}`;
-});
-
-document.getElementById('auth-cancel-btn').addEventListener('click', () => {
-authModal.classList.remove('active');
-window.history.back();
-});
-
-// Navigation
-backBtn.addEventListener('click', () => window.history.back());
-
-profileBtn.addEventListener('click', () => {
-if (currentUserId) {
-window.location.href = 'profile.html';
-} else {
-window.location.href = `login.html?redirect=${encodeURIComponent('creator-upload.html')}`;
-}
-});
-
-// Setup search and notifications
-setupSearchModal();
-setupNotificationsPanel();
-
-// Setup media type selector
-setupMediaTypeSelector();
-}
-
-// Initialize
-async function initialize() {
-setLoading(true);
-
-// Check auth
-const user = await checkAuthentication();
-if (!user) authModal.classList.add('active');
-
-// Setup UI
-setupMediaUpload();
-setupThumbnailUpload();
-setupListeners();
-
-updateButtonsState();
-updateChecklist();
-
-// Load Draft Recovery
-loadDraftFromLocalStorage();
-
-// Load notifications if authenticated
-if (currentUserId) {
-loadNotifications();
-}
-
-setLoading(false);
-console.log('✅ Creator Upload initialized with fixed features');
-}
-
-initialize();
-
-// Auth state listener
-window.supabaseClient.auth.onAuthStateChange(async (event, session) => {
-console.log('Auth state changed:', event);
-
-if (event === 'SIGNED_IN' && session?.user) {
-currentUserId = session.user.id;
-currentUserEmail = session.user.email;
-await loadUserProfilePicture(session.user);
-await loadNotifications();
-await loadCreatorStreak();
-authModal.classList.remove('active');
-showToast('Welcome back!', 'success');
-} else if (event === 'SIGNED_OUT') {
-currentUserId = null;
-currentUserEmail = null;
-document.getElementById('userProfilePlaceholder').innerHTML = `
-<div class="profile-placeholder">
-<i class="fas fa-user"></i>
-</div>
-`;
-updateNotificationBadge(0);
-showToast('Signed out successfully', 'info');
-}
-});
+    // DOM Elements
+    const loadingScreen = document.getElementById('loading');
+    const app = document.getElementById('app');
+    const authModal = document.getElementById('auth-modal');
+    const publishBtn = document.getElementById('publish-btn');
+    const saveDraftBtn = document.getElementById('save-draft-btn');
+    const profileBtn = document.getElementById('profile-btn');
+    const backBtn = document.getElementById('back-btn');
+    const notificationsBtn = document.getElementById('notifications-btn');
+    const searchBtn = document.getElementById('search-btn');
+    const progressSection = document.getElementById('upload-progress');
+    const progressFill = document.getElementById('progress-fill');
+    const progressPercentage = document.getElementById('progress-percentage');
+    const progressText = document.getElementById('progress-text');
+    const progressSpeed = document.getElementById('progress-speed');
+    const progressEta = document.getElementById('progress-eta');
+
+    // State Screens
+    const uploadFormState = document.getElementById('upload-form-state');
+    const processingState = document.getElementById('processing-state');
+    const successState = document.getElementById('success-state');
+
+    // State variables
+    let selectedMediaFile = null;
+    let selectedThumbnailFile = null;
+    let currentUserId = null;
+    let isUploading = false;
+    let currentUserEmail = null;
+    let selectedMediaType = 'regular'; // 'regular' or 'short'
+    let extractedDuration = null;
+    
+    // Upload tracking variables
+    let uploadStartTime = 0;
+    let uploadStartBytes = 0;
+    let lastLoadedBytes = 0;
+    let lastUpdateTime = 0;
+    let uploadSpeedInterval = null;
+    let currentUploadSubscription = null;
+
+    // UI Helpers
+    function setLoading(loading) {
+        loadingScreen.style.display = loading ? 'flex' : 'none';
+        app.style.display = loading ? 'none' : 'block';
+    }
+
+    function showToast(message, type = 'error') {
+        const toast = document.createElement('div');
+        toast.className = `toast ${type}`;
+        toast.innerHTML = `<i class="fas fa-${type === 'success' ? 'check-circle' : type === 'info' ? 'info-circle' : 'exclamation-triangle'}"></i> ${message}`;
+        document.getElementById('toast-container').appendChild(toast);
+        setTimeout(() => toast.remove(), 3000);
+    }
+
+    function formatFileSize(bytes) {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+
+    function formatTime(seconds) {
+        if (!seconds && seconds !== 0) return '--:--';
+        const mins = Math.floor(seconds / 60);
+        const secs = Math.floor(seconds % 60);
+        return `${mins}:${secs.toString().padStart(2, '0')}`;
+    }
+
+    // Reset progress display to initial state
+    function resetProgress() {
+        progressFill.style.width = '0%';
+        progressPercentage.textContent = '0%';
+        progressSpeed.textContent = 'Speed: 0 MB/s';
+        progressEta.textContent = 'ETA: --:--';
+        progressText.textContent = 'Preparing upload...';
+        progressSection.classList.remove('active');
+        
+        // Reset tracking variables
+        uploadStartTime = 0;
+        uploadStartBytes = 0;
+        lastLoadedBytes = 0;
+        lastUpdateTime = 0;
+        
+        // Clear speed update interval if exists
+        if (uploadSpeedInterval) {
+            clearInterval(uploadSpeedInterval);
+            uploadSpeedInterval = null;
+        }
+    }
+
+    function updateProgress(loaded, total) {
+        if (!total) return;
+        
+        const percentage = (loaded / total) * 100;
+        progressFill.style.width = `${percentage}%`;
+        progressPercentage.textContent = `${Math.round(percentage)}%`;
+        
+        // Show progress section when upload starts
+        if (percentage > 0 && !progressSection.classList.contains('active')) {
+            progressSection.classList.add('active');
+        }
+        
+        // Update speed and ETA in real-time
+        updateUploadStats(loaded, total);
+    }
+
+    function updateUploadStats(loaded, total) {
+        const now = Date.now();
+        
+        if (uploadStartTime === 0) {
+            uploadStartTime = now;
+            uploadStartBytes = loaded;
+            lastUpdateTime = now;
+            lastLoadedBytes = loaded;
+            return;
+        }
+        
+        const timeElapsed = (now - uploadStartTime) / 1000; // seconds
+        const timeSinceLastUpdate = (now - lastUpdateTime) / 1000; // seconds
+        
+        if (timeSinceLastUpdate > 0.2) { // Update every 200ms for smoother display
+            // Calculate average speed since start (more stable)
+            const avgSpeedBps = (loaded - uploadStartBytes) / timeElapsed;
+            const avgSpeedMBps = avgSpeedBps / (1024 * 1024);
+            
+            // Calculate instantaneous speed (more responsive)
+            const instantSpeedBps = (loaded - lastLoadedBytes) / timeSinceLastUpdate;
+            const instantSpeedMBps = instantSpeedBps / (1024 * 1024);
+            
+            // Use a weighted average for smoother speed display
+            const displaySpeedMBps = avgSpeedMBps * 0.3 + instantSpeedMBps * 0.7;
+            
+            // Calculate ETA
+            const remainingBytes = total - loaded;
+            const etaSeconds = displaySpeedMBps > 0 ? remainingBytes / (displaySpeedMBps * 1024 * 1024) : 0;
+            
+            progressSpeed.textContent = `Speed: ${displaySpeedMBps.toFixed(2)} MB/s`;
+            progressEta.textContent = `ETA: ${formatTime(etaSeconds)}`;
+            
+            lastLoadedBytes = loaded;
+            lastUpdateTime = now;
+        }
+    }
+
+    // Extract duration from any media file (video OR audio)
+    function extractMediaDuration(file) {
+        return new Promise((resolve, reject) => {
+            // For audio files
+            if (file.type.includes('audio')) {
+                const audio = document.createElement('audio');
+                audio.preload = 'metadata';
+                
+                const timeout = setTimeout(() => {
+                    URL.revokeObjectURL(audio.src);
+                    reject(new Error('Duration extraction timeout'));
+                }, 10000);
+
+                audio.onloadedmetadata = () => {
+                    clearTimeout(timeout);
+                    const duration = Math.floor(audio.duration);
+                    URL.revokeObjectURL(audio.src);
+                    resolve(duration);
+                };
+
+                audio.onerror = () => {
+                    clearTimeout(timeout);
+                    URL.revokeObjectURL(audio.src);
+                    reject(new Error('Failed to load audio metadata'));
+                };
+
+                audio.src = URL.createObjectURL(file);
+            }
+            // For video files
+            else if (file.type.includes('video')) {
+                const video = document.createElement('video');
+                video.preload = 'metadata';
+                
+                const timeout = setTimeout(() => {
+                    URL.revokeObjectURL(video.src);
+                    reject(new Error('Duration extraction timeout'));
+                }, 10000);
+
+                video.onloadedmetadata = () => {
+                    clearTimeout(timeout);
+                    const duration = Math.floor(video.duration);
+                    URL.revokeObjectURL(video.src);
+                    resolve(duration);
+                };
+
+                video.onerror = () => {
+                    clearTimeout(timeout);
+                    URL.revokeObjectURL(video.src);
+                    reject(new Error('Failed to load video metadata'));
+                };
+
+                video.src = URL.createObjectURL(file);
+            } else {
+                reject(new Error('Unsupported file type'));
+            }
+        });
+    }
+
+    // Generate thumbnail from video
+    async function generateVideoThumbnail(file) {
+        return new Promise((resolve, reject) => {
+            if (!file.type.includes('video')) {
+                reject(new Error('Not a video file'));
+                return;
+            }
+
+            const video = document.createElement('video');
+            video.preload = 'metadata';
+            
+            const timeout = setTimeout(() => {
+                URL.revokeObjectURL(video.src);
+                reject(new Error('Thumbnail generation timeout'));
+            }, 10000);
+
+            video.onloadeddata = () => {
+                clearTimeout(timeout);
+                
+                // Seek to 10% of video or 1 second, whichever is smaller
+                const seekTime = Math.min(1, video.duration * 0.1);
+                
+                video.currentTime = seekTime;
+            };
+
+            video.onseeked = () => {
+                // Create canvas and draw video frame
+                const canvas = document.createElement('canvas');
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                
+                // Convert to blob
+                canvas.toBlob((blob) => {
+                    URL.revokeObjectURL(video.src);
+                    
+                    // Create file from blob
+                    const thumbnailFile = new File([blob], 'thumbnail.jpg', { 
+                        type: 'image/jpeg',
+                        lastModified: Date.now()
+                    });
+                    
+                    resolve(thumbnailFile);
+                }, 'image/jpeg', 0.9);
+            };
+
+            video.onerror = () => {
+                clearTimeout(timeout);
+                URL.revokeObjectURL(video.src);
+                reject(new Error('Failed to load video for thumbnail'));
+            };
+
+            video.src = URL.createObjectURL(file);
+        });
+    }
+
+    // Helper Functions for Profile Display
+    function getInitials(email) {
+        if (!email) return 'U';
+        const parts = email.split('@')[0];
+        return parts.substring(0, 2).toUpperCase();
+    }
+
+    function getInitialsFromName(fullName) {
+        if (!fullName) return 'U';
+        const names = fullName.split(' ');
+        if (names.length >= 2) {
+            return (names[0].charAt(0) + names[names.length - 1].charAt(0)).toUpperCase();
+        }
+        return fullName.charAt(0).toUpperCase();
+    }
+
+    // Load profile picture with proper avatar handling
+    async function loadUserProfilePicture(user) {
+        try {
+            if (!user || !profileBtn) return;
+            const placeholder = document.getElementById('userProfilePlaceholder');
+            const displayName = user.email || 'User';
+            const fallbackInitials = getInitials(user.email);
+
+            // Clear placeholder FIRST
+            while (placeholder.firstChild) {
+                placeholder.removeChild(placeholder.firstChild);
+            }
+
+            // Set temporary initial placeholder while loading
+            const tempDiv = document.createElement('div');
+            tempDiv.className = 'profile-placeholder';
+            tempDiv.style.cssText = 'width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,#1D4ED8,#F59E0B);display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:16px';
+            tempDiv.textContent = fallbackInitials;
+            placeholder.appendChild(tempDiv);
+
+            // Fetch user profile from database
+            const { data: profile, error: profileError } = await window.supabaseClient
+                .from('user_profiles')
+                .select('*')
+                .eq('id', user.id)
+                .maybeSingle();
+
+            if (profileError) {
+                console.log('Profile query error:', profileError);
+                return;
+            }
+
+            if (profile && profile.avatar_url) {
+                let avatarUrl = profile.avatar_url;
+
+                // Construct full URL if needed
+                if (!avatarUrl.startsWith('http')) {
+                    if (avatarUrl.startsWith('avatars/')) {
+                        avatarUrl = `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/${avatarUrl}`;
+                    } else {
+                        avatarUrl = `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/avatars/${avatarUrl}`;
+                    }
+                }
+
+                // Clear placeholder FIRST again before adding image
+                while (placeholder.firstChild) {
+                    placeholder.removeChild(placeholder.firstChild);
+                }
+
+                // Create image with proper styling
+                const img = document.createElement('img');
+                img.className = 'profile-img';
+                img.alt = displayName;
+                img.style.cssText = 'width: 100%; height: 100%; border-radius: 50%; object-fit: cover;';
+                img.src = avatarUrl;
+
+                // Fallback on image load failure
+                img.onerror = () => {
+                    const fallback = document.createElement('div');
+                    fallback.className = 'profile-placeholder';
+                    fallback.style.cssText = 'width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,#1D4ED8,#F59E0B);display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:16px';
+                    const finalInitials = profile.full_name ? getInitialsFromName(profile.full_name) : fallbackInitials;
+                    fallback.textContent = finalInitials;
+                    while (placeholder.firstChild) {
+                        placeholder.removeChild(placeholder.firstChild);
+                    }
+                    placeholder.appendChild(fallback);
+                };
+                placeholder.appendChild(img);
+            }
+            // If no avatar but full name exists, update the temporary placeholder with name initials
+            else if (profile && profile.full_name) {
+                const nameInitials = getInitialsFromName(profile.full_name);
+                while (placeholder.firstChild) {
+                    placeholder.removeChild(placeholder.firstChild);
+                }
+                const nameDiv = document.createElement('div');
+                nameDiv.className = 'profile-placeholder';
+                nameDiv.style.cssText = 'width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,#1D4ED8,#F59E0B);display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:16px';
+                nameDiv.textContent = nameInitials;
+                placeholder.appendChild(nameDiv);
+            }
+        } catch (error) {
+            console.error('Error loading user profile picture:', error);
+        }
+    }
+
+    // Authentication
+    async function checkAuthentication() {
+        try {
+            const sessionResponse = await window.supabaseClient.auth.getSession();
+            const session = sessionResponse.data.session;
+            const error = sessionResponse.error;
+
+            if (error || !session?.user) {
+                console.log('⚠️ User not authenticated');
+                return null;
+            }
+
+            currentUserId = session.user.id;
+            currentUserEmail = session.user.email;
+            console.log('✅ Authenticated user ID:', currentUserId);
+
+            // Load profile picture
+            await loadUserProfilePicture(session.user);
+
+            // Load Streak
+            await loadCreatorStreak();
+
+            return session.user;
+        } catch (error) {
+            console.error('Auth check failed:', error);
+            return null;
+        }
+    }
+
+    // Load Creator Streak (Mocked for now, ready for DB)
+    async function loadCreatorStreak() {
+        try {
+            // In future: Fetch from user_profiles or uploads table
+            // For now, simulate based on localStorage
+            const streak = localStorage.getItem('creator_streak') || 0;
+            const streakEl = document.getElementById('creator-streak');
+            const streakCount = document.getElementById('streak-count');
+            if (streakEl && streakCount) {
+                streakCount.textContent = streak;
+                streakEl.style.display = 'flex';
+            }
+        } catch (error) {
+            console.error('Error loading streak:', error);
+        }
+    }
+
+    // Media Type Selector
+    function setupMediaTypeSelector() {
+        const options = document.querySelectorAll('.media-type-option');
+        const shortsInfo = document.getElementById('shorts-info');
+
+        options.forEach(option => {
+            option.addEventListener('click', () => {
+                // Update selected state
+                options.forEach(o => o.classList.remove('selected'));
+                option.classList.add('selected');
+
+                // Set selected media type
+                selectedMediaType = option.dataset.type;
+
+                // Show/hide shorts info box
+                if (selectedMediaType === 'short') {
+                    shortsInfo.classList.add('active');
+                    showToast('Shorts mode enabled - max 60 seconds', 'info');
+                } else {
+                    shortsInfo.classList.remove('active');
+                }
+
+                // Re-validate media file if already selected
+                if (selectedMediaFile) {
+                    validateMediaFile(selectedMediaFile);
+                }
+                updateButtonsState();
+                updateChecklist();
+            });
+        });
+    }
+
+    // Validate media file with proper duration display for audio
+    async function validateMediaFile(file) {
+        const durationDisplay = document.getElementById('duration-display');
+        const durationText = document.getElementById('duration-text');
+        const durationStatus = document.getElementById('duration-status');
+        const durationBadge = document.getElementById('duration-badge');
+        
+        // Reset extracted duration
+        extractedDuration = null;
+        
+        // Handle both video and audio
+        if (file.type.includes('video') || file.type.includes('audio')) {
+            durationDisplay.style.display = 'flex';
+            durationText.textContent = `Duration: extracting...`;
+            durationStatus.textContent = '';
+            durationBadge.style.display = 'none';
+            
+            try {
+                // Extract real duration from media metadata
+                const duration = await extractMediaDuration(file);
+                extractedDuration = duration;
+                
+                // Update display with file type indicator
+                const mediaIcon = file.type.includes('audio') ? '🎵' : '🎬';
+                durationText.textContent = `Duration: ${formatTime(duration)} ${mediaIcon}`;
+                durationBadge.style.display = 'inline-block';
+                
+                if (file.type.includes('audio')) {
+                    // Audio file - always valid
+                    durationDisplay.classList.remove('invalid');
+                    durationDisplay.classList.add('valid');
+                    durationStatus.textContent = '✓ Audio file';
+                    
+                    // Show toast with audio info
+                    showToast(`Audio duration: ${formatTime(duration)}`, 'success');
+                } else {
+                    // Video file - check shorts constraints
+                    if (selectedMediaType === 'short') {
+                        if (duration > 60) {
+                            durationDisplay.classList.add('invalid');
+                            durationDisplay.classList.remove('valid');
+                            durationStatus.textContent = '⚠️ Too long for Shorts (max 60s)';
+                            showToast('Video is too long for Shorts (max 60 seconds)', 'error');
+                        } else {
+                            durationDisplay.classList.add('valid');
+                            durationDisplay.classList.remove('invalid');
+                            durationStatus.textContent = '✓ Valid for Shorts';
+                        }
+                    } else {
+                        // Regular video - just show duration
+                        durationDisplay.classList.remove('valid', 'invalid');
+                        durationStatus.textContent = '';
+                    }
+                }
+                
+                // Auto-generate thumbnail for videos if no thumbnail selected
+                if (file.type.includes('video') && !selectedThumbnailFile) {
+                    try {
+                        showToast('Generating thumbnail from video...', 'info');
+                        const thumbnail = await generateVideoThumbnail(file);
+                        handleThumbnailFile(thumbnail, true); // Pass true to indicate auto-generated
+                    } catch (thumbError) {
+                        console.error('Auto-thumbnail generation failed:', thumbError);
+                        // Don't show error to user, just continue without thumbnail
+                    }
+                }
+                
+            } catch (error) {
+                console.error('Duration extraction failed:', error);
+                durationText.textContent = `Duration: unknown`;
+                durationStatus.textContent = '⚠️ Could not read duration';
+                durationDisplay.classList.add('invalid');
+                showToast('Could not read media duration. File may be corrupted.', 'error');
+            }
+        } else {
+            // Invalid file type
+            durationDisplay.style.display = 'none';
+            extractedDuration = null;
+        }
+        
+        updateButtonsState();
+        updateChecklist();
+    }
+
+    // Media Upload Handlers
+    function setupMediaUpload() {
+        const zone = document.getElementById('media-upload-zone');
+        const input = document.getElementById('media-file-input');
+        
+        zone.addEventListener('click', () => input.click());
+        
+        input.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleMediaFile(e.target.files[0]);
+            }
+        });
+
+        // Drag and drop
+        zone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            zone.style.borderColor = 'var(--warm-gold)';
+            zone.style.background = 'rgba(245,158,11,.05)';
+        });
+
+        zone.addEventListener('dragleave', () => {
+            zone.style.borderColor = 'rgba(255,255,255,.3)';
+            zone.style.background = 'transparent';
+        });
+
+        zone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            zone.style.borderColor = 'rgba(255,255,255,.3)';
+            zone.style.background = 'transparent';
+            if (e.dataTransfer.files.length > 0) {
+                handleMediaFile(e.dataTransfer.files[0]);
+            }
+        });
+    }
+
+    function handleMediaFile(file) {
+        const maxSize = 800 * 1024 * 1024; // 800MB
+        
+        if (file.size > maxSize) {
+            showToast('File size must be less than 800MB');
+            return;
+        }
+
+        const videoTypes = ['video/mp4', 'video/quicktime', 'video/x-msvideo', 'video/x-matroska', 'video/webm'];
+        const audioTypes = ['audio/mpeg', 'audio/mp3', 'audio/aac', 'audio/wav', 'audio/ogg'];
+        
+        const isValidType = [...videoTypes, ...audioTypes].some(type => 
+            file.type.includes(type.split('/')[1]) || file.type === type
+        );
+
+        if (!isValidType) {
+            showToast('Please select a valid video or audio file');
+            return;
+        }
+
+        selectedMediaFile = file;
+
+        // Update UI
+        const fileIcon = file.type.includes('audio') ? 'fa-music' : 'fa-video';
+        document.getElementById('file-icon').innerHTML = `<i class="fas ${fileIcon}"></i>`;
+        document.getElementById('media-file-name').textContent = file.name;
+        document.getElementById('media-file-size').textContent = formatFileSize(file.size);
+        document.getElementById('media-file-info').style.display = 'flex';
+        document.getElementById('media-zone-text').textContent = 'Click to change file';
+
+        // Validate and extract duration
+        validateMediaFile(file);
+
+        // Save to localStorage for recovery
+        saveDraftToLocalStorage();
+    }
+
+    function removeMediaFile() {
+        selectedMediaFile = null;
+        extractedDuration = null;
+        document.getElementById('media-file-info').style.display = 'none';
+        document.getElementById('media-zone-text').textContent = 'Click or drag video/audio files here';
+        
+        // Reset duration display
+        const durationDisplay = document.getElementById('duration-display');
+        if (durationDisplay) {
+            durationDisplay.style.display = 'none';
+        }
+        
+        updateButtonsState();
+        updateChecklist();
+        resetProgress();
+    }
+
+    // Thumbnail handler with auto-generated flag
+    function handleThumbnailFile(file, isAutoGenerated = false) {
+        const imageTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+        
+        if (!imageTypes.includes(file.type)) {
+            showToast('Please select a valid image file (JPG, PNG, GIF)');
+            return;
+        }
+
+        selectedThumbnailFile = file;
+
+        // Create preview
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            document.getElementById('thumbnail-image').src = e.target.result;
+            document.getElementById('thumbnail-preview').style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+
+        if (!isAutoGenerated) {
+            showToast('Thumbnail image selected', 'success');
+        } else {
+            showToast('Auto thumbnail generated from video', 'success');
+        }
+        
+        updateChecklist();
+        saveDraftToLocalStorage();
+    }
+
+    // Thumbnail Upload Handlers
+    function setupThumbnailUpload() {
+        const zone = document.getElementById('thumbnail-upload-zone');
+        const input = document.getElementById('thumbnail-file-input');
+        const preview = document.getElementById('thumbnail-preview');
+
+        zone.addEventListener('click', () => openImagePicker());
+
+        input.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleThumbnailFile(e.target.files[0], false);
+            }
+        });
+
+        // Drag and drop
+        zone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            zone.style.borderColor = 'var(--warm-gold)';
+            zone.style.background = 'rgba(245,158,11,.05)';
+        });
+
+        zone.addEventListener('dragleave', () => {
+            zone.style.borderColor = 'rgba(255,255,255,.3)';
+            zone.style.background = 'transparent';
+        });
+
+        zone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            zone.style.borderColor = 'rgba(255,255,255,.3)';
+            zone.style.background = 'transparent';
+            if (e.dataTransfer.files.length > 0) {
+                handleThumbnailFile(e.dataTransfer.files[0], false);
+            }
+        });
+
+        // Camera input
+        document.getElementById('camera-file-input').addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleThumbnailFile(e.target.files[0], false);
+            }
+        });
+    }
+
+    function openImagePicker() {
+        document.getElementById('thumbnail-file-input').click();
+    }
+
+    function captureCameraImage() {
+        document.getElementById('camera-file-input').click();
+    }
+
+    // Checklist Logic
+    function updateChecklist() {
+        const title = document.getElementById('content-title').value.trim();
+        const desc = document.getElementById('content-description').value.trim();
+        const genre = document.getElementById('content-genre').value;
+
+        let score = 0;
+
+        // Title
+        if (title.length > 5) {
+            document.getElementById('check-title').classList.add('completed');
+            document.getElementById('check-title').innerHTML = '<i class="fas fa-check-circle"></i> Compelling Title';
+            score += 20;
+        } else {
+            document.getElementById('check-title').classList.remove('completed');
+            document.getElementById('check-title').innerHTML = '<i class="far fa-circle"></i> Compelling Title';
+        }
+
+        // Description
+        if (desc.length > 20) {
+            document.getElementById('check-desc').classList.add('completed');
+            document.getElementById('check-desc').innerHTML = '<i class="fas fa-check-circle"></i> Detailed Description';
+            score += 20;
+        } else {
+            document.getElementById('check-desc').classList.remove('completed');
+            document.getElementById('check-desc').innerHTML = '<i class="far fa-circle"></i> Detailed Description';
+        }
+
+        // Media
+        if (selectedMediaFile) {
+            document.getElementById('check-media').classList.add('completed');
+            document.getElementById('check-media').innerHTML = '<i class="fas fa-check-circle"></i> Media File Uploaded';
+            score += 20;
+        } else {
+            document.getElementById('check-media').classList.remove('completed');
+            document.getElementById('check-media').innerHTML = '<i class="far fa-circle"></i> Media File Uploaded';
+        }
+
+        // Thumbnail
+        if (selectedThumbnailFile) {
+            document.getElementById('check-thumb').classList.add('completed');
+            document.getElementById('check-thumb').innerHTML = '<i class="fas fa-check-circle"></i> Custom Thumbnail <span style="color:var(--warm-gold);font-size:12px;margin-left:5px">(2x more clicks)</span>';
+            score += 20;
+        } else {
+            document.getElementById('check-thumb').classList.remove('completed');
+            document.getElementById('check-thumb').innerHTML = '<i class="far fa-circle"></i> Custom Thumbnail <span style="color:var(--warm-gold);font-size:12px;margin-left:5px">(2x more clicks)</span>';
+        }
+
+        // Genre
+        if (genre) {
+            document.getElementById('check-genre').classList.add('completed');
+            document.getElementById('check-genre').innerHTML = '<i class="fas fa-check-circle"></i> Category Selected';
+            score += 20;
+        } else {
+            document.getElementById('check-genre').classList.remove('completed');
+            document.getElementById('check-genre').innerHTML = '<i class="far fa-circle"></i> Category Selected';
+        }
+
+        document.getElementById('quality-score').textContent = `${score}%`;
+    }
+
+    // Button State Management
+    function updateButtonsState() {
+        const title = document.getElementById('content-title').value.trim();
+        const desc = document.getElementById('content-description').value.trim();
+
+        // For shorts, check duration validation (must have duration and be <= 60s)
+        const isShortValid = selectedMediaType !== 'short' ||
+            (extractedDuration !== null && extractedDuration <= 60);
+
+        // For regular videos, duration is optional but nice to have
+        const hasRequiredDuration = selectedMediaType !== 'short' || isShortValid;
+
+        saveDraftBtn.disabled = !title || isUploading || !currentUserId;
+        publishBtn.disabled = !title || !desc || !selectedMediaFile || isUploading || !currentUserId || !hasRequiredDuration;
+
+        if (isUploading) {
+            publishBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Publishing...';
+            saveDraftBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+        } else {
+            publishBtn.innerHTML = '<i class="fas fa-cloud-upload-alt"></i> Publish Content';
+            saveDraftBtn.innerHTML = '<i class="fas fa-save"></i> Save Draft';
+        }
+    }
+
+    // Auto-Save & Recovery
+    function saveDraftToLocalStorage() {
+        if (!currentUserId) return;
+
+        const draft = {
+            title: document.getElementById('content-title').value,
+            description: document.getElementById('content-description').value,
+            genre: document.getElementById('content-genre').value,
+            mediaType: selectedMediaType,
+            // Note: Files cannot be stored in localStorage, only metadata
+            hasMedia: !!selectedMediaFile,
+            mediaName: selectedMediaFile ? selectedMediaFile.name : null,
+            hasThumbnail: !!selectedThumbnailFile
+        };
+
+        localStorage.setItem(`draft_${currentUserId}`, JSON.stringify(draft));
+    }
+
+    function loadDraftFromLocalStorage() {
+        if (!currentUserId) return;
+
+        const draftStr = localStorage.getItem(`draft_${currentUserId}`);
+        if (draftStr) {
+            const draft = JSON.parse(draftStr);
+
+            document.getElementById('content-title').value = draft.title || '';
+            document.getElementById('content-description').value = draft.description || '';
+            document.getElementById('content-genre').value = draft.genre || '';
+
+            if (draft.mediaType) {
+                selectedMediaType = draft.mediaType;
+                document.querySelectorAll('.media-type-option').forEach(o => {
+                    o.classList.remove('selected');
+                    if (o.dataset.type === draft.mediaType) o.classList.add('selected');
+                });
+            }
+
+            updateChecklist();
+            updateButtonsState();
+
+            if (draft.hasMedia) {
+                showToast(`Draft recovered: ${draft.mediaName}`, 'success');
+            }
+        }
+    }
+
+    // FIXED: Upload to Storage with correct Supabase API
+    async function uploadFileToStorage(file, bucket, basePath) {
+        // Sanitize filename
+        const cleanFileName = file.name
+            .replace(/[^a-z0-9.]/gi, '_')
+            .replace(/_{2,}/g, '_')
+            .toLowerCase();
+        
+        const timestamp = Date.now();
+        const random = Math.random().toString(36).substring(7);
+        const fileName = `${timestamp}_${random}_${cleanFileName}`;
+        
+        // Path structure: {user_id}/{basePath}/{filename}
+        const filePath = `${currentUserId}/${basePath}/${fileName}`;
+        
+        console.log(`📤 Uploading to ${bucket}: ${filePath}`);
+        
+        try {
+            // Use Supabase's built-in upload with progress tracking
+            const { data, error } = await window.supabaseClient.storage
+                .from(bucket)
+                .upload(filePath, file, {
+                    contentType: file.type,
+                    cacheControl: '3600',
+                    upsert: false
+                });
+
+            if (error) throw error;
+
+            // Get public URL
+            const { data: { publicUrl } } = window.supabaseClient.storage
+                .from(bucket)
+                .getPublicUrl(filePath);
+
+            console.log(`✅ Upload successful. Public URL: ${publicUrl}`);
+            
+            // Simulate progress for the UI since we can't track it directly
+            updateProgress(file.size, file.size);
+            progressText.textContent = `Upload complete!`;
+            
+            return publicUrl;
+
+        } catch (error) {
+            console.error(`❌ ${bucket} upload failed:`, error);
+            throw error;
+        }
+    }
+
+    // Create Content Record with duration
+    async function createContentRecord(data) {
+        try {
+            // Prepare insert data
+            const insertData = {
+                title: data.title,
+                description: data.description,
+                file_url: data.media_url,
+                thumbnail_url: data.thumbnail_url || '',
+                media_type: data.media_type,
+                genre: data.genre || null,
+                status: data.status,
+                user_id: currentUserId,
+                created_at: new Date().toISOString()
+            };
+
+            // Add duration if we have it (for video/audio files)
+            if (data.duration !== null && data.duration !== undefined) {
+                insertData.duration = data.duration;
+                console.log(`🎬 Setting duration to ${data.duration} seconds`);
+            }
+
+            const { data: result, error } = await window.supabaseClient
+                .from('Content')
+                .insert([insertData])
+                .select();
+
+            if (error) throw error;
+
+            console.log('✅ Content record created with duration:', data.duration);
+            return result;
+        } catch (error) {
+            console.error('DB insert failed:', error);
+            throw error;
+        }
+    }
+
+    // Main Upload Flow
+    async function uploadContent(isDraft = false) {
+        if (!currentUserId) {
+            showToast('Please sign in to upload content');
+            authModal.classList.add('active');
+            return;
+        }
+
+        const title = document.getElementById('content-title').value.trim();
+        const desc = document.getElementById('content-description').value.trim();
+        const genre = document.getElementById('content-genre').value;
+
+        if (!title || !desc || !selectedMediaFile) {
+            showToast('Please fill all required fields');
+            return;
+        }
+
+        // Validate shorts duration
+        if (selectedMediaType === 'short') {
+            if (extractedDuration === null) {
+                showToast('Please wait for duration to be extracted', 'error');
+                return;
+            }
+            if (extractedDuration > 60) {
+                showToast('Shorts must be under 60 seconds', 'error');
+                return;
+            }
+        }
+
+        // Wait for duration if still extracting
+        if (selectedMediaFile.type.includes('video') && extractedDuration === null) {
+            showToast('Duration not ready yet. Please wait.', 'error');
+            return;
+        }
+
+        isUploading = true;
+        updateButtonsState();
+        
+        // Reset and initialize upload tracking
+        resetProgress();
+        uploadStartTime = Date.now();
+        lastLoadedBytes = 0;
+        lastUpdateTime = Date.now();
+
+        try {
+            // STEP 1: Upload media file to content-media bucket
+            progressText.textContent = 'Starting upload...';
+            const mediaType = selectedMediaFile.type.includes('video') ? 'video' : 'audio';
+            
+            // Set media_type to 'short' if shorts mode is selected
+            const finalMediaType = selectedMediaType === 'short' ? 'short' : mediaType;
+            
+            const mediaUrl = await uploadFileToStorage(selectedMediaFile, 'content-media', 'media');
+
+            // STEP 2: Upload thumbnail to content-thumbnails bucket
+            let thumbnailUrl = null;
+            if (selectedThumbnailFile) {
+                progressText.textContent = 'Uploading thumbnail...';
+                thumbnailUrl = await uploadFileToStorage(selectedThumbnailFile, 'content-thumbnails', 'thumbnails');
+            } else {
+                // Default thumbnails based on media type
+                if (mediaType === 'video') {
+                    thumbnailUrl = 'https://images.unsplash.com/photo-1574717024653-61fd2cf4d44d?w=800&q=80';
+                } else {
+                    thumbnailUrl = 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=800&q=80';
+                }
+            }
+
+            // STEP 3: Create content record with media_type and duration
+            progressText.textContent = 'Creating content record...';
+            
+            await createContentRecord({
+                title,
+                description: desc,
+                media_url: mediaUrl,
+                thumbnail_url: thumbnailUrl,
+                media_type: finalMediaType,
+                genre,
+                status: isDraft ? 'draft' : 'published',
+                duration: extractedDuration // Pass the extracted duration
+            });
+
+            // Complete Upload
+            progressText.textContent = 'Upload complete!';
+            
+            // Clear Draft
+            localStorage.removeItem(`draft_${currentUserId}`);
+
+            // Increment Streak (Mock)
+            let streak = parseInt(localStorage.getItem('creator_streak') || '0') + 1;
+            localStorage.setItem('creator_streak', streak);
+
+            // SHOW PROCESSING STATE
+            uploadFormState.style.display = 'none';
+            processingState.classList.add('active');
+            
+            // Hide progress section
+            progressSection.classList.remove('active');
+
+            // Simulate Processing Time
+            setTimeout(() => {
+                processingState.classList.remove('active');
+                successState.classList.add('active');
+                triggerConfetti();
+            }, 3000);
+
+        } catch (error) {
+            console.error('Upload failed:', error);
+            showToast(`Upload failed: ${error.message || 'Unknown error'}`, 'error');
+            resetProgress();
+            isUploading = false;
+            updateButtonsState();
+        }
+    }
+
+    // Confetti Animation
+    function triggerConfetti() {
+        const colors = ['#F59E0B', '#1D4ED8', '#10B981', '#EF4444'];
+        for (let i = 0; i < 50; i++) {
+            const confetti = document.createElement('div');
+            confetti.className = 'confetti';
+            confetti.style.left = Math.random() * 100 + 'vw';
+            confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+            confetti.style.animationDuration = (Math.random() * 2 + 2) + 's';
+            document.body.appendChild(confetti);
+            setTimeout(() => confetti.remove(), 4000);
+        }
+    }
+
+    // Post-Upload Actions
+    window.viewContent = function() {
+        window.location.href = 'content-library.html';
+    }
+
+    window.shareContent = function() {
+        if (navigator.share) {
+            navigator.share({
+                title: 'Check out my content on Bantu Stream Connect!',
+                url: window.location.origin
+            });
+        } else {
+            showToast('Link copied to clipboard', 'success');
+        }
+    }
+
+    window.uploadAnother = function() {
+        // Reset Form
+        document.getElementById('upload-form').reset();
+        selectedMediaFile = null;
+        selectedThumbnailFile = null;
+        extractedDuration = null;
+        document.getElementById('media-file-info').style.display = 'none';
+        document.getElementById('thumbnail-preview').style.display = 'none';
+        document.getElementById('duration-display').style.display = 'none';
+        resetProgress();
+        updateChecklist();
+        updateButtonsState();
+
+        // Show Form
+        successState.classList.remove('active');
+        uploadFormState.style.display = 'block';
+        showToast('Ready for next upload!', 'success');
+    }
+
+    window.goToDashboard = function() {
+        window.location.href = 'creator-dashboard.html';
+    }
+
+    // Search functionality (keep existing search functions)
+    function debounce(func, wait) {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
+                clearTimeout(timeout);
+                func(...args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        };
+    }
+
+    async function searchContent(query, category = '', sortBy = 'newest') {
+        try {
+            let queryBuilder = window.supabaseClient
+                .from('Content')
+                .select('*, user_profiles!user_id(*)')
+                .ilike('title', `%${query}%`)
+                .eq('status', 'published');
+
+            if (category) {
+                queryBuilder = queryBuilder.eq('genre', category);
+            }
+
+            if (sortBy === 'newest') {
+                queryBuilder = queryBuilder.order('created_at', { ascending: false });
+            }
+
+            const { data, error } = await queryBuilder.limit(50);
+            if (error) throw error;
+
+            // Enrich with real counts from source tables
+            const enriched = await Promise.all(
+                (data || []).map(async (item) => {
+                    const { count: viewsCount } = await window.supabaseClient
+                        .from('content_views')
+                        .select('*', { count: 'exact', head: true })
+                        .eq('content_id', item.id);
+
+                    const { count: likesCount } = await window.supabaseClient
+                        .from('content_likes')
+                        .select('*', { count: 'exact', head: true })
+                        .eq('content_id', item.id);
+
+                    return {
+                        ...item,
+                        real_views: viewsCount || 0,
+                        real_likes: likesCount || 0
+                    };
+                })
+            );
+
+            // Additional sorting for popularity/trending
+            if (sortBy === 'popular') {
+                enriched.sort((a, b) => (b.real_views || 0) - (a.real_views || 0));
+            } else if (sortBy === 'trending') {
+                enriched.sort((a, b) => {
+                    const aScore = (a.real_views || 0) + ((a.real_likes || 0) * 2);
+                    const bScore = (b.real_views || 0) + ((b.real_likes || 0) * 2);
+                    return bScore - aScore;
+                });
+            }
+
+            return enriched;
+        } catch (error) {
+            console.error('Search error:', error);
+            return [];
+        }
+    }
+
+    function escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    function truncateText(text, maxLength) {
+        if (!text) return '';
+        if (text.length <= maxLength) return text;
+        return text.substring(0, maxLength) + '...';
+    }
+
+    function formatNumber(num) {
+        if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+        if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+        return num.toString();
+    }
+
+    // Render search results
+    function renderSearchResults(results) {
+        const grid = document.getElementById('search-results-grid');
+        if (!grid) return;
+
+        if (!results || results.length === 0) {
+            grid.innerHTML = '<div class="no-results">No results found. Try different keywords.</div>';
+            return;
+        }
+
+        grid.innerHTML = results.map(item => {
+            const creator = item.user_profiles?.full_name ||
+                item.user_profiles?.username ||
+                item.creator ||
+                'Creator';
+            const creatorId = item.user_profiles?.id || item.user_id;
+            const thumbnailUrl = item.thumbnail_url
+                ? `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/${item.thumbnail_url.replace(/^\/+/, '')}`
+                : 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop';
+
+            return `
+            <div class="content-card" data-content-id="${item.id}">
+                <div class="card-thumbnail">
+                    <img src="${thumbnailUrl}"
+                         alt="${escapeHtml(item.title)}"
+                         loading="lazy"
+                         onerror="this.src='https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop'">
+                    <div class="thumbnail-overlay"></div>
+                    <div class="play-overlay">
+                        <div class="play-icon">
+                            <i class="fas fa-play"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-content">
+                    <h3 class="card-title">${truncateText(escapeHtml(item.title), 45)}</h3>
+                    <button class="creator-btn"
+                            onclick="event.stopPropagation(); window.location.href='creator-channel.html?id=${creatorId}&name=${encodeURIComponent(creator)}'">
+                        <i class="fas fa-user"></i>
+                        ${truncateText(escapeHtml(creator), 15)}
+                    </button>
+                    <div class="card-stats">
+                        <div class="card-stat">
+                            <i class="fas fa-eye"></i>
+                            ${formatNumber(item.real_views || item.views_count || 0)}
+                        </div>
+                        <div class="card-stat">
+                            <i class="fas fa-heart"></i>
+                            ${formatNumber(item.real_likes || 0)}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            `;
+        }).join('');
+
+        // Add click handlers to cards
+        grid.querySelectorAll('.content-card').forEach(card => {
+            card.addEventListener('click', (e) => {
+                if (e.target.closest('.creator-btn')) return;
+                const id = card.dataset.contentId;
+                if (id) window.location.href = `content-detail.html?id=${id}`;
+            });
+        });
+    }
+
+    // Setup Search Modal
+    function setupSearchModal() {
+        const searchModal = document.getElementById('search-modal');
+        const searchInput = document.getElementById('search-input');
+        const closeSearchBtn = document.getElementById('close-search-btn');
+
+        if (!searchModal || !searchInput || !closeSearchBtn) return;
+
+        // Open search modal
+        searchBtn.addEventListener('click', () => {
+            searchModal.classList.add('active');
+            setTimeout(() => searchInput.focus(), 300);
+        });
+
+        // Close search modal
+        closeSearchBtn.addEventListener('click', () => {
+            searchModal.classList.remove('active');
+            searchInput.value = '';
+            document.getElementById('search-results-grid').innerHTML = '';
+        });
+
+        // Close when clicking outside modal content
+        searchModal.addEventListener('click', (e) => {
+            if (e.target === searchModal) {
+                searchModal.classList.remove('active');
+                searchInput.value = '';
+                document.getElementById('search-results-grid').innerHTML = '';
+            }
+        });
+
+        // Live search with debounce
+        searchInput.addEventListener('input', debounce(async (e) => {
+            const query = e.target.value.trim();
+            const category = document.getElementById('category-filter')?.value;
+            const sortBy = document.getElementById('sort-filter')?.value;
+            const resultsGrid = document.getElementById('search-results-grid');
+
+            if (!resultsGrid) return;
+
+            if (query.length < 2) {
+                resultsGrid.innerHTML = '<div class="no-results">Start typing to search...</div>';
+                return;
+            }
+
+            resultsGrid.innerHTML = `
+                <div class="infinite-scroll-loading">
+                    <div class="infinite-scroll-spinner"></div>
+                    <div>Searching...</div>
+                </div>
+            `;
+
+            const results = await searchContent(query, category, sortBy);
+            renderSearchResults(results);
+        }, 300));
+
+        // Filter change triggers search
+        document.getElementById('category-filter')?.addEventListener('change', () => {
+            if (searchInput.value.trim().length >= 2) {
+                searchInput.dispatchEvent(new Event('input'));
+            }
+        });
+
+        document.getElementById('sort-filter')?.addEventListener('change', () => {
+            if (searchInput.value.trim().length >= 2) {
+                searchInput.dispatchEvent(new Event('input'));
+            }
+        });
+    }
+
+    // Notifications functions
+    async function loadNotifications() {
+        try {
+            if (!currentUserId) {
+                updateNotificationBadge(0);
+                return;
+            }
+
+            const { data, error } = await window.supabaseClient
+                .from('notifications')
+                .select('*')
+                .eq('user_id', currentUserId)
+                .order('created_at', { ascending: false })
+                .limit(20);
+
+            if (error) throw error;
+
+            const unreadCount = (data || []).filter(n => !n.is_read).length;
+            updateNotificationBadge(unreadCount);
+
+            // Render notifications
+            const notificationsList = document.getElementById('notifications-list');
+            if (!notificationsList) return;
+
+            if (!data || data.length === 0) {
+                notificationsList.innerHTML = `
+                    <div class="empty-notifications">
+                        <i class="fas fa-bell-slash"></i>
+                        <p>No notifications yet</p>
+                    </div>
+                `;
+                return;
+            }
+
+            notificationsList.innerHTML = data.map(notification => `
+                <div class="notification-item ${notification.is_read ? 'read' : 'unread'}" data-id="${notification.id}" data-content-id="${notification.content_id || ''}">
+                    <div class="notification-icon">
+                        <i class="${getNotificationIcon(notification.type)}"></i>
+                    </div>
+                    <div class="notification-content">
+                        <h4>${escapeHtml(notification.title)}</h4>
+                        <p>${escapeHtml(notification.message)}</p>
+                        <span class="notification-time">${formatNotificationTime(notification.created_at)}</span>
+                    </div>
+                    ${!notification.is_read ? '<div class="notification-dot"></div>' : ''}
+                </div>
+            `).join('');
+
+            // Add click handlers
+            notificationsList.querySelectorAll('.notification-item').forEach(item => {
+                item.addEventListener('click', async () => {
+                    const id = item.dataset.id;
+                    await markNotificationAsRead(id);
+                    if (item.dataset.contentId) {
+                        window.location.href = `content-detail.html?id=${item.dataset.contentId}`;
+                    }
+                    document.getElementById('notifications-panel').classList.remove('active');
+                });
+            });
+        } catch (error) {
+            console.error('Error loading notifications:', error);
+            updateNotificationBadge(0);
+        }
+    }
+
+    function getNotificationIcon(type) {
+        switch(type) {
+            case 'like': return 'fas fa-heart';
+            case 'comment': return 'fas fa-comment';
+            case 'follow': return 'fas fa-user-plus';
+            case 'view_milestone': return 'fas fa-trophy';
+            case 'system': return 'fas fa-bell';
+            default: return 'fas fa-bell';
+        }
+    }
+
+    async function markNotificationAsRead(notificationId) {
+        try {
+            const { error } = await window.supabaseClient
+                .from('notifications')
+                .update({ is_read: true })
+                .eq('id', notificationId);
+
+            if (error) throw error;
+
+            // Update UI
+            const item = document.querySelector(`.notification-item[data-id="${notificationId}"]`);
+            if (item) {
+                item.classList.remove('unread');
+                item.classList.add('read');
+                const dot = item.querySelector('.notification-dot');
+                if (dot) dot.remove();
+            }
+
+            await loadNotifications();
+        } catch (error) {
+            console.error('Error marking notification as read:', error);
+        }
+    }
+
+    async function markAllNotificationsAsRead() {
+        try {
+            if (!currentUserId) return;
+
+            const { error } = await window.supabaseClient
+                .from('notifications')
+                .update({ is_read: true })
+                .eq('user_id', currentUserId)
+                .eq('is_read', false);
+
+            if (error) throw error;
+
+            // Update UI
+            document.querySelectorAll('.notification-item.unread').forEach(item => {
+                item.classList.remove('unread');
+                item.classList.add('read');
+                const dot = item.querySelector('.notification-dot');
+                if (dot) dot.remove();
+            });
+
+            updateNotificationBadge(0);
+            showToast('All notifications marked as read', 'success');
+        } catch (error) {
+            console.error('Error marking all notifications as read:', error);
+            showToast('Failed to mark notifications as read', 'error');
+        }
+    }
+
+    function updateNotificationBadge(count = null) {
+        if (count === null) {
+            count = document.querySelectorAll('.notification-item.unread').length;
+        }
+        const badge = document.getElementById('notification-count');
+        if (badge) {
+            badge.textContent = count > 99 ? '99+' : count;
+            badge.style.display = count > 0 ? 'flex' : 'none';
+        }
+    }
+
+    function formatNotificationTime(timestamp) {
+        if (!timestamp) return 'Just now';
+        const diffMs = Date.now() - new Date(timestamp).getTime();
+        const diffMins = Math.floor(diffMs / 60000);
+        const diffHours = Math.floor(diffMs / 3600000);
+        const diffDays = Math.floor(diffMs / 86400000);
+
+        if (diffMins < 1) return 'Just now';
+        if (diffMins < 60) return `${diffMins}m ago`;
+        if (diffHours < 24) return `${diffHours}h ago`;
+        if (diffDays < 7) return `${diffDays}d ago`;
+        return new Date(timestamp).toLocaleDateString();
+    }
+
+    // Setup Notifications Panel
+    function setupNotificationsPanel() {
+        const notificationsPanel = document.getElementById('notifications-panel');
+        const closeNotifications = document.getElementById('close-notifications');
+        const markAllReadBtn = document.getElementById('mark-all-read');
+
+        if (!notificationsPanel || !closeNotifications || !markAllReadBtn) return;
+
+        // Open notifications panel
+        notificationsBtn.addEventListener('click', () => {
+            notificationsPanel.classList.add('active');
+            loadNotifications();
+        });
+
+        // Close notifications panel
+        closeNotifications.addEventListener('click', () => {
+            notificationsPanel.classList.remove('active');
+        });
+
+        // Close when clicking outside panel
+        document.addEventListener('click', (e) => {
+            if (notificationsPanel.classList.contains('active') &&
+                !notificationsPanel.contains(e.target) &&
+                !notificationsBtn.contains(e.target)) {
+                notificationsPanel.classList.remove('active');
+            }
+        });
+
+        // Mark all as read
+        markAllReadBtn.addEventListener('click', markAllNotificationsAsRead);
+    }
+
+    // Event Listeners
+    function setupListeners() {
+        // Form submission
+        document.getElementById('upload-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            if (!isUploading) uploadContent(false);
+        });
+
+        // Save draft
+        document.getElementById('save-draft-btn').addEventListener('click', () => {
+            if (!isUploading) uploadContent(true);
+        });
+
+        // Input listeners
+        ['content-title', 'content-description'].forEach(id => {
+            document.getElementById(id).addEventListener('input', () => {
+                updateButtonsState();
+                updateChecklist();
+                saveDraftToLocalStorage(); // Auto-save on typing
+            });
+        });
+
+        document.getElementById('content-genre').addEventListener('change', () => {
+            updateButtonsState();
+            updateChecklist();
+            saveDraftToLocalStorage();
+        });
+
+        // Auth modal
+        document.getElementById('auth-login-btn').addEventListener('click', () => {
+            window.location.href = `login.html?redirect=${encodeURIComponent('creator-upload.html')}`;
+        });
+
+        document.getElementById('auth-cancel-btn').addEventListener('click', () => {
+            authModal.classList.remove('active');
+            window.history.back();
+        });
+
+        // Navigation
+        backBtn.addEventListener('click', () => window.history.back());
+
+        profileBtn.addEventListener('click', () => {
+            if (currentUserId) {
+                window.location.href = 'profile.html';
+            } else {
+                window.location.href = `login.html?redirect=${encodeURIComponent('creator-upload.html')}`;
+            }
+        });
+
+        // Setup search and notifications
+        setupSearchModal();
+        setupNotificationsPanel();
+
+        // Setup media type selector
+        setupMediaTypeSelector();
+    }
+
+    // Initialize
+    async function initialize() {
+        setLoading(true);
+
+        // Check auth
+        const user = await checkAuthentication();
+        if (!user) authModal.classList.add('active');
+
+        // Setup UI
+        setupMediaUpload();
+        setupThumbnailUpload();
+        setupListeners();
+
+        updateButtonsState();
+        updateChecklist();
+
+        // Load Draft Recovery
+        loadDraftFromLocalStorage();
+
+        // Load notifications if authenticated
+        if (currentUserId) {
+            loadNotifications();
+        }
+
+        setLoading(false);
+        console.log('✅ Creator Upload initialized with fixed features');
+    }
+
+    initialize();
+
+    // Auth state listener
+    window.supabaseClient.auth.onAuthStateChange(async (event, session) => {
+        console.log('Auth state changed:', event);
+
+        if (event === 'SIGNED_IN' && session?.user) {
+            currentUserId = session.user.id;
+            currentUserEmail = session.user.email;
+            await loadUserProfilePicture(session.user);
+            await loadNotifications();
+            await loadCreatorStreak();
+            authModal.classList.remove('active');
+            showToast('Welcome back!', 'success');
+        } else if (event === 'SIGNED_OUT') {
+            currentUserId = null;
+            currentUserEmail = null;
+            document.getElementById('userProfilePlaceholder').innerHTML = `
+                <div class="profile-placeholder">
+                    <i class="fas fa-user"></i>
+                </div>
+            `;
+            updateNotificationBadge(0);
+            showToast('Signed out successfully', 'info');
+        }
+    });
 });
 
 // Global functions for onclick handlers
 window.removeMediaFile = function() {
-document.getElementById('media-file-input').value = '';
-document.getElementById('media-file-info').style.display = 'none';
-document.getElementById('media-zone-text').textContent = 'Click or drag video/audio files here';
-
-// Reset extracted duration
-if (window.selectedMediaFile) {
-window.selectedMediaFile = null;
-window.extractedDuration = null;
-const durationDisplay = document.getElementById('duration-display');
-if (durationDisplay) durationDisplay.style.display = 'none';
-}
-
-// Call update function if available
-if (typeof updateButtonsState === 'function') updateButtonsState();
-if (typeof updateChecklist === 'function') updateChecklist();
-if (typeof resetProgress === 'function') resetProgress();
+    document.getElementById('media-file-input').value = '';
+    document.getElementById('media-file-info').style.display = 'none';
+    document.getElementById('media-zone-text').textContent = 'Click or drag video/audio files here';
+    
+    // Reset extracted duration
+    if (window.selectedMediaFile) {
+        window.selectedMediaFile = null;
+        window.extractedDuration = null;
+        const durationDisplay = document.getElementById('duration-display');
+        if (durationDisplay) durationDisplay.style.display = 'none';
+    }
+    
+    // Call update function if available
+    if (typeof updateButtonsState === 'function') updateButtonsState();
+    if (typeof updateChecklist === 'function') updateChecklist();
+    if (typeof resetProgress === 'function') resetProgress();
 };
 
 window.openImagePicker = function() {
-document.getElementById('thumbnail-file-input').click();
+    document.getElementById('thumbnail-file-input').click();
 };
 
 window.captureCameraImage = function() {
-document.getElementById('camera-file-input').click();
+    document.getElementById('camera-file-input').click();
 };
 </script>
 </body>
