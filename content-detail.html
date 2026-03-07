@@ -152,13 +152,22 @@
         <!-- Content injected by JS with skeleton loaders -->
       </section>
 
-      <!-- Hero Section -->
-      <section class="content-hero">
+      <!-- 🎯 YOUTUBE-STYLE HERO SECTION - Enhanced with video-active class support -->
+      <section class="content-hero" id="contentHero">
+        <!-- Poster (shown initially) -->
         <div class="hero-poster" id="heroPoster">
           <div class="poster-placeholder" id="posterPlaceholder">
             <i class="fas fa-film"></i>
           </div>
+          <!-- Play overlay for visual cue -->
+          <div class="play-overlay" id="heroPlayOverlay">
+            <div class="play-icon-large">
+              <i class="fas fa-play"></i>
+            </div>
+          </div>
         </div>
+        
+        <!-- Hero Info (always visible) -->
         <div class="hero-info">
           <h1 id="contentTitle">Loading Content...</h1>
           <div class="hero-meta">
@@ -209,7 +218,7 @@
         </div>
       </section>
 
-      <!-- BANTU STREAM CONNECT BRANDED VIDEO PLAYER - PHASE 1 FIXED -->
+      <!-- 🎯 BANTU STREAM CONNECT BRANDED VIDEO PLAYER - YouTube Style Integration -->
       <div class="inline-player" id="inlinePlayer" style="display: none;">
         <div class="player-header">
           <h3 id="playerTitle">Now Playing</h3>
@@ -224,7 +233,9 @@
           </video>
           
           <!-- PHASE 4: Quality Badge and Network Speed Indicator -->
-          <div class="quality-indicator" id="qualityBadge">Auto</div>
+          <div class="quality-indicator" id="qualityBadge">
+            <i class="fas fa-microchip"></i> <span id="qualityLabel">Auto</span>
+          </div>
           <div class="network-speed-indicator" id="networkSpeedIndicator">
             <i class="fas fa-wifi"></i> <span id="networkSpeedValue">-- Mbps</span>
           </div>
@@ -235,7 +246,7 @@
             <i class="fas fa-leaf"></i> Data Saver
           </div>
           
-          <!-- SIMPLE Loading Placeholder Only -->
+          <!-- SIMPLE Loading Placeholder Only - with smooth transition -->
           <div class="bantu-player-placeholder" id="videoPlaceholder">
             <div class="bantu-logo-spinner">
               <div class="bantu-logo">
@@ -915,7 +926,10 @@
       if (qualityBadge && window.streamingManager && typeof window.streamingManager.getCurrentQuality === 'function') {
         qualityBadge.classList.add('visible');
         const quality = window.streamingManager.getCurrentQuality();
-        qualityBadge.textContent = quality === 'auto' ? 'Auto' : quality;
+        const qualityLabel = document.getElementById('qualityLabel');
+        if (qualityLabel) {
+          qualityLabel.textContent = quality === 'auto' ? 'Auto' : quality;
+        }
         
         // Update badge class
         qualityBadge.classList.remove('auto', 'hd');
