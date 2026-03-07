@@ -11,6 +11,7 @@
 // FIXED: Quality selector initialization and rendering issue
 // 🎯 YOUTUBE-STYLE HERO INTEGRATION: Video player now replaces poster in hero section for prominent display
 // 🎯 PROFESSIONAL LAYOUT FIX: Recommendation rails moved below comments section with proper titles
+// 🎯 FIXED: Duplicate Continue Watching sections consolidated into ONE section below comments
 
 console.log('🎬 Content Detail Initializing with RLS-compliant fixes and view tracking on Play button click...');
 
@@ -67,7 +68,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   initThemeSelector(); // FIXED: Theme selector now properly implemented
   initGlobalNavigation(); // FIXED: Navigation icons with proper event listeners
   
-  // PHASE 1: Load Continue Watching section
+  // PHASE 1: Load Continue Watching section (SINGLE SECTION - now below comments)
   if (currentUserId) {
     await loadContinueWatching(currentUserId);
     setupContinueWatchingRefresh();
@@ -505,17 +506,14 @@ function setupDataSaverToggle() {
 
 // ============================================
 // 🎯 FIXED: Load all recommendation rails with proper titles
+// ✅ REMOVED Continue Watching rail (now using Phase 1 section below comments)
 // ============================================
 async function loadRecommendationRails() {
   if (!recommendationEngine) return;
   
+  // ✅ REMOVED: Continue Watching rail (we use the Phase 1 section instead)
   const railConfigs = [
-    {
-      type: recommendationEngine.TYPES.CONTINUE_WATCHING,
-      containerId: 'continueWatchingRail',
-      title: 'Continue Watching', // ✅ Fixed: Proper title
-      options: { limit: 6 }
-    },
+    // ❌ Continue Watching removed - using continueWatchingSection instead
     {
       type: recommendationEngine.TYPES.BECAUSE_YOU_WATCHED,
       containerId: 'becauseYouWatchedRail',
@@ -3221,7 +3219,7 @@ function initGlobalNavigation() {
 }
 
 // ============================================
-// PHASE 1: CONTINUE WATCHING — LOAD & RENDER
+// PHASE 1: CONTINUE WATCHING — LOAD & RENDER (SINGLE SECTION)
 // ============================================
 
 async function loadContinueWatching(userId, limit) {
