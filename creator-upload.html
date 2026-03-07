@@ -1808,11 +1808,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                     return;
                 }
 
-                // Sanitize filename
-                const cleanFileName = file.name
-                    .replace(/[^a-z0-9.]/gi, '_)
-                    .replace(/_{2,}/g, '_')
-                    .toLowerCase();
+                // Sanitize filename - replace special characters
+                const cleanFileName = file.name.replace(/[^a-zA-Z0-9.]/g, '_');
                 
                 const timestamp = Date.now();
                 const random = Math.random().toString(36).substring(7);
@@ -1903,10 +1900,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
 
                 // Sanitize filename
-                const cleanFileName = file.name
-                    .replace(/[^a-z0-9.]/gi, '_')
-                    .replace(/_{2,}/g, '_')
-                    .toLowerCase();
+                const cleanFileName = file.name.replace(/[^a-zA-Z0-9.]/g, '_');
                 
                 const timestamp = Date.now();
                 const random = Math.random().toString(36).substring(7);
