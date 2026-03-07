@@ -9,6 +9,7 @@
 // FIXED: Playlist duplicate key constraint error handling
 // PHASE 4 ENHANCEMENTS: Quality badge, network speed indicator, HLS.js integration
 // FIXED: Quality selector initialization and rendering issue
+// 🎯 YOUTUBE-STYLE HERO INTEGRATION: Video player now replaces poster in hero section for prominent display
 
 console.log('🎬 Content Detail Initializing with RLS-compliant fixes and view tracking on Play button click...');
 
@@ -1663,7 +1664,8 @@ function clearViewCache() {
 }
 
 // ============================================
-// FIXED: Record view when Play button is clicked (like mobile app)
+// 🎯 YOUTUBE-STYLE HERO INTEGRATION: Record view when Play button is clicked (like mobile app)
+// AND TRANSFORM HERO INTO VIDEO PLAYER
 // ============================================
 function handlePlay() {
   if (!currentContent) {
@@ -1673,11 +1675,22 @@ function handlePlay() {
   
   const player = document.getElementById('inlinePlayer');
   const videoElement = document.getElementById('inlineVideoPlayer');
+  const hero = document.querySelector('.content-hero');
   
   if (!player || !videoElement) {
     showToast('Video player not available', 'error');
     return;
   }
+  
+  // 🎯 YOUTUBE-STYLE HERO INTEGRATION: Transform hero into video player
+  if (hero) {
+    hero.classList.add('video-active');
+  }
+  
+  // Show player seamlessly within hero
+  player.style.display = 'block';
+  player.style.margin = '0';
+  player.style.padding = '0';
   
   if (!hasViewedContentRecently(currentContent.id)) {
     const viewsEl = document.getElementById('viewsCount');
@@ -1715,16 +1728,20 @@ function handlePlay() {
       });
   }
   
+  // Hide placeholder smoothly
+  const placeholder = document.getElementById('videoPlaceholder');
+  if (placeholder) {
+    placeholder.classList.add('hidden');
+    setTimeout(() => placeholder.style.display = 'none', 300);
+  }
+  
   // PHASE 4: Check if HLS is available and use streaming manager
   if (currentContent.hls_manifest_url && streamingManager) {
-    player.style.display = 'block';
-    const placeholder = document.getElementById('videoPlaceholder');
-    if (placeholder) placeholder.style.display = 'none';
-    
     // Streaming manager will handle HLS playback
     streamingManager.initialize();
     
-    player.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    // Smooth scroll to hero (now containing video)
+    hero?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     
     // Initialize quality indicator
     setTimeout(() => {
@@ -1762,13 +1779,6 @@ function handlePlay() {
     console.error('❌ Invalid video URL or format:', videoUrl);
     showToast('Invalid video format or URL', 'error');
     return;
-  }
-  
-  player.style.display = 'block';
-  
-  const placeholder = document.getElementById('videoPlaceholder');
-  if (placeholder) {
-    placeholder.style.display = 'none';
   }
   
   if (enhancedVideoPlayer) {
@@ -1841,8 +1851,9 @@ function handlePlay() {
     }
   }, 500);
   
+  // Smooth scroll to hero (now containing video)
   setTimeout(() => {
-    player.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    hero?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }, 100);
 }
 
@@ -1865,11 +1876,29 @@ function setupEventListeners() {
     closePlayer.addEventListener('click', function() {
       const player = document.getElementById('inlinePlayer');
       const video = document.getElementById('inlineVideoPlayer');
+      const hero = document.querySelector('.content-hero');
       
-      if (player) player.style.display = 'none';
+      // 🎯 YOUTUBE-STYLE HERO INTEGRATION: Restore hero to original state
+      if (hero) {
+        hero.classList.remove('video-active');
+      }
+      
+      if (player) {
+        player.style.display = 'none';
+        player.style.margin = '';
+        player.style.padding = '';
+      }
+      
       if (video) {
         video.pause();
         video.currentTime = 0;
+      }
+      
+      // Restore placeholder
+      const placeholder = document.getElementById('videoPlaceholder');
+      if (placeholder) {
+        placeholder.style.display = 'flex';
+        placeholder.classList.remove('hidden');
       }
       
       if (watchSession) {
