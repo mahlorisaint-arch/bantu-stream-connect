@@ -359,8 +359,80 @@
 }
 
 /* ============================================ */
-/* PHASE 3: RECOMMENDATION RAIL STYLES */
+/* 🎯 RECOMMENDATION RAILS - PROFESSIONAL SPACING */
 /* ============================================ */
+.related-section {
+  margin-bottom: 40px;
+  padding-top: 20px;
+}
+
+.related-section .section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--card-border);
+}
+
+.related-section .section-title {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--soft-white);
+  margin: 0;
+}
+
+/* Continue Watching Section (Phase 1) */
+.continue-watching-section {
+  margin-bottom: 40px;
+  padding-top: 20px;
+}
+
+.continue-watching-section .section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--card-border);
+}
+
+.continue-watching-section .section-title {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--soft-white);
+  margin: 0;
+}
+
+/* Mobile adjustments for sections */
+@media (max-width: 768px) {
+  .related-section,
+  .continue-watching-section {
+    margin-bottom: 30px;
+    padding-top: 15px;
+  }
+  
+  .related-section .section-title,
+  .continue-watching-section .section-title {
+    font-size: 16px;
+  }
+  
+  .related-section .section-header,
+  .continue-watching-section .section-header {
+    margin-bottom: 15px;
+    padding-bottom: 8px;
+  }
+}
+
+/* Hide empty sections */
+.related-section:empty,
+.related-section[style*="display: none"],
+.continue-watching-section:empty,
+.continue-watching-section[style*="display: none"] {
+  display: none !important;
+}
 
 /* Recommendation Card Enhancements */
 .recommendation-card {
@@ -426,12 +498,6 @@
 .creator-chip i {
   font-size: 10px;
   color: var(--bantu-blue);
-}
-
-/* Hide empty sections */
-.related-section:empty,
-.related-section[style*="display: none"] {
-  display: none !important;
 }
 
 /* Mobile adjustments */
