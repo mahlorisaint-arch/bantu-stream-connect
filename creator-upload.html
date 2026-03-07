@@ -1381,6 +1381,54 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
+    // Setup session recovery for token expiration
+    function setupSessionRecovery() {
+        // Listen for visibility change to refresh session when tab becomes active
+        document.addEventListener('visibilitychange', async () => {
+            if (document.visibilityState === 'visible') {
+                try {
+                    const { data: { session } } = await window.supabaseClient.auth.getSession();
+                    if (session) {
+                        // Check if token is close to expiring (within 5 minutes)
+                        const expiresAt = session.expires_at * 1000; // Convert to milliseconds
+                        const now = Date.now();
+                        const fiveMinutes = 5 * 60 * 1000;
+                        
+                        if (expiresAt - now < fiveMinutes) {
+                            console.log('Token expiring soon, refreshing...');
+                            const { data, error } = await window.supabaseClient.auth.refreshSession();
+                            if (data?.session) {
+                                currentSession = data.session;
+                                console.log('Session refreshed');
+                            }
+                        }
+                    }
+                } catch (error) {
+                    console.error('Session check failed:', error);
+                }
+            }
+        });
+
+        // Also check every 10 minutes for token health
+        setInterval(async () => {
+            try {
+                const { data: { session } } = await window.supabaseClient.auth.getSession();
+                if (session) {
+                    const expiresAt = session.expires_at * 1000;
+                    const now = Date.now();
+                    const fiveMinutes = 5 * 60 * 1000;
+                    
+                    if (expiresAt - now < fiveMinutes) {
+                        console.log('Token expiring soon (interval check), refreshing...');
+                        await window.supabaseClient.auth.refreshSession();
+                    }
+                }
+            } catch (error) {
+                console.error('Interval session check failed:', error);
+            }
+        }, 5 * 60 * 1000); // Check every 5 minutes
+    }
+
     // Media Type Selector
     function setupMediaTypeSelector() {
         const options = document.querySelectorAll('.media-type-option');
@@ -1797,16 +1845,31 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    // FIXED: Upload to Storage with proper Supabase REST API format
+    // FIXED: Upload to Storage with proper token refresh and error handling
     async function uploadFileWithProgress(file, bucket, basePath, onProgress) {
         return new Promise(async (resolve, reject) => {
             try {
-                // Get fresh session for auth token
-                const { data: { session } } = await window.supabaseClient.auth.getSession();
+                // Get fresh session and ensure token is valid
+                let { data: { session }, error: sessionError } = await window.supabaseClient.auth.getSession();
+                
+                if (sessionError || !session) {
+                    console.error('Session error:', sessionError);
+                    // Try to refresh the session
+                    const { data: refreshData, error: refreshError } = await window.supabaseClient.auth.refreshSession();
+                    if (refreshError || !refreshData.session) {
+                        reject(new Error('Authentication failed - please sign in again'));
+                        return;
+                    }
+                    session = refreshData.session;
+                }
+                
                 if (!session) {
-                    reject(new Error('No active session'));
+                    reject(new Error('No active session - please sign in'));
                     return;
                 }
+
+                // Update current session
+                currentSession = session;
 
                 // Sanitize filename - replace special characters
                 const cleanFileName = file.name.replace(/[^a-zA-Z0-9.]/g, '_');
@@ -1851,6 +1914,17 @@ document.addEventListener('DOMContentLoaded', async () => {
                             const response = JSON.parse(xhr.responseText);
                             errorMessage = response.message || response.error || response.error?.message || errorMessage;
                             console.error('Upload error response:', response);
+                            
+                            // If it's a 403 with token error, try to refresh session
+                            if (xhr.status === 403 && (errorMessage.includes('exp') || errorMessage.includes('token') || errorMessage.includes('JWT'))) {
+                                // Trigger session refresh
+                                window.supabaseClient.auth.refreshSession().then(() => {
+                                    reject(new Error('Session expired - please try again'));
+                                }).catch(() => {
+                                    reject(new Error('Authentication failed - please sign in again'));
+                                });
+                                return;
+                            }
                         } catch (e) {
                             // Ignore parse error
                         }
@@ -1880,6 +1954,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                 // Important: This header ensures the file is publicly accessible
                 xhr.setRequestHeader('x-upsert', 'false');
                 
+                // Add cache control to prevent token issues
+                xhr.setRequestHeader('Cache-Control', 'no-cache');
+                
                 // Send the file
                 xhr.send(file);
             } catch (error) {
@@ -1893,7 +1970,18 @@ document.addEventListener('DOMContentLoaded', async () => {
         return new Promise(async (resolve, reject) => {
             try {
                 // Get fresh session for auth token
-                const { data: { session } } = await window.supabaseClient.auth.getSession();
+                let { data: { session }, error: sessionError } = await window.supabaseClient.auth.getSession();
+                
+                if (sessionError || !session) {
+                    // Try to refresh the session
+                    const { data: refreshData, error: refreshError } = await window.supabaseClient.auth.refreshSession();
+                    if (refreshError || !refreshData.session) {
+                        reject(new Error('Authentication failed - please sign in again'));
+                        return;
+                    }
+                    session = refreshData.session;
+                }
+
                 if (!session) {
                     reject(new Error('No active session'));
                     return;
@@ -1940,6 +2028,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                         try {
                             const response = JSON.parse(xhr.responseText);
                             errorMessage = response.message || response.error || errorMessage;
+                            
+                            // If it's a 403 with token error, try to refresh session
+                            if (xhr.status === 403 && (errorMessage.includes('exp') || errorMessage.includes('token'))) {
+                                window.supabaseClient.auth.refreshSession();
+                                reject(new Error('Session expired - please try again'));
+                                return;
+                            }
                         } catch (e) {
                             // Ignore parse error
                         }
@@ -1963,6 +2058,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 xhr.setRequestHeader('Authorization', `Bearer ${session.access_token}`);
                 xhr.setRequestHeader('Content-Type', file.type);
                 xhr.setRequestHeader('x-upsert', 'false');
+                xhr.setRequestHeader('Cache-Control', 'no-cache');
                 
                 // Send the file
                 xhr.send(file);
@@ -2695,9 +2791,40 @@ document.addEventListener('DOMContentLoaded', async () => {
     async function initialize() {
         setLoading(true);
 
-        // Check auth
-        const user = await checkAuthentication();
-        if (!user) authModal.classList.add('active');
+        // Setup session recovery
+        setupSessionRecovery();
+
+        // Check auth with retry
+        let user = await checkAuthentication();
+        if (!user) {
+            // Try to refresh session
+            try {
+                const { data, error } = await window.supabaseClient.auth.refreshSession();
+                if (!error && data.session) {
+                    user = data.session.user;
+                    currentSession = data.session;
+                    currentUserId = data.session.user.id;
+                    currentUserEmail = data.session.user.email;
+                    await loadUserProfilePicture(data.session.user);
+                    await loadCreatorStreak();
+                }
+            } catch (refreshError) {
+                console.error('Session refresh failed:', refreshError);
+            }
+        }
+        
+        if (!user) {
+            authModal.classList.add('active');
+        } else {
+            // Ensure we have a valid token before proceeding
+            const { data: { session } } = await window.supabaseClient.auth.getSession();
+            if (session) {
+                currentSession = session;
+                currentUserId = session.user.id;
+                currentUserEmail = session.user.email;
+                await loadUserProfilePicture(session.user);
+            }
+        }
 
         // Setup UI
         setupMediaUpload();
@@ -2725,15 +2852,22 @@ document.addEventListener('DOMContentLoaded', async () => {
     window.supabaseClient.auth.onAuthStateChange(async (event, session) => {
         console.log('Auth state changed:', event);
 
-        if (event === 'SIGNED_IN' && session?.user) {
-            currentSession = session;
-            currentUserId = session.user.id;
-            currentUserEmail = session.user.email;
-            await loadUserProfilePicture(session.user);
-            await loadNotifications();
-            await loadCreatorStreak();
-            authModal.classList.remove('active');
-            showToast('Welcome back!', 'success');
+        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+            if (session?.user) {
+                currentSession = session;
+                currentUserId = session.user.id;
+                currentUserEmail = session.user.email;
+                await loadUserProfilePicture(session.user);
+                await loadNotifications();
+                await loadCreatorStreak();
+                authModal.classList.remove('active');
+                
+                // Re-enable buttons if we were in the middle of something
+                isUploading = false;
+                updateButtonsState();
+                
+                showToast('Welcome back!', 'success');
+            }
         } else if (event === 'SIGNED_OUT') {
             currentSession = null;
             currentUserId = null;
@@ -2745,6 +2879,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             `;
             updateNotificationBadge(0);
             showToast('Signed out successfully', 'info');
+        } else if (event === 'USER_UPDATED') {
+            // Session was refreshed
+            console.log('Session updated');
+            if (session) {
+                currentSession = session;
+            }
         }
     });
 });
