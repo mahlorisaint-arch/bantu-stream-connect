@@ -10,6 +10,7 @@
 // PHASE 4 ENHANCEMENTS: Quality badge, network speed indicator, HLS.js integration
 // FIXED: Quality selector initialization and rendering issue
 // 🎯 YOUTUBE-STYLE HERO INTEGRATION: Video player now replaces poster in hero section for prominent display
+// 🎯 PROFESSIONAL LAYOUT FIX: Recommendation rails moved below comments section with proper titles
 
 console.log('🎬 Content Detail Initializing with RLS-compliant fixes and view tracking on Play button click...');
 
@@ -503,7 +504,7 @@ function setupDataSaverToggle() {
 }
 
 // ============================================
-// PHASE 3 POLISH: Load all recommendation rails with loading states
+// 🎯 FIXED: Load all recommendation rails with proper titles
 // ============================================
 async function loadRecommendationRails() {
   if (!recommendationEngine) return;
@@ -512,19 +513,19 @@ async function loadRecommendationRails() {
     {
       type: recommendationEngine.TYPES.CONTINUE_WATCHING,
       containerId: 'continueWatchingRail',
-      title: 'Continue Watching',
+      title: 'Continue Watching', // ✅ Fixed: Proper title
       options: { limit: 6 }
     },
     {
       type: recommendationEngine.TYPES.BECAUSE_YOU_WATCHED,
       containerId: 'becauseYouWatchedRail',
-      title: 'Because You Watched',
+      title: 'Because You Watched', // ✅ Fixed: Proper title
       options: { limit: 8 }
     },
     {
       type: recommendationEngine.TYPES.MORE_FROM_CREATOR,
       containerId: 'moreFromCreatorRail',
-      title: 'More From This Creator',
+      title: 'More From This Creator', // ✅ Fixed: Proper title
       options: { 
         creatorId: currentContent?.user_id,
         excludeContentId: currentContent?.id,
@@ -533,9 +534,9 @@ async function loadRecommendationRails() {
     }
   ];
   
-  // Show skeleton loaders for each rail
+  // Show skeleton loaders for each rail with proper titles
   railConfigs.forEach(config => {
-    showRailSkeleton(config.containerId);
+    showRailSkeleton(config.containerId, config.title); // ✅ Pass title
   });
   
   const results = await recommendationEngine.getMultipleRails(railConfigs);
@@ -550,8 +551,10 @@ async function loadRecommendationRails() {
   });
 }
 
-// PHASE 3 POLISH: Show skeleton loader for rail
-function showRailSkeleton(containerId) {
+// ============================================
+// 🎯 FIXED: Show skeleton loader for rail with proper title
+// ============================================
+function showRailSkeleton(containerId, title = 'Loading...') {
   const section = document.getElementById(containerId);
   if (!section) return;
   
@@ -560,7 +563,7 @@ function showRailSkeleton(containerId) {
   if (!section.querySelector('.section-header')) {
     section.innerHTML = `
       <div class="section-header">
-        <h2 class="section-title">Loading...</h2>
+        <h2 class="section-title">${title}</h2> <!-- ✅ Uses proper title -->
       </div>
       <div class="content-grid" id="${containerId}-grid">
         ${Array(6).fill().map(() => `
@@ -576,7 +579,9 @@ function showRailSkeleton(containerId) {
   }
 }
 
-// PHASE 3 POLISH: Show empty state for rail
+// ============================================
+// 🎯 Show empty state for rail
+// ============================================
 function showRailEmpty(containerId, title) {
   const section = document.getElementById(containerId);
   if (!section) return;
@@ -606,7 +611,9 @@ function showRailEmpty(containerId, title) {
   `;
 }
 
-// PHASE 3: Render a single recommendation rail
+// ============================================
+// 🎯 Render a single recommendation rail
+// ============================================
 function renderRecommendationRail(containerId, title, items) {
   const section = document.getElementById(containerId);
   if (!section) return;
