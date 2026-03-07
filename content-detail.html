@@ -120,18 +120,7 @@
 
     <!-- Main Content -->
     <main class="container">
-      <!-- PHASE 1: Continue Watching Section -->
-      <section class="continue-watching-section" id="continueWatchingSection" style="display:none;">
-        <div class="section-header">
-          <h2 class="section-title">Continue Watching</h2>
-          <button class="refresh-btn" id="refreshContinueBtn" title="Refresh">
-            <i class="fas fa-redo"></i>
-          </button>
-        </div>
-        <div class="content-grid" id="continueGrid">
-          <!-- Items injected by JS -->
-        </div>
-      </section>
+      <!-- NOTE: Continue Watching section moved below comments - SINGLE SECTION ONLY -->
 
       <!-- 🎯 YOUTUBE-STYLE HERO SECTION - Enhanced with video-active class support -->
       <section class="content-hero" id="contentHero">
@@ -435,13 +424,23 @@
       </section>
 
       <!-- ============================================ -->
-      <!-- 🎯 PHASE 3: RECOMMENDATION RAILS - NOW BELOW COMMENTS -->
+      <!-- ✅ SINGLE CONTINUE WATCHING SECTION - BELOW COMMENTS -->
       <!-- ============================================ -->
-
-      <!-- Continue Watching Rail (PHASE 3 enhanced version) -->
-      <section class="related-section" id="continueWatchingRail" style="display:none;">
-        <!-- Content injected by JS with skeleton loaders -->
+      <section class="continue-watching-section" id="continueWatchingSection" style="display:none;">
+        <div class="section-header">
+          <h2 class="section-title">Continue Watching</h2>
+          <button class="refresh-btn" id="refreshContinueBtn" title="Refresh">
+            <i class="fas fa-redo"></i>
+          </button>
+        </div>
+        <div class="content-grid" id="continueGrid">
+          <!-- Items injected by JS -->
+        </div>
       </section>
+
+      <!-- ============================================ -->
+      <!-- 🎯 PHASE 3: RECOMMENDATION RAILS - BELOW COMMENTS -->
+      <!-- ============================================ -->
 
       <!-- Because You Watched Rail -->
       <section class="related-section" id="becauseYouWatchedRail" style="display:none;">
