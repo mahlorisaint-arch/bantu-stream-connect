@@ -2756,7 +2756,7 @@ input:checked + .toggle-slider:before {
 }
 
 /* =================================================================== */
-/* MOBILE CONTROLS - SLIM & SLEEK (PHASE 4 OPTIMIZED)                  */
+/* MOBILE CONTROLS - ULTRA COMPACT (VIDEO = 90%, SETTINGS = 10%)      */
 /* =================================================================== */
 @media (max-width: 768px) {
   .enhanced-video-controls {
@@ -2775,24 +2775,24 @@ input:checked + .toggle-slider:before {
   }
   
   .control-btn {
-    width: 32px !important;
-    height: 32px !important;
-    min-width: 32px !important;
-    min-height: 32px !important;
+    width: 28px !important;
+    height: 28px !important;
+    min-width: 28px !important;
+    min-height: 28px !important;
   }
   
   .control-btn i {
-    font-size: 13px !important;
+    font-size: 11px !important;
   }
   
   .time-display {
-    min-width: 70px !important;
-    font-size: 11px !important;
+    min-width: 60px !important;
+    font-size: 10px !important;
     order: 1 !important;
     width: 100% !important;
     text-align: left !important;
-    margin-top: 3px !important;
-    padding-left: 5px !important;
+    margin-top: 2px !important;
+    padding-left: 4px !important;
   }
   
   .progress-container {
@@ -2807,164 +2807,51 @@ input:checked + .toggle-slider:before {
   }
   
   .progress-container::after {
-    width: 10px !important;
-    height: 10px !important;
+    width: 8px !important;
+    height: 8px !important;
   }
   
   .volume-controls {
     display: none !important;
   }
   
-  /* ✅ PHASE 4: Mobile Settings Menu - COMPACT */
+  /* ✅ CRITICAL FIX: Settings Menu = 10% MAX (was 70vh) */
   .settings-menu {
     min-width: 85% !important;
     max-width: 90% !important;
-    bottom: 55px !important;
+    bottom: 50px !important;
     right: 5% !important;
     left: 5% !important;
-    padding: 10px !important;
+    padding: 8px !important;
     border-radius: 8px !important;
-    max-height: 45vh !important;
+    max-height: 10vh !important; /* ✅ CHANGED FROM 70vh TO 10vh */
     overflow-y: auto !important;
     background: rgba(15, 23, 42, 0.98) !important;
     backdrop-filter: blur(15px) !important;
+    font-size: 9px !important;
   }
   
   .settings-section {
-    margin-bottom: 10px !important;
-    padding-bottom: 8px !important;
+    margin-bottom: 6px !important;
+    padding-bottom: 4px !important;
   }
   
   .settings-section h4 {
-    font-size: 11px !important;
-    margin-bottom: 6px !important;
-    letter-spacing: 0.3px !important;
+    font-size: 9px !important;
+    margin-bottom: 4px !important;
+    letter-spacing: 0.2px !important;
   }
   
   .quality-options {
-    grid-template-columns: repeat(2, 1fr) !important;
-    gap: 4px !important;
-    margin-bottom: 3px !important;
-  }
-  
-  .quality-option {
-    padding: 6px 4px !important;
-    font-size: 10px !important;
-    min-height: 36px !important;
-  }
-  
-  .speed-options {
     grid-template-columns: repeat(3, 1fr) !important;
     gap: 3px !important;
-  }
-  
-  .speed-option {
-    padding: 5px 3px !important;
-    font-size: 9px !important;
-    min-height: 32px !important;
-  }
-  
-  .toggle-switch {
-    transform: scale(0.85) !important;
-    margin: 4px 0 !important;
-  }
-  
-  .toggle-description {
-    font-size: 9px !important;
-    line-height: 1.2 !important;
-    max-width: 150px !important;
-  }
-  
-  /* ✅ PHASE 4: Mobile badges - smaller */
-  .quality-indicator {
-    top: 6px !important;
-    right: 6px !important;
-    font-size: 9px !important;
-    padding: 2px 6px !important;
-  }
-  
-  .data-saver-badge {
-    top: 6px !important;
-    left: 6px !important;
-    font-size: 8px !important;
-    padding: 2px 5px !important;
-  }
-  
-  .network-speed-indicator {
-    bottom: 45px !important;
-    right: 6px !important;
-    font-size: 8px !important;
-    padding: 2px 5px !important;
-  }
-  
-  .hls-badge {
-    top: 35px !important;
-    right: 6px !important;
-    font-size: 8px !important;
-    padding: 2px 5px !important;
-  }
-}
-
-/* ✅ Ultra-compact for very small screens */
-@media (max-width: 480px) {
-  .enhanced-video-controls {
-    padding: 3px 6px !important;
-  }
-  
-  .controls-bar {
-    padding: 3px 5px !important;
-    gap: 3px !important;
-  }
-  
-  .control-btn {
-    width: 30px !important;
-    height: 30px !important;
-  }
-  
-  .control-btn i {
-    font-size: 12px !important;
-  }
-  
-  .time-display {
-    font-size: 10px !important;
-    min-width: 65px !important;
-    margin-top: 2px !important;
-  }
-  
-  .progress-container {
-    height: 2.5px !important;
-  }
-  
-  .buffering-indicator .spinner {
-    width: 22px !important;
-    height: 22px !important;
-  }
-  
-  .buffering-indicator p {
-    font-size: 10px !important;
-  }
-  
-  /* ✅ PHASE 4: Ultra-compact settings */
-  .settings-menu {
-    padding: 8px !important;
-    bottom: 50px !important;
-    max-height: 40vh !important;
-  }
-  
-  .settings-section h4 {
-    font-size: 10px !important;
-    margin-bottom: 5px !important;
-  }
-  
-  .quality-options {
-    grid-template-columns: repeat(2, 1fr) !important;
-    gap: 3px !important;
+    margin-bottom: 2px !important;
   }
   
   .quality-option {
-    padding: 5px 3px !important;
-    font-size: 9px !important;
-    min-height: 32px !important;
+    padding: 4px 2px !important;
+    font-size: 8px !important;
+    min-height: 28px !important;
   }
   
   .speed-options {
@@ -2973,22 +2860,26 @@ input:checked + .toggle-slider:before {
   }
   
   .speed-option {
-    padding: 4px 2px !important;
+    padding: 3px 2px !important;
     font-size: 8px !important;
-    min-height: 28px !important;
+    min-height: 24px !important;
   }
   
   .toggle-switch {
-    transform: scale(0.75) !important;
-    margin: 0 !important;
+    transform: scale(0.7) !important;
+    margin: 2px 0 !important;
+    width: 40px !important;
+    height: 20px !important;
   }
   
   .toggle-description {
-    font-size: 8px !important;
-    line-height: 1.2 !important;
+    font-size: 7px !important;
+    line-height: 1.1 !important;
+    max-width: 120px !important;
+    display: none !important; /* ✅ HIDE DESCRIPTION ON MOBILE */
   }
   
-  /* ✅ PHASE 4: Ultra-compact badges */
+  /* ✅ Badges - Smaller */
   .quality-indicator {
     top: 5px !important;
     right: 5px !important;
@@ -3018,46 +2909,107 @@ input:checked + .toggle-slider:before {
   }
 }
 
-/* ✅ Touch device optimizations - COMPACT VERSION */
-@media (hover: none) and (pointer: coarse) {
+/* ✅ Ultra-compact for very small screens (480px and below) */
+@media (max-width: 480px) {
   .enhanced-video-controls {
-    opacity: 1 !important;
-    padding: 6px 8px !important;
+    padding: 3px 6px !important;
+  }
+  
+  .controls-bar {
+    padding: 3px 5px !important;
+    gap: 3px !important;
   }
   
   .control-btn {
-    min-width: 40px !important;
-    min-height: 40px !important;
+    width: 26px !important;
+    height: 26px !important;
+  }
+  
+  .control-btn i {
+    font-size: 10px !important;
+  }
+  
+  .time-display {
+    font-size: 9px !important;
+    min-width: 55px !important;
+    margin-top: 2px !important;
   }
   
   .progress-container {
-    height: 4px !important;
+    height: 2.5px !important;
   }
   
-  .progress-container::after {
-    width: 12px !important;
-    height: 12px !important;
+  /* ✅ CRITICAL: Even smaller settings on ultra-mobile */
+  .settings-menu {
+    padding: 6px !important;
+    bottom: 45px !important;
+    max-height: 8vh !important; /* ✅ EVEN SMALLER */
+    font-size: 8px !important;
   }
   
-  /* ✅ PHASE 4: Touch-friendly settings */
+  .settings-section h4 {
+    font-size: 8px !important;
+    margin-bottom: 3px !important;
+  }
+  
+  .quality-options {
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 2px !important;
+  }
+  
   .quality-option {
-    min-height: 40px !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
+    padding: 3px 1px !important;
+    font-size: 7px !important;
+    min-height: 24px !important;
+  }
+  
+  .speed-options {
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 2px !important;
   }
   
   .speed-option {
-    min-height: 36px !important;
+    padding: 2px 1px !important;
+    font-size: 7px !important;
+    min-height: 22px !important;
   }
   
-  .toggle-slider:before {
-    height: 18px !important;
-    width: 18px !important;
+  .toggle-switch {
+    transform: scale(0.65) !important;
+    margin: 0 !important;
   }
   
-  input:checked + .toggle-slider:before {
-    transform: translateX(24px) !important;
+  .toggle-description {
+    display: none !important;
+  }
+  
+  /* ✅ Badges - Ultra small */
+  .quality-indicator {
+    top: 4px !important;
+    right: 4px !important;
+    font-size: 7px !important;
+    padding: 1px 4px !important;
+  }
+  
+  .data-saver-badge {
+    top: 4px !important;
+    left: 4px !important;
+    font-size: 6px !important;
+    padding: 1px 3px !important;
+  }
+  
+  .network-speed-indicator {
+    bottom: 35px !important;
+    right: 4px !important;
+    font-size: 6px !important;
+    padding: 1px 3px !important;
+  }
+  
+  .hls-badge {
+    top: 28px !important;
+    right: 4px !important;
+    font-size: 6px !important;
+    padding: 1px 3px !important;
   }
 }
 
