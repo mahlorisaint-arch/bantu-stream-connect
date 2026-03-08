@@ -9,9 +9,10 @@
 // FIXED: Playlist duplicate key constraint error handling
 // PHASE 4 ENHANCEMENTS: Quality badge, network speed indicator, HLS.js integration
 // FIXED: Quality selector initialization and rendering issue
-// 🎯 YOUTUBE-STYLE HERO INTEGRATION: Video player now replaces poster in hero section for prominent display
+// 🎯 YOUTUBE-STYLE HERO INTEGRATION: Video player now BEFORE hero section for prominent display
 // 🎯 PROFESSIONAL LAYOUT FIX: Recommendation rails moved below comments section with proper titles
 // 🎯 FIXED: Duplicate Continue Watching sections consolidated into ONE section below comments
+// 🎯 MOBILE-OPTIMIZED: Full-width video player on mobile, removed "Now Playing" header
 
 console.log('🎬 Content Detail Initializing with RLS-compliant fixes and view tracking on Play button click...');
 
@@ -1208,10 +1209,11 @@ function updateContentUI(content) {
     `;
   }
   
-  const playerTitle = document.getElementById('playerTitle');
-  if (playerTitle) {
-    playerTitle.textContent = `Now Playing: ${content.title}`;
-  }
+  // 🎯 REMOVED: Player title "Now Playing" header - no longer used
+  // const playerTitle = document.getElementById('playerTitle');
+  // if (playerTitle) {
+  //   playerTitle.textContent = `Now Playing: ${content.title}`;
+  // }
 }
 
 async function loadComments(contentId) {
@@ -1669,8 +1671,8 @@ function clearViewCache() {
 }
 
 // ============================================
-// 🎯 YOUTUBE-STYLE HERO INTEGRATION: Record view when Play button is clicked (like mobile app)
-// AND TRANSFORM HERO INTO VIDEO PLAYER
+// 🎯 YOUTUBE-STYLE: Record view when Play button is clicked (like mobile app)
+// AND SHOW PLAYER BEFORE HERO SECTION
 // ============================================
 function handlePlay() {
   if (!currentContent) {
@@ -1680,23 +1682,13 @@ function handlePlay() {
   
   const player = document.getElementById('inlinePlayer');
   const videoElement = document.getElementById('inlineVideoPlayer');
-  const hero = document.querySelector('.content-hero');
   
   if (!player || !videoElement) {
     showToast('Video player not available', 'error');
     return;
   }
   
-  // 🎯 YOUTUBE-STYLE HERO INTEGRATION: Transform hero into video player
-  if (hero) {
-    hero.classList.add('video-active');
-  }
-  
-  // Show player seamlessly within hero
-  player.style.display = 'block';
-  player.style.margin = '0';
-  player.style.padding = '0';
-  
+  // ✅ Record view on play (like mobile app)
   if (!hasViewedContentRecently(currentContent.id)) {
     const viewsEl = document.getElementById('viewsCount');
     const viewsFullEl = document.getElementById('viewsCountFull');
@@ -1713,7 +1705,6 @@ function handlePlay() {
         if (success) {
           markContentAsViewed(currentContent.id);
           await refreshCountsFromSource();
-          
           if (window.track?.contentView) {
             window.track.contentView(currentContent.id, 'video');
           }
@@ -1733,20 +1724,21 @@ function handlePlay() {
       });
   }
   
-  // Hide placeholder smoothly
+  // ✅ Show player (now positioned BEFORE hero)
+  player.style.display = 'block';
+  
   const placeholder = document.getElementById('videoPlaceholder');
   if (placeholder) {
-    placeholder.classList.add('hidden');
-    setTimeout(() => placeholder.style.display = 'none', 300);
+    placeholder.style.display = 'none';
   }
+  
+  // ✅ SCROLL TO TOP - Player is now at top of page
+  window.scrollTo({ top: 0, behavior: 'smooth' });
   
   // PHASE 4: Check if HLS is available and use streaming manager
   if (currentContent.hls_manifest_url && streamingManager) {
     // Streaming manager will handle HLS playback
     streamingManager.initialize();
-    
-    // Smooth scroll to hero (now containing video)
-    hero?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     
     // Initialize quality indicator
     setTimeout(() => {
@@ -1754,7 +1746,6 @@ function handlePlay() {
         updateQualityIndicator(streamingManager.getCurrentQuality());
       }
     }, 1000);
-    
     return;
   }
   
@@ -1786,6 +1777,7 @@ function handlePlay() {
     return;
   }
   
+  // Clean up existing player
   if (enhancedVideoPlayer) {
     try {
       console.log('🗑️ Destroying existing player...');
@@ -1801,18 +1793,16 @@ function handlePlay() {
     watchSession = null;
   }
   
+  // Set video source
   console.log('🔧 Setting video source...');
-  
   while (videoElement.firstChild) {
     videoElement.removeChild(videoElement.firstChild);
   }
-  
   videoElement.removeAttribute('src');
   videoElement.src = '';
   
   const source = document.createElement('source');
   source.src = videoUrl;
-  
   if (videoUrl.endsWith('.mp4')) {
     source.type = 'video/mp4';
   } else if (videoUrl.endsWith('.webm')) {
@@ -1822,12 +1812,10 @@ function handlePlay() {
   } else {
     source.type = 'video/mp4';
   }
-  
   videoElement.appendChild(source);
   videoElement.load();
   
   console.log('✅ Video source set successfully');
-  
   console.log('🎬 Initializing EnhancedVideoPlayer...');
   initializeEnhancedVideoPlayer();
   
@@ -1840,6 +1828,7 @@ function handlePlay() {
     initializeStreamingManager();
   }, 100);
   
+  // Auto-play after setup
   setTimeout(() => {
     if (enhancedVideoPlayer) {
       console.log('▶️ Attempting to play...');
@@ -1855,11 +1844,6 @@ function handlePlay() {
       });
     }
   }, 500);
-  
-  // Smooth scroll to hero (now containing video)
-  setTimeout(() => {
-    hero?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }, 100);
 }
 
 // Setup event listeners
@@ -1881,19 +1865,13 @@ function setupEventListeners() {
     closePlayer.addEventListener('click', function() {
       const player = document.getElementById('inlinePlayer');
       const video = document.getElementById('inlineVideoPlayer');
-      const hero = document.querySelector('.content-hero');
       
-      // 🎯 YOUTUBE-STYLE HERO INTEGRATION: Restore hero to original state
-      if (hero) {
-        hero.classList.remove('video-active');
-      }
-      
+      // Hide player
       if (player) {
         player.style.display = 'none';
-        player.style.margin = '';
-        player.style.padding = '';
       }
       
+      // Stop video
       if (video) {
         video.pause();
         video.currentTime = 0;
@@ -1906,6 +1884,7 @@ function setupEventListeners() {
         placeholder.classList.remove('hidden');
       }
       
+      // Clean up sessions
       if (watchSession) {
         watchSession.stop();
         watchSession = null;
@@ -1923,6 +1902,12 @@ function setupEventListeners() {
       if (streamingManager) {
         streamingManager.destroy();
         streamingManager = null;
+      }
+      
+      // Scroll to hero section (now visible again)
+      const hero = document.querySelector('.content-hero');
+      if (hero) {
+        hero.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }
     });
   }
