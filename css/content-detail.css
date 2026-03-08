@@ -247,6 +247,41 @@
 }
 
 /* ============================================ */
+/* AUDIO FILE PLAYBACK - SHOW THUMBNAIL        */
+/* ============================================ */
+/* When playing audio, ensure thumbnail is visible */
+.video-container[data-media-type="audio"] video {
+  object-fit: contain;
+  background: #000;
+}
+
+/* Ensure poster image shows for audio files */
+#inlineVideoPlayer[poster] {
+  background: #000;
+}
+
+/* Mobile: Audio player should still be full-width with album art styling */
+@media (max-width: 768px) {
+  .video-container[data-media-type="audio"] {
+    aspect-ratio: 1/1; /* Square for album art */
+    max-height: 400px;
+    margin: 0 auto;
+    background: linear-gradient(135deg, #0A1128, #002855);
+  }
+  
+  .video-container[data-media-type="audio"] video {
+    object-fit: contain;
+    max-height: 400px;
+  }
+  
+  /* Album art styling for audio */
+  .video-container[data-media-type="audio"] video[poster] {
+    object-fit: cover;
+    background: linear-gradient(135deg, #0A1128, #002855);
+  }
+}
+
+/* ============================================ */
 /* MOBILE: FULL-BLEED VIDEO EXPERIENCE */
 /* ============================================ */
 @media (max-width: 768px) {
