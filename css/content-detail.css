@@ -184,13 +184,15 @@
   flex-wrap: wrap;
 }
 
-/* 🎯 COMPACT INLINE PLAYER - YouTube Style */
+/* ============================================ */
+/* 🎯 COMPACT INLINE PLAYER - YouTube Style - NOW BEFORE HERO */
+/* ============================================ */
 .inline-player {
   background: var(--deep-navy);
   border: 1px solid var(--card-border);
-  border-radius: 16px;
-  padding: 0; /* Remove padding for full-width video */
-  margin: 0 0 24px 0; /* Remove top margin */
+  border-radius: 0; /* Full bleed on mobile */
+  padding: 0; /* ❌ REMOVED: Was 24px */
+  margin: 0 0 20px 0; /* ❌ REMOVED: Top margin */
   box-shadow: 0 15px 40px rgba(0, 0, 0, 0.35);
   animation: slideDown 0.3s ease;
   display: none;
@@ -199,12 +201,55 @@
   width: 100%;
 }
 
-/* When in video-active hero, player is seamless */
-.content-hero.video-active .inline-player {
+/* Close button container - minimal space */
+.player-close-container {
+  padding: 12px 16px;
+  display: flex;
+  justify-content: flex-end;
+  background: rgba(0, 0, 0, 0.3);
+  border-top: 1px solid var(--card-border);
+}
+
+.player-close-container .close-player {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--card-border);
+  padding: 8px 16px;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+
+.player-close-container .close-player:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: scale(1.05);
+}
+
+/* Video container - FULL WIDTH */
+.video-container {
+  border-radius: 0; /* Full bleed */
+  overflow: hidden;
+  background: #000;
+  position: relative;
+  aspect-ratio: 16/9;
+  width: 100%;
+  height: auto;
   margin: 0;
-  border: none;
-  background: transparent;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+.video-container video {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+  background: #000;
+}
+
+/* Remove old player-header styles - NOW HIDDEN */
+.player-header {
+  display: none !important; /* ❌ HIDDEN - Saves space */
 }
 
 @keyframes slideDown {
@@ -218,144 +263,125 @@
   }
 }
 
-.player-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 12px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid var(--card-border);
-}
-
-.player-header h3 {
-  font-size: 16px;
-  color: var(--soft-white);
-  margin: 0;
-  font-weight: 600;
-}
-
-.close-player {
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid var(--card-border);
-  padding: 6px 12px;
-  font-size: 13px;
-}
-
-.close-player:hover {
-  background: rgba(255, 255, 255, 0.2);
-  transform: scale(1.1);
-}
-
-/* 🎯 VIDEO CONTAINER - Professional aspect ratio */
-.video-container {
-  border-radius: 16px 16px 0 0; /* Rounded top only */
-  overflow: hidden;
-  background: #000;
-  margin-bottom: 0;
-  position: relative;
-  aspect-ratio: 16/9;
-  width: 100%;
-  height: auto;
-  min-height: 200px; /* Mobile minimum */
-}
-
-.video-container video {
-  width: 100%;
-  height: 100%;
-  object-fit: contain; /* or 'cover' for full bleed */
-  display: block;
-  background: #000;
-}
-
-/* Desktop: Cinematic experience */
-@media (min-width: 1024px) {
-  .content-hero.video-active .video-container {
-    max-height: 70vh;
-    margin: 0 auto;
-    border-radius: 12px;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-  }
-}
-
-/* Mobile: Full-bleed video experience */
+/* ============================================ */
+/* MOBILE: FULL-BLEED VIDEO EXPERIENCE */
+/* ============================================ */
 @media (max-width: 768px) {
-  .content-hero.video-active {
-    padding: 0;
-    margin: 0;
+  .inline-player {
+    border-radius: 0;
+    margin: 0 0 16px 0;
+    border: none;
+    border-left: none;
+    border-right: none;
   }
   
   .video-container {
     border-radius: 0;
     aspect-ratio: 16/9;
+    width: 100vw; /* Full viewport width */
+    margin-left: calc(-50vw + 50%); /* Center full-width */
   }
   
-  .inline-player {
-    border-radius: 0;
+  .player-close-container {
+    padding: 10px 16px;
+    background: rgba(0, 0, 0, 0.5);
+  }
+  
+  .player-close-container .close-player {
+    width: 100%;
+    justify-content: center;
+    padding: 12px;
+    background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+    border: none;
+  }
+  
+  .enhanced-video-controls {
+    padding: 6px 10px !important;
+    bottom: 0 !important;
+  }
+  
+  .controls-bar {
+    padding: 5px 8px !important;
+    gap: 5px !important;
+    border-radius: 0 !important;
+    background: rgba(0, 0, 0, 0.9) !important;
+    margin: 0 !important;
+  }
+  
+  .control-btn {
+    width: 36px !important;
+    height: 36px !important;
+    min-width: 36px !important;
+    min-height: 36px !important;
+  }
+  
+  .time-display {
+    font-size: 12px !important;
+    min-width: 70px !important;
+  }
+  
+  .progress-container {
+    height: 4px !important;
+  }
+  
+  /* Quality badges - smaller on mobile */
+  .quality-indicator {
+    top: 8px;
+    right: 8px;
+    font-size: 10px;
+    padding: 3px 8px;
+  }
+  
+  .data-saver-badge {
+    top: 8px;
+    left: 8px;
+    font-size: 9px;
+    padding: 2px 6px;
   }
 }
 
-.player-actions {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 15px;
-  padding: 12px 16px;
+/* Ultra-mobile (360px and below) */
+@media (max-width: 360px) {
+  .video-container {
+    aspect-ratio: 16/9;
+  }
+  
+  .control-btn {
+    width: 32px !important;
+    height: 32px !important;
+  }
+  
+  .time-display {
+    font-size: 11px !important;
+    min-width: 60px !important;
+  }
+  
+  .player-close-container .close-player span {
+    display: none; /* Hide text, show icon only */
+  }
+  
+  .player-close-container .close-player {
+    padding: 12px;
+    justify-content: center;
+  }
 }
 
-.player-controls {
-  display: flex;
-  gap: 10px;
-}
-
-.control-btn {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid var(--card-border);
-  color: var(--soft-white);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.control-btn:hover {
-  background: rgba(255, 255, 255, 0.2);
-  transform: scale(1.1);
-}
-
-.fullscreen-btn {
-  background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
-  color: var(--soft-white);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.fullscreen-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(29, 78, 216, 0.3);
-}
-
-/* 🎯 SMOOTH PLACEHOLDER TRANSITION */
-.bantu-player-placeholder {
-  transition: opacity 0.3s ease;
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(135deg, #0A1128 0%, #0F172A 100%);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  z-index: 5;
-}
-
-.bantu-player-placeholder.hidden {
-  opacity: 0;
-  pointer-events: none;
+/* Desktop: Cinematic experience */
+@media (min-width: 1024px) {
+  .inline-player {
+    border-radius: 12px;
+    max-width: 1200px;
+    margin: 0 auto 24px auto;
+  }
+  
+  .video-container {
+    border-radius: 12px 12px 0 0;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  }
+  
+  .player-close-container {
+    padding: 16px 24px;
+  }
 }
 
 /* ============================================ */
@@ -2672,6 +2698,24 @@ input:checked + .toggle-slider:before {
   color: var(--warm-gold);
 }
 
+.hls-badge {
+  position: absolute;
+  top: 10px;
+  right: 60px;
+  background: rgba(29, 78, 216, 0.9);
+  color: white;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  backdrop-filter: blur(4px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
 .data-saver-badge {
   position: absolute;
   top: 10px;
@@ -2737,9 +2781,107 @@ input:checked + .toggle-slider:before {
   color: #ef4444;
 }
 
-/* =================================================================== */
+/* ============================================ */
+/* Buffering Indicator */
+/* ============================================ */
+.buffering-indicator {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(0, 0, 0, 0.8);
+  border-radius: 40px;
+  padding: 15px 25px;
+  display: none;
+  align-items: center;
+  gap: 15px;
+  z-index: 100;
+  backdrop-filter: blur(5px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.buffering-indicator.active {
+  display: flex;
+}
+
+.buffering-indicator .spinner {
+  width: 24px;
+  height: 24px;
+  border: 3px solid rgba(255, 255, 255, 0.3);
+  border-top-color: var(--warm-gold);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.buffering-indicator p {
+  color: white;
+  font-size: 14px;
+  margin: 0;
+}
+
+/* ============================================ */
+/* Error Overlay */
+/* ============================================ */
+.error-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.9);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 150;
+}
+
+.error-overlay.active {
+  display: flex;
+}
+
+.error-content {
+  text-align: center;
+  max-width: 400px;
+  padding: 30px;
+}
+
+.error-content i {
+  font-size: 60px;
+  color: var(--error-color);
+  margin-bottom: 20px;
+}
+
+.error-content h3 {
+  color: white;
+  margin-bottom: 10px;
+  font-size: 20px;
+}
+
+.error-content p {
+  color: var(--slate-grey);
+  margin-bottom: 20px;
+  font-size: 14px;
+}
+
+.retry-btn {
+  padding: 10px 25px;
+  background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+  border: none;
+  border-radius: 8px;
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.retry-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(29, 78, 216, 0.3);
+}
+
+/* ============================================ */
 /* TOAST NOTIFICATION SYSTEM */
-/* =================================================================== */
+/* ============================================ */
 .toast-notification {
   position: fixed;
   bottom: 30px;
