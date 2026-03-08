@@ -13,6 +13,7 @@
 // 🎯 PROFESSIONAL LAYOUT FIX: Recommendation rails moved below comments section with proper titles
 // 🎯 FIXED: Duplicate Continue Watching sections consolidated into ONE section below comments
 // 🎯 MOBILE-OPTIMIZED: Full-width video player on mobile, removed "Now Playing" header
+// 🎯 REDESIGN: Removed close button, full-width player, compact settings menu
 
 console.log('🎬 Content Detail Initializing with RLS-compliant fixes and view tracking on Play button click...');
 
@@ -148,17 +149,16 @@ if (!window.StreamingManager) {
 // PHASE 4: QUALITY INDICATOR UPDATE FUNCTION
 // ============================================
 function updateQualityIndicator(quality) {
-  const indicator = document.getElementById('qualityIndicator');
-  const label = document.getElementById('qualityLabel');
+  const indicator = document.getElementById('qualityBadge');
   const dataSaverBadge = document.getElementById('dataSaverBadge');
   
-  if (!indicator || !label) return;
+  if (!indicator) return;
   
   // Show indicator
-  indicator.classList.add('visible');
+  indicator.style.display = 'block';
   
   // Update label
-  label.textContent = quality.toUpperCase();
+  indicator.textContent = quality.toUpperCase();
   
   // Update styling based on quality
   indicator.classList.remove('auto', 'hd');
@@ -170,15 +170,15 @@ function updateQualityIndicator(quality) {
   
   // Update data saver badge
   if (streamingManager?.isDataSaverEnabled()) {
-    dataSaverBadge?.classList.add('visible');
+    dataSaverBadge?.style.setProperty('display', 'block');
   } else {
-    dataSaverBadge?.classList.remove('visible');
+    dataSaverBadge?.style.setProperty('display', 'none');
   }
   
   // Hide after 5 seconds
   setTimeout(() => {
     if (indicator && !streamingManager?.isDataSaverEnabled()) {
-      indicator.classList.remove('visible');
+      indicator.style.display = 'none';
     }
   }, 5000);
 }
@@ -193,7 +193,7 @@ function updateNetworkSpeedIndicator(speedMbps) {
   
   if (speedMbps) {
     valueSpan.textContent = speedMbps.toFixed(1) + ' Mbps';
-    indicator.classList.add('visible');
+    indicator.style.display = 'flex';
     
     // Update color based on speed
     indicator.classList.remove('good', 'fair', 'poor');
@@ -205,7 +205,7 @@ function updateNetworkSpeedIndicator(speedMbps) {
       indicator.classList.add('poor');
     }
   } else {
-    indicator.classList.remove('visible');
+    indicator.style.display = 'none';
   }
 }
 
@@ -481,7 +481,7 @@ function setupQualitySelector() {
       // Close settings menu
       const settingsMenu = document.querySelector('.settings-menu');
       if (settingsMenu) {
-        settingsMenu.style.display = 'none';
+        settingsMenu.classList.remove('active');
       }
     });
   });
@@ -1210,10 +1210,6 @@ function updateContentUI(content) {
   }
   
   // 🎯 REMOVED: Player title "Now Playing" header - no longer used
-  // const playerTitle = document.getElementById('playerTitle');
-  // if (playerTitle) {
-  //   playerTitle.textContent = `Now Playing: ${content.title}`;
-  // }
 }
 
 async function loadComments(contentId) {
@@ -1732,6 +1728,18 @@ function handlePlay() {
     placeholder.style.display = 'none';
   }
   
+  // ✅ Hide hero poster when player is active
+  const heroPoster = document.getElementById('heroPoster');
+  if (heroPoster) {
+    heroPoster.style.opacity = '0.3';
+  }
+  
+  // ✅ Show close button in hero actions (optional)
+  const closeFromHero = document.getElementById('closePlayerFromHero');
+  if (closeFromHero) {
+    closeFromHero.style.display = 'flex';
+  }
+  
   // ✅ SCROLL TO TOP - Player is now at top of page
   window.scrollTo({ top: 0, behavior: 'smooth' });
   
@@ -1846,6 +1854,69 @@ function handlePlay() {
   }, 500);
 }
 
+// ============================================
+// 🎯 CLOSE PLAYER FUNCTION (UPDATED)
+// ============================================
+function closeVideoPlayer() {
+  const player = document.getElementById('inlinePlayer');
+  const video = document.getElementById('inlineVideoPlayer');
+  
+  // Hide player
+  if (player) {
+    player.style.display = 'none';
+  }
+  
+  // Stop video
+  if (video) {
+    video.pause();
+    video.currentTime = 0;
+  }
+  
+  // Clean up sessions
+  if (watchSession) {
+    watchSession.stop();
+    watchSession = null;
+  }
+  
+  if (enhancedVideoPlayer) {
+    if (enhancedVideoPlayer.video) {
+      enhancedVideoPlayer.video.pause();
+      enhancedVideoPlayer.video.currentTime = 0;
+    }
+    enhancedVideoPlayer.destroy();
+    enhancedVideoPlayer = null;
+  }
+  
+  if (streamingManager) {
+    streamingManager.destroy();
+    streamingManager = null;
+  }
+  
+  // Show placeholder again
+  const placeholder = document.getElementById('videoPlaceholder');
+  if (placeholder) {
+    placeholder.style.display = 'flex';
+  }
+  
+  // ✅ Restore hero poster opacity
+  const heroPoster = document.getElementById('heroPoster');
+  if (heroPoster) {
+    heroPoster.style.opacity = '1';
+  }
+  
+  // ✅ Hide close button in hero actions
+  const closeFromHero = document.getElementById('closePlayerFromHero');
+  if (closeFromHero) {
+    closeFromHero.style.display = 'none';
+  }
+  
+  // Scroll to hero section (now visible again)
+  const hero = document.querySelector('.content-hero');
+  if (hero) {
+    hero.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+}
+
 // Setup event listeners
 function setupEventListeners() {
   console.log('🔧 Setting up event listeners...');
@@ -1860,57 +1931,15 @@ function setupEventListeners() {
     poster.addEventListener('click', handlePlay);
   }
   
-  const closePlayer = document.getElementById('closePlayerBtn');
-  if (closePlayer) {
-    closePlayer.addEventListener('click', function() {
-      const player = document.getElementById('inlinePlayer');
-      const video = document.getElementById('inlineVideoPlayer');
-      
-      // Hide player
-      if (player) {
-        player.style.display = 'none';
-      }
-      
-      // Stop video
-      if (video) {
-        video.pause();
-        video.currentTime = 0;
-      }
-      
-      // Restore placeholder
-      const placeholder = document.getElementById('videoPlaceholder');
-      if (placeholder) {
-        placeholder.style.display = 'flex';
-        placeholder.classList.remove('hidden');
-      }
-      
-      // Clean up sessions
-      if (watchSession) {
-        watchSession.stop();
-        watchSession = null;
-      }
-      
-      if (enhancedVideoPlayer) {
-        if (enhancedVideoPlayer.video) {
-          enhancedVideoPlayer.video.pause();
-          enhancedVideoPlayer.video.currentTime = 0;
-        }
-        enhancedVideoPlayer.destroy();
-        enhancedVideoPlayer = null;
-      }
-      
-      if (streamingManager) {
-        streamingManager.destroy();
-        streamingManager = null;
-      }
-      
-      // Scroll to hero section (now visible again)
-      const hero = document.querySelector('.content-hero');
-      if (hero) {
-        hero.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }
+  // ✅ Close player from hero actions button
+  const closeFromHero = document.getElementById('closePlayerFromHero');
+  if (closeFromHero) {
+    closeFromHero.addEventListener('click', function() {
+      closeVideoPlayer();
     });
   }
+  
+  // ❌ Old close button removed - no longer in DOM
   
   const fullscreenBtn = document.getElementById('fullscreenBtn');
   const fullPlayerBtn = document.getElementById('fullPlayerBtn');
@@ -3484,6 +3513,7 @@ window.clearViewCache = clearViewCache;
 window.streamingManager = streamingManager;
 window.keyboardShortcuts = keyboardShortcuts;
 window.playlistModal = playlistModal;
+window.closeVideoPlayer = closeVideoPlayer; // ✅ Export close function
 
 // PHASE 1: Page unload handler - clean up watch session
 window.addEventListener('beforeunload', function() {
