@@ -123,9 +123,10 @@
       <!-- NOTE: Continue Watching section moved below comments - SINGLE SECTION ONLY -->
 
       <!-- 🎯 VIDEO PLAYER - NOW BEFORE HERO (Appears on Play) -->
+      <!-- ✅ COMPACT VIDEO PLAYER - NO HEADER, NO CLOSE BUTTON -->
       <div class="inline-player" id="inlinePlayer" style="display: none;">
-        <!-- ❌ REMOVED: player-header with "Now Playing" -->
         <div class="video-container" id="bantuVideoContainer">
+          <!-- Video element WITHOUT any duplicate controls -->
           <video id="inlineVideoPlayer" playsinline webkit-playsinline>
             Your browser does not support the video tag.
           </video>
@@ -153,7 +154,7 @@
             <p class="loading-text">Ready to play...</p>
           </div>
           
-          <!-- Enhanced Video Player Controls -->
+          <!-- PHASE 1 FIX: Enhanced Video Player Controls (only these will show) -->
           <div class="enhanced-video-controls">
             <div class="controls-bar">
               <button class="control-btn play-pause" title="Play/Pause">
@@ -181,8 +182,9 @@
               </button>
             </div>
             
-            <!-- Settings Menu -->
+            <!-- PHASE 4: COMPACT Settings Menu -->
             <div class="settings-menu">
+              <!-- Quality Section -->
               <div class="settings-section">
                 <h4>Quality</h4>
                 <div class="quality-options" id="qualityOptions">
@@ -193,6 +195,8 @@
                   <button class="quality-option" data-quality="360p">360p</button>
                 </div>
               </div>
+              
+              <!-- Data Saver Section -->
               <div class="settings-section">
                 <h4>Data Saver</h4>
                 <label class="toggle-switch">
@@ -201,8 +205,10 @@
                 </label>
                 <p class="toggle-description">Reduce data usage by streaming at lower quality</p>
               </div>
+              
+              <!-- Playback Speed Section -->
               <div class="settings-section">
-                <h4>Playback Speed</h4>
+                <h4>Speed</h4>
                 <div class="speed-options">
                   <button class="speed-option" data-speed="0.5">0.5x</button>
                   <button class="speed-option" data-speed="0.75">0.75x</button>
@@ -232,13 +238,7 @@
           </div>
         </div>
         
-        <!-- ✅ MOVED: Close button - Now below video, minimal space -->
-        <div class="player-close-container">
-          <button class="icon-btn close-player" id="closePlayerBtn" title="Close Player">
-            <i class="fas fa-times"></i>
-            <span>Close Player</span>
-          </button>
-        </div>
+        <!-- ❌ REMOVED: Close button from player - Now in hero actions -->
       </div>
 
       <!-- 🎯 HERO SECTION - NOW BELOW PLAYER -->
@@ -302,6 +302,11 @@
             <button class="btn btn-secondary" id="shareBtn">
               <i class="fas fa-share"></i>
               <span>Share</span>
+            </button>
+            <!-- ✅ NEW: Close player button (only visible when player is active) -->
+            <button class="btn btn-secondary" id="closePlayerFromHero" style="display: none;">
+              <i class="fas fa-times"></i>
+              <span>Close Player</span>
             </button>
           </div>
         </div>
@@ -722,7 +727,7 @@
           // Close settings menu
           const settingsMenu = document.querySelector('.settings-menu');
           if (settingsMenu) {
-            settingsMenu.style.display = 'none';
+            settingsMenu.classList.remove('active');
           }
           
           // Show toast notification
@@ -811,17 +816,21 @@
       if (settingsBtn && settingsMenu) {
         settingsBtn.addEventListener('click', function(e) {
           e.stopPropagation();
-          const isVisible = settingsMenu.style.display === 'block';
-          settingsMenu.style.display = isVisible ? 'none' : 'block';
+          const isVisible = settingsMenu.classList.contains('active');
+          if (isVisible) {
+            settingsMenu.classList.remove('active');
+          } else {
+            settingsMenu.classList.add('active');
+          }
           console.log('⚙️ Settings menu:', isVisible ? 'closed' : 'opened');
         });
         
         // Close when clicking outside
         document.addEventListener('click', function(e) {
-          if (settingsMenu.style.display === 'block' &&
+          if (settingsMenu.classList.contains('active') &&
               !settingsMenu.contains(e.target) &&
               !settingsBtn.contains(e.target)) {
-            settingsMenu.style.display = 'none';
+            settingsMenu.classList.remove('active');
           }
         });
       }
@@ -901,10 +910,7 @@
       if (qualityBadge && window.streamingManager && typeof window.streamingManager.getCurrentQuality === 'function') {
         qualityBadge.classList.add('visible');
         const quality = window.streamingManager.getCurrentQuality();
-        const qualityLabel = document.getElementById('qualityLabel');
-        if (qualityLabel) {
-          qualityLabel.textContent = quality === 'auto' ? 'Auto' : quality;
-        }
+        qualityBadge.textContent = quality === 'auto' ? 'Auto' : quality;
         
         // Update badge class
         qualityBadge.classList.remove('auto', 'hd');
