@@ -14,6 +14,7 @@
 // 🎯 FIXED: Duplicate Continue Watching sections consolidated into ONE section below comments
 // 🎯 MOBILE-OPTIMIZED: Full-width video player on mobile, removed "Now Playing" header
 // 🎯 REDESIGN: Removed close button, full-width player, compact settings menu
+// 🎵 AUDIO SUPPORT: Added MP3, WAV, OGG playback with thumbnail as poster
 
 console.log('🎬 Content Detail Initializing with RLS-compliant fixes and view tracking on Play button click...');
 
@@ -1669,6 +1670,7 @@ function clearViewCache() {
 // ============================================
 // 🎯 YOUTUBE-STYLE: Record view when Play button is clicked (like mobile app)
 // AND SHOW PLAYER BEFORE HERO SECTION
+// 🎵 CRITICAL FIX: SUPPORT MP3, WAV, OGG AUDIO FILES
 // ============================================
 function handlePlay() {
   if (!currentContent) {
@@ -1740,12 +1742,18 @@ function handlePlay() {
     closeFromHero.style.display = 'flex';
   }
   
+  // Ensure audio is enabled
+  console.log('🔊 Preparing playback');
+  videoElement.muted = false;
+  videoElement.defaultMuted = false;
+  videoElement.volume = 1.0;
+  
   // ✅ SCROLL TO TOP - Player is now at top of page
   window.scrollTo({ top: 0, behavior: 'smooth' });
   
   // PHASE 4: Check if HLS is available and use streaming manager
   if (currentContent.hls_manifest_url && streamingManager) {
-    // Streaming manager will handle HLS playback
+    console.log('📺 Using HLS streaming');
     streamingManager.initialize();
     
     // Initialize quality indicator
@@ -1754,35 +1762,79 @@ function handlePlay() {
         updateQualityIndicator(streamingManager.getCurrentQuality());
       }
     }, 1000);
+    
+    // Set media type attribute for CSS styling
+    const videoContainer = document.querySelector('.video-container');
+    if (videoContainer) {
+      videoContainer.setAttribute('data-media-type', 'video');
+    }
     return;
   }
   
-  // Fallback to MP4 if no HLS
-  let videoUrl = currentContent.file_url;
-  console.log('📥 Raw file_url from database:', videoUrl);
+  // Fallback to direct file (MP4, MP3, WAV, etc.)
+  let fileUrl = currentContent.file_url;
+  console.log('📥 Raw file_url from database:', fileUrl);
   
-  if (videoUrl && !videoUrl.startsWith('http')) {
-    if (videoUrl.startsWith('/')) {
-      videoUrl = videoUrl.substring(1);
+  if (fileUrl && !fileUrl.startsWith('http')) {
+    if (fileUrl.startsWith('/')) {
+      fileUrl = fileUrl.substring(1);
     }
-    videoUrl = `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/content-media/${videoUrl}`;
+    fileUrl = `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/content-media/${fileUrl}`;
   }
   
-  if (!videoUrl || videoUrl === 'null' || videoUrl === 'undefined' || videoUrl === '') {
+  if (!fileUrl || fileUrl === 'null' || fileUrl === 'undefined' || fileUrl === '') {
     if (currentContent.thumbnail_url && !currentContent.thumbnail_url.startsWith('http')) {
       const cleanPath = currentContent.thumbnail_url.startsWith('/')
         ? currentContent.thumbnail_url.substring(1)
         : currentContent.thumbnail_url;
-      videoUrl = `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/content-media/${cleanPath}`;
+      fileUrl = `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/content-media/${cleanPath}`;
     }
   }
   
-  console.log('🎥 Final video URL:', videoUrl);
+  console.log('🎵 Final file URL:', fileUrl);
   
-  if (!videoUrl || (!videoUrl.includes('.mp4') && !videoUrl.includes('.webm') && !videoUrl.includes('.mov'))) {
-    console.error('❌ Invalid video URL or format:', videoUrl);
-    showToast('Invalid video format or URL', 'error');
+  // ============================================
+  // ✅ CRITICAL FIX: ALLOW AUDIO FILES (MP3, WAV, OGG)
+  // ============================================
+  const isAudioFile = fileUrl && (
+    fileUrl.includes('.mp3') || 
+    fileUrl.includes('.wav') || 
+    fileUrl.includes('.ogg') || 
+    fileUrl.includes('.aac') || 
+    fileUrl.includes('.m4a')
+  );
+  
+  const isVideoFile = fileUrl && (
+    fileUrl.includes('.mp4') || 
+    fileUrl.includes('.webm') || 
+    fileUrl.includes('.mov')
+  );
+  
+  if (!fileUrl || (!isAudioFile && !isVideoFile)) {
+    console.error('❌ Invalid file format:', fileUrl);
+    showToast('Invalid file format. Supported: MP4, WebM, MP3, WAV, OGG', 'error');
     return;
+  }
+  
+  // ============================================
+  // ✅ CRITICAL FIX: SET POSTER FOR AUDIO FILES
+  // ============================================
+  if (isAudioFile && currentContent.thumbnail_url) {
+    const imgUrl = window.SupabaseHelper?.fixMediaUrl?.(currentContent.thumbnail_url) || currentContent.thumbnail_url;
+    videoElement.setAttribute('poster', imgUrl);
+    console.log('🎵 Audio file detected - setting poster:', imgUrl);
+  } else {
+    videoElement.removeAttribute('poster');
+  }
+  
+  // Set media type attribute for CSS styling
+  const videoContainer = document.querySelector('.video-container');
+  if (videoContainer) {
+    if (isAudioFile) {
+      videoContainer.setAttribute('data-media-type', 'audio');
+    } else {
+      videoContainer.setAttribute('data-media-type', 'video');
+    }
   }
   
   // Clean up existing player
@@ -1801,8 +1853,8 @@ function handlePlay() {
     watchSession = null;
   }
   
-  // Set video source
-  console.log('🔧 Setting video source...');
+  // Set file source
+  console.log('🔧 Setting file source...');
   while (videoElement.firstChild) {
     videoElement.removeChild(videoElement.firstChild);
   }
@@ -1810,20 +1862,44 @@ function handlePlay() {
   videoElement.src = '';
   
   const source = document.createElement('source');
-  source.src = videoUrl;
-  if (videoUrl.endsWith('.mp4')) {
-    source.type = 'video/mp4';
-  } else if (videoUrl.endsWith('.webm')) {
-    source.type = 'video/webm';
-  } else if (videoUrl.endsWith('.mov')) {
-    source.type = 'video/quicktime';
+  source.src = fileUrl;
+  
+  // ============================================
+  // ✅ CRITICAL FIX: CORRECT MIME TYPES FOR AUDIO
+  // ============================================
+  if (isAudioFile) {
+    if (fileUrl.endsWith('.mp3')) {
+      source.type = 'audio/mpeg';
+    } else if (fileUrl.endsWith('.wav')) {
+      source.type = 'audio/wav';
+    } else if (fileUrl.endsWith('.ogg')) {
+      source.type = 'audio/ogg';
+    } else if (fileUrl.endsWith('.aac')) {
+      source.type = 'audio/aac';
+    } else if (fileUrl.endsWith('.m4a')) {
+      source.type = 'audio/mp4';
+    } else {
+      source.type = 'audio/mpeg'; // Default to MP3
+    }
+    console.log('🎵 Audio source type:', source.type);
   } else {
-    source.type = 'video/mp4';
+    // Video types
+    if (fileUrl.endsWith('.mp4')) {
+      source.type = 'video/mp4';
+    } else if (fileUrl.endsWith('.webm')) {
+      source.type = 'video/webm';
+    } else if (fileUrl.endsWith('.mov')) {
+      source.type = 'video/quicktime';
+    } else {
+      source.type = 'video/mp4';
+    }
+    console.log('📺 Video source type:', source.type);
   }
+  
   videoElement.appendChild(source);
   videoElement.load();
   
-  console.log('✅ Video source set successfully');
+  console.log('✅ File source set successfully');
   console.log('🎬 Initializing EnhancedVideoPlayer...');
   initializeEnhancedVideoPlayer();
   
@@ -1838,20 +1914,23 @@ function handlePlay() {
   
   // Auto-play after setup
   setTimeout(() => {
+    console.log('▶️ Attempting to play...');
     if (enhancedVideoPlayer) {
-      console.log('▶️ Attempting to play...');
       enhancedVideoPlayer.play().catch(function(err) {
         console.error('🔴 Play failed:', err);
         showToast('Click play button in video player', 'info');
       });
     } else {
-      console.log('▶️ Using native player...');
       videoElement.play().catch(function(err) {
         console.error('🔴 Autoplay failed:', err);
         showToast('Click play button in video player', 'info');
       });
     }
   }, 500);
+  
+  setTimeout(() => {
+    player.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, 100);
 }
 
 // ============================================
@@ -3528,4 +3607,4 @@ window.addEventListener('beforeunload', function() {
   }
 });
 
-console.log('✅ Content detail script loaded with PHASE 4 STREAMING MANAGER integration and PHASE 1-3 POLISH');
+console.log('✅ Content detail script loaded with PHASE 4 STREAMING MANAGER integration, PHASE 1-3 POLISH, and 🎵 AUDIO SUPPORT');
