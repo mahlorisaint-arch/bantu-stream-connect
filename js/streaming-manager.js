@@ -1,6 +1,7 @@
 // js/streaming-manager.js — HLS Streaming & Quality Control Manager
 // Bantu Stream Connect — Phase 4 Implementation
 // ✅ COMPLETE: Quality switching works for both HLS and MP4
+// 🎵 AUDIO SUPPORT: Skip HLS for audio files, use direct playback
 
 (function() {
   'use strict';
@@ -34,6 +35,7 @@
     this.availableQualities = [];
     this.hlsInstance = null;
     this.originalVideoUrl = null;
+    this.contentType = 'video'; // 'video' or 'audio'
     
     // Callbacks
     this.onQualityChange = config.onQualityChange || null;
@@ -51,28 +53,71 @@
   // ============================================
 
   StreamingManager.prototype.initialize = async function() {
+    console.log('📡 StreamingManager.initialize() called for content:', this.contentId);
+    
     // Store original video URL
     this.originalVideoUrl = this.video.src || 
       (this.video.querySelector('source')?.src) || null;
     
-    // Load available qualities from database
-    await this._loadAvailableQualities();
-    
-    // Check if HLS is supported
-    if (this._isHLSSupported()) {
-      await this._initializeHLS();
+    // ============================================
+    // ✅ CRITICAL FIX: SKIP HLS FOR AUDIO FILES
+    // ============================================
+    if (!this.contentId) {
+      console.log('ℹ️ No content ID, using direct playback');
+      return;
     }
     
-    // Setup network monitoring
-    this._startNetworkMonitoring();
+    try {
+      // Get content media type
+      const { data: contentData, error: contentError } = await this.supabase
+        .from('Content')
+        .select('media_type, hls_manifest_url, quality_profiles')
+        .eq('id', this.contentId)
+        .single();
+      
+      if (contentError) {
+        console.warn('⚠️ Could not fetch content type:', contentError);
+      }
+      
+      // Determine content type
+      if (contentData?.media_type === 'audio') {
+        this.contentType = 'audio';
+        console.log('🎵 Audio content detected - skipping HLS initialization');
+        // For audio, we don't need HLS, just use direct file
+        return;
+      }
+      
+      // Load available qualities from database
+      await this._loadAvailableQualities();
+      
+      // Check if HLS is supported AND available
+      if (contentData?.hls_manifest_url && this._isHLSSupported()) {
+        console.log('📺 HLS manifest available, initializing HLS');
+        await this._initializeHLS(contentData.hls_manifest_url);
+      } else {
+        console.log('ℹ️ No HLS manifest or HLS not supported, using MP4');
+      }
+      
+      // Setup network monitoring
+      this._startNetworkMonitoring();
+      
+      // Apply saved quality preference
+      await this._applyQualityPreference();
+      
+    } catch (error) {
+      console.error('❌ StreamingManager initialization error:', error);
+    }
     
-    // Apply saved quality preference
-    await this._applyQualityPreference();
-    
-    console.log('✅ StreamingManager fully initialized');
+    console.log('✅ StreamingManager fully initialized for', this.contentType);
   };
 
   StreamingManager.prototype.setQuality = async function(quality) {
+    // For audio files, just return - no quality switching needed
+    if (this.contentType === 'audio') {
+      console.log('🎵 Audio file - quality switching not applicable');
+      return false;
+    }
+    
     if (!this.qualityLevels.find(q => q.value === quality)) {
       console.warn('⚠️ Invalid quality level:', quality);
       return false;
@@ -119,6 +164,12 @@
   };
 
   StreamingManager.prototype.toggleDataSaver = function(enabled) {
+    // For audio files, data saver doesn't apply
+    if (this.contentType === 'audio') {
+      console.log('🎵 Audio file - data saver not applicable');
+      return false;
+    }
+    
     this.isDataSaverMode = enabled;
     
     // Save preference
@@ -141,6 +192,11 @@
   };
 
   StreamingManager.prototype.getAvailableQualities = function() {
+    // For audio files, return minimal quality options
+    if (this.contentType === 'audio') {
+      return [{ label: 'Audio', value: 'audio', bitrate: 128000 }];
+    }
+    
     if (this.isDataSaverMode) {
       return this.availableQualities.length > 0 ? 
         this.availableQualities.filter(q => q.value === '360p' || q.value === 'auto') :
@@ -160,6 +216,10 @@
 
   StreamingManager.prototype.getNetworkSpeed = function() {
     return this.networkSpeed;
+  };
+
+  StreamingManager.prototype.getContentType = function() {
+    return this.contentType;
   };
 
   StreamingManager.prototype.destroy = function() {
@@ -237,22 +297,10 @@
     }
   };
 
-  StreamingManager.prototype._initializeHLS = async function() {
-    if (!this.contentId) return;
+  StreamingManager.prototype._initializeHLS = async function(hlsManifestUrl) {
+    if (!hlsManifestUrl) return;
     
     try {
-      // Fetch content with HLS manifest URL
-      const { data: content, error } = await this.supabase
-        .from('Content')
-        .select('hls_manifest_url, quality_profiles')
-        .eq('id', this.contentId)
-        .single();
-      
-      if (error || !content?.hls_manifest_url) {
-        console.log('ℹ️ No HLS manifest available, using MP4');
-        return;
-      }
-      
       // Check for HLS.js (for non-Safari browsers)
       if (typeof Hls !== 'undefined' && Hls.isSupported()) {
         this.hlsInstance = new Hls({
@@ -261,12 +309,15 @@
           backBufferLength: 90
         });
         
-        this.hlsInstance.loadSource(content.hls_manifest_url);
+        this.hlsInstance.loadSource(hlsManifestUrl);
         this.hlsInstance.attachMedia(this.video);
         
         this.hlsInstance.on(Hls.Events.MANIFEST_PARSED, () => {
           console.log('✅ HLS manifest parsed');
-          this.video.play().catch(() => {});
+          // Only autoplay if video was already playing
+          if (!this.video.paused) {
+            this.video.play().catch(() => {});
+          }
         });
         
         this.hlsInstance.on(Hls.Events.ERROR, (event, data) => {
@@ -278,15 +329,12 @@
         
       } else if (this.video.canPlayType('application/vnd.apple.mpegurl')) {
         // Native HLS (Safari)
-        this.video.src = content.hls_manifest_url;
+        this.video.src = hlsManifestUrl;
         this.video.addEventListener('loadedmetadata', () => {
-          this.video.play().catch(() => {});
+          if (!this.video.paused) {
+            this.video.play().catch(() => {});
+          }
         });
-      }
-      
-      // Store quality profiles
-      if (content.quality_profiles?.length > 0) {
-        this.qualityLevels = content.quality_profiles;
       }
       
     } catch (error) {
@@ -296,6 +344,12 @@
   };
 
   StreamingManager.prototype._startNetworkMonitoring = function() {
+    // Skip network monitoring for audio files
+    if (this.contentType === 'audio') {
+      console.log('🎵 Audio file - skipping network monitoring');
+      return;
+    }
+    
     // Check network speed every 60 seconds (not 30) to reduce requests
     this._networkCheckInterval = setInterval(() => {
       this._measureNetworkSpeed();
@@ -338,7 +392,7 @@
       console.log('🌐 Network speed:', (this.networkSpeed / 1000000).toFixed(2), 'Mbps');
       
       // Auto-adjust quality based on network (if in auto mode)
-      if (this.currentQuality === 'auto' && !this.isDataSaverMode) {
+      if (this.currentQuality === 'auto' && !this.isDataSaverMode && this.contentType !== 'audio') {
         this._autoAdjustQuality();
       }
       
@@ -364,6 +418,12 @@
   };
 
   StreamingManager.prototype._applyQualityPreference = async function() {
+    // Skip for audio files
+    if (this.contentType === 'audio') {
+      this.currentQuality = 'audio';
+      return;
+    }
+    
     // Load from localStorage
     const savedQuality = localStorage.getItem('bsc_quality_preference');
     const dataSaver = localStorage.getItem('bsc_data_saver') === 'true';
