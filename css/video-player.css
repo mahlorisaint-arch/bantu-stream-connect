@@ -2,6 +2,7 @@
 /* =================================================================== */
 /* COMPACT VIDEO PLAYER - YOUTUBE STYLE                                */
 /* PHASE 4: Added Quality Selector & Data Saver Styles                 */
+/* 🎯 MOBILE-OPTIMIZED: Full-bleed video experience                    */
 /* =================================================================== */
 
 /* Hide ALL Bantu branded controls that conflict with EnhancedVideoPlayer */
@@ -13,6 +14,127 @@
 .bantu-error-overlay,
 .bantu-watermark {
   display: none !important;
+}
+
+/* ============================================ */
+/* MOBILE: FULL-BLEED VIDEO EXPERIENCE */
+/* ============================================ */
+@media (max-width: 768px) {
+  .inline-player {
+    border-radius: 0;
+    margin: 0 0 16px 0;
+    border: none;
+    border-left: none;
+    border-right: none;
+  }
+  
+  .video-container {
+    border-radius: 0;
+    aspect-ratio: 16/9;
+    width: 100vw; /* Full viewport width */
+    margin-left: calc(-50vw + 50%); /* Center full-width */
+  }
+  
+  .player-close-container {
+    padding: 10px 16px;
+    background: rgba(0, 0, 0, 0.5);
+  }
+  
+  .player-close-container .close-player {
+    width: 100%;
+    justify-content: center;
+    padding: 12px;
+    background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+    border: none;
+  }
+  
+  .enhanced-video-controls {
+    padding: 6px 10px !important;
+    bottom: 0 !important;
+  }
+  
+  .controls-bar {
+    padding: 5px 8px !important;
+    gap: 5px !important;
+    border-radius: 0 !important;
+    background: rgba(0, 0, 0, 0.9) !important;
+    margin: 0 !important;
+  }
+  
+  .control-btn {
+    width: 36px !important;
+    height: 36px !important;
+    min-width: 36px !important;
+    min-height: 36px !important;
+  }
+  
+  .time-display {
+    font-size: 12px !important;
+    min-width: 70px !important;
+  }
+  
+  .progress-container {
+    height: 4px !important;
+  }
+  
+  /* Quality badges - smaller on mobile */
+  .quality-indicator {
+    top: 8px;
+    right: 8px;
+    font-size: 10px;
+    padding: 3px 8px;
+  }
+  
+  .data-saver-badge {
+    top: 8px;
+    left: 8px;
+    font-size: 9px;
+    padding: 2px 6px;
+  }
+}
+
+/* Ultra-mobile (360px and below) */
+@media (max-width: 360px) {
+  .video-container {
+    aspect-ratio: 16/9;
+  }
+  
+  .control-btn {
+    width: 32px !important;
+    height: 32px !important;
+  }
+  
+  .time-display {
+    font-size: 11px !important;
+    min-width: 60px !important;
+  }
+  
+  .player-close-container .close-player span {
+    display: none; /* Hide text, show icon only */
+  }
+  
+  .player-close-container .close-player {
+    padding: 12px;
+    justify-content: center;
+  }
+}
+
+/* Desktop: Cinematic experience */
+@media (min-width: 1024px) {
+  .inline-player {
+    border-radius: 12px;
+    max-width: 1200px;
+    margin: 0 auto 24px auto;
+  }
+  
+  .video-container {
+    border-radius: 12px 12px 0 0;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  }
+  
+  .player-close-container {
+    padding: 16px 24px;
+  }
 }
 
 /* Enhanced Video Player Controls - COMPACT & STREAMLINED */
