@@ -1,3 +1,7 @@
+/* ============================================ */
+/* CONTENT DETAIL PAGE STYLES - BANTU STREAM CONNECT */
+/* ============================================ */
+
 /* Content Hero Section - More Compact with YouTube-Style Integration */
 .content-hero {
   background: var(--card-bg);
@@ -185,14 +189,14 @@
 }
 
 /* ============================================ */
-/* 🎯 COMPACT INLINE PLAYER - YouTube Style - NOW BEFORE HERO */
+/* 🎯 COMPACT INLINE PLAYER - YouTube Style - FULL WIDTH */
 /* ============================================ */
 .inline-player {
   background: var(--deep-navy);
-  border: none; /* Remove border for full-bleed */
-  border-radius: 0; /* No rounding on mobile */
-  padding: 0; /* ❌ REMOVED: Was 24px */
-  margin: 0 0 20px 0; /* ❌ REMOVED: Top margin */
+  border: none;
+  border-radius: 0;
+  padding: 0;
+  margin: 0 0 20px 0;
   box-shadow: 0 15px 40px rgba(0, 0, 0, 0.35);
   animation: slideDown 0.3s ease;
   display: none;
@@ -201,14 +205,14 @@
   width: 100%;
 }
 
-/* Remove old player-header styles */
+/* Hide player header */
 .player-header {
-  display: none !important; /* ❌ HIDDEN - Saves space */
+  display: none !important;
 }
 
-/* Remove player-actions section */
+/* Hide player actions */
 .player-actions {
-  display: none !important; /* ❌ HIDDEN - Use fullscreen instead */
+  display: none !important;
 }
 
 @keyframes slideDown {
@@ -224,7 +228,7 @@
 
 /* Video container - FULL WIDTH */
 .video-container {
-  border-radius: 0; /* Full bleed */
+  border-radius: 0;
   overflow: hidden;
   background: #000;
   position: relative;
@@ -260,66 +264,12 @@
     width: 100vw; /* Full viewport width */
     margin-left: calc(-50vw + 50%); /* Center full-width */
   }
-  
-  .enhanced-video-controls {
-    padding: 6px 10px !important;
-    bottom: 0 !important;
-  }
-  
-  .controls-bar {
-    padding: 5px 8px !important;
-    gap: 5px !important;
-    border-radius: 0 !important;
-    background: rgba(0, 0, 0, 0.9) !important;
-    margin: 0 !important;
-  }
-  
-  .control-btn {
-    width: 36px !important;
-    height: 36px !important;
-    min-width: 36px !important;
-    min-height: 36px !important;
-  }
-  
-  .time-display {
-    font-size: 12px !important;
-    min-width: 70px !important;
-  }
-  
-  .progress-container {
-    height: 4px !important;
-  }
-  
-  /* Quality badges - smaller on mobile */
-  .quality-indicator {
-    top: 8px;
-    right: 8px;
-    font-size: 10px;
-    padding: 3px 8px;
-  }
-  
-  .data-saver-badge {
-    top: 8px;
-    left: 8px;
-    font-size: 9px;
-    padding: 2px 6px;
-  }
 }
 
 /* Ultra-mobile (360px and below) */
 @media (max-width: 360px) {
   .video-container {
     aspect-ratio: 16/9;
-  }
-  
-  .control-btn {
-    width: 32px !important;
-    height: 32px !important;
-  }
-  
-  .time-display {
-    font-size: 11px !important;
-    min-width: 60px !important;
   }
 }
 
@@ -1291,69 +1241,261 @@
   color: rgba(255, 255, 255, 0.3);
 }
 
-/* Mobile Responsiveness - Adjusted */
+/* ============================================ */
+/* MOBILE: REDUCED FONT SIZES FOR ALL CARDS    */
+/* ============================================ */
 @media (max-width: 768px) {
-  .content-grid {
-    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-    gap: 12px;
+  /* Content Cards */
+  .content-card .card-title {
+    font-size: 13px !important;
+    line-height: 1.3 !important;
+    min-height: 32px !important;
   }
   
-  .hero-poster {
-    height: 200px;
+  .content-card .related-meta {
+    font-size: 11px !important;
   }
   
-  .stats-grid {
-    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
-    gap: 10px;
+  .content-card .creator-chip {
+    font-size: 10px !important;
+    padding: 2px 6px !important;
   }
   
-  .add-comment {
-    flex-direction: column;
+  .content-card .resume-badge {
+    font-size: 9px !important;
+    padding: 3px 6px !important;
   }
   
-  .creator-info {
-    flex-direction: column;
-    text-align: center;
+  /* Continue Watching Cards */
+  .continue-card .card-title {
+    font-size: 13px !important;
   }
+  
+  .continue-card .related-meta {
+    font-size: 11px !important;
+  }
+  
+  /* Recommendation Cards */
+  .recommendation-card .card-title {
+    font-size: 13px !important;
+  }
+  
+  .recommendation-card .related-meta {
+    font-size: 11px !important;
+  }
+  
+  /* Stat Cards */
+  .stat-card .stat-content h4 {
+    font-size: 11px !important;
+  }
+  
+  .stat-card .stat-content p {
+    font-size: 14px !important;
+  }
+  
+  .stat-icon {
+    width: 36px !important;
+    height: 36px !important;
+    font-size: 1rem !important;
+  }
+  
+  /* Comment Cards */
+  .comment-item {
+    padding: 10px !important;
+    margin-bottom: 10px !important;
+  }
+  
+  .comment-user strong {
+    font-size: 13px !important;
+  }
+  
+  .comment-time {
+    font-size: 10px !important;
+  }
+  
+  .comment-content {
+    font-size: 13px !important;
+    line-height: 1.4 !important;
+  }
+  
+  .comment-avatar-sm {
+    width: 28px !important;
+    height: 28px !important;
+  }
+  
+  /* Section Titles */
+  .section-title {
+    font-size: 16px !important;
+  }
+  
+  /* Hero Section */
+  .hero-info h1 {
+    font-size: 18px !important;
+  }
+  
+  .hero-meta {
+    font-size: 12px !important;
+    gap: 10px !important;
+  }
+  
+  .hero-description {
+    font-size: 13px !important;
+  }
+  
+  .meta-item {
+    font-size: 12px !important;
+  }
+  
+  /* Creator Section */
+  .creator-details h3 {
+    font-size: 15px !important;
+  }
+  
+  .creator-details p {
+    font-size: 12px !important;
+  }
+  
   .creator-avatar {
-    width: 70px;
-    height: 70px;
-  }
-  .connect-btn {
-    width: 100%;
-    justify-content: center;
+    width: 50px !important;
+    height: 50px !important;
+    font-size: 1.2rem !important;
   }
   
-  .comment-input-container {
-    width: 100%;
+  /* Description Section */
+  .description-section h2 {
+    font-size: 15px !important;
   }
-  .player-actions {
-    flex-direction: column;
+  
+  .description-content {
+    font-size: 13px !important;
   }
-  .player-controls {
-    width: 100%;
-    justify-content: center;
+  
+  /* Comments Section */
+  .comments-section h2 {
+    font-size: 15px !important;
   }
-  .fullscreen-btn {
-    width: 100%;
-  }
-}
-
-@media (max-width: 480px) {
+  
+  /* Grid Adjustments */
   .content-grid {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 10px !important;
   }
   
   .card-thumbnail {
-    height: 90px;
+    height: 90px !important;
   }
   
   .stats-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 8px !important;
+  }
+}
+
+/* ============================================ */
+/* ULTRA-MOBILE: EVEN SMALLER FONTS            */
+/* ============================================ */
+@media (max-width: 480px) {
+  /* Content Cards */
+  .content-card .card-title {
+    font-size: 12px !important;
+    min-height: 30px !important;
   }
   
+  .content-card .related-meta {
+    font-size: 10px !important;
+  }
+  
+  .content-card .creator-chip {
+    font-size: 9px !important;
+  }
+  
+  /* Stat Cards */
+  .stat-card .stat-content h4 {
+    font-size: 10px !important;
+  }
+  
+  .stat-card .stat-content p {
+    font-size: 13px !important;
+  }
+  
+  .stat-icon {
+    width: 32px !important;
+    height: 32px !important;
+  }
+  
+  /* Comment Cards */
+  .comment-user strong {
+    font-size: 12px !important;
+  }
+  
+  .comment-time {
+    font-size: 9px !important;
+  }
+  
+  .comment-content {
+    font-size: 12px !important;
+  }
+  
+  .comment-avatar-sm {
+    width: 26px !important;
+    height: 26px !important;
+  }
+  
+  /* Section Titles */
+  .section-title {
+    font-size: 15px !important;
+  }
+  
+  /* Hero Section */
   .hero-info h1 {
-    font-size: 18px;
+    font-size: 16px !important;
+  }
+  
+  .hero-meta {
+    font-size: 11px !important;
+  }
+  
+  .hero-description {
+    font-size: 12px !important;
+  }
+  
+  /* Grid */
+  .content-grid {
+    gap: 8px !important;
+  }
+  
+  .card-thumbnail {
+    height: 80px !important;
+  }
+  
+  .stats-grid {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 6px !important;
+  }
+}
+
+/* ============================================ */
+/* DESKTOP: KEEP ORIGINAL SIZES                */
+/* ============================================ */
+@media (min-width: 769px) {
+  .content-card .card-title {
+    font-size: 14px !important;
+  }
+  
+  .content-card .related-meta {
+    font-size: 12px !important;
+  }
+  
+  .stat-card .stat-content h4 {
+    font-size: 12px !important;
+  }
+  
+  .stat-card .stat-content p {
+    font-size: 15px !important;
+  }
+  
+  .comment-content {
+    font-size: 14px !important;
   }
 }
 
@@ -1461,9 +1603,9 @@
   gap: 8px;
   max-width: 100%;
   overflow: hidden;
-  justify-content: center; /* ADDED - Center icons horizontally */
-  align-items: center; /* ADDED - Center icons vertically */
-  width: 100%; /* Ensure full width */
+  justify-content: center;
+  align-items: center;
+  width: 100%;
 }
 .nav-icon {
   width: 40px;
@@ -1478,7 +1620,7 @@
   cursor: pointer;
   transition: all 0.3s ease;
   font-size: 16px;
-  flex-shrink: 0; /* Prevent icons from shrinking */
+  flex-shrink: 0;
 }
 .nav-icon:hover {
   background: rgba(255, 255, 255, 0.2);
@@ -1518,8 +1660,8 @@
     border-radius: 50px;
     gap: 12px;
     box-shadow: 0 6px 25px rgba(0, 0, 0, 0.35);
-    width: auto; /* Auto width on desktop */
-    min-width: 300px; /* Minimum width for better appearance */
+    width: auto;
+    min-width: 300px;
     justify-content: center;
   }
   .nav-icon {
@@ -1536,7 +1678,7 @@
     justify-content: center;
   }
   .navigation-button {
-    justify-content: space-around; /* Evenly space icons on mobile */
+    justify-content: space-around;
     padding: 8px 12px;
   }
 }
@@ -1548,11 +1690,11 @@
 /* DESKTOP HEADER OPTIMIZATION (769px and above) */
 @media (min-width: 769px) {
   .header {
-    padding: 12px 24px !important; /* Reduced from 16px */
+    padding: 12px 24px !important;
     min-height: 60px !important;
   }
   .logo-icon {
-    width: 36px !important; /* Reduced from 40px */
+    width: 36px !important;
     height: 36px !important;
   }
   .logo-icon img {
@@ -1561,12 +1703,12 @@
     border-radius: 8px !important;
   }
   .logo-text {
-    font-size: 17px !important; /* Reduced from 18px */
+    font-size: 17px !important;
     letter-spacing: 0.4px !important;
   }
   .header-actions .icon-btn,
   .header-actions .profile-btn {
-    width: 38px !important; /* Reduced from 40px */
+    width: 38px !important;
     height: 38px !important;
     min-width: 38px !important;
     min-height: 38px !important;
@@ -1577,7 +1719,7 @@
     font-size: 15px !important;
   }
   .footer {
-    padding: 24px 20px !important; /* Reduced from 30px */
+    padding: 24px 20px !important;
     font-size: 14px !important;
     margin-top: 40px !important;
   }
@@ -2360,7 +2502,7 @@ video::-webkit-media-controls-current-time-display {
   padding: 8px 16px;
   background: linear-gradient(to top, rgba(0,0,0,0.9), transparent);
   backdrop-filter: blur(10px);
-  border-radius: 0; /* Flush with video edges */
+  border-radius: 0;
   margin: 0;
   border: none;
 }
@@ -2433,14 +2575,14 @@ video::-webkit-media-controls-current-time-display {
 /* Settings Menu - PHASE 4 - COMPACT & PROPERLY SIZED */
 .settings-menu {
   position: absolute;
-  bottom: 50px; /* Moved up from 60px */
-  right: 10px; /* Moved from 20px */
-  background: rgba(15, 23, 42, 0.95); /* Darker background */
+  bottom: 50px;
+  right: 10px;
+  background: rgba(15, 23, 42, 0.95);
   border: 1px solid rgba(29, 78, 216, 0.3);
-  border-radius: 8px; /* Smaller radius */
-  padding: 12px; /* Reduced from 16px */
-  min-width: 200px; /* Reduced from 260px */
-  max-width: 280px; /* Added max-width */
+  border-radius: 8px;
+  padding: 12px;
+  min-width: 200px;
+  max-width: 280px;
   backdrop-filter: blur(10px);
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
   z-index: 1000;
@@ -2465,9 +2607,9 @@ video::-webkit-media-controls-current-time-display {
 }
 
 .settings-section {
-  margin-bottom: 12px; /* Reduced from 16px */
+  margin-bottom: 12px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  padding-bottom: 10px; /* Reduced from 12px */
+  padding-bottom: 10px;
 }
 
 .settings-section:last-child {
@@ -2478,8 +2620,8 @@ video::-webkit-media-controls-current-time-display {
 
 .settings-section h4 {
   color: var(--soft-white);
-  margin-bottom: 8px; /* Reduced from 10px */
-  font-size: 12px; /* Reduced from 14px */
+  margin-bottom: 8px;
+  font-size: 12px;
   font-weight: 600;
   opacity: 0.9;
   text-transform: uppercase;
@@ -2489,18 +2631,18 @@ video::-webkit-media-controls-current-time-display {
 /* Quality Options - PHASE 4 - COMPACT GRID */
 .quality-options {
   display: grid;
-  grid-template-columns: repeat(3, 1fr); /* 3 columns */
-  gap: 6px; /* Reduced from 8px */
-  margin-bottom: 4px; /* Reduced from 5px */
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  margin-bottom: 4px;
 }
 
 .quality-option {
-  padding: 6px 8px; /* Reduced from 8px 10px */
+  padding: 6px 8px;
   background: rgba(255, 255, 255, 0.1);
   border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 4px; /* Smaller radius */
+  border-radius: 4px;
   color: var(--soft-white);
-  font-size: 11px; /* Reduced from 12px */
+  font-size: 11px;
   font-weight: 500;
   cursor: pointer;
   text-align: center;
@@ -2525,9 +2667,9 @@ video::-webkit-media-controls-current-time-display {
 .toggle-switch {
   position: relative;
   display: inline-block;
-  width: 44px; /* Reduced from 52px */
-  height: 22px; /* Reduced from 26px */
-  margin: 6px 0 4px; /* Reduced margins */
+  width: 44px;
+  height: 22px;
+  margin: 6px 0 4px;
 }
 
 .toggle-switch input {
@@ -2552,8 +2694,8 @@ video::-webkit-media-controls-current-time-display {
 .toggle-slider:before {
   position: absolute;
   content: "";
-  height: 18px; /* Reduced from 20px */
-  width: 18px; /* Reduced from 20px */
+  height: 18px;
+  width: 18px;
   left: 2px;
   bottom: 2px;
   background-color: white;
@@ -2568,32 +2710,32 @@ input:checked + .toggle-slider {
 }
 
 input:checked + .toggle-slider:before {
-  transform: translateX(22px); /* Adjusted for smaller size */
+  transform: translateX(22px);
   background-color: white;
 }
 
 .toggle-description {
-  font-size: 10px; /* Reduced from 11px */
+  font-size: 10px;
   color: var(--slate-grey);
   margin-top: 4px;
   line-height: 1.3;
-  max-width: 180px; /* Reduced from 200px */
+  max-width: 180px;
 }
 
 /* Playback Speed Options - COMPACT GRID */
 .speed-options {
   display: grid;
-  grid-template-columns: repeat(3, 1fr); /* 3 columns */
-  gap: 5px; /* Reduced from 6px */
+  grid-template-columns: repeat(3, 1fr);
+  gap: 5px;
 }
 
 .speed-option {
-  padding: 5px 6px; /* Reduced from 6px 8px */
+  padding: 5px 6px;
   background: rgba(255, 255, 255, 0.1);
   border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: 4px;
   color: var(--soft-white);
-  font-size: 11px; /* Reduced from 12px */
+  font-size: 11px;
   font-weight: 500;
   cursor: pointer;
   text-align: center;
@@ -2613,89 +2755,309 @@ input:checked + .toggle-slider:before {
   font-weight: 600;
 }
 
-/* MOBILE SETTINGS MENU - PROPERLY SIZED */
+/* =================================================================== */
+/* MOBILE CONTROLS - SLIM & SLEEK (PHASE 4 OPTIMIZED)                  */
+/* =================================================================== */
 @media (max-width: 768px) {
+  .enhanced-video-controls {
+    padding: 4px 8px !important;
+    bottom: 0 !important;
+  }
+  
+  .controls-bar {
+    padding: 4px 6px !important;
+    gap: 4px !important;
+    flex-wrap: wrap !important;
+    border-radius: 6px !important;
+    background: rgba(15, 23, 42, 0.9) !important;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3) !important;
+    margin: 0 !important;
+  }
+  
+  .control-btn {
+    width: 32px !important;
+    height: 32px !important;
+    min-width: 32px !important;
+    min-height: 32px !important;
+  }
+  
+  .control-btn i {
+    font-size: 13px !important;
+  }
+  
+  .time-display {
+    min-width: 70px !important;
+    font-size: 11px !important;
+    order: 1 !important;
+    width: 100% !important;
+    text-align: left !important;
+    margin-top: 3px !important;
+    padding-left: 5px !important;
+  }
+  
+  .progress-container {
+    order: 0 !important;
+    width: 100% !important;
+    margin: 2px 0 !important;
+    height: 3px !important;
+  }
+  
+  .progress-container::before {
+    height: 3px !important;
+  }
+  
+  .progress-container::after {
+    width: 10px !important;
+    height: 10px !important;
+  }
+  
+  .volume-controls {
+    display: none !important;
+  }
+  
+  /* ✅ PHASE 4: Mobile Settings Menu - COMPACT */
   .settings-menu {
-    min-width: 90% !important;
-    max-width: 95% !important;
-    bottom: 55px !important; /* Adjusted for mobile */
+    min-width: 85% !important;
+    max-width: 90% !important;
+    bottom: 55px !important;
     right: 5% !important;
     left: 5% !important;
-    padding: 10px !important; /* Reduced from 15px */
+    padding: 10px !important;
     border-radius: 8px !important;
-    max-height: 60vh !important; /* Reduced from 70vh */
+    max-height: 45vh !important;
     overflow-y: auto !important;
+    background: rgba(15, 23, 42, 0.98) !important;
+    backdrop-filter: blur(15px) !important;
   }
   
-  .quality-options {
-    grid-template-columns: repeat(2, 1fr) !important; /* 2 columns on mobile */
-    gap: 5px !important;
-  }
-  
-  .quality-option {
-    padding: 8px 6px !important;
-    font-size: 11px !important;
-  }
-  
-  .speed-options {
-    grid-template-columns: repeat(2, 1fr) !important;
-    gap: 4px !important;
-  }
-  
-  .speed-option {
-    padding: 6px 4px !important;
-    font-size: 10px !important;
-  }
-  
-  .toggle-switch {
-    transform: scale(0.85) !important;
-  }
-  
-  .toggle-description {
-    font-size: 9px !important;
+  .settings-section {
+    margin-bottom: 10px !important;
+    padding-bottom: 8px !important;
   }
   
   .settings-section h4 {
     font-size: 11px !important;
     margin-bottom: 6px !important;
-  }
-}
-
-/* Ultra-compact for very small screens */
-@media (max-width: 480px) {
-  .settings-menu {
-    padding: 8px !important;
-    bottom: 50px !important;
+    letter-spacing: 0.3px !important;
   }
   
   .quality-options {
     grid-template-columns: repeat(2, 1fr) !important;
     gap: 4px !important;
+    margin-bottom: 3px !important;
   }
   
   .quality-option {
     padding: 6px 4px !important;
     font-size: 10px !important;
+    min-height: 36px !important;
   }
   
   .speed-options {
-    grid-template-columns: repeat(2, 1fr) !important;
+    grid-template-columns: repeat(3, 1fr) !important;
     gap: 3px !important;
   }
   
   .speed-option {
     padding: 5px 3px !important;
     font-size: 9px !important;
+    min-height: 32px !important;
   }
   
   .toggle-switch {
-    transform: scale(0.8) !important;
+    transform: scale(0.85) !important;
+    margin: 4px 0 !important;
+  }
+  
+  .toggle-description {
+    font-size: 9px !important;
+    line-height: 1.2 !important;
+    max-width: 150px !important;
+  }
+  
+  /* ✅ PHASE 4: Mobile badges - smaller */
+  .quality-indicator {
+    top: 6px !important;
+    right: 6px !important;
+    font-size: 9px !important;
+    padding: 2px 6px !important;
+  }
+  
+  .data-saver-badge {
+    top: 6px !important;
+    left: 6px !important;
+    font-size: 8px !important;
+    padding: 2px 5px !important;
+  }
+  
+  .network-speed-indicator {
+    bottom: 45px !important;
+    right: 6px !important;
+    font-size: 8px !important;
+    padding: 2px 5px !important;
+  }
+  
+  .hls-badge {
+    top: 35px !important;
+    right: 6px !important;
+    font-size: 8px !important;
+    padding: 2px 5px !important;
+  }
+}
+
+/* ✅ Ultra-compact for very small screens */
+@media (max-width: 480px) {
+  .enhanced-video-controls {
+    padding: 3px 6px !important;
+  }
+  
+  .controls-bar {
+    padding: 3px 5px !important;
+    gap: 3px !important;
+  }
+  
+  .control-btn {
+    width: 30px !important;
+    height: 30px !important;
+  }
+  
+  .control-btn i {
+    font-size: 12px !important;
+  }
+  
+  .time-display {
+    font-size: 10px !important;
+    min-width: 65px !important;
+    margin-top: 2px !important;
+  }
+  
+  .progress-container {
+    height: 2.5px !important;
+  }
+  
+  .buffering-indicator .spinner {
+    width: 22px !important;
+    height: 22px !important;
+  }
+  
+  .buffering-indicator p {
+    font-size: 10px !important;
+  }
+  
+  /* ✅ PHASE 4: Ultra-compact settings */
+  .settings-menu {
+    padding: 8px !important;
+    bottom: 50px !important;
+    max-height: 40vh !important;
+  }
+  
+  .settings-section h4 {
+    font-size: 10px !important;
+    margin-bottom: 5px !important;
+  }
+  
+  .quality-options {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 3px !important;
+  }
+  
+  .quality-option {
+    padding: 5px 3px !important;
+    font-size: 9px !important;
+    min-height: 32px !important;
+  }
+  
+  .speed-options {
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 2px !important;
+  }
+  
+  .speed-option {
+    padding: 4px 2px !important;
+    font-size: 8px !important;
+    min-height: 28px !important;
+  }
+  
+  .toggle-switch {
+    transform: scale(0.75) !important;
     margin: 0 !important;
   }
   
   .toggle-description {
     font-size: 8px !important;
     line-height: 1.2 !important;
+  }
+  
+  /* ✅ PHASE 4: Ultra-compact badges */
+  .quality-indicator {
+    top: 5px !important;
+    right: 5px !important;
+    font-size: 8px !important;
+    padding: 2px 5px !important;
+  }
+  
+  .data-saver-badge {
+    top: 5px !important;
+    left: 5px !important;
+    font-size: 7px !important;
+    padding: 1px 4px !important;
+  }
+  
+  .network-speed-indicator {
+    bottom: 40px !important;
+    right: 5px !important;
+    font-size: 7px !important;
+    padding: 1px 4px !important;
+  }
+  
+  .hls-badge {
+    top: 30px !important;
+    right: 5px !important;
+    font-size: 7px !important;
+    padding: 1px 4px !important;
+  }
+}
+
+/* ✅ Touch device optimizations - COMPACT VERSION */
+@media (hover: none) and (pointer: coarse) {
+  .enhanced-video-controls {
+    opacity: 1 !important;
+    padding: 6px 8px !important;
+  }
+  
+  .control-btn {
+    min-width: 40px !important;
+    min-height: 40px !important;
+  }
+  
+  .progress-container {
+    height: 4px !important;
+  }
+  
+  .progress-container::after {
+    width: 12px !important;
+    height: 12px !important;
+  }
+  
+  /* ✅ PHASE 4: Touch-friendly settings */
+  .quality-option {
+    min-height: 40px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+  
+  .speed-option {
+    min-height: 36px !important;
+  }
+  
+  .toggle-slider:before {
+    height: 18px !important;
+    width: 18px !important;
+  }
+  
+  input:checked + .toggle-slider:before {
+    transform: translateX(24px) !important;
   }
 }
 
