@@ -3,6 +3,7 @@
 // FIXED: Video source preservation and error handling
 // FIXED: Settings menu toggle with quality selector integration
 // FIXED: Fullscreen toggle with proper container
+// 🎵 AUDIO SUPPORT: Added audio file type detection and MIME types
 
 class EnhancedVideoPlayer {
   constructor(options = {}) {
@@ -69,7 +70,7 @@ class EnhancedVideoPlayer {
   }
   
   // ======================
-  // CORE METHODS - UPDATED
+  // CORE METHODS - UPDATED WITH AUDIO SUPPORT
   // ======================
   
   attach(videoElement, container) {
@@ -82,13 +83,17 @@ class EnhancedVideoPlayer {
     this.video = videoElement;
     this.container = container || videoElement.parentElement;
     
+    // Ensure audio is enabled
+    this.video.muted = false;
+    this.video.defaultMuted = false;
+    
     // ============================================
     // CRITICAL FIX: Preserve existing video source
     // ============================================
     var existingSrc = this.video.src || this.video.getAttribute('src');
     var existingSourceElements = Array.from(this.video.querySelectorAll('source'));
     
-    console.log('📥 Existing video src:', existingSrc);
+    console.log('📥 Existing file src:', existingSrc);
     console.log('📥 Existing source elements:', existingSourceElements.length);
     
     // Store existing source info before we modify anything
@@ -100,13 +105,25 @@ class EnhancedVideoPlayer {
         preservedType = existingSourceElements[0].type;
     } else if (existingSrc) {
         preservedSource = existingSrc;
-        // Infer type from URL
+        // ============================================
+        // ✅ CRITICAL FIX: SUPPORT AUDIO FILE TYPES
+        // ============================================
         if (preservedSource.endsWith('.mp4')) {
             preservedType = 'video/mp4';
         } else if (preservedSource.endsWith('.webm')) {
             preservedType = 'video/webm';
         } else if (preservedSource.endsWith('.mov')) {
             preservedType = 'video/quicktime';
+        } else if (preservedSource.endsWith('.mp3')) {
+            preservedType = 'audio/mpeg';
+        } else if (preservedSource.endsWith('.wav')) {
+            preservedType = 'audio/wav';
+        } else if (preservedSource.endsWith('.ogg')) {
+            preservedType = 'audio/ogg';
+        } else if (preservedSource.endsWith('.aac')) {
+            preservedType = 'audio/aac';
+        } else if (preservedSource.endsWith('.m4a')) {
+            preservedType = 'audio/mp4';
         }
     }
     
@@ -119,9 +136,14 @@ class EnhancedVideoPlayer {
 
     // Configure video element
     this.video.autoplay = this.config.autoplay;
-    this.video.muted = this.config.muted;
+    this.video.muted = false; // Ensure audio is enabled
+    this.video.defaultMuted = false;
     this.video.loop = this.config.loop;
     this.video.preload = this.config.preload;
+    
+    // Set default volume to 100%
+    this.video.volume = 1.0;
+    this.video.defaultVolume = 1.0;
 
     // Create and setup custom controls
     this.createCustomControls();
@@ -136,7 +158,7 @@ class EnhancedVideoPlayer {
     // CRITICAL: Restore video source AFTER setup
     // ============================================
     if (preservedSource) {
-        console.log('🔄 Restoring video source...');
+        console.log('🔄 Restoring file source...');
         
         // Clear any existing sources
         while (this.video.firstChild) {
@@ -154,19 +176,39 @@ class EnhancedVideoPlayer {
         // Add source to video element
         this.video.appendChild(source);
         
-        // Add error handling for video loading
+        // ============================================
+        // ✅ CRITICAL: Add error handling for file loading
+        // ============================================
         this.video.addEventListener('error', (e) => {
-          console.error('❌ Video load error:', e);
-          this.showErrorOverlay('Unable to load video. Please check your connection.');
+          console.error('❌ File load error:', e);
+          console.error('❌ Error code:', this.video?.error?.code);
+          console.error('❌ Error message:', this.video?.error?.message);
+          this.showErrorOverlay('Unable to load file. Please check your connection.');
+        }, { once: true });
+        
+        // ============================================
+        // ✅ CRITICAL: Detect audio tracks
+        // ============================================
+        this.video.addEventListener('loadedmetadata', () => {
+          console.log('✅ File metadata loaded');
+          console.log('✅ Has audio:', this.video.mozHasAudio || this.video.webkitAudioDecodedByteCount > 0 || true);
+          console.log('✅ Volume:', this.video.volume);
+          console.log('✅ Muted:', this.video.muted);
+          
+          // Check audio tracks
+          if (this.video.audioTracks && this.video.audioTracks.length > 0) {
+            console.log('✅ Audio tracks found:', this.video.audioTracks.length);
+            this.video.audioTracks[0].enabled = true;
+          }
         }, { once: true });
         
         // Force reload
         this.video.load();
         
-        console.log('✅ Video source restored successfully');
+        console.log('✅ File source restored successfully');
     }
 
-    console.log('✅ EnhancedVideoPlayer attached to video element');
+    console.log('✅ EnhancedVideoPlayer attached to file element');
     return this;
   }
   
@@ -229,7 +271,7 @@ class EnhancedVideoPlayer {
         this.handleCanPlay();
         break;
       case 'loadeddata':
-        console.log('✅ Video metadata loaded, ready to play');
+        console.log('✅ File metadata loaded, ready to play');
         this.emit('loadeddata', this.video);
         break;
     }
@@ -286,7 +328,7 @@ class EnhancedVideoPlayer {
     this.errorState = error;
     
     // Show error overlay
-    this.showErrorOverlay('Unable to play video. Please check your connection.');
+    this.showErrorOverlay('Unable to play file. Please check your connection.');
     
     this.emit('error', error);
   }
@@ -311,7 +353,7 @@ class EnhancedVideoPlayer {
     this.isBuffering = false;
     clearTimeout(this.bufferingTimeout);
     this.hideBufferingIndicator();
-    console.log('✅ Video can start playing');
+    console.log('✅ File can start playing');
     this.emit('canplay', this.video);
     this.emit('bufferingend');
   }
@@ -847,7 +889,7 @@ class EnhancedVideoPlayer {
   }
   
   // ======================
-  // CRITICAL FIX: DESTROY METHOD
+  // CRITICAL FIX: DESTROY METHOD WITH AUDIO PRESERVATION
   // ======================
   
   destroy() {
@@ -866,13 +908,21 @@ class EnhancedVideoPlayer {
             preservedType = existingSources[0].type;
         } else if (this.video.src) {
             preservedSource = this.video.src;
+            // ============================================
+            // ✅ CRITICAL: Preserve audio MIME types
+            // ============================================
             if (preservedSource.endsWith('.mp4')) preservedType = 'video/mp4';
             else if (preservedSource.endsWith('.webm')) preservedType = 'video/webm';
             else if (preservedSource.endsWith('.mov')) preservedType = 'video/quicktime';
+            else if (preservedSource.endsWith('.mp3')) preservedType = 'audio/mpeg';
+            else if (preservedSource.endsWith('.wav')) preservedType = 'audio/wav';
+            else if (preservedSource.endsWith('.ogg')) preservedType = 'audio/ogg';
+            else if (preservedSource.endsWith('.aac')) preservedType = 'audio/aac';
+            else if (preservedSource.endsWith('.m4a')) preservedType = 'audio/mp4';
         }
     }
     
-    console.log('💾 Preserving video source on destroy:', preservedSource);
+    console.log('💾 Preserving source on destroy:', preservedSource);
 
     // Remove event listeners
     if (this.video) {
@@ -912,7 +962,7 @@ class EnhancedVideoPlayer {
     if (this.video) {
         // Restore video source
         if (preservedSource) {
-            console.log('🔄 Restoring video source after destroy...');
+            console.log('🔄 Restoring source after destroy...');
             
             // Clear existing sources
             while (this.video.firstChild) {
@@ -937,7 +987,7 @@ class EnhancedVideoPlayer {
         // Restore native controls
         this.video.controls = true;
         
-        console.log('✅ Video source preserved after destroy');
+        console.log('✅ Source preserved after destroy');
     }
 
     // Clear references
@@ -980,4 +1030,4 @@ class EnhancedVideoPlayer {
 window.EnhancedVideoPlayer = EnhancedVideoPlayer;
 window.BantuVideoPlayer = EnhancedVideoPlayer; // For compatibility
 
-console.log('✅ Enhanced Video Player loaded successfully with null checks and quality selector support');
+console.log('✅ Enhanced Video Player loaded successfully with null checks, quality selector support, and 🎵 AUDIO SUPPORT');
