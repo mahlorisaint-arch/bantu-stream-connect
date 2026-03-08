@@ -833,7 +833,9 @@
   100% { box-shadow: 0 0 5px rgba(245, 158, 11, 0.5); }
 }
 
-/* Creator Info Section - More Compact */
+/* ============================================ */
+/* 🎨 CREATOR AVATAR SECTION - UPDATED WITH HOVER EFFECTS */
+/* ============================================ */
 .creator-section {
   background: var(--card-bg);
   border: 1px solid var(--card-border);
@@ -841,12 +843,19 @@
   padding: 18px;
   margin-bottom: 20px;
   backdrop-filter: blur(10px);
+  transition: all 0.3s ease;
+}
+
+.creator-section:hover {
+  border-color: var(--bantu-blue);
+  box-shadow: 0 5px 20px rgba(29, 78, 216, 0.2);
 }
 
 .creator-info {
   display: flex;
   align-items: center;
   gap: 16px;
+  cursor: pointer;
 }
 
 .creator-avatar {
@@ -861,6 +870,14 @@
   color: white;
   overflow: hidden;
   flex-shrink: 0;
+  border: 2px solid rgba(245, 158, 11, 0.3);
+  transition: all 0.3s ease;
+}
+
+.creator-info:hover .creator-avatar {
+  transform: scale(1.05);
+  border-color: var(--bantu-blue);
+  box-shadow: 0 0 15px rgba(29, 78, 216, 0.4);
 }
 
 .creator-avatar img {
@@ -878,6 +895,11 @@
   font-weight: 600;
   margin-bottom: 4px;
   color: var(--soft-white);
+  transition: color 0.3s ease;
+}
+
+.creator-info:hover .creator-details h3 {
+  color: var(--bantu-blue);
 }
 
 .creator-details p {
@@ -909,6 +931,25 @@
 
 .connect-btn.connected {
   background: linear-gradient(135deg, var(--success-color), #2b8a3e);
+}
+
+/* Mobile adjustments for creator section */
+@media (max-width: 768px) {
+  .creator-info {
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .creator-avatar {
+    width: 70px;
+    height: 70px;
+    font-size: 1.8rem;
+  }
+  
+  .connect-btn {
+    width: 100%;
+    justify-content: center;
+  }
 }
 
 /* Stats Grid - More Compact */
