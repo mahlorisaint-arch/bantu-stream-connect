@@ -15,6 +15,7 @@
 // 🎯 MOBILE-OPTIMIZED: Full-width video player on mobile, removed "Now Playing" header
 // 🎯 REDESIGN: Removed close button, full-width player, compact settings menu
 // 🎵 AUDIO SUPPORT: Added MP3, WAV, OGG playback with thumbnail as poster
+// 🎨 CREATOR AVATAR FIX: Show actual creator profile picture from user_profiles
 
 console.log('🎬 Content Detail Initializing with RLS-compliant fixes and view tracking on Play button click...');
 
@@ -962,15 +963,25 @@ function resetProfileUI() {
 
 // ============================================
 // FIXED: Load content with ACCURATE counts from source tables
+// ✅ CRITICAL: Include user_profiles with avatar_url
 // ============================================
 async function loadContentFromURL() {
   const urlParams = new URLSearchParams(window.location.search);
   const contentId = urlParams.get('id') || '68';
   
   try {
+    // ✅ CRITICAL: Ensure user_profiles includes avatar_url
     const { data: contentData, error: contentError } = await window.supabaseClient
       .from('Content')
-      .select('*, user_profiles!user_id(*)')
+      .select(`
+        *,
+        user_profiles!user_id (
+          id,
+          full_name,
+          username,
+          avatar_url
+        )
+      `)
       .eq('id', contentId)
       .single();
     
@@ -1024,6 +1035,7 @@ async function loadContentFromURL() {
       creator_display_name: contentData.user_profiles?.full_name || contentData.user_profiles?.username || 'Creator',
       creator_id: contentData.user_profiles?.id || contentData.user_id,
       user_id: contentData.user_id,
+      // ✅ CRITICAL: Include full user_profiles object with avatar_url
       user_profiles: contentData.user_profiles,
       watch_progress: watchProgress?.last_position || 0,
       is_completed: watchProgress?.is_completed || false,
@@ -1033,9 +1045,13 @@ async function loadContentFromURL() {
       data_saver_url: streamingData?.data_saver_url || null
     };
     
-    console.log('📥 Content loaded with ACCURATE counts:', {
+    console.log('📥 Content loaded with ACCURATE counts and creator data:', {
       views: currentContent.views_count,
       likes: currentContent.likes_count,
+      creator: currentContent.creator,
+      creator_id: currentContent.creator_id,
+      has_avatar: !!currentContent.user_profiles?.avatar_url,
+      avatar_url: currentContent.user_profiles?.avatar_url,
       watch_progress: currentContent.watch_progress,
       hls_available: !!currentContent.hls_manifest_url
     });
@@ -1171,6 +1187,9 @@ async function initializeFavoriteButton(contentId, userId) {
   }
 }
 
+// ============================================
+// 🎯 FIXED: Update Content UI with Creator Avatar
+// ============================================
 function updateContentUI(content) {
   if (!content) return;
   
@@ -1189,11 +1208,73 @@ function updateContentUI(content) {
   safeSetText('contentDurationFull', duration);
   
   safeSetText('uploadDate', formatDate(content.created_at));
-  
   safeSetText('contentGenre', content.genre || 'General');
-  
   safeSetText('contentDescriptionShort', truncateText(content.description, 150));
   safeSetText('contentDescriptionFull', content.description);
+  
+  // ============================================
+  // ✅ CRITICAL FIX: SET CREATOR AVATAR
+  // ============================================
+  const creatorAvatar = document.getElementById('creatorAvatar');
+  if (creatorAvatar && content.user_profiles) {
+    const avatarUrl = content.user_profiles.avatar_url;
+    const displayName = content.user_profiles.full_name || content.user_profiles.username || 'Creator';
+    const initial = displayName.charAt(0).toUpperCase();
+    
+    if (avatarUrl && avatarUrl !== 'null' && avatarUrl !== 'undefined' && avatarUrl !== '') {
+      // ✅ Use actual avatar URL
+      const fixedAvatarUrl = window.SupabaseHelper?.fixMediaUrl?.(avatarUrl) || avatarUrl;
+      creatorAvatar.innerHTML = `
+        <img src="${fixedAvatarUrl}" 
+             alt="${escapeHtml(displayName)}" 
+             style="width:100%; height:100%; border-radius:50%; object-fit:cover;"
+             onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect fill=%22%231D4ED8%22 width=%22100%22 height=%22100%22/><text x=%2250%22 y=%2255%22 font-size=%2250%22 text-anchor=%22middle%22 fill=%22white%22 font-family=%22Arial%22>${initial}</text></svg>'">
+      `;
+      console.log('✅ Creator avatar set from URL:', fixedAvatarUrl);
+    } else {
+      // ✅ Fallback to initials with gradient
+      creatorAvatar.innerHTML = `
+        <div style="
+          width:100%; 
+          height:100%; 
+          border-radius:50%; 
+          background:linear-gradient(135deg, #1D4ED8, #F59E0B);
+          display:flex;
+          align-items:center;
+          justify-content:center;
+          color:white;
+          font-weight:bold;
+          font-size:1.5rem;
+        ">${initial}</div>
+      `;
+      console.log('✅ Creator avatar fallback to initials:', initial);
+    }
+  } else {
+    console.warn('⚠️ Creator avatar element or user_profiles not found:', {
+      hasCreatorAvatar: !!document.getElementById('creatorAvatar'),
+      hasUserProfiles: !!content.user_profiles
+    });
+  }
+  
+  // ============================================
+  // ✅ CRITICAL FIX: MAKE CREATOR SECTION CLICKABLE
+  // ============================================
+  const creatorSection = document.querySelector('.creator-section');
+  const creatorInfo = document.querySelector('.creator-info');
+  if (creatorSection && content.creator_id) {
+    creatorSection.style.cursor = 'pointer';
+    if (creatorInfo) {
+      // Remove existing listeners by cloning
+      const newCreatorInfo = creatorInfo.cloneNode(true);
+      creatorInfo.parentNode.replaceChild(newCreatorInfo, creatorInfo);
+      
+      newCreatorInfo.addEventListener('click', function(e) {
+        // Don't trigger if clicking connect button
+        if (e.target.closest('.connect-btn')) return;
+        window.location.href = `creator-channel.html?id=${content.creator_id}&name=${encodeURIComponent(content.creator_display_name)}`;
+      });
+    }
+  }
   
   const posterPlaceholder = document.getElementById('posterPlaceholder');
   if (posterPlaceholder && content.thumbnail_url) {
@@ -3607,4 +3688,4 @@ window.addEventListener('beforeunload', function() {
   }
 });
 
-console.log('✅ Content detail script loaded with PHASE 4 STREAMING MANAGER integration, PHASE 1-3 POLISH, and 🎵 AUDIO SUPPORT');
+console.log('✅ Content detail script loaded with PHASE 4 STREAMING MANAGER integration, PHASE 1-3 POLISH, 🎵 AUDIO SUPPORT, and 🎨 CREATOR AVATAR FIX');
