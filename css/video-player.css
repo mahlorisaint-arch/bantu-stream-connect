@@ -3,6 +3,7 @@
 /* COMPACT VIDEO PLAYER - YOUTUBE STYLE                                */
 /* PHASE 4: Added Quality Selector & Data Saver Styles                 */
 /* 🎯 MOBILE-OPTIMIZED: Full-bleed video experience                    */
+/* 🎯 REDESIGN: Removed close button, compact settings, full-width     */
 /* =================================================================== */
 
 /* Hide ALL Bantu branded controls that conflict with EnhancedVideoPlayer */
@@ -33,19 +34,6 @@
     aspect-ratio: 16/9;
     width: 100vw; /* Full viewport width */
     margin-left: calc(-50vw + 50%); /* Center full-width */
-  }
-  
-  .player-close-container {
-    padding: 10px 16px;
-    background: rgba(0, 0, 0, 0.5);
-  }
-  
-  .player-close-container .close-player {
-    width: 100%;
-    justify-content: center;
-    padding: 12px;
-    background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
-    border: none;
   }
   
   .enhanced-video-controls {
@@ -108,32 +96,19 @@
     font-size: 11px !important;
     min-width: 60px !important;
   }
-  
-  .player-close-container .close-player span {
-    display: none; /* Hide text, show icon only */
-  }
-  
-  .player-close-container .close-player {
-    padding: 12px;
-    justify-content: center;
-  }
 }
 
 /* Desktop: Cinematic experience */
 @media (min-width: 1024px) {
   .inline-player {
-    border-radius: 12px;
-    max-width: 1200px;
+    border-radius: 0;
+    max-width: 100%;
     margin: 0 auto 24px auto;
   }
   
   .video-container {
-    border-radius: 12px 12px 0 0;
+    border-radius: 0;
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-  }
-  
-  .player-close-container {
-    padding: 16px 24px;
   }
 }
 
@@ -304,19 +279,20 @@
 }
 
 /* =================================================================== */
-/* PHASE 4: SETTINGS MENU - ENHANCED WITH QUALITY & DATA SAVER         */
+/* PHASE 4: SETTINGS MENU - COMPACT & PROPERLY SIZED                   */
 /* =================================================================== */
 .settings-menu {
   position: absolute;
-  bottom: 60px;
-  right: 20px;
-  background: var(--card-bg);
-  border: 1px solid var(--card-border);
-  border-radius: 12px;
-  padding: 16px;
-  min-width: 260px;
-  backdrop-filter: blur(20px);
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+  bottom: 50px; /* Moved up from 60px */
+  right: 10px; /* Moved from 20px */
+  background: rgba(15, 23, 42, 0.95); /* Darker background */
+  border: 1px solid rgba(29, 78, 216, 0.3);
+  border-radius: 8px; /* Smaller radius */
+  padding: 12px; /* Reduced from 16px */
+  min-width: 200px; /* Reduced from 260px */
+  max-width: 280px; /* Added max-width */
+  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
   z-index: 1000;
   display: none;
   animation: fadeInUp 0.2s ease;
@@ -339,9 +315,9 @@
 }
 
 .settings-section {
-  margin-bottom: 16px;
+  margin-bottom: 12px; /* Reduced from 16px */
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  padding-bottom: 12px;
+  padding-bottom: 10px; /* Reduced from 12px */
 }
 
 .settings-section:last-child {
@@ -352,8 +328,8 @@
 
 .settings-section h4 {
   color: var(--soft-white);
-  margin-bottom: 10px;
-  font-size: 14px;
+  margin-bottom: 8px; /* Reduced from 10px */
+  font-size: 12px; /* Reduced from 14px */
   font-weight: 600;
   opacity: 0.9;
   text-transform: uppercase;
@@ -361,22 +337,22 @@
 }
 
 /* =================================================================== */
-/* PHASE 4: QUALITY OPTIONS STYLES                                     */
+/* PHASE 4: QUALITY OPTIONS - COMPACT GRID                             */
 /* =================================================================== */
 .quality-options {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
-  margin-bottom: 5px;
+  grid-template-columns: repeat(3, 1fr); /* 3 columns */
+  gap: 6px; /* Reduced from 8px */
+  margin-bottom: 4px; /* Reduced from 5px */
 }
 
 .quality-option {
-  padding: 8px 10px;
+  padding: 6px 8px; /* Reduced from 8px 10px */
   background: rgba(255, 255, 255, 0.1);
-  border: 1px solid var(--card-border);
-  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 4px; /* Smaller radius */
   color: var(--soft-white);
-  font-size: 12px;
+  font-size: 11px; /* Reduced from 12px */
   font-weight: 500;
   cursor: pointer;
   text-align: center;
@@ -386,7 +362,7 @@
 .quality-option:hover {
   background: rgba(29, 78, 216, 0.3);
   border-color: var(--bantu-blue);
-  transform: translateY(-2px);
+  transform: translateY(-1px);
 }
 
 .quality-option.active {
@@ -394,18 +370,18 @@
   border-color: transparent;
   color: white;
   font-weight: 600;
-  box-shadow: 0 4px 10px rgba(29, 78, 216, 0.3);
+  box-shadow: 0 2px 8px rgba(29, 78, 216, 0.3);
 }
 
 /* =================================================================== */
-/* PHASE 4: DATA SAVER TOGGLE STYLES                                   */
+/* PHASE 4: DATA SAVER TOGGLE - COMPACT                                */
 /* =================================================================== */
 .toggle-switch {
   position: relative;
   display: inline-block;
-  width: 52px;
-  height: 26px;
-  margin: 8px 0 5px;
+  width: 44px; /* Reduced from 52px */
+  height: 22px; /* Reduced from 26px */
+  margin: 6px 0 4px; /* Reduced margins */
 }
 
 .toggle-switch input {
@@ -423,16 +399,16 @@
   bottom: 0;
   background-color: rgba(255, 255, 255, 0.2);
   transition: 0.3s;
-  border-radius: 26px;
+  border-radius: 22px;
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .toggle-slider:before {
   position: absolute;
   content: "";
-  height: 20px;
-  width: 20px;
-  left: 3px;
+  height: 18px; /* Reduced from 20px */
+  width: 18px; /* Reduced from 20px */
+  left: 2px;
   bottom: 2px;
   background-color: white;
   transition: 0.3s;
@@ -446,16 +422,51 @@ input:checked + .toggle-slider {
 }
 
 input:checked + .toggle-slider:before {
-  transform: translateX(26px);
+  transform: translateX(22px); /* Adjusted for smaller size */
   background-color: white;
 }
 
 .toggle-description {
-  font-size: 11px;
+  font-size: 10px; /* Reduced from 11px */
   color: var(--slate-grey);
-  margin-top: 5px;
-  line-height: 1.4;
-  max-width: 200px;
+  margin-top: 4px;
+  line-height: 1.3;
+  max-width: 180px; /* Reduced from 200px */
+}
+
+/* =================================================================== */
+/* SPEED OPTIONS - COMPACT GRID                                        */
+/* =================================================================== */
+.speed-options {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr); /* 3 columns */
+  gap: 5px; /* Reduced from 6px */
+}
+
+.speed-option {
+  padding: 5px 6px; /* Reduced from 6px 8px */
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 4px;
+  color: var(--soft-white);
+  font-size: 11px; /* Reduced from 12px */
+  font-weight: 500;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.2s ease;
+}
+
+.speed-option:hover {
+  background: rgba(29, 78, 216, 0.3);
+  border-color: var(--bantu-blue);
+  transform: translateY(-1px);
+}
+
+.speed-option.active {
+  background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+  border-color: transparent;
+  color: white;
+  font-weight: 600;
 }
 
 /* =================================================================== */
@@ -577,41 +588,6 @@ input:checked + .toggle-slider:before {
 .hls-badge i {
   margin-right: 3px;
   font-size: 8px;
-}
-
-/* =================================================================== */
-/* SPEED OPTIONS - EXISTING BUT ENHANCED                               */
-/* =================================================================== */
-.speed-options {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 6px;
-}
-
-.speed-option {
-  padding: 6px 8px;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid var(--card-border);
-  border-radius: 6px;
-  color: var(--soft-white);
-  font-size: 12px;
-  font-weight: 500;
-  cursor: pointer;
-  text-align: center;
-  transition: all 0.2s ease;
-}
-
-.speed-option:hover {
-  background: rgba(29, 78, 216, 0.3);
-  border-color: var(--bantu-blue);
-  transform: translateY(-1px);
-}
-
-.speed-option.active {
-  background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
-  border-color: transparent;
-  color: white;
-  font-weight: 600;
 }
 
 /* =================================================================== */
@@ -840,43 +816,50 @@ input:checked + .toggle-slider:before {
     display: none !important;
   }
   
-  /* PHASE 4: Mobile Settings Menu */
+  /* PHASE 4: Mobile Settings Menu - COMPACT */
   .settings-menu {
     min-width: 90% !important;
-    bottom: 70px !important;
+    max-width: 95% !important;
+    bottom: 55px !important; /* Adjusted for mobile */
     right: 5% !important;
     left: 5% !important;
-    padding: 15px !important;
-    border-radius: 12px !important;
-    max-height: 70vh !important;
+    padding: 10px !important; /* Reduced from 15px */
+    border-radius: 8px !important;
+    max-height: 60vh !important; /* Reduced from 70vh */
     overflow-y: auto !important;
   }
   
   .quality-options {
-    grid-template-columns: repeat(2, 1fr) !important;
-    gap: 6px !important;
+    grid-template-columns: repeat(2, 1fr) !important; /* 2 columns on mobile */
+    gap: 5px !important;
   }
   
   .quality-option {
-    padding: 10px 6px !important;
-    font-size: 12px !important;
-  }
-  
-  .speed-options {
-    grid-template-columns: repeat(2, 1fr) !important;
-  }
-  
-  .speed-option {
     padding: 8px 6px !important;
     font-size: 11px !important;
   }
   
+  .speed-options {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 4px !important;
+  }
+  
+  .speed-option {
+    padding: 6px 4px !important;
+    font-size: 10px !important;
+  }
+  
   .toggle-switch {
-    transform: scale(0.9) !important;
+    transform: scale(0.85) !important;
   }
   
   .toggle-description {
-    font-size: 10px !important;
+    font-size: 9px !important;
+  }
+  
+  .settings-section h4 {
+    font-size: 11px !important;
+    margin-bottom: 6px !important;
   }
 
   /* PHASE 4: Mobile badges */
@@ -950,13 +933,8 @@ input:checked + .toggle-slider:before {
   
   /* PHASE 4: Ultra-compact settings */
   .settings-menu {
-    padding: 12px !important;
-    bottom: 65px !important;
-  }
-  
-  .settings-section h4 {
-    font-size: 12px !important;
-    margin-bottom: 6px !important;
+    padding: 8px !important;
+    bottom: 50px !important;
   }
   
   .quality-options {
@@ -965,18 +943,18 @@ input:checked + .toggle-slider:before {
   }
   
   .quality-option {
-    padding: 8px 4px !important;
-    font-size: 11px !important;
+    padding: 6px 4px !important;
+    font-size: 10px !important;
   }
   
   .speed-options {
     grid-template-columns: repeat(2, 1fr) !important;
-    gap: 4px !important;
+    gap: 3px !important;
   }
   
   .speed-option {
-    padding: 6px 4px !important;
-    font-size: 10px !important;
+    padding: 5px 3px !important;
+    font-size: 9px !important;
   }
   
   .toggle-switch {
@@ -985,8 +963,8 @@ input:checked + .toggle-slider:before {
   }
   
   .toggle-description {
-    font-size: 9px !important;
-    line-height: 1.3 !important;
+    font-size: 8px !important;
+    line-height: 1.2 !important;
   }
 
   /* PHASE 4: Ultra-compact badges */
