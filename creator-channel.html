@@ -140,8 +140,8 @@ border-radius: 20px;
 overflow: hidden;
 margin-bottom: -60px;
 position: relative;
-background: linear-gradient(rgba(10, 14, 18, 0.85), rgba(15, 23, 42, 0.95)), 
-            url('https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?w=1500&h=400&fit=crop') center/cover;
+background: linear-gradient(rgba(10, 14, 18, 0.85), rgba(15, 23, 42, 0.95)),
+url('https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?w=1500&h=400&fit=crop') center/cover;
 display: flex;
 align-items: flex-end;
 padding: 0 40px 30px;
@@ -788,6 +788,177 @@ gap: 10px;
 font-size: 14px;
 color: var(--slate-grey);
 }
+
+/* ✅ NEW: Content Tabs */
+.content-tabs {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  border-bottom: 1px solid var(--card-border);
+  padding-bottom: 10px;
+}
+.tab-btn {
+  background: transparent;
+  border: 1px solid var(--card-border);
+  color: var(--slate-grey);
+  padding: 8px 16px;
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+.tab-btn:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--soft-white);
+}
+.tab-btn.active {
+  background: var(--warm-gold);
+  color: var(--deep-black);
+  border-color: var(--warm-gold);
+  font-weight: 600;
+}
+
+/* ✅ NEW: Channel Trailer Section */
+#channel-trailer-section {
+  margin-bottom: 40px;
+}
+.featured-trailer {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: 1.5fr 1fr;
+  gap: 0;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 20px;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+@media (max-width: 768px) {
+  .featured-trailer {
+    grid-template-columns: 1fr;
+  }
+}
+.trailer-video-container {
+  position: relative;
+  background: #000;
+  min-height: 300px;
+}
+.trailer-video-container video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.trailer-play-overlay {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.trailer-play-icon {
+  width: 70px;
+  height: 70px;
+  background: rgba(245, 158, 11, 0.9);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--deep-black);
+  font-size: 24px;
+  transition: transform 0.3s ease;
+}
+.trailer-play-overlay:hover .trailer-play-icon {
+  transform: scale(1.1);
+}
+.trailer-info {
+  padding: 30px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.trailer-badge {
+  display: inline-block;
+  background: rgba(245, 158, 11, 0.2);
+  color: var(--warm-gold);
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 10px;
+  width: fit-content;
+}
+
+/* ✅ NEW: Playlists Section */
+#playlists-section {
+  margin-bottom: 40px;
+}
+.playlist-card {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 20px;
+  overflow: hidden;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  text-decoration: none;
+  color: inherit;
+  backdrop-filter: blur(10px);
+}
+.playlist-card:hover {
+  transform: translateY(-5px);
+  border-color: var(--warm-gold);
+}
+.playlist-thumbnail {
+  position: relative;
+  height: 160px;
+  background: var(--deep-navy);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+.playlist-thumbnail img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.8;
+}
+.playlist-overlay {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
+}
+.playlist-count {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  background: rgba(0,0,0,0.7);
+  padding: 4px 10px;
+  border-radius: 8px;
+  font-size: 12px;
+  color: var(--soft-white);
+}
+.playlist-content {
+  padding: 15px;
+}
+.playlist-title {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 5px;
+  color: var(--soft-white);
+}
+.playlist-desc {
+  font-size: 13px;
+  color: var(--slate-grey);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
 /* Content Grid */
 .content-grid {
 display: grid;
@@ -904,6 +1075,11 @@ background: rgba(29, 78, 216, 0.9);
 }
 .badge-live {
 background: rgba(239, 68, 68, 0.9);
+}
+/* ✅ NEW: Pinned Badge */
+.badge-pinned {
+  background: rgba(245, 158, 11, 0.9);
+  color: var(--deep-black);
 }
 .card-content {
 padding: 15px;
@@ -1565,7 +1741,6 @@ Upload Image
 </button>
 </div>
 </header>
-
 <!-- Channel Banner - TIER 1 FEATURE with Customization -->
 <div class="channel-banner" id="channel-banner">
 <div class="banner-overlay" id="banner-overlay"></div>
@@ -1575,7 +1750,6 @@ Change Banner
 </button>
 <div class="banner-title" id="banner-title">OFFICIAL CHANNEL</div>
 </div>
-
 <!-- Main Content -->
 <main class="container">
 <!-- Creator Header -->
@@ -1594,7 +1768,6 @@ Change Banner
 </div>
 </div>
 </section>
-
 <!-- About Section - TIER 1 FEATURE -->
 <section class="about-section">
 <h2 class="about-title">
@@ -1621,7 +1794,6 @@ About
 </div>
 </div>
 </section>
-
 <!-- Stats Section -->
 <section class="stats-section">
 <div class="stat-card">
@@ -1637,7 +1809,6 @@ About
 <div class="stat-label">Uploads</div>
 </div>
 </section>
-
 <!-- Action Buttons -->
 <section class="action-buttons">
 <button id="connect-btn" class="action-btn connect-btn">
@@ -1650,28 +1821,73 @@ Share Channel
 </button>
 </section>
 
-<!-- Uploads Section (SINGLE SECTION) -->
+<!-- ✅ NEW: Channel Trailer Section -->
+<section id="channel-trailer-section" class="section" style="display:none;">
+  <div class="section-header">
+    <h2 class="section-title">🎬 Featured: Welcome to My Channel</h2>
+  </div>
+  <div class="featured-trailer" id="trailer-card">
+    <div class="trailer-video-container">
+      <video id="trailer-video" muted loop playsinline poster="">
+        <source src="" type="video/mp4">
+      </video>
+      <div class="trailer-play-overlay" id="trailer-play-overlay">
+        <div class="trailer-play-icon"><i class="fas fa-play"></i></div>
+      </div>
+    </div>
+    <div class="trailer-info">
+      <span class="trailer-badge">CHANNEL TRAILER</span>
+      <h3 id="trailer-title" style="font-size:24px;margin-bottom:10px;color:var(--soft-white);">Channel Introduction</h3>
+      <p id="trailer-desc" style="color:var(--slate-grey);font-size:14px;line-height:1.6;margin-bottom:20px;"></p>
+      <div class="card-meta" style="margin-top:auto;">
+        <span><i class="fas fa-eye"></i> <span id="trailer-views">0</span> views</span>
+        <span id="trailer-date"></span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ✅ NEW: Playlists Section -->
+<section id="playlists-section" class="section" style="display:none;">
+  <div class="section-header">
+    <h2 class="section-title">📂 Series & Collections</h2>
+    <a href="#" id="view-all-playlists" style="color:var(--warm-gold);font-size:14px;text-decoration:none;">View All →</a>
+  </div>
+  <div class="content-grid" id="playlists-grid">
+    <!-- Playlists loaded here -->
+  </div>
+</section>
+
+<!-- Uploads Section (WITH TABS) -->
 <section class="section">
-<div class="section-header">
-<h2 class="section-title">
-<i class="fas fa-video" style="color: var(--bantu-blue);"></i>
-UPLOADS
-</h2>
-<div id="content-count" class="content-count">0 items</div>
-</div>
-<div class="content-grid" id="content-grid">
-<!-- All creator content will be loaded here -->
-</div>
-<div id="no-content" class="empty-state" style="display: none; grid-column: 1 / -1;">
-<div class="empty-icon">
-<i class="fas fa-video-slash"></i>
-</div>
-<h3>No Uploads Yet</h3>
-<p>This creator hasn't uploaded any content</p>
-</div>
+  <div class="section-header">
+    <h2 class="section-title">
+      <i class="fas fa-video" style="color: var(--bantu-blue);"></i>
+      Content Library
+    </h2>
+    <div id="content-count" class="content-count">0 items</div>
+  </div>
+  
+  <!-- ✅ NEW: Smart Content Tabs -->
+  <div class="content-tabs" id="content-tabs">
+    <button class="tab-btn active" data-tab="all">All</button>
+    <button class="tab-btn" data-tab="videos">Videos</button>
+    <button class="tab-btn" data-tab="shorts">Shorts</button>
+    <button class="tab-btn" data-tab="podcasts">Podcasts</button>
+  </div>
+  
+  <div class="content-grid" id="content-grid">
+    <!-- All creator content will be loaded here -->
+  </div>
+  <div id="no-content" class="empty-state" style="display: none; grid-column: 1 / -1;">
+    <div class="empty-icon">
+      <i class="fas fa-video-slash"></i>
+    </div>
+    <h3>No Uploads Yet</h3>
+    <p>This creator hasn't uploaded any content</p>
+  </div>
 </section>
 </main>
-
 <!-- Footer -->
 <footer class="footer">
 <p>Bantu Stream Connect © 2025 • Built in South Africa • NO DNA, JUST RSA</p>
@@ -1684,7 +1900,6 @@ UPLOADS
 Need help? Contact us at <a href="mailto:support@bantustreamconnect.com">support@bantustreamconnect.com</a>
 </div>
 </footer>
-
 <!-- Global Navigation -->
 <div class="navigation-button-container">
 <div class="navigation-button">
@@ -1706,16 +1921,13 @@ Need help? Contact us at <a href="mailto:support@bantustreamconnect.com">support
 </div>
 </div>
 </div>
-
 <!-- Toast Container -->
 <div id="toast-container"></div>
-
 <!-- Back to Top Button -->
 <button id="backToTopBtn" class="back-to-top">
 <i class="fas fa-arrow-up"></i>
 </button>
 </div>
-
 <!-- Notifications Panel -->
 <div id="notifications-panel" class="modal">
 <div class="modal-content">
@@ -1734,7 +1946,6 @@ Need help? Contact us at <a href="mailto:support@bantustreamconnect.com">support
 </div>
 </div>
 </div>
-
 <!-- Theme Selector -->
 <div id="theme-selector" class="modal" style="display: none; background: rgba(0,0,0,0.5);">
 <div style="background: var(--card-bg); border-radius: 20px; padding: 20px; max-width: 400px; width: 90%;">
@@ -1752,13 +1963,11 @@ Need help? Contact us at <a href="mailto:support@bantustreamconnect.com">support
 </div>
 </div>
 </div>
-
 <!-- JavaScript Files -->
 <script src="env.js"></script>
 <script src="js/rate-limiter.js"></script>
 <script src="js/content-library-themes.js"></script>
 <script src="js/content-library-features.js"></script>
-
 <!-- Simple Supabase REST client -->
 <script>
 class ContentSupabaseClient {
@@ -1778,14 +1987,12 @@ const contentSupabase = new ContentSupabaseClient(
 );
 console.log('✅ Content Supabase client initialized');
 </script>
-
 <!-- Creator Channel JavaScript -->
 <script>
 const SUPABASE_URL = 'https://ydnxqnbjoshvxteevemc.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U';
 const supabaseAuth = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 console.log('✅ Supabase Auth client initialized');
-
 // Global state
 window.currentUser = null;
 window.notifications = [];
@@ -1794,13 +2001,12 @@ window.creatorProfile = null;
 window.isConnected = false;
 window.connectorCount = 0;
 window.bannerUrl = null;
-
+window.allContent = []; // Store all content for tab filtering
 document.addEventListener('DOMContentLoaded', async () => {
 console.log('👤 Creator Channel Initializing...');
 const loadingScreen = document.getElementById('loading');
 const loadingText = document.getElementById('loading-text');
 const app = document.getElementById('app');
-
 // UTILITY FUNCTIONS
 function showToast(message, type = 'info') {
 const container = document.getElementById('toast-container');
@@ -1812,26 +2018,22 @@ toast.innerHTML = `<i class="fas ${icons[type] || 'fa-info-circle'}"></i><span>$
 container.appendChild(toast);
 setTimeout(() => { toast.style.opacity='0'; toast.style.transform='translateX(100%)'; setTimeout(() => toast.remove(), 300); }, 3000);
 }
-
 function formatNumber(num) {
 if (num >= 1000000) return (num/1000000).toFixed(1)+'M';
 if (num >= 1000) return (num/1000).toFixed(1)+'K';
 return num.toString();
 }
-
 function truncateText(text, maxLength) {
 if (!text) return '';
 if (text.length <= maxLength) return text;
 return text.substring(0, maxLength) + '...';
 }
-
 function escapeHtml(text) {
 if (!text) return '';
 const div = document.createElement('div');
 div.textContent = text;
 return div.innerHTML;
 }
-
 function formatDate(dateString) {
 if (!dateString) return '';
 try {
@@ -1845,20 +2047,17 @@ if (diffDays < 30) return `${Math.floor(diffDays/7)} week${Math.floor(diffDays/7
 return date.toLocaleDateString('en-US', { month:'short', day:'numeric' });
 } catch (error) { return ''; }
 }
-
 function getInitials(name) {
 if (!name || name.trim() === '') return '?';
 const names = name.trim().split(' ');
 if (names.length >= 2) return (names[0][0] + names[names.length-1][0]).toUpperCase();
 return name[0].toUpperCase();
 }
-
 function fixMediaUrl(url) {
 if (!url) return '';
 if (url.startsWith('http')) return url;
 return `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/${url.replace(/^\/+/, '')}`;
 }
-
 // BANNER FUNCTIONS
 async function loadBannerFromProfile() {
 if (!window.creatorProfile) return;
@@ -1871,14 +2070,12 @@ const defaultBanner = `https://images.unsplash.com/photo-1517604931442-7e0c8ed29
 setBannerImage(defaultBanner);
 }
 }
-
 function setBannerImage(url) {
 if (!url) return;
 const banner = document.getElementById('channel-banner');
 window.bannerUrl = url;
 banner.style.backgroundImage = `linear-gradient(rgba(10, 14, 18, 0.85), rgba(15, 23, 42, 0.95)), url('${url}')`;
 }
-
 function showBannerUploadModal() {
 if (!window.currentUser || window.currentUser.id !== window.creatorId) {
 showToast('Only the channel owner can change the banner', 'warning');
@@ -1890,11 +2087,9 @@ document.getElementById('banner-preview-img').style.display = 'none';
 document.getElementById('banner-preview-placeholder').style.display = 'flex';
 document.getElementById('banner-url-input').value = '';
 }
-
 function hideBannerUploadModal() {
 document.getElementById('banner-upload-modal').style.display = 'none';
 }
-
 async function saveBanner(url) {
 if (!url || !window.currentUser || window.currentUser.id !== window.creatorId) return;
 try {
@@ -1913,12 +2108,10 @@ console.error('Error saving banner:', error);
 showToast('Failed to save banner', 'error');
 }
 }
-
 // Handle file upload
 document.getElementById('banner-file-upload')?.addEventListener('click', () => {
 document.getElementById('banner-file-input').click();
 });
-
 document.getElementById('banner-file-input')?.addEventListener('change', async (e) => {
 const file = e.target.files[0];
 if (!file) return;
@@ -1958,7 +2151,6 @@ console.error('Upload error:', error);
 showToast('Failed to upload image', 'error');
 }
 });
-
 // Handle URL input
 document.getElementById('banner-url-apply')?.addEventListener('click', () => {
 const url = document.getElementById('banner-url-input').value.trim();
@@ -1983,7 +2175,6 @@ previewImg.onerror = () => {
 showToast('Failed to load image from URL', 'error');
 };
 });
-
 // Save button
 document.getElementById('banner-save')?.addEventListener('click', () => {
 const previewImg = document.getElementById('banner-preview-img');
@@ -1993,17 +2184,14 @@ saveBanner(previewImg.src);
 showToast('Please select or enter an image first', 'warning');
 }
 });
-
 // Cancel button
 document.getElementById('banner-cancel')?.addEventListener('click', hideBannerUploadModal);
-
 // Click outside to close
 document.getElementById('banner-upload-modal')?.addEventListener('click', (e) => {
 if (e.target === document.getElementById('banner-upload-modal')) {
 hideBannerUploadModal();
 }
 });
-
 // AUTHENTICATION
 async function checkAuth() {
 try {
@@ -2023,7 +2211,6 @@ console.error('Auth check error:', error);
 return null;
 }
 }
-
 async function loadUserProfile() {
 try {
 if (!window.currentUser) return;
@@ -2040,7 +2227,6 @@ console.error('Error loading profile:', error);
 updateProfileUI(null);
 }
 }
-
 function updateProfileUI(profile) {
 const el = document.getElementById('userProfilePlaceholder');
 if (!el) return;
@@ -2055,10 +2241,10 @@ img.className = 'profile-img';
 img.alt = displayName;
 img.style.cssText = 'width:100%;height:100%;border-radius:50%;object-fit:cover;';
 try {
-img.src = avatarUrl.startsWith('http') ? avatarUrl : 
-         (avatarUrl.startsWith('avatars/') ? 
-          `${SUPABASE_URL}/storage/v1/object/public/${avatarUrl}` : 
-          `${SUPABASE_URL}/storage/v1/object/public/avatars/${avatarUrl}`);
+img.src = avatarUrl.startsWith('http') ? avatarUrl :
+(avatarUrl.startsWith('avatars/') ?
+`${SUPABASE_URL}/storage/v1/object/public/${avatarUrl}` :
+`${SUPABASE_URL}/storage/v1/object/public/avatars/${avatarUrl}`);
 img.onerror = () => {
 const fallback = document.createElement('div');
 fallback.className = 'profile-placeholder';
@@ -2088,7 +2274,6 @@ icon.className = 'fas fa-user';
 el.appendChild(icon);
 }
 }
-
 // NOTIFICATIONS
 async function loadNotifications() {
 try {
@@ -2108,7 +2293,6 @@ console.error('Error loading notifications:', error);
 updateNotificationBadge(0);
 }
 }
-
 function updateNotificationBadge(count) {
 const mainBadge = document.getElementById('notification-count');
 const navBadge = document.getElementById('nav-notification-count');
@@ -2119,7 +2303,6 @@ badge.style.display = count > 0 ? 'flex' : 'none';
 }
 });
 }
-
 function renderNotifications() {
 const list = document.getElementById('notifications-list');
 if (!list) return;
@@ -2147,11 +2330,9 @@ ${!n.is_read ? '<div style="width:10px;height:10px;border-radius:50%;background:
 </div>
 `).join('');
 }
-
 function getNotificationIcon(type) {
 switch(type) { case 'like': return 'fas fa-heart'; case 'comment': return 'fas fa-comment'; case 'follow': return 'fas fa-user-plus'; default: return 'fas fa-bell'; }
 }
-
 function formatNotificationTime(timestamp) {
 if (!timestamp) return 'Just now';
 const diffMs = Date.now() - new Date(timestamp).getTime();
@@ -2164,7 +2345,6 @@ if (diffHours < 24) return `${diffHours}h ago`;
 if (diffDays < 7) return `${diffDays}d ago`;
 return new Date(timestamp).toLocaleDateString();
 }
-
 // SEARCH FUNCTIONALITY
 async function searchContent(query, category = '', sortBy = 'newest') {
 try {
@@ -2183,7 +2363,6 @@ else if (sortBy === 'trending') enriched.sort((a,b) => ((b.real_views||0)+((b.re
 return enriched;
 } catch (error) { console.error('Search error:', error); return []; }
 }
-
 function renderSearchResults(results) {
 const grid = document.getElementById('search-results-grid');
 if (!grid) return;
@@ -2241,18 +2420,15 @@ const style = document.createElement('style');
 style.textContent = `.content-card:hover{transform:translateY(-8px);box-shadow:0 20px 40px rgba(0,0,0,0.4);border-color:rgba(245,158,11,0.3);}.content-card:hover .card-thumbnail img{transform:scale(1.05);}.content-card:hover .card-thumbnail>div:nth-child(2){opacity:1;}.content-card:hover .card-thumbnail>div:nth-child(2)>div{transform:scale(1);}`;
 document.head.appendChild(style);
 }
-
 // CREATOR DATA FUNCTIONS
 function getUrlParam(name) {
 const urlParams = new URLSearchParams(window.location.search);
 return urlParams.get(name);
 }
-
 async function loadCreatorData() {
 try {
 window.creatorId = getUrlParam('id');
 if (!window.creatorId) { showToast('Creator ID not found', 'error'); window.location.href='https://bantustreamconnect.com/content-library'; return; }
-
 loadingText.textContent = 'Loading creator profile...';
 const { data: profile, error: profileError } = await supabaseAuth
 .from('user_profiles')
@@ -2261,10 +2437,8 @@ const { data: profile, error: profileError } = await supabaseAuth
 .maybeSingle();
 if (profileError || !profile) { showToast('Creator not found', 'error'); window.location.href='https://bantustreamconnect.com/content-library'; return; }
 window.creatorProfile = profile;
-
 // Load banner from profile
 await loadBannerFromProfile();
-
 loadingText.textContent = 'Loading creator content...';
 const { data: content, error: contentError } = await supabaseAuth
 .from('Content')
@@ -2274,6 +2448,7 @@ const { data: content, error: contentError } = await supabaseAuth
 .order('created_at', { ascending: false })
 .limit(50);
 if (contentError) throw contentError;
+window.allContent = content || []; // Store for tab filtering
 
 // FIXED: Changed from 'user_connections' to 'connectors'
 const { count: connectorCount, error: countError } = await supabaseAuth
@@ -2283,7 +2458,6 @@ const { count: connectorCount, error: countError } = await supabaseAuth
 .eq('connection_type', 'creator');
 if (countError) throw countError;
 window.connectorCount = connectorCount || 0;
-
 if (window.currentUser) {
 const { data: connections } = await supabaseAuth
 .from('connectors')
@@ -2296,28 +2470,138 @@ window.isConnected = connections && connections.length > 0;
 } else {
 window.isConnected = false;
 }
-
 console.log('✅ Creator data loaded:', { profile, contentCount: content.length, connectorCount, isConnected: window.isConnected });
+
+// ✅ NEW: Load Enhanced Features
+await loadChannelTrailer();
+await loadCreatorPlaylists();
 updateCreatorUI();
-updateContentUI(content);
+updateContentUI(window.allContent); // Initial load
+setupContentTabs();
 } catch (error) {
 console.error('❌ Error loading creator channel:', error);
 showToast('Failed to load creator channel', 'error');
 }
 }
 
+// ✅ NEW: Load Channel Trailer
+async function loadChannelTrailer() {
+  try {
+    const { data: trailer, error } = await supabaseAuth
+      .from('Content')
+      .select('*')
+      .eq('user_id', window.creatorId)
+      .eq('is_channel_trailer', true)
+      .eq('status', 'published')
+      .maybeSingle();
+    
+    if (trailer) {
+      document.getElementById('trailer-card').href = `content-detail.html?id=${trailer.id}`;
+      document.getElementById('trailer-title').textContent = trailer.title;
+      document.getElementById('trailer-desc').textContent = truncateText(trailer.description, 120);
+      document.getElementById('trailer-views').textContent = formatNumber(trailer.views_count || 0);
+      document.getElementById('trailer-date').textContent = formatDate(trailer.created_at);
+      
+      const videoEl = document.getElementById('trailer-video');
+      const sourceEl = videoEl.querySelector('source');
+      if(trailer.file_url) {
+        sourceEl.src = fixMediaUrl(trailer.file_url);
+        videoEl.load();
+        // Auto-play preview on hover
+        const overlay = document.getElementById('trailer-play-overlay');
+        overlay.addEventListener('click', () => {
+           window.location.href = `content-detail.html?id=${trailer.id}`;
+        });
+      }
+      document.getElementById('channel-trailer-section').style.display = 'block';
+    }
+  } catch (error) {
+    console.warn('Trailer load error:', error);
+  }
+}
+
+// ✅ NEW: Load Creator Playlists
+async function loadCreatorPlaylists() {
+  try {
+    const { data: playlists, error } = await supabaseAuth
+      .from('playlists')
+      .select(`
+        *,
+        playlist_items (
+          content_id,
+          position,
+          Content (
+            id, title, thumbnail_url, views_count, duration
+          )
+        )
+      `)
+      .eq('user_id', window.creatorId)
+      .eq('is_public', true)
+      .order('updated_at', { ascending: false })
+      .limit(6);
+    
+    if (playlists && playlists.length > 0) {
+      const grid = document.getElementById('playlists-grid');
+      grid.innerHTML = playlists.map(playlist => {
+        const firstItem = playlist.playlist_items?.[0]?.Content;
+        const thumb = firstItem?.thumbnail_url ? fixMediaUrl(firstItem.thumbnail_url) : 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=400&h=225&fit=crop';
+        return `
+          <a href="playlist.html?id=${playlist.id}" class="playlist-card">
+            <div class="playlist-thumbnail">
+              <img src="${thumb}" alt="${escapeHtml(playlist.name)}">
+              <div class="playlist-overlay"></div>
+              <div class="playlist-count"><i class="fas fa-list"></i> ${playlist.playlist_items?.length || 0} videos</div>
+            </div>
+            <div class="playlist-content">
+              <h3 class="playlist-title">${escapeHtml(playlist.name)}</h3>
+              <p class="playlist-desc">${truncateText(playlist.description || 'Creator playlist', 60)}</p>
+            </div>
+          </a>
+        `;
+      }).join('');
+      document.getElementById('playlists-section').style.display = 'block';
+    }
+  } catch (error) {
+    console.warn('Playlist load error:', error);
+  }
+}
+
+// ✅ NEW: Setup Content Tabs
+function setupContentTabs() {
+  const tabs = document.querySelectorAll('.tab-btn');
+  tabs.forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      // Update active state
+      tabs.forEach(t => t.classList.remove('active'));
+      e.target.classList.add('active');
+      
+      // Filter content
+      const tab = e.target.dataset.tab;
+      let filtered = window.allContent;
+      
+      if (tab === 'shorts') {
+        filtered = window.allContent.filter(c => c.media_type === 'short');
+      } else if (tab === 'podcasts') {
+        filtered = window.allContent.filter(c => c.media_type === 'podcast');
+      } else if (tab === 'videos') {
+        filtered = window.allContent.filter(c => !c.media_type || c.media_type === 'video');
+      }
+      // 'all' shows everything
+      
+      updateContentUI(filtered);
+    });
+  });
+}
+
 function updateCreatorUI() {
 if (!window.creatorProfile) return;
-
 // Set creator info
 document.getElementById('creator-name').textContent = window.creatorProfile.full_name || window.creatorProfile.username || 'Creator';
 document.getElementById('creator-username').textContent = `@${window.creatorProfile.username || 'creator'}`;
 document.getElementById('creator-bio').textContent = window.creatorProfile.bio || 'Passionate content creator sharing authentic African stories and experiences.';
 document.getElementById('full-bio').textContent = window.creatorProfile.bio || 'Passionate content creator sharing authentic African stories and experiences.';
-
 // Banner title
 document.getElementById('banner-title').textContent = `${window.creatorProfile.full_name || window.creatorProfile.username}'s Channel`;
-
 // Show/hide banner edit button based on ownership
 const bannerEditBtn = document.getElementById('banner-edit-btn');
 if (window.currentUser && window.currentUser.id === window.creatorId) {
@@ -2325,20 +2609,17 @@ bannerEditBtn.style.display = 'flex';
 } else {
 bannerEditBtn.style.display = 'none';
 }
-
 // Location (if available)
 if (window.creatorProfile.location) {
 document.getElementById('location').textContent = window.creatorProfile.location;
 } else {
 document.querySelector('.about-item:nth-child(2)').style.display = 'none';
 }
-
 // Joined date
 if (window.creatorProfile.created_at) {
 const joinDate = new Date(window.creatorProfile.created_at);
 document.getElementById('joined-date').textContent = `Joined ${joinDate.toLocaleString('default', { month: 'long', year: 'numeric' })}`;
 }
-
 // Website link
 if (window.creatorProfile.website_url) {
 const websiteLink = document.getElementById('website-link');
@@ -2347,14 +2628,12 @@ websiteLink.textContent = window.creatorProfile.website_url.replace(/^https?:\/\
 } else {
 document.querySelector('.about-item:nth-child(3)').style.display = 'none';
 }
-
 // Interests/tags
 if (window.creatorProfile.interests) {
 document.getElementById('interests').textContent = window.creatorProfile.interests;
 } else {
 document.querySelector('.about-item:nth-child(4)').style.display = 'none';
 }
-
 // Avatar with perfect circle
 const avatarContainer = document.getElementById('creator-avatar-container');
 const avatarUrl = window.creatorProfile.avatar_url ? fixMediaUrl(window.creatorProfile.avatar_url) : null;
@@ -2365,40 +2644,41 @@ avatarContainer.innerHTML = `<img src="${avatarUrl}" alt="${displayName}" onerro
 } else {
 avatarContainer.innerHTML = `<div class="creator-initials">${initials}</div>`;
 }
-
 // Founder badge
 if (window.creatorProfile.is_founder) {
 document.getElementById('founder-badge').style.display = 'block';
 }
-
 // Stats
 document.getElementById('videos-count').textContent = document.getElementById('uploads-count').textContent = '0';
 document.getElementById('connectors-count').textContent = formatNumber(window.connectorCount);
-
 // Connect button
 updateConnectButton();
 }
-
 function updateContentUI(content) {
 const grid = document.getElementById('content-grid');
 const noContent = document.getElementById('no-content');
 const countEl = document.getElementById('content-count');
-
 document.getElementById('videos-count').textContent = content.length;
 document.getElementById('uploads-count').textContent = content.length;
 countEl.textContent = `${content.length} item${content.length !== 1 ? 's' : ''}`;
-
 if (content.length === 0) {
 grid.style.display = 'none';
 noContent.style.display = 'block';
 return;
 }
-
 grid.style.display = 'grid';
 noContent.style.display = 'none';
 grid.innerHTML = '';
 
-content.forEach(item => {
+// ✅ NEW: Sort Pinned Content First
+const sortedContent = [...content].sort((a, b) => {
+  if (a.is_pinned && !b.is_pinned) return -1;
+  if (!a.is_pinned && b.is_pinned) return 1;
+  if (a.is_pinned && b.is_pinned) return (a.pinned_order || 999) - (b.pinned_order || 999);
+  return new Date(b.created_at) - new Date(a.created_at);
+});
+
+sortedContent.forEach(item => {
 const thumbnailUrl = item.thumbnail_url ? fixMediaUrl(item.thumbnail_url) : 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=225&fit=crop';
 const displayName = item.user_profiles?.full_name || item.user_profiles?.username || 'User';
 const initials = getInitials(displayName);
@@ -2409,7 +2689,6 @@ avatarHtml = `<img src="${avatarUrl}" alt="${escapeHtml(displayName)}" onerror="
 } else {
 avatarHtml = `<div class="creator-initials-small" style="width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,var(--bantu-blue),var(--warm-gold));display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:12px;">${initials}</div>`;
 }
-
 const card = document.createElement('a');
 card.className = 'content-card';
 card.href = `content-detail.html?id=${item.id}`;
@@ -2417,7 +2696,10 @@ card.innerHTML = `
 <div class="card-thumbnail">
 <img src="${thumbnailUrl}" alt="${escapeHtml(item.title)}" loading="lazy" onerror="this.src='https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=225&fit=crop'">
 <div class="thumbnail-overlay"></div>
-${(new Date() - new Date(item.created_at)) < 7*24*60*60*1000 ? '<div class="badge-new card-badge"><i class="fas fa-gem"></i> NEW</div>' : ''}
+<div class="card-badges">
+  ${(new Date() - new Date(item.created_at)) < 7*24*60*60*1000 ? '<div class="badge-new card-badge"><i class="fas fa-gem"></i> NEW</div>' : ''}
+  ${item.is_pinned ? '<div class="badge-pinned card-badge"><i class="fas fa-thumbtack"></i> PINNED</div>' : ''}
+</div>
 <div class="play-overlay">
 <div class="play-icon"><i class="fas fa-play"></i></div>
 </div>
@@ -2437,7 +2719,6 @@ ${(new Date() - new Date(item.created_at)) < 7*24*60*60*1000 ? '<div class="badg
 grid.appendChild(card);
 });
 }
-
 function updateConnectButton() {
 const btn = document.getElementById('connect-btn');
 if (!window.currentUser) {
@@ -2464,12 +2745,10 @@ btn.classList.add('connect-btn');
 btn.onclick = handleConnect;
 }
 }
-
 function handleLoginRequired() {
 showToast('Please log in to connect with creators', 'info');
 window.location.href = `login.html?redirect=creator-channel.html?id=${window.creatorId}`;
 }
-
 // FIXED: Changed from 'user_connections' to 'connectors'
 async function handleConnect() {
 if (!window.currentUser) { handleLoginRequired(); return; }
@@ -2493,7 +2772,6 @@ console.error('Error connecting:', error);
 showToast('Failed to connect', 'error');
 }
 }
-
 // FIXED: Changed from 'user_connections' to 'connectors'
 async function handleDisconnect() {
 try {
@@ -2513,7 +2791,6 @@ console.error('Error disconnecting:', error);
 showToast('Failed to disconnect', 'error');
 }
 }
-
 function handleShare() {
 if (!window.creatorProfile) return;
 const name = window.creatorProfile.full_name || window.creatorProfile.username || 'this creator';
@@ -2522,12 +2799,12 @@ const url = window.location.href;
 if (navigator.share) {
 navigator.share({ title: `${name}'s Channel`, text, url });
 } else {
-navigator.clipboard.writeText(`${text}\n${url}`)
+navigator.clipboard.writeText(`${text}
+${url}`)
 .then(() => showToast('Link copied to clipboard!', 'success'))
 .catch(() => showToast('Failed to copy link', 'error'));
 }
 }
-
 // FIXED: Changed from 'user_connections' to 'connectors'
 async function showConnectorsModal() {
 try {
@@ -2571,7 +2848,6 @@ console.error('Error loading connectors:', error);
 showToast('Failed to load connectors', 'error');
 }
 }
-
 // EVENT LISTENERS
 function setupEventListeners() {
 // Profile button
@@ -2579,23 +2855,19 @@ document.getElementById('profile-btn')?.addEventListener('click', async () => {
 const { data: { session } } = await supabaseAuth.auth.getSession();
 session ? window.location.href='profile.html' : window.location.href=`login.html?redirect=${encodeURIComponent(window.location.href)}`;
 });
-
 // Banner edit button
 document.getElementById('banner-edit-btn')?.addEventListener('click', showBannerUploadModal);
-
 // Search button
 document.getElementById('search-btn')?.addEventListener('click', () => {
 document.getElementById('search-modal').classList.add('active');
 setTimeout(() => document.getElementById('search-input')?.focus(), 300);
 });
-
 // Close search modal
 document.getElementById('close-search-btn')?.addEventListener('click', () => {
 document.getElementById('search-modal').classList.remove('active');
 document.getElementById('search-input').value = '';
 document.getElementById('search-results-grid').innerHTML = '';
 });
-
 // Search modal background click
 document.getElementById('search-modal').addEventListener('click', e => {
 if (e.target === document.getElementById('search-modal')) {
@@ -2604,7 +2876,6 @@ document.getElementById('search-input').value = '';
 document.getElementById('search-results-grid').innerHTML = '';
 }
 });
-
 // Live search
 const searchInput = document.getElementById('search-input');
 if (searchInput) {
@@ -2627,7 +2898,6 @@ renderSearchResults(results);
 }, 300);
 });
 }
-
 // Filter changes trigger search
 document.getElementById('category-filter')?.addEventListener('change', () => {
 if (searchInput && searchInput.value.trim().length >= 2) searchInput.dispatchEvent(new Event('input'));
@@ -2635,13 +2905,10 @@ if (searchInput && searchInput.value.trim().length >= 2) searchInput.dispatchEve
 document.getElementById('sort-filter')?.addEventListener('change', () => {
 if (searchInput && searchInput.value.trim().length >= 2) searchInput.dispatchEvent(new Event('input'));
 });
-
 // Share button
 document.getElementById('share-btn')?.addEventListener('click', handleShare);
-
 // Connectors stat card
 document.getElementById('connectors-stat-card')?.addEventListener('click', showConnectorsModal);
-
 // Close connectors modal
 document.getElementById('close-modal-btn')?.addEventListener('click', () => {
 document.getElementById('connectors-modal').classList.remove('active');
@@ -2651,7 +2918,6 @@ if (e.target === document.getElementById('connectors-modal')) {
 document.getElementById('connectors-modal').classList.remove('active');
 }
 });
-
 // Notifications
 document.getElementById('notifications-btn')?.addEventListener('click', () => {
 document.getElementById('notifications-panel').classList.add('active');
@@ -2679,7 +2945,6 @@ console.error('Error marking all as read:', error);
 showToast('Failed to mark notifications as read', 'error');
 }
 });
-
 // Theme toggle
 const themeToggle = document.getElementById('nav-theme-toggle');
 const themeSelector = document.getElementById('theme-selector');
@@ -2697,7 +2962,6 @@ themeSelector.style.display = 'none';
 });
 });
 }
-
 // Navigation buttons
 document.getElementById('nav-home-btn')?.addEventListener('click', () => window.location.href='index.html');
 document.getElementById('nav-create-btn')?.addEventListener('click', async () => {
@@ -2712,7 +2976,6 @@ document.getElementById('nav-notifications-btn')?.addEventListener('click', () =
 document.getElementById('notifications-panel').classList.add('active');
 renderNotifications();
 });
-
 // Back to top
 const backToTopBtn = document.getElementById('backToTopBtn');
 if (backToTopBtn) {
@@ -2722,18 +2985,15 @@ backToTopBtn.style.display = window.pageYOffset > 300 ? 'flex' : 'none';
 });
 }
 }
-
 // INITIALIZE
 async function initializeCreatorChannel() {
 try {
 document.getElementById('loading').style.display = 'flex';
 document.getElementById('app').style.display = 'none';
-
 if (typeof window.initTheme === 'function') window.initTheme();
 await checkAuth();
 await loadCreatorData();
 setupEventListeners();
-
 setTimeout(() => {
 document.getElementById('loading').style.display = 'none';
 document.getElementById('app').style.display = 'block';
@@ -2748,9 +3008,7 @@ showToast('Failed to initialize creator channel', 'error');
 setTimeout(() => { document.getElementById('loading').style.display='none'; document.getElementById('app').style.display='block'; }, 1000);
 }
 }
-
 await initializeCreatorChannel();
-
 // Auth state change listener
 supabaseAuth.auth.onAuthStateChange((event, session) => {
 console.log('Auth state changed:', event);
