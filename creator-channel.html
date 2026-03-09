@@ -1487,12 +1487,14 @@ const supabaseAuth = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KE
 
 // Global State
 window.currentUser = null;
+window.notifications = [];
 window.creatorId = null;
 window.creatorProfile = null;
 window.isConnected = false;
 window.connectorCount = 0;
 window.creatorContent = [];
 window.playlists = [];
+window.loadingText = null; // 👈 ADD THIS LINE
 
 // Theme Configuration
 window.themes = {
@@ -1898,14 +1900,14 @@ try {
 window.creatorId = getUrlParam('id');
 if (!window.creatorId) { showToast('Creator ID not found', 'error'); window.location.href = 'content-library.html'; return; }
 
-loadingText.textContent = 'Loading creator profile...';
+window.loadingText.textContent = 'Loading creator profile...';
 const { data: profile, error: profileError } = await supabaseAuth.from('user_profiles').select('*').eq('id', window.creatorId).maybeSingle();
 if (profileError || !profile) { showToast('Creator not found', 'error'); window.location.href = 'content-library.html'; return; }
 window.creatorProfile = profile;
 
 await loadBannerFromProfile();
 
-loadingText.textContent = 'Loading creator content...';
+window.loadingText.textContent = 'Loading creator content...';
 const { data: content, error: contentError } = await supabaseAuth.from('Content').select('*, user_profiles!user_id(*)').eq('user_id', window.creatorId).eq('status', 'published').order('created_at', { ascending: false }).limit(50);
 if (contentError) throw contentError;
 window.creatorContent = content || [];
@@ -2610,6 +2612,10 @@ async function initializeCreatorChannel() {
 try {
 document.getElementById('loading').style.display = 'flex';
 document.getElementById('app').style.display = 'none';
+
+// 👇 ASSIGN TO GLOBAL
+window.loadingText = document.getElementById('loading-text');
+
 window.initTheme();
 await checkAuth();
 await loadCreatorData();
