@@ -133,7 +133,7 @@ animation-delay: 6s;
 0%, 100% { transform: translateY(0) scale(1); }
 50% { transform: translateY(-20px) scale(1.05); }
 }
-/* Channel Banner - TIER 1 FEATURE */
+/* Channel Banner - TIER 1 FEATURE with customization */
 .channel-banner {
 height: 280px;
 border-radius: 20px;
@@ -145,6 +145,7 @@ background: linear-gradient(rgba(10, 14, 18, 0.85), rgba(15, 23, 42, 0.95)),
 display: flex;
 align-items: flex-end;
 padding: 0 40px 30px;
+transition: background-image 0.3s ease;
 }
 .channel-banner::after {
 content: '';
@@ -154,6 +155,16 @@ left: 0;
 right: 0;
 height: 60%;
 background: linear-gradient(to top, var(--deep-black), transparent);
+pointer-events: none;
+}
+.banner-overlay {
+position: absolute;
+top: 0;
+left: 0;
+right: 0;
+bottom: 0;
+background: linear-gradient(rgba(10, 14, 18, 0.4), rgba(15, 23, 42, 0.7));
+pointer-events: none;
 }
 .banner-title {
 font-family: 'Orbitron', sans-serif;
@@ -166,6 +177,186 @@ background: linear-gradient(135deg, var(--soft-white), var(--warm-gold));
 -webkit-background-clip: text;
 -webkit-text-fill-color: transparent;
 letter-spacing: 1px;
+}
+.banner-edit-btn {
+position: absolute;
+top: 20px;
+right: 20px;
+background: rgba(0, 0, 0, 0.6);
+backdrop-filter: blur(10px);
+border: 1px solid rgba(255, 255, 255, 0.2);
+color: white;
+padding: 10px 20px;
+border-radius: 30px;
+font-size: 14px;
+font-weight: 600;
+cursor: pointer;
+display: flex;
+align-items: center;
+gap: 8px;
+z-index: 10;
+transition: all 0.3s ease;
+border: 1px solid var(--warm-gold);
+box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+}
+.banner-edit-btn:hover {
+background: var(--warm-gold);
+color: var(--deep-black);
+transform: translateY(-2px);
+box-shadow: 0 8px 25px rgba(245, 158, 11, 0.4);
+}
+.banner-edit-btn i {
+font-size: 16px;
+}
+/* Banner Upload Modal */
+.banner-upload-modal {
+position: fixed;
+top: 0;
+left: 0;
+width: 100%;
+height: 100%;
+background: rgba(0, 0, 0, 0.8);
+display: flex;
+align-items: center;
+justify-content: center;
+z-index: 2000;
+backdrop-filter: blur(5px);
+}
+.banner-upload-content {
+background: var(--card-bg);
+border: 1px solid var(--card-border);
+border-radius: 20px;
+padding: 30px;
+max-width: 500px;
+width: 90%;
+backdrop-filter: blur(10px);
+}
+.banner-upload-title {
+font-family: 'Orbitron', sans-serif;
+font-size: 24px;
+margin-bottom: 20px;
+color: var(--soft-white);
+text-align: center;
+background: linear-gradient(135deg, var(--soft-white), var(--warm-gold));
+-webkit-background-clip: text;
+-webkit-text-fill-color: transparent;
+}
+.banner-preview {
+width: 100%;
+height: 150px;
+border-radius: 12px;
+overflow: hidden;
+margin-bottom: 20px;
+border: 2px solid var(--warm-gold);
+background: linear-gradient(135deg, var(--deep-navy), var(--deep-black));
+position: relative;
+}
+.banner-preview-img {
+width: 100%;
+height: 100%;
+object-fit: cover;
+display: none;
+}
+.banner-preview-placeholder {
+width: 100%;
+height: 100%;
+display: flex;
+align-items: center;
+justify-content: center;
+color: var(--slate-grey);
+font-size: 14px;
+background: rgba(0, 0, 0, 0.3);
+}
+.banner-upload-options {
+display: flex;
+flex-direction: column;
+gap: 15px;
+margin-bottom: 20px;
+}
+.banner-upload-btn {
+background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+color: white;
+padding: 15px;
+border-radius: 12px;
+border: none;
+font-size: 16px;
+font-weight: 600;
+cursor: pointer;
+display: flex;
+align-items: center;
+justify-content: center;
+gap: 10px;
+transition: all 0.3s ease;
+}
+.banner-upload-btn:hover {
+transform: translateY(-2px);
+box-shadow: 0 4px 15px rgba(245, 158, 11, 0.4);
+}
+.banner-url-input {
+display: flex;
+gap: 10px;
+}
+.banner-url-field {
+flex: 1;
+padding: 12px 15px;
+border-radius: 10px;
+border: 1px solid var(--card-border);
+background: rgba(0, 0, 0, 0.3);
+color: var(--soft-white);
+font-size: 14px;
+}
+.banner-url-field:focus {
+outline: none;
+border-color: var(--warm-gold);
+}
+.banner-url-apply {
+padding: 12px 20px;
+border-radius: 10px;
+border: 1px solid var(--warm-gold);
+background: transparent;
+color: var(--warm-gold);
+font-weight: 600;
+cursor: pointer;
+transition: all 0.3s ease;
+}
+.banner-url-apply:hover {
+background: var(--warm-gold);
+color: var(--deep-black);
+}
+.banner-upload-actions {
+display: flex;
+gap: 15px;
+margin-top: 20px;
+}
+.banner-save-btn {
+flex: 1;
+padding: 12px;
+border-radius: 10px;
+border: none;
+background: linear-gradient(135deg, var(--warm-gold), var(--bantu-blue));
+color: white;
+font-weight: 600;
+cursor: pointer;
+transition: all 0.3s ease;
+}
+.banner-save-btn:hover {
+transform: translateY(-2px);
+box-shadow: 0 4px 15px rgba(245, 158, 11, 0.4);
+}
+.banner-cancel-btn {
+flex: 1;
+padding: 12px;
+border-radius: 10px;
+border: 1px solid var(--card-border);
+background: transparent;
+color: var(--slate-grey);
+font-weight: 600;
+cursor: pointer;
+transition: all 0.3s ease;
+}
+.banner-cancel-btn:hover {
+background: rgba(255, 255, 255, 0.1);
+color: var(--soft-white);
 }
 /* Main Container */
 .container {
@@ -496,6 +687,7 @@ padding: 25px;
 text-align: center;
 transition: all 0.3s ease;
 backdrop-filter: blur(10px);
+cursor: pointer;
 }
 .stat-card:hover {
 transform: translateY(-5px);
@@ -1274,6 +1466,34 @@ user-select: none;
 </div>
 </div>
 </div>
+<!-- Banner Upload Modal -->
+<div id="banner-upload-modal" class="banner-upload-modal" style="display: none;">
+<div class="banner-upload-content">
+<h2 class="banner-upload-title">Customize Channel Banner</h2>
+<div class="banner-preview" id="banner-preview">
+<img id="banner-preview-img" class="banner-preview-img" src="" alt="Banner preview">
+<div id="banner-preview-placeholder" class="banner-preview-placeholder">
+<i class="fas fa-image" style="font-size: 32px; margin-right: 10px;"></i>
+Banner preview
+</div>
+</div>
+<div class="banner-upload-options">
+<button id="banner-file-upload" class="banner-upload-btn">
+<i class="fas fa-cloud-upload-alt"></i>
+Upload Image
+</button>
+<input type="file" id="banner-file-input" accept="image/*" style="display: none;">
+<div class="banner-url-input">
+<input type="text" id="banner-url-input" class="banner-url-field" placeholder="Or enter image URL...">
+<button id="banner-url-apply" class="banner-url-apply">Apply</button>
+</div>
+</div>
+<div class="banner-upload-actions">
+<button id="banner-save" class="banner-save-btn">Save Changes</button>
+<button id="banner-cancel" class="banner-cancel-btn">Cancel</button>
+</div>
+</div>
+</div>
 <!-- Search Modal -->
 <div id="search-modal" class="search-modal">
 <div style="width: 90%; max-width: 800px; background: var(--card-bg); border-radius: 20px; padding: 30px; backdrop-filter: blur(10px);">
@@ -1346,8 +1566,13 @@ user-select: none;
 </div>
 </header>
 
-<!-- Channel Banner - TIER 1 FEATURE -->
+<!-- Channel Banner - TIER 1 FEATURE with Customization -->
 <div class="channel-banner" id="channel-banner">
+<div class="banner-overlay" id="banner-overlay"></div>
+<button id="banner-edit-btn" class="banner-edit-btn" style="display: none;">
+<i class="fas fa-camera"></i>
+Change Banner
+</button>
 <div class="banner-title" id="banner-title">OFFICIAL CHANNEL</div>
 </div>
 
@@ -1568,6 +1793,7 @@ window.creatorId = null;
 window.creatorProfile = null;
 window.isConnected = false;
 window.connectorCount = 0;
+window.bannerUrl = null;
 
 document.addEventListener('DOMContentLoaded', async () => {
 console.log('👤 Creator Channel Initializing...');
@@ -1632,6 +1858,151 @@ if (!url) return '';
 if (url.startsWith('http')) return url;
 return `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/${url.replace(/^\/+/, '')}`;
 }
+
+// BANNER FUNCTIONS
+async function loadBannerFromProfile() {
+if (!window.creatorProfile) return;
+const bannerUrl = window.creatorProfile.channel_banner_url || window.creatorProfile.banner_url;
+if (bannerUrl) {
+setBannerImage(bannerUrl);
+} else {
+// Default banner based on creator name or content
+const defaultBanner = `https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?w=1500&h=400&fit=crop`;
+setBannerImage(defaultBanner);
+}
+}
+
+function setBannerImage(url) {
+if (!url) return;
+const banner = document.getElementById('channel-banner');
+window.bannerUrl = url;
+banner.style.backgroundImage = `linear-gradient(rgba(10, 14, 18, 0.85), rgba(15, 23, 42, 0.95)), url('${url}')`;
+}
+
+function showBannerUploadModal() {
+if (!window.currentUser || window.currentUser.id !== window.creatorId) {
+showToast('Only the channel owner can change the banner', 'warning');
+return;
+}
+document.getElementById('banner-upload-modal').style.display = 'flex';
+// Reset preview
+document.getElementById('banner-preview-img').style.display = 'none';
+document.getElementById('banner-preview-placeholder').style.display = 'flex';
+document.getElementById('banner-url-input').value = '';
+}
+
+function hideBannerUploadModal() {
+document.getElementById('banner-upload-modal').style.display = 'none';
+}
+
+async function saveBanner(url) {
+if (!url || !window.currentUser || window.currentUser.id !== window.creatorId) return;
+try {
+// Update banner in UI
+setBannerImage(url);
+// Save to database
+const { error } = await supabaseAuth
+.from('user_profiles')
+.update({ channel_banner_url: url, updated_at: new Date().toISOString() })
+.eq('id', window.creatorId);
+if (error) throw error;
+showToast('Banner updated successfully!', 'success');
+hideBannerUploadModal();
+} catch (error) {
+console.error('Error saving banner:', error);
+showToast('Failed to save banner', 'error');
+}
+}
+
+// Handle file upload
+document.getElementById('banner-file-upload')?.addEventListener('click', () => {
+document.getElementById('banner-file-input').click();
+});
+
+document.getElementById('banner-file-input')?.addEventListener('change', async (e) => {
+const file = e.target.files[0];
+if (!file) return;
+// Check file type
+if (!file.type.startsWith('image/')) {
+showToast('Please select an image file', 'error');
+return;
+}
+// Check file size (max 5MB)
+if (file.size > 5 * 1024 * 1024) {
+showToast('Image must be less than 5MB', 'error');
+return;
+}
+// Show preview
+const reader = new FileReader();
+reader.onload = (event) => {
+const previewImg = document.getElementById('banner-preview-img');
+const placeholder = document.getElementById('banner-preview-placeholder');
+previewImg.src = event.target.result;
+previewImg.style.display = 'block';
+placeholder.style.display = 'none';
+};
+reader.readAsDataURL(file);
+// Upload to Supabase Storage
+try {
+const fileName = `banners/${window.creatorId}_${Date.now()}.${file.name.split('.').pop()}`;
+const { data, error } = await supabaseAuth.storage
+.from('channel-banners')
+.upload(fileName, file);
+if (error) throw error;
+const { data: { publicUrl } } = supabaseAuth.storage
+.from('channel-banners')
+.getPublicUrl(fileName);
+await saveBanner(publicUrl);
+} catch (error) {
+console.error('Upload error:', error);
+showToast('Failed to upload image', 'error');
+}
+});
+
+// Handle URL input
+document.getElementById('banner-url-apply')?.addEventListener('click', () => {
+const url = document.getElementById('banner-url-input').value.trim();
+if (!url) {
+showToast('Please enter a URL', 'warning');
+return;
+}
+// Validate URL (basic)
+if (!url.match(/^https?:\/\/.+\/.+\.(jpg|jpeg|png|gif|webp|bmp)$/i)) {
+showToast('Please enter a valid image URL', 'error');
+return;
+}
+// Show preview
+const previewImg = document.getElementById('banner-preview-img');
+const placeholder = document.getElementById('banner-preview-placeholder');
+previewImg.src = url;
+previewImg.onload = () => {
+previewImg.style.display = 'block';
+placeholder.style.display = 'none';
+};
+previewImg.onerror = () => {
+showToast('Failed to load image from URL', 'error');
+};
+});
+
+// Save button
+document.getElementById('banner-save')?.addEventListener('click', () => {
+const previewImg = document.getElementById('banner-preview-img');
+if (previewImg.style.display === 'block' && previewImg.src) {
+saveBanner(previewImg.src);
+} else {
+showToast('Please select or enter an image first', 'warning');
+}
+});
+
+// Cancel button
+document.getElementById('banner-cancel')?.addEventListener('click', hideBannerUploadModal);
+
+// Click outside to close
+document.getElementById('banner-upload-modal')?.addEventListener('click', (e) => {
+if (e.target === document.getElementById('banner-upload-modal')) {
+hideBannerUploadModal();
+}
+});
 
 // AUTHENTICATION
 async function checkAuth() {
@@ -1891,6 +2262,9 @@ const { data: profile, error: profileError } = await supabaseAuth
 if (profileError || !profile) { showToast('Creator not found', 'error'); window.location.href='https://bantustreamconnect.com/content-library'; return; }
 window.creatorProfile = profile;
 
+// Load banner from profile
+await loadBannerFromProfile();
+
 loadingText.textContent = 'Loading creator content...';
 const { data: content, error: contentError } = await supabaseAuth
 .from('Content')
@@ -1944,6 +2318,14 @@ document.getElementById('full-bio').textContent = window.creatorProfile.bio || '
 // Banner title
 document.getElementById('banner-title').textContent = `${window.creatorProfile.full_name || window.creatorProfile.username}'s Channel`;
 
+// Show/hide banner edit button based on ownership
+const bannerEditBtn = document.getElementById('banner-edit-btn');
+if (window.currentUser && window.currentUser.id === window.creatorId) {
+bannerEditBtn.style.display = 'flex';
+} else {
+bannerEditBtn.style.display = 'none';
+}
+
 // Location (if available)
 if (window.creatorProfile.location) {
 document.getElementById('location').textContent = window.creatorProfile.location;
@@ -1995,15 +2377,6 @@ document.getElementById('connectors-count').textContent = formatNumber(window.co
 
 // Connect button
 updateConnectButton();
-
-// Check if own channel
-if (window.currentUser && window.currentUser.id === window.creatorId) {
-const connectBtn = document.getElementById('connect-btn');
-connectBtn.disabled = true;
-connectBtn.innerHTML = '<i class="fas fa-user"></i> This is your channel';
-connectBtn.classList.remove('connect-btn', 'connected-btn');
-connectBtn.classList.add('share-btn');
-}
 }
 
 function updateContentUI(content) {
@@ -2207,6 +2580,9 @@ const { data: { session } } = await supabaseAuth.auth.getSession();
 session ? window.location.href='profile.html' : window.location.href=`login.html?redirect=${encodeURIComponent(window.location.href)}`;
 });
 
+// Banner edit button
+document.getElementById('banner-edit-btn')?.addEventListener('click', showBannerUploadModal);
+
 // Search button
 document.getElementById('search-btn')?.addEventListener('click', () => {
 document.getElementById('search-modal').classList.add('active');
@@ -2386,6 +2762,11 @@ showToast('Welcome back!', 'success');
 if (window.creatorId) {
 supabaseAuth.from('connectors').select('*').eq('connector_id',session.user.id).eq('connected_id',window.creatorId).eq('connection_type','creator').limit(1)
 .then(({data}) => { window.isConnected = data && data.length > 0; updateConnectButton(); });
+// Update banner edit button visibility
+const bannerEditBtn = document.getElementById('banner-edit-btn');
+if (bannerEditBtn && window.creatorId === session.user.id) {
+bannerEditBtn.style.display = 'flex';
+}
 }
 } else if (event === 'SIGNED_OUT') {
 window.currentUser = null;
@@ -2396,6 +2777,9 @@ renderNotifications();
 showToast('You have been signed out', 'info');
 window.isConnected = false;
 updateConnectButton();
+// Hide banner edit button
+const bannerEditBtn = document.getElementById('banner-edit-btn');
+if (bannerEditBtn) bannerEditBtn.style.display = 'none';
 }
 });
 });
