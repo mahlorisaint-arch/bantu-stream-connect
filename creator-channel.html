@@ -1062,15 +1062,88 @@ border-radius: 16px; backdrop-filter: blur(10px);
 
 .empty-icon { font-size: 48px; margin-bottom: 20px; color: var(--warm-gold); opacity: 0.5; }
 
-/* ===== PLAYLIST BUILDER STYLES ===== */
+/* ===== FIXED PLAYLIST BUILDER STYLES ===== */
 #playlist-builder-modal .modal-content {
   max-width: 900px !important;
   width: 95% !important;
   padding: 0 !important;
   overflow: hidden !important;
   border-radius: 20px !important;
+  max-height: 90vh !important;
+  display: flex !important;
+  flex-direction: column !important;
 }
 
+#playlist-builder-modal .modal-body {
+  display: grid;
+  grid-template-columns: 300px 1fr;
+  flex: 1;
+  overflow: hidden;
+  background: var(--deep-navy);
+}
+
+#playlist-builder-modal .modal-sidebar {
+  padding: 20px;
+  border-right: 1px solid var(--card-border);
+  background: var(--card-bg);
+  overflow-y: auto;
+  max-height: 70vh;
+}
+
+#playlist-builder-modal .modal-main {
+  display: flex;
+  flex-direction: column;
+  background: var(--deep-navy);
+  overflow: hidden;
+}
+
+#playlist-builder-modal .modal-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--card-border);
+  background: var(--card-bg);
+  flex-shrink: 0;
+}
+
+#playlist-builder-modal .modal-content-area {
+  flex: 1;
+  overflow-y: auto;
+  padding: 15px;
+  max-height: 60vh;
+}
+
+#playlist-builder-modal .modal-footer {
+  display: flex;
+  gap: 10px;
+  padding: 20px;
+  background: var(--card-bg);
+  border-top: 1px solid var(--card-border);
+  flex-shrink: 0;
+  position: sticky;
+  bottom: 0;
+}
+
+/* Ensure form inputs are visible */
+#playlist-builder-modal .form-group {
+  margin-bottom: 20px;
+}
+
+#playlist-builder-modal .form-input,
+#playlist-builder-modal .form-textarea {
+  width: 100%;
+  padding: 12px 15px;
+  border-radius: 10px;
+  border: 1px solid var(--card-border);
+  background: rgba(0, 0, 0, 0.3);
+  color: var(--soft-white);
+  font-size: 14px;
+}
+
+#playlist-builder-modal .form-textarea {
+  min-height: 80px;
+  resize: vertical;
+}
+
+/* Playlist item cards */
 .playlist-item-card {
   display: flex;
   gap: 12px;
@@ -1080,6 +1153,7 @@ border-radius: 16px; backdrop-filter: blur(10px);
   border: 1px solid var(--card-border);
   cursor: grab;
   transition: all 0.2s ease;
+  margin-bottom: 10px;
 }
 
 .playlist-item-card:active {
@@ -1102,30 +1176,7 @@ border-radius: 16px; backdrop-filter: blur(10px);
   font-size: 14px;
 }
 
-.playlist-item-card .item-thumbnail {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.library-filter {
-  padding: 6px 12px;
-  border-radius: 20px;
-  background: transparent;
-  border: 1px solid var(--card-border);
-  color: var(--slate-grey);
-  font-size: 12px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.library-filter.active,
-.library-filter:hover {
-  background: var(--warm-gold);
-  color: var(--deep-black);
-  border-color: var(--warm-gold);
-}
-
+/* Library item cards */
 .library-item-card {
   background: var(--card-bg);
   border: 1px solid var(--card-border);
@@ -1140,15 +1191,41 @@ border-radius: 16px; backdrop-filter: blur(10px);
   transform: translateY(-3px);
 }
 
-.library-item-card .lib-thumbnail {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+.library-filter {
+  padding: 6px 12px;
+  border-radius: 20px;
+  background: transparent;
+  border: 1px solid var(--card-border);
+  color: var(--slate-grey);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin: 0 5px 10px 0;
+  display: inline-block;
 }
 
-.library-item-card .lib-add-btn:hover {
+.library-filter.active,
+.library-filter:hover {
   background: var(--warm-gold);
   color: var(--deep-black);
+  border-color: var(--warm-gold);
+}
+
+/* Responsive for mobile */
+@media (max-width: 768px) {
+  #playlist-builder-modal .modal-body {
+    grid-template-columns: 1fr;
+  }
+  
+  #playlist-builder-modal .modal-sidebar {
+    max-height: 50vh;
+    border-right: none;
+    border-bottom: 1px solid var(--card-border);
+  }
+  
+  #playlist-builder-modal .modal-content-area {
+    max-height: 50vh;
+  }
 }
 
 /* ===== RESPONSIVE ===== */
@@ -1355,36 +1432,41 @@ Banner preview
 </div>
 </div>
 
-<!-- ===== PLAYLIST BUILDER MODAL ===== -->
+<!-- ===== FIXED PLAYLIST BUILDER MODAL ===== -->
 <div id="playlist-builder-modal" class="modal">
-  <div class="modal-content" style="max-width: 900px; width: 95%; padding: 0; overflow: hidden;">
+  <div class="modal-content">
     <!-- Modal Header -->
     <div style="padding: 20px 25px; border-bottom: 1px solid var(--card-border); display: flex; justify-content: space-between; align-items: center; background: var(--card-bg);">
-      <h2 class="modal-title" style="margin: 0; font-size: 20px;"><i class="fas fa-list"></i> <span id="playlist-modal-title">Create Playlist</span></h2>
-      <button id="close-playlist-modal" class="close-search-btn" style="width: 32px; height: 32px; font-size: 18px;"><i class="fas fa-times"></i></button>
+      <h2 class="modal-title" style="margin: 0; font-size: 20px;">
+        <i class="fas fa-list"></i> 
+        <span id="playlist-modal-title">Create Playlist</span>
+      </h2>
+      <button id="close-playlist-modal" class="close-search-btn" style="width: 32px; height: 32px; font-size: 18px;">
+        <i class="fas fa-times"></i>
+      </button>
     </div>
     
     <!-- Modal Body -->
-    <div style="display: grid; grid-template-columns: 300px 1fr; min-height: 500px; background: var(--deep-navy);">
+    <div class="modal-body">
       
       <!-- Sidebar: Playlist Settings -->
-      <div style="padding: 20px; border-right: 1px solid var(--card-border); background: var(--card-bg); overflow-y: auto;">
+      <div class="modal-sidebar">
         <form id="playlist-settings-form">
           <input type="hidden" id="edit-playlist-id">
           
           <div class="form-group">
-            <label class="form-label">Playlist Title *</label>
+            <label class="form-label" style="display: block; margin-bottom: 8px; font-size: 14px; color: var(--slate-grey); font-weight: 500;">Playlist Title *</label>
             <input type="text" id="playlist-title" class="form-input" placeholder="e.g., African Tech Stories" required>
           </div>
           
           <div class="form-group">
-            <label class="form-label">Description</label>
+            <label class="form-label" style="display: block; margin-bottom: 8px; font-size: 14px; color: var(--slate-grey); font-weight: 500;">Description</label>
             <textarea id="playlist-description" class="form-textarea" placeholder="Describe your playlist..." style="min-height: 80px;"></textarea>
           </div>
           
           <div class="form-group">
-            <label class="form-label">Type</label>
-            <select id="playlist-type" class="filter-select">
+            <label class="form-label" style="display: block; margin-bottom: 8px; font-size: 14px; color: var(--slate-grey); font-weight: 500;">Type</label>
+            <select id="playlist-type" class="form-input">
               <option value="playlist">📁 General Playlist</option>
               <option value="series">🎬 Series (Episodes)</option>
               <option value="album">🎵 Music Album</option>
@@ -1393,8 +1475,8 @@ Banner preview
           </div>
           
           <div class="form-group">
-            <label class="form-label">Visibility</label>
-            <select id="playlist-visibility" class="filter-select">
+            <label class="form-label" style="display: block; margin-bottom: 8px; font-size: 14px; color: var(--slate-grey); font-weight: 500;">Visibility</label>
+            <select id="playlist-visibility" class="form-input">
               <option value="public">🌍 Public (Everyone)</option>
               <option value="unlisted">🔗 Unlisted (Link only)</option>
               <option value="private">🔒 Private (Only me)</option>
@@ -1402,8 +1484,8 @@ Banner preview
           </div>
           
           <div class="form-group">
-            <label class="form-label">Sort Order</label>
-            <select id="playlist-sort" class="filter-select">
+            <label class="form-label" style="display: block; margin-bottom: 8px; font-size: 14px; color: var(--slate-grey); font-weight: 500;">Sort Order</label>
+            <select id="playlist-sort" class="form-input">
               <option value="manual">✋ Manual (Drag to reorder)</option>
               <option value="newest">📅 Newest First</option>
               <option value="oldest">📅 Oldest First</option>
@@ -1412,7 +1494,7 @@ Banner preview
           </div>
           
           <div class="form-group">
-            <label class="form-label">Custom Thumbnail</label>
+            <label class="form-label" style="display: block; margin-bottom: 8px; font-size: 14px; color: var(--slate-grey); font-weight: 500;">Custom Thumbnail</label>
             <div style="display: flex; gap: 10px; align-items: center;">
               <div id="playlist-thumb-preview" style="width: 80px; height: 45px; border-radius: 8px; background: var(--deep-black); border: 1px solid var(--card-border); display: flex; align-items: center; justify-content: center; color: var(--slate-grey); font-size: 11px; overflow: hidden;">
                 <i class="fas fa-image"></i>
@@ -1430,25 +1512,23 @@ Banner preview
             </label>
           </div>
         </form>
-        
-        <!-- Action Buttons -->
-        <div style="display: flex; gap: 10px; margin-top: 25px; position: sticky; bottom: 0; background: var(--card-bg); padding-top: 15px; border-top: 1px solid var(--card-border);">
-          <button id="save-playlist-btn" class="modal-btn close" style="flex: 1; padding: 12px;"><i class="fas fa-save"></i> Save Playlist</button>
-          <button id="delete-playlist-btn" class="modal-btn cancel" style="flex: 1; padding: 12px; display: none;"><i class="fas fa-trash"></i> Delete</button>
-        </div>
       </div>
       
       <!-- Main: Content Selector & Items List -->
-      <div style="display: flex; flex-direction: column; background: var(--deep-navy);">
+      <div class="modal-main">
         
         <!-- Tabs -->
-        <div style="display: flex; border-bottom: 1px solid var(--card-border); background: var(--card-bg);">
-          <button class="content-tab active" data-playlist-tab="items" style="flex: 1; padding: 12px; border: none; background: transparent; color: var(--soft-white); cursor: pointer; border-bottom: 2px solid var(--warm-gold;">📋 Items (<span id="items-count">0</span>)</button>
-          <button class="content-tab" data-playlist-tab="library" style="flex: 1; padding: 12px; border: none; background: transparent; color: var(--slate-grey); cursor: pointer;">📚 Add from Library</button>
+        <div class="modal-tabs">
+          <button class="content-tab active" data-playlist-tab="items" style="flex: 1; padding: 12px; border: none; background: transparent; color: var(--soft-white); cursor: pointer; border-bottom: 2px solid var(--warm-gold);">
+            📋 Items (<span id="items-count">0</span>)
+          </button>
+          <button class="content-tab" data-playlist-tab="library" style="flex: 1; padding: 12px; border: none; background: transparent; color: var(--slate-grey); cursor: pointer;">
+            📚 Add from Library
+          </button>
         </div>
         
         <!-- Items Tab (Drag & Drop) -->
-        <div id="playlist-items-tab" style="flex: 1; overflow-y: auto; padding: 15px;">
+        <div id="playlist-items-tab" class="modal-content-area">
           <div id="playlist-items-list" style="display: flex; flex-direction: column; gap: 10px;">
             <!-- Items rendered here -->
             <div style="text-align: center; padding: 40px; color: var(--slate-grey);">
@@ -1459,7 +1539,7 @@ Banner preview
         </div>
         
         <!-- Library Tab (Search & Add) -->
-        <div id="playlist-library-tab" style="flex: 1; overflow-y: auto; padding: 15px; display: none;">
+        <div id="playlist-library-tab" class="modal-content-area" style="display: none;">
           <!-- Search -->
           <div style="position: relative; margin-bottom: 15px;">
             <i class="fas fa-search" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--slate-grey);"></i>
@@ -1472,6 +1552,8 @@ Banner preview
             <button class="library-filter" data-filter="video">Videos</button>
             <button class="library-filter" data-filter="short">Shorts</button>
             <button class="library-filter" data-filter="podcast">Podcasts</button>
+            <button class="library-filter" data-filter="music">Music</button>
+            <button class="library-filter" data-filter="series">Series</button>
           </div>
           
           <!-- Content Grid -->
@@ -1482,13 +1564,24 @@ Banner preview
         
       </div>
     </div>
+    
+    <!-- Modal Footer (Save Button - Always Visible) -->
+    <div class="modal-footer">
+      <button id="save-playlist-btn" class="modal-btn close" style="flex: 1; padding: 12px;">
+        <i class="fas fa-save"></i> Save Playlist
+      </button>
+      <button id="delete-playlist-btn" class="modal-btn cancel" style="flex: 1; padding: 12px; display: none;">
+        <i class="fas fa-trash"></i> Delete
+      </button>
+    </div>
+    
   </div>
 </div>
 
 <!-- Playlist Item Card Template (Hidden) -->
 <template id="playlist-item-template">
-  <div class="playlist-item-card" draggable="true" style="display: flex; gap: 12px; padding: 12px; background: rgba(255,255,255,0.05); border-radius: 12px; border: 1px solid var(--card-border); cursor: grab; transition: all 0.2s ease;">
-    <div style="width: 24px; display: flex; align-items: center; justify-content: center; color: var(--slate-grey); font-weight: 600; font-size: 14px;" class="item-position">1</div>
+  <div class="playlist-item-card" draggable="true">
+    <div class="item-position">1</div>
     <div style="width: 100px; height: 56px; border-radius: 8px; overflow: hidden; background: var(--deep-black); flex-shrink: 0; position: relative;">
       <img src="" alt="" class="item-thumbnail" style="width: 100%; height: 100%; object-fit: cover;">
       <span style="position: absolute; bottom: 4px; right: 4px; background: rgba(0,0,0,0.8); color: white; padding: 2px 6px; border-radius: 4px; font-size: 10px;" class="item-duration">0:00</span>
@@ -1509,7 +1602,7 @@ Banner preview
 
 <!-- Library Item Card Template (Hidden) -->
 <template id="library-item-template">
-  <div class="library-item-card" style="background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px; overflow: hidden; cursor: pointer; transition: all 0.2s ease;">
+  <div class="library-item-card">
     <div style="position: relative; height: 84px; background: var(--deep-black);">
       <img src="" alt="" class="lib-thumbnail" style="width: 100%; height: 100%; object-fit: cover;">
       <div style="position: absolute; bottom: 6px; right: 6px; background: rgba(0,0,0,0.8); color: white; padding: 2px 6px; border-radius: 4px; font-size: 10px;" class="lib-duration">0:00</div>
@@ -2263,8 +2356,26 @@ const { data: connections } = await supabaseAuth.from('connectors').select('*').
 window.isConnected = connections && connections.length > 0;
 } else { window.isConnected = false; }
 
-// Load playlists
-const { data: playlistsData } = await supabaseAuth.from('playlists').select('*, playlist_items(count)').eq('user_id', window.creatorId).limit(10);
+// Load ONLY creator playlists (System 2) - NOT user watch-later playlists
+const { data: playlistsData } = await supabaseAuth
+  .from('playlists')
+  .select(`
+    *,
+    playlist_items (
+      count,
+      Content (
+        id, 
+        title, 
+        thumbnail_url, 
+        views_count, 
+        duration
+      )
+    )
+  `)
+  .eq('user_id', window.creatorId)  // CRITICAL: Only creator's own playlists
+  .eq('is_public', true)             // Only public playlists on channel
+  .order('updated_at', { ascending: false })
+  .limit(10);
 window.playlists = playlistsData || [];
 
 // Load achievements
@@ -2668,6 +2779,7 @@ tagsContainer.innerHTML = tags.map(tag => `<span class="identity-tag">${escapeHt
 }
 }
 
+// ===== FIXED PLAYLIST UI FUNCTION =====
 function updatePlaylistsUI() {
   const playlistSection = document.getElementById('playlists-section');
   const playlistGrid = document.getElementById('playlists-grid');
@@ -2677,11 +2789,10 @@ function updatePlaylistsUI() {
     return;
   }
   
-  // Filter public playlists for viewers, all for owner
-  const displayPlaylists = window.playlists.filter(p => 
-    p.visibility === 'public' || 
-    (window.currentUser && window.currentUser.id === window.creatorId)
-  );
+  // Filter: public for everyone, all for owner
+  const displayPlaylists = window.currentUser && window.currentUser.id === window.creatorId
+    ? window.playlists  // Owner sees all their playlists
+    : window.playlists.filter(p => p.visibility === 'public' || p.is_public);  // Others see only public
   
   if (displayPlaylists.length === 0) {
     playlistSection.style.display = 'none';
@@ -2698,19 +2809,22 @@ function updatePlaylistsUI() {
   });
   
   playlistGrid.innerHTML = sorted.map(playlist => {
+    // Get thumbnail from first item or custom thumbnail
+    const firstItem = playlist.playlist_items?.[0]?.Content;
     const thumb = playlist.custom_thumbnail_url 
       ? fixMediaUrl(playlist.custom_thumbnail_url) 
-      : 'https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?w=400&h=200&fit=crop';
-    const itemCount = playlist.playlist_items?.[0]?.count || 0;
-    const typeBadge = playlist.playlist_type !== 'playlist' 
+      : (firstItem?.thumbnail_url ? fixMediaUrl(firstItem.thumbnail_url) : 'https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?w=400&h=200&fit=crop');
+    
+    const itemCount = playlist.playlist_items?.[0]?.count || playlist.playlist_items?.length || 0;
+    const typeBadge = playlist.playlist_type && playlist.playlist_type !== 'playlist'
       ? `<span class="playlist-type-badge ${playlist.playlist_type}">${playlist.playlist_type}</span>` 
       : '';
     
     return `
-    <div class="playlist-card ${playlist.is_featured ? 'featured' : ''}" data-playlist-id="${playlist.id}">
+    <a href="playlist.html?id=${playlist.id}" class="playlist-card ${playlist.is_featured ? 'featured' : ''}" data-playlist-id="${playlist.id}">
       <div class="playlist-thumbnail">
         <img src="${thumb}" alt="${escapeHtml(playlist.name)}">
-        <div class="playlist-overlay"><i class="fas fa-play" style="font-size: 30px; color: white;"></i></div>
+        <div class="playlist-overlay"><i class="fas fa-play" style="font-size:30px;color:white;"></i></div>
         <div class="playlist-count"><i class="fas fa-video"></i> ${itemCount}</div>
         ${typeBadge ? `<div style="position:absolute;top:10px;left:10px;">${typeBadge}</div>` : ''}
       </div>
@@ -2718,29 +2832,24 @@ function updatePlaylistsUI() {
         <div class="playlist-name" title="${escapeHtml(playlist.name)}">${escapeHtml(playlist.name)}</div>
         <div class="playlist-meta">
           <span>${itemCount} ${itemCount === 1 ? 'video' : 'videos'}</span>
-          ${playlist.total_duration ? `<span>• ${formatDuration(playlist.total_duration)} total</span>` : ''}
+          ${playlist.total_duration ? `<span>• ${formatDuration(playlist.total_duration)}</span>` : ''}
         </div>
       </div>
-    </div>
+    </a>
     `;
   }).join('');
   
-  // Make playlist cards editable for owner
+  // Add "New Playlist" button for owner only
   if (window.currentUser && window.currentUser.id === window.creatorId) {
-    playlistGrid.querySelectorAll('.playlist-card').forEach(card => {
-      card.addEventListener('click', (e) => {
-        e.preventDefault();
-        const playlistId = card.dataset.playlistId;
-        if (playlistId) showPlaylistBuilder(playlistId);
-      });
-    });
-  } else {
-    playlistGrid.querySelectorAll('.playlist-card').forEach(card => {
-      card.addEventListener('click', () => {
-        const playlistId = card.dataset.playlistId;
-        if (playlistId) window.location.href = `playlist.html?id=${playlistId}`;
-      });
-    });
+    const header = playlistSection.querySelector('.section-header');
+    if (header && !header.querySelector('#new-playlist-btn')) {
+      const newBtn = document.createElement('button');
+      newBtn.id = 'new-playlist-btn';
+      newBtn.innerHTML = '<i class="fas fa-plus"></i> New Playlist';
+      newBtn.style.cssText = 'background:var(--warm-gold);color:var(--deep-black);border:none;padding:8px 16px;border-radius:20px;font-size:13px;font-weight:600;cursor:pointer;';
+      newBtn.onclick = (e) => { e.preventDefault(); showPlaylistBuilder(); };
+      header.appendChild(newBtn);
+    }
   }
 }
 
@@ -2911,7 +3020,7 @@ showToast('Failed to load connectors', 'error');
 }
 }
 
-// ===== PLAYLIST SYSTEM FUNCTIONS =====
+// ===== FIXED PLAYLIST SYSTEM FUNCTIONS =====
 
 // Show Playlist Builder Modal
 async function showPlaylistBuilder(playlistId = null) {
@@ -2940,7 +3049,7 @@ async function showPlaylistBuilder(playlistId = null) {
       .from('playlists')
       .select('*')
       .eq('id', playlistId)
-      .eq('user_id', window.creatorId)
+      .eq('user_id', window.creatorId)  // Security: Only owner's playlists
       .maybeSingle();
     
     if (error || !playlist) {
@@ -3043,11 +3152,11 @@ function renderPlaylistItems() {
     <div class="playlist-item-card" draggable="true" data-item-id="${item.id}" data-content-id="${content?.id}">
       <div class="item-position">${index + 1}</div>
       <div style="width:100px;height:56px;border-radius:8px;overflow:hidden;background:var(--deep-black);flex-shrink:0;position:relative;">
-        <img src="${thumb}" alt="${escapeHtml(content?.title || '')}" class="item-thumbnail">
+        <img src="${thumb}" alt="${escapeHtml(content?.title || '')}" class="item-thumbnail" style="width:100%;height:100%;object-fit:cover;">
         <span style="position:absolute;bottom:4px;right:4px;background:rgba(0,0,0,0.8);color:white;padding:2px 6px;border-radius:4px;font-size:10px;">${duration}</span>
       </div>
       <div style="flex:1;min-width:0;">
-        <div class="item-title" title="${escapeHtml(content?.title || '')}">${escapeHtml(content?.title || 'Untitled')}</div>
+        <div class="item-title" style="font-size:14px;font-weight:600;color:var(--soft-white);margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${escapeHtml(content?.title || '')}">${escapeHtml(content?.title || 'Untitled')}</div>
         <div style="font-size:12px;color:var(--slate-grey);display:flex;gap:10px;">
           <span><i class="fas fa-eye"></i> ${views}</span>
           <span><i class="fas fa-clock"></i> ${date}</span>
@@ -3097,6 +3206,10 @@ async function loadCreatorLibrary(filter = 'all', search = '') {
         query = query.eq('media_type', 'podcast');
       } else if (filter === 'video') {
         query = query.or('media_type.eq.video,media_type.is.null');
+      } else if (filter === 'music') {
+        query = query.eq('genre', 'Music');
+      } else if (filter === 'series') {
+        query = query.eq('genre', 'Series');
       }
     }
     
@@ -3142,12 +3255,12 @@ function renderLibraryContent(filter = 'all', search = '') {
     return `
     <div class="library-item-card" data-content-id="${content.id}">
       <div style="position:relative;height:84px;background:var(--deep-black);">
-        <img src="${thumb}" alt="${escapeHtml(content.title)}" class="lib-thumbnail">
+        <img src="${thumb}" alt="${escapeHtml(content.title)}" class="lib-thumbnail" style="width:100%;height:100%;object-fit:cover;">
         <div style="position:absolute;bottom:6px;right:6px;background:rgba(0,0,0,0.8);color:white;padding:2px 6px;border-radius:4px;font-size:10px;">${duration}</div>
         <div class="lib-add-btn" data-content-id="${content.id}" style="position:absolute;top:6px;right:6px;width:20px;height:20px;border-radius:50%;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;color:var(--warm-gold);font-size:11px;cursor:pointer;" title="Add to playlist"><i class="fas fa-plus"></i></div>
       </div>
       <div style="padding:10px;">
-        <div class="lib-title" title="${escapeHtml(content.title)}">${escapeHtml(content.title)}</div>
+        <div class="lib-title" style="font-size:13px;font-weight:600;color:var(--soft-white);margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${escapeHtml(content.title)}">${escapeHtml(content.title)}</div>
         <div style="font-size:11px;color:var(--slate-grey);"><i class="fas fa-eye"></i> ${views} views</div>
       </div>
     </div>
@@ -3198,6 +3311,10 @@ async function addContentToPlaylist(contentId) {
     
     // Refresh items
     await loadPlaylistItems(playlistId);
+    // Refresh library (remove added item)
+    const filter = document.querySelector('.library-filter.active')?.dataset.filter || 'all';
+    const search = document.getElementById('library-search')?.value.trim() || '';
+    await loadCreatorLibrary(filter, search);
     showToast('Video added to playlist!', 'success');
     
   } catch (error) {
@@ -3221,6 +3338,10 @@ async function removePlaylistItem(itemId) {
     // Refresh items
     const playlistId = document.getElementById('edit-playlist-id').value;
     await loadPlaylistItems(playlistId);
+    // Refresh library (add back removed item)
+    const filter = document.querySelector('.library-filter.active')?.dataset.filter || 'all';
+    const search = document.getElementById('library-search')?.value.trim() || '';
+    await loadCreatorLibrary(filter, search);
     showToast('Item removed', 'info');
     
   } catch (error) {
@@ -3292,7 +3413,8 @@ function setupDragAndDrop() {
   list.addEventListener('dragstart', (e) => {
     if (e.target.classList.contains('playlist-item-card')) {
       draggedItem = e.target;
-      setTimeout(() => e.target.style.opacity = '0.5', 0);
+      e.target.style.opacity = '0.5';
+      e.dataTransfer.effectAllowed = 'move';
     }
   });
   
@@ -3300,31 +3422,43 @@ function setupDragAndDrop() {
     if (draggedItem) {
       draggedItem.style.opacity = '1';
       draggedItem = null;
+      // Remove drag-over class from all items
+      document.querySelectorAll('.playlist-item-card').forEach(item => {
+        item.classList.remove('drag-over');
+      });
       savePlaylistOrder();
     }
   });
   
   list.addEventListener('dragover', (e) => {
     e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    
     const afterElement = getDragAfterElement(list, e.clientY);
-    const current = document.querySelector('.drag-over');
-    if (current) current.classList.remove('drag-over');
+    const currentDragOver = document.querySelector('.drag-over');
+    if (currentDragOver) currentDragOver.classList.remove('drag-over');
+    
     if (afterElement == null) {
       list.appendChild(draggedItem);
     } else {
+      afterElement.classList.add('drag-over');
       list.insertBefore(draggedItem, afterElement);
     }
   });
   
   list.addEventListener('drop', (e) => {
     e.preventDefault();
+    document.querySelectorAll('.playlist-item-card').forEach(item => {
+      item.classList.remove('drag-over');
+    });
     updateItemPositions();
   });
 }
 
 function getDragAfterElement(container, y) {
-  const elements = [...container.querySelectorAll('.playlist-item-card:not(.dragging)')];
-  return elements.reduce((closest, child) => {
+  const draggableElements = [...container.querySelectorAll('.playlist-item-card:not(.dragging)')];
+  
+  return draggableElements.reduce((closest, child) => {
     const box = child.getBoundingClientRect();
     const offset = y - box.top - box.height / 2;
     if (offset < 0 && offset > closest.offset) {
@@ -3336,9 +3470,12 @@ function getDragAfterElement(container, y) {
 }
 
 function updateItemPositions() {
-  const items = document.querySelectorAll('.playlist-item-card');
+  const items = document.querySelectorAll('#playlist-items-list .playlist-item-card');
   items.forEach((item, index) => {
-    item.querySelector('.item-position').textContent = index + 1;
+    const positionEl = item.querySelector('.item-position');
+    if (positionEl) {
+      positionEl.textContent = index + 1;
+    }
   });
 }
 
@@ -3346,12 +3483,14 @@ async function savePlaylistOrder() {
   const playlistId = document.getElementById('edit-playlist-id').value;
   if (!playlistId) return;
   
-  const items = document.querySelectorAll('.playlist-item-card');
+  const items = document.querySelectorAll('#playlist-items-list .playlist-item-card');
   const updates = [];
   
   items.forEach((item, index) => {
     const itemId = item.dataset.itemId;
-    updates.push({ id: itemId, position: index + 1 });
+    if (itemId) {
+      updates.push({ id: itemId, position: index + 1 });
+    }
   });
   
   try {
@@ -3462,6 +3601,12 @@ function setupThumbnailUpload() {
       return;
     }
     
+    if (file.size > 5 * 1024 * 1024) {
+      showToast('Image must be less than 5MB', 'error');
+      return;
+    }
+    
+    // Show preview
     const reader = new FileReader();
     reader.onload = (event) => {
       document.getElementById('playlist-thumb-preview').innerHTML = 
@@ -3469,6 +3614,19 @@ function setupThumbnailUpload() {
       document.getElementById('playlist-thumbnail').value = event.target.result;
     };
     reader.readAsDataURL(file);
+    
+    // Upload to Supabase Storage
+    try {
+      const fileName = `playlist-thumbs/${window.creatorId}_${Date.now()}.${file.name.split('.').pop()}`;
+      const { data, error } = await supabaseAuth.storage.from('playlist-thumbs').upload(fileName, file);
+      if (error) throw error;
+      const { data: { publicUrl } } = supabaseAuth.storage.from('playlist-thumbs').getPublicUrl(fileName);
+      document.getElementById('playlist-thumbnail').value = publicUrl;
+      showToast('Thumbnail uploaded!', 'success');
+    } catch (error) {
+      console.error('Upload error:', error);
+      // Keep local preview for demo
+    }
   });
 }
 
@@ -3657,7 +3815,9 @@ document.getElementById('notifications-panel').classList.add('active');
 renderNotifications();
 });
   
-// Playlist Builder Events
+// ===== PLAYLIST BUILDER EVENT LISTENERS =====
+
+// Close modal
 document.getElementById('close-playlist-modal')?.addEventListener('click', () => {
   document.getElementById('playlist-builder-modal').classList.remove('active');
 });
@@ -3668,25 +3828,31 @@ document.getElementById('playlist-builder-modal')?.addEventListener('click', (e)
   }
 });
 
+// Save playlist button
 document.getElementById('save-playlist-btn')?.addEventListener('click', savePlaylist);
+
+// Delete playlist button
 document.getElementById('delete-playlist-btn')?.addEventListener('click', deletePlaylist);
 
+// Thumbnail upload
 setupThumbnailUpload();
 
-// Add "New Playlist" button to playlists section (for owner)
-if (window.currentUser && window.currentUser.id === window.creatorId) {
-  const playlistsSection = document.getElementById('playlists-section');
-  if (playlistsSection) {
-    const header = playlistsSection.querySelector('.section-header');
-    if (header) {
-      const manageBtn = document.createElement('button');
-      manageBtn.innerHTML = '<i class="fas fa-plus"></i> New Playlist';
-      manageBtn.style.cssText = 'background:var(--warm-gold);color:var(--deep-black);border:none;padding:8px 16px;border-radius:20px;font-size:13px;font-weight:600;cursor:pointer;';
-      manageBtn.onclick = () => showPlaylistBuilder();
-      header.appendChild(manageBtn);
+// New playlist button (added dynamically to playlists section)
+document.addEventListener('click', (e) => {
+  if (e.target.id === 'new-playlist-btn' || e.target.closest('#new-playlist-btn')) {
+    e.preventDefault();
+    showPlaylistBuilder();
+  }
+  
+  // Edit playlist on card click (owner only)
+  if (e.target.closest('.playlist-card') && window.currentUser?.id === window.creatorId) {
+    const playlistId = e.target.closest('.playlist-card').dataset.playlistId;
+    if (playlistId) {
+      e.preventDefault();
+      showPlaylistBuilder(playlistId);
     }
   }
-}
+});
 
 setupContentTabs();
 const backToTopBtn = document.getElementById('backToTopBtn');
