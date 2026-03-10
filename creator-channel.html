@@ -465,11 +465,12 @@ display: flex; align-items: center; gap: 10px;
 .playlist-card {
 background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 16px;
 overflow: hidden; transition: all 0.3s ease; cursor: pointer;
+text-decoration: none; color: inherit; display: block;
 }
 
 .playlist-card:hover { transform: translateY(-5px); border-color: var(--warm-gold); }
 
-.playlist-card.featured { border: 2px solid var(--warm-gold); box-shadow: 0 0 20px rgba(245,158,11,0.3); }
+.playlist-card.featured { border: 2px solid var(--warm-gold); box-shadow: 0 0 20px rgba(245,158,11,0.3); position: relative; }
 .playlist-card.featured::before {
 content: '⭐ FEATURED'; position: absolute; top: 10px; right: 10px;
 background: var(--warm-gold); color: var(--deep-black);
@@ -518,7 +519,7 @@ padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: 600; text-t
 .content-card {
 background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 20px;
 overflow: hidden; transition: all 0.3s ease; cursor: pointer; text-decoration: none;
-color: inherit; backdrop-filter: blur(10px); position: relative;
+color: inherit; backdrop-filter: blur(10px); position: relative; display: block;
 }
 
 .content-card:hover { transform: translateY(-8px); box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4); border-color: rgba(245, 158, 11, 0.3); }
@@ -2356,8 +2357,10 @@ const { data: connections } = await supabaseAuth.from('connectors').select('*').
 window.isConnected = connections && connections.length > 0;
 } else { window.isConnected = false; }
 
-// Load ONLY creator playlists (System 2) - NOT user watch-later playlists
-const { data: playlistsData } = await supabaseAuth
+// ===== FIXED: Load playlists - ALL for owner, PUBLIC only for others =====
+window.loadingText.textContent = 'Loading playlists...';
+
+let playlistsQuery = supabaseAuth
   .from('playlists')
   .select(`
     *,
@@ -2372,10 +2375,21 @@ const { data: playlistsData } = await supabaseAuth
       )
     )
   `)
-  .eq('user_id', window.creatorId)  // CRITICAL: Only creator's own playlists
-  .eq('is_public', true)             // Only public playlists on channel
+  .eq('user_id', window.creatorId);  // Only creator's own playlists
+
+// If viewer (not the owner), only show public playlists
+if (!window.currentUser || window.currentUser.id !== window.creatorId) {
+  playlistsQuery = playlistsQuery.eq('visibility', 'public');
+}
+
+const { data: playlistsData, error: playlistsError } = await playlistsQuery
   .order('updated_at', { ascending: false })
   .limit(10);
+
+if (playlistsError) {
+  console.error('Error loading playlists:', playlistsError);
+}
+
 window.playlists = playlistsData || [];
 
 // Load achievements
@@ -2792,7 +2806,7 @@ function updatePlaylistsUI() {
   // Filter: public for everyone, all for owner
   const displayPlaylists = window.currentUser && window.currentUser.id === window.creatorId
     ? window.playlists  // Owner sees all their playlists
-    : window.playlists.filter(p => p.visibility === 'public' || p.is_public);  // Others see only public
+    : window.playlists.filter(p => p.visibility === 'public');  // Others see only public
   
   if (displayPlaylists.length === 0) {
     playlistSection.style.display = 'none';
@@ -3849,6 +3863,10 @@ document.addEventListener('click', (e) => {
     const playlistId = e.target.closest('.playlist-card').dataset.playlistId;
     if (playlistId) {
       e.preventDefault();
+      // Option 1: Navigate to playlist page
+      // window.location.href = `playlist.html?id=${playlistId}`;
+      
+      // Option 2: Open edit modal (uncomment to use)
       showPlaylistBuilder(playlistId);
     }
   }
