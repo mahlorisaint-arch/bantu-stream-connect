@@ -747,12 +747,13 @@ white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block;
 background: transparent; border: 1px solid var(--warm-gold); color: var(--warm-gold);
 padding: 8px 20px; border-radius: 30px; font-size: 13px; font-weight: 600;
 cursor: pointer; transition: all 0.3s ease;
+white-space: nowrap;
 }
-.recommended-follow-btn:hover { background: var(--warm-gold); color: var(--deep-black); }
+.recommended-follow-btn:hover { background: var(--warm-gold); color: var(--deep-black); transform: translateY(-2px); }
 .recommended-follow-btn.connected {
 background: var(--success-color); border-color: var(--success-color); color: white;
 }
-.recommended-follow-btn.connected:hover { background: #059669; }
+.recommended-follow-btn.connected:hover { background: #059669; transform: none; }
 
 /* ===== SUPPORT ===== */
 .support-section { margin-bottom: 40px; }
@@ -1475,7 +1476,7 @@ Passionate about sharing African culture, technology, and innovation through com
 </div>
 </section>
 
-<!-- Recommended Creators (FIXED TITLE & CONTENT) -->
+<!-- Recommended Creators (FIXED) -->
 <section class="recommended-section" id="recommended-section" style="display: none;">
 <div class="section-header">
 <h2 class="section-title"><i class="fas fa-users"></i> CREATORS YOU MAY LIKE</h2>
@@ -1706,43 +1707,61 @@ function hideEditAboutModal() {
 document.getElementById('edit-about-modal').classList.remove('active');
 }
 
+// FIXED: Updated saveAboutSection function with better error handling
 async function saveAboutSection() {
 if (!window.currentUser || window.currentUser.id !== window.creatorId) {
 showToast('Only the channel owner can edit this section', 'warning');
 return;
 }
+  
 try {
-// Safe updates - only fields we know exist in DB (adjust if your schema differs)
-const updates = {
-location: document.getElementById('edit-location').value.trim(),
-website_url: document.getElementById('edit-website').value.trim(),
-upload_schedule: document.getElementById('edit-schedule').value.trim(),
-updated_at: new Date().toISOString()
-};
-// Optional fields - add only if they exist in your schema (we'll send them anyway, DB might have them)
-const quote = document.getElementById('edit-quote').value.trim();
-const mission = document.getElementById('edit-mission').value.trim();
-const interests = document.getElementById('edit-tags').value.trim();
-if (quote) updates.quote = quote;
-if (mission) updates.mission = mission;
-if (interests) updates.interests = interests;
-try {
+const updates = { updated_at: new Date().toISOString() };
+    
+// Only add fields that have values
+const fields = [
+{ id: 'edit-quote', key: 'quote' },
+{ id: 'edit-mission', key: 'mission' },
+{ id: 'edit-location', key: 'location' },
+{ id: 'edit-website', key: 'website_url' },
+{ id: 'edit-schedule', key: 'upload_schedule' },
+{ id: 'edit-tags', key: 'interests' }
+];
+    
+fields.forEach(({ id, key }) => {
+const val = document.getElementById(id).value.trim();
+if (val) updates[key] = val;
+});
+    
+// Parse social links JSON safely
 const socialInput = document.getElementById('edit-social').value.trim();
 if (socialInput) {
-updates.social_links = JSON.parse(socialInput);
+try { 
+updates.social_links = JSON.parse(socialInput); 
+} catch (e) { 
+showToast('Invalid JSON for social links', 'warning'); 
+return; 
 }
-} catch (e) {
-console.warn('Invalid social links JSON, skipping');
 }
-const { error } = await supabaseAuth.from('user_profiles').update(updates).eq('id', window.creatorId);
+    
+// Update database
+const { data, error } = await supabaseAuth
+.from('user_profiles')
+.update(updates)
+.eq('id', window.creatorId)
+.select()
+.single();
+      
 if (error) throw error;
-window.creatorProfile = { ...window.creatorProfile, ...updates };
+    
+// Update local profile and UI
+if (data) window.creatorProfile = { ...window.creatorProfile, ...data };
 updateIdentityCard();
 hideEditAboutModal();
-showToast('About section updated successfully!', 'success');
+showToast('About section updated successfully! ✨', 'success');
+  
 } catch (error) {
-console.error('Error saving about section:', error);
-showToast('Failed to save changes', 'error');
+console.error('Save error:', error);
+showToast('Failed: ' + (error.message || error.hint || 'Unknown'), 'error');
 }
 }
 
@@ -2141,38 +2160,100 @@ ${achievement.date ? `<div class="achievement-date">${formatDate(achievement.dat
 // ===== FIXED RECOMMENDED CREATORS =====
 async function loadRecommendedCreators() {
 const grid = document.getElementById('recommended-grid');
-if (!grid) return;
+  
 try {
+// Get creators who are connected to this creator's connectors (discovery algorithm)
+const { data: connectors, error: connError } = await supabaseAuth
+.from('connectors')
+.select('connector_id')
+.eq('connected_id', window.creatorId)
+.limit(10);
+    
+if (connError) throw connError;
+    
 let recommended = [];
-// Get connectors of this creator (people they connect to)
-const { data: connectors } = await supabaseAuth.from('connectors').select('connector_id').eq('connected_id', window.creatorId).limit(10);
+    
 if (connectors && connectors.length > 0) {
 const connectorIds = connectors.map(c => c.connector_id);
-const { data: profiles } = await supabaseAuth.from('user_profiles').select('id, username, full_name, avatar_url, bio').in('id', connectorIds).eq('role', 'creator').neq('id', window.creatorId).limit(4);
+      
+// Get profiles of those connectors who are also creators (excluding current)
+const { data: profiles, error: profError } = await supabaseAuth
+.from('user_profiles')
+.select('id, username, full_name, avatar_url, bio')
+.in('id', connectorIds)
+.eq('role', 'creator')
+.neq('id', window.creatorId)
+.limit(4);
+      
+if (profError) throw profError;
 recommended = profiles || [];
 }
-// Fallback
+    
+// Fallback: random creators if no connectors found
 if (recommended.length === 0) {
-const { data: randomCreators } = await supabaseAuth.from('user_profiles').select('id, username, full_name, avatar_url, bio').eq('role', 'creator').neq('id', window.creatorId).limit(4);
+const { data: randomCreators, error: randError } = await supabaseAuth
+.from('user_profiles')
+.select('id, username, full_name, avatar_url, bio')
+.eq('role', 'creator')
+.neq('id', window.creatorId)
+.limit(4);
+      
+if (randError) throw randError;
 recommended = randomCreators || [];
 }
+    
 if (recommended.length > 0) {
+// Check connection status for EACH recommended creator
+const connectionChecks = await Promise.all(
+recommended.map(async (creator) => {
+if (!window.currentUser) return { id: creator.id, isConnected: false };
+          
+const { data: conn } = await supabaseAuth
+.from('connectors')
+.select('id')
+.eq('connector_id', window.currentUser.id)
+.eq('connected_id', creator.id)
+.eq('connection_type', 'creator')
+.maybeSingle();
+          
+return { id: creator.id, isConnected: !!conn };
+})
+);
+      
+const connectionMap = Object.fromEntries(
+connectionChecks.map(c => [c.id, c.isConnected])
+);
+      
+// Render with correct button state
 grid.innerHTML = recommended.map(creator => {
 const avatarUrl = creator.avatar_url ? fixMediaUrl(creator.avatar_url) : null;
 const initials = getInitials(creator.full_name || creator.username);
-const avatarHtml = avatarUrl 
-? `<img src="${avatarUrl}" alt="${escapeHtml(creator.full_name || creator.username)}" onerror="this.onerror=null; this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect fill=%22%231D4ED8%22 width=%22100%22 height=%22100%22/><text x=%2250%22 y=%2255%22 font-size=%2240%22 text-anchor=%22middle%22 fill=%22white%22 font-family=%22Inter,sans-serif%22>${initials}</text></svg>';">`
-: `<div style="width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,var(--bantu-blue),var(--warm-gold));display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:24px;">${initials}</div>`;
+const isConnected = connectionMap[creator.id] || false;
+        
 return `
 <div class="recommended-creator" data-creator-id="${creator.id}">
-<div class="recommended-avatar">${avatarHtml}</div>
-<div class="recommended-name" title="${escapeHtml(creator.full_name || creator.username)}">${escapeHtml(creator.full_name || creator.username)}</div>
-<div class="recommended-username" title="@${escapeHtml(creator.username)}">@${escapeHtml(creator.username || 'creator')}</div>
-<button class="recommended-follow-btn" data-target-id="${creator.id}">Connect</button>
+<div class="recommended-avatar">
+${avatarUrl 
+? `<img src="${avatarUrl}" alt="${escapeHtml(creator.full_name || creator.username)}" 
+onerror="this.parentElement.innerHTML='<div style=\\'width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,var(--bantu-blue),var(--warm-gold));display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:24px;\\'>${initials}</div>'">`
+: `<div style="width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,var(--bantu-blue),var(--warm-gold));display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:24px;">${initials}</div>`
+}
+</div>
+<div class="recommended-name" title="${escapeHtml(creator.full_name || creator.username)}">
+${escapeHtml(creator.full_name || creator.username)}
+</div>
+<div class="recommended-username" title="@${escapeHtml(creator.username)}">
+@${escapeHtml(creator.username || 'creator')}
+</div>
+<button class="recommended-follow-btn ${isConnected ? 'connected' : ''}" 
+data-target-id="${creator.id}">
+${isConnected ? 'Connected' : 'Connect'}
+</button>
 </div>
 `;
 }).join('');
-// Add listeners
+      
+// Add connect button listeners
 grid.querySelectorAll('.recommended-follow-btn').forEach(btn => {
 btn.addEventListener('click', async (e) => {
 e.stopPropagation();
@@ -2180,6 +2261,8 @@ const targetId = btn.dataset.targetId;
 await handleRecommendedConnect(targetId, btn);
 });
 });
+      
+// Add card click to navigate
 grid.querySelectorAll('.recommended-creator').forEach(card => {
 card.addEventListener('click', (e) => {
 if (!e.target.classList.contains('recommended-follow-btn')) {
@@ -2188,50 +2271,77 @@ if (creatorId) window.location.href = `creator-channel.html?id=${creatorId}`;
 }
 });
 });
+      
 document.getElementById('recommended-section').style.display = 'block';
-} else {
-grid.innerHTML = '<p style="color:var(--slate-grey);grid-column:1/-1;text-align:center;">More creators coming soon!</p>';
 }
+    
 } catch (error) {
 console.error('Error loading recommended creators:', error);
-grid.innerHTML = '<p style="color:var(--slate-grey);grid-column:1/-1;text-align:center;">Unable to load recommendations</p>';
+grid.innerHTML = '<p style="color:var(--slate-grey);grid-column:1/-1;text-align:center;">More creators coming soon!</p>';
 }
 }
 
+// FIXED: handleRecommendedConnect with toggle functionality
 async function handleRecommendedConnect(targetCreatorId, button) {
 if (!window.currentUser) {
 showToast('Please log in to connect', 'info');
 window.location.href = `login.html?redirect=${encodeURIComponent(window.location.href)}`;
 return;
 }
+  
 if (window.currentUser.id === targetCreatorId) {
 showToast('You cannot connect to your own channel', 'info');
 return;
 }
+  
 try {
-const { data: existing } = await supabaseAuth.from('connectors').select('id').eq('connector_id', window.currentUser.id).eq('connected_id', targetCreatorId).eq('connection_type', 'creator').maybeSingle();
+// Check current connection status
+const { data: existing } = await supabaseAuth
+.from('connectors')
+.select('id')
+.eq('connector_id', window.currentUser.id)
+.eq('connected_id', targetCreatorId)
+.eq('connection_type', 'creator')
+.maybeSingle();
+    
 if (existing) {
-const { error } = await supabaseAuth.from('connectors').delete().eq('connector_id', window.currentUser.id).eq('connected_id', targetCreatorId).eq('connection_type', 'creator');
+// Already connected → Disconnect
+const { error } = await supabaseAuth
+.from('connectors')
+.delete()
+.eq('connector_id', window.currentUser.id)
+.eq('connected_id', targetCreatorId)
+.eq('connection_type', 'creator');
+      
 if (error) throw error;
+      
+// Update UI
 button.textContent = 'Connect';
 button.classList.remove('connected');
 showToast('Disconnected', 'info');
+      
 } else {
-const { error } = await supabaseAuth.from('connectors').insert({
+// Not connected → Connect
+const { error } = await supabaseAuth
+.from('connectors')
+.insert({
 connector_id: window.currentUser.id,
 connected_id: targetCreatorId,
 connection_type: 'creator',
 created_at: new Date().toISOString()
 });
+      
 if (error) throw error;
+      
+// Update UI with confetti animation
 button.textContent = 'Connected';
 button.classList.add('connected');
 showConfetti();
-showToast('Connected successfully!', 'success');
+showToast('Connected successfully! ✨', 'success');
 }
 } catch (error) {
-console.error('Error connecting:', error);
-showToast('Failed to connect', 'error');
+console.error('Error toggling connection:', error);
+showToast('Failed to update connection', 'error');
 }
 }
 
@@ -2526,7 +2636,7 @@ filtered = window.creatorContent;
 if (tabType === 'about') {
 document.getElementById('uploads-section').style.display = 'none';
 document.getElementById('playlists-section').style.display = 'none';
-document.getElementById('identity-card').scrollIntoView({ behavior: 'smooth' });
+document.querySelector('.identity-card').scrollIntoView({ behavior: 'smooth' });
 } else {
 document.getElementById('uploads-section').style.display = 'block';
 document.getElementById('playlists-section').style.display = (tabType === 'playlists') ? 'block' : 'none';
