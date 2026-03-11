@@ -1796,13 +1796,13 @@ Passionate about sharing African culture, technology, and innovation through com
 <section class="playlists-section" id="playlists-section">
   <div class="section-header">
     <h2 class="section-title"><i class="fas fa-list"></i> SERIES & PLAYLISTS</h2>
-    <a href="#" class="view-all-link" id="view-all-playlists">View All <i class="fas fa-arrow-right"></i></a>
+    <a href="playlists.html?creatorId=CREATOR_ID_PLACEHOLDER" class="view-all-link" id="view-all-playlists">View All <i class="fas fa-arrow-right"></i></a>
     <!-- New Playlist button will be injected here by JS for the owner -->
   </div>
   <div id="playlists-empty" class="empty-state" style="display: none;">
     <div class="empty-icon"><i class="fas fa-list"></i></div>
     <h3>No playlists yet</h3>
-    <p>You haven't created any playlists. Start organizing your content!</p>
+    <p>This creator hasn't created any playlists yet.</p>
   </div>
   <div class="playlists-grid" id="playlists-grid"></div>
 </section>
@@ -1921,7 +1921,7 @@ Passionate about sharing African culture, technology, and innovation through com
 <script>
 const SUPABASE_URL = 'https://ydnxqnbjoshvxteevemc.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U';
-const supabaseAuth = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // Global State
 window.currentUser = null;
@@ -2000,6 +2000,7 @@ return names.length >= 2 ? (names[0][0] + names[names.length-1][0]).toUpperCase(
 function fixMediaUrl(url) {
 if (!url) return '';
 if (url.startsWith('http')) return url;
+if (url.startsWith('data:')) return url;
 return `${SUPABASE_URL}/storage/v1/object/public/${url.replace(/^\/+/, '')}`;
 }
 
@@ -2075,7 +2076,7 @@ async function saveBanner(url) {
 if (!url || !window.currentUser || window.currentUser.id !== window.creatorId) return;
 try {
 setBannerImage(url);
-const { error } = await supabaseAuth.from('user_profiles').update({ channel_banner_url: url, updated_at: new Date().toISOString() }).eq('id', window.creatorId);
+const { error } = await supabase.from('user_profiles').update({ channel_banner_url: url, updated_at: new Date().toISOString() }).eq('id', window.creatorId);
 if (error) throw error;
 showToast('Banner updated successfully!', 'success');
 hideBannerUploadModal();
@@ -2138,7 +2139,7 @@ return;
 }
 }
     
-const { data, error } = await supabaseAuth
+const { data, error } = await supabase
 .from('user_profiles')
 .update(updates)
 .eq('id', window.creatorId)
@@ -2161,7 +2162,7 @@ showToast('Failed: ' + (error.message || error.hint || 'Unknown'), 'error');
 // ===== AUTHENTICATION =====
 async function checkAuth() {
 try {
-const { data: { session }, error } = await supabaseAuth.auth.getSession();
+const { data: { session }, error } = await supabase.auth.getSession();
 if (error) throw error;
 window.currentUser = session?.user || null;
 if (window.currentUser) {
@@ -2178,7 +2179,7 @@ return null;
 async function loadUserProfile() {
 try {
 if (!window.currentUser) return;
-const { data: profile, error } = await supabaseAuth.from('user_profiles').select('*').eq('id', window.currentUser.id).maybeSingle();
+const { data: profile, error } = await supabase.from('user_profiles').select('*').eq('id', window.currentUser.id).maybeSingle();
 if (error) throw error;
 updateProfileUI(profile);
 await loadNotifications();
@@ -2227,7 +2228,7 @@ el.appendChild(icon);
 async function loadNotifications() {
 try {
 if (!window.currentUser) { updateNotificationBadge(0); return; }
-const { data, error } = await supabaseAuth.from('notifications').select('*').eq('user_id', window.currentUser.id).order('created_at', { ascending: false }).limit(20);
+const { data, error } = await supabase.from('notifications').select('*').eq('user_id', window.currentUser.id).order('created_at', { ascending: false }).limit(20);
 if (error) throw error;
 window.notifications = data || [];
 const unreadCount = window.notifications.filter(n => !n.is_read).length;
@@ -2297,13 +2298,13 @@ return new Date(timestamp).toLocaleDateString();
 // ===== SEARCH =====
 async function searchContent(query, category = '', sortBy = 'newest') {
 try {
-let qb = supabaseAuth.from('Content').select('*, user_profiles!user_id(*)').ilike('title', `%${query}%`).eq('status', 'published');
+let qb = supabase.from('Content').select('*, user_profiles!user_id(*)').ilike('title', `%${query}%`).eq('status', 'published');
 if (category) qb = qb.eq('genre', category);
 const { data, error } = await qb.limit(50);
 if (error) throw error;
 const enriched = await Promise.all((data || []).map(async item => {
-const { count: views } = await supabaseAuth.from('content_views').select('*', { count: 'exact', head: true }).eq('content_id', item.id);
-const { count: likes } = await supabaseAuth.from('content_likes').select('*', { count: 'exact', head: true }).eq('content_id', item.id);
+const { count: views } = await supabase.from('content_views').select('*', { count: 'exact', head: true }).eq('content_id', item.id);
+const { count: likes } = await supabase.from('content_likes').select('*', { count: 'exact', head: true }).eq('content_id', item.id);
 return { ...item, real_views: views || 0, real_likes: likes || 0 };
 }));
 if (sortBy === 'popular') enriched.sort((a,b) => (b.real_views||0) - (a.real_views||0));
@@ -2358,37 +2359,40 @@ try {
 window.creatorId = getUrlParam('id');
 if (!window.creatorId) { showToast('Creator ID not found', 'error'); window.location.href = 'content-library.html'; return; }
 
+// Update view-all link
+document.getElementById('view-all-playlists').href = `playlists.html?creatorId=${window.creatorId}`;
+
 window.loadingText.textContent = 'Loading creator profile...';
-const { data: profile, error: profileError } = await supabaseAuth.from('user_profiles').select('*').eq('id', window.creatorId).maybeSingle();
+const { data: profile, error: profileError } = await supabase.from('user_profiles').select('*').eq('id', window.creatorId).maybeSingle();
 if (profileError || !profile) { showToast('Creator not found', 'error'); window.location.href = 'content-library.html'; return; }
 window.creatorProfile = profile;
 
 await loadBannerFromProfile();
 
 window.loadingText.textContent = 'Loading creator content...';
-const { data: content, error: contentError } = await supabaseAuth.from('Content').select('*, user_profiles!user_id(*)').eq('user_id', window.creatorId).eq('status', 'published').order('created_at', { ascending: false }).limit(50);
+const { data: content, error: contentError } = await supabase.from('Content').select('*, user_profiles!user_id(*)').eq('user_id', window.creatorId).eq('status', 'published').order('created_at', { ascending: false }).limit(50);
 if (contentError) throw contentError;
 window.creatorContent = content || [];
 
-const { count: connectorCount, error: countError } = await supabaseAuth.from('connectors').select('*', { count: 'exact', head: true }).eq('connected_id', window.creatorId).eq('connection_type', 'creator');
+const { count: connectorCount, error: countError } = await supabase.from('connectors').select('*', { count: 'exact', head: true }).eq('connected_id', window.creatorId).eq('connection_type', 'creator');
 if (countError) throw countError;
 window.connectorCount = connectorCount || 0;
 
 if (window.currentUser) {
-const { data: connections } = await supabaseAuth.from('connectors').select('*').eq('connector_id', window.currentUser.id).eq('connected_id', window.creatorId).eq('connection_type', 'creator').limit(1);
+const { data: connections } = await supabase.from('connectors').select('*').eq('connector_id', window.currentUser.id).eq('connected_id', window.creatorId).eq('connection_type', 'creator').limit(1);
 window.isConnected = connections && connections.length > 0;
 } else { window.isConnected = false; }
 
-// Load playlists - ALL for owner, PUBLIC only for others
+// Load playlists from creator_playlists table
 window.loadingText.textContent = 'Loading playlists...';
 
-let playlistsQuery = supabaseAuth
-  .from('playlists')
+let playlistsQuery = supabase
+  .from('creator_playlists')
   .select(`
     *,
-    playlist_items (
+    creator_playlist_items!inner (
       count,
-      Content (
+      Content!content_id (
         id, 
         title, 
         thumbnail_url, 
@@ -2397,7 +2401,7 @@ let playlistsQuery = supabaseAuth
       )
     )
   `)
-  .eq('user_id', window.creatorId);  // Only creator's own playlists
+  .eq('creator_id', window.creatorId);
 
 // If viewer (not the owner), only show public playlists
 if (!window.currentUser || window.currentUser.id !== window.creatorId) {
@@ -2414,16 +2418,12 @@ if (playlistsError) {
 
 window.playlists = playlistsData || [];
 
-// Load achievements
-const { data: badges } = await supabaseAuth.from('user_badges').select('*').eq('user_id', window.creatorId);
-window.achievements = badges || [];
-
 console.log('✅ Creator data loaded:', { profile, contentCount: window.creatorContent.length, connectorCount, isConnected: window.isConnected, playlists: window.playlists.length });
 
 updateCreatorUI();
 updateIdentityCard();
 updateContentUI(window.creatorContent);
-updatePlaylistsUI(); // Updated UI logic included here
+updatePlaylistsUI();
 checkAndShowAllSections();
 } catch (error) {
 console.error('❌ Error loading creator channel:', error);
@@ -2531,7 +2531,7 @@ function updateFanHighlights() {
 const fanGrid = document.getElementById('fan-grid');
 const contentIds = window.creatorContent.map(c => c.id);
 if (contentIds.length === 0) { fanGrid.innerHTML = '<p style="color:var(--slate-grey);">No fan comments yet</p>'; return; }
-supabaseAuth.from('comments').select('*, user_profiles!user_id(full_name, username, avatar_url)').in('content_id', contentIds).order('created_at', { ascending: false }).limit(4).then(({ data }) => {
+supabase.from('comments').select('*, user_profiles!user_id(full_name, username, avatar_url)').in('content_id', contentIds).order('created_at', { ascending: false }).limit(4).then(({ data }) => {
 if (data && data.length > 0) {
 fanGrid.innerHTML = data.map(comment => {
 const avatarUrl = comment.user_profiles?.avatar_url ? fixMediaUrl(comment.user_profiles.avatar_url) : 'https://images.unsplash.com/photo-1633332755192-727a05c4013d?w=100&h=100&fit=crop';
@@ -2585,7 +2585,7 @@ async function loadRecommendedCreators() {
 const grid = document.getElementById('recommended-grid');
   
 try {
-const { data: connectors, error: connError } = await supabaseAuth
+const { data: connectors, error: connError } = await supabase
 .from('connectors')
 .select('connector_id')
 .eq('connected_id', window.creatorId)
@@ -2598,7 +2598,7 @@ let recommended = [];
 if (connectors && connectors.length > 0) {
 const connectorIds = connectors.map(c => c.connector_id);
       
-const { data: profiles, error: profError } = await supabaseAuth
+const { data: profiles, error: profError } = await supabase
 .from('user_profiles')
 .select('id, username, full_name, avatar_url, bio')
 .in('id', connectorIds)
@@ -2611,7 +2611,7 @@ recommended = profiles || [];
 }
     
 if (recommended.length === 0) {
-const { data: randomCreators, error: randError } = await supabaseAuth
+const { data: randomCreators, error: randError } = await supabase
 .from('user_profiles')
 .select('id, username, full_name, avatar_url, bio')
 .eq('role', 'creator')
@@ -2627,7 +2627,7 @@ const connectionChecks = await Promise.all(
 recommended.map(async (creator) => {
 if (!window.currentUser) return { id: creator.id, isConnected: false };
           
-const { data: conn } = await supabaseAuth
+const { data: conn } = await supabase
 .from('connectors')
 .select('id')
 .eq('connector_id', window.currentUser.id)
@@ -2710,7 +2710,7 @@ return;
 }
   
 try {
-const { data: existing } = await supabaseAuth
+const { data: existing } = await supabase
 .from('connectors')
 .select('id')
 .eq('connector_id', window.currentUser.id)
@@ -2719,7 +2719,7 @@ const { data: existing } = await supabaseAuth
 .maybeSingle();
     
 if (existing) {
-const { error } = await supabaseAuth
+const { error } = await supabase
 .from('connectors')
 .delete()
 .eq('connector_id', window.currentUser.id)
@@ -2733,7 +2733,7 @@ button.classList.remove('connected');
 showToast('Disconnected', 'info');
       
 } else {
-const { error } = await supabaseAuth
+const { error } = await supabase
 .from('connectors')
 .insert({
 connector_id: window.currentUser.id,
@@ -2815,7 +2815,7 @@ tagsContainer.innerHTML = tags.map(tag => `<span class="identity-tag">${escapeHt
 }
 }
 
-// ===== PLAYLIST UI FUNCTION (Updated with correct empty state and always-visible button) =====
+// ===== PLAYLIST UI FUNCTION (Updated with correct tables) =====
 function updatePlaylistsUI() {
   const playlistSection = document.getElementById('playlists-section');
   const playlistGrid = document.getElementById('playlists-grid');
@@ -2824,21 +2824,31 @@ function updatePlaylistsUI() {
   // Ensure section is always visible for the creator
   playlistSection.style.display = 'block';
 
-  // Filter: public for everyone, all for owner
-  const displayPlaylists = window.currentUser && window.currentUser.id === window.creatorId
-    ? window.playlists  // Owner sees all their playlists
-    : window.playlists.filter(p => p.visibility === 'public');  // Others see only public
-
   // Handle empty state for playlists
-  if (!displayPlaylists || displayPlaylists.length === 0) {
+  if (!window.playlists || window.playlists.length === 0) {
     playlistGrid.style.display = 'none';
     emptyState.style.display = 'block';
+    
+    // Customize empty state message for owner vs viewer
+    if (window.currentUser && window.currentUser.id === window.creatorId) {
+      emptyState.innerHTML = `
+        <div class="empty-icon"><i class="fas fa-list"></i></div>
+        <h3>No playlists yet</h3>
+        <p>You haven't created any playlists. Click "New Playlist" to get started!</p>
+      `;
+    } else {
+      emptyState.innerHTML = `
+        <div class="empty-icon"><i class="fas fa-list"></i></div>
+        <h3>No playlists yet</h3>
+        <p>This creator hasn't created any playlists yet.</p>
+      `;
+    }
   } else {
     playlistGrid.style.display = 'grid';
     emptyState.style.display = 'none';
     
     // Sort: featured first, then by updated_at
-    const sorted = [...displayPlaylists].sort((a, b) => {
+    const sorted = [...window.playlists].sort((a, b) => {
       if (a.is_featured && !b.is_featured) return -1;
       if (!a.is_featured && b.is_featured) return 1;
       return new Date(b.updated_at) - new Date(a.updated_at);
@@ -2846,20 +2856,23 @@ function updatePlaylistsUI() {
     
     playlistGrid.innerHTML = sorted.map(playlist => {
       // Get thumbnail from first item or custom thumbnail
-      const firstItem = playlist.playlist_items?.[0]?.Content;
-      const thumb = playlist.custom_thumbnail_url 
+      const firstItem = playlist.creator_playlist_items?.[0]?.Content;
+      let thumb = playlist.custom_thumbnail_url 
         ? fixMediaUrl(playlist.custom_thumbnail_url) 
         : (firstItem?.thumbnail_url ? fixMediaUrl(firstItem.thumbnail_url) : 'https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?w=400&h=200&fit=crop');
       
-      const itemCount = playlist.playlist_items?.[0]?.count || playlist.playlist_items?.length || 0;
+      const itemCount = playlist.creator_playlist_items?.length || 0;
       const typeBadge = playlist.playlist_type && playlist.playlist_type !== 'playlist'
         ? `<span class="playlist-type-badge ${playlist.playlist_type}">${playlist.playlist_type}</span>` 
         : '';
       
+      // For owner, add edit capability
+      const isOwner = window.currentUser && window.currentUser.id === window.creatorId;
+      
       return `
-      <a href="playlist.html?id=${playlist.id}" class="playlist-card ${playlist.is_featured ? 'featured' : ''}" data-playlist-id="${playlist.id}">
+      <div class="playlist-card ${playlist.is_featured ? 'featured' : ''}" data-playlist-id="${playlist.id}" ${isOwner ? 'style="cursor:pointer;"' : ''}>
         <div class="playlist-thumbnail">
-          <img src="${thumb}" alt="${escapeHtml(playlist.name)}">
+          <img src="${thumb}" alt="${escapeHtml(playlist.name)}" loading="lazy">
           <div class="playlist-overlay"><i class="fas fa-play" style="font-size:30px;color:white;"></i></div>
           <div class="playlist-count"><i class="fas fa-video"></i> ${itemCount}</div>
           ${typeBadge ? `<div style="position:absolute;top:10px;left:10px;">${typeBadge}</div>` : ''}
@@ -2867,13 +2880,30 @@ function updatePlaylistsUI() {
         <div class="playlist-info">
           <div class="playlist-name" title="${escapeHtml(playlist.name)}">${escapeHtml(playlist.name)}</div>
           <div class="playlist-meta">
-            <span>${itemCount} ${itemCount === 1 ? 'video' : 'videos'}</span>
+            <span>${itemCount} ${itemCount === 1 ? 'item' : 'items'}</span>
             ${playlist.total_duration ? `<span>• ${formatDuration(playlist.total_duration)}</span>` : ''}
           </div>
         </div>
-      </a>
+      </div>
       `;
     }).join('');
+    
+    // Add click handlers
+    playlistGrid.querySelectorAll('.playlist-card').forEach(card => {
+      card.addEventListener('click', (e) => {
+        const playlistId = card.dataset.playlistId;
+        if (!playlistId) return;
+        
+        // If owner and not clicking a button, open playlist builder for editing
+        if (window.currentUser && window.currentUser.id === window.creatorId) {
+          e.preventDefault();
+          showPlaylistBuilder(playlistId);
+        } else {
+          // For viewers, navigate to playlist view page
+          window.location.href = `playlist.html?id=${playlistId}`;
+        }
+      });
+    });
   }
 
   // Add "New Playlist" button for owner only (always present in header)
@@ -2887,7 +2917,7 @@ function updatePlaylistsUI() {
     newBtn.id = 'new-playlist-btn';
     newBtn.innerHTML = '<i class="fas fa-plus"></i> New Playlist';
     newBtn.style.cssText = 'background:var(--warm-gold);color:var(--deep-black);border:none;padding:8px 16px;border-radius:30px;font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:8px;white-space:nowrap;';
-    newBtn.onclick = (e) => { e.preventDefault(); showPlaylistBuilder(); };
+    newBtn.onclick = (e) => { e.preventDefault(); e.stopPropagation(); showPlaylistBuilder(); };
     header.appendChild(newBtn);
   }
 }
@@ -2985,7 +3015,7 @@ async function handleConnect() {
 if (!window.currentUser) { handleLoginRequired(); return; }
 if (window.currentUser.id === window.creatorId) { showToast('You cannot connect to your own channel', 'info'); return; }
 try {
-const { error } = await supabaseAuth.from('connectors').insert({
+const { error } = await supabase.from('connectors').insert({
 connector_id: window.currentUser.id,
 connected_id: window.creatorId,
 connection_type: 'creator',
@@ -3006,7 +3036,7 @@ showToast('Failed to connect', 'error');
 
 async function handleDisconnect() {
 try {
-const { error } = await supabaseAuth.from('connectors').delete().eq('connector_id', window.currentUser.id).eq('connected_id', window.creatorId).eq('connection_type', 'creator');
+const { error } = await supabase.from('connectors').delete().eq('connector_id', window.currentUser.id).eq('connected_id', window.creatorId).eq('connection_type', 'creator');
 if (error) throw error;
 window.isConnected = false;
 window.connectorCount = Math.max(0, window.connectorCount - 1);
@@ -3030,7 +3060,7 @@ else { navigator.clipboard.writeText(`${text}\n${url}`).then(() => showToast('Li
 
 async function showConnectorsModal() {
 try {
-const { data: connectors, error } = await supabaseAuth.from('connectors').select(`connector_id, user_profiles!inner(id, full_name, username, avatar_url)`).eq('connected_id', window.creatorId).eq('connection_type', 'creator');
+const { data: connectors, error } = await supabase.from('connectors').select(`connector_id, user_profiles!inner(id, full_name, username, avatar_url)`).eq('connected_id', window.creatorId).eq('connection_type', 'creator');
 if (error) throw error;
 const title = document.getElementById('modal-title');
 const list = document.getElementById('connectors-list');
@@ -3083,12 +3113,12 @@ async function showPlaylistBuilder(playlistId = null) {
     title.textContent = 'Edit Playlist';
     deleteBtn.style.display = 'block';
     
-    // Load playlist data
-    const { data: playlist, error } = await supabaseAuth
-      .from('playlists')
+    // Load playlist data from creator_playlists
+    const { data: playlist, error } = await supabase
+      .from('creator_playlists')
       .select('*')
       .eq('id', playlistId)
-      .eq('user_id', window.creatorId)  // Security: Only owner's playlists
+      .eq('creator_id', window.creatorId)  // Security: Only owner's playlists
       .maybeSingle();
     
     if (error || !playlist) {
@@ -3111,7 +3141,7 @@ async function showPlaylistBuilder(playlistId = null) {
         `<img src="${fixMediaUrl(playlist.custom_thumbnail_url)}" style="width:100%;height:100%;object-fit:cover;">`;
     }
     
-    // Load playlist items
+    // Load playlist items from creator_playlist_items
     await loadPlaylistItems(playlist.id);
     
   } else {
@@ -3125,6 +3155,7 @@ async function showPlaylistBuilder(playlistId = null) {
       </div>
     `;
     document.getElementById('items-count').textContent = '0';
+    window.playlistItems = [];
   }
   
   // Load creator's content library
@@ -3140,19 +3171,19 @@ async function showPlaylistBuilder(playlistId = null) {
   setupDragAndDrop();
 }
 
-// Load playlist items
+// Load playlist items from creator_playlist_items
 async function loadPlaylistItems(playlistId) {
   try {
-    const { data: items, error } = await supabaseAuth
-      .from('playlist_items')
+    const { data: items, error } = await supabase
+      .from('creator_playlist_items')
       .select(`
         *,
-        Content (
+        Content!content_id (
           id, title, thumbnail_url, duration, views_count, created_at, media_type
         )
       `)
       .eq('playlist_id', playlistId)
-      .order('position', { ascending: true });
+      .order('position', { ascending: true, nullsLast: true });
     
     if (error) throw error;
     
@@ -3230,7 +3261,7 @@ function renderPlaylistItems() {
 // Load creator's content library
 async function loadCreatorLibrary(filter = 'all', search = '') {
   try {
-    let query = supabaseAuth
+    let query = supabase
       .from('Content')
       .select('id, title, thumbnail_url, duration, views_count, created_at, media_type, genre')
       .eq('user_id', window.creatorId)
@@ -3325,7 +3356,7 @@ function renderLibraryContent(filter = 'all', search = '') {
   });
 }
 
-// Add content to playlist
+// Add content to playlist (creator_playlist_items)
 async function addContentToPlaylist(contentId) {
   const playlistId = document.getElementById('edit-playlist-id').value;
   if (!playlistId) {
@@ -3335,10 +3366,12 @@ async function addContentToPlaylist(contentId) {
   
   try {
     // Get next position
-    const maxPos = Math.max(0, ...window.playlistItems.map(i => i.position || 0));
+    const maxPos = window.playlistItems.length > 0 
+      ? Math.max(...window.playlistItems.map(i => i.position || 0)) 
+      : 0;
     
-    const { error } = await supabaseAuth
-      .from('playlist_items')
+    const { error } = await supabase
+      .from('creator_playlist_items')
       .insert({
         playlist_id: playlistId,
         content_id: parseInt(contentId),
@@ -3346,7 +3379,14 @@ async function addContentToPlaylist(contentId) {
         added_at: new Date().toISOString()
       });
     
-    if (error) throw error;
+    if (error) {
+      if (error.code === '23505') { // Unique constraint violation
+        showToast('This video is already in the playlist', 'warning');
+      } else {
+        throw error;
+      }
+      return;
+    }
     
     // Refresh items
     await loadPlaylistItems(playlistId);
@@ -3362,13 +3402,13 @@ async function addContentToPlaylist(contentId) {
   }
 }
 
-// Remove item from playlist
+// Remove item from playlist (creator_playlist_items)
 async function removePlaylistItem(itemId) {
   if (!confirm('Remove this item from the playlist?')) return;
   
   try {
-    const { error } = await supabaseAuth
-      .from('playlist_items')
+    const { error } = await supabase
+      .from('creator_playlist_items')
       .delete()
       .eq('id', itemId);
     
@@ -3389,16 +3429,27 @@ async function removePlaylistItem(itemId) {
   }
 }
 
-// Edit item metadata
+// Edit item metadata (custom_title, start_timestamp, end_timestamp, episode_notes)
 function editPlaylistItem(itemId) {
   const item = window.playlistItems.find(i => i.id === itemId);
   if (!item) return;
   
-  // Simple prompt for now (can expand to modal)
+  // Simple prompt for now - could be expanded to a modal
   const customTitle = prompt('Custom title for this episode (optional):', item.custom_title || '');
   if (customTitle !== null) {
-    // TODO: Implement update in database
-    showToast('Item updated (demo)', 'success');
+    // Update in database
+    supabase
+      .from('creator_playlist_items')
+      .update({ custom_title: customTitle || null })
+      .eq('id', itemId)
+      .then(({ error }) => {
+        if (error) {
+          showToast('Failed to update', 'error');
+        } else {
+          showToast('Item updated', 'success');
+          loadPlaylistItems(document.getElementById('edit-playlist-id').value);
+        }
+      });
   }
 }
 
@@ -3466,7 +3517,6 @@ function setupDragAndDrop() {
       document.querySelectorAll('.playlist-item-card').forEach(item => {
         item.classList.remove('drag-over');
       });
-      savePlaylistOrder();
     }
   });
   
@@ -3492,6 +3542,7 @@ function setupDragAndDrop() {
       item.classList.remove('drag-over');
     });
     updateItemPositions();
+    savePlaylistOrder();
   });
 }
 
@@ -3535,8 +3586,8 @@ async function savePlaylistOrder() {
   
   try {
     for (const update of updates) {
-      await supabaseAuth
-        .from('playlist_items')
+      await supabase
+        .from('creator_playlist_items')
         .update({ position: update.position })
         .eq('id', update.id);
     }
@@ -3546,7 +3597,7 @@ async function savePlaylistOrder() {
   }
 }
 
-// Save playlist (create or update) - FIXED: Added name to playlistData for inserts
+// Save playlist (create or update) to creator_playlists
 async function savePlaylist() {
   const playlistId = document.getElementById('edit-playlist-id').value;
   const title = document.getElementById('playlist-title').value.trim();
@@ -3558,7 +3609,7 @@ async function savePlaylist() {
   
   try {
     const playlistData = {
-      user_id: window.creatorId,
+      creator_id: window.creatorId,
       name: title,
       description: document.getElementById('playlist-description').value.trim() || null,
       playlist_type: document.getElementById('playlist-type').value,
@@ -3569,23 +3620,29 @@ async function savePlaylist() {
       updated_at: new Date().toISOString()
     };
     
-    // For create, add created_at
-    if (!playlistId) {
-      playlistData.created_at = new Date().toISOString();
+    // Calculate total duration from items
+    if (window.playlistItems.length > 0) {
+      const totalDuration = window.playlistItems.reduce((sum, item) => {
+        return sum + (item.Content?.duration || 0);
+      }, 0);
+      playlistData.total_duration = totalDuration;
     }
     
     let result;
     if (playlistId) {
-      result = await supabaseAuth
-        .from('playlists')
+      // Update existing playlist
+      result = await supabase
+        .from('creator_playlists')
         .update(playlistData)
         .eq('id', playlistId)
-        .eq('user_id', window.creatorId)
+        .eq('creator_id', window.creatorId)
         .select()
         .single();
     } else {
-      result = await supabaseAuth
-        .from('playlists')
+      // Create new playlist
+      playlistData.created_at = new Date().toISOString();
+      result = await supabase
+        .from('creator_playlists')
         .insert([playlistData])
         .select()
         .single();
@@ -3608,7 +3665,7 @@ async function savePlaylist() {
   }
 }
 
-// Delete playlist
+// Delete playlist from creator_playlists
 async function deletePlaylist() {
   const playlistId = document.getElementById('edit-playlist-id').value;
   if (!playlistId) return;
@@ -3616,11 +3673,11 @@ async function deletePlaylist() {
   if (!confirm('Delete this playlist? All items will be removed. This cannot be undone.')) return;
   
   try {
-    const { error } = await supabaseAuth
-      .from('playlists')
+    const { error } = await supabase
+      .from('creator_playlists')
       .delete()
       .eq('id', playlistId)
-      .eq('user_id', window.creatorId);
+      .eq('creator_id', window.creatorId);
     
     if (error) throw error;
     
@@ -3635,7 +3692,7 @@ async function deletePlaylist() {
   }
 }
 
-// Thumbnail upload handler
+// Thumbnail upload handler (using content-thumbnails bucket)
 function setupThumbnailUpload() {
   document.getElementById('upload-thumb-btn')?.addEventListener('click', () => {
     document.getElementById('thumb-file-input').click();
@@ -3664,18 +3721,21 @@ function setupThumbnailUpload() {
     };
     reader.readAsDataURL(file);
     
-    // Upload to Supabase Storage - FIXED: Using correct bucket name
+    // Upload to Supabase Storage (content-thumbnails bucket)
     try {
-      // Check if bucket exists or use a default bucket
       const fileName = `playlist-thumbs/${window.creatorId}_${Date.now()}.${file.name.split('.').pop()}`;
       
-      // Try to upload - if bucket doesn't exist, we'll still keep the local preview
-      const { data, error } = await supabaseAuth.storage.from('playlist-thumbs').upload(fileName, file);
+      const { data, error } = await supabase.storage
+        .from('content-thumbnails')
+        .upload(fileName, file);
+      
       if (error) {
         console.log('Storage upload failed, keeping local preview:', error);
         // Keep local preview - user can still use the data URL
       } else {
-        const { data: { publicUrl } } = supabaseAuth.storage.from('playlist-thumbs').getPublicUrl(fileName);
+        const { data: { publicUrl } } = supabase.storage
+          .from('content-thumbnails')
+          .getPublicUrl(fileName);
         document.getElementById('playlist-thumbnail').value = publicUrl;
         showToast('Thumbnail uploaded!', 'success');
       }
@@ -3729,7 +3789,7 @@ updateContentUI(filtered);
 // ===== EVENT LISTENERS =====
 function setupEventListeners() {
 document.getElementById('profile-btn')?.addEventListener('click', async () => {
-const { data: { session } } = await supabaseAuth.auth.getSession();
+const { data: { session } } = await supabase.auth.getSession();
 session ? window.location.href='profile.html' : window.location.href=`login.html?redirect=${encodeURIComponent(window.location.href)}`;
 });
 document.getElementById('banner-edit-btn')?.addEventListener('click', showBannerUploadModal);
@@ -3750,9 +3810,9 @@ placeholder.style.display = 'none';
 reader.readAsDataURL(file);
 try {
 const fileName = `banners/${window.creatorId}_${Date.now()}.${file.name.split('.').pop()}`;
-const { data, error } = await supabaseAuth.storage.from('channel-banners').upload(fileName, file);
+const { data, error } = await supabase.storage.from('channel-banners').upload(fileName, file);
 if (error) throw error;
-const { data: { publicUrl } } = supabaseAuth.storage.from('channel-banners').getPublicUrl(fileName);
+const { data: { publicUrl } } = supabase.storage.from('channel-banners').getPublicUrl(fileName);
 await saveBanner(publicUrl);
 } catch (error) {
 console.error('Upload error:', error);
@@ -3835,7 +3895,7 @@ if (e.target === document.getElementById('notifications-panel')) { document.getE
 document.getElementById('mark-all-read')?.addEventListener('click', async () => {
 if (!window.currentUser) return;
 try {
-const { error } = await supabaseAuth.from('notifications').update({ is_read: true }).eq('user_id', window.currentUser.id).eq('is_read', false);
+const { error } = await supabase.from('notifications').update({ is_read: true }).eq('user_id', window.currentUser.id).eq('is_read', false);
 if (error) throw error;
 window.notifications = window.notifications.map(n => ({ ...n, is_read: true }));
 renderNotifications();
@@ -3859,11 +3919,11 @@ option.addEventListener('click', () => { window.applyTheme(option.dataset.theme)
 }
 document.getElementById('nav-home-btn')?.addEventListener('click', () => window.location.href='index.html');
 document.getElementById('nav-create-btn')?.addEventListener('click', async () => {
-const { data: { session } } = await supabaseAuth.auth.getSession();
+const { data: { session } } = await supabase.auth.getSession();
 session ? window.location.href='creator-upload.html' : (showToast('Please sign in to upload', 'warning'), window.location.href='login.html?redirect=creator-upload.html');
 });
 document.getElementById('nav-dashboard-btn')?.addEventListener('click', async () => {
-const { data: { session } } = await supabaseAuth.auth.getSession();
+const { data: { session } } = await supabase.auth.getSession();
 session ? window.location.href='creator-dashboard.html' : (showToast('Please sign in to access dashboard', 'warning'), window.location.href='login.html?redirect=creator-dashboard.html');
 });
 document.getElementById('nav-notifications-btn')?.addEventListener('click', () => {
@@ -3894,21 +3954,7 @@ document.getElementById('delete-playlist-btn')?.addEventListener('click', delete
 setupThumbnailUpload();
 
 // New playlist button (added dynamically to playlists section)
-document.addEventListener('click', (e) => {
-  if (e.target.id === 'new-playlist-btn' || e.target.closest('#new-playlist-btn')) {
-    e.preventDefault();
-    showPlaylistBuilder();
-  }
-  
-  // Edit playlist on card click (owner only)
-  if (e.target.closest('.playlist-card') && window.currentUser?.id === window.creatorId) {
-    const playlistId = e.target.closest('.playlist-card').dataset.playlistId;
-    if (playlistId) {
-      e.preventDefault();
-      showPlaylistBuilder(playlistId);
-    }
-  }
-});
+// Already handled by inline onclick in updatePlaylistsUI
 
 setupContentTabs();
 const backToTopBtn = document.getElementById('backToTopBtn');
@@ -3947,14 +3993,14 @@ setTimeout(() => { document.getElementById('loading').style.display='none'; docu
 
 await initializeCreatorChannel();
 
-supabaseAuth.auth.onAuthStateChange((event, session) => {
+supabase.auth.onAuthStateChange((event, session) => {
 if (event === 'SIGNED_IN') {
 window.currentUser = session.user;
 loadUserProfile();
 loadNotifications();
 showToast('Welcome back!', 'success');
 if (window.creatorId) {
-supabaseAuth.from('connectors').select('*').eq('connector_id', session.user.id).eq('connected_id', window.creatorId).eq('connection_type', 'creator').limit(1).then(({ data }) => {
+supabase.from('connectors').select('*').eq('connector_id', session.user.id).eq('connected_id', window.creatorId).eq('connection_type', 'creator').limit(1).then(({ data }) => {
 window.isConnected = data && data.length > 0;
 updateConnectButton();
 });
