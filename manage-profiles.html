@@ -24,8 +24,1169 @@
   <!-- Chart.js for Analytics -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   
-  <!-- Consolidated CSS File -->
-  <link rel="stylesheet" href="css/manage-profiles.css">
+  <!-- Consolidated CSS File - Comment out if not exists -->
+  <!-- <link rel="stylesheet" href="css/manage-profiles.css"> -->
+  
+  <style>
+    /* Emergency inline styles if CSS file is missing */
+    :root {
+      --deep-charcoal: #0A0E12;
+      --warm-gold: #D4AF37;
+      --soft-white: #F5F5F5;
+      --slate-grey: #4A5568;
+      --electric-blue: #00A3FF;
+      --forest-green: #2D5A27;
+      --error-red: #DC2626;
+      --success-green: #10B981;
+      --warning-yellow: #F59E0B;
+      --ui-scale: 1;
+    }
+    
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: var(--deep-charcoal);
+      color: var(--soft-white);
+      min-height: 100vh;
+      position: relative;
+      overflow-x: hidden;
+    }
+    
+    /* Loading Screen */
+    .loading-screen {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: var(--deep-charcoal);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+    }
+    
+    .spinner {
+      width: 50px;
+      height: 50px;
+      border: 3px solid var(--slate-grey);
+      border-top-color: var(--warm-gold);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-bottom: 20px;
+    }
+    
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    
+    /* Header */
+    .header {
+      background: linear-gradient(180deg, rgba(10,14,18,0.95) 0%, rgba(10,14,18,0.8) 100%);
+      backdrop-filter: blur(10px);
+      padding: 16px 32px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      border-bottom: 1px solid rgba(212, 175, 55, 0.3);
+    }
+    
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      cursor: pointer;
+    }
+    
+    .menu-toggle {
+      background: none;
+      border: none;
+      color: var(--soft-white);
+      font-size: 20px;
+      cursor: pointer;
+      display: none;
+    }
+    
+    .logo-icon {
+      width: 40px;
+      height: 40px;
+      background: linear-gradient(135deg, var(--warm-gold), #B8860B);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .logo-text {
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 700;
+      font-size: 18px;
+      letter-spacing: 2px;
+      color: var(--warm-gold);
+    }
+    
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    
+    .icon-btn {
+      background: rgba(255,255,255,0.1);
+      border: none;
+      color: var(--soft-white);
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.3s;
+    }
+    
+    .icon-btn:hover {
+      background: var(--warm-gold);
+      color: var(--deep-charcoal);
+      transform: translateY(-2px);
+    }
+    
+    .profile-switcher {
+      position: relative;
+    }
+    
+    .profile-btn {
+      background: rgba(255,255,255,0.1);
+      border: none;
+      color: var(--soft-white);
+      padding: 8px 16px;
+      border-radius: 40px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    
+    .profile-btn:hover {
+      background: var(--warm-gold);
+      color: var(--deep-charcoal);
+    }
+    
+    .profile-placeholder {
+      width: 32px;
+      height: 32px;
+      background: linear-gradient(135deg, var(--slate-grey), #2d3748);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .profile-name {
+      font-size: 14px;
+      font-weight: 500;
+    }
+    
+    .profile-dropdown {
+      position: absolute;
+      top: 100%;
+      right: 0;
+      width: 280px;
+      background: #1a1e24;
+      border: 1px solid rgba(212,175,55,0.3);
+      border-radius: 12px;
+      margin-top: 8px;
+      display: none;
+      z-index: 1001;
+    }
+    
+    .profile-dropdown.show {
+      display: block;
+    }
+    
+    .profile-dropdown-header {
+      padding: 16px;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+    
+    .profile-dropdown-header h4 {
+      color: var(--warm-gold);
+      font-size: 14px;
+    }
+    
+    .profile-list {
+      max-height: 300px;
+      overflow-y: auto;
+      padding: 8px;
+    }
+    
+    .profile-list-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 8px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    
+    .profile-list-item:hover {
+      background: rgba(212,175,55,0.1);
+    }
+    
+    .profile-list-item.active {
+      background: rgba(212,175,55,0.2);
+      border-left: 3px solid var(--warm-gold);
+    }
+    
+    .profile-list-avatar {
+      width: 40px;
+      height: 40px;
+      background: linear-gradient(135deg, var(--slate-grey), #2d3748);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .profile-list-info {
+      flex: 1;
+    }
+    
+    .profile-list-name {
+      font-weight: 500;
+      font-size: 14px;
+    }
+    
+    .profile-list-type {
+      font-size: 12px;
+      color: #a0aec0;
+    }
+    
+    .profile-dropdown-footer {
+      padding: 16px;
+      border-top: 1px solid rgba(255,255,255,0.1);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    
+    .text-btn {
+      background: none;
+      border: none;
+      color: var(--soft-white);
+      padding: 8px;
+      border-radius: 6px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      width: 100%;
+      text-align: left;
+    }
+    
+    .text-btn:hover {
+      background: rgba(255,255,255,0.1);
+    }
+    
+    .rsa-badge {
+      background: linear-gradient(135deg, #007A4D, #FFB81C, #E03C31);
+      padding: 6px 12px;
+      border-radius: 40px;
+      font-size: 12px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    
+    /* Page Header */
+    .page-header {
+      padding: 40px 32px 20px;
+      text-align: center;
+    }
+    
+    .page-title {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 36px;
+      font-weight: 700;
+      color: var(--warm-gold);
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+    }
+    
+    .page-subtitle {
+      color: #a0aec0;
+      font-size: 16px;
+    }
+    
+    /* Container */
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 32px 60px;
+    }
+    
+    /* Profiles Grid */
+    .profiles-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 24px;
+      margin-bottom: 40px;
+    }
+    
+    .profile-card {
+      background: linear-gradient(135deg, rgba(26,30,36,0.9), rgba(10,14,18,0.9));
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(212,175,55,0.2);
+      border-radius: 16px;
+      padding: 24px;
+      transition: all 0.3s;
+      cursor: pointer;
+      position: relative;
+    }
+    
+    .profile-card:hover {
+      transform: translateY(-4px);
+      border-color: var(--warm-gold);
+      box-shadow: 0 10px 30px rgba(212,175,55,0.2);
+    }
+    
+    .profile-card.active {
+      border-color: var(--warm-gold);
+      background: linear-gradient(135deg, rgba(212,175,55,0.1), rgba(26,30,36,0.9));
+    }
+    
+    .profile-avatar {
+      width: 100px;
+      height: 100px;
+      margin: 0 auto 16px;
+      border-radius: 50%;
+      overflow: hidden;
+      border: 3px solid var(--warm-gold);
+      position: relative;
+    }
+    
+    .profile-avatar img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    
+    .avatar-initials {
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(135deg, var(--slate-grey), #2d3748);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 36px;
+      font-weight: 600;
+      color: var(--warm-gold);
+    }
+    
+    .active-badge {
+      position: absolute;
+      top: 5px;
+      right: 5px;
+      background: var(--warm-gold);
+      color: var(--deep-charcoal);
+      padding: 4px 8px;
+      border-radius: 20px;
+      font-size: 10px;
+      font-weight: 600;
+    }
+    
+    .profile-info {
+      text-align: center;
+      margin-bottom: 16px;
+    }
+    
+    .profile-info h3 {
+      font-size: 18px;
+      margin-bottom: 4px;
+    }
+    
+    .profile-info p {
+      color: #a0aec0;
+      font-size: 14px;
+    }
+    
+    .profile-actions {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+    }
+    
+    .profile-actions .icon-btn {
+      width: 36px;
+      height: 36px;
+      background: rgba(255,255,255,0.05);
+    }
+    
+    .profile-actions .icon-btn:hover {
+      background: var(--warm-gold);
+    }
+    
+    /* Add Profile Button */
+    .add-profile-container {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 60px;
+    }
+    
+    .add-profile-btn {
+      background: linear-gradient(135deg, rgba(212,175,55,0.2), rgba(10,14,18,0.9));
+      border: 2px dashed var(--warm-gold);
+      color: var(--warm-gold);
+      padding: 16px 32px;
+      border-radius: 60px;
+      font-size: 18px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    
+    .add-profile-btn:hover {
+      background: var(--warm-gold);
+      color: var(--deep-charcoal);
+      transform: translateY(-2px);
+    }
+    
+    /* Settings Section */
+    .profile-settings-section {
+      margin-bottom: 40px;
+    }
+    
+    .settings-title {
+      font-size: 24px;
+      color: var(--warm-gold);
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    
+    .settings-card {
+      background: linear-gradient(135deg, rgba(26,30,36,0.9), rgba(10,14,18,0.9));
+      border: 1px solid rgba(212,175,55,0.2);
+      border-radius: 16px;
+      padding: 24px;
+    }
+    
+    .setting-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+    
+    .setting-item:last-child {
+      border-bottom: none;
+    }
+    
+    .setting-info h3 {
+      font-size: 16px;
+      margin-bottom: 4px;
+    }
+    
+    .setting-info p {
+      color: #a0aec0;
+      font-size: 14px;
+    }
+    
+    .setting-select {
+      background: #2d3748;
+      border: 1px solid var(--warm-gold);
+      color: var(--soft-white);
+      padding: 8px 16px;
+      border-radius: 8px;
+      min-width: 200px;
+    }
+    
+    .toggle-switch {
+      position: relative;
+      display: inline-block;
+      width: 50px;
+      height: 24px;
+    }
+    
+    .toggle-switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    
+    .toggle-slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #2d3748;
+      transition: .4s;
+      border-radius: 34px;
+    }
+    
+    .toggle-slider:before {
+      position: absolute;
+      content: "";
+      height: 20px;
+      width: 20px;
+      left: 2px;
+      bottom: 2px;
+      background-color: white;
+      transition: .4s;
+      border-radius: 50%;
+    }
+    
+    input:checked + .toggle-slider {
+      background-color: var(--warm-gold);
+    }
+    
+    input:checked + .toggle-slider:before {
+      transform: translateX(26px);
+    }
+    
+    /* Content Sections */
+    .profile-content-section {
+      margin-bottom: 40px;
+    }
+    
+    .content-section-title {
+      font-size: 20px;
+      color: var(--warm-gold);
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    
+    .horizontal-scroll {
+      display: flex;
+      gap: 16px;
+      overflow-x: auto;
+      padding-bottom: 16px;
+    }
+    
+    .content-placeholder {
+      text-align: center;
+      padding: 40px;
+      background: rgba(255,255,255,0.02);
+      border-radius: 16px;
+      width: 100%;
+    }
+    
+    .content-placeholder p {
+      color: #a0aec0;
+      margin: 8px 0;
+    }
+    
+    .content-placeholder small {
+      color: #4a5568;
+    }
+    
+    .history-item {
+      min-width: 200px;
+      background: rgba(255,255,255,0.05);
+      border-radius: 12px;
+      overflow: hidden;
+      cursor: pointer;
+      transition: transform 0.3s;
+    }
+    
+    .history-item:hover {
+      transform: translateY(-4px);
+    }
+    
+    .history-item img {
+      width: 100%;
+      height: 120px;
+      object-fit: cover;
+    }
+    
+    .history-item-info {
+      padding: 12px;
+    }
+    
+    .history-item-info h4 {
+      font-size: 14px;
+      margin-bottom: 4px;
+    }
+    
+    .history-item-info p {
+      font-size: 12px;
+      color: #a0aec0;
+    }
+    
+    /* Playlists Grid */
+    .playlists-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 16px;
+    }
+    
+    .playlist-card {
+      background: rgba(255,255,255,0.05);
+      border-radius: 12px;
+      padding: 16px;
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+    
+    .playlist-thumbnail {
+      width: 60px;
+      height: 60px;
+      background: linear-gradient(135deg, var(--warm-gold), #B8860B);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+    }
+    
+    .playlist-info {
+      flex: 1;
+    }
+    
+    .playlist-info h4 {
+      font-size: 14px;
+      margin-bottom: 4px;
+    }
+    
+    .playlist-info p {
+      font-size: 12px;
+      color: #a0aec0;
+    }
+    
+    .playlist-info small {
+      font-size: 10px;
+      color: var(--warm-gold);
+    }
+    
+    .playlist-actions {
+      display: flex;
+      gap: 4px;
+    }
+    
+    .create-playlist-btn {
+      background: none;
+      border: 1px solid var(--warm-gold);
+      color: var(--warm-gold);
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-left: auto;
+    }
+    
+    .create-playlist-btn:hover {
+      background: var(--warm-gold);
+      color: var(--deep-charcoal);
+    }
+    
+    /* Danger Zone */
+    .danger-zone-section {
+      margin-top: 60px;
+    }
+    
+    .danger-title {
+      font-size: 24px;
+      color: var(--error-red);
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    
+    .danger-card {
+      background: linear-gradient(135deg, rgba(220,38,38,0.1), rgba(10,14,18,0.9));
+      border: 1px solid var(--error-red);
+      border-radius: 16px;
+      padding: 24px;
+    }
+    
+    .danger-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .danger-info h3 {
+      font-size: 18px;
+      margin-bottom: 4px;
+      color: var(--error-red);
+    }
+    
+    .danger-info p {
+      color: #a0aec0;
+      font-size: 14px;
+    }
+    
+    .danger-btn {
+      background: none;
+      border: 1px solid var(--error-red);
+      color: var(--error-red);
+      padding: 12px 24px;
+      border-radius: 8px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.3s;
+    }
+    
+    .danger-btn:hover {
+      background: var(--error-red);
+      color: white;
+    }
+    
+    /* Modal Styles */
+    .profile-modal, .delete-modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.8);
+      backdrop-filter: blur(5px);
+      z-index: 2000;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .modal-content {
+      background: #1a1e24;
+      border-radius: 24px;
+      width: 90%;
+      max-width: 600px;
+      max-height: 90vh;
+      overflow-y: auto;
+      border: 1px solid var(--warm-gold);
+    }
+    
+    .modal-header {
+      padding: 20px 24px;
+      border-bottom: 1px solid rgba(212,175,55,0.3);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .modal-header h2 {
+      color: var(--warm-gold);
+      font-size: 20px;
+    }
+    
+    .close-modal-btn {
+      background: none;
+      border: none;
+      color: var(--soft-white);
+      font-size: 20px;
+      cursor: pointer;
+    }
+    
+    .modal-body {
+      padding: 24px;
+    }
+    
+    .form-group {
+      margin-bottom: 20px;
+    }
+    
+    .form-group label {
+      display: block;
+      margin-bottom: 8px;
+      color: var(--warm-gold);
+      font-size: 14px;
+      font-weight: 500;
+    }
+    
+    .form-input, .form-textarea, .form-select {
+      width: 100%;
+      padding: 12px;
+      background: #2d3748;
+      border: 1px solid rgba(212,175,55,0.3);
+      border-radius: 8px;
+      color: var(--soft-white);
+      font-size: 14px;
+    }
+    
+    .form-input:focus, .form-textarea:focus, .form-select:focus {
+      outline: none;
+      border-color: var(--warm-gold);
+    }
+    
+    .character-count {
+      text-align: right;
+      font-size: 12px;
+      color: #a0aec0;
+      margin-top: 4px;
+    }
+    
+    .avatar-section {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-bottom: 24px;
+    }
+    
+    .avatar-preview {
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      overflow: hidden;
+      border: 3px solid var(--warm-gold);
+      margin-bottom: 16px;
+    }
+    
+    .avatar-placeholder {
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(135deg, var(--slate-grey), #2d3748);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 48px;
+    }
+    
+    .avatar-actions {
+      display: flex;
+      gap: 12px;
+    }
+    
+    .avatar-btn {
+      background: rgba(212,175,55,0.1);
+      border: 1px solid var(--warm-gold);
+      color: var(--warm-gold);
+      padding: 8px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .avatar-hint {
+      font-size: 12px;
+      color: #a0aec0;
+      margin-top: 8px;
+    }
+    
+    .profile-type-options {
+      display: flex;
+      gap: 16px;
+    }
+    
+    .profile-type-option {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 12px;
+      background: rgba(255,255,255,0.05);
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    
+    .profile-type-option input {
+      display: none;
+    }
+    
+    .profile-type-option i {
+      font-size: 24px;
+      margin-bottom: 8px;
+    }
+    
+    .profile-type-option input:checked + i + span,
+    .profile-type-option input:checked ~ i,
+    .profile-type-option input:checked ~ span {
+      color: var(--warm-gold);
+    }
+    
+    .profile-type-option input:checked + i {
+      color: var(--warm-gold);
+    }
+    
+    .profile-type-option input:checked ~ * {
+      color: var(--warm-gold);
+    }
+    
+    .preferences-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+    
+    .preference-checkbox {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px;
+      background: rgba(255,255,255,0.05);
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    
+    .toggle-label {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    
+    .modal-footer {
+      padding: 20px 24px;
+      border-top: 1px solid rgba(212,175,55,0.3);
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+    }
+    
+    .cancel-btn {
+      background: none;
+      border: 1px solid #a0aec0;
+      color: #a0aec0;
+      padding: 10px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    
+    .save-btn {
+      background: var(--warm-gold);
+      border: none;
+      color: var(--deep-charcoal);
+      padding: 10px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    
+    .delete-content {
+      background: #1a1e24;
+      border-radius: 24px;
+      width: 90%;
+      max-width: 450px;
+      border: 1px solid var(--error-red);
+    }
+    
+    .delete-header {
+      padding: 20px 24px;
+      border-bottom: 1px solid var(--error-red);
+      text-align: center;
+    }
+    
+    .delete-header i {
+      font-size: 48px;
+      color: var(--error-red);
+      margin-bottom: 12px;
+    }
+    
+    .delete-header h2 {
+      color: var(--error-red);
+    }
+    
+    .delete-body {
+      padding: 24px;
+    }
+    
+    .warning-list {
+      margin: 16px 0;
+    }
+    
+    .warning-list p {
+      margin: 8px 0;
+      color: #a0aec0;
+    }
+    
+    .warning-list i {
+      color: var(--error-red);
+      margin-right: 8px;
+    }
+    
+    .delete-warning {
+      color: var(--error-red);
+      font-weight: 600;
+      margin: 16px 0;
+    }
+    
+    .support-contact {
+      font-size: 12px;
+      color: #a0aec0;
+    }
+    
+    .delete-footer {
+      padding: 20px 24px;
+      border-top: 1px solid var(--error-red);
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+    }
+    
+    .confirm-delete-btn {
+      background: var(--error-red);
+      border: none;
+      color: white;
+      padding: 10px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    
+    /* Toast Container */
+    #toast-container {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      z-index: 3000;
+    }
+    
+    .toast {
+      background: #1a1e24;
+      border-left: 4px solid var(--warm-gold);
+      border-radius: 8px;
+      padding: 12px 20px;
+      margin-top: 8px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      animation: slideIn 0.3s ease;
+    }
+    
+    .toast-success {
+      border-left-color: var(--success-green);
+    }
+    
+    .toast-error {
+      border-left-color: var(--error-red);
+    }
+    
+    .toast-warning {
+      border-left-color: var(--warning-yellow);
+    }
+    
+    @keyframes slideIn {
+      from {
+        transform: translateX(100%);
+        opacity: 0;
+      }
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
+    
+    .toast.fade-out {
+      animation: fadeOut 0.3s ease forwards;
+    }
+    
+    @keyframes fadeOut {
+      to {
+        opacity: 0;
+        transform: translateX(100%);
+      }
+    }
+    
+    /* No Profiles Message */
+    .no-profiles-message {
+      grid-column: 1 / -1;
+      text-align: center;
+      padding: 60px;
+      background: rgba(255,255,255,0.02);
+      border-radius: 16px;
+    }
+    
+    .no-profiles-message h3 {
+      font-size: 20px;
+      margin-bottom: 8px;
+    }
+    
+    .no-profiles-message p {
+      color: #a0aec0;
+    }
+    
+    /* Responsive */
+    @media (max-width: 768px) {
+      .header {
+        padding: 12px 16px;
+      }
+      
+      .menu-toggle {
+        display: block;
+      }
+      
+      .logo-text {
+        display: none;
+      }
+      
+      .profile-name {
+        display: none;
+      }
+      
+      .rsa-badge span {
+        display: none;
+      }
+      
+      .page-title {
+        font-size: 28px;
+      }
+      
+      .container {
+        padding: 0 16px 40px;
+      }
+      
+      .profiles-grid {
+        grid-template-columns: 1fr;
+      }
+      
+      .setting-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+      }
+      
+      .setting-select {
+        width: 100%;
+      }
+      
+      .danger-item {
+        flex-direction: column;
+        gap: 16px;
+      }
+      
+      .danger-btn {
+        width: 100%;
+        justify-content: center;
+      }
+      
+      .preferences-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+  </style>
 </head>
 <body>
   <!-- =================================================================== -->
@@ -34,16 +1195,6 @@
   <div id="loading" class="loading-screen">
     <div class="spinner"></div>
     <div id="loading-text">Loading Profiles...</div>
-  </div>
-  
-  <!-- =================================================================== -->
-  <!-- ANIMATED BACKGROUND                                                 -->
-  <!-- =================================================================== -->
-  <div class="animated-bg">
-    <div class="glow-cycle glow-1"></div>
-    <div class="glow-cycle glow-2"></div>
-    <div class="glow-cycle glow-3"></div>
-    <div class="glow-cycle glow-4"></div>
   </div>
   
   <!-- =================================================================== -->
@@ -206,16 +1357,16 @@
         </div>
       </div>
       
-      <!-- Profile Content Sections (Favorites & History) - NOW VISIBLE -->
+      <!-- Profile Content Sections (Favorites & History) -->
       <div class="profile-content-section" id="profile-favorites-section">
         <h3 class="content-section-title">
           <i class="fas fa-heart"></i>
           <span>Favorite Content</span>
         </h3>
         <div class="horizontal-scroll" id="profile-favorites">
-          <!-- Favorites loaded dynamically - placeholder until loaded -->
+          <!-- Favorites loaded dynamically -->
           <div class="content-placeholder">
-            <i class="fas fa-heart" style="font-size: 48px; color: var(--slate-grey); margin-bottom: 16px;"></i>
+            <i class="fas fa-heart" style="font-size: 48px; color: #4a5568; margin-bottom: 16px;"></i>
             <p>No favorites yet</p>
             <small>Content you mark as favorite will appear here</small>
           </div>
@@ -228,16 +1379,16 @@
           <span>Watch History</span>
         </h3>
         <div class="horizontal-scroll" id="profile-history">
-          <!-- History loaded dynamically - placeholder until loaded -->
+          <!-- History loaded dynamically -->
           <div class="content-placeholder">
-            <i class="fas fa-history" style="font-size: 48px; color: var(--slate-grey); margin-bottom: 16px;"></i>
+            <i class="fas fa-history" style="font-size: 48px; color: #4a5568; margin-bottom: 16px;"></i>
             <p>No watch history yet</p>
             <small>Content you watch will appear here</small>
           </div>
         </div>
       </div>
 
-      <!-- User Playlists Section - NEW -->
+      <!-- User Playlists Section -->
       <div class="profile-content-section" id="profile-playlists-section">
         <h3 class="content-section-title">
           <i class="fas fa-list"></i>
@@ -247,9 +1398,9 @@
           </button>
         </h3>
         <div class="playlists-grid" id="profile-playlists">
-          <!-- Playlists loaded dynamically - placeholder until loaded -->
+          <!-- Playlists loaded dynamically -->
           <div class="content-placeholder">
-            <i class="fas fa-list" style="font-size: 48px; color: var(--slate-grey); margin-bottom: 16px;"></i>
+            <i class="fas fa-list" style="font-size: 48px; color: #4a5568; margin-bottom: 16px;"></i>
             <p>No playlists yet</p>
             <small>Create playlists to organize your favorite content</small>
           </div>
@@ -280,153 +1431,9 @@
     </main>
     
     <!-- =================================================================== -->
-    <!-- SIMPLIFIED BOTTOM NAVIGATION                                        -->
-    <!-- =================================================================== -->
-    <div class="navigation-button-container">
-      <div class="navigation-button">
-        <div class="nav-icon" id="nav-home-btn" title="Home">
-          <i class="fas fa-home"></i>
-        </div>
-        <div class="nav-icon" id="nav-create-btn" title="Create Content">
-          <i class="fas fa-plus-circle"></i>
-        </div>
-        <div class="nav-icon" id="nav-menu-btn" title="Menu">
-          <i class="fas fa-bars"></i>
-        </div>
-      </div>
-    </div>
-    
-    <!-- =================================================================== -->
     <!-- TOAST CONTAINER                                                     -->
     <!-- =================================================================== -->
     <div id="toast-container"></div>
-    
-    <!-- =================================================================== -->
-    <!-- BACK TO TOP BUTTON                                                  -->
-    <!-- =================================================================== -->
-    <button id="backToTopBtn" class="back-to-top">
-      <i class="fas fa-arrow-up"></i>
-    </button>
-    
-    <!-- =================================================================== -->
-    <!-- UI SCALE CONTROL WIDGET                                             -->
-    <!-- =================================================================== -->
-    <div class="ui-scale-control" id="ui-scale-control">
-      <div class="scale-control-bar">
-        <button class="scale-btn" id="scale-decrease" title="Make Smaller (Ctrl+-)">
-          <i class="fas fa-minus"></i>
-        </button>
-        <span class="scale-value" id="scale-value">100%</span>
-        <button class="scale-btn" id="scale-increase" title="Make Larger (Ctrl++)">
-          <i class="fas fa-plus"></i>
-        </button>
-        <button class="scale-btn" id="scale-reset" title="Reset (Ctrl+0)">
-          <i class="fas fa-undo"></i>
-        </button>
-      </div>
-    </div>
-    
-  </div>
-  
-  <!-- =================================================================== -->
-  <!-- SIDEBAR MENU (Enhanced)                                             -->
-  <!-- =================================================================== -->
-  <div class="sidebar-overlay" id="sidebar-overlay"></div>
-  <div class="sidebar-menu" id="sidebar-menu">
-    
-    <div class="sidebar-header">
-      <div class="sidebar-logo" onclick="window.location.href='index.html'">
-        <div class="logo-icon">
-          <img src="assets/icon/bantu_stream_connect_icon.png" alt="Bantu Stream Connect" style="width: 24px; height: 24px; object-fit: contain;">
-        </div>
-        <span class="sidebar-logo-text">BANTU</span>
-      </div>
-      <button class="sidebar-close" id="sidebar-close" aria-label="Close menu">
-        <i class="fas fa-times"></i>
-      </button>
-    </div>
-    
-    <!-- Profile Section -->
-    <div class="sidebar-profile" id="sidebar-profile">
-      <div class="sidebar-profile-avatar" id="sidebar-profile-avatar">
-        <img id="sidebar-profile-img" src="" alt="Profile" style="width: 40px; height: 40px; border-radius: 50%; display: none;">
-        <i class="fas fa-user" id="sidebar-profile-icon"></i>
-      </div>
-      <div class="sidebar-profile-info">
-        <div class="sidebar-profile-name" id="sidebar-profile-name">Loading...</div>
-        <div class="sidebar-profile-email" id="sidebar-profile-email">Loading...</div>
-      </div>
-      <i class="fas fa-chevron-right"></i>
-    </div>
-    
-    <!-- Navigation Items -->
-    <nav class="sidebar-nav">
-      <a href="index.html" class="sidebar-nav-item">
-        <i class="fas fa-home"></i>
-        <span>Home</span>
-      </a>
-      <a href="explore-screen.html" class="sidebar-nav-item">
-        <i class="fas fa-compass"></i>
-        <span>Explore</span>
-      </a>
-      <a href="#" class="sidebar-nav-item" id="sidebar-analytics">
-        <i class="fas fa-chart-line"></i>
-        <span>Analytics</span>
-      </a>
-      <a href="#" class="sidebar-nav-item" id="sidebar-notifications">
-        <i class="fas fa-bell"></i>
-        <span>Notifications</span>
-        <span class="badge" id="sidebar-notification-count" style="display: none;">0</span>
-      </a>
-      <a href="#" class="sidebar-nav-item" id="sidebar-badges">
-        <i class="fas fa-medal"></i>
-        <span>My Badges</span>
-      </a>
-      <a href="#" class="sidebar-nav-item" id="sidebar-watch-party">
-        <i class="fas fa-users"></i>
-        <span>Watch Party</span>
-      </a>
-      <a href="creator-upload.html" class="sidebar-nav-item" id="sidebar-create">
-        <i class="fas fa-plus-circle"></i>
-        <span>Create</span>
-      </a>
-      <a href="creator-dashboard.html" class="sidebar-nav-item" id="sidebar-dashboard">
-        <i class="fas fa-tachometer-alt"></i>
-        <span>Dashboard</span>
-      </a>
-      <a href="manage-profiles.html" class="sidebar-nav-item active">
-        <i class="fas fa-user-cog"></i>
-        <span>Manage Profiles</span>
-      </a>
-    </nav>
-    
-    <!-- Footer: Theme & Scale -->
-    <div class="sidebar-footer">
-      <div class="sidebar-theme-toggle" id="sidebar-theme-toggle">
-        <span><i class="fas fa-palette"></i> Theme</span>
-        <i class="fas fa-chevron-right" style="color: var(--slate-grey);"></i>
-      </div>
-      
-      <div class="sidebar-scale-control">
-        <div class="scale-control-row">
-          <span><i class="fas fa-text-height"></i> UI Size</span>
-          <div style="display: flex; align-items: center; gap: 8px;">
-            <button class="scale-btn" id="sidebar-scale-decrease" title="Smaller">
-              <i class="fas fa-minus"></i>
-            </button>
-            <span class="scale-value" id="sidebar-scale-value">100%</span>
-            <button class="scale-btn" id="sidebar-scale-increase" title="Larger">
-              <i class="fas fa-plus"></i>
-            </button>
-          </div>
-        </div>
-        <div class="scale-control-row">
-          <button class="scale-btn" id="sidebar-scale-reset" title="Reset" style="width: 100%;">
-            <i class="fas fa-undo"></i> Reset to Default
-          </button>
-        </div>
-      </div>
-    </div>
     
   </div>
   
@@ -688,7 +1695,7 @@
     </div>
   </div>
   
-  <!-- Create Playlist Modal - NEW -->
+  <!-- Create Playlist Modal -->
   <div id="playlist-modal" class="profile-modal">
     <div class="modal-content">
       <div class="modal-header">
@@ -738,269 +1745,12 @@
     </div>
   </div>
   
-  <!-- Search Modal -->
-  <div id="search-modal" class="search-modal">
-    <div class="search-modal-header">
-      <div class="search-input-container">
-        <i class="search-icon fas fa-search"></i>
-        <input type="text" id="search-input" class="search-input" placeholder="Search content, creators, or categories..." autocomplete="off">
-        <button id="voice-search-modal-btn" class="voice-search-btn" title="Voice Search">
-          <i class="fas fa-microphone"></i>
-        </button>
-      </div>
-      <button id="close-search-btn" class="close-search-btn">
-        <i class="fas fa-times"></i>
-      </button>
-    </div>
-    
-    <div class="search-filters">
-      <div class="filter-group">
-        <label class="filter-label">Category</label>
-        <select id="category-filter" class="filter-select">
-          <option value="">All Categories</option>
-          <option value="Music">Music</option>
-          <option value="STEM">STEM</option>
-          <option value="Culture">Culture</option>
-          <option value="News">News</option>
-        </select>
-      </div>
-      <div class="filter-group">
-        <label class="filter-label">Sort By</label>
-        <select id="sort-filter" class="filter-select">
-          <option value="newest">Newest First</option>
-          <option value="popular">Most Popular</option>
-        </select>
-      </div>
-      <div class="filter-group">
-        <label class="filter-label">Language</label>
-        <select id="language-filter" class="filter-select">
-          <option value="">All Languages</option>
-          <option value="en">English</option>
-          <option value="zu">IsiZulu</option>
-          <option value="xh">IsiXhosa</option>
-        </select>
-      </div>
-    </div>
-    
-    <div id="search-results" class="search-results">
-      <div id="search-results-grid" class="search-results-grid">
-        <!-- Results loaded here -->
-      </div>
-    </div>
-  </div>
-  
-  <!-- Notifications Panel -->
-  <div id="notifications-panel" class="notifications-panel">
-    <div class="notifications-header">
-      <h2>Notifications</h2>
-      <button id="close-notifications" class="icon-btn">
-        <i class="fas fa-times"></i>
-      </button>
-    </div>
-    <div class="notifications-list" id="notifications-list">
-      <!-- Notifications loaded here -->
-    </div>
-    <div class="notifications-footer">
-      <button id="mark-all-read" class="text-btn">Mark all as read</button>
-      <button id="notification-settings" class="text-btn">Settings</button>
-    </div>
-  </div>
-  
-  <!-- Analytics Modal -->
-  <div id="analytics-modal" class="analytics-modal">
-    <div class="analytics-content">
-      <div class="analytics-header">
-        <h2>My Personal Analytics</h2>
-        <button id="close-analytics" class="close-search-btn">
-          <i class="fas fa-times"></i>
-        </button>
-      </div>
-      <div class="analytics-body">
-        <div class="analytics-grid">
-          <div class="analytics-card">
-            <h3>Watch Time</h3>
-            <div class="analytics-value" id="personal-watch-time">0h</div>
-          </div>
-          <div class="analytics-card">
-            <h3>Sessions</h3>
-            <div class="analytics-value" id="personal-sessions">0</div>
-          </div>
-          <div class="analytics-card">
-            <h3>Return Rate</h3>
-            <div class="analytics-value" id="return-rate">0%</div>
-          </div>
-          <div class="analytics-card">
-            <h3>Total Views</h3>
-            <div class="analytics-value" id="personal-views">0</div>
-          </div>
-        </div>
-        <div class="charts-container">
-          <canvas id="engagement-chart"></canvas>
-        </div>
-      </div>
-    </div>
-  </div>
-  
-  <!-- Theme Selector -->
-  <div id="theme-selector" class="theme-selector">
-    <button class="theme-option" data-theme="dark">
-      <i class="fas fa-moon"></i> Dark
-    </button>
-    <button class="theme-option" data-theme="light">
-      <i class="fas fa-sun"></i> Light
-    </button>
-    <button class="theme-option" data-theme="high-contrast">
-      <i class="fas fa-eye"></i> High Contrast
-    </button>
-  </div>
-  
-  <!-- Watch Party Modal -->
-  <div id="watch-party-modal" class="watch-party-modal">
-    <div class="watch-party-content">
-      <div class="watch-party-header">
-        <h2><i class="fas fa-users"></i> Start a Watch Party</h2>
-        <button id="close-watch-party" class="close-btn">
-          <i class="fas fa-times"></i>
-        </button>
-      </div>
-      <div class="watch-party-body">
-        <div class="watch-party-content-selector">
-          <h3>Select Content</h3>
-          <div class="watch-party-search">
-            <input type="text" id="watch-party-search" placeholder="Search content...">
-          </div>
-          <div class="watch-party-content-list" id="watch-party-content-list">
-            <!-- Content list loaded here -->
-          </div>
-        </div>
-        <div class="watch-party-settings">
-          <h3>Party Settings</h3>
-          <div class="setting-item">
-            <label>
-              <input type="checkbox" id="party-sync-playback" checked>
-              Sync playback for everyone
-            </label>
-          </div>
-          <div class="setting-item">
-            <label>
-              <input type="checkbox" id="party-chat-enabled" checked>
-              Enable party chat
-            </label>
-          </div>
-        </div>
-      </div>
-      <div class="watch-party-footer">
-        <button id="start-watch-party" class="primary-btn">
-          <i class="fas fa-play"></i> Start Party
-        </button>
-      </div>
-    </div>
-  </div>
-  
-  <!-- Tip Creator Modal -->
-  <div id="tip-modal" class="tip-modal">
-    <div class="tip-content">
-      <div class="tip-header">
-        <h2><i class="fas fa-gift"></i> Support Creator</h2>
-        <button id="close-tip" class="close-btn">
-          <i class="fas fa-times"></i>
-        </button>
-      </div>
-      <div class="tip-body">
-        <div class="creator-info-tip" id="tip-creator-info">
-          <!-- Creator info loaded here -->
-        </div>
-        <div class="tip-amounts">
-          <h3>Select Amount</h3>
-          <div class="tip-options">
-            <button class="tip-option" data-amount="5">R5</button>
-            <button class="tip-option" data-amount="10">R10</button>
-            <button class="tip-option" data-amount="25">R25</button>
-            <button class="tip-option" data-amount="50">R50</button>
-          </div>
-        </div>
-        <div class="tip-message">
-          <h3>Message (Optional)</h3>
-          <textarea id="tip-message" placeholder="Say something nice..."></textarea>
-        </div>
-      </div>
-      <div class="tip-footer">
-        <button id="send-tip" class="primary-btn">
-          <i class="fas fa-gift"></i> Send Tip
-        </button>
-      </div>
-    </div>
-  </div>
-  
-  <!-- Badges Modal -->
-  <div id="badges-modal" class="badges-modal">
-    <div class="badges-content">
-      <div class="badges-header">
-        <h2><i class="fas fa-medal"></i> Your Badges</h2>
-        <button id="close-badges" class="close-btn">
-          <i class="fas fa-times"></i>
-        </button>
-      </div>
-      <div class="badges-body">
-        <div class="badges-stats">
-          <div class="badge-stat">
-            <span class="badge-stat-value" id="badges-earned">0</span>
-            <span class="badge-stat-label">Badges Earned</span>
-          </div>
-        </div>
-        <div class="badges-grid" id="badges-grid">
-          <!-- Badges will be loaded here -->
-        </div>
-      </div>
-    </div>
-  </div>
-  
-  <!-- Voice Search Status -->
-  <div id="voice-search-status" class="voice-search-status">
-    <div class="voice-status-content">
-      <i class="fas fa-microphone"></i>
-      <span id="voice-status-text">Listening...</span>
-    </div>
-  </div>
-  
-  <!-- Keyboard Shortcuts Help Modal -->
-  <div id="shortcuts-modal" class="analytics-modal" style="display: none;">
-    <div class="analytics-content">
-      <div class="analytics-header">
-        <h2>Keyboard Shortcuts</h2>
-        <button id="close-shortcuts" class="close-search-btn">
-          <i class="fas fa-times"></i>
-        </button>
-      </div>
-      <div class="analytics-body">
-        <div class="shortcuts-grid">
-          <div><kbd>Ctrl+K</kbd> - Search</div>
-          <div><kbd>Alt+N</kbd> - Notifications</div>
-          <div><kbd>Alt+A</kbd> - Analytics</div>
-          <div><kbd>Alt+P</kbd> - Profile</div>
-          <div><kbd>Ctrl+N</kbd> - New Profile</div>
-          <div><kbd>?</kbd> - Show Shortcuts</div>
-          <div><kbd>Escape</kbd> - Close Modals</div>
-        </div>
-      </div>
-    </div>
-  </div>
-  
   <!-- =================================================================== -->
-  <!-- JAVASCRIPT FILES (Load Supabase SDK FIRST)                          -->
+  <!-- JAVASCRIPT                                                          -->
   <!-- =================================================================== -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="env.js"></script>
-  <script src="js/rate-limiter.js"></script>
-  <script src="js/manage-profiles.js"></script>
-  <script src="js/manage-profiles-ui.js"></script>
-  <script src="js/manage-profiles-features.js"></script>
-  <script src="js/playlists.js"></script>
-  <script src="js/watch-history.js"></script>
 
-  <!-- =================================================================== -->
-  <!-- INITIALIZATION SCRIPT (After all dependencies load)                 -->
-  <!-- =================================================================== -->
   <script>
   // Global variables
   window.currentUser = null;
@@ -1011,48 +1761,16 @@
   window.watchHistory = [];
   window.notifications = [];
 
-  // Wait for Supabase to be available
-  function initializeSupabase() {
-    // Supabase Configuration
-    const SUPABASE_URL = window.ENV?.SUPABASE_URL || 'https://ydnxqnbjoshvxteevemc.supabase.co';
-    const SUPABASE_ANON_KEY = window.ENV?.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U';
-    
-    // Check if Supabase is loaded
-    if (!window.supabase) {
-      console.error('❌ Supabase SDK not loaded!');
-      setTimeout(initializeSupabase, 100);
-      return;
-    }
-    
-    // Initialize Supabase client
-    window.supabaseAuth = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    
-    // Content Supabase client for media URLs
-    class ContentSupabaseClient {
-      constructor(url, key) {
-        this.url = url;
-        this.key = key;
-      }
-      fixMediaUrl(url) {
-        if (!url) return '';
-        if (url.startsWith('http')) return url;
-        if (url.includes('supabase.co')) return url;
-        return `${this.url}/storage/v1/object/public/${url.replace(/^\/+/, '')}`;
-      }
-    }
-    window.contentSupabase = new ContentSupabaseClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    
-    console.log('✅ Supabase initialized');
-    
-    // Initialize when DOM is ready
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', onDOMReady);
-    } else {
-      onDOMReady();
-    }
-  }
+  // Supabase Configuration
+  const SUPABASE_URL = window.ENV?.SUPABASE_URL || 'https://ydnxqnbjoshvxteevemc.supabase.co';
+  const SUPABASE_ANON_KEY = window.ENV?.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U';
+  
+  // Initialize Supabase client
+  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  window.supabaseAuth = supabase;
 
-  async function onDOMReady() {
+  // Wait for DOM to be ready
+  document.addEventListener('DOMContentLoaded', async function() {
     console.log('🚀 Manage Profiles Page Initializing');
     
     const loadingScreen = document.getElementById('loading');
@@ -1062,88 +1780,32 @@
     try {
       if (loadingText) loadingText.textContent = 'Checking authentication...';
       
-      // Check authentication first
+      // Check authentication
       await checkAuth();
       
       if (!window.currentUser) {
-        // Redirect to login if not authenticated
         window.location.href = 'login.html';
         return;
       }
       
-      if (loadingText) loadingText.textContent = 'Loading user profiles...';
+      if (loadingText) loadingText.textContent = 'Loading your profiles...';
       
       // Load user profiles
       await loadUserProfiles();
       
       if (loadingText) loadingText.textContent = 'Loading your data...';
       
-      // Initialize UI Scale Controller
-      if (!window.uiScaleController && typeof UIScaleController !== 'undefined') {
-        window.uiScaleController = new UIScaleController();
-        window.uiScaleController.init();
-      }
+      // Load playlists
+      await loadPlaylists();
       
-      // Update header and sidebar with user info
+      // Load watch history
+      await loadWatchHistory();
+      
+      // Update header with user info
       updateHeaderProfile();
-      updateSidebarProfile();
       
-      // Initialize page components
-      if (typeof initializeManageProfiles === 'function') {
-        initializeManageProfiles();
-      }
-      
-      // Initialize UI components
-      if (typeof initializeManageProfilesUI === 'function') {
-        initializeManageProfilesUI();
-      }
-      
-      // Initialize features
-      if (typeof initializeManageProfilesFeatures === 'function') {
-        initializeManageProfilesFeatures();
-      }
-      
-      // Setup sidebar
-      if (typeof setupSidebar === 'function') {
-        setupSidebar();
-      }
-      
-      // Setup other UI components
-      if (typeof setupSearch === 'function') setupSearch();
-      if (typeof setupNotifications === 'function') setupNotifications();
-      if (typeof setupAnalytics === 'function') setupAnalytics();
-      if (typeof setupVoiceSearch === 'function') setupVoiceSearch();
-      if (typeof setupWatchParty === 'function') setupWatchParty();
-      if (typeof setupTipSystem === 'function') setupTipSystem();
-      if (typeof setupBackToTop === 'function') setupBackToTop();
-      if (typeof setupKeyboardNavigation === 'function') setupKeyboardNavigation();
-      if (typeof setupNavigationButtons === 'function') setupNavigationButtons();
-      
-      // Load playlists if function exists
-      if (typeof loadUserPlaylists === 'function') {
-        await loadUserPlaylists();
-      } else {
-        await loadPlaylists();
-      }
-      
-      // Load watch history if function exists
-      if (typeof loadWatchHistory === 'function') {
-        await loadWatchHistory();
-      } else {
-        await loadHistory();
-      }
-      
-      // Setup edit profile functionality
-      setupEditProfile();
-      
-      // Setup playlist creation
-      setupPlaylistCreation();
-      
-      // Setup logout
-      setupLogout();
-      
-      // Setup profile switching
-      setupProfileSwitching();
+      // Setup event listeners
+      setupEventListeners();
       
       // Hide loading screen
       setTimeout(() => {
@@ -1159,20 +1821,18 @@
       
     } catch (error) {
       console.error('❌ Error loading manage profiles:', error);
-      if (typeof showToast === 'function') {
-        showToast('Failed to load profiles: ' + error.message, 'error');
-      }
+      showToast('Failed to load profiles: ' + error.message, 'error');
       setTimeout(() => {
         loadingScreen.style.display = 'none';
         app.style.display = 'block';
       }, 1000);
     }
-  }
+  });
 
   // Check Authentication
   async function checkAuth() {
     try {
-      const { data: { session }, error } = await window.supabaseAuth.auth.getSession();
+      const { data: { session }, error } = await supabase.auth.getSession();
       
       if (error) throw error;
       
@@ -1182,25 +1842,7 @@
         return;
       }
       
-      // Set current user
       window.currentUser = session.user;
-      
-      // Get user profile from database
-      const { data: profile, error: profileError } = await window.supabaseAuth
-        .from('profiles')
-        .select('*')
-        .eq('id', session.user.id)
-        .single();
-      
-      if (profileError && profileError.code !== 'PGRST116') {
-        console.error('Error fetching user profile:', profileError);
-      }
-      
-      // Merge user data
-      if (profile) {
-        window.currentUser = { ...window.currentUser, ...profile };
-      }
-      
       console.log('Authenticated user:', window.currentUser);
       
     } catch (error) {
@@ -1209,30 +1851,50 @@
     }
   }
 
-  // Load User Profiles
+  // Load User Profiles - Using user_profiles table as suggested by the error
   async function loadUserProfiles() {
     if (!window.currentUser) return;
     
     try {
-      const { data, error } = await window.supabaseAuth
-        .from('profiles')
+      // Try to get profiles from user_profiles table first
+      let { data, error } = await supabase
+        .from('user_profiles')
         .select('*')
         .eq('user_id', window.currentUser.id)
         .order('created_at', { ascending: true });
+      
+      if (error) {
+        console.log('user_profiles table error:', error.message);
+        
+        // Fallback to profiles table
+        const result = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('user_id', window.currentUser.id)
+          .order('created_at', { ascending: true });
+        
+        data = result.data;
+        error = result.error;
+      }
       
       if (error) throw error;
       
       window.profiles = data || [];
       
-      // Get current profile from localStorage or use first profile
-      const savedProfileId = localStorage.getItem('current_profile_id');
-      if (savedProfileId) {
-        window.currentProfile = window.profiles.find(p => p.id === savedProfileId);
-      }
-      
-      if (!window.currentProfile && window.profiles.length > 0) {
-        window.currentProfile = window.profiles[0];
-        localStorage.setItem('current_profile_id', window.currentProfile.id);
+      // If no profiles exist, create a default one
+      if (window.profiles.length === 0) {
+        await createDefaultProfile();
+      } else {
+        // Get current profile from localStorage or use first profile
+        const savedProfileId = localStorage.getItem('current_profile_id');
+        if (savedProfileId) {
+          window.currentProfile = window.profiles.find(p => p.id === savedProfileId);
+        }
+        
+        if (!window.currentProfile && window.profiles.length > 0) {
+          window.currentProfile = window.profiles[0];
+          localStorage.setItem('current_profile_id', window.currentProfile.id);
+        }
       }
       
       console.log('Loaded profiles:', window.profiles);
@@ -1245,8 +1907,68 @@
       
     } catch (error) {
       console.error('Error loading profiles:', error);
-      throw error;
+      // Create a default profile in memory if database fails
+      createDefaultMemoryProfile();
     }
+  }
+
+  // Create default profile in database
+  async function createDefaultProfile() {
+    try {
+      const defaultProfile = {
+        user_id: window.currentUser.id,
+        name: window.currentUser.email?.split('@')[0] || 'User',
+        type: 'adult',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+      
+      // Try user_profiles first
+      let { data, error } = await supabase
+        .from('user_profiles')
+        .insert([defaultProfile])
+        .select();
+      
+      if (error) {
+        // Fallback to profiles table
+        const result = await supabase
+          .from('profiles')
+          .insert([defaultProfile])
+          .select();
+        
+        data = result.data;
+        error = result.error;
+      }
+      
+      if (error) throw error;
+      
+      if (data && data.length > 0) {
+        window.profiles = data;
+        window.currentProfile = data[0];
+        localStorage.setItem('current_profile_id', window.currentProfile.id);
+      }
+      
+    } catch (error) {
+      console.error('Error creating default profile:', error);
+      createDefaultMemoryProfile();
+    }
+  }
+
+  // Create default profile in memory (fallback)
+  function createDefaultMemoryProfile() {
+    const tempProfile = {
+      id: 'temp-' + Date.now(),
+      user_id: window.currentUser.id,
+      name: window.currentUser.email?.split('@')[0] || 'User',
+      type: 'adult',
+      created_at: new Date().toISOString()
+    };
+    
+    window.profiles = [tempProfile];
+    window.currentProfile = tempProfile;
+    localStorage.setItem('current_profile_id', tempProfile.id);
+    
+    showToast('Using temporary profile mode', 'warning');
   }
 
   // Display Profiles in Grid
@@ -1257,7 +1979,7 @@
     if (!window.profiles || window.profiles.length === 0) {
       grid.innerHTML = `
         <div class="no-profiles-message">
-          <i class="fas fa-user-plus" style="font-size: 48px; color: var(--slate-grey); margin-bottom: 16px;"></i>
+          <i class="fas fa-user-plus" style="font-size: 48px; color: #4a5568; margin-bottom: 16px;"></i>
           <h3>No Profiles Yet</h3>
           <p>Create your first profile to get started!</p>
         </div>
@@ -1269,14 +1991,15 @@
       <div class="profile-card ${profile.id === window.currentProfile?.id ? 'active' : ''}" data-profile-id="${profile.id}">
         <div class="profile-avatar">
           ${profile.avatar_url ? 
-            `<img src="${profile.avatar_url}" alt="${profile.name}">` : 
-            `<div class="avatar-initials">${profile.name?.charAt(0).toUpperCase() || 'U'}</div>`
+            `<img src="${profile.avatar_url}" alt="${profile.name || 'Profile'}">` : 
+            `<div class="avatar-initials">${(profile.name || 'U').charAt(0).toUpperCase()}</div>`
           }
           ${profile.id === window.currentProfile?.id ? '<span class="active-badge">Current</span>' : ''}
         </div>
         <div class="profile-info">
           <h3>${profile.name || 'Unnamed Profile'}</h3>
           <p>${profile.type || 'Adult'} Profile</p>
+          ${profile.bio ? `<small>${profile.bio.substring(0, 30)}${profile.bio.length > 30 ? '...' : ''}</small>` : ''}
         </div>
         <div class="profile-actions">
           <button class="icon-btn edit-profile-btn" data-profile-id="${profile.id}" title="Edit Profile">
@@ -1291,44 +2014,6 @@
         </div>
       </div>
     `).join('');
-    
-    // Add event listeners to profile action buttons
-    document.querySelectorAll('.edit-profile-btn').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const profileId = btn.dataset.profileId;
-        const profile = window.profiles.find(p => p.id === profileId);
-        if (profile) {
-          openEditProfileModal(profile);
-        }
-      });
-    });
-    
-    document.querySelectorAll('.delete-profile-btn').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const profileId = btn.dataset.profileId;
-        const profile = window.profiles.find(p => p.id === profileId);
-        if (profile) {
-          openDeleteProfileModal(profile);
-        }
-      });
-    });
-    
-    document.querySelectorAll('.switch-profile-btn').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const profileId = btn.dataset.profileId;
-        switchProfile(profileId);
-      });
-    });
-    
-    document.querySelectorAll('.profile-card').forEach(card => {
-      card.addEventListener('click', () => {
-        const profileId = card.dataset.profileId;
-        switchProfile(profileId);
-      });
-    });
   }
 
   // Populate Default Profile Select
@@ -1341,8 +2026,8 @@
     window.profiles.forEach(profile => {
       const option = document.createElement('option');
       option.value = profile.id;
-      option.textContent = profile.name;
-      option.selected = profile.is_default === true;
+      option.textContent = profile.name || 'Unnamed';
+      option.selected = profile.id === window.currentProfile?.id;
       select.appendChild(option);
     });
     
@@ -1351,12 +2036,6 @@
     if (savedDefault) {
       select.value = savedDefault;
     }
-    
-    select.addEventListener('change', (e) => {
-      const profileId = e.target.value;
-      localStorage.setItem('default_profile_id', profileId);
-      showToast('Default profile updated', 'success');
-    });
   }
 
   // Update Header Profile
@@ -1371,41 +2050,19 @@
       if (window.currentProfile.avatar_url) {
         profileImg.src = window.currentProfile.avatar_url;
         profileImg.style.display = 'block';
-        profileIcon.style.display = 'none';
+        if (profileIcon) profileIcon.style.display = 'none';
       } else {
-        profileImg.style.display = 'none';
-        profileIcon.style.display = 'block';
+        if (profileImg) profileImg.style.display = 'none';
+        if (profileIcon) profileIcon.style.display = 'block';
       }
     } else if (window.currentUser) {
       if (profileName) profileName.textContent = window.currentUser.email?.split('@')[0] || 'User';
-      profileImg.style.display = 'none';
-      profileIcon.style.display = 'block';
+      if (profileImg) profileImg.style.display = 'none';
+      if (profileIcon) profileIcon.style.display = 'block';
     }
     
-    // Update profile dropdown list
+    // Update profile dropdown
     updateProfileDropdown();
-  }
-
-  // Update Sidebar Profile
-  function updateSidebarProfile() {
-    const sidebarName = document.getElementById('sidebar-profile-name');
-    const sidebarEmail = document.getElementById('sidebar-profile-email');
-    const sidebarIcon = document.getElementById('sidebar-profile-icon');
-    const sidebarImg = document.getElementById('sidebar-profile-img');
-    
-    if (window.currentUser) {
-      if (sidebarName) sidebarName.textContent = window.currentUser.email?.split('@')[0] || 'User';
-      if (sidebarEmail) sidebarEmail.textContent = window.currentUser.email || 'No email';
-    }
-    
-    if (window.currentProfile?.avatar_url) {
-      sidebarImg.src = window.currentProfile.avatar_url;
-      sidebarImg.style.display = 'block';
-      sidebarIcon.style.display = 'none';
-    } else {
-      sidebarImg.style.display = 'none';
-      sidebarIcon.style.display = 'block';
-    }
   }
 
   // Update Profile Dropdown
@@ -1414,7 +2071,7 @@
     if (!list) return;
     
     if (!window.profiles || window.profiles.length === 0) {
-      list.innerHTML = '<div class="no-profiles">No profiles available</div>';
+      list.innerHTML = '<div class="no-profiles" style="padding: 16px; text-align: center; color: #a0aec0;">No profiles available</div>';
       return;
     }
     
@@ -1422,25 +2079,17 @@
       <div class="profile-list-item ${profile.id === window.currentProfile?.id ? 'active' : ''}" data-profile-id="${profile.id}">
         <div class="profile-list-avatar">
           ${profile.avatar_url ? 
-            `<img src="${profile.avatar_url}" alt="${profile.name}">` : 
-            `<div class="avatar-initials">${profile.name?.charAt(0).toUpperCase() || 'U'}</div>`
+            `<img src="${profile.avatar_url}" alt="${profile.name}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">` : 
+            `<div class="avatar-initials" style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;">${(profile.name || 'U').charAt(0).toUpperCase()}</div>`
           }
         </div>
         <div class="profile-list-info">
           <div class="profile-list-name">${profile.name || 'Unnamed'}</div>
           <div class="profile-list-type">${profile.type || 'Adult'}</div>
         </div>
-        ${profile.id === window.currentProfile?.id ? '<i class="fas fa-check"></i>' : ''}
+        ${profile.id === window.currentProfile?.id ? '<i class="fas fa-check" style="color: var(--warm-gold);"></i>' : ''}
       </div>
     `).join('');
-    
-    list.querySelectorAll('.profile-list-item').forEach(item => {
-      item.addEventListener('click', () => {
-        const profileId = item.dataset.profileId;
-        switchProfile(profileId);
-        document.getElementById('profile-dropdown').classList.remove('show');
-      });
-    });
   }
 
   // Switch Profile
@@ -1452,20 +2101,19 @@
     localStorage.setItem('current_profile_id', profileId);
     
     updateHeaderProfile();
-    updateSidebarProfile();
     
     // Reload profile-specific data
-    if (typeof loadUserPlaylists === 'function') {
-      await loadUserPlaylists();
-    } else {
-      await loadPlaylists();
-    }
+    await loadPlaylists();
+    await loadWatchHistory();
     
-    if (typeof loadWatchHistory === 'function') {
-      await loadWatchHistory();
-    } else {
-      await loadHistory();
-    }
+    // Update active state in profiles grid
+    document.querySelectorAll('.profile-card').forEach(card => {
+      if (card.dataset.profileId === profileId) {
+        card.classList.add('active');
+      } else {
+        card.classList.remove('active');
+      }
+    });
     
     showToast(`Switched to ${profile.name} profile`, 'success');
   }
@@ -1483,11 +2131,11 @@
     if (title) title.textContent = 'Edit Profile';
     if (nameInput) {
       nameInput.value = profile.name || '';
-      document.getElementById('name-count').textContent = profile.name?.length || 0;
+      document.getElementById('name-count').textContent = (profile.name || '').length;
     }
     if (bioInput) {
       bioInput.value = profile.bio || '';
-      document.getElementById('bio-count').textContent = profile.bio?.length || 0;
+      document.getElementById('bio-count').textContent = (profile.bio || '').length;
     }
     if (profileId) profileId.value = profile.id || '';
     
@@ -1532,19 +2180,6 @@
     modal.style.display = 'flex';
   }
 
-  // Open Delete Profile Modal
-  function openDeleteProfileModal(profile) {
-    const modal = document.getElementById('delete-modal');
-    const nameSpan = document.getElementById('delete-profile-name');
-    
-    if (nameSpan) nameSpan.textContent = profile.name || 'this profile';
-    
-    const confirmBtn = document.getElementById('confirm-delete-btn');
-    confirmBtn.dataset.profileId = profile.id;
-    
-    modal.style.display = 'flex';
-  }
-
   // Save Profile Changes
   async function saveProfileChanges() {
     const profileId = document.getElementById('profile-id')?.value;
@@ -1564,14 +2199,12 @@
     }
     
     try {
-      // Show loading state
       const saveBtn = document.getElementById('save-profile-btn');
       if (saveBtn) {
         saveBtn.disabled = true;
         saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
       }
       
-      // Prepare update data
       const updateData = {
         name,
         bio,
@@ -1585,17 +2218,31 @@
         updated_at: new Date().toISOString()
       };
       
-      // Update in database
-      const { data, error } = await window.supabaseAuth
-        .from('profiles')
+      let error = null;
+      
+      // Try user_profiles first
+      const { error: userProfilesError } = await supabase
+        .from('user_profiles')
         .update(updateData)
         .eq('id', profileId);
+      
+      error = userProfilesError;
+      
+      if (error) {
+        // Fallback to profiles table
+        const { error: profilesError } = await supabase
+          .from('profiles')
+          .update(updateData)
+          .eq('id', profileId);
+        
+        error = profilesError;
+      }
       
       if (error) throw error;
       
       // Update local profiles array
-      const profileIndex = window.profiles?.findIndex(p => p.id === profileId);
-      if (profileIndex !== -1 && window.profiles) {
+      const profileIndex = window.profiles.findIndex(p => p.id === profileId);
+      if (profileIndex !== -1) {
         window.profiles[profileIndex] = { ...window.profiles[profileIndex], ...updateData };
       }
       
@@ -1603,14 +2250,11 @@
       if (window.currentProfile?.id === profileId) {
         window.currentProfile = { ...window.currentProfile, ...updateData };
         updateHeaderProfile();
-        updateSidebarProfile();
       }
       
-      // Close modal and show success
       document.getElementById('profile-modal').style.display = 'none';
       showToast('Profile updated successfully', 'success');
       
-      // Refresh profiles display
       displayProfiles();
       updateProfileDropdown();
       
@@ -1633,10 +2277,25 @@
       confirmBtn.disabled = true;
       confirmBtn.querySelector('.fa-spinner').style.display = 'inline-block';
       
-      const { error } = await window.supabaseAuth
-        .from('profiles')
+      let error = null;
+      
+      // Try user_profiles first
+      const { error: userProfilesError } = await supabase
+        .from('user_profiles')
         .delete()
         .eq('id', profileId);
+      
+      error = userProfilesError;
+      
+      if (error) {
+        // Fallback to profiles table
+        const { error: profilesError } = await supabase
+          .from('profiles')
+          .delete()
+          .eq('id', profileId);
+        
+        error = profilesError;
+      }
       
       if (error) throw error;
       
@@ -1653,13 +2312,11 @@
           localStorage.removeItem('current_profile_id');
         }
         updateHeaderProfile();
-        updateSidebarProfile();
       }
       
       document.getElementById('delete-modal').style.display = 'none';
       showToast('Profile deleted successfully', 'success');
       
-      // Refresh displays
       displayProfiles();
       updateProfileDropdown();
       populateDefaultProfileSelect();
@@ -1676,10 +2333,10 @@
 
   // Load Playlists
   async function loadPlaylists() {
-    if (!window.currentUser || !window.currentProfile) return;
+    if (!window.currentProfile) return;
     
     try {
-      const { data, error } = await window.supabaseAuth
+      const { data, error } = await supabase
         .from('playlists')
         .select('*')
         .eq('profile_id', window.currentProfile.id)
@@ -1703,7 +2360,7 @@
     if (!window.playlists || window.playlists.length === 0) {
       container.innerHTML = `
         <div class="content-placeholder">
-          <i class="fas fa-list" style="font-size: 48px; color: var(--slate-grey); margin-bottom: 16px;"></i>
+          <i class="fas fa-list" style="font-size: 48px; color: #4a5568; margin-bottom: 16px;"></i>
           <p>No playlists yet</p>
           <small>Create playlists to organize your favorite content</small>
         </div>
@@ -1717,8 +2374,8 @@
           <i class="fas fa-list"></i>
         </div>
         <div class="playlist-info">
-          <h4>${playlist.name}</h4>
-          <p>${playlist.description || ''}</p>
+          <h4>${playlist.name || 'Untitled'}</h4>
+          ${playlist.description ? `<p>${playlist.description.substring(0, 30)}${playlist.description.length > 30 ? '...' : ''}</p>` : ''}
           <small>${playlist.is_public ? 'Public' : 'Private'}</small>
         </div>
         <div class="playlist-actions">
@@ -1734,11 +2391,11 @@
   }
 
   // Load Watch History
-  async function loadHistory() {
-    if (!window.currentUser || !window.currentProfile) return;
+  async function loadWatchHistory() {
+    if (!window.currentProfile) return;
     
     try {
-      const { data, error } = await window.supabaseAuth
+      const { data, error } = await supabase
         .from('watch_history')
         .select(`
           *,
@@ -1757,7 +2414,7 @@
       if (error) throw error;
       
       window.watchHistory = data || [];
-      displayHistory();
+      displayWatchHistory();
       
     } catch (error) {
       console.error('Error loading watch history:', error);
@@ -1765,14 +2422,14 @@
   }
 
   // Display Watch History
-  function displayHistory() {
+  function displayWatchHistory() {
     const container = document.getElementById('profile-history');
     if (!container) return;
     
     if (!window.watchHistory || window.watchHistory.length === 0) {
       container.innerHTML = `
         <div class="content-placeholder">
-          <i class="fas fa-history" style="font-size: 48px; color: var(--slate-grey); margin-bottom: 16px;"></i>
+          <i class="fas fa-history" style="font-size: 48px; color: #4a5568; margin-bottom: 16px;"></i>
           <p>No watch history yet</p>
           <small>Content you watch will appear here</small>
         </div>
@@ -1782,7 +2439,7 @@
     
     container.innerHTML = window.watchHistory.map(item => `
       <div class="history-item" onclick="window.location.href='watch.html?id=${item.content_id}'">
-        <img src="${item.content?.thumbnail_url || 'assets/placeholder.jpg'}" alt="${item.content?.title}">
+        <img src="${item.content?.thumbnail_url || 'assets/placeholder.jpg'}" alt="${item.content?.title || 'Content'}">
         <div class="history-item-info">
           <h4>${item.content?.title || 'Unknown Content'}</h4>
           <p>${new Date(item.watched_at).toLocaleDateString()}</p>
@@ -1791,11 +2448,149 @@
     `).join('');
   }
 
-  // Playlist Functions
-  function setupPlaylistCreation() {
-    const createBtn = document.getElementById('create-playlist-btn');
-    if (createBtn) {
-      createBtn.addEventListener('click', () => {
+  // Setup Event Listeners
+  function setupEventListeners() {
+    // Profile button dropdown
+    const profileBtn = document.getElementById('current-profile-btn');
+    const dropdown = document.getElementById('profile-dropdown');
+    
+    if (profileBtn && dropdown) {
+      profileBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        dropdown.classList.toggle('show');
+      });
+      
+      document.addEventListener('click', (e) => {
+        if (!profileBtn.contains(e.target) && !dropdown.contains(e.target)) {
+          dropdown.classList.remove('show');
+        }
+      });
+      
+      // Profile list item clicks
+      dropdown.addEventListener('click', (e) => {
+        const item = e.target.closest('.profile-list-item');
+        if (item) {
+          const profileId = item.dataset.profileId;
+          switchProfile(profileId);
+          dropdown.classList.remove('show');
+        }
+      });
+    }
+    
+    // Add profile button
+    const addBtn = document.getElementById('add-profile-btn');
+    if (addBtn) {
+      addBtn.addEventListener('click', () => {
+        openCreateProfileModal();
+      });
+    }
+    
+    // Manage profiles button
+    const manageBtn = document.getElementById('manage-profiles-btn');
+    if (manageBtn) {
+      manageBtn.addEventListener('click', () => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        dropdown.classList.remove('show');
+      });
+    }
+    
+    // Logout button
+    const logoutBtn = document.getElementById('logout-btn');
+    if (logoutBtn) {
+      logoutBtn.addEventListener('click', async () => {
+        await supabase.auth.signOut();
+        localStorage.clear();
+        window.location.href = 'login.html';
+      });
+    }
+    
+    // Edit profile buttons (delegation)
+    document.addEventListener('click', (e) => {
+      const editBtn = e.target.closest('.edit-profile-btn');
+      if (editBtn) {
+        e.stopPropagation();
+        const profileId = editBtn.dataset.profileId;
+        const profile = window.profiles.find(p => p.id === profileId);
+        if (profile) openEditProfileModal(profile);
+      }
+    });
+    
+    // Delete profile buttons (delegation)
+    document.addEventListener('click', (e) => {
+      const deleteBtn = e.target.closest('.delete-profile-btn');
+      if (deleteBtn) {
+        e.stopPropagation();
+        const profileId = deleteBtn.dataset.profileId;
+        const profile = window.profiles.find(p => p.id === profileId);
+        if (profile) openDeleteProfileModal(profile);
+      }
+    });
+    
+    // Switch profile buttons (delegation)
+    document.addEventListener('click', (e) => {
+      const switchBtn = e.target.closest('.switch-profile-btn');
+      if (switchBtn) {
+        e.stopPropagation();
+        const profileId = switchBtn.dataset.profileId;
+        switchProfile(profileId);
+      }
+    });
+    
+    // Profile cards click
+    document.addEventListener('click', (e) => {
+      const card = e.target.closest('.profile-card');
+      if (card && !e.target.closest('.profile-actions')) {
+        const profileId = card.dataset.profileId;
+        switchProfile(profileId);
+      }
+    });
+    
+    // Modal close buttons
+    const closeModalBtn = document.getElementById('close-modal-btn');
+    if (closeModalBtn) {
+      closeModalBtn.addEventListener('click', () => {
+        document.getElementById('profile-modal').style.display = 'none';
+      });
+    }
+    
+    const cancelModalBtn = document.getElementById('cancel-modal-btn');
+    if (cancelModalBtn) {
+      cancelModalBtn.addEventListener('click', () => {
+        document.getElementById('profile-modal').style.display = 'none';
+      });
+    }
+    
+    // Save profile button
+    const saveProfileBtn = document.getElementById('save-profile-btn');
+    if (saveProfileBtn) {
+      saveProfileBtn.addEventListener('click', async (e) => {
+        e.preventDefault();
+        await saveProfileChanges();
+      });
+    }
+    
+    // Delete confirmation
+    const confirmDeleteBtn = document.getElementById('confirm-delete-btn');
+    if (confirmDeleteBtn) {
+      confirmDeleteBtn.addEventListener('click', async () => {
+        const profileId = confirmDeleteBtn.dataset.profileId;
+        if (profileId) {
+          await deleteProfile(profileId);
+        }
+      });
+    }
+    
+    const cancelDeleteBtn = document.getElementById('cancel-delete-btn');
+    if (cancelDeleteBtn) {
+      cancelDeleteBtn.addEventListener('click', () => {
+        document.getElementById('delete-modal').style.display = 'none';
+      });
+    }
+    
+    // Playlist creation
+    const createPlaylistBtn = document.getElementById('create-playlist-btn');
+    if (createPlaylistBtn) {
+      createPlaylistBtn.addEventListener('click', () => {
         openCreatePlaylistModal();
       });
     }
@@ -1822,7 +2617,21 @@
       });
     }
     
-    // Playlist name character count
+    // Character counts
+    const nameInput = document.getElementById('profile-name');
+    if (nameInput) {
+      nameInput.addEventListener('input', () => {
+        document.getElementById('name-count').textContent = nameInput.value.length;
+      });
+    }
+    
+    const bioInput = document.getElementById('profile-bio');
+    if (bioInput) {
+      bioInput.addEventListener('input', () => {
+        document.getElementById('bio-count').textContent = bioInput.value.length;
+      });
+    }
+    
     const playlistName = document.getElementById('playlist-name');
     if (playlistName) {
       playlistName.addEventListener('input', () => {
@@ -1830,15 +2639,129 @@
       });
     }
     
-    // Playlist description character count
     const playlistDesc = document.getElementById('playlist-description');
     if (playlistDesc) {
       playlistDesc.addEventListener('input', () => {
         document.getElementById('playlist-description-count').textContent = playlistDesc.value.length;
       });
     }
+    
+    // Default profile select
+    const defaultSelect = document.getElementById('default-profile-select');
+    if (defaultSelect) {
+      defaultSelect.addEventListener('change', (e) => {
+        const profileId = e.target.value;
+        if (profileId) {
+          localStorage.setItem('default_profile_id', profileId);
+          showToast('Default profile updated', 'success');
+        }
+      });
+    }
+    
+    // Delete all profiles
+    const deleteAllBtn = document.getElementById('delete-all-profiles-btn');
+    if (deleteAllBtn) {
+      deleteAllBtn.addEventListener('click', () => {
+        document.getElementById('delete-all-modal').style.display = 'flex';
+      });
+    }
+    
+    const cancelDeleteAll = document.getElementById('cancel-delete-all-btn');
+    if (cancelDeleteAll) {
+      cancelDeleteAll.addEventListener('click', () => {
+        document.getElementById('delete-all-modal').style.display = 'none';
+      });
+    }
+    
+    const deleteAllConfirm = document.getElementById('confirm-delete-all-btn');
+    const deleteAllInput = document.getElementById('delete-confirmation');
+    
+    if (deleteAllInput && deleteAllConfirm) {
+      deleteAllInput.addEventListener('input', () => {
+        deleteAllConfirm.disabled = deleteAllInput.value !== 'DELETE';
+      });
+      
+      deleteAllConfirm.addEventListener('click', async () => {
+        if (deleteAllInput.value !== 'DELETE') return;
+        
+        try {
+          deleteAllConfirm.disabled = true;
+          deleteAllConfirm.querySelector('.fa-spinner').style.display = 'inline-block';
+          
+          // Delete all profiles except current user's main profile
+          for (const profile of window.profiles) {
+            if (profile.id !== window.currentProfile?.id) {
+              await supabase.from('user_profiles').delete().eq('id', profile.id);
+            }
+          }
+          
+          window.profiles = window.profiles.filter(p => p.id === window.currentProfile?.id);
+          showToast('All other profiles deleted', 'success');
+          document.getElementById('delete-all-modal').style.display = 'none';
+          displayProfiles();
+          updateProfileDropdown();
+          
+        } catch (error) {
+          console.error('Error deleting all profiles:', error);
+          showToast('Failed to delete all profiles', 'error');
+        } finally {
+          deleteAllConfirm.disabled = false;
+          deleteAllConfirm.querySelector('.fa-spinner').style.display = 'none';
+        }
+      });
+    }
   }
 
+  // Open Create Profile Modal
+  function openCreateProfileModal() {
+    const modal = document.getElementById('profile-modal');
+    const title = document.getElementById('modal-title');
+    const nameInput = document.getElementById('profile-name');
+    const bioInput = document.getElementById('profile-bio');
+    const profileId = document.getElementById('profile-id');
+    const avatarImage = document.getElementById('avatar-image');
+    const avatarPlaceholder = document.getElementById('avatar-placeholder');
+    
+    if (title) title.textContent = 'Create New Profile';
+    if (nameInput) {
+      nameInput.value = '';
+      document.getElementById('name-count').textContent = '0';
+    }
+    if (bioInput) {
+      bioInput.value = '';
+      document.getElementById('bio-count').textContent = '0';
+    }
+    if (profileId) profileId.value = '';
+    
+    avatarImage.style.display = 'none';
+    avatarPlaceholder.style.display = 'flex';
+    
+    // Reset form
+    document.querySelector('input[name="profile-type"][value="adult"]').checked = true;
+    document.getElementById('maturity-rating').value = 'all';
+    document.getElementById('private-profile-toggle').checked = false;
+    document.getElementById('show-history-toggle').checked = true;
+    document.getElementById('autoplay-toggle').checked = true;
+    document.getElementById('preview-toggle').checked = false;
+    document.getElementById('hd-toggle').checked = false;
+    
+    modal.style.display = 'flex';
+  }
+
+  // Open Delete Profile Modal
+  function openDeleteProfileModal(profile) {
+    const modal = document.getElementById('delete-modal');
+    const nameSpan = document.getElementById('delete-profile-name');
+    
+    if (nameSpan) nameSpan.textContent = profile.name || 'this profile';
+    
+    const confirmBtn = document.getElementById('confirm-delete-btn');
+    confirmBtn.dataset.profileId = profile.id;
+    
+    modal.style.display = 'flex';
+  }
+
+  // Open Create Playlist Modal
   function openCreatePlaylistModal() {
     const modal = document.getElementById('playlist-modal');
     const nameInput = document.getElementById('playlist-name');
@@ -1860,6 +2783,7 @@
     modal.style.display = 'flex';
   }
 
+  // Save Playlist
   async function savePlaylist() {
     const name = document.getElementById('playlist-name')?.value;
     const description = document.getElementById('playlist-description')?.value;
@@ -1880,7 +2804,7 @@
       
       if (playlistId) {
         // Update existing playlist
-        const { error } = await window.supabaseAuth
+        const { error } = await supabase
           .from('playlists')
           .update({
             name,
@@ -1894,7 +2818,7 @@
         showToast('Playlist updated successfully', 'success');
       } else {
         // Create new playlist
-        const { error } = await window.supabaseAuth
+        const { error } = await supabase
           .from('playlists')
           .insert([{
             name,
@@ -1902,7 +2826,8 @@
             is_public: isPublic,
             user_id: window.currentUser?.id,
             profile_id: window.currentProfile?.id,
-            created_at: new Date().toISOString()
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
           }]);
         
         if (error) throw error;
@@ -1926,7 +2851,7 @@
     }
   }
 
-  // Edit Playlist function (to be called from onclick)
+  // Edit Playlist
   window.editPlaylist = async function(playlistId) {
     const playlist = window.playlists.find(p => p.id === playlistId);
     if (!playlist) return;
@@ -1939,11 +2864,11 @@
     
     if (nameInput) {
       nameInput.value = playlist.name || '';
-      document.getElementById('playlist-name-count').textContent = playlist.name?.length || 0;
+      document.getElementById('playlist-name-count').textContent = (playlist.name || '').length;
     }
     if (descInput) {
       descInput.value = playlist.description || '';
-      document.getElementById('playlist-description-count').textContent = playlist.description?.length || 0;
+      document.getElementById('playlist-description-count').textContent = (playlist.description || '').length;
     }
     if (publicToggle) publicToggle.checked = playlist.is_public || false;
     if (playlistIdInput) playlistIdInput.value = playlist.id;
@@ -1951,12 +2876,12 @@
     modal.style.display = 'flex';
   };
 
-  // Delete Playlist function (to be called from onclick)
+  // Delete Playlist
   window.deletePlaylist = async function(playlistId) {
     if (!confirm('Are you sure you want to delete this playlist?')) return;
     
     try {
-      const { error } = await window.supabaseAuth
+      const { error } = await supabase
         .from('playlists')
         .delete()
         .eq('id', playlistId);
@@ -1972,273 +2897,7 @@
     }
   };
 
-  // Setup Edit Profile Functionality
-  function setupEditProfile() {
-    // Save profile button handler
-    const saveBtn = document.getElementById('save-profile-btn');
-    if (saveBtn) {
-      saveBtn.addEventListener('click', async function(e) {
-        e.preventDefault();
-        await saveProfileChanges();
-      });
-    }
-    
-    // Close modal buttons
-    const closeBtn = document.getElementById('close-modal-btn');
-    if (closeBtn) {
-      closeBtn.addEventListener('click', () => {
-        document.getElementById('profile-modal').style.display = 'none';
-      });
-    }
-    
-    const cancelBtn = document.getElementById('cancel-modal-btn');
-    if (cancelBtn) {
-      cancelBtn.addEventListener('click', () => {
-        document.getElementById('profile-modal').style.display = 'none';
-      });
-    }
-    
-    // Delete confirmation
-    const confirmDeleteBtn = document.getElementById('confirm-delete-btn');
-    if (confirmDeleteBtn) {
-      confirmDeleteBtn.addEventListener('click', async () => {
-        const profileId = confirmDeleteBtn.dataset.profileId;
-        if (profileId) {
-          await deleteProfile(profileId);
-        }
-      });
-    }
-    
-    const cancelDeleteBtn = document.getElementById('cancel-delete-btn');
-    if (cancelDeleteBtn) {
-      cancelDeleteBtn.addEventListener('click', () => {
-        document.getElementById('delete-modal').style.display = 'none';
-      });
-    }
-    
-    // Name character count
-    const nameInput = document.getElementById('profile-name');
-    if (nameInput) {
-      nameInput.addEventListener('input', () => {
-        document.getElementById('name-count').textContent = nameInput.value.length;
-      });
-    }
-    
-    // Bio character count
-    const bioInput = document.getElementById('profile-bio');
-    if (bioInput) {
-      bioInput.addEventListener('input', () => {
-        document.getElementById('bio-count').textContent = bioInput.value.length;
-      });
-    }
-  }
-
-  // Setup Logout
-  function setupLogout() {
-    const logoutBtn = document.getElementById('logout-btn');
-    if (logoutBtn) {
-      logoutBtn.addEventListener('click', async () => {
-        try {
-          await window.supabaseAuth.auth.signOut();
-          localStorage.clear();
-          window.location.href = 'login.html';
-        } catch (error) {
-          console.error('Logout error:', error);
-          showToast('Failed to log out', 'error');
-        }
-      });
-    }
-  }
-
-  // Setup Profile Switching
-  function setupProfileSwitching() {
-    const profileBtn = document.getElementById('current-profile-btn');
-    const dropdown = document.getElementById('profile-dropdown');
-    const manageProfilesBtn = document.getElementById('manage-profiles-btn');
-    
-    if (profileBtn && dropdown) {
-      profileBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        dropdown.classList.toggle('show');
-      });
-      
-      document.addEventListener('click', (e) => {
-        if (!profileBtn.contains(e.target) && !dropdown.contains(e.target)) {
-          dropdown.classList.remove('show');
-        }
-      });
-    }
-    
-    if (manageProfilesBtn) {
-      manageProfilesBtn.addEventListener('click', () => {
-        // Already on manage profiles page, just scroll to top
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-        dropdown.classList.remove('show');
-      });
-    }
-  }
-
-  // Setup Sidebar
-  function setupSidebar() {
-    const menuToggle = document.getElementById('menu-toggle');
-    const sidebar = document.getElementById('sidebar-menu');
-    const overlay = document.getElementById('sidebar-overlay');
-    const closeBtn = document.getElementById('sidebar-close');
-    
-    if (menuToggle && sidebar && overlay) {
-      menuToggle.addEventListener('click', () => {
-        sidebar.classList.add('show');
-        overlay.classList.add('show');
-      });
-      
-      closeBtn.addEventListener('click', () => {
-        sidebar.classList.remove('show');
-        overlay.classList.remove('show');
-      });
-      
-      overlay.addEventListener('click', () => {
-        sidebar.classList.remove('show');
-        overlay.classList.remove('show');
-      });
-    }
-    
-    // Sidebar profile click
-    const sidebarProfile = document.getElementById('sidebar-profile');
-    if (sidebarProfile) {
-      sidebarProfile.addEventListener('click', () => {
-        // Navigate to profile page or open profile modal
-        window.location.href = 'profile.html';
-      });
-    }
-  }
-
-  // Setup Back to Top
-  function setupBackToTop() {
-    const backToTopBtn = document.getElementById('backToTopBtn');
-    if (!backToTopBtn) return;
-    
-    window.addEventListener('scroll', () => {
-      if (window.scrollY > 300) {
-        backToTopBtn.classList.add('show');
-      } else {
-        backToTopBtn.classList.remove('show');
-      }
-    });
-    
-    backToTopBtn.addEventListener('click', () => {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    });
-  }
-
-  // Setup Navigation Buttons
-  function setupNavigationButtons() {
-    const homeBtn = document.getElementById('nav-home-btn');
-    if (homeBtn) {
-      homeBtn.addEventListener('click', () => {
-        window.location.href = 'index.html';
-      });
-    }
-    
-    const createBtn = document.getElementById('nav-create-btn');
-    if (createBtn) {
-      createBtn.addEventListener('click', () => {
-        window.location.href = 'creator-upload.html';
-      });
-    }
-    
-    const menuBtn = document.getElementById('nav-menu-btn');
-    if (menuBtn) {
-      menuBtn.addEventListener('click', () => {
-        document.getElementById('menu-toggle').click();
-      });
-    }
-  }
-
-  // UIScaleController class
-  class UIScaleController {
-    constructor() {
-      this.scaleKey = 'bantu_ui_scale';
-      this.scales = [0.75, 0.85, 1.0, 1.15, 1.25, 1.5];
-      this.currentIndex = 2;
-    }
-    
-    init() {
-      const savedScale = localStorage.getItem(this.scaleKey);
-      if (savedScale) {
-        this.currentIndex = this.scales.indexOf(parseFloat(savedScale));
-        if (this.currentIndex === -1) this.currentIndex = 2;
-      }
-      this.applyScale();
-      this.setupListeners();
-    }
-    
-    applyScale() {
-      const scale = this.scales[this.currentIndex];
-      document.documentElement.style.setProperty('--ui-scale', scale);
-      localStorage.setItem(this.scaleKey, scale);
-      this.updateScaleDisplay();
-      document.dispatchEvent(new CustomEvent('scaleChanged', { detail: { scale } }));
-    }
-    
-    updateScaleDisplay() {
-      const scaleValue = document.getElementById('scale-value');
-      const sidebarScaleValue = document.getElementById('sidebar-scale-value');
-      const percentage = Math.round(this.getScale() * 100) + '%';
-      if (scaleValue) scaleValue.textContent = percentage;
-      if (sidebarScaleValue) sidebarScaleValue.textContent = percentage;
-    }
-    
-    getScale() {
-      return this.scales[this.currentIndex];
-    }
-    
-    increase() {
-      if (this.currentIndex < this.scales.length - 1) {
-        this.currentIndex++;
-        this.applyScale();
-        this.showScaleToast();
-      }
-    }
-    
-    decrease() {
-      if (this.currentIndex > 0) {
-        this.currentIndex--;
-        this.applyScale();
-        this.showScaleToast();
-      }
-    }
-    
-    reset() {
-      this.currentIndex = 2;
-      this.applyScale();
-      this.showScaleToast();
-    }
-    
-    showScaleToast() {
-      const scale = this.getScale();
-      const percentage = Math.round(scale * 100);
-      showToast(`UI Size: ${percentage}%`, 'info');
-    }
-    
-    setupListeners() {
-      const increaseBtn = document.getElementById('scale-increase');
-      const decreaseBtn = document.getElementById('scale-decrease');
-      const resetBtn = document.getElementById('scale-reset');
-      const sidebarIncrease = document.getElementById('sidebar-scale-increase');
-      const sidebarDecrease = document.getElementById('sidebar-scale-decrease');
-      const sidebarReset = document.getElementById('sidebar-scale-reset');
-      
-      if (increaseBtn) increaseBtn.addEventListener('click', () => this.increase());
-      if (decreaseBtn) decreaseBtn.addEventListener('click', () => this.decrease());
-      if (resetBtn) resetBtn.addEventListener('click', () => this.reset());
-      if (sidebarIncrease) sidebarIncrease.addEventListener('click', () => this.increase());
-      if (sidebarDecrease) sidebarDecrease.addEventListener('click', () => this.decrease());
-      if (sidebarReset) sidebarReset.addEventListener('click', () => this.reset());
-    }
-  }
-  window.UIScaleController = UIScaleController;
-
-  // Show toast notification function
+  // Show Toast
   function showToast(message, type = 'info') {
     const container = document.getElementById('toast-container');
     if (!container) return;
@@ -2258,204 +2917,6 @@
     }, 3000);
   }
   window.showToast = showToast;
-
-  // Setup Keyboard Navigation
-  function setupKeyboardNavigation() {
-    document.addEventListener('keydown', (e) => {
-      // Ctrl+K for search
-      if (e.ctrlKey && e.key === 'k') {
-        e.preventDefault();
-        document.getElementById('search-btn')?.click();
-      }
-      
-      // Escape to close modals
-      if (e.key === 'Escape') {
-        document.querySelectorAll('.profile-modal, .delete-modal, .search-modal, .notifications-panel, .analytics-modal')
-          .forEach(modal => {
-            modal.style.display = 'none';
-          });
-      }
-      
-      // ? for shortcuts
-      if (e.key === '?' && !e.ctrlKey && !e.altKey) {
-        e.preventDefault();
-        document.getElementById('shortcuts-modal').style.display = 'flex';
-      }
-    });
-    
-    // Close shortcuts modal
-    const closeShortcuts = document.getElementById('close-shortcuts');
-    if (closeShortcuts) {
-      closeShortcuts.addEventListener('click', () => {
-        document.getElementById('shortcuts-modal').style.display = 'none';
-      });
-    }
-  }
-
-  // Setup Search (placeholder)
-  function setupSearch() {
-    const searchBtn = document.getElementById('search-btn');
-    const searchModal = document.getElementById('search-modal');
-    const closeSearch = document.getElementById('close-search-btn');
-    
-    if (searchBtn && searchModal) {
-      searchBtn.addEventListener('click', () => {
-        searchModal.style.display = 'flex';
-        document.getElementById('search-input')?.focus();
-      });
-      
-      closeSearch?.addEventListener('click', () => {
-        searchModal.style.display = 'none';
-      });
-      
-      // Close on escape
-      document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape' && searchModal.style.display === 'flex') {
-          searchModal.style.display = 'none';
-        }
-      });
-    }
-  }
-
-  // Setup Notifications (placeholder)
-  function setupNotifications() {
-    const notifBtn = document.getElementById('notifications-btn');
-    const notifPanel = document.getElementById('notifications-panel');
-    const closeNotif = document.getElementById('close-notifications');
-    
-    if (notifBtn && notifPanel) {
-      notifBtn.addEventListener('click', () => {
-        notifPanel.classList.toggle('show');
-      });
-      
-      closeNotif?.addEventListener('click', () => {
-        notifPanel.classList.remove('show');
-      });
-      
-      document.addEventListener('click', (e) => {
-        if (!notifBtn.contains(e.target) && !notifPanel.contains(e.target)) {
-          notifPanel.classList.remove('show');
-        }
-      });
-    }
-    
-    // Load notifications placeholder
-    const notifList = document.getElementById('notifications-list');
-    if (notifList) {
-      notifList.innerHTML = `
-        <div class="notification-item">
-          <i class="fas fa-bell"></i>
-          <div class="notification-content">
-            <p>Welcome to Bantu Stream Connect!</p>
-            <small>Just now</small>
-          </div>
-        </div>
-        <div class="notification-item">
-          <i class="fas fa-user-plus"></i>
-          <div class="notification-content">
-            <p>Create your first profile to get started</p>
-            <small>1 hour ago</small>
-          </div>
-        </div>
-      `;
-    }
-  }
-
-  // Setup Analytics (placeholder)
-  function setupAnalytics() {
-    const analyticsBtn = document.getElementById('analytics-btn');
-    const analyticsModal = document.getElementById('analytics-modal');
-    const closeAnalytics = document.getElementById('close-analytics');
-    
-    if (analyticsBtn && analyticsModal) {
-      analyticsBtn.addEventListener('click', () => {
-        analyticsModal.style.display = 'flex';
-        // Initialize chart if not already done
-        if (!window.engagementChart && typeof Chart !== 'undefined') {
-          const ctx = document.getElementById('engagement-chart')?.getContext('2d');
-          if (ctx) {
-            window.engagementChart = new Chart(ctx, {
-              type: 'line',
-              data: {
-                labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-                datasets: [{
-                  label: 'Watch Time (hours)',
-                  data: [2, 3, 1.5, 4, 2.5, 5, 3],
-                  borderColor: '#D4AF37',
-                  tension: 0.4
-                }]
-              },
-              options: {
-                responsive: true,
-                maintainAspectRatio: false
-              }
-            });
-          }
-        }
-      });
-      
-      closeAnalytics?.addEventListener('click', () => {
-        analyticsModal.style.display = 'none';
-      });
-    }
-  }
-
-  // Setup Voice Search (placeholder)
-  function setupVoiceSearch() {
-    const voiceBtn = document.getElementById('voice-search-btn');
-    const voiceStatus = document.getElementById('voice-search-status');
-    const voiceText = document.getElementById('voice-status-text');
-    
-    if (voiceBtn && voiceStatus) {
-      voiceBtn.addEventListener('click', () => {
-        voiceStatus.style.display = 'flex';
-        voiceText.textContent = 'Listening...';
-        
-        // Simulate voice recognition
-        setTimeout(() => {
-          voiceText.textContent = 'No speech detected';
-          setTimeout(() => {
-            voiceStatus.style.display = 'none';
-          }, 1500);
-        }, 3000);
-      });
-    }
-  }
-
-  // Setup Watch Party (placeholder)
-  function setupWatchParty() {
-    const watchPartyBtn = document.getElementById('sidebar-watch-party');
-    const watchPartyModal = document.getElementById('watch-party-modal');
-    const closeWatchParty = document.getElementById('close-watch-party');
-    
-    if (watchPartyBtn && watchPartyModal) {
-      watchPartyBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        watchPartyModal.style.display = 'flex';
-      });
-      
-      closeWatchParty?.addEventListener('click', () => {
-        watchPartyModal.style.display = 'none';
-      });
-    }
-  }
-
-  // Setup Tip System (placeholder)
-  function setupTipSystem() {
-    // This would be implemented when needed
-  }
-
-  // Start initialization
-  initializeSupabase();
-
-  // Update scale display on scale change
-  document.addEventListener('scaleChanged', function(e) {
-    const scaleValue = document.getElementById('scale-value');
-    const sidebarScaleValue = document.getElementById('sidebar-scale-value');
-    const percentage = Math.round(e.detail.scale * 100) + '%';
-    if (scaleValue) scaleValue.textContent = percentage;
-    if (sidebarScaleValue) sidebarScaleValue.textContent = percentage;
-  });
   </script>
 </body>
 </html>
