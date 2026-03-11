@@ -1918,10 +1918,9 @@ Passionate about sharing African culture, technology, and innovation through com
 <button id="backToTopBtn" class="back-to-top"><i class="fas fa-arrow-up"></i></button>
 </div>
 
-<script>
 const SUPABASE_URL = 'https://ydnxqnbjoshvxteevemc.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U';
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY); // This is the only declaration
 
 // Global State
 window.currentUser = null;
@@ -2390,7 +2389,7 @@ let playlistsQuery = supabase
   .from('creator_playlists')
   .select(`
     *,
-    creator_playlist_items!inner (
+    creator_playlist_items!left (
       count,
       Content!content_id (
         id, 
@@ -2417,6 +2416,10 @@ if (playlistsError) {
 }
 
 window.playlists = playlistsData || [];
+
+// Load achievements
+const { data: badges } = await supabase.from('user_badges').select('*').eq('user_id', window.creatorId);
+window.achievements = badges || [];
 
 console.log('✅ Creator data loaded:', { profile, contentCount: window.creatorContent.length, connectorCount, isConnected: window.isConnected, playlists: window.playlists.length });
 
