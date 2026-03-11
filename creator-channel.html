@@ -2356,25 +2356,15 @@ const { data: connections } = await supabaseAuth.from('connectors').select('*').
 window.isConnected = connections && connections.length > 0;
 } else { window.isConnected = false; }
 
-// Load playlists - ALL for owner, PUBLIC only for others
+// Load playlists - FIXED QUERY (no nested count)
+console.log('📋 Loading playlists for creator:', window.creatorId);
 window.loadingText.textContent = 'Loading playlists...';
 
+// Step 1: Load playlists WITHOUT nested items (avoids GROUP BY error)
 let playlistsQuery = supabaseAuth
   .from('playlists')
-  .select(`
-    *,
-    playlist_items (
-      count,
-      Content (
-        id, 
-        title, 
-        thumbnail_url, 
-        views_count, 
-        duration
-      )
-    )
-  `)
-  .eq('user_id', window.creatorId);  // Only creator's own playlists
+  .select('*')
+  .eq('user_id', window.creatorId);
 
 // If viewer (not the owner), only show public playlists
 if (!window.currentUser || window.currentUser.id !== window.creatorId) {
@@ -2386,10 +2376,38 @@ const { data: playlistsData, error: playlistsError } = await playlistsQuery
   .limit(10);
 
 if (playlistsError) {
-  console.error('Error loading playlists:', playlistsError);
+  console.error('Playlist load error:', playlistsError);
+  window.playlists = [];
+} else {
+  // Step 2: Load items for each playlist separately
+  const playlistsWithItems = await Promise.all(
+    (playlistsData || []).map(async (playlist) => {
+      const { data: items } = await supabaseAuth
+        .from('playlist_items')
+        .select(`
+          *,
+          Content (
+            id,
+            title,
+            thumbnail_url,
+            views_count,
+            duration
+          )
+        `)
+        .eq('playlist_id', playlist.id)
+        .order('position', { ascending: true });
+      
+      return {
+        ...playlist,
+        playlist_items: items || [],
+        item_count: items?.length || 0
+      };
+    })
+  );
+  
+  window.playlists = playlistsWithItems;
+  console.log('✅ Playlists loaded:', window.playlists.length);
 }
-
-window.playlists = playlistsData || [];
 
 // Load achievements
 const { data: badges } = await supabaseAuth.from('user_badges').select('*').eq('user_id', window.creatorId);
@@ -2797,6 +2815,8 @@ function updatePlaylistsUI() {
   const playlistSection = document.getElementById('playlists-section');
   const playlistGrid = document.getElementById('playlists-grid');
   
+  console.log('🎨 Updating playlists UI...');
+  
   if (!window.playlists || window.playlists.length === 0) {
     playlistSection.style.display = 'none';
     return;
@@ -2806,6 +2826,9 @@ function updatePlaylistsUI() {
   const displayPlaylists = window.currentUser && window.currentUser.id === window.creatorId
     ? window.playlists  // Owner sees all their playlists
     : window.playlists.filter(p => p.visibility === 'public');  // Others see only public
+  
+  console.log('🎨 Is owner?', window.currentUser?.id === window.creatorId);
+  console.log('🎨 Display playlists:', displayPlaylists.length);
   
   if (displayPlaylists.length === 0) {
     playlistSection.style.display = 'none';
@@ -2828,13 +2851,13 @@ function updatePlaylistsUI() {
       ? fixMediaUrl(playlist.custom_thumbnail_url) 
       : (firstItem?.thumbnail_url ? fixMediaUrl(firstItem.thumbnail_url) : 'https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?w=400&h=200&fit=crop');
     
-    const itemCount = playlist.playlist_items?.[0]?.count || playlist.playlist_items?.length || 0;
+    const itemCount = playlist.item_count || 0;
     const typeBadge = playlist.playlist_type && playlist.playlist_type !== 'playlist'
       ? `<span class="playlist-type-badge ${playlist.playlist_type}">${playlist.playlist_type}</span>` 
       : '';
     
     return `
-    <a href="playlist.html?id=${playlist.id}" class="playlist-card ${playlist.is_featured ? 'featured' : ''}" data-playlist-id="${playlist.id}">
+    <div class="playlist-card ${playlist.is_featured ? 'featured' : ''}" data-playlist-id="${playlist.id}">
       <div class="playlist-thumbnail">
         <img src="${thumb}" alt="${escapeHtml(playlist.name)}">
         <div class="playlist-overlay"><i class="fas fa-play" style="font-size:30px;color:white;"></i></div>
@@ -2845,25 +2868,50 @@ function updatePlaylistsUI() {
         <div class="playlist-name" title="${escapeHtml(playlist.name)}">${escapeHtml(playlist.name)}</div>
         <div class="playlist-meta">
           <span>${itemCount} ${itemCount === 1 ? 'video' : 'videos'}</span>
-          ${playlist.total_duration ? `<span>• ${formatDuration(playlist.total_duration)}</span>` : ''}
         </div>
       </div>
-    </a>
+    </div>
     `;
   }).join('');
   
-  // Add "New Playlist" button for owner only
+  // ✅ CRITICAL: Add "New Playlist" button for owner (REMOVE OLD BUTTON FIRST)
   if (window.currentUser && window.currentUser.id === window.creatorId) {
     const header = playlistSection.querySelector('.section-header');
-    if (header && !header.querySelector('#new-playlist-btn')) {
+    if (header) {
+      // Remove existing button if any (prevent duplicates)
+      const existingBtn = header.querySelector('#new-playlist-btn');
+      if (existingBtn) existingBtn.remove();
+      
+      // Create new button
       const newBtn = document.createElement('button');
       newBtn.id = 'new-playlist-btn';
       newBtn.innerHTML = '<i class="fas fa-plus"></i> New Playlist';
-      newBtn.style.cssText = 'background:var(--warm-gold);color:var(--deep-black);border:none;padding:8px 16px;border-radius:20px;font-size:13px;font-weight:600;cursor:pointer;';
-      newBtn.onclick = (e) => { e.preventDefault(); showPlaylistBuilder(); };
+      newBtn.style.cssText = 'background:var(--warm-gold);color:var(--deep-black);border:none;padding:8px 16px;border-radius:20px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;';
+      newBtn.onclick = (e) => { 
+        e.preventDefault(); 
+        e.stopPropagation();
+        console.log('🎬 Opening playlist builder...');
+        showPlaylistBuilder(); 
+      };
       header.appendChild(newBtn);
+      console.log('✅ New Playlist button added to DOM');
     }
   }
+  
+  // Add click handler for playlist cards
+  playlistGrid.querySelectorAll('.playlist-card').forEach(card => {
+    card.addEventListener('click', (e) => {
+      if (window.currentUser?.id === window.creatorId) {
+        // Owner clicks → Edit mode
+        const playlistId = card.dataset.playlistId;
+        if (playlistId) showPlaylistBuilder(playlistId);
+      } else {
+        // Viewer clicks → View playlist
+        const playlistId = card.dataset.playlistId;
+        if (playlistId) window.location.href = `playlist.html?id=${playlistId}`;
+      }
+    });
+  });
 }
 
 function createContentCard(item) {
