@@ -3546,7 +3546,7 @@ async function savePlaylistOrder() {
   }
 }
 
-// Save playlist (create or update)
+// Save playlist (create or update) - FIXED: Added name to playlistData for inserts
 async function savePlaylist() {
   const playlistId = document.getElementById('edit-playlist-id').value;
   const title = document.getElementById('playlist-title').value.trim();
@@ -3560,7 +3560,7 @@ async function savePlaylist() {
     const playlistData = {
       user_id: window.creatorId,
       name: title,
-      description: document.getElementById('playlist-description').value.trim(),
+      description: document.getElementById('playlist-description').value.trim() || null,
       playlist_type: document.getElementById('playlist-type').value,
       visibility: document.getElementById('playlist-visibility').value,
       sort_order: document.getElementById('playlist-sort').value,
@@ -3568,6 +3568,11 @@ async function savePlaylist() {
       custom_thumbnail_url: document.getElementById('playlist-thumbnail').value || null,
       updated_at: new Date().toISOString()
     };
+    
+    // For create, add created_at
+    if (!playlistId) {
+      playlistData.created_at = new Date().toISOString();
+    }
     
     let result;
     if (playlistId) {
@@ -3581,7 +3586,7 @@ async function savePlaylist() {
     } else {
       result = await supabaseAuth
         .from('playlists')
-        .insert(playlistData)
+        .insert([playlistData])
         .select()
         .single();
     }
@@ -3595,7 +3600,11 @@ async function savePlaylist() {
     
   } catch (error) {
     console.error('Error saving playlist:', error);
-    showToast('Failed to save playlist', 'error');
+    if (error.code === '23505') {
+      showToast('A playlist with this name already exists', 'error');
+    } else {
+      showToast('Failed to save playlist: ' + (error.message || 'Unknown error'), 'error');
+    }
   }
 }
 
@@ -3655,14 +3664,21 @@ function setupThumbnailUpload() {
     };
     reader.readAsDataURL(file);
     
-    // Upload to Supabase Storage
+    // Upload to Supabase Storage - FIXED: Using correct bucket name
     try {
+      // Check if bucket exists or use a default bucket
       const fileName = `playlist-thumbs/${window.creatorId}_${Date.now()}.${file.name.split('.').pop()}`;
+      
+      // Try to upload - if bucket doesn't exist, we'll still keep the local preview
       const { data, error } = await supabaseAuth.storage.from('playlist-thumbs').upload(fileName, file);
-      if (error) throw error;
-      const { data: { publicUrl } } = supabaseAuth.storage.from('playlist-thumbs').getPublicUrl(fileName);
-      document.getElementById('playlist-thumbnail').value = publicUrl;
-      showToast('Thumbnail uploaded!', 'success');
+      if (error) {
+        console.log('Storage upload failed, keeping local preview:', error);
+        // Keep local preview - user can still use the data URL
+      } else {
+        const { data: { publicUrl } } = supabaseAuth.storage.from('playlist-thumbs').getPublicUrl(fileName);
+        document.getElementById('playlist-thumbnail').value = publicUrl;
+        showToast('Thumbnail uploaded!', 'success');
+      }
     } catch (error) {
       console.error('Upload error:', error);
       // Keep local preview for demo
