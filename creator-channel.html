@@ -448,7 +448,7 @@ cursor: pointer; transition: all 0.3s ease; display: inline-flex; align-items: c
 /* ===== PLAYLISTS ===== */
 .playlists-section { margin-bottom: 40px; }
 
-.section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+.section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
 
 .section-title {
 font-family: 'Orbitron', sans-serif; font-size: 24px; font-weight: 700;
@@ -458,6 +458,23 @@ display: flex; align-items: center; gap: 10px;
 }
 
 .view-all-link { color: var(--warm-gold); text-decoration: none; font-size: 14px; display: flex; align-items: center; gap: 5px; }
+
+#new-playlist-btn {
+background: var(--warm-gold);
+color: var(--deep-black);
+border: none;
+padding: 8px 16px;
+border-radius: 30px;
+font-size: 14px;
+font-weight: 600;
+cursor: pointer;
+display: flex;
+align-items: center;
+gap: 8px;
+transition: all 0.3s ease;
+white-space: nowrap;
+}
+#new-playlist-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 15px rgba(245,158,11,0.4); }
 
 .playlists-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px; }
 
@@ -1776,12 +1793,18 @@ Passionate about sharing African culture, technology, and innovation through com
 </div>
 
 <!-- Playlists Section -->
-<section class="playlists-section" id="playlists-section" style="display: none;">
-<div class="section-header">
-<h2 class="section-title"><i class="fas fa-list"></i> SERIES & PLAYLISTS</h2>
-<a href="#" class="view-all-link" id="view-all-playlists">View All <i class="fas fa-arrow-right"></i></a>
-</div>
-<div class="playlists-grid" id="playlists-grid"></div>
+<section class="playlists-section" id="playlists-section">
+  <div class="section-header">
+    <h2 class="section-title"><i class="fas fa-list"></i> SERIES & PLAYLISTS</h2>
+    <a href="#" class="view-all-link" id="view-all-playlists">View All <i class="fas fa-arrow-right"></i></a>
+    <!-- New Playlist button will be injected here by JS for the owner -->
+  </div>
+  <div id="playlists-empty" class="empty-state" style="display: none;">
+    <div class="empty-icon"><i class="fas fa-list"></i></div>
+    <h3>No playlists yet</h3>
+    <p>You haven't created any playlists. Start organizing your content!</p>
+  </div>
+  <div class="playlists-grid" id="playlists-grid"></div>
 </section>
 
 <!-- Uploads Section -->
@@ -2400,7 +2423,7 @@ console.log('✅ Creator data loaded:', { profile, contentCount: window.creatorC
 updateCreatorUI();
 updateIdentityCard();
 updateContentUI(window.creatorContent);
-updatePlaylistsUI();
+updatePlaylistsUI(); // Updated UI logic included here
 checkAndShowAllSections();
 } catch (error) {
 console.error('❌ Error loading creator channel:', error);
@@ -2792,77 +2815,80 @@ tagsContainer.innerHTML = tags.map(tag => `<span class="identity-tag">${escapeHt
 }
 }
 
-// ===== PLAYLIST UI FUNCTION =====
+// ===== PLAYLIST UI FUNCTION (Updated with correct empty state and always-visible button) =====
 function updatePlaylistsUI() {
   const playlistSection = document.getElementById('playlists-section');
   const playlistGrid = document.getElementById('playlists-grid');
-  
-  if (!window.playlists || window.playlists.length === 0) {
-    playlistSection.style.display = 'none';
-    return;
-  }
-  
+  const emptyState = document.getElementById('playlists-empty');
+
+  // Ensure section is always visible for the creator
+  playlistSection.style.display = 'block';
+
   // Filter: public for everyone, all for owner
   const displayPlaylists = window.currentUser && window.currentUser.id === window.creatorId
     ? window.playlists  // Owner sees all their playlists
     : window.playlists.filter(p => p.visibility === 'public');  // Others see only public
-  
-  if (displayPlaylists.length === 0) {
-    playlistSection.style.display = 'none';
-    return;
-  }
-  
-  playlistSection.style.display = 'block';
-  
-  // Sort: featured first, then by updated_at
-  const sorted = [...displayPlaylists].sort((a, b) => {
-    if (a.is_featured && !b.is_featured) return -1;
-    if (!a.is_featured && b.is_featured) return 1;
-    return new Date(b.updated_at) - new Date(a.updated_at);
-  });
-  
-  playlistGrid.innerHTML = sorted.map(playlist => {
-    // Get thumbnail from first item or custom thumbnail
-    const firstItem = playlist.playlist_items?.[0]?.Content;
-    const thumb = playlist.custom_thumbnail_url 
-      ? fixMediaUrl(playlist.custom_thumbnail_url) 
-      : (firstItem?.thumbnail_url ? fixMediaUrl(firstItem.thumbnail_url) : 'https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?w=400&h=200&fit=crop');
+
+  // Handle empty state for playlists
+  if (!displayPlaylists || displayPlaylists.length === 0) {
+    playlistGrid.style.display = 'none';
+    emptyState.style.display = 'block';
+  } else {
+    playlistGrid.style.display = 'grid';
+    emptyState.style.display = 'none';
     
-    const itemCount = playlist.playlist_items?.[0]?.count || playlist.playlist_items?.length || 0;
-    const typeBadge = playlist.playlist_type && playlist.playlist_type !== 'playlist'
-      ? `<span class="playlist-type-badge ${playlist.playlist_type}">${playlist.playlist_type}</span>` 
-      : '';
+    // Sort: featured first, then by updated_at
+    const sorted = [...displayPlaylists].sort((a, b) => {
+      if (a.is_featured && !b.is_featured) return -1;
+      if (!a.is_featured && b.is_featured) return 1;
+      return new Date(b.updated_at) - new Date(a.updated_at);
+    });
     
-    return `
-    <a href="playlist.html?id=${playlist.id}" class="playlist-card ${playlist.is_featured ? 'featured' : ''}" data-playlist-id="${playlist.id}">
-      <div class="playlist-thumbnail">
-        <img src="${thumb}" alt="${escapeHtml(playlist.name)}">
-        <div class="playlist-overlay"><i class="fas fa-play" style="font-size:30px;color:white;"></i></div>
-        <div class="playlist-count"><i class="fas fa-video"></i> ${itemCount}</div>
-        ${typeBadge ? `<div style="position:absolute;top:10px;left:10px;">${typeBadge}</div>` : ''}
-      </div>
-      <div class="playlist-info">
-        <div class="playlist-name" title="${escapeHtml(playlist.name)}">${escapeHtml(playlist.name)}</div>
-        <div class="playlist-meta">
-          <span>${itemCount} ${itemCount === 1 ? 'video' : 'videos'}</span>
-          ${playlist.total_duration ? `<span>• ${formatDuration(playlist.total_duration)}</span>` : ''}
+    playlistGrid.innerHTML = sorted.map(playlist => {
+      // Get thumbnail from first item or custom thumbnail
+      const firstItem = playlist.playlist_items?.[0]?.Content;
+      const thumb = playlist.custom_thumbnail_url 
+        ? fixMediaUrl(playlist.custom_thumbnail_url) 
+        : (firstItem?.thumbnail_url ? fixMediaUrl(firstItem.thumbnail_url) : 'https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?w=400&h=200&fit=crop');
+      
+      const itemCount = playlist.playlist_items?.[0]?.count || playlist.playlist_items?.length || 0;
+      const typeBadge = playlist.playlist_type && playlist.playlist_type !== 'playlist'
+        ? `<span class="playlist-type-badge ${playlist.playlist_type}">${playlist.playlist_type}</span>` 
+        : '';
+      
+      return `
+      <a href="playlist.html?id=${playlist.id}" class="playlist-card ${playlist.is_featured ? 'featured' : ''}" data-playlist-id="${playlist.id}">
+        <div class="playlist-thumbnail">
+          <img src="${thumb}" alt="${escapeHtml(playlist.name)}">
+          <div class="playlist-overlay"><i class="fas fa-play" style="font-size:30px;color:white;"></i></div>
+          <div class="playlist-count"><i class="fas fa-video"></i> ${itemCount}</div>
+          ${typeBadge ? `<div style="position:absolute;top:10px;left:10px;">${typeBadge}</div>` : ''}
         </div>
-      </div>
-    </a>
-    `;
-  }).join('');
-  
-  // Add "New Playlist" button for owner only
+        <div class="playlist-info">
+          <div class="playlist-name" title="${escapeHtml(playlist.name)}">${escapeHtml(playlist.name)}</div>
+          <div class="playlist-meta">
+            <span>${itemCount} ${itemCount === 1 ? 'video' : 'videos'}</span>
+            ${playlist.total_duration ? `<span>• ${formatDuration(playlist.total_duration)}</span>` : ''}
+          </div>
+        </div>
+      </a>
+      `;
+    }).join('');
+  }
+
+  // Add "New Playlist" button for owner only (always present in header)
+  const header = playlistSection.querySelector('.section-header');
+  // Remove existing button if any to avoid duplicates
+  const existingBtn = document.getElementById('new-playlist-btn');
+  if (existingBtn) existingBtn.remove();
+
   if (window.currentUser && window.currentUser.id === window.creatorId) {
-    const header = playlistSection.querySelector('.section-header');
-    if (header && !header.querySelector('#new-playlist-btn')) {
-      const newBtn = document.createElement('button');
-      newBtn.id = 'new-playlist-btn';
-      newBtn.innerHTML = '<i class="fas fa-plus"></i> New Playlist';
-      newBtn.style.cssText = 'background:var(--warm-gold);color:var(--deep-black);border:none;padding:8px 16px;border-radius:20px;font-size:13px;font-weight:600;cursor:pointer;';
-      newBtn.onclick = (e) => { e.preventDefault(); showPlaylistBuilder(); };
-      header.appendChild(newBtn);
-    }
+    const newBtn = document.createElement('button');
+    newBtn.id = 'new-playlist-btn';
+    newBtn.innerHTML = '<i class="fas fa-plus"></i> New Playlist';
+    newBtn.style.cssText = 'background:var(--warm-gold);color:var(--deep-black);border:none;padding:8px 16px;border-radius:30px;font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:8px;white-space:nowrap;';
+    newBtn.onclick = (e) => { e.preventDefault(); showPlaylistBuilder(); };
+    header.appendChild(newBtn);
   }
 }
 
