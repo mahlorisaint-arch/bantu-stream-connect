@@ -1062,23 +1062,18 @@ border-radius: 16px; backdrop-filter: blur(10px);
 
 .empty-icon { font-size: 48px; margin-bottom: 20px; color: var(--warm-gold); opacity: 0.5; }
 
-/* ===== PLAYLIST BUILDER STYLES ===== */
+/* ===== PLAYLIST BUILDER MODAL STYLES ===== */
 #playlist-builder-modal .modal-content {
-  max-width: 900px !important;
-  width: 95% !important;
-  padding: 0 !important;
-  overflow: hidden !important;
-  border-radius: 20px !important;
-  max-height: 90vh !important;
-  display: flex !important;
-  flex-direction: column !important;
+  max-width: 900px;
+  width: 95%;
+  padding: 0;
+  overflow: hidden;
 }
 
 #playlist-builder-modal .modal-body {
   display: grid;
   grid-template-columns: 300px 1fr;
-  flex: 1;
-  overflow: hidden;
+  min-height: 500px;
   background: var(--deep-navy);
 }
 
@@ -1094,14 +1089,12 @@ border-radius: 16px; backdrop-filter: blur(10px);
   display: flex;
   flex-direction: column;
   background: var(--deep-navy);
-  overflow: hidden;
 }
 
 #playlist-builder-modal .modal-tabs {
   display: flex;
   border-bottom: 1px solid var(--card-border);
   background: var(--card-bg);
-  flex-shrink: 0;
 }
 
 #playlist-builder-modal .modal-content-area {
@@ -1117,30 +1110,6 @@ border-radius: 16px; backdrop-filter: blur(10px);
   padding: 20px;
   background: var(--card-bg);
   border-top: 1px solid var(--card-border);
-  flex-shrink: 0;
-  position: sticky;
-  bottom: 0;
-}
-
-/* Ensure form inputs are visible */
-#playlist-builder-modal .form-group {
-  margin-bottom: 20px;
-}
-
-#playlist-builder-modal .form-input,
-#playlist-builder-modal .form-textarea {
-  width: 100%;
-  padding: 12px 15px;
-  border-radius: 10px;
-  border: 1px solid var(--card-border);
-  background: rgba(0, 0, 0, 0.3);
-  color: var(--soft-white);
-  font-size: 14px;
-}
-
-#playlist-builder-modal .form-textarea {
-  min-height: 80px;
-  resize: vertical;
 }
 
 /* Playlist item cards */
@@ -1211,7 +1180,6 @@ border-radius: 16px; backdrop-filter: blur(10px);
   border-color: var(--warm-gold);
 }
 
-/* Responsive for mobile */
 @media (max-width: 768px) {
   #playlist-builder-modal .modal-body {
     grid-template-columns: 1fr;
@@ -1432,10 +1400,10 @@ Banner preview
 </div>
 </div>
 
-<!-- PLAYLIST BUILDER MODAL -->
+<!-- ===== CREATOR PLAYLIST BUILDER MODAL ===== -->
 <div id="playlist-builder-modal" class="modal">
-  <div class="modal-content">
-    <!-- Modal Header -->
+  <div class="modal-content" style="max-width: 900px; width: 95%; padding: 0; overflow: hidden;">
+    <!-- Header -->
     <div style="padding: 20px 25px; border-bottom: 1px solid var(--card-border); display: flex; justify-content: space-between; align-items: center; background: var(--card-bg);">
       <h2 class="modal-title" style="margin: 0; font-size: 20px;">
         <i class="fas fa-list"></i> 
@@ -1446,26 +1414,26 @@ Banner preview
       </button>
     </div>
     
-    <!-- Modal Body -->
-    <div class="modal-body">
+    <!-- Body -->
+    <div style="display: grid; grid-template-columns: 300px 1fr; min-height: 500px; background: var(--deep-navy);">
       
-      <!-- Sidebar: Playlist Settings -->
-      <div class="modal-sidebar">
+      <!-- Sidebar: Settings -->
+      <div style="padding: 20px; border-right: 1px solid var(--card-border); background: var(--card-bg); overflow-y: auto; max-height: 70vh;">
         <form id="playlist-settings-form">
           <input type="hidden" id="edit-playlist-id">
           
           <div class="form-group">
-            <label class="form-label" style="display: block; margin-bottom: 8px; font-size: 14px; color: var(--slate-grey); font-weight: 500;">Playlist Title *</label>
+            <label class="form-label">Playlist Title *</label>
             <input type="text" id="playlist-title" class="form-input" placeholder="e.g., African Tech Stories" required>
           </div>
           
           <div class="form-group">
-            <label class="form-label" style="display: block; margin-bottom: 8px; font-size: 14px; color: var(--slate-grey); font-weight: 500;">Description</label>
+            <label class="form-label">Description</label>
             <textarea id="playlist-description" class="form-textarea" placeholder="Describe your playlist..." style="min-height: 80px;"></textarea>
           </div>
           
           <div class="form-group">
-            <label class="form-label" style="display: block; margin-bottom: 8px; font-size: 14px; color: var(--slate-grey); font-weight: 500;">Type</label>
+            <label class="form-label">Type</label>
             <select id="playlist-type" class="form-input">
               <option value="playlist">📁 General Playlist</option>
               <option value="series">🎬 Series (Episodes)</option>
@@ -1475,26 +1443,25 @@ Banner preview
           </div>
           
           <div class="form-group">
-            <label class="form-label" style="display: block; margin-bottom: 8px; font-size: 14px; color: var(--slate-grey); font-weight: 500;">Visibility</label>
+            <label class="form-label">Visibility</label>
             <select id="playlist-visibility" class="form-input">
-              <option value="public">🌍 Public (Everyone)</option>
-              <option value="unlisted">🔗 Unlisted (Link only)</option>
-              <option value="private">🔒 Private (Only me)</option>
+              <option value="public">🌍 Public</option>
+              <option value="unlisted">🔗 Unlisted</option>
+              <option value="private">🔒 Private</option>
             </select>
           </div>
           
           <div class="form-group">
-            <label class="form-label" style="display: block; margin-bottom: 8px; font-size: 14px; color: var(--slate-grey); font-weight: 500;">Sort Order</label>
+            <label class="form-label">Sort Order</label>
             <select id="playlist-sort" class="form-input">
               <option value="manual">✋ Manual (Drag to reorder)</option>
               <option value="newest">📅 Newest First</option>
               <option value="oldest">📅 Oldest First</option>
-              <option value="duration">⏱️ By Duration</option>
             </select>
           </div>
           
           <div class="form-group">
-            <label class="form-label" style="display: block; margin-bottom: 8px; font-size: 14px; color: var(--slate-grey); font-weight: 500;">Custom Thumbnail</label>
+            <label class="form-label">Custom Thumbnail</label>
             <div style="display: flex; gap: 10px; align-items: center;">
               <div id="playlist-thumb-preview" style="width: 80px; height: 45px; border-radius: 8px; background: var(--deep-black); border: 1px solid var(--card-border); display: flex; align-items: center; justify-content: center; color: var(--slate-grey); font-size: 11px; overflow: hidden;">
                 <i class="fas fa-image"></i>
@@ -1514,11 +1481,11 @@ Banner preview
         </form>
       </div>
       
-      <!-- Main: Content Selector & Items List -->
-      <div class="modal-main">
+      <!-- Main: Items & Library -->
+      <div style="display: flex; flex-direction: column; background: var(--deep-navy);">
         
         <!-- Tabs -->
-        <div class="modal-tabs">
+        <div style="display: flex; border-bottom: 1px solid var(--card-border); background: var(--card-bg);">
           <button class="content-tab active" data-playlist-tab="items" style="flex: 1; padding: 12px; border: none; background: transparent; color: var(--soft-white); cursor: pointer; border-bottom: 2px solid var(--warm-gold);">
             📋 Items (<span id="items-count">0</span>)
           </button>
@@ -1527,10 +1494,9 @@ Banner preview
           </button>
         </div>
         
-        <!-- Items Tab (Drag & Drop) -->
-        <div id="playlist-items-tab" class="modal-content-area">
+        <!-- Items Tab -->
+        <div id="playlist-items-tab" style="flex: 1; overflow-y: auto; padding: 15px; max-height: 60vh;">
           <div id="playlist-items-list" style="display: flex; flex-direction: column; gap: 10px;">
-            <!-- Items rendered here -->
             <div style="text-align: center; padding: 40px; color: var(--slate-grey);">
               <i class="fas fa-list" style="font-size: 32px; margin-bottom: 15px; opacity: 0.5;"></i>
               <p>No items yet. Add videos from your library!</p>
@@ -1538,35 +1504,26 @@ Banner preview
           </div>
         </div>
         
-        <!-- Library Tab (Search & Add) -->
-        <div id="playlist-library-tab" class="modal-content-area" style="display: none;">
-          <!-- Search -->
+        <!-- Library Tab -->
+        <div id="playlist-library-tab" style="flex: 1; overflow-y: auto; padding: 15px; max-height: 60vh; display: none;">
           <div style="position: relative; margin-bottom: 15px;">
             <i class="fas fa-search" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--slate-grey);"></i>
             <input type="text" id="library-search" class="form-input" placeholder="Search your videos..." style="padding-left: 35px;">
           </div>
-          
-          <!-- Filter Chips -->
           <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 15px;">
             <button class="library-filter active" data-filter="all">All</button>
             <button class="library-filter" data-filter="video">Videos</button>
             <button class="library-filter" data-filter="short">Shorts</button>
             <button class="library-filter" data-filter="podcast">Podcasts</button>
-            <button class="library-filter" data-filter="music">Music</button>
-            <button class="library-filter" data-filter="series">Series</button>
           </div>
-          
-          <!-- Content Grid -->
-          <div id="library-content-grid" class="content-grid" style="grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));">
-            <!-- Library items rendered here -->
-          </div>
+          <div id="library-content-grid" class="content-grid" style="grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));"></div>
         </div>
         
       </div>
     </div>
     
-    <!-- Modal Footer (Save Button - Always Visible) -->
-    <div class="modal-footer">
+    <!-- Footer: Save Button -->
+    <div style="display: flex; gap: 10px; padding: 20px; background: var(--card-bg); border-top: 1px solid var(--card-border);">
       <button id="save-playlist-btn" class="modal-btn close" style="flex: 1; padding: 12px;">
         <i class="fas fa-save"></i> Save Playlist
       </button>
@@ -2341,17 +2298,17 @@ return urlParams.get(name);
 // ===== FIXED: Load Creator Playlists (System 2 - creator_playlists) =====
 async function loadCreatorPlaylists() {
   try {
-    console.log('📋 Loading creator playlists for:', window.creatorId);
+    console.log('📋 Loading CREATOR playlists for:', window.creatorId);
     
     // Step 1: Load playlists WITHOUT nested items (avoids GROUP BY error)
     const { data: playlists, error: playlistError } = await supabaseAuth
-      .from('creator_playlists')
+      .from('creator_playlists')  // ✅ USE creator_playlists TABLE
       .select('*')
-      .eq('creator_id', window.creatorId)
+      .eq('creator_id', window.creatorId)  // ✅ Filter by creator_id
       .order('updated_at', { ascending: false });
     
     if (playlistError) {
-      console.error('Playlist load error:', playlistError);
+      console.error('❌ Playlist load error:', playlistError);
       window.playlists = [];
       document.getElementById('playlists-section').style.display = 'none';
       return;
@@ -2370,7 +2327,7 @@ async function loadCreatorPlaylists() {
     const playlistsWithItems = await Promise.all(
       playlists.map(async (playlist) => {
         const { data: items } = await supabaseAuth
-          .from('creator_playlist_items')
+          .from('creator_playlist_items')  // ✅ USE creator_playlist_items TABLE
           .select(`
             *,
             Content (
@@ -2395,11 +2352,11 @@ async function loadCreatorPlaylists() {
     window.playlists = playlistsWithItems;
     console.log('✅ Creator playlists loaded:', window.playlists.length);
     
-    // Step 3: Update UI
+    // Step 3: Update UI (this will show the button)
     updatePlaylistsUI();
     
   } catch (error) {
-    console.error('Error loading creator playlists:', error);
+    console.error('❌ Error loading creator playlists:', error);
     window.playlists = [];
     document.getElementById('playlists-section').style.display = 'none';
   }
@@ -2869,6 +2826,8 @@ function updatePlaylistsUI() {
   const playlistSection = document.getElementById('playlists-section');
   const playlistGrid = document.getElementById('playlists-grid');
   
+  console.log('🎨 Updating playlists UI...', window.playlists?.length);
+  
   if (!window.playlists || window.playlists.length === 0) {
     playlistSection.style.display = 'none';
     return;
@@ -2922,11 +2881,13 @@ function updatePlaylistsUI() {
     `;
   }).join('');
   
-  // Add "New Playlist" button for owner
+  // ✅ CRITICAL: Add "New Playlist" button for owner
   if (window.currentUser && window.currentUser.id === window.creatorId) {
+    console.log('👤 User is owner, adding button');
+    
     const header = playlistSection.querySelector('.section-header');
     if (header) {
-      // Remove existing button if any
+      // Remove existing button if any (prevent duplicates)
       const existingBtn = header.querySelector('#new-playlist-btn');
       if (existingBtn) existingBtn.remove();
       
@@ -2942,17 +2903,19 @@ function updatePlaylistsUI() {
         showPlaylistBuilder(); 
       };
       header.appendChild(newBtn);
-      console.log('✅ New Playlist button added');
+      console.log('✅ New Playlist button added to DOM');
     }
   }
   
-  // Add click handler
+  // Add click handler for playlist cards
   playlistGrid.querySelectorAll('.playlist-card').forEach(card => {
     card.addEventListener('click', (e) => {
       if (window.currentUser?.id === window.creatorId) {
+        // Owner clicks → Edit mode
         const playlistId = card.dataset.playlistId;
         if (playlistId) showPlaylistBuilder(playlistId);
       } else {
+        // Viewer clicks → View playlist
         const playlistId = card.dataset.playlistId;
         if (playlistId) window.location.href = `playlist.html?id=${playlistId}`;
       }
@@ -3313,10 +3276,6 @@ async function loadCreatorLibrary(filter = 'all', search = '') {
         query = query.eq('media_type', 'podcast');
       } else if (filter === 'video') {
         query = query.or('media_type.eq.video,media_type.is.null');
-      } else if (filter === 'music') {
-        query = query.eq('genre', 'Music');
-      } else if (filter === 'series') {
-        query = query.eq('genre', 'Series');
       }
     }
     
