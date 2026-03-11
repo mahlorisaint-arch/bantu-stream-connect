@@ -1858,2066 +1858,2071 @@ Passionate about sharing African culture, technology, and innovation through com
 </div>
 
 <script>
-const SUPABASE_URL = 'https://ydnxqnbjoshvxteevemc.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U';
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+(function() {
+  // SINGLE DECLARATION - only here at the beginning
+  const SUPABASE_URL = 'https://ydnxqnbjoshvxteevemc.supabase.co';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U';
+  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-window.currentUser = null;
-window.notifications = [];
-window.creatorId = null;
-window.creatorProfile = null;
-window.isConnected = false;
-window.connectorCount = 0;
-window.creatorContent = [];
-window.playlists = [];
-window.loadingText = null;
-window.currentPlaylist = null;
-window.playlistItems = [];
-window.creatorLibrary = [];
+  // Global State
+  window.currentUser = null;
+  window.notifications = [];
+  window.creatorId = null;
+  window.creatorProfile = null;
+  window.isConnected = false;
+  window.connectorCount = 0;
+  window.creatorContent = [];
+  window.playlists = [];
+  window.loadingText = null;
+  window.currentPlaylist = null;
+  window.playlistItems = [];
+  window.creatorLibrary = [];
 
-window.themes = {
-  dark: { '--deep-black': '#0A0E12', '--deep-navy': '#0F172A', '--soft-white': '#F8FAFC', '--slate-grey': '#94A3B8', '--card-bg': 'rgba(15, 23, 42, 0.6)', '--card-border': 'rgba(148, 163, 184, 0.2)' },
-  light: { '--deep-black': '#F8FAFC', '--deep-navy': '#E2E8F0', '--soft-white': '#0A0E12', '--slate-grey': '#475569', '--card-bg': 'rgba(255, 255, 255, 0.8)', '--card-border': 'rgba(0, 0, 0, 0.1)' },
-  'high-contrast': { '--deep-black': '#000000', '--deep-navy': '#0A0A0A', '--soft-white': '#FFFFFF', '--slate-grey': '#CCCCCC', '--bantu-blue': '#FFFF00', '--warm-gold': '#00FFFF', '--card-bg': '#1A1A1A', '--card-border': '#FFFFFF' }
-};
+  window.themes = {
+    dark: { '--deep-black': '#0A0E12', '--deep-navy': '#0F172A', '--soft-white': '#F8FAFC', '--slate-grey': '#94A3B8', '--card-bg': 'rgba(15, 23, 42, 0.6)', '--card-border': 'rgba(148, 163, 184, 0.2)' },
+    light: { '--deep-black': '#F8FAFC', '--deep-navy': '#E2E8F0', '--soft-white': '#0A0E12', '--slate-grey': '#475569', '--card-bg': 'rgba(255, 255, 255, 0.8)', '--card-border': 'rgba(0, 0, 0, 0.1)' },
+    'high-contrast': { '--deep-black': '#000000', '--deep-navy': '#0A0A0A', '--soft-white': '#FFFFFF', '--slate-grey': '#CCCCCC', '--bantu-blue': '#FFFF00', '--warm-gold': '#00FFFF', '--card-bg': '#1A1A1A', '--card-border': '#FFFFFF' }
+  };
 
-function showToast(message, type = 'info') {
-  const container = document.getElementById('toast-container');
-  if (!container) return;
-  const toast = document.createElement('div');
-  toast.className = `toast ${type}`;
-  const icons = {error:'fa-exclamation-triangle', success:'fa-check-circle', warning:'fa-exclamation-circle', info:'fa-info-circle'};
-  toast.innerHTML = `<i class="fas ${icons[type] || 'fa-info-circle'}"></i><span>${escapeHtml(message)}</span>`;
-  container.appendChild(toast);
-  setTimeout(() => { 
-    toast.style.opacity = '0'; 
-    toast.style.transform = 'translateX(100%)'; 
-    setTimeout(() => toast.remove(), 300); 
-  }, 3000);
-}
-
-function formatNumber(num) {
-  if (num >= 1000000) return (num/1000000).toFixed(1) + 'M';
-  if (num >= 1000) return (num/1000).toFixed(1) + 'K';
-  return num.toString();
-}
-
-function truncateText(text, maxLength) {
-  if (!text) return '';
-  return text.length <= maxLength ? text : text.substring(0, maxLength) + '...';
-}
-
-function escapeHtml(text) {
-  if (!text) return '';
-  const div = document.createElement('div');
-  div.textContent = text;
-  return div.innerHTML;
-}
-
-function formatDate(dateString) {
-  if (!dateString) return '';
-  try {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffDays = Math.floor((now - date) / (1000 * 60 * 60 * 24));
-    if (diffDays === 0) return 'Today';
-    if (diffDays === 1) return 'Yesterday';
-    if (diffDays < 7) return `${diffDays} days ago`;
-    if (diffDays < 30) return `${Math.floor(diffDays/7)} week${Math.floor(diffDays/7)>1?'s':''} ago`;
-    return date.toLocaleDateString('en-US', { month:'short', day:'numeric' });
-  } catch { return ''; }
-}
-
-function getInitials(name) {
-  if (!name || name.trim() === '') return '?';
-  const names = name.trim().split(' ');
-  return names.length >= 2 ? (names[0][0] + names[names.length-1][0]).toUpperCase() : name[0].toUpperCase();
-}
-
-function fixMediaUrl(url) {
-  if (!url) return '';
-  if (url.startsWith('http')) return url;
-  if (url.startsWith('data:')) return url;
-  return `${SUPABASE_URL}/storage/v1/object/public/${url.replace(/^\/+/, '')}`;
-}
-
-function showConfetti() {
-  const colors = ['#F59E0B', '#1D4ED8', '#10B981', '#EC4899', '#8B5CF6'];
-  for (let i = 0; i < 50; i++) {
-    const confetti = document.createElement('div');
-    confetti.className = 'confetti';
-    confetti.style.left = Math.random() * 100 + 'vw';
-    confetti.style.background = colors[Math.floor(Math.random() * colors.length)];
-    confetti.style.animationDelay = Math.random() * 0.5 + 's';
-    document.body.appendChild(confetti);
-    setTimeout(() => confetti.remove(), 3000);
+  function showToast(message, type = 'info') {
+    const container = document.getElementById('toast-container');
+    if (!container) return;
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    const icons = {error:'fa-exclamation-triangle', success:'fa-check-circle', warning:'fa-exclamation-circle', info:'fa-info-circle'};
+    toast.innerHTML = `<i class="fas ${icons[type] || 'fa-info-circle'}"></i><span>${escapeHtml(message)}</span>`;
+    container.appendChild(toast);
+    setTimeout(() => { 
+      toast.style.opacity = '0'; 
+      toast.style.transform = 'translateX(100%)'; 
+      setTimeout(() => toast.remove(), 300); 
+    }, 3000);
   }
-}
 
-function formatDuration(seconds) {
-  if (!seconds) return '0:00';
-  const mins = Math.floor(seconds / 60);
-  const secs = seconds % 60;
-  return `${mins}:${secs.toString().padStart(2, '0')}`;
-}
-
-window.initTheme = function() {
-  const savedTheme = localStorage.getItem('bantu-theme') || 'dark';
-  applyTheme(savedTheme);
-};
-
-function applyTheme(theme) {
-  const root = document.documentElement;
-  const themeColors = window.themes[theme];
-  if (themeColors) {
-    Object.entries(themeColors).forEach(([key, value]) => {
-      root.style.setProperty(key, value);
-    });
-    document.body.className = theme === 'light' ? 'light-theme' : (theme === 'high-contrast' ? 'high-contrast' : '');
-    localStorage.setItem('bantu-theme', theme);
+  function formatNumber(num) {
+    if (num >= 1000000) return (num/1000000).toFixed(1) + 'M';
+    if (num >= 1000) return (num/1000).toFixed(1) + 'K';
+    return num.toString();
   }
-}
 
-async function loadBannerFromProfile() {
-  if (!window.creatorProfile) return;
-  const bannerUrl = window.creatorProfile.channel_banner_url || window.creatorProfile.banner_url;
-  if (bannerUrl) { 
-    setBannerImage(bannerUrl); 
-  } else { 
-    setBannerImage('https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?w=1500&h=400&fit=crop'); 
+  function truncateText(text, maxLength) {
+    if (!text) return '';
+    return text.length <= maxLength ? text : text.substring(0, maxLength) + '...';
   }
-}
 
-function setBannerImage(url) {
-  if (!url) return;
-  const banner = document.getElementById('channel-banner');
-  window.bannerUrl = url;
-  banner.style.backgroundImage = `linear-gradient(rgba(10, 14, 18, 0.85), rgba(15, 23, 42, 0.95)), url('${url}')`;
-}
-
-function showBannerUploadModal() {
-  if (!window.currentUser || window.currentUser.id !== window.creatorId) {
-    showToast('Only the channel owner can change the banner', 'warning');
-    return;
+  function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
   }
-  document.getElementById('banner-upload-modal').classList.add('active');
-  document.getElementById('banner-preview-img').style.display = 'none';
-  document.getElementById('banner-preview-placeholder').style.display = 'flex';
-  document.getElementById('banner-url-input').value = '';
-}
 
-function hideBannerUploadModal() {
-  document.getElementById('banner-upload-modal').classList.remove('active');
-}
-
-async function saveBanner(url) {
-  if (!url || !window.currentUser || window.currentUser.id !== window.creatorId) return;
-  try {
-    setBannerImage(url);
-    const { error } = await supabase.from('user_profiles').update({ channel_banner_url: url, updated_at: new Date().toISOString() }).eq('id', window.creatorId);
-    if (error) throw error;
-    showToast('Banner updated successfully!', 'success');
-    hideBannerUploadModal();
-  } catch (error) {
-    console.error('Error saving banner:', error);
-    showToast('Failed to save banner', 'error');
+  function formatDate(dateString) {
+    if (!dateString) return '';
+    try {
+      const date = new Date(dateString);
+      const now = new Date();
+      const diffDays = Math.floor((now - date) / (1000 * 60 * 60 * 24));
+      if (diffDays === 0) return 'Today';
+      if (diffDays === 1) return 'Yesterday';
+      if (diffDays < 7) return `${diffDays} days ago`;
+      if (diffDays < 30) return `${Math.floor(diffDays/7)} week${Math.floor(diffDays/7)>1?'s':''} ago`;
+      return date.toLocaleDateString('en-US', { month:'short', day:'numeric' });
+    } catch { return ''; }
   }
-}
 
-function showEditAboutModal() {
-  if (!window.currentUser || window.currentUser.id !== window.creatorId) {
-    showToast('Only the channel owner can edit this section', 'warning');
-    return;
+  function getInitials(name) {
+    if (!name || name.trim() === '') return '?';
+    const names = name.trim().split(' ');
+    return names.length >= 2 ? (names[0][0] + names[names.length-1][0]).toUpperCase() : name[0].toUpperCase();
   }
-  document.getElementById('edit-quote').value = window.creatorProfile.quote || '';
-  document.getElementById('edit-mission').value = window.creatorProfile.mission || '';
-  document.getElementById('edit-location').value = window.creatorProfile.location || '';
-  document.getElementById('edit-website').value = window.creatorProfile.website_url || '';
-  document.getElementById('edit-schedule').value = window.creatorProfile.upload_schedule || '';
-  document.getElementById('edit-tags').value = window.creatorProfile.interests || '';
-  document.getElementById('edit-social').value = window.creatorProfile.social_links ? JSON.stringify(window.creatorProfile.social_links, null, 2) : '';
-  document.getElementById('edit-about-modal').classList.add('active');
-}
 
-function hideEditAboutModal() {
-  document.getElementById('edit-about-modal').classList.remove('active');
-}
-
-async function saveAboutSection() {
-  if (!window.currentUser || window.currentUser.id !== window.creatorId) {
-    showToast('Only the channel owner can edit this section', 'warning');
-    return;
+  function fixMediaUrl(url) {
+    if (!url) return '';
+    if (url.startsWith('http')) return url;
+    if (url.startsWith('data:')) return url;
+    return `${SUPABASE_URL}/storage/v1/object/public/${url.replace(/^\/+/, '')}`;
   }
-  
-  try {
-    const updates = { updated_at: new Date().toISOString() };
-    
-    const fields = [
-      { id: 'edit-quote', key: 'quote' },
-      { id: 'edit-mission', key: 'mission' },
-      { id: 'edit-location', key: 'location' },
-      { id: 'edit-website', key: 'website_url' },
-      { id: 'edit-schedule', key: 'upload_schedule' },
-      { id: 'edit-tags', key: 'interests' }
-    ];
-    
-    fields.forEach(({ id, key }) => {
-      const val = document.getElementById(id).value.trim();
-      if (val) updates[key] = val;
-    });
-    
-    const socialInput = document.getElementById('edit-social').value.trim();
-    if (socialInput) {
-      try { 
-        updates.social_links = JSON.parse(socialInput); 
-      } catch (e) { 
-        showToast('Invalid JSON for social links', 'warning'); 
-        return; 
-      }
+
+  function showConfetti() {
+    const colors = ['#F59E0B', '#1D4ED8', '#10B981', '#EC4899', '#8B5CF6'];
+    for (let i = 0; i < 50; i++) {
+      const confetti = document.createElement('div');
+      confetti.className = 'confetti';
+      confetti.style.left = Math.random() * 100 + 'vw';
+      confetti.style.background = colors[Math.floor(Math.random() * colors.length)];
+      confetti.style.animationDelay = Math.random() * 0.5 + 's';
+      document.body.appendChild(confetti);
+      setTimeout(() => confetti.remove(), 3000);
+    }
+  }
+
+  function formatDuration(seconds) {
+    if (!seconds) return '0:00';
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  }
+
+  window.initTheme = function() {
+    const savedTheme = localStorage.getItem('bantu-theme') || 'dark';
+    applyTheme(savedTheme);
+  };
+
+  function applyTheme(theme) {
+    const root = document.documentElement;
+    const themeColors = window.themes[theme];
+    if (themeColors) {
+      Object.entries(themeColors).forEach(([key, value]) => {
+        root.style.setProperty(key, value);
+      });
+      document.body.className = theme === 'light' ? 'light-theme' : (theme === 'high-contrast' ? 'high-contrast' : '');
+      localStorage.setItem('bantu-theme', theme);
+    }
+  }
+
+  async function loadBannerFromProfile() {
+    if (!window.creatorProfile) return;
+    const bannerUrl = window.creatorProfile.channel_banner_url || window.creatorProfile.banner_url;
+    if (bannerUrl) { 
+      setBannerImage(bannerUrl); 
+    } else { 
+      setBannerImage('https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?w=1500&h=400&fit=crop'); 
+    }
+  }
+
+  function setBannerImage(url) {
+    if (!url) return;
+    const banner = document.getElementById('channel-banner');
+    window.bannerUrl = url;
+    banner.style.backgroundImage = `linear-gradient(rgba(10, 14, 18, 0.85), rgba(15, 23, 42, 0.95)), url('${url}')`;
+  }
+
+  function showBannerUploadModal() {
+    if (!window.currentUser || window.currentUser.id !== window.creatorId) {
+      showToast('Only the channel owner can change the banner', 'warning');
+      return;
+    }
+    document.getElementById('banner-upload-modal').classList.add('active');
+    document.getElementById('banner-preview-img').style.display = 'none';
+    document.getElementById('banner-preview-placeholder').style.display = 'flex';
+    document.getElementById('banner-url-input').value = '';
+  }
+
+  function hideBannerUploadModal() {
+    document.getElementById('banner-upload-modal').classList.remove('active');
+  }
+
+  async function saveBanner(url) {
+    if (!url || !window.currentUser || window.currentUser.id !== window.creatorId) return;
+    try {
+      setBannerImage(url);
+      const { error } = await supabase.from('user_profiles').update({ channel_banner_url: url, updated_at: new Date().toISOString() }).eq('id', window.creatorId);
+      if (error) throw error;
+      showToast('Banner updated successfully!', 'success');
+      hideBannerUploadModal();
+    } catch (error) {
+      console.error('Error saving banner:', error);
+      showToast('Failed to save banner', 'error');
+    }
+  }
+
+  function showEditAboutModal() {
+    if (!window.currentUser || window.currentUser.id !== window.creatorId) {
+      showToast('Only the channel owner can edit this section', 'warning');
+      return;
+    }
+    document.getElementById('edit-quote').value = window.creatorProfile.quote || '';
+    document.getElementById('edit-mission').value = window.creatorProfile.mission || '';
+    document.getElementById('edit-location').value = window.creatorProfile.location || '';
+    document.getElementById('edit-website').value = window.creatorProfile.website_url || '';
+    document.getElementById('edit-schedule').value = window.creatorProfile.upload_schedule || '';
+    document.getElementById('edit-tags').value = window.creatorProfile.interests || '';
+    document.getElementById('edit-social').value = window.creatorProfile.social_links ? JSON.stringify(window.creatorProfile.social_links, null, 2) : '';
+    document.getElementById('edit-about-modal').classList.add('active');
+  }
+
+  function hideEditAboutModal() {
+    document.getElementById('edit-about-modal').classList.remove('active');
+  }
+
+  async function saveAboutSection() {
+    if (!window.currentUser || window.currentUser.id !== window.creatorId) {
+      showToast('Only the channel owner can edit this section', 'warning');
+      return;
     }
     
-    const { data, error } = await supabase
-      .from('user_profiles')
-      .update(updates)
-      .eq('id', window.creatorId)
-      .select()
-      .single();
+    try {
+      const updates = { updated_at: new Date().toISOString() };
       
-    if (error) throw error;
+      const fields = [
+        { id: 'edit-quote', key: 'quote' },
+        { id: 'edit-mission', key: 'mission' },
+        { id: 'edit-location', key: 'location' },
+        { id: 'edit-website', key: 'website_url' },
+        { id: 'edit-schedule', key: 'upload_schedule' },
+        { id: 'edit-tags', key: 'interests' }
+      ];
+      
+      fields.forEach(({ id, key }) => {
+        const val = document.getElementById(id).value.trim();
+        if (val) updates[key] = val;
+      });
+      
+      const socialInput = document.getElementById('edit-social').value.trim();
+      if (socialInput) {
+        try { 
+          updates.social_links = JSON.parse(socialInput); 
+        } catch (e) { 
+          showToast('Invalid JSON for social links', 'warning'); 
+          return; 
+        }
+      }
+      
+      const { data, error } = await supabase
+        .from('user_profiles')
+        .update(updates)
+        .eq('id', window.creatorId)
+        .select()
+        .single();
+        
+      if (error) throw error;
+      
+      if (data) window.creatorProfile = { ...window.creatorProfile, ...data };
+      updateIdentityCard();
+      hideEditAboutModal();
+      showToast('About section updated successfully! ✨', 'success');
     
-    if (data) window.creatorProfile = { ...window.creatorProfile, ...data };
-    updateIdentityCard();
-    hideEditAboutModal();
-    showToast('About section updated successfully! ✨', 'success');
-  
-  } catch (error) {
-    console.error('Save error:', error);
-    showToast('Failed: ' + (error.message || error.hint || 'Unknown'), 'error');
-  }
-}
-
-async function checkAuth() {
-  try {
-    const { data: { session }, error } = await supabase.auth.getSession();
-    if (error) throw error;
-    window.currentUser = session?.user || null;
-    if (window.currentUser) {
-      console.log('✅ User authenticated:', window.currentUser.email);
-      await loadUserProfile();
+    } catch (error) {
+      console.error('Save error:', error);
+      showToast('Failed: ' + (error.message || error.hint || 'Unknown'), 'error');
     }
-    return window.currentUser;
-  } catch (error) {
-    console.error('Auth check error:', error);
-    return null;
   }
-}
 
-async function loadUserProfile() {
-  try {
-    if (!window.currentUser) return;
-    const { data: profile, error } = await supabase.from('user_profiles').select('*').eq('id', window.currentUser.id).maybeSingle();
-    if (error) throw error;
-    updateProfileUI(profile);
-    await loadNotifications();
-  } catch (error) {
-    console.error('Error loading profile:', error);
+  async function checkAuth() {
+    try {
+      const { data: { session }, error } = await supabase.auth.getSession();
+      if (error) throw error;
+      window.currentUser = session?.user || null;
+      if (window.currentUser) {
+        console.log('✅ User authenticated:', window.currentUser.email);
+        await loadUserProfile();
+      }
+      return window.currentUser;
+    } catch (error) {
+      console.error('Auth check error:', error);
+      return null;
+    }
   }
-}
 
-function updateProfileUI(profile) {
-  const el = document.getElementById('userProfilePlaceholder');
-  if (!el) return;
-  while (el.firstChild) el.removeChild(el.firstChild);
-  if (profile) {
-    const displayName = profile.full_name || profile.username || window.currentUser?.email || 'User';
-    const initial = getInitials(displayName);
-    const avatarUrl = profile.avatar_url;
-    if (avatarUrl) {
-      const img = document.createElement('img');
-      img.className = 'profile-img';
-      img.alt = displayName;
-      img.style.cssText = 'width:100%;height:100%;border-radius:50%;object-fit:cover;';
-      img.src = fixMediaUrl(avatarUrl);
-      img.onerror = () => {
+  async function loadUserProfile() {
+    try {
+      if (!window.currentUser) return;
+      const { data: profile, error } = await supabase.from('user_profiles').select('*').eq('id', window.currentUser.id).maybeSingle();
+      if (error) throw error;
+      updateProfileUI(profile);
+      await loadNotifications();
+    } catch (error) {
+      console.error('Error loading profile:', error);
+    }
+  }
+
+  function updateProfileUI(profile) {
+    const el = document.getElementById('userProfilePlaceholder');
+    if (!el) return;
+    while (el.firstChild) el.removeChild(el.firstChild);
+    if (profile) {
+      const displayName = profile.full_name || profile.username || window.currentUser?.email || 'User';
+      const initial = getInitials(displayName);
+      const avatarUrl = profile.avatar_url;
+      if (avatarUrl) {
+        const img = document.createElement('img');
+        img.className = 'profile-img';
+        img.alt = displayName;
+        img.style.cssText = 'width:100%;height:100%;border-radius:50%;object-fit:cover;';
+        img.src = fixMediaUrl(avatarUrl);
+        img.onerror = () => {
+          const fallback = document.createElement('div');
+          fallback.className = 'profile-placeholder';
+          fallback.style.cssText = 'width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,#1D4ED8,#F59E0B);display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:16px';
+          fallback.textContent = initial;
+          el.innerHTML = ''; el.appendChild(fallback);
+        };
+        el.appendChild(img);
+      } else {
         const fallback = document.createElement('div');
         fallback.className = 'profile-placeholder';
         fallback.style.cssText = 'width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,#1D4ED8,#F59E0B);display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:16px';
         fallback.textContent = initial;
-        el.innerHTML = ''; el.appendChild(fallback);
-      };
-      el.appendChild(img);
+        el.appendChild(fallback);
+      }
     } else {
-      const fallback = document.createElement('div');
-      fallback.className = 'profile-placeholder';
-      fallback.style.cssText = 'width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,#1D4ED8,#F59E0B);display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:16px';
-      fallback.textContent = initial;
-      el.appendChild(fallback);
-    }
-  } else {
-    const icon = document.createElement('i');
-    icon.className = 'fas fa-user';
-    el.appendChild(icon);
-  }
-}
-
-async function loadNotifications() {
-  try {
-    if (!window.currentUser) { updateNotificationBadge(0); return; }
-    const { data, error } = await supabase.from('notifications').select('*').eq('user_id', window.currentUser.id).order('created_at', { ascending: false }).limit(20);
-    if (error) throw error;
-    window.notifications = data || [];
-    const unreadCount = window.notifications.filter(n => !n.is_read).length;
-    updateNotificationBadge(unreadCount);
-  } catch (error) {
-    console.error('Error loading notifications:', error);
-    updateNotificationBadge(0);
-  }
-}
-
-function updateNotificationBadge(count) {
-  const mainBadge = document.getElementById('notification-count');
-  const navBadge = document.getElementById('nav-notification-count');
-  [mainBadge, navBadge].forEach(badge => {
-    if (badge) {
-      badge.textContent = count > 99 ? '99+' : count;
-      badge.style.display = count > 0 ? 'flex' : 'none';
-    }
-  });
-}
-
-function renderNotifications() {
-  const list = document.getElementById('notifications-list');
-  if (!list) return;
-  if (!window.currentUser) {
-    list.innerHTML = `<div style="text-align:center;padding:40px;color:var(--slate-grey);"><i class="fas fa-bell-slash" style="font-size:48px;margin-bottom:15px;opacity:0.5;"></i><p>Sign in to see notifications</p></div>`;
-    return;
-  }
-  if (!window.notifications || window.notifications.length === 0) {
-    list.innerHTML = `<div style="text-align:center;padding:40px;color:var(--slate-grey);"><i class="fas fa-bell" style="font-size:48px;margin-bottom:15px;opacity:0.3;"></i><p>No notifications yet</p></div>`;
-    return;
-  }
-  list.innerHTML = window.notifications.map(n => `
-    <div style="padding:15px;border-bottom:1px solid var(--card-border);${n.is_read ? 'opacity:0.7;' : 'background:rgba(245,158,11,0.1);'}">
-      <div style="display:flex;gap:12px;">
-        <div style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,var(--bantu-blue),var(--warm-gold));display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-          <i class="${getNotificationIcon(n.type)}" style="font-size:18px;"></i>
-        </div>
-        <div style="flex:1;">
-          <div style="font-weight:600;margin-bottom:5px;color:var(--soft-white);">${escapeHtml(n.title)}</div>
-          <div style="font-size:14px;color:var(--slate-grey);margin-bottom:8px;">${escapeHtml(n.message)}</div>
-          <div style="font-size:12px;color:var(--warm-gold);">${formatNotificationTime(n.created_at)}</div>
-        </div>
-        ${!n.is_read ? '<div style="width:10px;height:10px;border-radius:50%;background:var(--warm-gold);margin-top:5px;"></div>' : ''}
-      </div>
-    </div>
-  `).join('');
-}
-
-function getNotificationIcon(type) {
-  switch(type) { 
-    case 'like': return 'fas fa-heart'; 
-    case 'comment': return 'fas fa-comment'; 
-    case 'follow': return 'fas fa-user-plus'; 
-    default: return 'fas fa-bell'; 
-  }
-}
-
-function formatNotificationTime(timestamp) {
-  if (!timestamp) return 'Just now';
-  const diffMs = Date.now() - new Date(timestamp).getTime();
-  const diffMins = Math.floor(diffMs/60000);
-  const diffHours = Math.floor(diffMs/3600000);
-  const diffDays = Math.floor(diffMs/86400000);
-  if (diffMins < 1) return 'Just now';
-  if (diffMins < 60) return `${diffMins}m ago`;
-  if (diffHours < 24) return `${diffHours}h ago`;
-  if (diffDays < 7) return `${diffDays}d ago`;
-  return new Date(timestamp).toLocaleDateString();
-}
-
-async function searchContent(query, category = '', sortBy = 'newest') {
-  try {
-    let qb = supabase.from('Content').select('*, user_profiles!user_id(*)').ilike('title', `%${query}%`).eq('status', 'published');
-    if (category) qb = qb.eq('genre', category);
-    const { data, error } = await qb.limit(50);
-    if (error) throw error;
-    const enriched = await Promise.all((data || []).map(async item => {
-      const { count: views } = await supabase.from('content_views').select('*', { count: 'exact', head: true }).eq('content_id', item.id);
-      const { count: likes } = await supabase.from('content_likes').select('*', { count: 'exact', head: true }).eq('content_id', item.id);
-      return { ...item, real_views: views || 0, real_likes: likes || 0 };
-    }));
-    if (sortBy === 'popular') enriched.sort((a,b) => (b.real_views||0) - (a.real_views||0));
-    else if (sortBy === 'trending') enriched.sort((a,b) => ((b.real_views||0) + ((b.real_likes||0)*2)) - ((a.real_views||0) + ((a.real_likes||0)*2)));
-    else enriched.sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
-    return enriched;
-  } catch (error) { 
-    console.error('Search error:', error); 
-    return []; 
-  }
-}
-
-function renderSearchResults(results) {
-  const grid = document.getElementById('search-results-grid');
-  if (!grid) return;
-  if (!results || results.length === 0) {
-    grid.innerHTML = '<div style="text-align:center;padding:40px;color:var(--slate-grey);">No results found. Try different keywords.</div>';
-    return;
-  }
-  grid.innerHTML = results.map(item => {
-    const thumbnailUrl = item.thumbnail_url ? fixMediaUrl(item.thumbnail_url) : 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop';
-    return `
-      <div class="content-card" data-content-id="${item.id}">
-        <div class="card-thumbnail">
-          <img src="${thumbnailUrl}" alt="${escapeHtml(item.title)}" loading="lazy">
-          <div class="thumbnail-overlay"></div>
-          <div class="play-overlay"><div class="play-icon"><i class="fas fa-play"></i></div></div>
-        </div>
-        <div class="card-content">
-          <h3 class="card-title">${truncateText(escapeHtml(item.title), 45)}</h3>
-          <div class="card-meta">
-            <span><i class="fas fa-eye"></i> ${formatNumber(item.real_views || 0)}</span>
-            <span><i class="fas fa-heart"></i> ${formatNumber(item.real_likes || 0)}</span>
-          </div>
-        </div>
-      </div>
-    `;
-  }).join('');
-  grid.querySelectorAll('.content-card').forEach(card => {
-    card.addEventListener('click', () => {
-      const id = card.dataset.contentId;
-      if (id) window.location.href = `content-detail.html?id=${id}`;
-    });
-  });
-}
-
-function getUrlParam(name) {
-  const urlParams = new URLSearchParams(window.location.search);
-  return urlParams.get(name);
-}
-
-async function loadCreatorData() {
-  try {
-    window.creatorId = getUrlParam('id');
-    if (!window.creatorId) { 
-      showToast('Creator ID not found', 'error'); 
-      window.location.href = 'content-library.html'; 
-      return; 
-    }
-
-    document.getElementById('view-all-playlists').href = `playlists.html?creatorId=${window.creatorId}`;
-
-    window.loadingText.textContent = 'Loading creator profile...';
-    const { data: profile, error: profileError } = await supabase.from('user_profiles').select('*').eq('id', window.creatorId).maybeSingle();
-    if (profileError || !profile) { 
-      showToast('Creator not found', 'error'); 
-      window.location.href = 'content-library.html'; 
-      return; 
-    }
-    window.creatorProfile = profile;
-
-    await loadBannerFromProfile();
-
-    window.loadingText.textContent = 'Loading creator content...';
-    const { data: content, error: contentError } = await supabase.from('Content').select('*, user_profiles!user_id(*)').eq('user_id', window.creatorId).eq('status', 'published').order('created_at', { ascending: false }).limit(50);
-    if (contentError) throw contentError;
-    window.creatorContent = content || [];
-
-    const { count: connectorCount, error: countError } = await supabase.from('connectors').select('*', { count: 'exact', head: true }).eq('connected_id', window.creatorId).eq('connection_type', 'creator');
-    if (countError) throw countError;
-    window.connectorCount = connectorCount || 0;
-
-    if (window.currentUser) {
-      const { data: connections } = await supabase.from('connectors').select('*').eq('connector_id', window.currentUser.id).eq('connected_id', window.creatorId).eq('connection_type', 'creator').limit(1);
-      window.isConnected = connections && connections.length > 0;
-    } else { 
-      window.isConnected = false; 
-    }
-
-    window.loadingText.textContent = 'Loading playlists...';
-
-    let playlistsQuery = supabase
-      .from('creator_playlists')
-      .select(`
-        *,
-        creator_playlist_items!left (
-          count,
-          Content!content_id (
-            id, 
-            title, 
-            thumbnail_url, 
-            views_count, 
-            duration
-          )
-        )
-      `)
-      .eq('creator_id', window.creatorId);
-
-    if (!window.currentUser || window.currentUser.id !== window.creatorId) {
-      playlistsQuery = playlistsQuery.eq('visibility', 'public');
-    }
-
-    const { data: playlistsData, error: playlistsError } = await playlistsQuery
-      .order('updated_at', { ascending: false })
-      .limit(10);
-
-    if (playlistsError) {
-      console.error('Error loading playlists:', playlistsError);
-    }
-
-    window.playlists = playlistsData || [];
-
-    const { data: badges } = await supabase.from('user_badges').select('*').eq('user_id', window.creatorId);
-    window.achievements = badges || [];
-
-    console.log('✅ Creator data loaded:', { 
-      profile, 
-      contentCount: window.creatorContent.length, 
-      connectorCount, 
-      isConnected: window.isConnected, 
-      playlists: window.playlists.length 
-    });
-
-    updateCreatorUI();
-    updateIdentityCard();
-    updateContentUI(window.creatorContent);
-    updatePlaylistsUI();
-    checkAndShowAllSections();
-  } catch (error) {
-    console.error('❌ Error loading creator channel:', error);
-    showToast('Failed to load creator channel', 'error');
-  }
-}
-
-function checkAndShowAllSections() {
-  if (window.creatorContent.length > 0) {
-    const mostPopular = [...window.creatorContent].sort((a,b) => (b.views_count || 0) - (a.views_count || 0)).slice(0, 4);
-    if (mostPopular.length > 0) {
-      document.getElementById('popular-section').style.display = 'block';
-      updatePopularUI(mostPopular);
+      const icon = document.createElement('i');
+      icon.className = 'fas fa-user';
+      el.appendChild(icon);
     }
   }
-  document.getElementById('activity-section').style.display = 'block';
-  updateActivityFeed();
-  document.getElementById('fan-section').style.display = 'block';
-  updateFanHighlights();
-  document.getElementById('achievements-section').style.display = 'block';
-  updateAchievementsUI();
-  if (window.creatorProfile.upload_schedule) {
-    document.getElementById('schedule-section').style.display = 'block';
-    document.getElementById('schedule-text').textContent = window.creatorProfile.upload_schedule;
-  }
-  document.getElementById('recommended-section').style.display = 'block';
-  loadRecommendedCreators();
-  document.getElementById('support-section').style.display = 'block';
-  const trailer = window.creatorContent.find(c => c.is_channel_trailer);
-  if (trailer) {
-    document.getElementById('trailer-section').style.display = 'block';
-    updateTrailerUI(trailer);
-  }
-  const pinned = window.creatorContent.find(c => c.is_pinned);
-  if (pinned) {
-    document.getElementById('pinned-section').style.display = 'block';
-    updatePinnedUI(pinned);
-  }
-}
 
-function updateTrailerUI(content) {
-  document.getElementById('trailer-title').textContent = content.title || 'Channel Trailer';
-  document.getElementById('trailer-description').textContent = truncateText(content.description || 'Welcome to my channel!', 150);
-  document.getElementById('trailer-views').textContent = formatNumber(content.views_count || 0);
-  const videoEl = document.getElementById('trailer-video');
-  if (content.thumbnail_url) {
-    videoEl.querySelector('img').src = fixMediaUrl(content.thumbnail_url);
-  }
-  videoEl.onclick = () => { window.location.href = `content-detail.html?id=${content.id}`; };
-}
-
-function updatePinnedUI(content) {
-  document.getElementById('pinned-thumbnail').src = content.thumbnail_url ? fixMediaUrl(content.thumbnail_url) : 'https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?w=600&h=300&fit=crop';
-  document.getElementById('pinned-title').textContent = content.title || 'Featured Content';
-  document.getElementById('pinned-description').textContent = truncateText(content.description || 'Check out this featured content', 120);
-  document.getElementById('pinned-views').textContent = formatNumber(content.views_count || 0);
-  document.getElementById('pinned-likes').textContent = formatNumber(content.likes_count || 0);
-  document.getElementById('pinned-time').textContent = formatDate(content.created_at);
-  document.getElementById('pinned-watch-btn').onclick = () => { window.location.href = `content-detail.html?id=${content.id}`; };
-}
-
-function updatePopularUI(popularContent) {
-  const grid = document.getElementById('popular-grid');
-  grid.innerHTML = popularContent.map((item, index) => `
-    <div class="popular-item" data-content-id="${item.id}">
-      <div class="popular-rank">#${index + 1}</div>
-      <div class="popular-info">
-        <div class="popular-title">${truncateText(escapeHtml(item.title), 30)}</div>
-        <div class="popular-stats">
-          <span><i class="fas fa-eye"></i> ${formatNumber(item.views_count || 0)}</span>
-          <span><i class="fas fa-heart"></i> ${formatNumber(item.likes_count || 0)}</span>
-        </div>
-      </div>
-    </div>
-  `).join('');
-  grid.querySelectorAll('.popular-item').forEach(item => {
-    item.addEventListener('click', () => {
-      const id = item.dataset.contentId;
-      if (id) window.location.href = `content-detail.html?id=${id}`;
-    });
-  });
-}
-
-function updateActivityFeed() {
-  const feed = document.getElementById('activity-feed');
-  const activities = [];
-  const recentUploads = [...window.creatorContent].sort((a,b) => new Date(b.created_at) - new Date(a.created_at)).slice(0, 3);
-  recentUploads.forEach(u => {
-    activities.push({ icon: 'fa-video', text: `Uploaded "${truncateText(u.title, 30)}"`, time: u.created_at });
-  });
-  const weekAgo = new Date(Date.now() - 7*24*60*60*1000).toISOString();
-  activities.push({ icon: 'fa-users', text: `Gained ${window.connectorCount} connectors`, time: weekAgo });
-  feed.innerHTML = activities.slice(0, 5).map(activity => `
-    <div class="activity-item">
-      <div class="activity-icon"><i class="fas ${activity.icon}"></i></div>
-      <div class="activity-content">
-        <div class="activity-text"><strong>${activity.text}</strong></div>
-        <div class="activity-time"><i class="fas fa-clock"></i> ${formatDate(activity.time)}</div>
-      </div>
-    </div>
-  `).join('');
-}
-
-function updateFanHighlights() {
-  const fanGrid = document.getElementById('fan-grid');
-  const contentIds = window.creatorContent.map(c => c.id);
-  if (contentIds.length === 0) { 
-    fanGrid.innerHTML = '<p style="color:var(--slate-grey);">No fan comments yet</p>'; 
-    return; 
-  }
-  supabase.from('comments').select('*, user_profiles!user_id(full_name, username, avatar_url)').in('content_id', contentIds).order('created_at', { ascending: false }).limit(4).then(({ data }) => {
-    if (data && data.length > 0) {
-      fanGrid.innerHTML = data.map(comment => {
-        const avatarUrl = comment.user_profiles?.avatar_url ? fixMediaUrl(comment.user_profiles.avatar_url) : 'https://images.unsplash.com/photo-1633332755192-727a05c4013d?w=100&h=100&fit=crop';
-        const name = comment.user_profiles?.full_name || comment.user_profiles?.username || comment.author_name || 'Fan';
-        return `
-          <div class="fan-card">
-            <div class="fan-header">
-              <div class="fan-avatar"><img src="${avatarUrl}" alt="${name}"></div>
-              <div class="fan-info">
-                <h4>${escapeHtml(name)}</h4>
-                <div class="fan-badge"><i class="fas fa-crown"></i> Top Fan</div>
-              </div>
-            </div>
-            <div class="fan-comment">"${truncateText(escapeHtml(comment.comment_text), 100)}"</div>
-            <div class="fan-stats">
-              <span><i class="fas fa-heart"></i> ${comment.likes_count || 0}</span>
-              <span><i class="fas fa-clock"></i> ${formatDate(comment.created_at)}</span>
-            </div>
-          </div>
-        `;
-      }).join('');
-    } else {
-      fanGrid.innerHTML = '<p style="color:var(--slate-grey);grid-column:1/-1;text-align:center;">Be the first to comment!</p>';
-    }
-  });
-}
-
-function updateAchievementsUI() {
-  const grid = document.getElementById('achievements-grid');
-  const achievements = [
-    { name: 'First Upload', icon: 'fa-check-circle', completed: window.creatorContent.length >= 1 },
-    { name: '100 Connectors', icon: 'fa-users', completed: window.connectorCount >= 100 },
-    { name: '10K Views', icon: 'fa-eye', completed: window.creatorContent.reduce((sum, c) => sum + (c.views_count || 0), 0) >= 10000 },
-    { name: '50 Videos', icon: 'fa-video', completed: window.creatorContent.length >= 50 }
-  ];
-  if (window.achievements) {
-    window.achievements.forEach(badge => {
-      achievements.push({ name: badge.badge_name, icon: 'fa-trophy', completed: true, date: badge.awarded_at });
-    });
-  }
-  grid.innerHTML = achievements.slice(0, 8).map(achievement => `
-    <div class="achievement-card ${achievement.completed ? 'completed' : 'in-progress'}">
-      <div class="achievement-icon"><i class="fas ${achievement.icon}"></i></div>
-      <div class="achievement-name">${escapeHtml(achievement.name)}</div>
-      ${achievement.date ? `<div class="achievement-date">${formatDate(achievement.date)}</div>` : ''}
-    </div>
-  `).join('');
-}
-
-async function loadRecommendedCreators() {
-  const grid = document.getElementById('recommended-grid');
-  
-  try {
-    const { data: connectors, error: connError } = await supabase
-      .from('connectors')
-      .select('connector_id')
-      .eq('connected_id', window.creatorId)
-      .limit(10);
-    
-    if (connError) throw connError;
-    
-    let recommended = [];
-    
-    if (connectors && connectors.length > 0) {
-      const connectorIds = connectors.map(c => c.connector_id);
-      
-      const { data: profiles, error: profError } = await supabase
-        .from('user_profiles')
-        .select('id, username, full_name, avatar_url, bio')
-        .in('id', connectorIds)
-        .eq('role', 'creator')
-        .neq('id', window.creatorId)
-        .limit(4);
-      
-      if (profError) throw profError;
-      recommended = profiles || [];
-    }
-    
-    if (recommended.length === 0) {
-      const { data: randomCreators, error: randError } = await supabase
-        .from('user_profiles')
-        .select('id, username, full_name, avatar_url, bio')
-        .eq('role', 'creator')
-        .neq('id', window.creatorId)
-        .limit(4);
-      
-      if (randError) throw randError;
-      recommended = randomCreators || [];
-    }
-    
-    if (recommended.length > 0) {
-      const connectionChecks = await Promise.all(
-        recommended.map(async (creator) => {
-          if (!window.currentUser) return { id: creator.id, isConnected: false };
-          
-          const { data: conn } = await supabase
-            .from('connectors')
-            .select('id')
-            .eq('connector_id', window.currentUser.id)
-            .eq('connected_id', creator.id)
-            .eq('connection_type', 'creator')
-            .maybeSingle();
-          
-          return { id: creator.id, isConnected: !!conn };
-        })
-      );
-      
-      const connectionMap = Object.fromEntries(
-        connectionChecks.map(c => [c.id, c.isConnected])
-      );
-      
-      grid.innerHTML = recommended.map(creator => {
-        const avatarUrl = creator.avatar_url ? fixMediaUrl(creator.avatar_url) : null;
-        const initials = getInitials(creator.full_name || creator.username);
-        const isConnected = connectionMap[creator.id] || false;
-        
-        return `
-          <div class="recommended-creator" data-creator-id="${creator.id}">
-            <div class="recommended-avatar">
-              ${avatarUrl 
-                ? `<img src="${avatarUrl}" alt="${escapeHtml(creator.full_name || creator.username)}" 
-                  onerror="this.parentElement.innerHTML='<div style=\'width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,var(--bantu-blue),var(--warm-gold));display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:24px;\'>${initials}</div>'">`
-                : `<div style="width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,var(--bantu-blue),var(--warm-gold));display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:24px;">${initials}</div>`
-              }
-            </div>
-            <div class="recommended-name" title="${escapeHtml(creator.full_name || creator.username)}">
-              ${escapeHtml(creator.full_name || creator.username)}
-            </div>
-            <div class="recommended-username" title="@${escapeHtml(creator.username)}">
-              @${escapeHtml(creator.username || 'creator')}
-            </div>
-            <button class="recommended-follow-btn ${isConnected ? 'connected' : ''}" 
-              data-target-id="${creator.id}">
-              ${isConnected ? 'Connected' : 'Connect'}
-            </button>
-          </div>
-        `;
-      }).join('');
-      
-      grid.querySelectorAll('.recommended-follow-btn').forEach(btn => {
-        btn.addEventListener('click', async (e) => {
-          e.stopPropagation();
-          const targetId = btn.dataset.targetId;
-          await handleRecommendedConnect(targetId, btn);
-        });
-      });
-      
-      grid.querySelectorAll('.recommended-creator').forEach(card => {
-        card.addEventListener('click', (e) => {
-          if (!e.target.classList.contains('recommended-follow-btn')) {
-            const creatorId = card.dataset.creatorId;
-            if (creatorId) window.location.href = `creator-channel.html?id=${creatorId}`;
-          }
-        });
-      });
-      
-      document.getElementById('recommended-section').style.display = 'block';
-    }
-    
-  } catch (error) {
-    console.error('Error loading recommended creators:', error);
-    grid.innerHTML = '<p style="color:var(--slate-grey);grid-column:1/-1;text-align:center;">More creators coming soon!</p>';
-  }
-}
-
-async function handleRecommendedConnect(targetCreatorId, button) {
-  if (!window.currentUser) {
-    showToast('Please log in to connect', 'info');
-    window.location.href = `login.html?redirect=${encodeURIComponent(window.location.href)}`;
-    return;
-  }
-  
-  if (window.currentUser.id === targetCreatorId) {
-    showToast('You cannot connect to your own channel', 'info');
-    return;
-  }
-  
-  try {
-    const { data: existing } = await supabase
-      .from('connectors')
-      .select('id')
-      .eq('connector_id', window.currentUser.id)
-      .eq('connected_id', targetCreatorId)
-      .eq('connection_type', 'creator')
-      .maybeSingle();
-    
-    if (existing) {
-      const { error } = await supabase
-        .from('connectors')
-        .delete()
-        .eq('connector_id', window.currentUser.id)
-        .eq('connected_id', targetCreatorId)
-        .eq('connection_type', 'creator');
-      
+  async function loadNotifications() {
+    try {
+      if (!window.currentUser) { updateNotificationBadge(0); return; }
+      const { data, error } = await supabase.from('notifications').select('*').eq('user_id', window.currentUser.id).order('created_at', { ascending: false }).limit(20);
       if (error) throw error;
-      
-      button.textContent = 'Connect';
-      button.classList.remove('connected');
-      showToast('Disconnected', 'info');
-      
-    } else {
-      const { error } = await supabase
-        .from('connectors')
-        .insert({
-          connector_id: window.currentUser.id,
-          connected_id: targetCreatorId,
-          connection_type: 'creator',
-          created_at: new Date().toISOString()
-        });
-      
-      if (error) throw error;
-      
-      button.textContent = 'Connected';
-      button.classList.add('connected');
-      showConfetti();
-      showToast('Connected successfully! ✨', 'success');
+      window.notifications = data || [];
+      const unreadCount = window.notifications.filter(n => !n.is_read).length;
+      updateNotificationBadge(unreadCount);
+    } catch (error) {
+      console.error('Error loading notifications:', error);
+      updateNotificationBadge(0);
     }
-  } catch (error) {
-    console.error('Error toggling connection:', error);
-    showToast('Failed to update connection', 'error');
   }
-}
 
-function updateCreatorUI() {
-  if (!window.creatorProfile) return;
-  document.getElementById('creator-name').textContent = window.creatorProfile.full_name || window.creatorProfile.username || 'Creator';
-  document.getElementById('creator-username').textContent = `@${window.creatorProfile.username || 'creator'}`;
-  document.getElementById('creator-bio').textContent = window.creatorProfile.bio || 'Passionate content creator sharing authentic African stories.';
-  document.getElementById('banner-title').textContent = `${window.creatorProfile.full_name || window.creatorProfile.username}'s Channel`;
-  const editBtn = document.getElementById('edit-identity-btn');
-  const bannerEditBtn = document.getElementById('banner-edit-btn');
-  if (window.currentUser && window.currentUser.id === window.creatorId) {
-    editBtn.style.display = 'flex';
-    bannerEditBtn.style.display = 'flex';
-  } else {
-    editBtn.style.display = 'none';
-    bannerEditBtn.style.display = 'none';
-  }
-  const avatarContainer = document.getElementById('creator-avatar-container');
-  const avatarUrl = window.creatorProfile.avatar_url ? fixMediaUrl(window.creatorProfile.avatar_url) : null;
-  const displayName = window.creatorProfile.full_name || window.creatorProfile.username || 'Creator';
-  const initials = getInitials(displayName);
-  avatarContainer.innerHTML = avatarUrl
-    ? `<img src="${avatarUrl}" alt="${displayName}" style="width:100%;height:100%;object-fit:cover;display:block;border-radius:50%;">`
-    : `<div class="creator-initials">${initials}</div>`;
-  document.getElementById('founder-badge').style.display = window.creatorProfile.is_founder ? 'block' : 'none';
-  document.getElementById('videos-count').textContent = window.creatorContent.length;
-  document.getElementById('connectors-count').textContent = formatNumber(window.connectorCount);
-  const totalViews = window.creatorContent.reduce((sum, item) => sum + (item.views_count || 0), 0);
-  document.getElementById('views-count').textContent = formatNumber(totalViews);
-  const totalLikes = window.creatorContent.reduce((sum, item) => sum + (item.likes_count || 0), 0);
-  const engagement = totalViews > 0 ? Math.round((totalLikes / totalViews) * 100) : 0;
-  document.getElementById('engagement-count').textContent = engagement + '%';
-  updateConnectButton();
-}
-
-function updateIdentityCard() {
-  if (!window.creatorProfile) return;
-  document.getElementById('creator-quote').textContent = window.creatorProfile.quote || '"Creating authentic African stories for the world"';
-  document.getElementById('creator-mission').textContent = window.creatorProfile.mission || 'Passionate about sharing African culture, technology, and innovation.';
-  document.getElementById('creator-location').textContent = window.creatorProfile.location || 'Johannesburg, South Africa';
-  if (window.creatorProfile.created_at) {
-    const joinDate = new Date(window.creatorProfile.created_at);
-    document.getElementById('creator-joined').textContent = `Joined ${joinDate.toLocaleString('default', { month: 'long', year: 'numeric' })}`;
-  }
-  const websiteLink = document.getElementById('creator-website');
-  if (window.creatorProfile.website_url) {
-    websiteLink.href = window.creatorProfile.website_url;
-    websiteLink.textContent = window.creatorProfile.website_url.replace(/^https?:\/\//, '');
-    websiteLink.style.display = 'block';
-  } else {
-    websiteLink.style.display = 'none';
-  }
-  if (window.creatorProfile.upload_schedule) {
-    document.getElementById('creator-schedule').textContent = window.creatorProfile.upload_schedule;
-  }
-  const tagsContainer = document.getElementById('creator-tags');
-  if (window.creatorProfile.interests) {
-    const tags = window.creatorProfile.interests.split(',').map(t => t.trim()).filter(t => t);
-    tagsContainer.innerHTML = tags.map(tag => `<span class="identity-tag">${escapeHtml(tag)}</span>`).join('');
-  }
-}
-
-function updatePlaylistsUI() {
-  const playlistSection = document.getElementById('playlists-section');
-  const playlistGrid = document.getElementById('playlists-grid');
-  const emptyState = document.getElementById('playlists-empty');
-
-  playlistSection.style.display = 'block';
-
-  if (!window.playlists || window.playlists.length === 0) {
-    playlistGrid.style.display = 'none';
-    emptyState.style.display = 'block';
-    
-    if (window.currentUser && window.currentUser.id === window.creatorId) {
-      emptyState.innerHTML = `
-        <div class="empty-icon"><i class="fas fa-list"></i></div>
-        <h3>No playlists yet</h3>
-        <p>You haven't created any playlists. Click "New Playlist" to get started!</p>
-      `;
-    } else {
-      emptyState.innerHTML = `
-        <div class="empty-icon"><i class="fas fa-list"></i></div>
-        <h3>No playlists yet</h3>
-        <p>This creator hasn't created any playlists yet.</p>
-      `;
-    }
-  } else {
-    playlistGrid.style.display = 'grid';
-    emptyState.style.display = 'none';
-    
-    const sorted = [...window.playlists].sort((a, b) => {
-      if (a.is_featured && !b.is_featured) return -1;
-      if (!a.is_featured && b.is_featured) return 1;
-      return new Date(b.updated_at) - new Date(a.updated_at);
+  function updateNotificationBadge(count) {
+    const mainBadge = document.getElementById('notification-count');
+    const navBadge = document.getElementById('nav-notification-count');
+    [mainBadge, navBadge].forEach(badge => {
+      if (badge) {
+        badge.textContent = count > 99 ? '99+' : count;
+        badge.style.display = count > 0 ? 'flex' : 'none';
+      }
     });
-    
-    playlistGrid.innerHTML = sorted.map(playlist => {
-      const firstItem = playlist.creator_playlist_items?.[0]?.Content;
-      let thumb = playlist.custom_thumbnail_url 
-        ? fixMediaUrl(playlist.custom_thumbnail_url) 
-        : (firstItem?.thumbnail_url ? fixMediaUrl(firstItem.thumbnail_url) : 'https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?w=400&h=200&fit=crop');
-      
-      const itemCount = playlist.creator_playlist_items?.length || 0;
-      const typeBadge = playlist.playlist_type && playlist.playlist_type !== 'playlist'
-        ? `<span class="playlist-type-badge ${playlist.playlist_type}">${playlist.playlist_type}</span>` 
-        : '';
-      
-      const isOwner = window.currentUser && window.currentUser.id === window.creatorId;
-      
+  }
+
+  function renderNotifications() {
+    const list = document.getElementById('notifications-list');
+    if (!list) return;
+    if (!window.currentUser) {
+      list.innerHTML = `<div style="text-align:center;padding:40px;color:var(--slate-grey);"><i class="fas fa-bell-slash" style="font-size:48px;margin-bottom:15px;opacity:0.5;"></i><p>Sign in to see notifications</p></div>`;
+      return;
+    }
+    if (!window.notifications || window.notifications.length === 0) {
+      list.innerHTML = `<div style="text-align:center;padding:40px;color:var(--slate-grey);"><i class="fas fa-bell" style="font-size:48px;margin-bottom:15px;opacity:0.3;"></i><p>No notifications yet</p></div>`;
+      return;
+    }
+    list.innerHTML = window.notifications.map(n => `
+      <div style="padding:15px;border-bottom:1px solid var(--card-border);${n.is_read ? 'opacity:0.7;' : 'background:rgba(245,158,11,0.1);'}">
+        <div style="display:flex;gap:12px;">
+          <div style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,var(--bantu-blue),var(--warm-gold));display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <i class="${getNotificationIcon(n.type)}" style="font-size:18px;"></i>
+          </div>
+          <div style="flex:1;">
+            <div style="font-weight:600;margin-bottom:5px;color:var(--soft-white);">${escapeHtml(n.title)}</div>
+            <div style="font-size:14px;color:var(--slate-grey);margin-bottom:8px;">${escapeHtml(n.message)}</div>
+            <div style="font-size:12px;color:var(--warm-gold);">${formatNotificationTime(n.created_at)}</div>
+          </div>
+          ${!n.is_read ? '<div style="width:10px;height:10px;border-radius:50%;background:var(--warm-gold);margin-top:5px;"></div>' : ''}
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function getNotificationIcon(type) {
+    switch(type) { 
+      case 'like': return 'fas fa-heart'; 
+      case 'comment': return 'fas fa-comment'; 
+      case 'follow': return 'fas fa-user-plus'; 
+      default: return 'fas fa-bell'; 
+    }
+  }
+
+  function formatNotificationTime(timestamp) {
+    if (!timestamp) return 'Just now';
+    const diffMs = Date.now() - new Date(timestamp).getTime();
+    const diffMins = Math.floor(diffMs/60000);
+    const diffHours = Math.floor(diffMs/3600000);
+    const diffDays = Math.floor(diffMs/86400000);
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffDays < 7) return `${diffDays}d ago`;
+    return new Date(timestamp).toLocaleDateString();
+  }
+
+  async function searchContent(query, category = '', sortBy = 'newest') {
+    try {
+      let qb = supabase.from('Content').select('*, user_profiles!user_id(*)').ilike('title', `%${query}%`).eq('status', 'published');
+      if (category) qb = qb.eq('genre', category);
+      const { data, error } = await qb.limit(50);
+      if (error) throw error;
+      const enriched = await Promise.all((data || []).map(async item => {
+        const { count: views } = await supabase.from('content_views').select('*', { count: 'exact', head: true }).eq('content_id', item.id);
+        const { count: likes } = await supabase.from('content_likes').select('*', { count: 'exact', head: true }).eq('content_id', item.id);
+        return { ...item, real_views: views || 0, real_likes: likes || 0 };
+      }));
+      if (sortBy === 'popular') enriched.sort((a,b) => (b.real_views||0) - (a.real_views||0));
+      else if (sortBy === 'trending') enriched.sort((a,b) => ((b.real_views||0) + ((b.real_likes||0)*2)) - ((a.real_views||0) + ((a.real_likes||0)*2)));
+      else enriched.sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
+      return enriched;
+    } catch (error) { 
+      console.error('Search error:', error); 
+      return []; 
+    }
+  }
+
+  function renderSearchResults(results) {
+    const grid = document.getElementById('search-results-grid');
+    if (!grid) return;
+    if (!results || results.length === 0) {
+      grid.innerHTML = '<div style="text-align:center;padding:40px;color:var(--slate-grey);">No results found. Try different keywords.</div>';
+      return;
+    }
+    grid.innerHTML = results.map(item => {
+      const thumbnailUrl = item.thumbnail_url ? fixMediaUrl(item.thumbnail_url) : 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop';
       return `
-        <div class="playlist-card ${playlist.is_featured ? 'featured' : ''}" data-playlist-id="${playlist.id}" ${isOwner ? 'style="cursor:pointer;"' : ''}>
-          <div class="playlist-thumbnail">
-            <img src="${thumb}" alt="${escapeHtml(playlist.name)}" loading="lazy">
-            <div class="playlist-overlay"><i class="fas fa-play" style="font-size:30px;color:white;"></i></div>
-            <div class="playlist-count"><i class="fas fa-video"></i> ${itemCount}</div>
-            ${typeBadge ? `<div style="position:absolute;top:10px;left:10px;">${typeBadge}</div>` : ''}
+        <div class="content-card" data-content-id="${item.id}">
+          <div class="card-thumbnail">
+            <img src="${thumbnailUrl}" alt="${escapeHtml(item.title)}" loading="lazy">
+            <div class="thumbnail-overlay"></div>
+            <div class="play-overlay"><div class="play-icon"><i class="fas fa-play"></i></div></div>
           </div>
-          <div class="playlist-info">
-            <div class="playlist-name" title="${escapeHtml(playlist.name)}">${escapeHtml(playlist.name)}</div>
-            <div class="playlist-meta">
-              <span>${itemCount} ${itemCount === 1 ? 'item' : 'items'}</span>
-              ${playlist.total_duration ? `<span>• ${formatDuration(playlist.total_duration)}</span>` : ''}
+          <div class="card-content">
+            <h3 class="card-title">${truncateText(escapeHtml(item.title), 45)}</h3>
+            <div class="card-meta">
+              <span><i class="fas fa-eye"></i> ${formatNumber(item.real_views || 0)}</span>
+              <span><i class="fas fa-heart"></i> ${formatNumber(item.real_likes || 0)}</span>
             </div>
           </div>
         </div>
       `;
     }).join('');
-    
-    playlistGrid.querySelectorAll('.playlist-card').forEach(card => {
-      card.addEventListener('click', (e) => {
-        const playlistId = card.dataset.playlistId;
-        if (!playlistId) return;
-        
-        if (window.currentUser && window.currentUser.id === window.creatorId) {
-          e.preventDefault();
-          showPlaylistBuilder(playlistId);
-        } else {
-          window.location.href = `playlist.html?id=${playlistId}`;
-        }
+    grid.querySelectorAll('.content-card').forEach(card => {
+      card.addEventListener('click', () => {
+        const id = card.dataset.contentId;
+        if (id) window.location.href = `content-detail.html?id=${id}`;
       });
     });
   }
 
-  const header = playlistSection.querySelector('.section-header');
-  const existingBtn = document.getElementById('new-playlist-btn');
-  if (existingBtn) existingBtn.remove();
-
-  if (window.currentUser && window.currentUser.id === window.creatorId) {
-    const newBtn = document.createElement('button');
-    newBtn.id = 'new-playlist-btn';
-    newBtn.innerHTML = '<i class="fas fa-plus"></i> New Playlist';
-    newBtn.style.cssText = 'background:var(--warm-gold);color:var(--deep-black);border:none;padding:8px 16px;border-radius:30px;font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:8px;white-space:nowrap;';
-    newBtn.onclick = (e) => { e.preventDefault(); e.stopPropagation(); showPlaylistBuilder(); };
-    header.appendChild(newBtn);
+  function getUrlParam(name) {
+    const urlParams = new URLSearchParams(window.location.search);
+    return urlParams.get(name);
   }
-}
 
-function createContentCard(item) {
-  const thumbnailUrl = item.thumbnail_url ? fixMediaUrl(item.thumbnail_url) : 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=225&fit=crop';
-  const displayName = item.user_profiles?.full_name || item.user_profiles?.username || 'User';
-  const initials = getInitials(displayName);
-  const avatarHtml = item.user_profiles?.avatar_url 
-    ? `<img src="${fixMediaUrl(item.user_profiles.avatar_url)}" alt="${escapeHtml(displayName)}" style="width:100%;height:100%;object-fit:cover;">`
-    : `<div style="width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,var(--bantu-blue),var(--warm-gold));display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:12px;">${initials}</div>`;
-  const isNew = (new Date() - new Date(item.created_at)) < 7*24*60*60*1000;
-  return `
-    <a href="content-detail.html?id=${item.id}" class="content-card">
-      <div class="card-thumbnail">
-        <img src="${thumbnailUrl}" alt="${escapeHtml(item.title)}" loading="lazy">
-        <div class="thumbnail-overlay"></div>
-        <div class="card-badges">
-          ${item.is_pinned ? '<div class="badge-pinned card-badge"><i class="fas fa-thumbtack"></i> PINNED</div>' : ''}
-          ${isNew ? '<div class="badge-new card-badge"><i class="fas fa-gem"></i> NEW</div>' : ''}
+  async function loadCreatorData() {
+    try {
+      window.creatorId = getUrlParam('id');
+      if (!window.creatorId) { 
+        showToast('Creator ID not found', 'error'); 
+        window.location.href = 'content-library.html'; 
+        return; 
+      }
+
+      document.getElementById('view-all-playlists').href = `playlists.html?creatorId=${window.creatorId}`;
+
+      window.loadingText = document.getElementById('loading-text');
+      window.loadingText.textContent = 'Loading creator profile...';
+      const { data: profile, error: profileError } = await supabase.from('user_profiles').select('*').eq('id', window.creatorId).maybeSingle();
+      if (profileError || !profile) { 
+        showToast('Creator not found', 'error'); 
+        window.location.href = 'content-library.html'; 
+        return; 
+      }
+      window.creatorProfile = profile;
+
+      await loadBannerFromProfile();
+
+      window.loadingText.textContent = 'Loading creator content...';
+      const { data: content, error: contentError } = await supabase.from('Content').select('*, user_profiles!user_id(*)').eq('user_id', window.creatorId).eq('status', 'published').order('created_at', { ascending: false }).limit(50);
+      if (contentError) throw contentError;
+      window.creatorContent = content || [];
+
+      const { count: connectorCount, error: countError } = await supabase.from('connectors').select('*', { count: 'exact', head: true }).eq('connected_id', window.creatorId).eq('connection_type', 'creator');
+      if (countError) throw countError;
+      window.connectorCount = connectorCount || 0;
+
+      if (window.currentUser) {
+        const { data: connections } = await supabase.from('connectors').select('*').eq('connector_id', window.currentUser.id).eq('connected_id', window.creatorId).eq('connection_type', 'creator').limit(1);
+        window.isConnected = connections && connections.length > 0;
+      } else { 
+        window.isConnected = false; 
+      }
+
+      window.loadingText.textContent = 'Loading playlists...';
+
+      let playlistsQuery = supabase
+        .from('creator_playlists')
+        .select(`
+          *,
+          creator_playlist_items!left (
+            count,
+            Content!content_id (
+              id, 
+              title, 
+              thumbnail_url, 
+              views_count, 
+              duration
+            )
+          )
+        `)
+        .eq('creator_id', window.creatorId);
+
+      if (!window.currentUser || window.currentUser.id !== window.creatorId) {
+        playlistsQuery = playlistsQuery.eq('visibility', 'public');
+      }
+
+      const { data: playlistsData, error: playlistsError } = await playlistsQuery
+        .order('updated_at', { ascending: false })
+        .limit(10);
+
+      if (playlistsError) {
+        console.error('Error loading playlists:', playlistsError);
+      }
+
+      window.playlists = playlistsData || [];
+
+      const { data: badges } = await supabase.from('user_badges').select('*').eq('user_id', window.creatorId);
+      window.achievements = badges || [];
+
+      console.log('✅ Creator data loaded:', { 
+        profile, 
+        contentCount: window.creatorContent.length, 
+        connectorCount, 
+        isConnected: window.isConnected, 
+        playlists: window.playlists.length 
+      });
+
+      updateCreatorUI();
+      updateIdentityCard();
+      updateContentUI(window.creatorContent);
+      updatePlaylistsUI();
+      checkAndShowAllSections();
+    } catch (error) {
+      console.error('❌ Error loading creator channel:', error);
+      showToast('Failed to load creator channel', 'error');
+    }
+  }
+
+  function checkAndShowAllSections() {
+    if (window.creatorContent.length > 0) {
+      const mostPopular = [...window.creatorContent].sort((a,b) => (b.views_count || 0) - (a.views_count || 0)).slice(0, 4);
+      if (mostPopular.length > 0) {
+        document.getElementById('popular-section').style.display = 'block';
+        updatePopularUI(mostPopular);
+      }
+    }
+    document.getElementById('activity-section').style.display = 'block';
+    updateActivityFeed();
+    document.getElementById('fan-section').style.display = 'block';
+    updateFanHighlights();
+    document.getElementById('achievements-section').style.display = 'block';
+    updateAchievementsUI();
+    if (window.creatorProfile.upload_schedule) {
+      document.getElementById('schedule-section').style.display = 'block';
+      document.getElementById('schedule-text').textContent = window.creatorProfile.upload_schedule;
+    }
+    document.getElementById('recommended-section').style.display = 'block';
+    loadRecommendedCreators();
+    document.getElementById('support-section').style.display = 'block';
+    const trailer = window.creatorContent.find(c => c.is_channel_trailer);
+    if (trailer) {
+      document.getElementById('trailer-section').style.display = 'block';
+      updateTrailerUI(trailer);
+    }
+    const pinned = window.creatorContent.find(c => c.is_pinned);
+    if (pinned) {
+      document.getElementById('pinned-section').style.display = 'block';
+      updatePinnedUI(pinned);
+    }
+  }
+
+  function updateTrailerUI(content) {
+    document.getElementById('trailer-title').textContent = content.title || 'Channel Trailer';
+    document.getElementById('trailer-description').textContent = truncateText(content.description || 'Welcome to my channel!', 150);
+    document.getElementById('trailer-views').textContent = formatNumber(content.views_count || 0);
+    const videoEl = document.getElementById('trailer-video');
+    if (content.thumbnail_url) {
+      videoEl.querySelector('img').src = fixMediaUrl(content.thumbnail_url);
+    }
+    videoEl.onclick = () => { window.location.href = `content-detail.html?id=${content.id}`; };
+  }
+
+  function updatePinnedUI(content) {
+    document.getElementById('pinned-thumbnail').src = content.thumbnail_url ? fixMediaUrl(content.thumbnail_url) : 'https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?w=600&h=300&fit=crop';
+    document.getElementById('pinned-title').textContent = content.title || 'Featured Content';
+    document.getElementById('pinned-description').textContent = truncateText(content.description || 'Check out this featured content', 120);
+    document.getElementById('pinned-views').textContent = formatNumber(content.views_count || 0);
+    document.getElementById('pinned-likes').textContent = formatNumber(content.likes_count || 0);
+    document.getElementById('pinned-time').textContent = formatDate(content.created_at);
+    document.getElementById('pinned-watch-btn').onclick = () => { window.location.href = `content-detail.html?id=${content.id}`; };
+  }
+
+  function updatePopularUI(popularContent) {
+    const grid = document.getElementById('popular-grid');
+    grid.innerHTML = popularContent.map((item, index) => `
+      <div class="popular-item" data-content-id="${item.id}">
+        <div class="popular-rank">#${index + 1}</div>
+        <div class="popular-info">
+          <div class="popular-title">${truncateText(escapeHtml(item.title), 30)}</div>
+          <div class="popular-stats">
+            <span><i class="fas fa-eye"></i> ${formatNumber(item.views_count || 0)}</span>
+            <span><i class="fas fa-heart"></i> ${formatNumber(item.likes_count || 0)}</span>
+          </div>
         </div>
-        <div class="play-overlay"><div class="play-icon"><i class="fas fa-play"></i></div></div>
-        ${item.duration ? `<div style="position:absolute;bottom:8px;right:8px;background:rgba(0,0,0,0.8);color:white;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;">${formatDuration(item.duration)}</div>` : ''}
       </div>
-      <div class="card-content">
-        <h3 class="card-title" title="${escapeHtml(item.title)}">${truncateText(escapeHtml(item.title), 50)}</h3>
-        <div class="creator-info-small">
-          <div class="creator-avatar-small">${avatarHtml}</div>
-          <div class="creator-name-small">@${escapeHtml(item.user_profiles?.username || 'Creator')}</div>
-        </div>
-        <div class="card-meta">
-          <span><i class="fas fa-eye" style="color:var(--warm-gold);"></i>${formatNumber(item.views_count || 0)}</span>
-          <span><i class="fas fa-heart" style="color:#ef4444;"></i>${formatNumber(item.likes_count || 0)}</span>
-          <span><i class="fas fa-comment" style="color:var(--bantu-blue);"></i>${formatNumber(item.comments_count || 0)}</span>
-          <span><i class="fas fa-share" style="color:var(--success-color);"></i>${formatNumber(item.shares_count || 0)}</span>
-        </div>
-      </div>
-    </a>
-  `;
-}
-
-function updateContentUI(content) {
-  const grid = document.getElementById('content-grid');
-  const noContent = document.getElementById('no-content');
-  const countEl = document.getElementById('content-count');
-  countEl.textContent = `${content.length} item${content.length !== 1 ? 's' : ''}`;
-  if (content.length === 0) {
-    grid.style.display = 'none';
-    noContent.style.display = 'block';
-    return;
-  }
-  grid.style.display = 'grid';
-  noContent.style.display = 'none';
-  const sorted = [...content].sort((a, b) => {
-    if (a.is_pinned && !b.is_pinned) return -1;
-    if (!a.is_pinned && b.is_pinned) return 1;
-    return new Date(b.created_at) - new Date(a.created_at);
-  });
-  grid.innerHTML = sorted.map(item => createContentCard(item)).join('');
-}
-
-function updateConnectButton() {
-  const btn = document.getElementById('connect-btn');
-  if (!window.currentUser) {
-    btn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Log in to Connect';
-    btn.classList.remove('connected-btn');
-    btn.classList.add('connect-btn');
-    btn.onclick = handleLoginRequired;
-    return;
-  }
-  if (window.currentUser.id === window.creatorId) {
-    btn.disabled = true;
-    btn.innerHTML = '<i class="fas fa-user"></i> This is your channel';
-    return;
-  }
-  if (window.isConnected) {
-    btn.innerHTML = '<i class="fas fa-link"></i> Connected';
-    btn.classList.remove('connect-btn');
-    btn.classList.add('connected-btn');
-    btn.onclick = handleDisconnect;
-  } else {
-    btn.innerHTML = '<i class="fas fa-link"></i> Connect';
-    btn.classList.remove('connected-btn');
-    btn.classList.add('connect-btn');
-    btn.onclick = handleConnect;
-  }
-}
-
-function handleLoginRequired() {
-  showToast('Please log in to connect', 'info');
-  window.location.href = `login.html?redirect=creator-channel.html?id=${window.creatorId}`;
-}
-
-async function handleConnect() {
-  if (!window.currentUser) { handleLoginRequired(); return; }
-  if (window.currentUser.id === window.creatorId) { showToast('You cannot connect to your own channel', 'info'); return; }
-  try {
-    const { error } = await supabase.from('connectors').insert({
-      connector_id: window.currentUser.id,
-      connected_id: window.creatorId,
-      connection_type: 'creator',
-      created_at: new Date().toISOString()
+    `).join('');
+    grid.querySelectorAll('.popular-item').forEach(item => {
+      item.addEventListener('click', () => {
+        const id = item.dataset.contentId;
+        if (id) window.location.href = `content-detail.html?id=${id}`;
+      });
     });
-    if (error) throw error;
-    window.isConnected = true;
-    window.connectorCount++;
-    updateConnectButton();
-    document.getElementById('connectors-count').textContent = formatNumber(window.connectorCount);
-    showConfetti();
-    showToast(`Connected with ${window.creatorProfile.full_name || window.creatorProfile.username}!`, 'success');
-  } catch (error) {
-    console.error('Error connecting:', error);
-    showToast('Failed to connect', 'error');
   }
-}
 
-async function handleDisconnect() {
-  try {
-    const { error } = await supabase.from('connectors').delete().eq('connector_id', window.currentUser.id).eq('connected_id', window.creatorId).eq('connection_type', 'creator');
-    if (error) throw error;
-    window.isConnected = false;
-    window.connectorCount = Math.max(0, window.connectorCount - 1);
-    updateConnectButton();
-    document.getElementById('connectors-count').textContent = formatNumber(window.connectorCount);
-    showToast('Disconnected', 'info');
-  } catch (error) {
-    console.error('Error disconnecting:', error);
-    showToast('Failed to disconnect', 'error');
+  function updateActivityFeed() {
+    const feed = document.getElementById('activity-feed');
+    const activities = [];
+    const recentUploads = [...window.creatorContent].sort((a,b) => new Date(b.created_at) - new Date(a.created_at)).slice(0, 3);
+    recentUploads.forEach(u => {
+      activities.push({ icon: 'fa-video', text: `Uploaded "${truncateText(u.title, 30)}"`, time: u.created_at });
+    });
+    const weekAgo = new Date(Date.now() - 7*24*60*60*1000).toISOString();
+    activities.push({ icon: 'fa-users', text: `Gained ${window.connectorCount} connectors`, time: weekAgo });
+    feed.innerHTML = activities.slice(0, 5).map(activity => `
+      <div class="activity-item">
+        <div class="activity-icon"><i class="fas ${activity.icon}"></i></div>
+        <div class="activity-content">
+          <div class="activity-text"><strong>${activity.text}</strong></div>
+          <div class="activity-time"><i class="fas fa-clock"></i> ${formatDate(activity.time)}</div>
+        </div>
+      </div>
+    `).join('');
   }
-}
 
-function handleShare() {
-  if (!window.creatorProfile) return;
-  const name = window.creatorProfile.full_name || window.creatorProfile.username || 'this creator';
-  const text = `Check out ${name}'s channel on Bantu Stream Connect!`;
-  const url = window.location.href;
-  if (navigator.share) { 
-    navigator.share({ title: `${name}'s Channel`, text, url }); 
-  } else { 
-    navigator.clipboard.writeText(`${text}\n${url}`).then(() => showToast('Link copied!', 'success')); 
+  function updateFanHighlights() {
+    const fanGrid = document.getElementById('fan-grid');
+    const contentIds = window.creatorContent.map(c => c.id);
+    if (contentIds.length === 0) { 
+      fanGrid.innerHTML = '<p style="color:var(--slate-grey);">No fan comments yet</p>'; 
+      return; 
+    }
+    supabase.from('comments').select('*, user_profiles!user_id(full_name, username, avatar_url)').in('content_id', contentIds).order('created_at', { ascending: false }).limit(4).then(({ data }) => {
+      if (data && data.length > 0) {
+        fanGrid.innerHTML = data.map(comment => {
+          const avatarUrl = comment.user_profiles?.avatar_url ? fixMediaUrl(comment.user_profiles.avatar_url) : 'https://images.unsplash.com/photo-1633332755192-727a05c4013d?w=100&h=100&fit=crop';
+          const name = comment.user_profiles?.full_name || comment.user_profiles?.username || comment.author_name || 'Fan';
+          return `
+            <div class="fan-card">
+              <div class="fan-header">
+                <div class="fan-avatar"><img src="${avatarUrl}" alt="${name}"></div>
+                <div class="fan-info">
+                  <h4>${escapeHtml(name)}</h4>
+                  <div class="fan-badge"><i class="fas fa-crown"></i> Top Fan</div>
+                </div>
+              </div>
+              <div class="fan-comment">"${truncateText(escapeHtml(comment.comment_text), 100)}"</div>
+              <div class="fan-stats">
+                <span><i class="fas fa-heart"></i> ${comment.likes_count || 0}</span>
+                <span><i class="fas fa-clock"></i> ${formatDate(comment.created_at)}</span>
+              </div>
+            </div>
+          `;
+        }).join('');
+      } else {
+        fanGrid.innerHTML = '<p style="color:var(--slate-grey);grid-column:1/-1;text-align:center;">Be the first to comment!</p>';
+      }
+    });
   }
-}
 
-async function showConnectorsModal() {
-  try {
-    const { data: connectors, error } = await supabase.from('connectors').select(`connector_id, user_profiles!inner(id, full_name, username, avatar_url)`).eq('connected_id', window.creatorId).eq('connection_type', 'creator');
-    if (error) throw error;
-    const title = document.getElementById('modal-title');
-    const list = document.getElementById('connectors-list');
-    const profiles = connectors.map(c => c.user_profiles);
-    title.textContent = `Connectors (${profiles.length})`;
-    if (profiles.length === 0) {
-      list.innerHTML = '<div style="text-align:center;padding:40px;color:var(--slate-grey);">No connectors yet</div>';
+  function updateAchievementsUI() {
+    const grid = document.getElementById('achievements-grid');
+    const achievements = [
+      { name: 'First Upload', icon: 'fa-check-circle', completed: window.creatorContent.length >= 1 },
+      { name: '100 Connectors', icon: 'fa-users', completed: window.connectorCount >= 100 },
+      { name: '10K Views', icon: 'fa-eye', completed: window.creatorContent.reduce((sum, c) => sum + (c.views_count || 0), 0) >= 10000 },
+      { name: '50 Videos', icon: 'fa-video', completed: window.creatorContent.length >= 50 }
+    ];
+    if (window.achievements) {
+      window.achievements.forEach(badge => {
+        achievements.push({ name: badge.badge_name, icon: 'fa-trophy', completed: true, date: badge.awarded_at });
+      });
+    }
+    grid.innerHTML = achievements.slice(0, 8).map(achievement => `
+      <div class="achievement-card ${achievement.completed ? 'completed' : 'in-progress'}">
+        <div class="achievement-icon"><i class="fas ${achievement.icon}"></i></div>
+        <div class="achievement-name">${escapeHtml(achievement.name)}</div>
+        ${achievement.date ? `<div class="achievement-date">${formatDate(achievement.date)}</div>` : ''}
+      </div>
+    `).join('');
+  }
+
+  async function loadRecommendedCreators() {
+    const grid = document.getElementById('recommended-grid');
+    
+    try {
+      const { data: connectors, error: connError } = await supabase
+        .from('connectors')
+        .select('connector_id')
+        .eq('connected_id', window.creatorId)
+        .limit(10);
+      
+      if (connError) throw connError;
+      
+      let recommended = [];
+      
+      if (connectors && connectors.length > 0) {
+        const connectorIds = connectors.map(c => c.connector_id);
+        
+        const { data: profiles, error: profError } = await supabase
+          .from('user_profiles')
+          .select('id, username, full_name, avatar_url, bio')
+          .in('id', connectorIds)
+          .eq('role', 'creator')
+          .neq('id', window.creatorId)
+          .limit(4);
+        
+        if (profError) throw profError;
+        recommended = profiles || [];
+      }
+      
+      if (recommended.length === 0) {
+        const { data: randomCreators, error: randError } = await supabase
+          .from('user_profiles')
+          .select('id, username, full_name, avatar_url, bio')
+          .eq('role', 'creator')
+          .neq('id', window.creatorId)
+          .limit(4);
+        
+        if (randError) throw randError;
+        recommended = randomCreators || [];
+      }
+      
+      if (recommended.length > 0) {
+        const connectionChecks = await Promise.all(
+          recommended.map(async (creator) => {
+            if (!window.currentUser) return { id: creator.id, isConnected: false };
+            
+            const { data: conn } = await supabase
+              .from('connectors')
+              .select('id')
+              .eq('connector_id', window.currentUser.id)
+              .eq('connected_id', creator.id)
+              .eq('connection_type', 'creator')
+              .maybeSingle();
+            
+            return { id: creator.id, isConnected: !!conn };
+          })
+        );
+        
+        const connectionMap = Object.fromEntries(
+          connectionChecks.map(c => [c.id, c.isConnected])
+        );
+        
+        grid.innerHTML = recommended.map(creator => {
+          const avatarUrl = creator.avatar_url ? fixMediaUrl(creator.avatar_url) : null;
+          const initials = getInitials(creator.full_name || creator.username);
+          const isConnected = connectionMap[creator.id] || false;
+          
+          return `
+            <div class="recommended-creator" data-creator-id="${creator.id}">
+              <div class="recommended-avatar">
+                ${avatarUrl 
+                  ? `<img src="${avatarUrl}" alt="${escapeHtml(creator.full_name || creator.username)}" 
+                    onerror="this.parentElement.innerHTML='<div style=\'width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,var(--bantu-blue),var(--warm-gold));display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:24px;\'>${initials}</div>'">`
+                  : `<div style="width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,var(--bantu-blue),var(--warm-gold));display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:24px;">${initials}</div>`
+                }
+              </div>
+              <div class="recommended-name" title="${escapeHtml(creator.full_name || creator.username)}">
+                ${escapeHtml(creator.full_name || creator.username)}
+              </div>
+              <div class="recommended-username" title="@${escapeHtml(creator.username)}">
+                @${escapeHtml(creator.username || 'creator')}
+              </div>
+              <button class="recommended-follow-btn ${isConnected ? 'connected' : ''}" 
+                data-target-id="${creator.id}">
+                ${isConnected ? 'Connected' : 'Connect'}
+              </button>
+            </div>
+          `;
+        }).join('');
+        
+        grid.querySelectorAll('.recommended-follow-btn').forEach(btn => {
+          btn.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            const targetId = btn.dataset.targetId;
+            await handleRecommendedConnect(targetId, btn);
+          });
+        });
+        
+        grid.querySelectorAll('.recommended-creator').forEach(card => {
+          card.addEventListener('click', (e) => {
+            if (!e.target.classList.contains('recommended-follow-btn')) {
+              const creatorId = card.dataset.creatorId;
+              if (creatorId) window.location.href = `creator-channel.html?id=${creatorId}`;
+            }
+          });
+        });
+        
+        document.getElementById('recommended-section').style.display = 'block';
+      }
+      
+    } catch (error) {
+      console.error('Error loading recommended creators:', error);
+      grid.innerHTML = '<p style="color:var(--slate-grey);grid-column:1/-1;text-align:center;">More creators coming soon!</p>';
+    }
+  }
+
+  async function handleRecommendedConnect(targetCreatorId, button) {
+    if (!window.currentUser) {
+      showToast('Please log in to connect', 'info');
+      window.location.href = `login.html?redirect=${encodeURIComponent(window.location.href)}`;
+      return;
+    }
+    
+    if (window.currentUser.id === targetCreatorId) {
+      showToast('You cannot connect to your own channel', 'info');
+      return;
+    }
+    
+    try {
+      const { data: existing } = await supabase
+        .from('connectors')
+        .select('id')
+        .eq('connector_id', window.currentUser.id)
+        .eq('connected_id', targetCreatorId)
+        .eq('connection_type', 'creator')
+        .maybeSingle();
+      
+      if (existing) {
+        const { error } = await supabase
+          .from('connectors')
+          .delete()
+          .eq('connector_id', window.currentUser.id)
+          .eq('connected_id', targetCreatorId)
+          .eq('connection_type', 'creator');
+        
+        if (error) throw error;
+        
+        button.textContent = 'Connect';
+        button.classList.remove('connected');
+        showToast('Disconnected', 'info');
+        
+      } else {
+        const { error } = await supabase
+          .from('connectors')
+          .insert({
+            connector_id: window.currentUser.id,
+            connected_id: targetCreatorId,
+            connection_type: 'creator',
+            created_at: new Date().toISOString()
+          });
+        
+        if (error) throw error;
+        
+        button.textContent = 'Connected';
+        button.classList.add('connected');
+        showConfetti();
+        showToast('Connected successfully! ✨', 'success');
+      }
+    } catch (error) {
+      console.error('Error toggling connection:', error);
+      showToast('Failed to update connection', 'error');
+    }
+  }
+
+  function updateCreatorUI() {
+    if (!window.creatorProfile) return;
+    document.getElementById('creator-name').textContent = window.creatorProfile.full_name || window.creatorProfile.username || 'Creator';
+    document.getElementById('creator-username').textContent = `@${window.creatorProfile.username || 'creator'}`;
+    document.getElementById('creator-bio').textContent = window.creatorProfile.bio || 'Passionate content creator sharing authentic African stories.';
+    document.getElementById('banner-title').textContent = `${window.creatorProfile.full_name || window.creatorProfile.username}'s Channel`;
+    const editBtn = document.getElementById('edit-identity-btn');
+    const bannerEditBtn = document.getElementById('banner-edit-btn');
+    if (window.currentUser && window.currentUser.id === window.creatorId) {
+      editBtn.style.display = 'flex';
+      bannerEditBtn.style.display = 'flex';
     } else {
-      list.innerHTML = profiles.map(p => {
-        const avatarUrl = p.avatar_url ? fixMediaUrl(p.avatar_url) : 'https://images.unsplash.com/photo-1633332755192-727a05c4013d?w=400&h=400&fit=crop';
+      editBtn.style.display = 'none';
+      bannerEditBtn.style.display = 'none';
+    }
+    const avatarContainer = document.getElementById('creator-avatar-container');
+    const avatarUrl = window.creatorProfile.avatar_url ? fixMediaUrl(window.creatorProfile.avatar_url) : null;
+    const displayName = window.creatorProfile.full_name || window.creatorProfile.username || 'Creator';
+    const initials = getInitials(displayName);
+    avatarContainer.innerHTML = avatarUrl
+      ? `<img src="${avatarUrl}" alt="${displayName}" style="width:100%;height:100%;object-fit:cover;display:block;border-radius:50%;">`
+      : `<div class="creator-initials">${initials}</div>`;
+    document.getElementById('founder-badge').style.display = window.creatorProfile.is_founder ? 'block' : 'none';
+    document.getElementById('videos-count').textContent = window.creatorContent.length;
+    document.getElementById('connectors-count').textContent = formatNumber(window.connectorCount);
+    const totalViews = window.creatorContent.reduce((sum, item) => sum + (item.views_count || 0), 0);
+    document.getElementById('views-count').textContent = formatNumber(totalViews);
+    const totalLikes = window.creatorContent.reduce((sum, item) => sum + (item.likes_count || 0), 0);
+    const engagement = totalViews > 0 ? Math.round((totalLikes / totalViews) * 100) : 0;
+    document.getElementById('engagement-count').textContent = engagement + '%';
+    updateConnectButton();
+  }
+
+  function updateIdentityCard() {
+    if (!window.creatorProfile) return;
+    document.getElementById('creator-quote').textContent = window.creatorProfile.quote || '"Creating authentic African stories for the world"';
+    document.getElementById('creator-mission').textContent = window.creatorProfile.mission || 'Passionate about sharing African culture, technology, and innovation.';
+    document.getElementById('creator-location').textContent = window.creatorProfile.location || 'Johannesburg, South Africa';
+    if (window.creatorProfile.created_at) {
+      const joinDate = new Date(window.creatorProfile.created_at);
+      document.getElementById('creator-joined').textContent = `Joined ${joinDate.toLocaleString('default', { month: 'long', year: 'numeric' })}`;
+    }
+    const websiteLink = document.getElementById('creator-website');
+    if (window.creatorProfile.website_url) {
+      websiteLink.href = window.creatorProfile.website_url;
+      websiteLink.textContent = window.creatorProfile.website_url.replace(/^https?:\/\//, '');
+      websiteLink.style.display = 'block';
+    } else {
+      websiteLink.style.display = 'none';
+    }
+    if (window.creatorProfile.upload_schedule) {
+      document.getElementById('creator-schedule').textContent = window.creatorProfile.upload_schedule;
+    }
+    const tagsContainer = document.getElementById('creator-tags');
+    if (window.creatorProfile.interests) {
+      const tags = window.creatorProfile.interests.split(',').map(t => t.trim()).filter(t => t);
+      tagsContainer.innerHTML = tags.map(tag => `<span class="identity-tag">${escapeHtml(tag)}</span>`).join('');
+    }
+  }
+
+  function updatePlaylistsUI() {
+    const playlistSection = document.getElementById('playlists-section');
+    const playlistGrid = document.getElementById('playlists-grid');
+    const emptyState = document.getElementById('playlists-empty');
+
+    playlistSection.style.display = 'block';
+
+    if (!window.playlists || window.playlists.length === 0) {
+      playlistGrid.style.display = 'none';
+      emptyState.style.display = 'block';
+      
+      if (window.currentUser && window.currentUser.id === window.creatorId) {
+        emptyState.innerHTML = `
+          <div class="empty-icon"><i class="fas fa-list"></i></div>
+          <h3>No playlists yet</h3>
+          <p>You haven't created any playlists. Click "New Playlist" to get started!</p>
+        `;
+      } else {
+        emptyState.innerHTML = `
+          <div class="empty-icon"><i class="fas fa-list"></i></div>
+          <h3>No playlists yet</h3>
+          <p>This creator hasn't created any playlists yet.</p>
+        `;
+      }
+    } else {
+      playlistGrid.style.display = 'grid';
+      emptyState.style.display = 'none';
+      
+      const sorted = [...window.playlists].sort((a, b) => {
+        if (a.is_featured && !b.is_featured) return -1;
+        if (!a.is_featured && b.is_featured) return 1;
+        return new Date(b.updated_at) - new Date(a.updated_at);
+      });
+      
+      playlistGrid.innerHTML = sorted.map(playlist => {
+        const firstItem = playlist.creator_playlist_items?.[0]?.Content;
+        let thumb = playlist.custom_thumbnail_url 
+          ? fixMediaUrl(playlist.custom_thumbnail_url) 
+          : (firstItem?.thumbnail_url ? fixMediaUrl(firstItem.thumbnail_url) : 'https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?w=400&h=200&fit=crop');
+        
+        const itemCount = playlist.creator_playlist_items?.length || 0;
+        const typeBadge = playlist.playlist_type && playlist.playlist_type !== 'playlist'
+          ? `<span class="playlist-type-badge ${playlist.playlist_type}">${playlist.playlist_type}</span>` 
+          : '';
+        
+        const isOwner = window.currentUser && window.currentUser.id === window.creatorId;
+        
         return `
-          <div style="display:flex;align-items:center;gap:15px;padding:15px;background:rgba(255,255,255,0.05);border-radius:10px;margin-bottom:10px;">
-            <div style="width:40px;height:40px;border-radius:50%;overflow:hidden;border:2px solid var(--warm-gold);"><img src="${avatarUrl}" alt="${p.full_name || p.username}" style="width:100%;height:100%;object-fit:cover;"></div>
-            <div>
-              <div style="font-weight:600;color:var(--soft-white);">${escapeHtml(p.full_name || p.username)}</div>
-              <div style="font-size:14px;color:var(--slate-grey);">@${escapeHtml(p.username || 'user')}</div>
+          <div class="playlist-card ${playlist.is_featured ? 'featured' : ''}" data-playlist-id="${playlist.id}" ${isOwner ? 'style="cursor:pointer;"' : ''}>
+            <div class="playlist-thumbnail">
+              <img src="${thumb}" alt="${escapeHtml(playlist.name)}" loading="lazy">
+              <div class="playlist-overlay"><i class="fas fa-play" style="font-size:30px;color:white;"></i></div>
+              <div class="playlist-count"><i class="fas fa-video"></i> ${itemCount}</div>
+              ${typeBadge ? `<div style="position:absolute;top:10px;left:10px;">${typeBadge}</div>` : ''}
+            </div>
+            <div class="playlist-info">
+              <div class="playlist-name" title="${escapeHtml(playlist.name)}">${escapeHtml(playlist.name)}</div>
+              <div class="playlist-meta">
+                <span>${itemCount} ${itemCount === 1 ? 'item' : 'items'}</span>
+                ${playlist.total_duration ? `<span>• ${formatDuration(playlist.total_duration)}</span>` : ''}
+              </div>
             </div>
           </div>
         `;
       }).join('');
+      
+      playlistGrid.querySelectorAll('.playlist-card').forEach(card => {
+        card.addEventListener('click', (e) => {
+          const playlistId = card.dataset.playlistId;
+          if (!playlistId) return;
+          
+          if (window.currentUser && window.currentUser.id === window.creatorId) {
+            e.preventDefault();
+            showPlaylistBuilder(playlistId);
+          } else {
+            window.location.href = `playlist.html?id=${playlistId}`;
+          }
+        });
+      });
     }
-    document.getElementById('connectors-modal').classList.add('active');
-  } catch (error) {
-    console.error('Error loading connectors:', error);
-    showToast('Failed to load connectors', 'error');
-  }
-}
 
-async function showPlaylistBuilder(playlistId = null) {
-  if (!window.currentUser || window.currentUser.id !== window.creatorId) {
-    showToast('Only the channel owner can manage playlists', 'warning');
-    return;
-  }
-  
-  const modal = document.getElementById('playlist-builder-modal');
-  const title = document.getElementById('playlist-modal-title');
-  const deleteBtn = document.getElementById('delete-playlist-btn');
-  
-  document.getElementById('playlist-settings-form').reset();
-  document.getElementById('edit-playlist-id').value = '';
-  document.getElementById('playlist-thumb-preview').innerHTML = '<i class="fas fa-image"></i>';
-  document.getElementById('playlist-thumbnail').value = '';
-  
-  if (playlistId) {
-    title.textContent = 'Edit Playlist';
-    deleteBtn.style.display = 'block';
-    
-    const { data: playlist, error } = await supabase
-      .from('creator_playlists')
-      .select('*')
-      .eq('id', playlistId)
-      .eq('creator_id', window.creatorId)
-      .maybeSingle();
-    
-    if (error || !playlist) {
-      showToast('Playlist not found', 'error');
-      return;
+    const header = playlistSection.querySelector('.section-header');
+    const existingBtn = document.getElementById('new-playlist-btn');
+    if (existingBtn) existingBtn.remove();
+
+    if (window.currentUser && window.currentUser.id === window.creatorId) {
+      const newBtn = document.createElement('button');
+      newBtn.id = 'new-playlist-btn';
+      newBtn.innerHTML = '<i class="fas fa-plus"></i> New Playlist';
+      newBtn.style.cssText = 'background:var(--warm-gold);color:var(--deep-black);border:none;padding:8px 16px;border-radius:30px;font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:8px;white-space:nowrap;';
+      newBtn.onclick = (e) => { e.preventDefault(); e.stopPropagation(); showPlaylistBuilder(); };
+      header.appendChild(newBtn);
     }
-    
-    document.getElementById('edit-playlist-id').value = playlist.id;
-    document.getElementById('playlist-title').value = playlist.name || '';
-    document.getElementById('playlist-description').value = playlist.description || '';
-    document.getElementById('playlist-type').value = playlist.playlist_type || 'playlist';
-    document.getElementById('playlist-visibility').value = playlist.visibility || 'public';
-    document.getElementById('playlist-sort').value = playlist.sort_order || 'manual';
-    document.getElementById('playlist-featured').checked = playlist.is_featured || false;
-    
-    if (playlist.custom_thumbnail_url) {
-      document.getElementById('playlist-thumbnail').value = playlist.custom_thumbnail_url;
-      document.getElementById('playlist-thumb-preview').innerHTML = 
-        `<img src="${fixMediaUrl(playlist.custom_thumbnail_url)}" style="width:100%;height:100%;object-fit:cover;">`;
-    }
-    
-    await loadPlaylistItems(playlist.id);
-    
-  } else {
-    title.textContent = 'Create Playlist';
-    deleteBtn.style.display = 'none';
-    document.getElementById('playlist-items-list').innerHTML = `
-      <div style="text-align:center;padding:40px;color:var(--slate-grey);">
-        <i class="fas fa-list" style="font-size:32px;margin-bottom:15px;opacity:0.5;"></i>
-        <p>No items yet. Add videos from your library!</p>
-      </div>
-    `;
-    document.getElementById('items-count').textContent = '0';
-    window.playlistItems = [];
   }
-  
-  await loadCreatorLibrary();
-  
-  modal.classList.add('active');
-  
-  setupPlaylistTabs();
-  setupDragAndDrop();
-}
 
-async function loadPlaylistItems(playlistId) {
-  try {
-    const { data: items, error } = await supabase
-      .from('creator_playlist_items')
-      .select(`
-        *,
-        Content!content_id (
-          id, title, thumbnail_url, duration, views_count, created_at, media_type
-        )
-      `)
-      .eq('playlist_id', playlistId)
-      .order('position', { ascending: true, nullsLast: true });
-    
-    if (error) throw error;
-    
-    window.playlistItems = items || [];
-    renderPlaylistItems();
-    
-  } catch (error) {
-    console.error('Error loading playlist items:', error);
-    showToast('Failed to load items', 'error');
-  }
-}
-
-function renderPlaylistItems() {
-  const list = document.getElementById('playlist-items-list');
-  
-  if (window.playlistItems.length === 0) {
-    list.innerHTML = `
-      <div style="text-align:center;padding:40px;color:var(--slate-grey);">
-        <i class="fas fa-list" style="font-size:32px;margin-bottom:15px;opacity:0.5;"></i>
-        <p>No items yet. Add videos from your library!</p>
-      </div>
-    `;
-    document.getElementById('items-count').textContent = '0';
-    return;
-  }
-  
-  list.innerHTML = window.playlistItems.map((item, index) => {
-    const content = item.Content;
-    const thumb = content?.thumbnail_url ? fixMediaUrl(content.thumbnail_url) : 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=225&fit=crop';
-    const duration = formatDuration(content?.duration);
-    const views = formatNumber(content?.views_count || 0);
-    const date = formatDate(content?.created_at);
-    
+  function createContentCard(item) {
+    const thumbnailUrl = item.thumbnail_url ? fixMediaUrl(item.thumbnail_url) : 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=225&fit=crop';
+    const displayName = item.user_profiles?.full_name || item.user_profiles?.username || 'User';
+    const initials = getInitials(displayName);
+    const avatarHtml = item.user_profiles?.avatar_url 
+      ? `<img src="${fixMediaUrl(item.user_profiles.avatar_url)}" alt="${escapeHtml(displayName)}" style="width:100%;height:100%;object-fit:cover;">`
+      : `<div style="width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,var(--bantu-blue),var(--warm-gold));display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:12px;">${initials}</div>`;
+    const isNew = (new Date() - new Date(item.created_at)) < 7*24*60*60*1000;
     return `
-      <div class="playlist-item-card" draggable="true" data-item-id="${item.id}" data-content-id="${content?.id}">
-        <div class="item-position">${index + 1}</div>
-        <div style="width:100px;height:56px;border-radius:8px;overflow:hidden;background:var(--deep-black);flex-shrink:0;position:relative;">
-          <img src="${thumb}" alt="${escapeHtml(content?.title || '')}" class="item-thumbnail" style="width:100%;height:100%;object-fit:cover;">
-          <span style="position:absolute;bottom:4px;right:4px;background:rgba(0,0,0,0.8);color:white;padding:2px 6px;border-radius:4px;font-size:10px;">${duration}</span>
+      <a href="content-detail.html?id=${item.id}" class="content-card">
+        <div class="card-thumbnail">
+          <img src="${thumbnailUrl}" alt="${escapeHtml(item.title)}" loading="lazy">
+          <div class="thumbnail-overlay"></div>
+          <div class="card-badges">
+            ${item.is_pinned ? '<div class="badge-pinned card-badge"><i class="fas fa-thumbtack"></i> PINNED</div>' : ''}
+            ${isNew ? '<div class="badge-new card-badge"><i class="fas fa-gem"></i> NEW</div>' : ''}
+          </div>
+          <div class="play-overlay"><div class="play-icon"><i class="fas fa-play"></i></div></div>
+          ${item.duration ? `<div style="position:absolute;bottom:8px;right:8px;background:rgba(0,0,0,0.8);color:white;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;">${formatDuration(item.duration)}</div>` : ''}
         </div>
-        <div style="flex:1;min-width:0;">
-          <div class="item-title" style="font-size:14px;font-weight:600;color:var(--soft-white);margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${escapeHtml(content?.title || '')}">${escapeHtml(content?.title || 'Untitled')}</div>
-          <div style="font-size:12px;color:var(--slate-grey);display:flex;gap:10px;">
-            <span><i class="fas fa-eye"></i> ${views}</span>
-            <span><i class="fas fa-clock"></i> ${date}</span>
+        <div class="card-content">
+          <h3 class="card-title" title="${escapeHtml(item.title)}">${truncateText(escapeHtml(item.title), 50)}</h3>
+          <div class="creator-info-small">
+            <div class="creator-avatar-small">${avatarHtml}</div>
+            <div class="creator-name-small">@${escapeHtml(item.user_profiles?.username || 'Creator')}</div>
+          </div>
+          <div class="card-meta">
+            <span><i class="fas fa-eye" style="color:var(--warm-gold);"></i>${formatNumber(item.views_count || 0)}</span>
+            <span><i class="fas fa-heart" style="color:#ef4444;"></i>${formatNumber(item.likes_count || 0)}</span>
+            <span><i class="fas fa-comment" style="color:var(--bantu-blue);"></i>${formatNumber(item.comments_count || 0)}</span>
+            <span><i class="fas fa-share" style="color:var(--success-color);"></i>${formatNumber(item.shares_count || 0)}</span>
           </div>
         </div>
-        <div style="display:flex;flex-direction:column;gap:5px;align-items:flex-end;">
-          <button class="item-remove-btn" data-item-id="${item.id}" style="background:none;border:none;color:var(--slate-grey);cursor:pointer;padding:4px;border-radius:4px;" title="Remove"><i class="fas fa-times"></i></button>
-          <button class="item-edit-btn" data-item-id="${item.id}" style="background:none;border:none;color:var(--slate-grey);cursor:pointer;padding:4px;border-radius:4px;" title="Edit"><i class="fas fa-edit"></i></button>
-        </div>
-      </div>
+      </a>
     `;
-  }).join('');
-  
-  document.getElementById('items-count').textContent = window.playlistItems.length;
-  
-  list.querySelectorAll('.item-remove-btn').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      removePlaylistItem(btn.dataset.itemId);
-    });
-  });
-  
-  list.querySelectorAll('.item-edit-btn').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      editPlaylistItem(btn.dataset.itemId);
-    });
-  });
-}
+  }
 
-async function loadCreatorLibrary(filter = 'all', search = '') {
-  try {
-    let query = supabase
-      .from('Content')
-      .select('id, title, thumbnail_url, duration, views_count, created_at, media_type, genre')
-      .eq('user_id', window.creatorId)
-      .eq('status', 'published')
-      .order('created_at', { ascending: false });
-    
-    if (filter !== 'all') {
-      if (filter === 'short') {
-        query = query.eq('media_type', 'short');
-      } else if (filter === 'podcast') {
-        query = query.eq('media_type', 'podcast');
-      } else if (filter === 'video') {
-        query = query.or('media_type.eq.video,media_type.is.null');
-      } else if (filter === 'music') {
-        query = query.eq('genre', 'Music');
-      } else if (filter === 'series') {
-        query = query.eq('genre', 'Series');
-      }
+  function updateContentUI(content) {
+    const grid = document.getElementById('content-grid');
+    const noContent = document.getElementById('no-content');
+    const countEl = document.getElementById('content-count');
+    countEl.textContent = `${content.length} item${content.length !== 1 ? 's' : ''}`;
+    if (content.length === 0) {
+      grid.style.display = 'none';
+      noContent.style.display = 'block';
+      return;
     }
-    
-    if (search) {
-      query = query.ilike('title', `%${search}%`);
+    grid.style.display = 'grid';
+    noContent.style.display = 'none';
+    const sorted = [...content].sort((a, b) => {
+      if (a.is_pinned && !b.is_pinned) return -1;
+      if (!a.is_pinned && b.is_pinned) return 1;
+      return new Date(b.created_at) - new Date(a.created_at);
+    });
+    grid.innerHTML = sorted.map(item => createContentCard(item)).join('');
+  }
+
+  function updateConnectButton() {
+    const btn = document.getElementById('connect-btn');
+    if (!window.currentUser) {
+      btn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Log in to Connect';
+      btn.classList.remove('connected-btn');
+      btn.classList.add('connect-btn');
+      btn.onclick = handleLoginRequired;
+      return;
     }
-    
-    const { data, error } = await query.limit(50);
-    if (error) throw error;
-    
-    window.creatorLibrary = data || [];
-    renderLibraryContent(filter, search);
-    
-  } catch (error) {
-    console.error('Error loading library:', error);
+    if (window.currentUser.id === window.creatorId) {
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fas fa-user"></i> This is your channel';
+      return;
+    }
+    if (window.isConnected) {
+      btn.innerHTML = '<i class="fas fa-link"></i> Connected';
+      btn.classList.remove('connect-btn');
+      btn.classList.add('connected-btn');
+      btn.onclick = handleDisconnect;
+    } else {
+      btn.innerHTML = '<i class="fas fa-link"></i> Connect';
+      btn.classList.remove('connected-btn');
+      btn.classList.add('connect-btn');
+      btn.onclick = handleConnect;
+    }
   }
-}
 
-function renderLibraryContent(filter = 'all', search = '') {
-  const grid = document.getElementById('library-content-grid');
-  
-  const playlistContentIds = new Set(window.playlistItems.map(i => i.content_id));
-  const availableContent = window.creatorLibrary.filter(c => !playlistContentIds.has(c.id));
-  
-  if (availableContent.length === 0) {
-    grid.innerHTML = `
-      <div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--slate-grey);">
-        <i class="fas fa-search" style="font-size:32px;margin-bottom:15px;opacity:0.5;"></i>
-        <p>${search ? 'No matching videos found' : 'All videos already added!'}</p>
-      </div>
-    `;
-    return;
+  function handleLoginRequired() {
+    showToast('Please log in to connect', 'info');
+    window.location.href = `login.html?redirect=creator-channel.html?id=${window.creatorId}`;
   }
-  
-  grid.innerHTML = availableContent.map(content => {
-    const thumb = content.thumbnail_url ? fixMediaUrl(content.thumbnail_url) : 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=225&fit=crop';
-    const duration = formatDuration(content.duration);
-    const views = formatNumber(content.views_count || 0);
-    
-    return `
-      <div class="library-item-card" data-content-id="${content.id}">
-        <div style="position:relative;height:84px;background:var(--deep-black);">
-          <img src="${thumb}" alt="${escapeHtml(content.title)}" class="lib-thumbnail" style="width:100%;height:100%;object-fit:cover;">
-          <div style="position:absolute;bottom:6px;right:6px;background:rgba(0,0,0,0.8);color:white;padding:2px 6px;border-radius:4px;font-size:10px;">${duration}</div>
-          <div class="lib-add-btn" data-content-id="${content.id}" style="position:absolute;top:6px;right:6px;width:20px;height:20px;border-radius:50%;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;color:var(--warm-gold);font-size:11px;cursor:pointer;" title="Add to playlist"><i class="fas fa-plus"></i></div>
-        </div>
-        <div style="padding:10px;">
-          <div class="lib-title" style="font-size:13px;font-weight:600;color:var(--soft-white);margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${escapeHtml(content.title)}">${escapeHtml(content.title)}</div>
-          <div style="font-size:11px;color:var(--slate-grey);"><i class="fas fa-eye"></i> ${views} views</div>
-        </div>
-      </div>
-    `;
-  }).join('');
-  
-  grid.querySelectorAll('.library-item-card').forEach(card => {
-    card.addEventListener('click', (e) => {
-      if (!e.target.closest('.lib-add-btn')) {
-        const contentId = card.dataset.contentId;
-        if (contentId) window.open(`content-detail.html?id=${contentId}`, '_blank');
-      }
-    });
-  });
-  
-  grid.querySelectorAll('.lib-add-btn').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      addContentToPlaylist(btn.dataset.contentId);
-    });
-  });
-}
 
-async function addContentToPlaylist(contentId) {
-  const playlistId = document.getElementById('edit-playlist-id').value;
-  if (!playlistId) {
-    showToast('Please save the playlist first', 'warning');
-    return;
-  }
-  
-  try {
-    const maxPos = window.playlistItems.length > 0 
-      ? Math.max(...window.playlistItems.map(i => i.position || 0)) 
-      : 0;
-    
-    const { error } = await supabase
-      .from('creator_playlist_items')
-      .insert({
-        playlist_id: playlistId,
-        content_id: parseInt(contentId),
-        position: maxPos + 1,
-        added_at: new Date().toISOString()
+  async function handleConnect() {
+    if (!window.currentUser) { handleLoginRequired(); return; }
+    if (window.currentUser.id === window.creatorId) { showToast('You cannot connect to your own channel', 'info'); return; }
+    try {
+      const { error } = await supabase.from('connectors').insert({
+        connector_id: window.currentUser.id,
+        connected_id: window.creatorId,
+        connection_type: 'creator',
+        created_at: new Date().toISOString()
       });
-    
-    if (error) {
-      if (error.code === '23505') {
-        showToast('This video is already in the playlist', 'warning');
+      if (error) throw error;
+      window.isConnected = true;
+      window.connectorCount++;
+      updateConnectButton();
+      document.getElementById('connectors-count').textContent = formatNumber(window.connectorCount);
+      showConfetti();
+      showToast(`Connected with ${window.creatorProfile.full_name || window.creatorProfile.username}!`, 'success');
+    } catch (error) {
+      console.error('Error connecting:', error);
+      showToast('Failed to connect', 'error');
+    }
+  }
+
+  async function handleDisconnect() {
+    try {
+      const { error } = await supabase.from('connectors').delete().eq('connector_id', window.currentUser.id).eq('connected_id', window.creatorId).eq('connection_type', 'creator');
+      if (error) throw error;
+      window.isConnected = false;
+      window.connectorCount = Math.max(0, window.connectorCount - 1);
+      updateConnectButton();
+      document.getElementById('connectors-count').textContent = formatNumber(window.connectorCount);
+      showToast('Disconnected', 'info');
+    } catch (error) {
+      console.error('Error disconnecting:', error);
+      showToast('Failed to disconnect', 'error');
+    }
+  }
+
+  function handleShare() {
+    if (!window.creatorProfile) return;
+    const name = window.creatorProfile.full_name || window.creatorProfile.username || 'this creator';
+    const text = `Check out ${name}'s channel on Bantu Stream Connect!`;
+    const url = window.location.href;
+    if (navigator.share) { 
+      navigator.share({ title: `${name}'s Channel`, text, url }); 
+    } else { 
+      navigator.clipboard.writeText(`${text}\n${url}`).then(() => showToast('Link copied!', 'success')); 
+    }
+  }
+
+  async function showConnectorsModal() {
+    try {
+      const { data: connectors, error } = await supabase.from('connectors').select(`connector_id, user_profiles!inner(id, full_name, username, avatar_url)`).eq('connected_id', window.creatorId).eq('connection_type', 'creator');
+      if (error) throw error;
+      const title = document.getElementById('modal-title');
+      const list = document.getElementById('connectors-list');
+      const profiles = connectors.map(c => c.user_profiles);
+      title.textContent = `Connectors (${profiles.length})`;
+      if (profiles.length === 0) {
+        list.innerHTML = '<div style="text-align:center;padding:40px;color:var(--slate-grey);">No connectors yet</div>';
       } else {
-        throw error;
+        list.innerHTML = profiles.map(p => {
+          const avatarUrl = p.avatar_url ? fixMediaUrl(p.avatar_url) : 'https://images.unsplash.com/photo-1633332755192-727a05c4013d?w=400&h=400&fit=crop';
+          return `
+            <div style="display:flex;align-items:center;gap:15px;padding:15px;background:rgba(255,255,255,0.05);border-radius:10px;margin-bottom:10px;">
+              <div style="width:40px;height:40px;border-radius:50%;overflow:hidden;border:2px solid var(--warm-gold);"><img src="${avatarUrl}" alt="${p.full_name || p.username}" style="width:100%;height:100%;object-fit:cover;"></div>
+              <div>
+                <div style="font-weight:600;color:var(--soft-white);">${escapeHtml(p.full_name || p.username)}</div>
+                <div style="font-size:14px;color:var(--slate-grey);">@${escapeHtml(p.username || 'user')}</div>
+              </div>
+            </div>
+          `;
+        }).join('');
       }
+      document.getElementById('connectors-modal').classList.add('active');
+    } catch (error) {
+      console.error('Error loading connectors:', error);
+      showToast('Failed to load connectors', 'error');
+    }
+  }
+
+  async function showPlaylistBuilder(playlistId = null) {
+    if (!window.currentUser || window.currentUser.id !== window.creatorId) {
+      showToast('Only the channel owner can manage playlists', 'warning');
       return;
     }
     
-    await loadPlaylistItems(playlistId);
-    const filter = document.querySelector('.library-filter.active')?.dataset.filter || 'all';
-    const search = document.getElementById('library-search')?.value.trim() || '';
-    await loadCreatorLibrary(filter, search);
-    showToast('Video added to playlist!', 'success');
+    const modal = document.getElementById('playlist-builder-modal');
+    const title = document.getElementById('playlist-modal-title');
+    const deleteBtn = document.getElementById('delete-playlist-btn');
     
-  } catch (error) {
-    console.error('Error adding to playlist:', error);
-    showToast('Failed to add video', 'error');
+    document.getElementById('playlist-settings-form').reset();
+    document.getElementById('edit-playlist-id').value = '';
+    document.getElementById('playlist-thumb-preview').innerHTML = '<i class="fas fa-image"></i>';
+    document.getElementById('playlist-thumbnail').value = '';
+    
+    if (playlistId) {
+      title.textContent = 'Edit Playlist';
+      deleteBtn.style.display = 'block';
+      
+      const { data: playlist, error } = await supabase
+        .from('creator_playlists')
+        .select('*')
+        .eq('id', playlistId)
+        .eq('creator_id', window.creatorId)
+        .maybeSingle();
+      
+      if (error || !playlist) {
+        showToast('Playlist not found', 'error');
+        return;
+      }
+      
+      document.getElementById('edit-playlist-id').value = playlist.id;
+      document.getElementById('playlist-title').value = playlist.name || '';
+      document.getElementById('playlist-description').value = playlist.description || '';
+      document.getElementById('playlist-type').value = playlist.playlist_type || 'playlist';
+      document.getElementById('playlist-visibility').value = playlist.visibility || 'public';
+      document.getElementById('playlist-sort').value = playlist.sort_order || 'manual';
+      document.getElementById('playlist-featured').checked = playlist.is_featured || false;
+      
+      if (playlist.custom_thumbnail_url) {
+        document.getElementById('playlist-thumbnail').value = playlist.custom_thumbnail_url;
+        document.getElementById('playlist-thumb-preview').innerHTML = 
+          `<img src="${fixMediaUrl(playlist.custom_thumbnail_url)}" style="width:100%;height:100%;object-fit:cover;">`;
+      }
+      
+      await loadPlaylistItems(playlist.id);
+      
+    } else {
+      title.textContent = 'Create Playlist';
+      deleteBtn.style.display = 'none';
+      document.getElementById('playlist-items-list').innerHTML = `
+        <div style="text-align:center;padding:40px;color:var(--slate-grey);">
+          <i class="fas fa-list" style="font-size:32px;margin-bottom:15px;opacity:0.5;"></i>
+          <p>No items yet. Add videos from your library!</p>
+        </div>
+      `;
+      document.getElementById('items-count').textContent = '0';
+      window.playlistItems = [];
+    }
+    
+    await loadCreatorLibrary();
+    
+    modal.classList.add('active');
+    
+    setupPlaylistTabs();
+    setupDragAndDrop();
   }
-}
 
-async function removePlaylistItem(itemId) {
-  if (!confirm('Remove this item from the playlist?')) return;
-  
-  try {
-    const { error } = await supabase
-      .from('creator_playlist_items')
-      .delete()
-      .eq('id', itemId);
-    
-    if (error) throw error;
-    
-    const playlistId = document.getElementById('edit-playlist-id').value;
-    await loadPlaylistItems(playlistId);
-    const filter = document.querySelector('.library-filter.active')?.dataset.filter || 'all';
-    const search = document.getElementById('library-search')?.value.trim() || '';
-    await loadCreatorLibrary(filter, search);
-    showToast('Item removed', 'info');
-    
-  } catch (error) {
-    console.error('Error removing item:', error);
-    showToast('Failed to remove item', 'error');
+  async function loadPlaylistItems(playlistId) {
+    try {
+      const { data: items, error } = await supabase
+        .from('creator_playlist_items')
+        .select(`
+          *,
+          Content!content_id (
+            id, title, thumbnail_url, duration, views_count, created_at, media_type
+          )
+        `)
+        .eq('playlist_id', playlistId)
+        .order('position', { ascending: true, nullsLast: true });
+      
+      if (error) throw error;
+      
+      window.playlistItems = items || [];
+      renderPlaylistItems();
+      
+    } catch (error) {
+      console.error('Error loading playlist items:', error);
+      showToast('Failed to load items', 'error');
+    }
   }
-}
 
-function editPlaylistItem(itemId) {
-  const item = window.playlistItems.find(i => i.id === itemId);
-  if (!item) return;
-  
-  const customTitle = prompt('Custom title for this episode (optional):', item.custom_title || '');
-  if (customTitle !== null) {
-    supabase
-      .from('creator_playlist_items')
-      .update({ custom_title: customTitle || null })
-      .eq('id', itemId)
-      .then(({ error }) => {
-        if (error) {
-          showToast('Failed to update', 'error');
-        } else {
-          showToast('Item updated', 'success');
-          loadPlaylistItems(document.getElementById('edit-playlist-id').value);
+  function renderPlaylistItems() {
+    const list = document.getElementById('playlist-items-list');
+    
+    if (window.playlistItems.length === 0) {
+      list.innerHTML = `
+        <div style="text-align:center;padding:40px;color:var(--slate-grey);">
+          <i class="fas fa-list" style="font-size:32px;margin-bottom:15px;opacity:0.5;"></i>
+          <p>No items yet. Add videos from your library!</p>
+        </div>
+      `;
+      document.getElementById('items-count').textContent = '0';
+      return;
+    }
+    
+    list.innerHTML = window.playlistItems.map((item, index) => {
+      const content = item.Content;
+      const thumb = content?.thumbnail_url ? fixMediaUrl(content.thumbnail_url) : 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=225&fit=crop';
+      const duration = formatDuration(content?.duration);
+      const views = formatNumber(content?.views_count || 0);
+      const date = formatDate(content?.created_at);
+      
+      return `
+        <div class="playlist-item-card" draggable="true" data-item-id="${item.id}" data-content-id="${content?.id}">
+          <div class="item-position">${index + 1}</div>
+          <div style="width:100px;height:56px;border-radius:8px;overflow:hidden;background:var(--deep-black);flex-shrink:0;position:relative;">
+            <img src="${thumb}" alt="${escapeHtml(content?.title || '')}" class="item-thumbnail" style="width:100%;height:100%;object-fit:cover;">
+            <span style="position:absolute;bottom:4px;right:4px;background:rgba(0,0,0,0.8);color:white;padding:2px 6px;border-radius:4px;font-size:10px;">${duration}</span>
+          </div>
+          <div style="flex:1;min-width:0;">
+            <div class="item-title" style="font-size:14px;font-weight:600;color:var(--soft-white);margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${escapeHtml(content?.title || '')}">${escapeHtml(content?.title || 'Untitled')}</div>
+            <div style="font-size:12px;color:var(--slate-grey);display:flex;gap:10px;">
+              <span><i class="fas fa-eye"></i> ${views}</span>
+              <span><i class="fas fa-clock"></i> ${date}</span>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:5px;align-items:flex-end;">
+            <button class="item-remove-btn" data-item-id="${item.id}" style="background:none;border:none;color:var(--slate-grey);cursor:pointer;padding:4px;border-radius:4px;" title="Remove"><i class="fas fa-times"></i></button>
+            <button class="item-edit-btn" data-item-id="${item.id}" style="background:none;border:none;color:var(--slate-grey);cursor:pointer;padding:4px;border-radius:4px;" title="Edit"><i class="fas fa-edit"></i></button>
+          </div>
+        </div>
+      `;
+    }).join('');
+    
+    document.getElementById('items-count').textContent = window.playlistItems.length;
+    
+    list.querySelectorAll('.item-remove-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        removePlaylistItem(btn.dataset.itemId);
+      });
+    });
+    
+    list.querySelectorAll('.item-edit-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        editPlaylistItem(btn.dataset.itemId);
+      });
+    });
+  }
+
+  async function loadCreatorLibrary(filter = 'all', search = '') {
+    try {
+      let query = supabase
+        .from('Content')
+        .select('id, title, thumbnail_url, duration, views_count, created_at, media_type, genre')
+        .eq('user_id', window.creatorId)
+        .eq('status', 'published')
+        .order('created_at', { ascending: false });
+      
+      if (filter !== 'all') {
+        if (filter === 'short') {
+          query = query.eq('media_type', 'short');
+        } else if (filter === 'podcast') {
+          query = query.eq('media_type', 'podcast');
+        } else if (filter === 'video') {
+          query = query.or('media_type.eq.video,media_type.is.null');
+        } else if (filter === 'music') {
+          query = query.eq('genre', 'Music');
+        } else if (filter === 'series') {
+          query = query.eq('genre', 'Series');
+        }
+      }
+      
+      if (search) {
+        query = query.ilike('title', `%${search}%`);
+      }
+      
+      const { data, error } = await query.limit(50);
+      if (error) throw error;
+      
+      window.creatorLibrary = data || [];
+      renderLibraryContent(filter, search);
+      
+    } catch (error) {
+      console.error('Error loading library:', error);
+    }
+  }
+
+  function renderLibraryContent(filter = 'all', search = '') {
+    const grid = document.getElementById('library-content-grid');
+    
+    const playlistContentIds = new Set(window.playlistItems.map(i => i.content_id));
+    const availableContent = window.creatorLibrary.filter(c => !playlistContentIds.has(c.id));
+    
+    if (availableContent.length === 0) {
+      grid.innerHTML = `
+        <div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--slate-grey);">
+          <i class="fas fa-search" style="font-size:32px;margin-bottom:15px;opacity:0.5;"></i>
+          <p>${search ? 'No matching videos found' : 'All videos already added!'}</p>
+        </div>
+      `;
+      return;
+    }
+    
+    grid.innerHTML = availableContent.map(content => {
+      const thumb = content.thumbnail_url ? fixMediaUrl(content.thumbnail_url) : 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=225&fit=crop';
+      const duration = formatDuration(content.duration);
+      const views = formatNumber(content.views_count || 0);
+      
+      return `
+        <div class="library-item-card" data-content-id="${content.id}">
+          <div style="position:relative;height:84px;background:var(--deep-black);">
+            <img src="${thumb}" alt="${escapeHtml(content.title)}" class="lib-thumbnail" style="width:100%;height:100%;object-fit:cover;">
+            <div style="position:absolute;bottom:6px;right:6px;background:rgba(0,0,0,0.8);color:white;padding:2px 6px;border-radius:4px;font-size:10px;">${duration}</div>
+            <div class="lib-add-btn" data-content-id="${content.id}" style="position:absolute;top:6px;right:6px;width:20px;height:20px;border-radius:50%;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;color:var(--warm-gold);font-size:11px;cursor:pointer;" title="Add to playlist"><i class="fas fa-plus"></i></div>
+          </div>
+          <div style="padding:10px;">
+            <div class="lib-title" style="font-size:13px;font-weight:600;color:var(--soft-white);margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${escapeHtml(content.title)}">${escapeHtml(content.title)}</div>
+            <div style="font-size:11px;color:var(--slate-grey);"><i class="fas fa-eye"></i> ${views} views</div>
+          </div>
+        </div>
+      `;
+    }).join('');
+    
+    grid.querySelectorAll('.library-item-card').forEach(card => {
+      card.addEventListener('click', (e) => {
+        if (!e.target.closest('.lib-add-btn')) {
+          const contentId = card.dataset.contentId;
+          if (contentId) window.open(`content-detail.html?id=${contentId}`, '_blank');
         }
       });
-  }
-}
-
-function setupPlaylistTabs() {
-  document.querySelectorAll('[data-playlist-tab]').forEach(tab => {
-    tab.addEventListener('click', () => {
-      document.querySelectorAll('[data-playlist-tab]').forEach(t => {
-        t.classList.remove('active');
-        t.style.color = 'var(--slate-grey)';
-        t.style.borderBottomColor = 'transparent';
+    });
+    
+    grid.querySelectorAll('.lib-add-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        addContentToPlaylist(btn.dataset.contentId);
       });
-      tab.classList.add('active');
-      tab.style.color = 'var(--soft-white)';
-      tab.style.borderBottomColor = 'var(--warm-gold)';
-      
-      const tabName = tab.dataset.playlistTab;
-      document.getElementById('playlist-items-tab').style.display = tabName === 'items' ? 'block' : 'none';
-      document.getElementById('playlist-library-tab').style.display = tabName === 'library' ? 'block' : 'none';
-    });
-  });
-  
-  const searchInput = document.getElementById('library-search');
-  if (searchInput) {
-    let timeout;
-    searchInput.addEventListener('input', (e) => {
-      clearTimeout(timeout);
-      timeout = setTimeout(() => {
-        const filter = document.querySelector('.library-filter.active')?.dataset.filter || 'all';
-        loadCreatorLibrary(filter, e.target.value.trim());
-      }, 300);
     });
   }
-  
-  document.querySelectorAll('.library-filter').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('.library-filter').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      const search = document.getElementById('library-search')?.value.trim() || '';
-      loadCreatorLibrary(btn.dataset.filter, search);
-    });
-  });
-}
 
-function setupDragAndDrop() {
-  const list = document.getElementById('playlist-items-list');
-  let draggedItem = null;
-  
-  list.addEventListener('dragstart', (e) => {
-    if (e.target.classList.contains('playlist-item-card')) {
-      draggedItem = e.target;
-      e.target.style.opacity = '0.5';
-      e.dataTransfer.effectAllowed = 'move';
+  async function addContentToPlaylist(contentId) {
+    const playlistId = document.getElementById('edit-playlist-id').value;
+    if (!playlistId) {
+      showToast('Please save the playlist first', 'warning');
+      return;
     }
-  });
-  
-  list.addEventListener('dragend', (e) => {
-    if (draggedItem) {
-      draggedItem.style.opacity = '1';
-      draggedItem = null;
+    
+    try {
+      const maxPos = window.playlistItems.length > 0 
+        ? Math.max(...window.playlistItems.map(i => i.position || 0)) 
+        : 0;
+      
+      const { error } = await supabase
+        .from('creator_playlist_items')
+        .insert({
+          playlist_id: playlistId,
+          content_id: parseInt(contentId),
+          position: maxPos + 1,
+          added_at: new Date().toISOString()
+        });
+      
+      if (error) {
+        if (error.code === '23505') {
+          showToast('This video is already in the playlist', 'warning');
+        } else {
+          throw error;
+        }
+        return;
+      }
+      
+      await loadPlaylistItems(playlistId);
+      const filter = document.querySelector('.library-filter.active')?.dataset.filter || 'all';
+      const search = document.getElementById('library-search')?.value.trim() || '';
+      await loadCreatorLibrary(filter, search);
+      showToast('Video added to playlist!', 'success');
+      
+    } catch (error) {
+      console.error('Error adding to playlist:', error);
+      showToast('Failed to add video', 'error');
+    }
+  }
+
+  async function removePlaylistItem(itemId) {
+    if (!confirm('Remove this item from the playlist?')) return;
+    
+    try {
+      const { error } = await supabase
+        .from('creator_playlist_items')
+        .delete()
+        .eq('id', itemId);
+      
+      if (error) throw error;
+      
+      const playlistId = document.getElementById('edit-playlist-id').value;
+      await loadPlaylistItems(playlistId);
+      const filter = document.querySelector('.library-filter.active')?.dataset.filter || 'all';
+      const search = document.getElementById('library-search')?.value.trim() || '';
+      await loadCreatorLibrary(filter, search);
+      showToast('Item removed', 'info');
+      
+    } catch (error) {
+      console.error('Error removing item:', error);
+      showToast('Failed to remove item', 'error');
+    }
+  }
+
+  function editPlaylistItem(itemId) {
+    const item = window.playlistItems.find(i => i.id === itemId);
+    if (!item) return;
+    
+    const customTitle = prompt('Custom title for this episode (optional):', item.custom_title || '');
+    if (customTitle !== null) {
+      supabase
+        .from('creator_playlist_items')
+        .update({ custom_title: customTitle || null })
+        .eq('id', itemId)
+        .then(({ error }) => {
+          if (error) {
+            showToast('Failed to update', 'error');
+          } else {
+            showToast('Item updated', 'success');
+            loadPlaylistItems(document.getElementById('edit-playlist-id').value);
+          }
+        });
+    }
+  }
+
+  function setupPlaylistTabs() {
+    document.querySelectorAll('[data-playlist-tab]').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('[data-playlist-tab]').forEach(t => {
+          t.classList.remove('active');
+          t.style.color = 'var(--slate-grey)';
+          t.style.borderBottomColor = 'transparent';
+        });
+        tab.classList.add('active');
+        tab.style.color = 'var(--soft-white)';
+        tab.style.borderBottomColor = 'var(--warm-gold)';
+        
+        const tabName = tab.dataset.playlistTab;
+        document.getElementById('playlist-items-tab').style.display = tabName === 'items' ? 'block' : 'none';
+        document.getElementById('playlist-library-tab').style.display = tabName === 'library' ? 'block' : 'none';
+      });
+    });
+    
+    const searchInput = document.getElementById('library-search');
+    if (searchInput) {
+      let timeout;
+      searchInput.addEventListener('input', (e) => {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => {
+          const filter = document.querySelector('.library-filter.active')?.dataset.filter || 'all';
+          loadCreatorLibrary(filter, e.target.value.trim());
+        }, 300);
+      });
+    }
+    
+    document.querySelectorAll('.library-filter').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.library-filter').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const search = document.getElementById('library-search')?.value.trim() || '';
+        loadCreatorLibrary(btn.dataset.filter, search);
+      });
+    });
+  }
+
+  function setupDragAndDrop() {
+    const list = document.getElementById('playlist-items-list');
+    let draggedItem = null;
+    
+    list.addEventListener('dragstart', (e) => {
+      if (e.target.classList.contains('playlist-item-card')) {
+        draggedItem = e.target;
+        e.target.style.opacity = '0.5';
+        e.dataTransfer.effectAllowed = 'move';
+      }
+    });
+    
+    list.addEventListener('dragend', (e) => {
+      if (draggedItem) {
+        draggedItem.style.opacity = '1';
+        draggedItem = null;
+        document.querySelectorAll('.playlist-item-card').forEach(item => {
+          item.classList.remove('drag-over');
+        });
+      }
+    });
+    
+    list.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      
+      const afterElement = getDragAfterElement(list, e.clientY);
+      const currentDragOver = document.querySelector('.drag-over');
+      if (currentDragOver) currentDragOver.classList.remove('drag-over');
+      
+      if (afterElement == null) {
+        list.appendChild(draggedItem);
+      } else {
+        afterElement.classList.add('drag-over');
+        list.insertBefore(draggedItem, afterElement);
+      }
+    });
+    
+    list.addEventListener('drop', (e) => {
+      e.preventDefault();
       document.querySelectorAll('.playlist-item-card').forEach(item => {
         item.classList.remove('drag-over');
       });
-    }
-  });
-  
-  list.addEventListener('dragover', (e) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-    
-    const afterElement = getDragAfterElement(list, e.clientY);
-    const currentDragOver = document.querySelector('.drag-over');
-    if (currentDragOver) currentDragOver.classList.remove('drag-over');
-    
-    if (afterElement == null) {
-      list.appendChild(draggedItem);
-    } else {
-      afterElement.classList.add('drag-over');
-      list.insertBefore(draggedItem, afterElement);
-    }
-  });
-  
-  list.addEventListener('drop', (e) => {
-    e.preventDefault();
-    document.querySelectorAll('.playlist-item-card').forEach(item => {
-      item.classList.remove('drag-over');
+      updateItemPositions();
+      savePlaylistOrder();
     });
-    updateItemPositions();
-    savePlaylistOrder();
-  });
-}
-
-function getDragAfterElement(container, y) {
-  const draggableElements = [...container.querySelectorAll('.playlist-item-card:not(.dragging)')];
-  
-  return draggableElements.reduce((closest, child) => {
-    const box = child.getBoundingClientRect();
-    const offset = y - box.top - box.height / 2;
-    if (offset < 0 && offset > closest.offset) {
-      return { offset: offset, element: child };
-    } else {
-      return closest;
-    }
-  }, { offset: Number.NEGATIVE_INFINITY }).element;
-}
-
-function updateItemPositions() {
-  const items = document.querySelectorAll('#playlist-items-list .playlist-item-card');
-  items.forEach((item, index) => {
-    const positionEl = item.querySelector('.item-position');
-    if (positionEl) {
-      positionEl.textContent = index + 1;
-    }
-  });
-}
-
-async function savePlaylistOrder() {
-  const playlistId = document.getElementById('edit-playlist-id').value;
-  if (!playlistId) return;
-  
-  const items = document.querySelectorAll('#playlist-items-list .playlist-item-card');
-  const updates = [];
-  
-  items.forEach((item, index) => {
-    const itemId = item.dataset.itemId;
-    if (itemId) {
-      updates.push({ id: itemId, position: index + 1 });
-    }
-  });
-  
-  try {
-    for (const update of updates) {
-      await supabase
-        .from('creator_playlist_items')
-        .update({ position: update.position })
-        .eq('id', update.id);
-    }
-    console.log('Playlist order saved');
-  } catch (error) {
-    console.error('Error saving order:', error);
   }
-}
 
-async function savePlaylist() {
-  const playlistId = document.getElementById('edit-playlist-id').value;
-  const title = document.getElementById('playlist-title').value.trim();
-  
-  if (!title) {
-    showToast('Playlist title is required', 'warning');
-    return;
+  function getDragAfterElement(container, y) {
+    const draggableElements = [...container.querySelectorAll('.playlist-item-card:not(.dragging)')];
+    
+    return draggableElements.reduce((closest, child) => {
+      const box = child.getBoundingClientRect();
+      const offset = y - box.top - box.height / 2;
+      if (offset < 0 && offset > closest.offset) {
+        return { offset: offset, element: child };
+      } else {
+        return closest;
+      }
+    }, { offset: Number.NEGATIVE_INFINITY }).element;
   }
-  
-  try {
-    const playlistData = {
-      creator_id: window.creatorId,
-      name: title,
-      description: document.getElementById('playlist-description').value.trim() || null,
-      playlist_type: document.getElementById('playlist-type').value,
-      visibility: document.getElementById('playlist-visibility').value,
-      sort_order: document.getElementById('playlist-sort').value,
-      is_featured: document.getElementById('playlist-featured').checked,
-      custom_thumbnail_url: document.getElementById('playlist-thumbnail').value || null,
-      updated_at: new Date().toISOString()
-    };
-    
-    if (window.playlistItems.length > 0) {
-      const totalDuration = window.playlistItems.reduce((sum, item) => {
-        return sum + (item.Content?.duration || 0);
-      }, 0);
-      playlistData.total_duration = totalDuration;
-    }
-    
-    let result;
-    if (playlistId) {
-      result = await supabase
-        .from('creator_playlists')
-        .update(playlistData)
-        .eq('id', playlistId)
-        .eq('creator_id', window.creatorId)
-        .select()
-        .single();
-    } else {
-      playlistData.created_at = new Date().toISOString();
-      result = await supabase
-        .from('creator_playlists')
-        .insert([playlistData])
-        .select()
-        .single();
-    }
-    
-    if (result.error) throw result.error;
-    
-    await loadCreatorData();
-    
-    document.getElementById('playlist-builder-modal').classList.remove('active');
-    showToast(playlistId ? 'Playlist updated!' : 'Playlist created!', 'success');
-    
-  } catch (error) {
-    console.error('Error saving playlist:', error);
-    if (error.code === '23505') {
-      showToast('A playlist with this name already exists', 'error');
-    } else {
-      showToast('Failed to save playlist: ' + (error.message || 'Unknown error'), 'error');
-    }
-  }
-}
 
-async function deletePlaylist() {
-  const playlistId = document.getElementById('edit-playlist-id').value;
-  if (!playlistId) return;
-  
-  if (!confirm('Delete this playlist? All items will be removed. This cannot be undone.')) return;
-  
-  try {
-    const { error } = await supabase
-      .from('creator_playlists')
-      .delete()
-      .eq('id', playlistId)
-      .eq('creator_id', window.creatorId);
-    
-    if (error) throw error;
-    
-    await loadCreatorData();
-    
-    document.getElementById('playlist-builder-modal').classList.remove('active');
-    showToast('Playlist deleted', 'info');
-    
-  } catch (error) {
-    console.error('Error deleting playlist:', error);
-    showToast('Failed to delete playlist', 'error');
+  function updateItemPositions() {
+    const items = document.querySelectorAll('#playlist-items-list .playlist-item-card');
+    items.forEach((item, index) => {
+      const positionEl = item.querySelector('.item-position');
+      if (positionEl) {
+        positionEl.textContent = index + 1;
+      }
+    });
   }
-}
 
-function setupThumbnailUpload() {
-  document.getElementById('upload-thumb-btn')?.addEventListener('click', () => {
-    document.getElementById('thumb-file-input').click();
-  });
-  
-  document.getElementById('thumb-file-input')?.addEventListener('change', async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
+  async function savePlaylistOrder() {
+    const playlistId = document.getElementById('edit-playlist-id').value;
+    if (!playlistId) return;
     
-    if (!file.type.startsWith('image/')) {
-      showToast('Please select an image file', 'error');
-      return;
-    }
+    const items = document.querySelectorAll('#playlist-items-list .playlist-item-card');
+    const updates = [];
     
-    if (file.size > 5 * 1024 * 1024) {
-      showToast('Image must be less than 5MB', 'error');
-      return;
-    }
-    
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      document.getElementById('playlist-thumb-preview').innerHTML = 
-        `<img src="${event.target.result}" style="width:100%;height:100%;object-fit:cover;">`;
-      document.getElementById('playlist-thumbnail').value = event.target.result;
-    };
-    reader.readAsDataURL(file);
+    items.forEach((item, index) => {
+      const itemId = item.dataset.itemId;
+      if (itemId) {
+        updates.push({ id: itemId, position: index + 1 });
+      }
+    });
     
     try {
-      const fileName = `playlist-thumbs/${window.creatorId}_${Date.now()}.${file.name.split('.').pop()}`;
-      
-      const { data, error } = await supabase.storage
-        .from('content-thumbnails')
-        .upload(fileName, file);
-      
-      if (error) {
-        console.log('Storage upload failed, keeping local preview:', error);
-      } else {
-        const { data: { publicUrl } } = supabase.storage
-          .from('content-thumbnails')
-          .getPublicUrl(fileName);
-        document.getElementById('playlist-thumbnail').value = publicUrl;
-        showToast('Thumbnail uploaded!', 'success');
+      for (const update of updates) {
+        await supabase
+          .from('creator_playlist_items')
+          .update({ position: update.position })
+          .eq('id', update.id);
       }
+      console.log('Playlist order saved');
     } catch (error) {
-      console.error('Upload error:', error);
+      console.error('Error saving order:', error);
     }
-  });
-}
+  }
 
-function setupContentTabs() {
-  document.querySelectorAll('.content-tab').forEach(tab => {
-    tab.addEventListener('click', (e) => {
-      document.querySelectorAll('.content-tab').forEach(t => t.classList.remove('active'));
-      e.target.classList.add('active');
-      const tabType = e.target.dataset.tab;
-      let filtered = window.creatorContent;
-      if (tabType === 'shorts') {
-        filtered = window.creatorContent.filter(c => c.media_type === 'short' || c.genre?.toLowerCase().includes('short'));
-      } else if (tabType === 'music') {
-        filtered = window.creatorContent.filter(c => c.genre === 'Music' || c.media_type === 'music');
-      } else if (tabType === 'podcasts') {
-        filtered = window.creatorContent.filter(c => c.media_type === 'podcast' || c.genre === 'Podcasts');
-      } else if (tabType === 'series') {
-        filtered = window.creatorContent.filter(c => c.genre === 'Series' || c.tags?.includes('series'));
-      } else if (tabType === 'films') {
-        filtered = window.creatorContent.filter(c => c.media_type === 'film' || c.genre === 'Movies');
-      } else if (tabType === 'stem') {
-        filtered = window.creatorContent.filter(c => c.genre === 'STEM' || c.tags?.includes('STEM'));
-      } else if (tabType === 'documentaries') {
-        filtered = window.creatorContent.filter(c => c.genre === 'Documentaries' || c.media_type === 'documentary');
-      } else if (tabType === 'videos') {
-        filtered = window.creatorContent.filter(c => !c.media_type || c.media_type === 'video');
-      } else if (tabType === 'all') {
-        filtered = window.creatorContent;
+  async function savePlaylist() {
+    const playlistId = document.getElementById('edit-playlist-id').value;
+    const title = document.getElementById('playlist-title').value.trim();
+    
+    if (!title) {
+      showToast('Playlist title is required', 'warning');
+      return;
+    }
+    
+    try {
+      const playlistData = {
+        creator_id: window.creatorId,
+        name: title,
+        description: document.getElementById('playlist-description').value.trim() || null,
+        playlist_type: document.getElementById('playlist-type').value,
+        visibility: document.getElementById('playlist-visibility').value,
+        sort_order: document.getElementById('playlist-sort').value,
+        is_featured: document.getElementById('playlist-featured').checked,
+        custom_thumbnail_url: document.getElementById('playlist-thumbnail').value || null,
+        updated_at: new Date().toISOString()
+      };
+      
+      if (window.playlistItems.length > 0) {
+        const totalDuration = window.playlistItems.reduce((sum, item) => {
+          return sum + (item.Content?.duration || 0);
+        }, 0);
+        playlistData.total_duration = totalDuration;
       }
-      if (tabType === 'about') {
-        document.getElementById('uploads-section').style.display = 'none';
-        document.getElementById('playlists-section').style.display = 'none';
-        document.querySelector('.identity-card').scrollIntoView({ behavior: 'smooth' });
+      
+      let result;
+      if (playlistId) {
+        result = await supabase
+          .from('creator_playlists')
+          .update(playlistData)
+          .eq('id', playlistId)
+          .eq('creator_id', window.creatorId)
+          .select()
+          .single();
       } else {
-        document.getElementById('uploads-section').style.display = 'block';
-        document.getElementById('playlists-section').style.display = 'block';
-        updateContentUI(filtered);
+        playlistData.created_at = new Date().toISOString();
+        result = await supabase
+          .from('creator_playlists')
+          .insert([playlistData])
+          .select()
+          .single();
+      }
+      
+      if (result.error) throw result.error;
+      
+      await loadCreatorData();
+      
+      document.getElementById('playlist-builder-modal').classList.remove('active');
+      showToast(playlistId ? 'Playlist updated!' : 'Playlist created!', 'success');
+      
+    } catch (error) {
+      console.error('Error saving playlist:', error);
+      if (error.code === '23505') {
+        showToast('A playlist with this name already exists', 'error');
+      } else {
+        showToast('Failed to save playlist: ' + (error.message || 'Unknown error'), 'error');
+      }
+    }
+  }
+
+  async function deletePlaylist() {
+    const playlistId = document.getElementById('edit-playlist-id').value;
+    if (!playlistId) return;
+    
+    if (!confirm('Delete this playlist? All items will be removed. This cannot be undone.')) return;
+    
+    try {
+      const { error } = await supabase
+        .from('creator_playlists')
+        .delete()
+        .eq('id', playlistId)
+        .eq('creator_id', window.creatorId);
+      
+      if (error) throw error;
+      
+      await loadCreatorData();
+      
+      document.getElementById('playlist-builder-modal').classList.remove('active');
+      showToast('Playlist deleted', 'info');
+      
+    } catch (error) {
+      console.error('Error deleting playlist:', error);
+      showToast('Failed to delete playlist', 'error');
+    }
+  }
+
+  function setupThumbnailUpload() {
+    document.getElementById('upload-thumb-btn')?.addEventListener('click', () => {
+      document.getElementById('thumb-file-input').click();
+    });
+    
+    document.getElementById('thumb-file-input')?.addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      
+      if (!file.type.startsWith('image/')) {
+        showToast('Please select an image file', 'error');
+        return;
+      }
+      
+      if (file.size > 5 * 1024 * 1024) {
+        showToast('Image must be less than 5MB', 'error');
+        return;
+      }
+      
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        document.getElementById('playlist-thumb-preview').innerHTML = 
+          `<img src="${event.target.result}" style="width:100%;height:100%;object-fit:cover;">`;
+        document.getElementById('playlist-thumbnail').value = event.target.result;
+      };
+      reader.readAsDataURL(file);
+      
+      try {
+        const fileName = `playlist-thumbs/${window.creatorId}_${Date.now()}.${file.name.split('.').pop()}`;
+        
+        const { data, error } = await supabase.storage
+          .from('content-thumbnails')
+          .upload(fileName, file);
+        
+        if (error) {
+          console.log('Storage upload failed, keeping local preview:', error);
+        } else {
+          const { data: { publicUrl } } = supabase.storage
+            .from('content-thumbnails')
+            .getPublicUrl(fileName);
+          document.getElementById('playlist-thumbnail').value = publicUrl;
+          showToast('Thumbnail uploaded!', 'success');
+        }
+      } catch (error) {
+        console.error('Upload error:', error);
       }
     });
-  });
-}
+  }
 
-function setupEventListeners() {
-  document.getElementById('profile-btn')?.addEventListener('click', async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    session ? window.location.href='profile.html' : window.location.href=`login.html?redirect=${encodeURIComponent(window.location.href)}`;
-  });
-  document.getElementById('banner-edit-btn')?.addEventListener('click', showBannerUploadModal);
-  document.getElementById('banner-file-upload')?.addEventListener('click', () => { document.getElementById('banner-file-input').click(); });
-  document.getElementById('banner-file-input')?.addEventListener('change', async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    if (!file.type.startsWith('image/')) { showToast('Please select an image file', 'error'); return; }
-    if (file.size > 5 * 1024 * 1024) { showToast('Image must be less than 5MB', 'error'); return; }
-    const reader = new FileReader();
-    reader.onload = (event) => {
+  function setupContentTabs() {
+    document.querySelectorAll('.content-tab').forEach(tab => {
+      tab.addEventListener('click', (e) => {
+        document.querySelectorAll('.content-tab').forEach(t => t.classList.remove('active'));
+        e.target.classList.add('active');
+        const tabType = e.target.dataset.tab;
+        let filtered = window.creatorContent;
+        if (tabType === 'shorts') {
+          filtered = window.creatorContent.filter(c => c.media_type === 'short' || c.genre?.toLowerCase().includes('short'));
+        } else if (tabType === 'music') {
+          filtered = window.creatorContent.filter(c => c.genre === 'Music' || c.media_type === 'music');
+        } else if (tabType === 'podcasts') {
+          filtered = window.creatorContent.filter(c => c.media_type === 'podcast' || c.genre === 'Podcasts');
+        } else if (tabType === 'series') {
+          filtered = window.creatorContent.filter(c => c.genre === 'Series' || c.tags?.includes('series'));
+        } else if (tabType === 'films') {
+          filtered = window.creatorContent.filter(c => c.media_type === 'film' || c.genre === 'Movies');
+        } else if (tabType === 'stem') {
+          filtered = window.creatorContent.filter(c => c.genre === 'STEM' || c.tags?.includes('STEM'));
+        } else if (tabType === 'documentaries') {
+          filtered = window.creatorContent.filter(c => c.genre === 'Documentaries' || c.media_type === 'documentary');
+        } else if (tabType === 'videos') {
+          filtered = window.creatorContent.filter(c => !c.media_type || c.media_type === 'video');
+        } else if (tabType === 'all') {
+          filtered = window.creatorContent;
+        }
+        if (tabType === 'about') {
+          document.getElementById('uploads-section').style.display = 'none';
+          document.getElementById('playlists-section').style.display = 'none';
+          document.querySelector('.identity-card').scrollIntoView({ behavior: 'smooth' });
+        } else {
+          document.getElementById('uploads-section').style.display = 'block';
+          document.getElementById('playlists-section').style.display = 'block';
+          updateContentUI(filtered);
+        }
+      });
+    });
+  }
+
+  function setupEventListeners() {
+    document.getElementById('profile-btn')?.addEventListener('click', async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      session ? window.location.href='profile.html' : window.location.href=`login.html?redirect=${encodeURIComponent(window.location.href)}`;
+    });
+    document.getElementById('banner-edit-btn')?.addEventListener('click', showBannerUploadModal);
+    document.getElementById('banner-file-upload')?.addEventListener('click', () => { document.getElementById('banner-file-input').click(); });
+    document.getElementById('banner-file-input')?.addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      if (!file.type.startsWith('image/')) { showToast('Please select an image file', 'error'); return; }
+      if (file.size > 5 * 1024 * 1024) { showToast('Image must be less than 5MB', 'error'); return; }
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const previewImg = document.getElementById('banner-preview-img');
+        const placeholder = document.getElementById('banner-preview-placeholder');
+        previewImg.src = event.target.result;
+        previewImg.style.display = 'block';
+        placeholder.style.display = 'none';
+      };
+      reader.readAsDataURL(file);
+      try {
+        const fileName = `banners/${window.creatorId}_${Date.now()}.${file.name.split('.').pop()}`;
+        const { data, error } = await supabase.storage.from('channel-banners').upload(fileName, file);
+        if (error) throw error;
+        const { data: { publicUrl } } = supabase.storage.from('channel-banners').getPublicUrl(fileName);
+        await saveBanner(publicUrl);
+      } catch (error) {
+        console.error('Upload error:', error);
+        showToast('Failed to upload image', 'error');
+      }
+    });
+    document.getElementById('banner-url-apply')?.addEventListener('click', () => {
+      const url = document.getElementById('banner-url-input').value.trim();
+      if (!url) { showToast('Please enter a URL', 'warning'); return; }
       const previewImg = document.getElementById('banner-preview-img');
       const placeholder = document.getElementById('banner-preview-placeholder');
-      previewImg.src = event.target.result;
-      previewImg.style.display = 'block';
-      placeholder.style.display = 'none';
-    };
-    reader.readAsDataURL(file);
-    try {
-      const fileName = `banners/${window.creatorId}_${Date.now()}.${file.name.split('.').pop()}`;
-      const { data, error } = await supabase.storage.from('channel-banners').upload(fileName, file);
-      if (error) throw error;
-      const { data: { publicUrl } } = supabase.storage.from('channel-banners').getPublicUrl(fileName);
-      await saveBanner(publicUrl);
-    } catch (error) {
-      console.error('Upload error:', error);
-      showToast('Failed to upload image', 'error');
-    }
-  });
-  document.getElementById('banner-url-apply')?.addEventListener('click', () => {
-    const url = document.getElementById('banner-url-input').value.trim();
-    if (!url) { showToast('Please enter a URL', 'warning'); return; }
-    const previewImg = document.getElementById('banner-preview-img');
-    const placeholder = document.getElementById('banner-preview-placeholder');
-    previewImg.src = url;
-    previewImg.onload = () => { previewImg.style.display = 'block'; placeholder.style.display = 'none'; };
-  });
-  document.getElementById('banner-save')?.addEventListener('click', () => {
-    const previewImg = document.getElementById('banner-preview-img');
-    if (previewImg.style.display === 'block' && previewImg.src) { saveBanner(previewImg.src); }
-    else { showToast('Please select or enter an image first', 'warning'); }
-  });
-  document.getElementById('banner-cancel')?.addEventListener('click', hideBannerUploadModal);
-  document.getElementById('edit-identity-btn')?.addEventListener('click', showEditAboutModal);
-  document.getElementById('cancel-about-btn')?.addEventListener('click', hideEditAboutModal);
-  document.getElementById('save-about-btn')?.addEventListener('click', saveAboutSection);
-  document.getElementById('search-btn')?.addEventListener('click', () => {
-    document.getElementById('search-modal').classList.add('active');
-    setTimeout(() => document.getElementById('search-input')?.focus(), 300);
-  });
-  document.getElementById('close-search-btn')?.addEventListener('click', () => {
-    document.getElementById('search-modal').classList.remove('active');
-    document.getElementById('search-input').value = '';
-    document.getElementById('search-results-grid').innerHTML = '';
-  });
-  document.getElementById('search-modal').addEventListener('click', e => {
-    if (e.target === document.getElementById('search-modal')) {
+      previewImg.src = url;
+      previewImg.onload = () => { previewImg.style.display = 'block'; placeholder.style.display = 'none'; };
+    });
+    document.getElementById('banner-save')?.addEventListener('click', () => {
+      const previewImg = document.getElementById('banner-preview-img');
+      if (previewImg.style.display === 'block' && previewImg.src) { saveBanner(previewImg.src); }
+      else { showToast('Please select or enter an image first', 'warning'); }
+    });
+    document.getElementById('banner-cancel')?.addEventListener('click', hideBannerUploadModal);
+    document.getElementById('edit-identity-btn')?.addEventListener('click', showEditAboutModal);
+    document.getElementById('cancel-about-btn')?.addEventListener('click', hideEditAboutModal);
+    document.getElementById('save-about-btn')?.addEventListener('click', saveAboutSection);
+    document.getElementById('search-btn')?.addEventListener('click', () => {
+      document.getElementById('search-modal').classList.add('active');
+      setTimeout(() => document.getElementById('search-input')?.focus(), 300);
+    });
+    document.getElementById('close-search-btn')?.addEventListener('click', () => {
       document.getElementById('search-modal').classList.remove('active');
       document.getElementById('search-input').value = '';
       document.getElementById('search-results-grid').innerHTML = '';
-    }
-  });
-  const searchInput = document.getElementById('search-input');
-  if (searchInput) {
-    let timeout;
-    searchInput.addEventListener('input', e => {
-      clearTimeout(timeout);
-      timeout = setTimeout(async () => {
-        const query = e.target.value.trim();
-        if (query.length < 2) {
-          document.getElementById('search-results-grid').innerHTML = '<div style="text-align:center;padding:40px;color:var(--slate-grey);">Start typing to search...</div>';
-          return;
-        }
-        document.getElementById('search-results-grid').innerHTML = `<div style="text-align:center;padding:40px;"><div style="width:40px;height:40px;border:3px solid rgba(255,255,255,0.1);border-radius:50%;border-top-color:var(--warm-gold);animation:spin 1s linear infinite;margin:0 auto 15px;"></div><div style="color:var(--slate-grey);">Searching...</div></div>`;
-        const results = await searchContent(query, document.getElementById('category-filter')?.value, document.getElementById('sort-filter')?.value);
-        renderSearchResults(results);
-      }, 300);
     });
-  }
-  document.getElementById('category-filter')?.addEventListener('change', () => {
-    if (searchInput && searchInput.value.trim().length >= 2) searchInput.dispatchEvent(new Event('input'));
-  });
-  document.getElementById('sort-filter')?.addEventListener('change', () => {
-    if (searchInput && searchInput.value.trim().length >= 2) searchInput.dispatchEvent(new Event('input'));
-  });
-  document.getElementById('share-btn')?.addEventListener('click', handleShare);
-  document.getElementById('support-btn')?.addEventListener('click', () => { showToast('Support feature coming soon!', 'info'); });
-  document.getElementById('tip-btn')?.addEventListener('click', () => { showToast('Tips feature coming soon!', 'info'); });
-  document.getElementById('membership-btn')?.addEventListener('click', () => { showToast('Memberships feature coming soon!', 'info'); });
-  document.getElementById('connectors-stat-card')?.addEventListener('click', showConnectorsModal);
-  document.getElementById('close-modal-btn')?.addEventListener('click', () => { document.getElementById('connectors-modal').classList.remove('active'); });
-  document.getElementById('connectors-modal').addEventListener('click', e => {
-    if (e.target === document.getElementById('connectors-modal')) { document.getElementById('connectors-modal').classList.remove('active'); }
-  });
-  document.getElementById('notifications-btn')?.addEventListener('click', () => {
-    document.getElementById('notifications-panel').classList.add('active');
-    renderNotifications();
-  });
-  document.getElementById('close-notifications')?.addEventListener('click', () => { document.getElementById('notifications-panel').classList.remove('active'); });
-  document.getElementById('notifications-panel').addEventListener('click', e => {
-    if (e.target === document.getElementById('notifications-panel')) { document.getElementById('notifications-panel').classList.remove('active'); }
-  });
-  document.getElementById('mark-all-read')?.addEventListener('click', async () => {
-    if (!window.currentUser) return;
-    try {
-      const { error } = await supabase.from('notifications').update({ is_read: true }).eq('user_id', window.currentUser.id).eq('is_read', false);
-      if (error) throw error;
-      window.notifications = window.notifications.map(n => ({ ...n, is_read: true }));
+    document.getElementById('search-modal').addEventListener('click', e => {
+      if (e.target === document.getElementById('search-modal')) {
+        document.getElementById('search-modal').classList.remove('active');
+        document.getElementById('search-input').value = '';
+        document.getElementById('search-results-grid').innerHTML = '';
+      }
+    });
+    const searchInput = document.getElementById('search-input');
+    if (searchInput) {
+      let timeout;
+      searchInput.addEventListener('input', e => {
+        clearTimeout(timeout);
+        timeout = setTimeout(async () => {
+          const query = e.target.value.trim();
+          if (query.length < 2) {
+            document.getElementById('search-results-grid').innerHTML = '<div style="text-align:center;padding:40px;color:var(--slate-grey);">Start typing to search...</div>';
+            return;
+          }
+          document.getElementById('search-results-grid').innerHTML = `<div style="text-align:center;padding:40px;"><div style="width:40px;height:40px;border:3px solid rgba(255,255,255,0.1);border-radius:50%;border-top-color:var(--warm-gold);animation:spin 1s linear infinite;margin:0 auto 15px;"></div><div style="color:var(--slate-grey);">Searching...</div></div>`;
+          const results = await searchContent(query, document.getElementById('category-filter')?.value, document.getElementById('sort-filter')?.value);
+          renderSearchResults(results);
+        }, 300);
+      });
+    }
+    document.getElementById('category-filter')?.addEventListener('change', () => {
+      if (searchInput && searchInput.value.trim().length >= 2) searchInput.dispatchEvent(new Event('input'));
+    });
+    document.getElementById('sort-filter')?.addEventListener('change', () => {
+      if (searchInput && searchInput.value.trim().length >= 2) searchInput.dispatchEvent(new Event('input'));
+    });
+    document.getElementById('share-btn')?.addEventListener('click', handleShare);
+    document.getElementById('support-btn')?.addEventListener('click', () => { showToast('Support feature coming soon!', 'info'); });
+    document.getElementById('tip-btn')?.addEventListener('click', () => { showToast('Tips feature coming soon!', 'info'); });
+    document.getElementById('membership-btn')?.addEventListener('click', () => { showToast('Memberships feature coming soon!', 'info'); });
+    document.getElementById('connectors-stat-card')?.addEventListener('click', showConnectorsModal);
+    document.getElementById('close-modal-btn')?.addEventListener('click', () => { document.getElementById('connectors-modal').classList.remove('active'); });
+    document.getElementById('connectors-modal').addEventListener('click', e => {
+      if (e.target === document.getElementById('connectors-modal')) { document.getElementById('connectors-modal').classList.remove('active'); }
+    });
+    document.getElementById('notifications-btn')?.addEventListener('click', () => {
+      document.getElementById('notifications-panel').classList.add('active');
       renderNotifications();
-      updateNotificationBadge(0);
-      showToast('All notifications marked as read', 'success');
-    } catch (error) {
-      console.error('Error marking all as read:', error);
-      showToast('Failed to mark notifications as read', 'error');
+    });
+    document.getElementById('close-notifications')?.addEventListener('click', () => { document.getElementById('notifications-panel').classList.remove('active'); });
+    document.getElementById('notifications-panel').addEventListener('click', e => {
+      if (e.target === document.getElementById('notifications-panel')) { document.getElementById('notifications-panel').classList.remove('active'); }
+    });
+    document.getElementById('mark-all-read')?.addEventListener('click', async () => {
+      if (!window.currentUser) return;
+      try {
+        const { error } = await supabase.from('notifications').update({ is_read: true }).eq('user_id', window.currentUser.id).eq('is_read', false);
+        if (error) throw error;
+        window.notifications = window.notifications.map(n => ({ ...n, is_read: true }));
+        renderNotifications();
+        updateNotificationBadge(0);
+        showToast('All notifications marked as read', 'success');
+      } catch (error) {
+        console.error('Error marking all as read:', error);
+        showToast('Failed to mark notifications as read', 'error');
+      }
+    });
+    const themeToggle = document.getElementById('nav-theme-toggle');
+    const themeSelector = document.getElementById('theme-selector');
+    if (themeToggle && themeSelector) {
+      themeToggle.addEventListener('click', e => { e.stopPropagation(); themeSelector.style.display = themeSelector.style.display === 'flex' ? 'none' : 'flex'; });
+      document.addEventListener('click', e => {
+        if (themeSelector.style.display === 'flex' && !themeSelector.contains(e.target) && !themeToggle.contains(e.target)) { themeSelector.style.display = 'none'; }
+      });
+      document.querySelectorAll('.theme-option').forEach(option => {
+        option.addEventListener('click', () => { applyTheme(option.dataset.theme); themeSelector.style.display = 'none'; });
+      });
     }
-  });
-  const themeToggle = document.getElementById('nav-theme-toggle');
-  const themeSelector = document.getElementById('theme-selector');
-  if (themeToggle && themeSelector) {
-    themeToggle.addEventListener('click', e => { e.stopPropagation(); themeSelector.style.display = themeSelector.style.display === 'flex' ? 'none' : 'flex'; });
-    document.addEventListener('click', e => {
-      if (themeSelector.style.display === 'flex' && !themeSelector.contains(e.target) && !themeToggle.contains(e.target)) { themeSelector.style.display = 'none'; }
+    document.getElementById('nav-home-btn')?.addEventListener('click', () => window.location.href='index.html');
+    document.getElementById('nav-create-btn')?.addEventListener('click', async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      session ? window.location.href='creator-upload.html' : (showToast('Please sign in to upload', 'warning'), window.location.href='login.html?redirect=creator-upload.html');
     });
-    document.querySelectorAll('.theme-option').forEach(option => {
-      option.addEventListener('click', () => { applyTheme(option.dataset.theme); themeSelector.style.display = 'none'; });
+    document.getElementById('nav-dashboard-btn')?.addEventListener('click', async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      session ? window.location.href='creator-dashboard.html' : (showToast('Please sign in to access dashboard', 'warning'), window.location.href='login.html?redirect=creator-dashboard.html');
     });
-  }
-  document.getElementById('nav-home-btn')?.addEventListener('click', () => window.location.href='index.html');
-  document.getElementById('nav-create-btn')?.addEventListener('click', async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    session ? window.location.href='creator-upload.html' : (showToast('Please sign in to upload', 'warning'), window.location.href='login.html?redirect=creator-upload.html');
-  });
-  document.getElementById('nav-dashboard-btn')?.addEventListener('click', async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    session ? window.location.href='creator-dashboard.html' : (showToast('Please sign in to access dashboard', 'warning'), window.location.href='login.html?redirect=creator-dashboard.html');
-  });
-  document.getElementById('nav-notifications-btn')?.addEventListener('click', () => {
-    document.getElementById('notifications-panel').classList.add('active');
-    renderNotifications();
-  });
-  
-  document.getElementById('close-playlist-modal')?.addEventListener('click', () => {
-    document.getElementById('playlist-builder-modal').classList.remove('active');
-  });
-  
-  document.getElementById('playlist-builder-modal')?.addEventListener('click', (e) => {
-    if (e.target === document.getElementById('playlist-builder-modal')) {
+    document.getElementById('nav-notifications-btn')?.addEventListener('click', () => {
+      document.getElementById('notifications-panel').classList.add('active');
+      renderNotifications();
+    });
+    
+    document.getElementById('close-playlist-modal')?.addEventListener('click', () => {
       document.getElementById('playlist-builder-modal').classList.remove('active');
+    });
+    
+    document.getElementById('playlist-builder-modal')?.addEventListener('click', (e) => {
+      if (e.target === document.getElementById('playlist-builder-modal')) {
+        document.getElementById('playlist-builder-modal').classList.remove('active');
+      }
+    });
+    
+    document.getElementById('save-playlist-btn')?.addEventListener('click', savePlaylist);
+    
+    document.getElementById('delete-playlist-btn')?.addEventListener('click', deletePlaylist);
+    
+    setupThumbnailUpload();
+    setupContentTabs();
+    
+    const backToTopBtn = document.getElementById('backToTopBtn');
+    if (backToTopBtn) {
+      backToTopBtn.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+      window.addEventListener('scroll', () => {
+        backToTopBtn.style.display = window.pageYOffset > 300 ? 'flex' : 'none';
+      });
+    }
+  }
+
+  async function initializeCreatorChannel() {
+    try {
+      document.getElementById('loading').style.display = 'flex';
+      document.getElementById('app').style.display = 'none';
+      window.loadingText = document.getElementById('loading-text');
+      window.initTheme();
+      await checkAuth();
+      await loadCreatorData();
+      setupEventListeners();
+      setTimeout(() => {
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('app').style.display = 'block';
+        document.querySelectorAll('.content-card, .playlist-card, .popular-item').forEach((el, i) => {
+          setTimeout(() => { 
+            el.style.opacity = '1'; 
+            el.style.transform = 'translateY(0)'; 
+          }, 100 + (i * 30));
+        });
+      }, 500);
+      console.log('✅ Creator channel initialized with ALL features!');
+    } catch (error) {
+      console.error('❌ Error initializing:', error);
+      showToast('Failed to initialize', 'error');
+      setTimeout(() => { 
+        document.getElementById('loading').style.display = 'none'; 
+        document.getElementById('app').style.display = 'block'; 
+      }, 1000);
+    }
+  }
+
+  initializeCreatorChannel();
+
+  supabase.auth.onAuthStateChange((event, session) => {
+    if (event === 'SIGNED_IN') {
+      window.currentUser = session.user;
+      loadUserProfile();
+      loadNotifications();
+      showToast('Welcome back!', 'success');
+      if (window.creatorId) {
+        supabase.from('connectors').select('*').eq('connector_id', session.user.id).eq('connected_id', window.creatorId).eq('connection_type', 'creator').limit(1).then(({ data }) => {
+          window.isConnected = data && data.length > 0;
+          updateConnectButton();
+        });
+        const bannerEditBtn = document.getElementById('banner-edit-btn');
+        const editIdentityBtn = document.getElementById('edit-identity-btn');
+        if (bannerEditBtn && window.creatorId === session.user.id) { bannerEditBtn.style.display = 'flex'; }
+        if (editIdentityBtn && window.creatorId === session.user.id) { editIdentityBtn.style.display = 'flex'; }
+      }
+    } else if (event === 'SIGNED_OUT') {
+      window.currentUser = null;
+      updateProfileUI(null);
+      updateNotificationBadge(0);
+      window.notifications = [];
+      renderNotifications();
+      showToast('Signed out', 'info');
+      window.isConnected = false;
+      updateConnectButton();
+      document.getElementById('banner-edit-btn').style.display = 'none';
+      document.getElementById('edit-identity-btn').style.display = 'none';
     }
   });
-  
-  document.getElementById('save-playlist-btn')?.addEventListener('click', savePlaylist);
-  
-  document.getElementById('delete-playlist-btn')?.addEventListener('click', deletePlaylist);
-  
-  setupThumbnailUpload();
-  setupContentTabs();
-  
-  const backToTopBtn = document.getElementById('backToTopBtn');
-  if (backToTopBtn) {
-    backToTopBtn.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
-    window.addEventListener('scroll', () => {
-      backToTopBtn.style.display = window.pageYOffset > 300 ? 'flex' : 'none';
-    });
-  }
-}
-
-async function initializeCreatorChannel() {
-  try {
-    document.getElementById('loading').style.display = 'flex';
-    document.getElementById('app').style.display = 'none';
-    window.loadingText = document.getElementById('loading-text');
-    window.initTheme();
-    await checkAuth();
-    await loadCreatorData();
-    setupEventListeners();
-    setTimeout(() => {
-      document.getElementById('loading').style.display = 'none';
-      document.getElementById('app').style.display = 'block';
-      document.querySelectorAll('.content-card, .playlist-card, .popular-item').forEach((el, i) => {
-        setTimeout(() => { 
-          el.style.opacity = '1'; 
-          el.style.transform = 'translateY(0)'; 
-        }, 100 + (i * 30));
-      });
-    }, 500);
-    console.log('✅ Creator channel initialized with ALL features!');
-  } catch (error) {
-    console.error('❌ Error initializing:', error);
-    showToast('Failed to initialize', 'error');
-    setTimeout(() => { 
-      document.getElementById('loading').style.display = 'none'; 
-      document.getElementById('app').style.display = 'block'; 
-    }, 1000);
-  }
-}
-
-initializeCreatorChannel();
-
-supabase.auth.onAuthStateChange((event, session) => {
-  if (event === 'SIGNED_IN') {
-    window.currentUser = session.user;
-    loadUserProfile();
-    loadNotifications();
-    showToast('Welcome back!', 'success');
-    if (window.creatorId) {
-      supabase.from('connectors').select('*').eq('connector_id', session.user.id).eq('connected_id', window.creatorId).eq('connection_type', 'creator').limit(1).then(({ data }) => {
-        window.isConnected = data && data.length > 0;
-        updateConnectButton();
-      });
-      const bannerEditBtn = document.getElementById('banner-edit-btn');
-      const editIdentityBtn = document.getElementById('edit-identity-btn');
-      if (bannerEditBtn && window.creatorId === session.user.id) { bannerEditBtn.style.display = 'flex'; }
-      if (editIdentityBtn && window.creatorId === session.user.id) { editIdentityBtn.style.display = 'flex'; }
-    }
-  } else if (event === 'SIGNED_OUT') {
-    window.currentUser = null;
-    updateProfileUI(null);
-    updateNotificationBadge(0);
-    window.notifications = [];
-    renderNotifications();
-    showToast('Signed out', 'info');
-    window.isConnected = false;
-    updateConnectButton();
-    document.getElementById('banner-edit-btn').style.display = 'none';
-    document.getElementById('edit-identity-btn').style.display = 'none';
-  }
-});
+})();
 </script>
 </body>
 </html>
