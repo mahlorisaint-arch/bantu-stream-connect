@@ -8,6 +8,7 @@
 
 <!-- Google Fonts -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Orbitron:wght@400;500;600;700&display=swap" rel="stylesheet">
 
 <!-- Font Awesome -->
@@ -66,7 +67,7 @@ display: flex; justify-content: space-between; align-items: center;
 
 .logo-icon {
 width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center;
-justify-content: center; background: linear-gradient(135deg, var(--warm-gold), var(--bantu-blue));
+justify-content: center; background: transparent;
 }
 
 .logo-icon img { width: 100%; height: 100%; object-fit: contain; border-radius: 10px; }
@@ -162,8 +163,6 @@ font-weight: 600; cursor: pointer; transition: all 0.3s ease;
 .profile-action-btn.delete {
 background: rgba(239, 68, 68, 0.2); color: var(--error-color); border: 1px solid var(--error-color);
 }
-
-.profile-action-btn.switch { background: var(--success-color); color: white; }
 
 .profile-action-btn:hover { transform: translateY(-2px); }
 
@@ -585,6 +584,7 @@ transition: all 0.3s ease; box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
 <header class="header">
 <div class="logo" onclick="window.location.href='index.html'">
 <div class="logo-icon">
+<!-- ✅ FIXED: Using correct logo path -->
 <img src="assets/icon/bantu_stream_connect_icon.png" alt="Bantu Stream Connect" onerror="this.style.display='none'; this.parentElement.innerHTML='<i class=\'fas fa-film\' style=\'color: var(--warm-gold); font-size: 20px;\'></i>'">
 </div>
 <div class="logo-text">BANTU STREAM CONNECT</div>
@@ -921,11 +921,15 @@ transition: all 0.3s ease; box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
 </div>
 </div>
 
+<!-- ✅ FIXED: Single Supabase Declaration -->
 <script>
-// ===== SUPABASE CONFIGURATION =====
+// ===== SUPABASE CONFIGURATION (DECLARE ONCE) =====
 const SUPABASE_URL = 'https://ydnxqnbjoshvxteevemc.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U';
+
+// Initialize Supabase client (ONLY ONCE)
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+console.log('✅ Supabase client initialized');
 
 // Global State
 window.currentUser = null;
@@ -1006,7 +1010,7 @@ console.log('📋 Loading profiles for user:', window.currentUser.id);
 const { data: profiles, error } = await supabase
 .from('user_profiles')
 .select('*')
-.eq('id', window.currentUser.id);  // ✅ Use 'id' not 'user_id'
+.eq('id', window.currentUser.id);
 
 if (error) {
 console.error('Profile load error:', error);
