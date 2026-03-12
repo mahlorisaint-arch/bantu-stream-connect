@@ -14,7 +14,7 @@
 <!-- Font Awesome -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-<!-- Supabase -->
+<!-- Supabase SDK - Load ONCE -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <style>
@@ -584,7 +584,7 @@ transition: all 0.3s ease; box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
 <header class="header">
 <div class="logo" onclick="window.location.href='index.html'">
 <div class="logo-icon">
-<!-- ✅ FIXED: Using correct logo path -->
+<!-- ✅ CORRECT LOGO PATH -->
 <img src="assets/icon/bantu_stream_connect_icon.png" alt="Bantu Stream Connect" onerror="this.style.display='none'; this.parentElement.innerHTML='<i class=\'fas fa-film\' style=\'color: var(--warm-gold); font-size: 20px;\'></i>'">
 </div>
 <div class="logo-text">BANTU STREAM CONNECT</div>
@@ -921,13 +921,13 @@ transition: all 0.3s ease; box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
 </div>
 </div>
 
-<!-- ✅ FIXED: Single Supabase Declaration -->
+<!-- ✅ SUPABASE CLIENT - DECLARED ONCE ONLY -->
 <script>
-// ===== SUPABASE CONFIGURATION (DECLARE ONCE) =====
+// ===== SUPABASE CONFIGURATION (DECLARE ONCE - NO DUPLICATES) =====
 const SUPABASE_URL = 'https://ydnxqnbjoshvxteevemc.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U';
 
-// Initialize Supabase client (ONLY ONCE)
+// Initialize Supabase client ONCE
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 console.log('✅ Supabase client initialized');
 
@@ -1006,7 +1006,7 @@ if (!window.currentUser) return;
 
 console.log('📋 Loading profiles for user:', window.currentUser.id);
 
-// ✅ FIXED: Query user_profiles by id (not user_id)
+// ✅ Query user_profiles by id (NOT user_id)
 const { data: profiles, error } = await supabase
 .from('user_profiles')
 .select('*')
@@ -1089,7 +1089,7 @@ select.appendChild(option);
 });
 }
 
-// ✅ FIXED: Edit Profile Function
+// ✅ Edit Profile Function
 async function editProfile(profileId) {
 if (!profileId) {
 showToast('Profile ID not found', 'error');
@@ -1142,7 +1142,7 @@ showToast('Failed to load profile', 'error');
 }
 }
 
-// ✅ FIXED: Save Profile Function
+// ✅ Save Profile Function
 async function saveProfile() {
 const profileId = document.getElementById('profile-id').value;
 const name = document.getElementById('profile-name').value.trim();
@@ -1211,7 +1211,7 @@ showToast('Failed to save: ' + (error.message || 'Unknown error'), 'error');
 }
 }
 
-// ✅ FIXED: Delete Profile Function
+// ✅ Delete Profile Function
 async function deleteProfile(profileId) {
 if (!profileId) {
 showToast('Profile ID not found', 'error');
@@ -1262,7 +1262,7 @@ if (!window.currentUser) return;
 
 console.log('📺 Loading watch history...');
 
-// ✅ FIXED: Use watch_progress table (not watch_history)
+// ✅ Use watch_progress table (NOT watch_history)
 const { data: history, error } = await supabase
 .from('watch_progress')
 .select(`
@@ -1333,7 +1333,7 @@ if (!window.currentUser) return;
 
 console.log('📋 Loading user playlists...');
 
-// ✅ FIXED: Use playlists table with user_id
+// ✅ Use playlists table with user_id
 const { data: playlists, error } = await supabase
 .from('playlists')
 .select(`
@@ -1406,7 +1406,7 @@ if (!window.currentUser) return;
 
 console.log('❤️ Loading favorites...');
 
-// ✅ FIXED: Use favorites table
+// ✅ Use favorites table
 const { data: favorites, error } = await supabase
 .from('favorites')
 .select(`
