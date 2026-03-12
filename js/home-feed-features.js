@@ -2,6 +2,22 @@
 // HOME FEED INITIALIZATION - PRODUCTION ARCHITECTURE
 // ============================================
 
+// Language mapping for display
+const languageMap = {
+    'en': 'English',
+    'zu': 'isiZulu',
+    'xh': 'isiXhosa',
+    'st': 'Sesotho',
+    'tn': 'Setswana',
+    'ss': 'Siswati',
+    've': 'Tshivenḓa',
+    'ts': 'Xitsonga',
+    'nr': 'isiNdebele',
+    'nso': 'Sesotho sa Leboa',
+    'af': 'Afrikaans',
+    'all': 'All Languages'
+};
+
 // ============================================
 // UTILITY FUNCTIONS (MUST BE DEFINED FIRST)
 // ============================================
@@ -391,6 +407,7 @@ async function loadContinueWatchingSection() {
                     thumbnail_url,
                     duration,
                     genre,
+                    language,
                     status,
                     user_profiles!user_id (
                         id,
@@ -565,7 +582,7 @@ function renderContinueWatchingCards(container, contents, progressMap) {
 }
 
 // ============================================
-// SECTION 2: FOR YOU (Personalized)
+// SECTION 2: FOR YOU (Personalized) with Amplification Logic
 // ============================================
 async function loadForYouSection() {
     const container = document.getElementById('for-you-grid');
@@ -605,10 +622,10 @@ async function loadForYouSection() {
                 genres = [...new Set((likedGenres || []).map(g => g.genre).filter(Boolean))];
             }
             
-            // Build query based on preferences
+            // Build query based on preferences - ✅ Explicitly select language
             let query = supabaseAuth
                 .from('Content')
-                .select('*, user_profiles!user_id(*)')
+                .select('*, language, user_profiles!user_id(*)')
                 .eq('status', 'published');
             
             if (genres.length > 0) {
@@ -626,7 +643,7 @@ async function loadForYouSection() {
         if (contentList.length === 0) {
             const { data } = await supabaseAuth
                 .from('Content')
-                .select('*, user_profiles!user_id(*)')
+                .select('*, language, user_profiles!user_id(*)')
                 .eq('status', 'published')
                 .order('views_count', { ascending: false })
                 .limit(8);
@@ -648,14 +665,61 @@ async function loadForYouSection() {
         // Build complete dataset with metrics
         const sectionData = await buildSectionData(contentList.slice(0, 8));
         
+        // ✅ Apply Amplification Logic
+        const boostedData = applyAmplificationLogic(sectionData);
+        
+        // Sort by amplification score
+        boostedData.sort((a, b) => (b.amplification_score || 0) - (a.amplification_score || 0));
+        
         // Render once
         container.innerHTML = '';
-        renderContentCards(container, sectionData);
+        renderContentCards(container, boostedData);
         
     } catch (err) {
         console.error("❌ For You Section Error:", err);
         container.innerHTML = '<div class="empty-state">Failed to load recommendations</div>';
     }
+}
+
+// ✅ Amplification Logic Implementation
+function applyAmplificationLogic(items) {
+    const localLanguages = ['zu', 'xh', 'st', 'tn', 'ss', 've', 'ts', 'nr', 'nso'];
+    
+    return items.map(item => {
+        let score = item.metrics?.base_score || 0;
+        
+        // Use metrics for amplification if available
+        const baseScore = (item.metrics?.views || 0) + 
+                         ((item.metrics?.likes || 0) * 5) + 
+                         ((item.metrics?.shares || 0) * 10);
+        
+        score = baseScore;
+        
+        // 1. Local Language Boost (IsiZulu, IsiXhosa, etc.)
+        if (localLanguages.includes(item.language)) {
+            score = score * 1.3; 
+        }
+        
+        // 2. Emerging Creator Boost (< 1000 connectors)
+        if (item.metrics?.connectors < 1000) {
+            score = score * 1.2;
+        }
+        
+        // 3. Freshness Boost (< 7 days)
+        const daysOld = (new Date() - new Date(item.created_at)) / (1000 * 60 * 60 * 24);
+        if (daysOld < 7) {
+            score = score * 1.4;
+        }
+        
+        return { 
+            ...item, 
+            amplification_score: score,
+            metrics: {
+                ...item.metrics,
+                base_score: baseScore
+            }
+        };
+    });
 }
 
 // ============================================
@@ -687,10 +751,10 @@ async function loadFollowingSection() {
         
         const creatorIds = following.map(f => f.connected_id);
         
-        // 2️⃣ Fetch content from followed creators
+        // 2️⃣ Fetch content from followed creators - ✅ Explicitly select language
         const { data: contentList, error: contentError } = await supabaseAuth
             .from('Content')
-            .select('*, user_profiles!user_id(*)')
+            .select('*, language, user_profiles!user_id(*)')
             .eq('status', 'published')
             .in('user_id', creatorIds)
             .order('created_at', { ascending: false })
@@ -733,10 +797,10 @@ async function loadShortsSection() {
     if (!container) return;
     
     try {
-        // 1️⃣ Fetch short content
+        // 1️⃣ Fetch short content - ✅ Explicitly select language
         const { data: contentList, error } = await supabaseAuth
             .from('Content')
-            .select('*, user_profiles!user_id(*)')
+            .select('*, language, user_profiles!user_id(*)')
             .eq('status', 'published')
             .eq('media_type', 'short')
             .or('media_type.eq.short,duration.lte.60')
@@ -809,10 +873,10 @@ async function loadCommunityFavoritesSection() {
     if (!container) return;
     
     try {
-        // 1️⃣ Fetch community favorites (by favorites_count)
+        // 1️⃣ Fetch community favorites (by favorites_count) - ✅ Explicitly select language
         const { data: contentList, error } = await supabaseAuth
             .from('Content')
-            .select('*, user_profiles!user_id(*)')
+            .select('*, language, user_profiles!user_id(*)')
             .eq('status', 'published')
             .order('favorites_count', { ascending: false })
             .limit(12);
@@ -846,10 +910,10 @@ async function loadLiveStreamsSection() {
     if (!container || !noLiveStreams) return;
     
     try {
-        // 1️⃣ Fetch live streams
+        // 1️⃣ Fetch live streams - ✅ Explicitly select language
         const { data: contentList, error } = await supabaseAuth
             .from('Content')
-            .select('*, user_profiles!user_id(*)')
+            .select('*, language, user_profiles!user_id(*)')
             .eq('media_type', 'live')
             .eq('status', 'published')
             .order('created_at', { ascending: false })
@@ -878,17 +942,17 @@ async function loadLiveStreamsSection() {
 }
 
 // ============================================
-// SECTION 6: TRENDING NOW
+// SECTION 6: TRENDING NOW with Amplification Logic
 // ============================================
 async function loadTrendingSection() {
     const container = document.getElementById('trending-grid');
     if (!container) return;
     
     try {
-        // 1️⃣ Fetch trending content (by views_count)
+        // 1️⃣ Fetch trending content (by views_count) - ✅ Explicitly select language
         const { data: contentList, error } = await supabaseAuth
             .from('Content')
-            .select('*, user_profiles!user_id(*)')
+            .select('*, language, user_profiles!user_id(*)')
             .eq('status', 'published')
             .order('views_count', { ascending: false })
             .limit(12);
@@ -909,9 +973,15 @@ async function loadTrendingSection() {
         // 2️⃣ Build complete dataset with metrics
         const sectionData = await buildSectionData(contentList.slice(0, 8));
         
+        // ✅ Apply Amplification Logic
+        const boostedData = applyAmplificationLogic(sectionData);
+        
+        // Sort by amplification score
+        boostedData.sort((a, b) => (b.amplification_score || 0) - (a.amplification_score || 0));
+        
         // 3️⃣ Render
         container.innerHTML = '';
-        renderContentCards(container, sectionData);
+        renderContentCards(container, boostedData);
         
     } catch (err) {
         console.error("❌ Trending Section Error:", err);
@@ -919,17 +989,17 @@ async function loadTrendingSection() {
 }
 
 // ============================================
-// SECTION 7: LATEST GEMS (NEW CONTENT)
+// SECTION 7: LATEST GEMS (NEW CONTENT) with Amplification Logic
 // ============================================
 async function loadNewContentSection() {
     const container = document.getElementById('new-content-grid');
     if (!container) return;
     
     try {
-        // 1️⃣ Fetch new content (by created_at)
+        // 1️⃣ Fetch new content (by created_at) - ✅ Explicitly select language
         const { data: contentList, error } = await supabaseAuth
             .from('Content')
-            .select('*, user_profiles!user_id(*)')
+            .select('*, language, user_profiles!user_id(*)')
             .eq('status', 'published')
             .order('created_at', { ascending: false })
             .limit(12);
@@ -950,9 +1020,15 @@ async function loadNewContentSection() {
         // 2️⃣ Build complete dataset with metrics
         const sectionData = await buildSectionData(contentList.slice(0, 8));
         
+        // ✅ Apply Amplification Logic
+        const boostedData = applyAmplificationLogic(sectionData);
+        
+        // Sort by amplification score
+        boostedData.sort((a, b) => (b.amplification_score || 0) - (a.amplification_score || 0));
+        
         // 3️⃣ Render
         container.innerHTML = '';
-        renderContentCards(container, sectionData);
+        renderContentCards(container, boostedData);
         
     } catch (err) {
         console.error("❌ New Content Section Error:", err);
@@ -1203,10 +1279,10 @@ function renderEventsCards(container, events) {
 // ============================================
 async function loadCinematicHero() {
     try {
-        // Get trending content with highest engagement
+        // Get trending content with highest engagement - ✅ Explicitly select language
         const { data: trendingData, error } = await supabaseAuth
             .from('Content')
-            .select('*, user_profiles!user_id(*)')
+            .select('*, language, user_profiles!user_id(*)')
             .eq('status', 'published')
             .order('views_count', { ascending: false })
             .order('favorites_count', { ascending: false })
@@ -1369,7 +1445,7 @@ function renderContentCards(container, contents) {
                     <span><i class="fas fa-eye"></i> ${formatNumber(content.metrics?.views || 0)}</span>
                     <span><i class="fas fa-heart"></i> ${formatNumber(content.metrics?.likes || 0)}</span>
                     <span><i class="fas fa-share"></i> ${formatNumber(content.metrics?.shares || 0)}</span>
-                    <span><i class="fas fa-language"></i> ${window.languageMap[content.language] || 'English'}</span>
+                    <span><i class="fas fa-language"></i> ${languageMap[content.language] || 'English'}</span>
                 </div>
                 <div class="connector-info">
                     <i class="fas fa-user-friends"></i> ${formatNumber(content.metrics?.connectors || 0)} Connectors
@@ -1395,6 +1471,7 @@ function getMockHeroContent() {
         favorites_count: 3450,
         shares_count: 1200,
         file_url: 'https://assets.mixkit.co/videos/preview/mixkit-young-woman-playing-the-saxophone-4864-large.mp4',
+        language: 'en',
         user_profiles: {
             id: 'creator-1',
             full_name: 'AfroBeats Official',
@@ -2050,7 +2127,7 @@ async function searchContent(query, category = '', sortBy = 'newest', language =
     try {
         let queryBuilder = supabaseAuth
             .from('Content')
-            .select('*, user_profiles!user_id(*)')
+            .select('*, language, user_profiles!user_id(*)')
             .ilike('title', `%${query}%`)
             .eq('status', 'published');
         
@@ -2625,7 +2702,7 @@ async function loadWatchPartyContent() {
     try {
         const { data, error } = await supabaseAuth
             .from('Content')
-            .select('*, user_profiles!user_id(*)')
+            .select('*, language, user_profiles!user_id(*)')
             .eq('status', 'published')
             .order('created_at', { ascending: false })
             .limit(20);
@@ -2876,7 +2953,7 @@ async function reloadContentByCategory(category) {
     try {
         let query = supabaseAuth
             .from('Content')
-            .select('*, user_profiles!user_id(*)')
+            .select('*, language, user_profiles!user_id(*)')
             .eq('status', 'published');
         
         if (category !== 'All') {
@@ -3149,7 +3226,7 @@ async function loadMoreContent() {
         
         const { data, error } = await supabaseAuth
             .from('Content')
-            .select('*, user_profiles!user_id(*)')
+            .select('*, language, user_profiles!user_id(*)')
             .eq('status', 'published')
             .order('created_at', { ascending: false })
             .range(from, to);
