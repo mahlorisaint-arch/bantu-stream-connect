@@ -20,8 +20,8 @@ if (typeof window.languageMap === 'undefined') {
     };
 }
 
-// Use the window.languageMap throughout the file
-const languageMap = window.languageMap;
+// Use window.languageMap directly instead of redeclaring with const
+// This avoids the "already been declared" error
 
 // ============================================
 // UTILITY FUNCTIONS (MUST BE DEFINED FIRST)
@@ -1465,7 +1465,7 @@ function renderContentCards(container, contents) {
                     <span><i class="fas fa-eye"></i> ${formatNumber(content.metrics?.views || 0)}</span>
                     <span><i class="fas fa-heart"></i> ${formatNumber(content.metrics?.likes || 0)}</span>
                     <span><i class="fas fa-share"></i> ${formatNumber(content.metrics?.shares || 0)}</span>
-                    <span><i class="fas fa-language"></i> ${languageMap[content.language] || 'English'}</span>
+                    <span><i class="fas fa-language"></i> ${window.languageMap[content.language] || 'English'}</span>
                 </div>
                 <div class="connector-info">
                     <i class="fas fa-user-friends"></i> ${formatNumber(content.metrics?.connectors || 0)} Connectors
@@ -2008,7 +2008,7 @@ function setupLanguageFilter() {
                     const newChip = document.createElement('button');
                     newChip.className = 'language-chip';
                     newChip.dataset.lang = lang;
-                    newChip.textContent = languageMap[lang] || lang;
+                    newChip.textContent = window.languageMap[lang] || lang;
                     
                     newChip.addEventListener('click', (e) => {
                         e.preventDefault();
@@ -2016,7 +2016,7 @@ function setupLanguageFilter() {
                         document.querySelectorAll('.language-chip').forEach(c => c.classList.remove('active'));
                         newChip.classList.add('active');
                         filterContentByLanguage(lang);
-                        showToast(`Showing: ${languageMap[lang]}`, 'info');
+                        showToast(`Showing: ${window.languageMap[lang]}`, 'info');
                     });
                     
                     languageContainer.insertBefore(newChip, newMoreBtn);
@@ -2035,7 +2035,7 @@ function setupLanguageFilter() {
 }
 
 function getLanguageName(code) {
-    return languageMap[code] || code || 'All Languages';
+    return window.languageMap[code] || code || 'All Languages';
 }
 
 function filterContentByLanguage(lang) {
