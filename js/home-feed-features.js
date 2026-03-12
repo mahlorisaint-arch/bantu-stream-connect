@@ -2,21 +2,26 @@
 // HOME FEED INITIALIZATION - PRODUCTION ARCHITECTURE
 // ============================================
 
-// Language mapping for display
-const languageMap = {
-    'en': 'English',
-    'zu': 'isiZulu',
-    'xh': 'isiXhosa',
-    'st': 'Sesotho',
-    'tn': 'Setswana',
-    'ss': 'Siswati',
-    've': 'Tshivenḓa',
-    'ts': 'Xitsonga',
-    'nr': 'isiNdebele',
-    'nso': 'Sesotho sa Leboa',
-    'af': 'Afrikaans',
-    'all': 'All Languages'
-};
+// Check if languageMap already exists to avoid duplicate declaration errors
+if (typeof window.languageMap === 'undefined') {
+    window.languageMap = {
+        'en': 'English',
+        'zu': 'isiZulu',
+        'xh': 'isiXhosa',
+        'st': 'Sesotho',
+        'tn': 'Setswana',
+        'ss': 'Siswati',
+        've': 'Tshivenḓa',
+        'ts': 'Xitsonga',
+        'nr': 'isiNdebele',
+        'nso': 'Sesotho sa Leboa',
+        'af': 'Afrikaans',
+        'all': 'All Languages'
+    };
+}
+
+// Use the window.languageMap throughout the file
+const languageMap = window.languageMap;
 
 // ============================================
 // UTILITY FUNCTIONS (MUST BE DEFINED FIRST)
@@ -138,16 +143,31 @@ function showToast(message, type = 'info') {
     }, 3000);
 }
 
-document.addEventListener('DOMContentLoaded', async () => {
-    console.log('🚀 Home Feed Initializing (Production Mode)');
+// Only run DOMContentLoaded if document is still loading
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', async () => {
+        console.log('🚀 Home Feed Initializing (Production Mode)');
+        
+        // Override loading text
+        const loadingText = document.getElementById('loading-text');
+        if (loadingText) loadingText.textContent = 'Building Your Feed...';
+        
+        // Initialize the feed sequentially for stability
+        await initializeHomeFeed();
+    });
+} else {
+    // DOM is already loaded, run immediately
+    console.log('🚀 Home Feed Initializing (Production Mode) - DOM already loaded');
     
     // Override loading text
     const loadingText = document.getElementById('loading-text');
     if (loadingText) loadingText.textContent = 'Building Your Feed...';
     
     // Initialize the feed sequentially for stability
-    await initializeHomeFeed();
-});
+    initializeHomeFeed().catch(err => {
+        console.error("❌ Home Feed Initialization Error:", err);
+    });
+}
 
 // ============================================
 // HOME FEED CONTROLLER
@@ -203,8 +223,8 @@ async function initializeHomeFeed() {
         
         // Hide loading screen and show content
         setTimeout(() => {
-            loadingScreen.style.display = 'none';
-            app.style.display = 'block';
+            if (loadingScreen) loadingScreen.style.display = 'none';
+            if (app) app.style.display = 'block';
             
             // Animate cards in
             document.querySelectorAll('.content-card').forEach((card, index) => {
@@ -222,8 +242,8 @@ async function initializeHomeFeed() {
         showToast('Failed to load home feed', 'error');
         
         setTimeout(() => {
-            loadingScreen.style.display = 'none';
-            app.style.display = 'block';
+            if (loadingScreen) loadingScreen.style.display = 'none';
+            if (app) app.style.display = 'block';
         }, 1000);
     }
 }
