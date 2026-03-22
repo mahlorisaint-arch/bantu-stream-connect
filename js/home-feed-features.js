@@ -170,11 +170,12 @@ if (document.readyState === 'loading') {
 }
 
 // ============================================
-// THEME FUNCTIONS - FIXED VERSION
+// THEME FUNCTIONS - FIXED VERSION WITH IMPROVED CLICK HANDLING
 // ============================================
 
 /**
  * Setup theme selector with proper event handling
+ * Enhanced with better click handling and z-index management
  */
 function setupThemeSelector() {
     const themeSelector = document.getElementById('theme-selector');
@@ -191,47 +192,45 @@ function setupThemeSelector() {
     const savedTheme = localStorage.getItem('bantu_theme') || 'dark';
     applyTheme(savedTheme);
     
-    // Theme option click handlers - Use event delegation for reliability
+    // Theme option click handlers - Use event delegation with stopPropagation
     const themeOptions = document.querySelectorAll('.theme-option');
     console.log('🎨 Theme Options Found:', themeOptions.length);
     
     themeOptions.forEach((option, index) => {
-        // Remove any existing listeners by cloning
+        // Clone to remove any existing listeners
         const newOption = option.cloneNode(true);
         option.parentNode.replaceChild(newOption, option);
         
         newOption.addEventListener('click', function(e) {
             e.preventDefault();
-            e.stopPropagation();
+            e.stopPropagation(); // Stop event from bubbling to overlay
             const theme = this.dataset.theme;
             console.log('🎨 Theme clicked:', theme);
+            
+            // Apply theme
             applyTheme(theme);
-            themeSelector.classList.remove('active');
+            
+            // Hide selector after selection
+            setTimeout(() => {
+                themeSelector.classList.remove('active');
+            }, 100);
+            
             showToast(`Theme changed to ${theme}`, 'success');
         });
         
         console.log(`🎨 Theme option ${index + 1} listener attached`);
     });
     
-    // Toggle theme selector visibility from sidebar
-    if (themeToggle) {
-        themeToggle.addEventListener('click', function(e) {
-            e.preventDefault();
-            e.stopPropagation();
-            console.log('🎨 Theme toggle clicked');
-            themeSelector.classList.toggle('active');
-        });
-    }
-    
-    // Close when clicking outside
+    // Close when clicking outside theme selector - Use capture phase
     document.addEventListener('click', function(e) {
         if (themeSelector.classList.contains('active') && 
             !themeSelector.contains(e.target) && 
             !e.target.closest('#sidebar-theme-toggle') &&
             !e.target.closest('.sidebar-theme-toggle')) {
             themeSelector.classList.remove('active');
+            console.log('🎨 Theme selector closed by outside click');
         }
-    });
+    }, true); // Use capture phase to ensure it runs first
     
     // Close on Escape key
     document.addEventListener('keydown', function(e) {
@@ -242,7 +241,7 @@ function setupThemeSelector() {
 }
 
 /**
- * Apply theme to the document
+ * Apply theme to the document with force reflow
  * @param {string} theme - Theme name (dark, light, high-contrast)
  */
 function applyTheme(theme) {
@@ -255,7 +254,7 @@ function applyTheme(theme) {
     // Apply new theme class
     root.classList.add(`theme-${theme}`);
     
-    // Force CSS variable update for immediate effect
+    // Force CSS reflow for immediate update
     void root.offsetWidth;
     
     // Save preference
@@ -267,7 +266,7 @@ function applyTheme(theme) {
     });
     
     console.log('🎨 Theme applied successfully:', theme);
-    console.log('🎨 Current classes:', root.className);
+    console.log('🎨 Current HTML classes:', root.className);
     
     // Show confirmation toast
     if (typeof showToast === 'function') {
@@ -282,10 +281,12 @@ function applyTheme(theme) {
 
 /**
  * Setup sidebar theme toggle with proper event handling
+ * Enhanced with delay to ensure sidebar closes before theme selector appears
  */
 function setupSidebarThemeToggle() {
     const themeToggle = document.getElementById('sidebar-theme-toggle');
     const themeSelector = document.getElementById('theme-selector');
+    const sidebarClose = document.getElementById('sidebar-close');
     
     console.log('🎨 Sidebar Theme Toggle Setup - Toggle:', !!themeToggle, 'Selector:', !!themeSelector);
     
@@ -294,7 +295,7 @@ function setupSidebarThemeToggle() {
         return;
     }
     
-    // Remove existing listener by cloning
+    // Remove existing listener by cloning to prevent duplicates
     const newToggle = themeToggle.cloneNode(true);
     themeToggle.parentNode.replaceChild(newToggle, themeToggle);
     
@@ -304,14 +305,21 @@ function setupSidebarThemeToggle() {
         console.log('🎨 Sidebar theme toggle clicked');
         
         // Close sidebar first
-        document.getElementById('sidebar-close')?.click();
-        
-        // Show theme selector
-        if (themeSelector) {
-            const isActive = themeSelector.classList.contains('active');
-            themeSelector.classList.toggle('active');
-            console.log('🎨 Theme selector active:', !isActive);
+        if (sidebarClose) {
+            sidebarClose.click();
         }
+        
+        // Small delay to ensure sidebar overlay is removed before showing theme selector
+        setTimeout(() => {
+            if (themeSelector) {
+                const isActive = themeSelector.classList.contains('active');
+                themeSelector.classList.toggle('active');
+                console.log('🎨 Theme selector active:', !isActive, 'Classes:', themeSelector.className);
+                
+                // Force reflow to ensure CSS applies
+                void themeSelector.offsetWidth;
+            }
+        }, 150); // 150ms delay for smooth transition
     });
 }
 
@@ -352,7 +360,7 @@ async function initializeHomeFeed() {
         
         // Initialize UI components (non-data dependent)
         setupSidebar();
-        setupThemeSelector(); // ✅ Added theme selector setup
+        setupThemeSelector(); // ✅ Enhanced theme selector setup
         setupLanguageFilter();
         setupSearch();
         setupNotifications();
@@ -1857,7 +1865,7 @@ function setupSidebar() {
     
     updateSidebarProfile();
     setupSidebarNavigation();
-    setupSidebarThemeToggle(); // ✅ Already calling this
+    setupSidebarThemeToggle(); // ✅ Enhanced version
     setupSidebarScaleControls();
 }
 
