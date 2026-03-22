@@ -3,6 +3,85 @@
 // ============================================
 
 // ============================================
+// UI SCALE CONTROLLER - Add this class
+// ============================================
+class UIScaleController {
+    constructor() {
+        this.scale = parseFloat(localStorage.getItem('bantu_ui_scale')) || 1;
+        this.minScale = 0.8;
+        this.maxScale = 1.4;
+        this.step = 0.1;
+    }
+
+    init() {
+        this.applyScale();
+        this.setupEventListeners();
+    }
+
+    setupEventListeners() {
+        // Listen for scale change events to update UI
+        document.addEventListener('scaleChanged', (e) => {
+            this.updateScaleDisplay(e.detail.scale);
+        });
+    }
+
+    applyScale() {
+        document.documentElement.style.setProperty('--ui-scale', this.scale);
+        localStorage.setItem('bantu_ui_scale', this.scale.toString());
+        
+        // Dispatch custom event for other components to react
+        document.dispatchEvent(new CustomEvent('scaleChanged', {
+            detail: { scale: this.scale }
+        }));
+        
+        console.log('📏 Scale applied:', this.scale, 'CSS var:', getComputedStyle(document.documentElement).getPropertyValue('--ui-scale'));
+    }
+
+    increase() {
+        if (this.scale < this.maxScale) {
+            this.scale = Math.min(this.maxScale, this.scale + this.step);
+            this.applyScale();
+        }
+    }
+
+    decrease() {
+        if (this.scale > this.minScale) {
+            this.scale = Math.max(this.minScale, this.scale - this.step);
+            this.applyScale();
+        }
+    }
+
+    reset() {
+        this.scale = 1;
+        this.applyScale();
+    }
+
+    getScale() {
+        return this.scale;
+    }
+
+    updateScaleDisplay(scale) {
+        const displays = document.querySelectorAll('.scale-value, #sidebar-scale-value');
+        displays.forEach(el => {
+            if (el) el.textContent = Math.round(scale * 100) + '%';
+        });
+    }
+}
+
+// Initialize UIScaleController if not already done
+if (!window.uiScaleController) {
+    window.uiScaleController = new UIScaleController();
+    // Wait for DOM to be ready
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => {
+            window.uiScaleController.init();
+        });
+    } else {
+        window.uiScaleController.init();
+    }
+}
+
+// ============================================
 // INITIALIZATION
 // ============================================
 function initializeManageProfilesUI() {
@@ -79,21 +158,45 @@ function closeAllModals() {
 // ============================================
 function setupThemeSelector() {
     const themeSelector = document.getElementById('theme-selector');
+    const themeToggle = document.getElementById('sidebar-theme-toggle');
+    
     if (!themeSelector) return;
     
+    // Apply saved theme on load
     const savedTheme = localStorage.getItem('bantu_theme') || 'dark';
     applyTheme(savedTheme);
     
+    // Theme option click handlers
     document.querySelectorAll('.theme-option').forEach(option => {
-        option.addEventListener('click', () => {
+        option.addEventListener('click', (e) => {
+            e.preventDefault();
             const theme = option.dataset.theme;
             applyTheme(theme);
             themeSelector.classList.remove('active');
         });
     });
     
+    // Toggle theme selector visibility
+    if (themeToggle) {
+        themeToggle.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            themeSelector.classList.toggle('active');
+        });
+    }
+    
+    // Close when clicking outside
     document.addEventListener('click', (e) => {
-        if (!themeSelector.contains(e.target) && !e.target.closest('#sidebar-theme-toggle')) {
+        if (!themeSelector.contains(e.target) && 
+            !e.target.closest('#sidebar-theme-toggle') &&
+            !e.target.closest('.sidebar-theme-toggle')) {
+            themeSelector.classList.remove('active');
+        }
+    });
+    
+    // Close on Escape key
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && themeSelector.classList.contains('active')) {
             themeSelector.classList.remove('active');
         }
     });
@@ -105,11 +208,14 @@ function setupThemeSelector() {
 function applyTheme(theme) {
     const root = document.documentElement;
     
+    // Remove all theme classes first
     root.classList.remove('theme-dark', 'theme-light', 'theme-high-contrast');
+    
+    // Apply new theme class
+    root.classList.add(`theme-${theme}`);
     
     switch(theme) {
         case 'light':
-            root.classList.add('theme-light');
             root.style.setProperty('--deep-black', '#ffffff');
             root.style.setProperty('--soft-white', '#1a1a1a');
             root.style.setProperty('--slate-grey', '#666666');
@@ -118,7 +224,6 @@ function applyTheme(theme) {
             break;
             
         case 'high-contrast':
-            root.classList.add('theme-high-contrast');
             root.style.setProperty('--deep-black', '#000000');
             root.style.setProperty('--soft-white', '#ffffff');
             root.style.setProperty('--slate-grey', '#ffff00');
@@ -128,8 +233,7 @@ function applyTheme(theme) {
             root.style.setProperty('--card-border', '#ffffff');
             break;
             
-        default:
-            root.classList.add('theme-dark');
+        default: // dark
             root.style.setProperty('--deep-black', '#0A0A0A');
             root.style.setProperty('--soft-white', '#F5F5F5');
             root.style.setProperty('--slate-grey', '#A0A0A0');
@@ -141,7 +245,15 @@ function applyTheme(theme) {
     }
     
     localStorage.setItem('bantu_theme', theme);
-    showToast(`Theme changed to ${theme}`, 'success');
+    
+    console.log('🎨 Theme applied:', theme, 'CSS class:', document.documentElement.className);
+    
+    if (typeof showToast === 'function') {
+        showToast(`Theme changed to ${theme}`, 'success');
+    }
+    
+    // Optional: Force reflow to ensure CSS variables apply immediately
+    void root.offsetWidth;
 }
 
 // ============================================
@@ -301,3 +413,4 @@ window.closeAllModals = closeAllModals;
 window.toggleNotifications = toggleNotifications;
 window.openAnalytics = openAnalytics;
 window.formatTimeAgo = formatTimeAgo;
+window.UIScaleController = UIScaleController;
