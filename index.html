@@ -5,6 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
     <title>Home - Bantu Stream Connect</title>
     
+    <!-- Apply saved theme BEFORE page renders (prevents flash) -->
+    <script>
+        (function() {
+            const savedTheme = localStorage.getItem('bantu_theme') || 'dark';
+            document.documentElement.classList.add(`theme-${savedTheme}`);
+        })();
+    </script>
+    
     <!-- PERFORMANCE: Preload Critical Resources -->
     <link rel="preload" href="css/home-feed.css" as="style">
     <link rel="preload" href="css/home-feed-ui.css" as="style">
@@ -787,7 +795,7 @@
     </div>
 
     <!-- =================================================================== -->
-    <!-- SIDEBAR MENU (Enhanced)                                             -->
+    <!-- SIDEBAR MENU (Enhanced with proper overflow handling)               -->
     <!-- =================================================================== -->
     <div class="sidebar-overlay" id="sidebar-overlay"></div>
     <div class="sidebar-menu" id="sidebar-menu">
@@ -803,7 +811,7 @@
             </button>
         </div>
         
-        <!-- Profile Section -->
+        <!-- Profile Section - Fixed with text truncation -->
         <div class="sidebar-profile" id="sidebar-profile">
             <div class="sidebar-profile-avatar" id="sidebar-profile-avatar">
                 <i class="fas fa-user"></i>
@@ -812,10 +820,10 @@
                 <div class="sidebar-profile-name" id="sidebar-profile-name">Guest</div>
                 <div class="sidebar-profile-email" id="sidebar-profile-email">Sign in to continue</div>
             </div>
-            <i class="fas fa-chevron-right" style="color: var(--slate-grey);"></i>
+            <i class="fas fa-chevron-right" style="color: var(--slate-grey); flex-shrink: 0;"></i>
         </div>
         
-        <!-- Navigation Items -->
+        <!-- Navigation Items - Scrollable area -->
         <nav class="sidebar-nav">
             <a href="index.html" class="sidebar-nav-item active">
                 <i class="fas fa-home"></i>
@@ -861,8 +869,8 @@
             </a>
         </nav>
         
-        <!-- Footer: Theme & Scale -->
-        <div class="sidebar-footer">
+        <!-- Footer: Theme & Scale (Fixed at bottom with safe area support) -->
+        <div class="sidebar-footer" id="sidebar-footer">
             <div class="sidebar-theme-toggle" id="sidebar-theme-toggle">
                 <span><i class="fas fa-palette"></i> Theme</span>
                 <i class="fas fa-chevron-right" style="color: var(--slate-grey);"></i>
@@ -1160,21 +1168,11 @@
         </div>
     </div>
 
-    <!-- UI Scale Control Widget (floating button for quick access) -->
-    <div class="ui-scale-control" id="ui-scale-control">
-        <div class="scale-control-bar">
-            <button class="scale-btn" id="scale-decrease" title="Make Smaller (Ctrl+-)">
-                <i class="fas fa-minus"></i>
-            </button>
-            <span class="scale-value" id="scale-value">100%</span>
-            <button class="scale-btn" id="scale-increase" title="Make Larger (Ctrl++)">
-                <i class="fas fa-plus"></i>
-            </button>
-            <button class="scale-btn" id="scale-reset" title="Reset (Ctrl+0)">
-                <i class="fas fa-undo"></i>
-            </button>
-        </div>
-    </div>
+    <!-- =================================================================== -->
+    <!-- UI SCALE CONTROL - REMOVED (Now only in sidebar)                    -->
+    <!-- The floating UI scale control has been removed as requested.        -->
+    <!-- Scale controls are now only available in the sidebar footer.        -->
+    <!-- =================================================================== -->
 
     <!-- Keyboard Shortcuts Help Modal -->
     <div id="shortcuts-modal" class="analytics-modal" style="display: none;">
@@ -1291,40 +1289,44 @@
             window.uiScaleController.init();
         }
         
-        // Apply saved theme on page load
-        (function applySavedTheme() {
+        // Apply saved theme on page load (fallback - already applied in head)
+        (function applySavedThemeFallback() {
             const savedTheme = localStorage.getItem('bantu_theme') || 'dark';
             const root = document.documentElement;
-            root.classList.remove('theme-dark', 'theme-light', 'theme-high-contrast');
-            root.classList.add(`theme-${savedTheme}`);
             
-            // Apply CSS variables based on theme
-            if (savedTheme === 'light') {
-                root.style.setProperty('--deep-black', '#ffffff');
-                root.style.setProperty('--soft-white', '#1a1a1a');
-                root.style.setProperty('--slate-grey', '#666666');
-                root.style.setProperty('--card-bg', 'rgba(255, 255, 255, 0.9)');
-                root.style.setProperty('--card-border', 'rgba(0, 0, 0, 0.1)');
-            } else if (savedTheme === 'high-contrast') {
-                root.style.setProperty('--deep-black', '#000000');
-                root.style.setProperty('--soft-white', '#ffffff');
-                root.style.setProperty('--slate-grey', '#ffff00');
-                root.style.setProperty('--warm-gold', '#ff0000');
-                root.style.setProperty('--bantu-blue', '#00ff00');
-                root.style.setProperty('--card-bg', '#000000');
-                root.style.setProperty('--card-border', '#ffffff');
-            } else {
-                // Dark theme (default)
-                root.style.setProperty('--deep-black', '#0A0A0A');
-                root.style.setProperty('--soft-white', '#F5F5F5');
-                root.style.setProperty('--slate-grey', '#A0A0A0');
-                root.style.setProperty('--warm-gold', '#F59E0B');
-                root.style.setProperty('--bantu-blue', '#1D4ED8');
-                root.style.setProperty('--card-bg', 'rgba(18, 18, 18, 0.95)');
-                root.style.setProperty('--card-border', 'rgba(255, 255, 255, 0.1)');
+            // Only apply if not already applied by the head script
+            if (!root.classList.contains(`theme-${savedTheme}`)) {
+                root.classList.remove('theme-dark', 'theme-light', 'theme-high-contrast');
+                root.classList.add(`theme-${savedTheme}`);
+                
+                // Apply CSS variables based on theme
+                if (savedTheme === 'light') {
+                    root.style.setProperty('--deep-black', '#ffffff');
+                    root.style.setProperty('--soft-white', '#1a1a1a');
+                    root.style.setProperty('--slate-grey', '#666666');
+                    root.style.setProperty('--card-bg', 'rgba(255, 255, 255, 0.9)');
+                    root.style.setProperty('--card-border', 'rgba(0, 0, 0, 0.1)');
+                } else if (savedTheme === 'high-contrast') {
+                    root.style.setProperty('--deep-black', '#000000');
+                    root.style.setProperty('--soft-white', '#ffffff');
+                    root.style.setProperty('--slate-grey', '#ffff00');
+                    root.style.setProperty('--warm-gold', '#ff0000');
+                    root.style.setProperty('--bantu-blue', '#00ff00');
+                    root.style.setProperty('--card-bg', '#000000');
+                    root.style.setProperty('--card-border', '#ffffff');
+                } else {
+                    // Dark theme (default)
+                    root.style.setProperty('--deep-black', '#0A0A0A');
+                    root.style.setProperty('--soft-white', '#F5F5F5');
+                    root.style.setProperty('--slate-grey', '#A0A0A0');
+                    root.style.setProperty('--warm-gold', '#F59E0B');
+                    root.style.setProperty('--bantu-blue', '#1D4ED8');
+                    root.style.setProperty('--card-bg', 'rgba(18, 18, 18, 0.95)');
+                    root.style.setProperty('--card-border', 'rgba(255, 255, 255, 0.1)');
+                }
+                
+                console.log('🎨 Initial theme applied (fallback):', savedTheme);
             }
-            
-            console.log('🎨 Initial theme applied:', savedTheme);
         })();
     </script>
 </body>
