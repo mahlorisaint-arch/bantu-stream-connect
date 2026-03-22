@@ -92,6 +92,7 @@ function initializeManageProfilesUI() {
     setupThemeSelector();
     setupScaleControl();
     setupKeyboardShortcuts();
+    setupSidebarThemeToggle(); // ✅ Added for sidebar theme toggle
 }
 
 // ============================================
@@ -154,40 +155,61 @@ function closeAllModals() {
 }
 
 // ============================================
-// THEME SELECTOR SETUP
+// THEME SELECTOR SETUP - FIXED VERSION
 // ============================================
 function setupThemeSelector() {
     const themeSelector = document.getElementById('theme-selector');
     const themeToggle = document.getElementById('sidebar-theme-toggle');
     
-    if (!themeSelector) return;
+    console.log('🎨 Theme Setup - Selector:', !!themeSelector, 'Toggle:', !!themeToggle);
+    
+    if (!themeSelector) {
+        console.error('❌ Theme selector element not found!');
+        return;
+    }
     
     // Apply saved theme on load
     const savedTheme = localStorage.getItem('bantu_theme') || 'dark';
     applyTheme(savedTheme);
     
-    // Theme option click handlers
-    document.querySelectorAll('.theme-option').forEach(option => {
-        option.addEventListener('click', (e) => {
-            e.preventDefault();
-            const theme = option.dataset.theme;
-            applyTheme(theme);
-            themeSelector.classList.remove('active');
-        });
-    });
+    // Theme option click handlers - Use event delegation for reliability
+    const themeOptions = document.querySelectorAll('.theme-option');
+    console.log('🎨 Theme Options Found:', themeOptions.length);
     
-    // Toggle theme selector visibility
-    if (themeToggle) {
-        themeToggle.addEventListener('click', (e) => {
+    themeOptions.forEach((option, index) => {
+        // Remove any existing listeners by cloning
+        const newOption = option.cloneNode(true);
+        option.parentNode.replaceChild(newOption, option);
+        
+        newOption.addEventListener('click', function(e) {
             e.preventDefault();
             e.stopPropagation();
+            const theme = this.dataset.theme;
+            console.log('🎨 Theme clicked:', theme);
+            applyTheme(theme);
+            themeSelector.classList.remove('active');
+            if (typeof showToast === 'function') {
+                showToast(`Theme changed to ${theme}`, 'success');
+            }
+        });
+        
+        console.log(`🎨 Theme option ${index + 1} listener attached`);
+    });
+    
+    // Toggle theme selector visibility from sidebar
+    if (themeToggle) {
+        themeToggle.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('🎨 Theme toggle clicked');
             themeSelector.classList.toggle('active');
         });
     }
     
     // Close when clicking outside
-    document.addEventListener('click', (e) => {
-        if (!themeSelector.contains(e.target) && 
+    document.addEventListener('click', function(e) {
+        if (themeSelector.classList.contains('active') && 
+            !themeSelector.contains(e.target) && 
             !e.target.closest('#sidebar-theme-toggle') &&
             !e.target.closest('.sidebar-theme-toggle')) {
             themeSelector.classList.remove('active');
@@ -195,7 +217,7 @@ function setupThemeSelector() {
     });
     
     // Close on Escape key
-    document.addEventListener('keydown', (e) => {
+    document.addEventListener('keydown', function(e) {
         if (e.key === 'Escape' && themeSelector.classList.contains('active')) {
             themeSelector.classList.remove('active');
         }
@@ -203,10 +225,46 @@ function setupThemeSelector() {
 }
 
 // ============================================
-// APPLY THEME
+// SIDEBAR THEME TOGGLE - FIXED VERSION
+// ============================================
+function setupSidebarThemeToggle() {
+    const themeToggle = document.getElementById('sidebar-theme-toggle');
+    const themeSelector = document.getElementById('theme-selector');
+    
+    console.log('🎨 Sidebar Theme Toggle Setup - Toggle:', !!themeToggle, 'Selector:', !!themeSelector);
+    
+    if (!themeToggle) {
+        console.error('❌ Sidebar theme toggle not found!');
+        return;
+    }
+    
+    // Remove existing listener by cloning
+    const newToggle = themeToggle.cloneNode(true);
+    themeToggle.parentNode.replaceChild(newToggle, themeToggle);
+    
+    newToggle.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        console.log('🎨 Sidebar theme toggle clicked');
+        
+        // Close sidebar first
+        document.getElementById('sidebar-close')?.click();
+        
+        // Show theme selector
+        if (themeSelector) {
+            const isActive = themeSelector.classList.contains('active');
+            themeSelector.classList.toggle('active');
+            console.log('🎨 Theme selector active:', !isActive);
+        }
+    });
+}
+
+// ============================================
+// APPLY THEME - FIXED VERSION
 // ============================================
 function applyTheme(theme) {
     const root = document.documentElement;
+    console.log('🎨 Applying theme:', theme);
     
     // Remove all theme classes first
     root.classList.remove('theme-dark', 'theme-light', 'theme-high-contrast');
@@ -214,6 +272,7 @@ function applyTheme(theme) {
     // Apply new theme class
     root.classList.add(`theme-${theme}`);
     
+    // Apply theme-specific CSS variables
     switch(theme) {
         case 'light':
             root.style.setProperty('--deep-black', '#ffffff');
@@ -244,16 +303,29 @@ function applyTheme(theme) {
             break;
     }
     
+    // Force CSS variable update for immediate effect
+    void root.offsetWidth;
+    
+    // Save preference
     localStorage.setItem('bantu_theme', theme);
     
-    console.log('🎨 Theme applied:', theme, 'CSS class:', document.documentElement.className);
+    // Update active state on theme options
+    document.querySelectorAll('.theme-option').forEach(option => {
+        option.classList.toggle('active', option.dataset.theme === theme);
+    });
     
+    console.log('🎨 Theme applied successfully:', theme);
+    console.log('🎨 Current classes:', root.className);
+    
+    // Show confirmation toast
     if (typeof showToast === 'function') {
         showToast(`Theme changed to ${theme}`, 'success');
     }
     
-    // Optional: Force reflow to ensure CSS variables apply immediately
-    void root.offsetWidth;
+    // Dispatch custom event for other components to react
+    document.dispatchEvent(new CustomEvent('themeChanged', {
+        detail: { theme: theme }
+    }));
 }
 
 // ============================================
@@ -330,14 +402,29 @@ function setupKeyboardShortcuts() {
         
         if (e.key === '?' && !e.shiftKey) {
             e.preventDefault();
-            document.getElementById('shortcuts-modal').style.display = 'flex';
+            const shortcutsModal = document.getElementById('shortcuts-modal');
+            if (shortcutsModal) {
+                shortcutsModal.style.display = 'flex';
+            }
         }
     });
     
     const closeShortcuts = document.getElementById('close-shortcuts');
     if (closeShortcuts) {
         closeShortcuts.addEventListener('click', () => {
-            document.getElementById('shortcuts-modal').style.display = 'none';
+            const shortcutsModal = document.getElementById('shortcuts-modal');
+            if (shortcutsModal) {
+                shortcutsModal.style.display = 'none';
+            }
+        });
+    }
+    
+    const shortcutsModal = document.getElementById('shortcuts-modal');
+    if (shortcutsModal) {
+        shortcutsModal.addEventListener('click', (e) => {
+            if (e.target === shortcutsModal) {
+                shortcutsModal.style.display = 'none';
+            }
         });
     }
 }
@@ -384,6 +471,29 @@ function toggleProfileDropdown() {
 }
 
 // ============================================
+// OPEN CREATE PROFILE MODAL
+// ============================================
+function openCreateProfileModal() {
+    const modal = document.getElementById('profile-modal');
+    if (modal) {
+        modal.classList.add('active');
+        
+        // Reset form
+        const nameInput = document.getElementById('profile-name');
+        if (nameInput) nameInput.value = '';
+        
+        const avatarInput = document.getElementById('profile-avatar');
+        if (avatarInput) avatarInput.value = '';
+        
+        const avatarPreview = document.getElementById('avatar-preview');
+        if (avatarPreview) {
+            avatarPreview.style.display = 'none';
+            avatarPreview.querySelector('img')?.remove();
+        }
+    }
+}
+
+// ============================================
 // FORMAT TIME AGO
 // ============================================
 function formatTimeAgo(timestamp) {
@@ -407,10 +517,56 @@ function formatTimeAgo(timestamp) {
     return date.toLocaleDateString();
 }
 
+// ============================================
+// SHOW TOAST (if not already defined)
+// ============================================
+if (typeof window.showToast === 'undefined') {
+    window.showToast = function(message, type = 'info') {
+        const container = document.getElementById('toast-container');
+        if (!container) return;
+        
+        const toast = document.createElement('div');
+        toast.className = `toast toast-${type}`;
+        toast.innerHTML = `
+            <i class="fas ${type === 'success' ? 'fa-check-circle' : 
+                            type === 'error' ? 'fa-exclamation-circle' : 
+                            type === 'warning' ? 'fa-exclamation-triangle' : 
+                            'fa-info-circle'}"></i>
+            <span>${message}</span>
+        `;
+        
+        container.appendChild(toast);
+        
+        setTimeout(() => {
+            toast.classList.add('toast-hide');
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
+    };
+}
+
+// ============================================
+// GET INITIALS (if not already defined)
+// ============================================
+if (typeof window.getInitials === 'undefined') {
+    window.getInitials = function(name) {
+        if (!name) return '?';
+        return name
+            .split(' ')
+            .map(part => part[0])
+            .join('')
+            .toUpperCase()
+            .substring(0, 2);
+    };
+}
+
 // Export functions
 window.initializeManageProfilesUI = initializeManageProfilesUI;
 window.closeAllModals = closeAllModals;
 window.toggleNotifications = toggleNotifications;
 window.openAnalytics = openAnalytics;
+window.openCreateProfileModal = openCreateProfileModal;
 window.formatTimeAgo = formatTimeAgo;
+window.applyTheme = applyTheme;
+window.setupThemeSelector = setupThemeSelector;
+window.setupSidebarThemeToggle = setupSidebarThemeToggle;
 window.UIScaleController = UIScaleController;
