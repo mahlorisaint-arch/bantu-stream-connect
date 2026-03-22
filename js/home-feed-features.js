@@ -170,6 +170,152 @@ if (document.readyState === 'loading') {
 }
 
 // ============================================
+// THEME FUNCTIONS - FIXED VERSION
+// ============================================
+
+/**
+ * Setup theme selector with proper event handling
+ */
+function setupThemeSelector() {
+    const themeSelector = document.getElementById('theme-selector');
+    const themeToggle = document.getElementById('sidebar-theme-toggle');
+    
+    console.log('🎨 Theme Setup - Selector:', !!themeSelector, 'Toggle:', !!themeToggle);
+    
+    if (!themeSelector) {
+        console.error('❌ Theme selector element not found!');
+        return;
+    }
+    
+    // Apply saved theme on load
+    const savedTheme = localStorage.getItem('bantu_theme') || 'dark';
+    applyTheme(savedTheme);
+    
+    // Theme option click handlers - Use event delegation for reliability
+    const themeOptions = document.querySelectorAll('.theme-option');
+    console.log('🎨 Theme Options Found:', themeOptions.length);
+    
+    themeOptions.forEach((option, index) => {
+        // Remove any existing listeners by cloning
+        const newOption = option.cloneNode(true);
+        option.parentNode.replaceChild(newOption, option);
+        
+        newOption.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            const theme = this.dataset.theme;
+            console.log('🎨 Theme clicked:', theme);
+            applyTheme(theme);
+            themeSelector.classList.remove('active');
+            showToast(`Theme changed to ${theme}`, 'success');
+        });
+        
+        console.log(`🎨 Theme option ${index + 1} listener attached`);
+    });
+    
+    // Toggle theme selector visibility from sidebar
+    if (themeToggle) {
+        themeToggle.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('🎨 Theme toggle clicked');
+            themeSelector.classList.toggle('active');
+        });
+    }
+    
+    // Close when clicking outside
+    document.addEventListener('click', function(e) {
+        if (themeSelector.classList.contains('active') && 
+            !themeSelector.contains(e.target) && 
+            !e.target.closest('#sidebar-theme-toggle') &&
+            !e.target.closest('.sidebar-theme-toggle')) {
+            themeSelector.classList.remove('active');
+        }
+    });
+    
+    // Close on Escape key
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && themeSelector.classList.contains('active')) {
+            themeSelector.classList.remove('active');
+        }
+    });
+}
+
+/**
+ * Apply theme to the document
+ * @param {string} theme - Theme name (dark, light, high-contrast)
+ */
+function applyTheme(theme) {
+    const root = document.documentElement;
+    console.log('🎨 Applying theme:', theme);
+    
+    // Remove all theme classes first
+    root.classList.remove('theme-dark', 'theme-light', 'theme-high-contrast');
+    
+    // Apply new theme class
+    root.classList.add(`theme-${theme}`);
+    
+    // Force CSS variable update for immediate effect
+    void root.offsetWidth;
+    
+    // Save preference
+    localStorage.setItem('bantu_theme', theme);
+    
+    // Update active state on theme options
+    document.querySelectorAll('.theme-option').forEach(option => {
+        option.classList.toggle('active', option.dataset.theme === theme);
+    });
+    
+    console.log('🎨 Theme applied successfully:', theme);
+    console.log('🎨 Current classes:', root.className);
+    
+    // Show confirmation toast
+    if (typeof showToast === 'function') {
+        showToast(`Theme changed to ${theme}`, 'success');
+    }
+    
+    // Dispatch custom event for other components to react
+    document.dispatchEvent(new CustomEvent('themeChanged', {
+        detail: { theme: theme }
+    }));
+}
+
+/**
+ * Setup sidebar theme toggle with proper event handling
+ */
+function setupSidebarThemeToggle() {
+    const themeToggle = document.getElementById('sidebar-theme-toggle');
+    const themeSelector = document.getElementById('theme-selector');
+    
+    console.log('🎨 Sidebar Theme Toggle Setup - Toggle:', !!themeToggle, 'Selector:', !!themeSelector);
+    
+    if (!themeToggle) {
+        console.error('❌ Sidebar theme toggle not found!');
+        return;
+    }
+    
+    // Remove existing listener by cloning
+    const newToggle = themeToggle.cloneNode(true);
+    themeToggle.parentNode.replaceChild(newToggle, themeToggle);
+    
+    newToggle.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        console.log('🎨 Sidebar theme toggle clicked');
+        
+        // Close sidebar first
+        document.getElementById('sidebar-close')?.click();
+        
+        // Show theme selector
+        if (themeSelector) {
+            const isActive = themeSelector.classList.contains('active');
+            themeSelector.classList.toggle('active');
+            console.log('🎨 Theme selector active:', !isActive);
+        }
+    });
+}
+
+// ============================================
 // HOME FEED CONTROLLER
 // ============================================
 async function initializeHomeFeed() {
@@ -206,6 +352,7 @@ async function initializeHomeFeed() {
         
         // Initialize UI components (non-data dependent)
         setupSidebar();
+        setupThemeSelector(); // ✅ Added theme selector setup
         setupLanguageFilter();
         setupSearch();
         setupNotifications();
@@ -1710,7 +1857,7 @@ function setupSidebar() {
     
     updateSidebarProfile();
     setupSidebarNavigation();
-    setupSidebarThemeToggle();
+    setupSidebarThemeToggle(); // ✅ Already calling this
     setupSidebarScaleControls();
 }
 
@@ -1859,19 +2006,6 @@ function setupSidebarNavigation() {
             return;
         }
         window.location.href = 'watch-history.html';
-    });
-}
-
-function setupSidebarThemeToggle() {
-    const themeToggle = document.getElementById('sidebar-theme-toggle');
-    if (!themeToggle) return;
-    
-    themeToggle.addEventListener('click', () => {
-        document.getElementById('sidebar-close')?.click();
-        const themeSelector = document.getElementById('theme-selector');
-        if (themeSelector) {
-            themeSelector.classList.toggle('active');
-        }
     });
 }
 
