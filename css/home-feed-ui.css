@@ -1402,7 +1402,9 @@
     color: var(--warm-gold);
 }
 
-/* Theme Selector */
+/* ============================================
+   THEME SELECTOR - FIXED VERSION
+   ============================================ */
 .theme-selector {
     position: fixed;
     bottom: calc(6.25rem * var(--ui-scale));
@@ -1415,15 +1417,17 @@
     padding: var(--spacing-xs);
     display: flex;
     gap: var(--spacing-xs);
-    z-index: 1002;
+    z-index: 1002; /* Increased z-index to be above other elements */
     opacity: 0;
     visibility: hidden;
     transition: all 0.3s ease;
+    pointer-events: none; /* Disabled when hidden */
 }
 
 .theme-selector.active {
     opacity: 1;
     visibility: visible;
+    pointer-events: auto; /* Enabled when visible */
 }
 
 .theme-option {
@@ -1439,10 +1443,19 @@
     gap: var(--spacing-xs);
     font-size: var(--font-sm);
     border: none;
+    pointer-events: auto; /* Ensure clickable */
+    position: relative;
+    z-index: 1;
 }
 
 .theme-option:hover {
     background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+    transform: translateY(calc(-0.125rem * var(--ui-scale)));
+}
+
+.theme-option.active {
+    background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+    border-color: var(--warm-gold);
 }
 
 /* Watch Party Modal */
@@ -2450,6 +2463,7 @@
     border-top: 1px solid var(--card-border);
 }
 
+/* Sidebar Theme Toggle - Ensure Clickable */
 .sidebar-theme-toggle {
     display: flex;
     align-items: center;
@@ -2459,6 +2473,9 @@
     border-radius: calc(0.75rem * var(--ui-scale));
     cursor: pointer;
     transition: background 0.3s ease;
+    pointer-events: auto;
+    position: relative;
+    z-index: 1;
 }
 
 .sidebar-theme-toggle:hover {
