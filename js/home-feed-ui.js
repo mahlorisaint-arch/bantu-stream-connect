@@ -1,5 +1,5 @@
 // ============================================
-// MANAGE PROFILES UI - Clean Version
+// HOME FEED UI - Complete Version with Mobile Sidebar Fixes
 // ============================================
 
 // ============================================
@@ -34,7 +34,7 @@ class UIScaleController {
             detail: { scale: this.scale }
         }));
         
-        console.log('📏 Scale applied:', this.scale, 'CSS var:', getComputedStyle(document.documentElement).getPropertyValue('--ui-scale'));
+        console.log('📏 Scale applied:', this.scale);
     }
 
     increase() {
@@ -90,9 +90,9 @@ function initializeManageProfilesUI() {
     setupToastContainer();
     setupBackToTop();
     setupThemeSelector();
+    setupSidebarThemeToggle(); // ✅ Enhanced sidebar theme toggle
     setupScaleControl();
     setupKeyboardShortcuts();
-    setupSidebarThemeToggle(); // ✅ Added for sidebar theme toggle
 }
 
 // ============================================
@@ -155,7 +155,7 @@ function closeAllModals() {
 }
 
 // ============================================
-// THEME SELECTOR SETUP - FIXED VERSION
+// THEME SELECTOR SETUP - FIXED VERSION (INSTANT APPLY, NO REFRESH)
 // ============================================
 function setupThemeSelector() {
     const themeSelector = document.getElementById('theme-selector');
@@ -168,7 +168,7 @@ function setupThemeSelector() {
         return;
     }
     
-    // Apply saved theme on load
+    // Apply saved theme IMMEDIATELY on load
     const savedTheme = localStorage.getItem('bantu_theme') || 'dark';
     applyTheme(savedTheme);
     
@@ -187,7 +187,9 @@ function setupThemeSelector() {
             const theme = this.dataset.theme;
             console.log('🎨 Theme clicked:', theme);
             applyTheme(theme);
-            themeSelector.classList.remove('active');
+            setTimeout(() => {
+                themeSelector.classList.remove('active');
+            }, 100);
             if (typeof showToast === 'function') {
                 showToast(`Theme changed to ${theme}`, 'success');
             }
@@ -225,11 +227,12 @@ function setupThemeSelector() {
 }
 
 // ============================================
-// SIDEBAR THEME TOGGLE - FIXED VERSION
+// SIDEBAR THEME TOGGLE - FIXED VERSION (Enhanced)
 // ============================================
 function setupSidebarThemeToggle() {
     const themeToggle = document.getElementById('sidebar-theme-toggle');
     const themeSelector = document.getElementById('theme-selector');
+    const sidebarClose = document.getElementById('sidebar-close');
     
     console.log('🎨 Sidebar Theme Toggle Setup - Toggle:', !!themeToggle, 'Selector:', !!themeSelector);
     
@@ -247,20 +250,27 @@ function setupSidebarThemeToggle() {
         e.stopPropagation();
         console.log('🎨 Sidebar theme toggle clicked');
         
-        // Close sidebar first
-        document.getElementById('sidebar-close')?.click();
-        
-        // Show theme selector
-        if (themeSelector) {
-            const isActive = themeSelector.classList.contains('active');
-            themeSelector.classList.toggle('active');
-            console.log('🎨 Theme selector active:', !isActive);
+        // Close sidebar first for smooth transition
+        if (sidebarClose) {
+            sidebarClose.click();
         }
+        
+        // Small delay to ensure sidebar overlay is removed before showing theme selector
+        setTimeout(() => {
+            if (themeSelector) {
+                const isActive = themeSelector.classList.contains('active');
+                themeSelector.classList.toggle('active');
+                console.log('🎨 Theme selector active:', !isActive);
+                
+                // Force reflow to ensure CSS applies
+                void themeSelector.offsetWidth;
+            }
+        }, 150); // 150ms delay for smooth transition
     });
 }
 
 // ============================================
-// APPLY THEME - FIXED VERSION
+// APPLY THEME - FIXED VERSION (Instant Apply)
 // ============================================
 function applyTheme(theme) {
     const root = document.documentElement;
@@ -303,7 +313,7 @@ function applyTheme(theme) {
             break;
     }
     
-    // Force CSS variable update for immediate effect
+    // Force CSS variable update for INSTANT visual effect
     void root.offsetWidth;
     
     // Save preference
@@ -532,7 +542,7 @@ if (typeof window.showToast === 'undefined') {
                             type === 'error' ? 'fa-exclamation-circle' : 
                             type === 'warning' ? 'fa-exclamation-triangle' : 
                             'fa-info-circle'}"></i>
-            <span>${message}</span>
+            <span>${escapeHtml(message)}</span>
         `;
         
         container.appendChild(toast);
@@ -542,6 +552,16 @@ if (typeof window.showToast === 'undefined') {
             setTimeout(() => toast.remove(), 300);
         }, 3000);
     };
+}
+
+// ============================================
+// ESCAPE HTML (helper for toast)
+// ============================================
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
 }
 
 // ============================================
@@ -559,7 +579,153 @@ if (typeof window.getInitials === 'undefined') {
     };
 }
 
-// Export functions
+// ============================================
+// SIDEBAR PROFILE TRUNCATION FIX
+// ============================================
+function fixSidebarProfileTruncation() {
+    const profileName = document.getElementById('sidebar-profile-name');
+    const profileEmail = document.getElementById('sidebar-profile-email');
+    
+    if (profileName) {
+        // Ensure text truncation works with CSS
+        profileName.style.whiteSpace = 'nowrap';
+        profileName.style.overflow = 'hidden';
+        profileName.style.textOverflow = 'ellipsis';
+    }
+    
+    if (profileEmail) {
+        profileEmail.style.whiteSpace = 'nowrap';
+        profileEmail.style.overflow = 'hidden';
+        profileEmail.style.textOverflow = 'ellipsis';
+    }
+}
+
+// ============================================
+// SIDEBAR SCALE CONTROLS SETUP
+// ============================================
+function setupSidebarScaleControls() {
+    const decreaseBtn = document.getElementById('sidebar-scale-decrease');
+    const increaseBtn = document.getElementById('sidebar-scale-increase');
+    const resetBtn = document.getElementById('sidebar-scale-reset');
+    const scaleValue = document.getElementById('sidebar-scale-value');
+    
+    if (!window.uiScaleController) return;
+    
+    const updateDisplay = () => {
+        if (scaleValue) {
+            scaleValue.textContent = Math.round(window.uiScaleController.getScale() * 100) + '%';
+        }
+    };
+    
+    if (decreaseBtn) {
+        decreaseBtn.addEventListener('click', () => {
+            window.uiScaleController.decrease();
+            updateDisplay();
+        });
+    }
+    
+    if (increaseBtn) {
+        increaseBtn.addEventListener('click', () => {
+            window.uiScaleController.increase();
+            updateDisplay();
+        });
+    }
+    
+    if (resetBtn) {
+        resetBtn.addEventListener('click', () => {
+            window.uiScaleController.reset();
+            updateDisplay();
+        });
+    }
+    
+    updateDisplay();
+    document.addEventListener('scaleChanged', updateDisplay);
+}
+
+// ============================================
+// MOBILE SIDEBAR OPTIMIZATION
+// ============================================
+function optimizeMobileSidebar() {
+    if (window.innerWidth <= 768) {
+        // Ensure sidebar content doesn't overflow on mobile
+        const sidebarProfile = document.getElementById('sidebar-profile');
+        const sidebarNav = document.getElementById('sidebar-nav');
+        
+        if (sidebarProfile) {
+            sidebarProfile.style.minWidth = '0';
+        }
+        
+        if (sidebarNav) {
+            sidebarNav.style.overflowY = 'auto';
+            sidebarNav.style.WebkitOverflowScrolling = 'touch';
+        }
+    }
+}
+
+// ============================================
+// SETUP MOBILE SIDEBAR BEHAVIOR (YouTube-like)
+// ============================================
+function setupMobileSidebar() {
+    const menuToggle = document.getElementById('menu-toggle');
+    const sidebarClose = document.getElementById('sidebar-close');
+    const sidebarOverlay = document.getElementById('sidebar-overlay');
+    const sidebarMenu = document.getElementById('sidebar-menu');
+    
+    if (!menuToggle || !sidebarClose || !sidebarOverlay || !sidebarMenu) return;
+    
+    const openSidebar = () => {
+        sidebarMenu.classList.add('active');
+        sidebarOverlay.classList.add('active');
+        document.body.style.overflow = 'hidden';
+    };
+    
+    const closeSidebar = () => {
+        sidebarMenu.classList.remove('active');
+        sidebarOverlay.classList.remove('active');
+        document.body.style.overflow = '';
+    };
+    
+    menuToggle.addEventListener('click', (e) => {
+        e.stopPropagation();
+        openSidebar();
+    });
+    
+    sidebarClose.addEventListener('click', closeSidebar);
+    sidebarOverlay.addEventListener('click', closeSidebar);
+    
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && sidebarMenu.classList.contains('active')) {
+            closeSidebar();
+        }
+    });
+    
+    // Handle safe area insets for modern mobile devices
+    if (window.CSS && CSS.supports('padding-bottom', 'env(safe-area-inset-bottom)')) {
+        const sidebarFooter = document.getElementById('sidebar-footer');
+        if (sidebarFooter) {
+            sidebarFooter.style.paddingBottom = 'max(16px, env(safe-area-inset-bottom))';
+        }
+    }
+}
+
+// ============================================
+// COMPLETE SIDEBAR SETUP (All mobile fixes)
+// ============================================
+function setupCompleteSidebar() {
+    setupMobileSidebar();
+    fixSidebarProfileTruncation();
+    setupSidebarScaleControls();
+    optimizeMobileSidebar();
+    
+    // Listen for resize events to re-apply mobile optimizations
+    window.addEventListener('resize', () => {
+        optimizeMobileSidebar();
+    });
+}
+
+// ============================================
+// EXPORT FUNCTIONS
+// ============================================
 window.initializeManageProfilesUI = initializeManageProfilesUI;
 window.closeAllModals = closeAllModals;
 window.toggleNotifications = toggleNotifications;
@@ -569,4 +735,22 @@ window.formatTimeAgo = formatTimeAgo;
 window.applyTheme = applyTheme;
 window.setupThemeSelector = setupThemeSelector;
 window.setupSidebarThemeToggle = setupSidebarThemeToggle;
+window.setupCompleteSidebar = setupCompleteSidebar;
+window.setupMobileSidebar = setupMobileSidebar;
+window.fixSidebarProfileTruncation = fixSidebarProfileTruncation;
+window.setupSidebarScaleControls = setupSidebarScaleControls;
+window.optimizeMobileSidebar = optimizeMobileSidebar;
 window.UIScaleController = UIScaleController;
+
+// ============================================
+// AUTO-INITIALIZE ON DOM READY
+// ============================================
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+        initializeManageProfilesUI();
+        setupCompleteSidebar();
+    });
+} else {
+    initializeManageProfilesUI();
+    setupCompleteSidebar();
+}
