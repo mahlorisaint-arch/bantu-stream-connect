@@ -2259,59 +2259,12 @@
     transform: translateY(calc(-0.125rem * var(--ui-scale)));
 }
 
-/* UI Scale Control */
-.ui-scale-control {
-    position: fixed;
-    bottom: calc(10rem * var(--ui-scale));
-    left: 50%;
-    transform: translateX(-50%);
-    background: rgba(10, 14, 18, 0.9);
-    backdrop-filter: blur(20px);
-    border: 1px solid var(--card-border);
-    border-radius: calc(2.5rem * var(--ui-scale));
-    padding: calc(0.5rem * var(--ui-scale)) calc(1rem * var(--ui-scale));
-    z-index: 999;
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-sm);
-    box-shadow: 0 calc(0.625rem * var(--ui-scale)) calc(1.875rem * var(--ui-scale)) rgba(0, 0, 0, 0.5);
-}
-
-.scale-control-bar {
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-sm);
-}
-
-.scale-btn {
-    width: calc(2rem * var(--ui-scale));
-    height: calc(2rem * var(--ui-scale));
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid var(--card-border);
-    color: var(--soft-white);
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.3s ease;
-    font-size: var(--font-sm);
-    border: none;
-}
-
-.scale-btn:hover {
-    background: var(--warm-gold);
-    color: var(--deep-black);
-    transform: scale(1.1);
-}
-
-.scale-value {
-    font-size: var(--font-sm);
-    color: var(--soft-white);
-    min-width: calc(3rem * var(--ui-scale));
-    text-align: center;
-    font-weight: 600;
-}
+/* ============================================
+   UI SCALE CONTROL - REMOVED FLOATING CONTROL
+   ============================================ */
+/* The floating UI scale control has been removed.
+   Scale controls now only exist in the sidebar footer. 
+   Search for .ui-scale-control in HTML and remove it. */
 
 /* Sidebar Styles - FIXED SCROLLABLE SIDEBAR */
 .sidebar-overlay {
@@ -2402,7 +2355,7 @@
     background: var(--error-color);
 }
 
-/* Sidebar Profile */
+/* Sidebar Profile - FIXED OVERFLOW */
 .sidebar-profile {
     display: flex;
     align-items: center;
@@ -2414,8 +2367,7 @@
     cursor: pointer;
     transition: background 0.3s ease;
     flex-shrink: 0;
-    -webkit-tap-highlight-color: transparent;
-    touch-action: manipulation;
+    min-width: 0; /* Allow text truncation */
 }
 
 .sidebar-profile:hover {
@@ -2434,10 +2386,7 @@
     font-weight: 600;
     font-size: var(--font-base);
     overflow: hidden;
-    -webkit-transform: translateZ(0);
-    transform: translateZ(0);
-    -webkit-backface-visibility: hidden;
-    backface-visibility: hidden;
+    flex-shrink: 0;
 }
 
 .sidebar-profile-avatar img {
@@ -2450,17 +2399,25 @@
 
 .sidebar-profile-info {
     flex: 1;
+    min-width: 0; /* Allow text truncation */
+    overflow: hidden;
 }
 
 .sidebar-profile-name {
     font-size: var(--font-base);
     font-weight: 600;
     color: var(--soft-white);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .sidebar-profile-email {
     font-size: var(--font-xs);
     color: var(--slate-grey);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 /* Make navigation area scrollable */
@@ -2509,6 +2466,7 @@
     font-size: var(--font-base);
     transition: all 0.3s ease;
     cursor: pointer;
+    white-space: nowrap;
 }
 
 .sidebar-nav-item:hover {
@@ -2524,6 +2482,7 @@
     width: calc(1.25rem * var(--ui-scale));
     text-align: center;
     font-size: var(--icon-md);
+    flex-shrink: 0;
 }
 
 .sidebar-nav-item .badge {
@@ -2533,6 +2492,7 @@
     font-size: calc(0.625rem * var(--ui-scale));
     padding: calc(0.125rem * var(--ui-scale)) calc(0.5rem * var(--ui-scale));
     border-radius: calc(0.625rem * var(--ui-scale));
+    flex-shrink: 0;
 }
 
 /* Keep footer fixed at bottom */
@@ -2541,6 +2501,7 @@
     margin-top: auto;
     padding-top: calc(1.25rem * var(--ui-scale));
     border-top: 1px solid var(--card-border);
+    padding-bottom: max(calc(1rem * var(--ui-scale)), env(safe-area-inset-bottom));
 }
 
 /* Sidebar Theme Toggle - Ensure Clickable */
@@ -2556,6 +2517,7 @@
     pointer-events: auto;
     position: relative;
     z-index: 1;
+    margin-bottom: calc(0.75rem * var(--ui-scale));
 }
 
 .sidebar-theme-toggle:hover {
@@ -2563,7 +2525,6 @@
 }
 
 .sidebar-scale-control {
-    margin-top: calc(0.75rem * var(--ui-scale));
     padding: calc(0.75rem * var(--ui-scale));
     background: rgba(255, 255, 255, 0.05);
     border-radius: calc(0.75rem * var(--ui-scale));
@@ -2580,7 +2541,40 @@
     margin-bottom: 0;
 }
 
-/* Mobile Responsive */
+.scale-btn {
+    width: calc(2rem * var(--ui-scale));
+    height: calc(2rem * var(--ui-scale));
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid var(--card-border);
+    color: var(--soft-white);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    font-size: var(--font-sm);
+    border: none;
+    flex-shrink: 0;
+}
+
+.scale-btn:hover {
+    background: var(--warm-gold);
+    color: var(--deep-black);
+    transform: scale(1.1);
+}
+
+.scale-value {
+    font-size: var(--font-sm);
+    color: var(--soft-white);
+    min-width: calc(3rem * var(--ui-scale));
+    text-align: center;
+    font-weight: 600;
+}
+
+/* ============================================
+   MOBILE RESPONSIVE - YOUTUBE STYLE
+   ============================================ */
 @media (max-width: 768px) {
     .video-hero-section { height: calc(25rem * var(--ui-scale)); }
     .search-filters { flex-direction: column; }
@@ -2629,14 +2623,50 @@
         width: calc(2.5rem * var(--ui-scale));
         height: calc(2.5rem * var(--ui-scale));
     }
-    
-    .sidebar-profile-avatar img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-        border-radius: 50%;
-    }
 
+    /* Sidebar mobile adjustments */
+    .sidebar-menu {
+        width: 280px;
+        max-width: 85vw;
+    }
+    
+    .sidebar-profile {
+        margin: calc(0.75rem * var(--ui-scale));
+        padding: calc(0.75rem * var(--ui-scale));
+    }
+    
+    .sidebar-profile-avatar {
+        width: calc(2.5rem * var(--ui-scale));
+        height: calc(2.5rem * var(--ui-scale));
+    }
+    
+    .sidebar-profile-name {
+        font-size: var(--font-sm);
+    }
+    
+    .sidebar-profile-email {
+        font-size: calc(0.6875rem * var(--ui-scale));
+    }
+    
+    .sidebar-nav-item {
+        padding: calc(0.75rem * var(--ui-scale)) calc(0.875rem * var(--ui-scale));
+        font-size: var(--font-sm);
+    }
+    
+    .sidebar-footer {
+        padding: calc(0.75rem * var(--ui-scale));
+    }
+    
+    .sidebar-theme-toggle,
+    .sidebar-scale-control {
+        padding: calc(0.625rem * var(--ui-scale));
+    }
+    
+    .scale-btn {
+        width: calc(1.75rem * var(--ui-scale));
+        height: calc(1.75rem * var(--ui-scale));
+    }
+    
     .profile-placeholder,
     .sidebar-profile-avatar {
         min-width: 36px !important;
@@ -2646,12 +2676,6 @@
     #userProfilePlaceholder {
         min-width: 32px !important;
         min-height: 32px !important;
-    }
-    
-    .profile-placeholder img,
-    .sidebar-profile-avatar img {
-        min-width: 36px !important;
-        min-height: 36px !important;
     }
 }
 
@@ -2686,6 +2710,61 @@
     
     .hero-metric-label {
         font-size: calc(0.625rem * var(--ui-scale));
+    }
+
+    /* Sidebar mobile adjustments */
+    .sidebar-menu {
+        width: 260px;
+        max-width: 80vw;
+    }
+    
+    .sidebar-profile {
+        margin: calc(0.625rem * var(--ui-scale));
+        padding: calc(0.625rem * var(--ui-scale));
+    }
+    
+    .sidebar-profile-avatar {
+        width: calc(2.25rem * var(--ui-scale));
+        height: calc(2.25rem * var(--ui-scale));
+        font-size: var(--font-sm);
+    }
+    
+    .sidebar-profile-name {
+        font-size: calc(0.75rem * var(--ui-scale));
+    }
+    
+    .sidebar-profile-email {
+        font-size: calc(0.625rem * var(--ui-scale));
+    }
+    
+    .sidebar-nav-item {
+        padding: calc(0.625rem * var(--ui-scale)) calc(0.75rem * var(--ui-scale));
+        font-size: calc(0.75rem * var(--ui-scale));
+        gap: calc(0.625rem * var(--ui-scale));
+    }
+    
+    .sidebar-nav-item i {
+        font-size: var(--icon-sm);
+    }
+    
+    .sidebar-footer {
+        padding: calc(0.625rem * var(--ui-scale));
+    }
+    
+    .sidebar-theme-toggle span,
+    .sidebar-scale-control span {
+        font-size: calc(0.75rem * var(--ui-scale));
+    }
+    
+    .scale-btn {
+        width: calc(1.625rem * var(--ui-scale));
+        height: calc(1.625rem * var(--ui-scale));
+        font-size: calc(0.6875rem * var(--ui-scale));
+    }
+    
+    .scale-value {
+        font-size: calc(0.6875rem * var(--ui-scale));
+        min-width: calc(2.5rem * var(--ui-scale));
     }
 
     /* Mobile profile sizing adjustments */
