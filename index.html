@@ -941,12 +941,14 @@
         </div>
     </div>
 
-    <!-- Search Modal (with Voice Search) -->
+    <!-- Search Modal (Enhanced with Voice Search and Filters) -->
     <div id="search-modal" class="search-modal">
         <div class="search-modal-header">
             <div class="search-input-container">
                 <i class="search-icon fas fa-search"></i>
-                <input type="text" id="search-input" class="search-input" placeholder="Search content, creators, or categories..." autocomplete="off">
+                <input type="text" id="search-input" class="search-input" 
+                       placeholder="Search content, creators, or categories..." 
+                       autocomplete="off">
                 <button id="voice-search-modal-btn" class="voice-search-btn" title="Voice Search">
                     <i class="fas fa-microphone"></i>
                 </button>
@@ -955,6 +957,8 @@
                 <i class="fas fa-times"></i>
             </button>
         </div>
+        
+        <!-- Search Filters -->
         <div class="search-filters">
             <div class="filter-group">
                 <label class="filter-label">Category</label>
@@ -997,9 +1001,11 @@
                 </select>
             </div>
         </div>
+        
+        <!-- Search Results -->
         <div id="search-results" class="search-results">
             <div id="search-results-grid" class="search-results-grid">
-                <!-- Results loaded here -->
+                <!-- Results will be loaded here -->
             </div>
         </div>
     </div>
