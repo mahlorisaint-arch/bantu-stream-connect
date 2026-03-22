@@ -140,6 +140,28 @@ function showToast(message, type = 'info') {
     }, 3000);
 }
 
+/**
+ * Escape RegExp special characters for search highlighting
+ * @param {string} string - String to escape
+ * @returns {string} Escaped string
+ */
+function escapeRegExp(string) {
+    return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/**
+ * Highlight search query in text
+ * @param {string} text - Text to highlight
+ * @param {string} query - Search query
+ * @returns {string} HTML with highlighted text
+ */
+function highlightSearchQuery(text, query) {
+    if (!query || !text) return text;
+    
+    const regex = new RegExp(`(${escapeRegExp(query)})`, 'gi');
+    return text.replace(regex, '<mark style="background:rgba(245,158,11,0.3);color:var(--soft-white);padding:0 2px;border-radius:3px;">$1</mark>');
+}
+
 // Only run DOMContentLoaded if document is still loading
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', async () => {
@@ -365,7 +387,7 @@ async function initializeHomeFeed() {
         setupSidebar();
         setupThemeSelector(); // ✅ Enhanced theme selector setup
         setupLanguageFilter();
-        setupSearch();
+        setupSearch(); // ✅ FIXED SEARCH
         setupNotifications();
         setupAnalytics();
         setupVoiceSearch();
@@ -2504,113 +2526,210 @@ function filterContentByLanguage(lang) {
 }
 
 // ============================================
-// SEARCH
+// SEARCH - FIXED VERSION
 // ============================================
 function setupSearch() {
     const searchBtn = document.getElementById('search-btn');
     const searchModal = document.getElementById('search-modal');
     const closeSearchBtn = document.getElementById('close-search-btn');
     const searchInput = document.getElementById('search-input');
+    const searchResultsGrid = document.getElementById('search-results-grid');
     
-    if (!searchBtn || !searchModal) return;
+    console.log('🔍 Search Setup - Btn:', !!searchBtn, 'Modal:', !!searchModal, 'Input:', !!searchInput, 'Grid:', !!searchResultsGrid);
     
+    if (!searchBtn || !searchModal || !searchInput) {
+        console.error('❌ Search elements not found!');
+        return;
+    }
+    
+    // Open search modal
     searchBtn.addEventListener('click', () => {
+        console.log('🔍 Search button clicked');
         searchModal.classList.add('active');
-        setTimeout(() => searchInput?.focus(), 300);
+        setTimeout(() => {
+            searchInput.focus();
+        }, 300);
     });
     
+    // Close search modal
     if (closeSearchBtn) {
         closeSearchBtn.addEventListener('click', () => {
+            console.log('🔍 Search close clicked');
             searchModal.classList.remove('active');
             if (searchInput) searchInput.value = '';
-            document.getElementById('search-results-grid').innerHTML = '';
+            if (searchResultsGrid) searchResultsGrid.innerHTML = '';
         });
     }
     
+    // Close on backdrop click
     searchModal.addEventListener('click', (e) => {
         if (e.target === searchModal) {
             searchModal.classList.remove('active');
             if (searchInput) searchInput.value = '';
-            document.getElementById('search-results-grid').innerHTML = '';
+            if (searchResultsGrid) searchResultsGrid.innerHTML = '';
         }
     });
     
+    // Close on Escape key
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && searchModal.classList.contains('active')) {
+            searchModal.classList.remove('active');
+            if (searchInput) searchInput.value = '';
+            if (searchResultsGrid) searchResultsGrid.innerHTML = '';
+        }
+    });
+    
+    // Search input with debounce
     if (searchInput) {
         searchInput.addEventListener('input', debounce(async (e) => {
             const query = e.target.value.trim();
-            const category = document.getElementById('category-filter')?.value;
-            const sortBy = document.getElementById('sort-filter')?.value;
-            const language = document.getElementById('language-filter')?.value;
-            const resultsGrid = document.getElementById('search-results-grid');
+            const category = document.getElementById('category-filter')?.value || '';
+            const sortBy = document.getElementById('sort-filter')?.value || 'newest';
+            const language = document.getElementById('language-filter')?.value || '';
             
-            if (!resultsGrid) return;
+            console.log('🔍 Search input:', query, 'Category:', category, 'Sort:', sortBy, 'Language:', language);
+            
+            if (!searchResultsGrid) return;
             
             if (query.length < 2) {
-                resultsGrid.innerHTML = '<div class="no-results">Start typing to search...</div>';
+                searchResultsGrid.innerHTML = `
+                    <div class="empty-state" style="grid-column: 1 / -1;">
+                        <div class="empty-icon"><i class="fas fa-search"></i></div>
+                        <h3>Start Typing</h3>
+                        <p>Enter at least 2 characters to search</p>
+                    </div>
+                `;
                 return;
             }
             
-            resultsGrid.innerHTML = `
-                <div class="infinite-scroll-loading">
+            // Show loading state
+            searchResultsGrid.innerHTML = `
+                <div class="infinite-scroll-loading" style="grid-column: 1 / -1;">
                     <div class="infinite-scroll-spinner"></div>
                     <div>Searching...</div>
                 </div>
             `;
             
-            const results = await searchContent(query, category, sortBy, language);
-            renderSearchResults(results);
-        }, 300));
+            try {
+                const results = await searchContent(query, category, sortBy, language);
+                console.log('🔍 Search results:', results.length);
+                renderSearchResults(results, query);
+            } catch (error) {
+                console.error('❌ Search error:', error);
+                searchResultsGrid.innerHTML = `
+                    <div class="empty-state" style="grid-column: 1 / -1;">
+                        <div class="empty-icon"><i class="fas fa-exclamation-triangle"></i></div>
+                        <h3>Search Error</h3>
+                        <p>Failed to load results. Please try again.</p>
+                        <button class="see-all-btn" onclick="document.getElementById('search-input').dispatchEvent(new Event('input'))">
+                            <i class="fas fa-redo"></i> Retry
+                        </button>
+                    </div>
+                `;
+            }
+        }, 500)); // Increased debounce to 500ms for better performance
     }
     
-    document.getElementById('category-filter')?.addEventListener('change', () => {
-        const searchInput = document.getElementById('search-input');
-        if (searchInput && searchInput.value.trim().length >= 2) {
-            searchInput.dispatchEvent(new Event('input'));
+    // Filter change handlers
+    const categoryFilter = document.getElementById('category-filter');
+    const sortFilter = document.getElementById('sort-filter');
+    const languageFilter = document.getElementById('language-filter');
+    
+    if (categoryFilter) {
+        categoryFilter.addEventListener('change', () => {
+            console.log('🔍 Category filter changed');
+            if (searchInput && searchInput.value.trim().length >= 2) {
+                searchInput.dispatchEvent(new Event('input'));
+            }
+        });
+    }
+    
+    if (sortFilter) {
+        sortFilter.addEventListener('change', () => {
+            console.log('🔍 Sort filter changed');
+            if (searchInput && searchInput.value.trim().length >= 2) {
+                searchInput.dispatchEvent(new Event('input'));
+            }
+        });
+    }
+    
+    if (languageFilter) {
+        languageFilter.addEventListener('change', () => {
+            console.log('🔍 Language filter changed');
+            if (searchInput && searchInput.value.trim().length >= 2) {
+                searchInput.dispatchEvent(new Event('input'));
+            }
+        });
+    }
+    
+    // Keyboard shortcut (Ctrl+K)
+    document.addEventListener('keydown', (e) => {
+        if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+            e.preventDefault();
+            searchModal.classList.add('active');
+            setTimeout(() => searchInput?.focus(), 300);
         }
     });
     
-    document.getElementById('sort-filter')?.addEventListener('change', () => {
-        const searchInput = document.getElementById('search-input');
-        if (searchInput && searchInput.value.trim().length >= 2) {
-            searchInput.dispatchEvent(new Event('input'));
-        }
-    });
-    
-    document.getElementById('language-filter')?.addEventListener('change', () => {
-        const searchInput = document.getElementById('search-input');
-        if (searchInput && searchInput.value.trim().length >= 2) {
-            searchInput.dispatchEvent(new Event('input'));
-        }
-    });
+    console.log('✅ Search setup complete');
 }
 
+// ============================================
+// SEARCH CONTENT - FIXED VERSION
+// ============================================
 async function searchContent(query, category = '', sortBy = 'newest', language = '') {
+    console.log('🔍 Searching:', query, 'Category:', category, 'Sort:', sortBy, 'Language:', language);
+    
     try {
+        // Build search query with proper Supabase syntax
         let queryBuilder = supabaseAuth
             .from('Content')
-            .select('*, language, user_profiles!user_id(*)')
-            .ilike('title', `%${query}%`)
+            .select(`
+                *,
+                language,
+                user_profiles!user_id (
+                    id,
+                    full_name,
+                    username,
+                    avatar_url
+                )
+            `)
             .eq('status', 'published');
         
-        if (category && category !== 'all' && category !== '') {
+        // Search by title OR description (using or condition)
+        queryBuilder = queryBuilder.or(`title.ilike.%${query}%,description.ilike.%${query}%`);
+        
+        // Apply category filter
+        if (category && category !== '' && category !== 'all') {
             queryBuilder = queryBuilder.eq('genre', category);
+            console.log('🔍 Filtering by category:', category);
         }
         
-        if (language && language !== 'all' && language !== '') {
+        // Apply language filter
+        if (language && language !== '' && language !== 'all') {
             queryBuilder = queryBuilder.eq('language', language);
+            console.log('🔍 Filtering by language:', language);
         }
         
+        // Execute query
         const { data, error } = await queryBuilder.limit(50);
+        
         if (error) {
-            console.error('Search error:', error);
-            return [];
+            console.error('❌ Search query error:', error);
+            throw error;
         }
+        
+        console.log('🔍 Raw search results:', data?.length || 0);
         
         let results = data || [];
         
+        // Enrich results with metrics if we have results
         if (results.length > 0) {
             const contentIds = results.map(r => r.id);
             const creatorIds = [...new Set(results.map(r => r.user_id).filter(Boolean))];
+            
+            console.log('🔍 Fetching metrics for', contentIds.length, 'content items');
+            
             const metrics = await fetchAllMetrics(contentIds, creatorIds);
             
             // Enrich results with metrics
@@ -2625,31 +2744,72 @@ async function searchContent(query, category = '', sortBy = 'newest', language =
             }));
         }
         
+        // Apply sorting
         if (sortBy === 'popular') {
-            results.sort((a, b) => (b.views_count || 0) - (a.views_count || 0));
-        } else if (sortBy === 'newest') {
+            results.sort((a, b) => (b.metrics?.views || 0) - (a.metrics?.views || 0));
+            console.log('🔍 Sorted by popular');
+        } else if (sortBy === 'trending') {
+            results.sort((a, b) => {
+                const scoreA = (a.metrics?.views || 0) + (a.metrics?.likes || 0) * 5;
+                const scoreB = (b.metrics?.views || 0) + (b.metrics?.likes || 0) * 5;
+                return scoreB - scoreA;
+            });
+            console.log('🔍 Sorted by trending');
+        } else if (sortBy === 'connectors') {
+            results.sort((a, b) => (b.metrics?.connectors || 0) - (a.metrics?.connectors || 0));
+            console.log('🔍 Sorted by connectors');
+        } else {
+            // Default: newest first
             results.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+            console.log('🔍 Sorted by newest');
         }
         
+        console.log('✅ Search complete:', results.length, 'results');
         return results;
+        
     } catch (error) {
-        console.error('Search error:', error);
+        console.error('❌ Search function error:', error);
+        showToast('Search failed. Please try again.', 'error');
         return [];
     }
 }
 
-function renderSearchResults(results) {
+// ============================================
+// RENDER SEARCH RESULTS - FIXED VERSION
+// ============================================
+function renderSearchResults(results, searchQuery = '') {
     const grid = document.getElementById('search-results-grid');
-    if (!grid) return;
     
-    if (!results || results.length === 0) {
-        grid.innerHTML = '<div class="no-results">No results found. Try different keywords.</div>';
+    console.log('🎨 Rendering search results:', results.length);
+    
+    if (!grid) {
+        console.error('❌ Search results grid not found!');
         return;
     }
     
+    if (!results || results.length === 0) {
+        grid.innerHTML = `
+            <div class="empty-state" style="grid-column: 1 / -1;">
+                <div class="empty-icon"><i class="fas fa-search"></i></div>
+                <h3>No Results Found</h3>
+                <p>Try different keywords or check your spelling</p>
+                <p style="color: var(--warm-gold); margin-top: 10px;">Searched for: "${escapeHtml(searchQuery)}"</p>
+            </div>
+        `;
+        return;
+    }
+    
+    // Create document fragment for better performance
     const fragment = document.createDocumentFragment();
     
-    results.slice(0, 12).forEach(content => {
+    // Add results count header
+    const resultsHeader = document.createElement('div');
+    resultsHeader.style.cssText = 'grid-column: 1 / -1; margin-bottom: 1rem; color: var(--slate-grey); font-size: var(--font-sm);';
+    resultsHeader.innerHTML = `Found ${results.length} result${results.length !== 1 ? 's' : ''} for "${escapeHtml(searchQuery)}"`;
+    fragment.appendChild(resultsHeader);
+    
+    // Render each result
+    results.slice(0, 24).forEach((content, index) => {
         if (!content) return;
         
         const thumbnailUrl = content.thumbnail_url
@@ -2657,39 +2817,79 @@ function renderSearchResults(results) {
             : 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=225&fit=crop';
         
         const creatorProfile = content.user_profiles;
-        const displayName = creatorProfile?.full_name || creatorProfile?.username || 'User';
+        const displayName = creatorProfile?.full_name || creatorProfile?.username || 'Creator';
         const username = creatorProfile?.username || 'creator';
         const durationFormatted = formatDuration(content.duration || 0);
+        const initials = getInitials(displayName);
+        
+        let avatarHtml = '';
+        if (creatorProfile?.avatar_url) {
+            const avatarUrl = fixAvatarUrl(creatorProfile.avatar_url);
+            avatarHtml = `<img src="${avatarUrl}" alt="${escapeHtml(displayName)}" loading="lazy" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
+        } else {
+            avatarHtml = `<div class="creator-initials-small">${initials}</div>`;
+        }
         
         const card = document.createElement('a');
-        card.className = 'content-card';
+        card.className = 'content-card search-result-card';
         card.href = `content-detail.html?id=${content.id}`;
         card.dataset.contentId = content.id;
+        card.dataset.language = content.language || 'en';
+        card.dataset.category = content.genre || '';
+        card.style.opacity = '0';
+        card.style.transform = 'translateY(20px)';
+        card.style.transition = 'all 0.3s ease';
+        
+        // Highlight search query in title
+        const highlightedTitle = highlightSearchQuery(escapeHtml(content.title), searchQuery);
         
         card.innerHTML = `
             <div class="card-thumbnail">
                 <img src="${thumbnailUrl}" alt="${escapeHtml(content.title)}" loading="lazy">
                 <div class="thumbnail-overlay"></div>
-                <div class="play-overlay"><div class="play-icon"><i class="fas fa-play"></i></div></div>
+                <div class="play-overlay">
+                    <div class="play-icon"><i class="fas fa-play"></i></div>
+                </div>
                 ${content.duration > 0 ? `<div class="duration-badge">${durationFormatted}</div>` : ''}
+                ${content.media_type === 'live' ? `
+                    <div class="card-badge badge-live" style="position:absolute;top:10px;left:10px;z-index:4;">
+                        <i class="fas fa-circle"></i> LIVE
+                    </div>
+                ` : ''}
             </div>
             <div class="card-content">
-                <h3 class="card-title" title="${escapeHtml(content.title)}">${truncateText(escapeHtml(content.title), 50)}</h3>
+                <h3 class="card-title" title="${escapeHtml(content.title)}">${highlightedTitle}</h3>
                 <div class="creator-info">
+                    <div class="creator-avatar-small">${avatarHtml}</div>
                     <div class="creator-name-small">@${escapeHtml(username)}</div>
                 </div>
                 <div class="card-meta">
                     <span><i class="fas fa-eye"></i> ${formatNumber(content.metrics?.views || 0)}</span>
                     <span><i class="fas fa-heart"></i> ${formatNumber(content.metrics?.likes || 0)}</span>
+                    <span><i class="fas fa-share"></i> ${formatNumber(content.metrics?.shares || 0)}</span>
+                    ${content.language ? `<span><i class="fas fa-language"></i> ${window.languageMap[content.language] || content.language}</span>` : ''}
                 </div>
+                ${content.metrics?.connectors > 0 ? `
+                    <div class="connector-info">
+                        <i class="fas fa-user-friends"></i> ${formatNumber(content.metrics.connectors)} Connectors
+                    </div>
+                ` : ''}
             </div>
         `;
         
         fragment.appendChild(card);
+        
+        // Animate cards in with stagger
+        setTimeout(() => {
+            card.style.opacity = '1';
+            card.style.transform = 'translateY(0)';
+        }, 50 + (index * 50));
     });
     
     grid.innerHTML = '';
     grid.appendChild(fragment);
+    
+    console.log('✅ Search results rendered');
 }
 
 // ============================================
