@@ -20,9 +20,6 @@ if (typeof window.languageMap === 'undefined') {
     };
 }
 
-// Use window.languageMap directly instead of redeclaring with const
-// This avoids the "already been declared" error
-
 // ============================================
 // UTILITY FUNCTIONS (MUST BE DEFINED FIRST)
 // ============================================
@@ -170,7 +167,7 @@ if (document.readyState === 'loading') {
 }
 
 // ============================================
-// THEME FUNCTIONS - FIXED VERSION WITH IMPROVED CLICK HANDLING
+// THEME FUNCTIONS - FIXED VERSION (INSTANT APPLY, NO REFRESH)
 // ============================================
 
 /**
@@ -188,7 +185,7 @@ function setupThemeSelector() {
         return;
     }
     
-    // Apply saved theme on load
+    // Apply saved theme IMMEDIATELY on load
     const savedTheme = localStorage.getItem('bantu_theme') || 'dark';
     applyTheme(savedTheme);
     
@@ -241,7 +238,7 @@ function setupThemeSelector() {
 }
 
 /**
- * Apply theme to the document with force reflow
+ * Apply theme to the document with INSTANT application (no refresh needed)
  * @param {string} theme - Theme name (dark, light, high-contrast)
  */
 function applyTheme(theme) {
@@ -254,7 +251,7 @@ function applyTheme(theme) {
     // Apply new theme class
     root.classList.add(`theme-${theme}`);
     
-    // Force CSS reflow for immediate update
+    // Force immediate CSS reflow for instant visual update
     void root.offsetWidth;
     
     // Save preference
