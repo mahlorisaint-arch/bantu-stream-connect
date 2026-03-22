@@ -37,13 +37,68 @@
     <noscript><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css"></noscript>
     <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js" defer></script>
     
-    <!-- CSS Files - RENAMED -->
+    <!-- CSS Files -->
     <link rel="stylesheet" href="css/home-feed.css">
     <link rel="stylesheet" href="css/home-feed-ui.css">
     <link rel="stylesheet" href="css/home-feed-features.css">
     
-    <!-- Inline critical CSS for skeleton loading -->
+    <!-- Inline critical CSS for skeleton loading and theme variables -->
     <style>
+        /* Theme CSS Variables - Default Dark Theme */
+        :root {
+            --deep-black: #0A0A0A;
+            --soft-white: #F5F5F5;
+            --slate-grey: #A0A0A0;
+            --warm-gold: #F59E0B;
+            --bantu-blue: #1D4ED8;
+            --card-bg: rgba(18, 18, 18, 0.95);
+            --card-border: rgba(255, 255, 255, 0.1);
+            --card-radius: 12px;
+            --card-thumbnail-height: 180px;
+            --spacing-xs: 8px;
+            --spacing-sm: 12px;
+            --spacing-md: 16px;
+            --spacing-lg: 24px;
+            --spacing-xl: 32px;
+            --icon-sm: 12px;
+            --icon-md: 16px;
+            --icon-lg: 20px;
+            --icon-xl: 24px;
+            --font-xs: 12px;
+            --font-sm: 14px;
+            --font-base: 16px;
+            --font-lg: 18px;
+            --font-xl: 20px;
+            --font-2xl: 24px;
+            --font-3xl: 30px;
+            --font-4xl: 36px;
+            --ui-scale: 1;
+            --success-color: #10B981;
+            --error-color: #EF4444;
+            --warning-color: #F59E0B;
+            --info-color: #3B82F6;
+        }
+        
+        /* Light Theme Variables */
+        .theme-light {
+            --deep-black: #ffffff;
+            --soft-white: #1a1a1a;
+            --slate-grey: #666666;
+            --card-bg: rgba(255, 255, 255, 0.9);
+            --card-border: rgba(0, 0, 0, 0.1);
+        }
+        
+        /* High Contrast Theme Variables */
+        .theme-high-contrast {
+            --deep-black: #000000;
+            --soft-white: #ffffff;
+            --slate-grey: #ffff00;
+            --warm-gold: #ff0000;
+            --bantu-blue: #00ff00;
+            --card-bg: #000000;
+            --card-border: #ffffff;
+        }
+        
         /* Critical skeleton loading styles */
         .skeleton-card {
             background: rgba(30, 30, 40, 0.5);
@@ -113,18 +168,159 @@
         #app[style*="display: block"] {
             opacity: 1;
         }
-
-        /* UI Scale CSS Variables (fallback) */
-        :root {
-            --ui-scale: 1;
-            --font-xs: calc(0.75rem * var(--ui-scale));
-            --font-sm: calc(0.875rem * var(--ui-scale));
-            --font-base: calc(1rem * var(--ui-scale));
-            --font-lg: calc(1.125rem * var(--ui-scale));
-            --font-xl: calc(1.25rem * var(--ui-scale));
-            --font-2xl: calc(1.5rem * var(--ui-scale));
-            --font-3xl: calc(1.875rem * var(--ui-scale));
-            --font-4xl: calc(2.25rem * var(--ui-scale));
+        
+        /* Toast Container Styles */
+        .toast-container {
+            position: fixed;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10000;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            pointer-events: none;
+        }
+        
+        .toast {
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: var(--soft-white);
+            font-size: 14px;
+            animation: toast-in 0.3s ease;
+            pointer-events: auto;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+        
+        .toast-success i { color: var(--success-color); }
+        .toast-error i { color: var(--error-color); }
+        .toast-warning i { color: var(--warning-color); }
+        .toast-info i { color: var(--info-color); }
+        
+        .toast-hide {
+            animation: toast-out 0.3s ease forwards;
+        }
+        
+        @keyframes toast-in {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        @keyframes toast-out {
+            from {
+                opacity: 1;
+                transform: translateY(0);
+            }
+            to {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+        }
+        
+        /* Loading Screen */
+        .loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--deep-black);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+        }
+        
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 3px solid rgba(245, 158, 11, 0.2);
+            border-top-color: var(--warm-gold);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        #loading-text {
+            color: var(--soft-white);
+            font-size: 16px;
+        }
+        
+        /* Animated Background */
+        .animated-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            overflow: hidden;
+        }
+        
+        .glow-cycle {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(80px);
+            animation: float 20s infinite ease-in-out;
+        }
+        
+        .glow-1 {
+            width: 500px;
+            height: 500px;
+            background: rgba(29, 78, 216, 0.2);
+            top: -200px;
+            left: -200px;
+        }
+        
+        .glow-2 {
+            width: 600px;
+            height: 600px;
+            background: rgba(245, 158, 11, 0.15);
+            bottom: -300px;
+            right: -200px;
+            animation-delay: -5s;
+        }
+        
+        .glow-3 {
+            width: 400px;
+            height: 400px;
+            background: rgba(16, 185, 129, 0.1);
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            animation-delay: -10s;
+        }
+        
+        .glow-4 {
+            width: 300px;
+            height: 300px;
+            background: rgba(239, 68, 68, 0.1);
+            bottom: 20%;
+            left: 20%;
+            animation-delay: -15s;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            33% { transform: translate(50px, -50px) scale(1.1); }
+            66% { transform: translate(-30px, 30px) scale(0.9); }
         }
     </style>
 </head>
@@ -569,7 +765,7 @@
                 <div class="nav-icon" id="nav-home-btn" title="Home">
                     <i class="fas fa-home"></i>
                 </div>
-                <div class="nav-icon" id="nav-history-btn" title="Watch History">  <!-- ✅ NEW -->
+                <div class="nav-icon" id="nav-history-btn" title="Watch History">
                     <i class="fas fa-history"></i>
                 </div>
                 <div class="nav-icon" id="nav-create-btn" title="Create Content">
@@ -582,7 +778,7 @@
         </div>
 
         <!-- Toast Container -->
-        <div id="toast-container"></div>
+        <div id="toast-container" class="toast-container"></div>
 
         <!-- Back to Top Button -->
         <button id="backToTopBtn" class="back-to-top">
@@ -629,7 +825,7 @@
                 <i class="fas fa-compass"></i>
                 <span>Explore</span>
             </a>
-            <!-- ✅ NEW: Watch History in Sidebar -->
+            <!-- Watch History in Sidebar -->
             <a href="#" class="sidebar-nav-item" id="sidebar-watch-history">
                 <i class="fas fa-history"></i>
                 <span>Watch History</span>
@@ -817,7 +1013,7 @@
         </div>
     </div>
 
-    <!-- Theme Selector -->
+    <!-- Theme Selector - FIXED with proper positioning -->
     <div id="theme-selector" class="theme-selector">
         <button class="theme-option" data-theme="dark">
             <i class="fas fa-moon"></i> Dark
@@ -1006,15 +1202,16 @@
         </div>
     </div>
 
-    <!-- JavaScript Files - RENAMED -->
+    <!-- JavaScript Files -->
     <script src="env.js" defer></script>
     <script src="js/rate-limiter.js" defer></script>
     <script src="js/home-feed.js" defer></script>
     <script src="js/home-feed-ui.js" defer></script>
     <script src="js/home-feed-features.js" defer></script>
     
-    <!-- Service Worker Registration -->
+    <!-- Initialization Script -->
     <script>
+        // Service Worker Registration
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('/sw.js').catch(error => {
@@ -1077,6 +1274,15 @@
                     window.uiScaleController.reset();
                 }
             }
+            
+            // Alt+T for theme toggle
+            if (e.altKey && e.key === 't') {
+                e.preventDefault();
+                const themeSelector = document.getElementById('theme-selector');
+                if (themeSelector) {
+                    themeSelector.classList.toggle('active');
+                }
+            }
         });
 
         // Initialize UI Scale Controller if not already initialized
@@ -1084,6 +1290,42 @@
             window.uiScaleController = new UIScaleController();
             window.uiScaleController.init();
         }
+        
+        // Apply saved theme on page load
+        (function applySavedTheme() {
+            const savedTheme = localStorage.getItem('bantu_theme') || 'dark';
+            const root = document.documentElement;
+            root.classList.remove('theme-dark', 'theme-light', 'theme-high-contrast');
+            root.classList.add(`theme-${savedTheme}`);
+            
+            // Apply CSS variables based on theme
+            if (savedTheme === 'light') {
+                root.style.setProperty('--deep-black', '#ffffff');
+                root.style.setProperty('--soft-white', '#1a1a1a');
+                root.style.setProperty('--slate-grey', '#666666');
+                root.style.setProperty('--card-bg', 'rgba(255, 255, 255, 0.9)');
+                root.style.setProperty('--card-border', 'rgba(0, 0, 0, 0.1)');
+            } else if (savedTheme === 'high-contrast') {
+                root.style.setProperty('--deep-black', '#000000');
+                root.style.setProperty('--soft-white', '#ffffff');
+                root.style.setProperty('--slate-grey', '#ffff00');
+                root.style.setProperty('--warm-gold', '#ff0000');
+                root.style.setProperty('--bantu-blue', '#00ff00');
+                root.style.setProperty('--card-bg', '#000000');
+                root.style.setProperty('--card-border', '#ffffff');
+            } else {
+                // Dark theme (default)
+                root.style.setProperty('--deep-black', '#0A0A0A');
+                root.style.setProperty('--soft-white', '#F5F5F5');
+                root.style.setProperty('--slate-grey', '#A0A0A0');
+                root.style.setProperty('--warm-gold', '#F59E0B');
+                root.style.setProperty('--bantu-blue', '#1D4ED8');
+                root.style.setProperty('--card-bg', 'rgba(18, 18, 18, 0.95)');
+                root.style.setProperty('--card-border', 'rgba(255, 255, 255, 0.1)');
+            }
+            
+            console.log('🎨 Initial theme applied:', savedTheme);
+        })();
     </script>
 </body>
 </html>
