@@ -2,6 +2,33 @@
 /* CONTENT DETAIL PAGE STYLES - BANTU STREAM CONNECT */
 /* ============================================ */
 
+/* CSS Variables for UI Scaling */
+:root {
+  --ui-scale: 1;
+  --spacing-xs: calc(0.5rem * var(--ui-scale));
+  --spacing-sm: calc(0.75rem * var(--ui-scale));
+  --spacing-md: calc(1rem * var(--ui-scale));
+  --spacing-lg: calc(1.5rem * var(--ui-scale));
+  --font-xs: calc(0.75rem * var(--ui-scale));
+  --font-sm: calc(0.875rem * var(--ui-scale));
+  --font-base: calc(1rem * var(--ui-scale));
+  --font-lg: calc(1.125rem * var(--ui-scale));
+  --icon-xs: calc(0.75rem * var(--ui-scale));
+  --icon-sm: calc(0.875rem * var(--ui-scale));
+  --icon-md: calc(1rem * var(--ui-scale));
+  --icon-lg: calc(1.25rem * var(--ui-scale));
+  --deep-black: #0A0E12;
+  --deep-navy: #0F172A;
+  --soft-white: #F8FAFC;
+  --slate-grey: #94A3B8;
+  --warm-gold: #F59E0B;
+  --bantu-blue: #1D4ED8;
+  --error-color: #EF4444;
+  --success-color: #10B981;
+  --card-bg: rgba(15, 23, 42, 0.6);
+  --card-border: rgba(148, 163, 184, 0.2);
+}
+
 /* Content Hero Section - More Compact with YouTube-Style Integration */
 .content-hero {
   background: var(--card-bg);
