@@ -1413,5 +1413,462 @@
   <script src="js/keyboard-shortcuts.js"></script>
   <script src="js/playlist-modal.js"></script>
   <script src="js/content-detail.js"></script>
+  
+  <!-- ===== HOME FEED UI INITIALIZATION FOR CONTENT DETAIL PAGE ===== -->
+  <script>
+  (function() {
+    // Wait for DOM and ensure all external scripts have a moment to set up globals like showToast
+    document.addEventListener('DOMContentLoaded', function() {
+      console.log('🎯 Initializing Home Feed UI components on content detail page');
+      
+      // Helper to safely get showToast (might be defined in other scripts)
+      const safeShowToast = (message, type) => {
+        if (typeof window.showToast === 'function') {
+          window.showToast(message, type);
+        } else if (typeof showToast === 'function') {
+          showToast(message, type);
+        } else {
+          console.log(`Toast (${type}): ${message}`);
+        }
+      };
+      
+      // 1. Initialize Profile Dropdown
+      function initProfileDropdown() {
+        const profileBtn = document.getElementById('current-profile-btn');
+        const profileDropdown = document.getElementById('profile-dropdown');
+        
+        if (profileBtn && profileDropdown) {
+          // Remove any existing listener to avoid duplicates (simple approach: add new one)
+          profileBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            profileDropdown.classList.toggle('active');
+          });
+          
+          document.addEventListener('click', function(e) {
+            if (!profileBtn.contains(e.target) && !profileDropdown.contains(e.target)) {
+              profileDropdown.classList.remove('active');
+            }
+          });
+        }
+      }
+      
+      // 2. Initialize Search Modal (if modal exists in DOM)
+      function initSearchModal() {
+        const searchBtn = document.getElementById('search-btn');
+        let searchModal = document.getElementById('search-modal');
+        // If modal doesn't exist, create a basic one for demo purposes or just log
+        if (!searchModal) {
+          console.log('Search modal not found, creating placeholder behavior');
+          if (searchBtn) {
+            searchBtn.addEventListener('click', () => safeShowToast('Search feature ready (modal integration available)', 'info'));
+          }
+          return;
+        }
+        const closeSearchBtn = document.getElementById('close-search-btn');
+        const searchInput = document.getElementById('search-input');
+        
+        if (searchBtn && searchModal) {
+          searchBtn.addEventListener('click', function() {
+            searchModal.classList.add('active');
+            if (searchInput) setTimeout(() => searchInput.focus(), 300);
+          });
+          
+          if (closeSearchBtn) {
+            closeSearchBtn.addEventListener('click', function() {
+              searchModal.classList.remove('active');
+            });
+          }
+          
+          searchModal.addEventListener('click', function(e) {
+            if (e.target === searchModal) {
+              searchModal.classList.remove('active');
+            }
+          });
+        }
+      }
+      
+      // 3. Initialize Analytics Modal
+      function initAnalyticsModal() {
+        const analyticsBtn = document.getElementById('analytics-btn');
+        const analyticsModal = document.getElementById('analytics-modal');
+        const closeAnalytics = document.getElementById('close-analytics');
+        
+        if (analyticsBtn && analyticsModal) {
+          analyticsBtn.addEventListener('click', async function() {
+            if (window.supabaseClient) {
+              const { data } = await window.supabaseClient.auth.getSession();
+              if (!data?.session) {
+                safeShowToast('Please sign in to view analytics', 'warning');
+                return;
+              }
+            }
+            analyticsModal.classList.add('active');
+            if (typeof window.loadPersonalAnalytics === 'function') {
+              window.loadPersonalAnalytics();
+            }
+          });
+          
+          if (closeAnalytics) {
+            closeAnalytics.addEventListener('click', function() {
+              analyticsModal.classList.remove('active');
+            });
+          }
+          
+          analyticsModal.addEventListener('click', function(e) {
+            if (e.target === analyticsModal) {
+              analyticsModal.classList.remove('active');
+            }
+          });
+        }
+      }
+      
+      // 4. Initialize Notifications Panel
+      function initNotificationsPanel() {
+        const notificationsBtn = document.getElementById('notifications-btn');
+        const notificationsPanel = document.getElementById('notifications-panel');
+        const closeNotifications = document.getElementById('close-notifications');
+        
+        if (notificationsBtn && notificationsPanel) {
+          notificationsBtn.addEventListener('click', function() {
+            notificationsPanel.classList.add('active');
+            if (typeof window.renderNotifications === 'function') {
+              window.renderNotifications();
+            }
+          });
+          
+          if (closeNotifications) {
+            closeNotifications.addEventListener('click', function() {
+              notificationsPanel.classList.remove('active');
+            });
+          }
+          
+          document.addEventListener('click', function(e) {
+            if (notificationsPanel.classList.contains('active') &&
+                !notificationsPanel.contains(e.target) &&
+                !notificationsBtn.contains(e.target)) {
+              notificationsPanel.classList.remove('active');
+            }
+          });
+        }
+      }
+      
+      // 5. Initialize Voice Search
+      function initVoiceSearch() {
+        const voiceSearchBtn = document.getElementById('voice-search-btn');
+        const voiceStatus = document.getElementById('voice-search-status');
+        
+        if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+          if (voiceSearchBtn) voiceSearchBtn.style.display = 'none';
+          return;
+        }
+        
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        const recognition = new SpeechRecognition();
+        recognition.continuous = false;
+        recognition.interimResults = false;
+        recognition.lang = 'en-ZA';
+        
+        const startVoiceSearch = () => {
+          // Check if user is signed in using window.currentUser or session
+          if (window.currentUser === null && (!window.supabaseClient)) {
+            safeShowToast('Please sign in to use voice search', 'warning');
+            return;
+          }
+          recognition.start();
+          if (voiceStatus) voiceStatus.classList.add('active');
+        };
+        
+        recognition.onresult = (event) => {
+          const transcript = event.results[0][0].transcript;
+          // Attempt to find search input if exists, else simulate
+          const searchInput = document.getElementById('search-input');
+          if (searchInput) {
+            searchInput.value = transcript;
+            searchInput.dispatchEvent(new Event('input', { bubbles: true }));
+          } else {
+            safeShowToast(`Voice search: "${transcript}"`, 'info');
+          }
+          if (voiceStatus) voiceStatus.classList.remove('active');
+          safeShowToast(`Searching: "${transcript}"`, 'info');
+        };
+        
+        recognition.onerror = (event) => {
+          console.error('Voice search error:', event.error);
+          if (voiceStatus) voiceStatus.classList.remove('active');
+          if (event.error === 'not-allowed') safeShowToast('Microphone access denied', 'error');
+        };
+        
+        recognition.onend = () => {
+          if (voiceStatus) voiceStatus.classList.remove('active');
+        };
+        
+        if (voiceSearchBtn) {
+          voiceSearchBtn.addEventListener('click', startVoiceSearch);
+        }
+      }
+      
+      // 6. Initialize Bottom Navigation Bar (already partially done, but ensure complete)
+      function initBottomNavigation() {
+        const navHomeBtn = document.getElementById('nav-home-btn');
+        const navHistoryBtn = document.getElementById('nav-history-btn');
+        const navCreateBtn = document.getElementById('nav-create-btn');
+        const navMenuBtn = document.getElementById('nav-menu-btn');
+        
+        if (navHomeBtn) {
+          navHomeBtn.addEventListener('click', function() {
+            window.location.href = 'index.html';
+          });
+        }
+        
+        if (navHistoryBtn) {
+          navHistoryBtn.addEventListener('click', async function() {
+            if (window.supabaseClient) {
+              const { data } = await window.supabaseClient.auth.getSession();
+              if (data?.session) {
+                window.location.href = 'watch-history.html';
+              } else {
+                safeShowToast('Please sign in to view watch history', 'warning');
+                window.location.href = `login.html?redirect=watch-history.html`;
+              }
+            } else {
+              safeShowToast('Please sign in to view watch history', 'warning');
+              window.location.href = `login.html?redirect=watch-history.html`;
+            }
+          });
+        }
+        
+        if (navCreateBtn) {
+          navCreateBtn.addEventListener('click', async function() {
+            if (window.supabaseClient) {
+              const { data } = await window.supabaseClient.auth.getSession();
+              if (data?.session) {
+                window.location.href = 'creator-upload.html';
+              } else {
+                safeShowToast('Please sign in to create content', 'warning');
+                window.location.href = `login.html?redirect=creator-upload.html`;
+              }
+            } else {
+              safeShowToast('Please sign in to create content', 'warning');
+              window.location.href = `login.html?redirect=creator-upload.html`;
+            }
+          });
+        }
+        
+        if (navMenuBtn) {
+          navMenuBtn.addEventListener('click', function() {
+            const sidebarMenu = document.getElementById('sidebar-menu');
+            const sidebarOverlay = document.getElementById('sidebar-overlay');
+            if (sidebarMenu && sidebarOverlay) {
+              sidebarMenu.classList.add('active');
+              sidebarOverlay.classList.add('active');
+              document.body.style.overflow = 'hidden';
+            }
+          });
+        }
+      }
+      
+      // 7. Initialize Sidebar Menu (already has basic, but ensure robust)
+      function initSidebarMenu() {
+        const menuToggle = document.getElementById('menu-toggle');
+        const sidebarClose = document.getElementById('sidebar-close');
+        const sidebarOverlay = document.getElementById('sidebar-overlay');
+        const sidebarMenu = document.getElementById('sidebar-menu');
+        
+        if (menuToggle && sidebarClose && sidebarOverlay && sidebarMenu) {
+          const openSidebarFn = () => {
+            sidebarMenu.classList.add('active');
+            sidebarOverlay.classList.add('active');
+            document.body.style.overflow = 'hidden';
+          };
+          
+          const closeSidebarFn = () => {
+            sidebarMenu.classList.remove('active');
+            sidebarOverlay.classList.remove('active');
+            document.body.style.overflow = '';
+          };
+          
+          menuToggle.addEventListener('click', openSidebarFn);
+          sidebarClose.addEventListener('click', closeSidebarFn);
+          sidebarOverlay.addEventListener('click', closeSidebarFn);
+          
+          document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && sidebarMenu.classList.contains('active')) {
+              closeSidebarFn();
+            }
+          });
+        }
+      }
+      
+      // 8. Initialize Theme Selector
+      function initThemeSelector() {
+        const themeToggle = document.getElementById('sidebar-theme-toggle');
+        const themeSelector = document.getElementById('theme-selector');
+        
+        if (themeToggle && themeSelector) {
+          themeToggle.addEventListener('click', function(e) {
+            e.stopPropagation();
+            themeSelector.classList.toggle('active');
+          });
+          
+          document.querySelectorAll('.theme-option').forEach(option => {
+            option.addEventListener('click', function() {
+              const theme = this.dataset.theme;
+              if (theme) {
+                if (typeof window.applyTheme === 'function') {
+                  window.applyTheme(theme);
+                } else {
+                  // basic theme switching fallback
+                  document.body.classList.remove('theme-dark', 'theme-light', 'theme-high-contrast');
+                  document.body.classList.add('theme-' + theme);
+                  localStorage.setItem('bantu_theme', theme);
+                  safeShowToast(`Theme changed to ${theme}`, 'success');
+                }
+                themeSelector.classList.remove('active');
+              }
+            });
+          });
+          
+          document.addEventListener('click', function(e) {
+            if (themeSelector.classList.contains('active') &&
+                !themeSelector.contains(e.target) &&
+                !themeToggle.contains(e.target)) {
+              themeSelector.classList.remove('active');
+            }
+          });
+        }
+      }
+      
+      // 9. Apply Theme Function (if not already defined)
+      function applyTheme(theme) {
+        const root = document.documentElement;
+        root.classList.remove('theme-dark', 'theme-light', 'theme-high-contrast');
+        
+        switch(theme) {
+          case 'light':
+            root.classList.add('theme-light');
+            root.style.setProperty('--deep-black', '#ffffff');
+            root.style.setProperty('--soft-white', '#1a1a1a');
+            root.style.setProperty('--slate-grey', '#666666');
+            break;
+          case 'high-contrast':
+            root.classList.add('theme-high-contrast');
+            root.style.setProperty('--deep-black', '#000000');
+            root.style.setProperty('--soft-white', '#ffffff');
+            root.style.setProperty('--slate-grey', '#ffff00');
+            break;
+          default:
+            root.classList.add('theme-dark');
+            root.style.setProperty('--deep-black', '#0A0A0A');
+            root.style.setProperty('--soft-white', '#F5F5F5');
+            root.style.setProperty('--slate-grey', '#A0A0A0');
+            break;
+        }
+        
+        localStorage.setItem('bantu_theme', theme);
+        safeShowToast(`Theme changed to ${theme}`, 'success');
+      }
+      
+      window.applyTheme = applyTheme;
+      
+      function loadSavedTheme() {
+        const savedTheme = localStorage.getItem('bantu_theme') || 'dark';
+        applyTheme(savedTheme);
+      }
+      
+      // 10. Update Notification Badge
+      async function updateNotificationBadge() {
+        try {
+          if (window.supabaseClient) {
+            const { data: { session } } = await window.supabaseClient.auth.getSession();
+            if (session && session.user) {
+              const { data: notifications } = await window.supabaseClient
+                .from('notifications')
+                .select('id')
+                .eq('user_id', session.user.id)
+                .eq('is_read', false);
+              
+              const unreadCount = notifications?.length || 0;
+              const badge = document.getElementById('notification-count');
+              if (badge) {
+                badge.textContent = unreadCount > 99 ? '99+' : unreadCount;
+                badge.style.display = unreadCount > 0 ? 'flex' : 'none';
+              }
+              const sidebarBadge = document.getElementById('sidebar-notification-count');
+              if (sidebarBadge) {
+                sidebarBadge.textContent = unreadCount > 99 ? '99+' : unreadCount;
+                sidebarBadge.style.display = unreadCount > 0 ? 'flex' : 'none';
+              }
+            }
+          }
+        } catch (error) {
+          console.error('Error updating notification badge:', error);
+        }
+      }
+      
+      // 11. Initialize Scale Controls
+      function initScaleControls() {
+        const decreaseBtn = document.getElementById('sidebar-scale-decrease');
+        const increaseBtn = document.getElementById('sidebar-scale-increase');
+        const resetBtn = document.getElementById('sidebar-scale-reset');
+        const scaleValue = document.getElementById('sidebar-scale-value');
+        
+        let currentScale = parseFloat(localStorage.getItem('bantu_ui_scale')) || 1;
+        
+        const updateScale = (scale) => {
+          currentScale = Math.min(1.4, Math.max(0.8, scale));
+          document.documentElement.style.setProperty('--ui-scale', currentScale);
+          localStorage.setItem('bantu_ui_scale', currentScale);
+          if (scaleValue) {
+            scaleValue.textContent = Math.round(currentScale * 100) + '%';
+          }
+        };
+        
+        if (decreaseBtn) {
+          decreaseBtn.addEventListener('click', () => updateScale(currentScale - 0.1));
+        }
+        
+        if (increaseBtn) {
+          increaseBtn.addEventListener('click', () => updateScale(currentScale + 0.1));
+        }
+        
+        if (resetBtn) {
+          resetBtn.addEventListener('click', () => updateScale(1));
+        }
+        
+        updateScale(currentScale);
+      }
+      
+      // 12. Initialize Back to Top Button
+      function initBackToTop() {
+        const backToTopBtn = document.getElementById('backToTopBtn');
+        if (backToTopBtn) {
+          window.addEventListener('scroll', () => {
+            backToTopBtn.style.display = window.pageYOffset > 300 ? 'flex' : 'none';
+          });
+          
+          backToTopBtn.addEventListener('click', () => {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          });
+        }
+      }
+      
+      // Initialize all components
+      initProfileDropdown();
+      initSearchModal();
+      initAnalyticsModal();
+      initNotificationsPanel();
+      initVoiceSearch();
+      initBottomNavigation();
+      initSidebarMenu();
+      initThemeSelector();
+      initScaleControls();
+      initBackToTop();
+      loadSavedTheme();
+      updateNotificationBadge();
+      
+      console.log('✅ All Home Feed UI components initialized on content detail page');
+    });
+  })();
+  </script>
 </body>
 </html>
