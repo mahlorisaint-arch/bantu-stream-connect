@@ -229,6 +229,57 @@
       overflow-y: auto;
     }
     
+    .profile-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.2s ease;
+    }
+    
+    .profile-item:hover {
+      background: rgba(255, 255, 255, 0.1);
+    }
+    
+    .profile-item.active {
+      background: rgba(29, 78, 216, 0.2);
+      border-left: 3px solid var(--bantu-blue);
+    }
+    
+    .profile-item-avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+    
+    .profile-item-avatar img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    
+    .profile-item-info {
+      flex: 1;
+    }
+    
+    .profile-item-name {
+      color: var(--soft-white);
+      font-size: 14px;
+      font-weight: 500;
+    }
+    
+    .profile-item-email {
+      color: var(--slate-grey);
+      font-size: 11px;
+    }
+    
     .profile-dropdown-footer {
       padding: 12px;
       border-top: 1px solid var(--card-border);
@@ -243,6 +294,7 @@
       width: 100%;
       text-align: center;
       padding: 8px;
+      transition: all 0.2s ease;
     }
     
     .text-btn:hover {
@@ -750,9 +802,19 @@
           </button>
           <div class="profile-dropdown" id="profile-dropdown">
             <div class="profile-dropdown-header">
-              <h4>Switch Profile</h4>
+              <h4>My Profile</h4>
             </div>
-            <div class="profile-list" id="profile-list"></div>
+            <div class="profile-list" id="profile-list">
+              <div class="profile-item" id="current-profile-item">
+                <div class="profile-item-avatar" id="dropdown-avatar">
+                  <i class="fas fa-user"></i>
+                </div>
+                <div class="profile-item-info">
+                  <div class="profile-item-name" id="dropdown-name">Guest</div>
+                  <div class="profile-item-email" id="dropdown-email">Sign in to continue</div>
+                </div>
+              </div>
+            </div>
             <div class="profile-dropdown-footer">
               <button class="text-btn" id="manage-profiles-btn">
                 <i class="fas fa-user-cog"></i> Manage Profiles
@@ -943,14 +1005,7 @@
       <div class="footer-links"><a href="privacy-policy.html">Privacy Policy</a><a href="terms-of-service.html">Terms of Service</a><a href="support.html">Support</a></div>
     </footer>
 
-    <!-- Modals -->
-    <div id="analytics-modal" class="analytics-modal"><div class="analytics-content"><div class="analytics-header"><h2>Content Analytics</h2><button class="close-search-btn" id="close-analytics"><i class="fas fa-times"></i></button></div><div class="analytics-body"><div class="analytics-grid"><div class="analytics-card"><h3>Total Views</h3><div class="analytics-value" id="content-total-views">0</div></div></div><div class="charts-container"><canvas id="content-engagement-chart"></canvas></div></div></div></div>
-    <div id="search-modal" class="search-modal"><div class="search-modal-content"><div class="search-modal-header"><div class="search-input-container"><i class="fas fa-search search-icon"></i><input type="text" id="search-input" class="search-input" placeholder="Search videos, creators, genres..."></div><button class="close-search-btn" id="close-search-btn"><i class="fas fa-times"></i></button></div><div class="search-results"><div class="search-results-grid" id="search-results-grid"></div></div></div></div>
-    <div id="notifications-panel" class="notifications-panel"><div class="notifications-header"><h3>Notifications</h3><button class="close-search-btn" id="close-notifications"><i class="fas fa-times"></i></button></div><div class="notifications-list" id="notifications-list"><div class="empty-notifications"><i class="fas fa-bell-slash"></i><p>No notifications yet</p></div></div><div class="notifications-footer"><button class="text-btn" id="mark-all-read">Mark all as read</button></div></div>
-    <div id="badges-modal" class="badges-modal"><div class="badges-content"><div class="badges-header"><h2>My Achievements</h2><button class="close-badges"><i class="fas fa-times"></i></button></div><div class="badges-body"><div class="badges-stats"><div class="badge-stat"><span class="badge-count" id="badges-earned">0</span><span>Badges Earned</span></div></div><div class="badges-grid" id="badges-grid"></div></div></div></div>
-    <div id="watch-party-modal" class="watch-party-modal"><div class="watch-party-content"><div class="watch-party-header"><h2>Start a Watch Party</h2><button class="close-watch-party"><i class="fas fa-times"></i></button></div><div class="watch-party-body"><div class="watch-party-content-list" id="watch-party-content-list"></div><button class="start-party-btn" id="start-party-btn"><i class="fas fa-play"></i> Start Party</button></div></div></div>
-    <div id="tip-modal" class="tip-modal"><div class="tip-content"><div class="tip-header"><h2>Support This Creator</h2><button class="close-tip"><i class="fas fa-times"></i></button></div><div class="tip-body"><p>Send a tip to show your appreciation</p><div class="tip-amounts"><button class="tip-amount" data-amount="5">R5</button><button class="tip-amount" data-amount="10">R10</button><button class="tip-amount" data-amount="25">R25</button><button class="tip-amount" data-amount="50">R50</button><button class="tip-amount" data-amount="100">R100</button></div><div class="custom-tip"><input type="number" id="custom-tip-amount" placeholder="Custom amount (R)"><button id="send-tip-btn">Send Tip</button></div></div></div></div>
-    <div id="voice-search-status" class="voice-search-status"><i class="fas fa-microphone-alt"></i><span>Listening...</span></div>
+    <!-- Toast Container -->
     <div id="toast-container"></div>
     <button id="backToTopBtn" class="back-to-top"><i class="fas fa-arrow-up"></i></button>
   </div>
@@ -962,10 +1017,9 @@
     window.SUPABASE_URL = SUPABASE_URL;
     window.SUPABASE_ANON_KEY = SUPABASE_ANON_KEY;
     
-    // Global user state
     let currentUser = null;
+    let currentProfile = null;
     
-    // Function to update profile UI based on auth state
     async function updateUserProfile() {
       try {
         const { data: { session } } = await window.supabaseClient.auth.getSession();
@@ -980,6 +1034,7 @@
             .eq('id', currentUser.id)
             .maybeSingle();
           
+          currentProfile = profile;
           const displayName = profile?.full_name || profile?.username || currentUser.email?.split('@')[0] || 'User';
           const userEmail = currentUser.email || 'user@example.com';
           const avatarUrl = profile?.avatar_url;
@@ -989,14 +1044,30 @@
           const headerName = document.getElementById('current-profile-name');
           
           if (headerPlaceholder) {
-            if (avatarUrl) {
-              headerPlaceholder.innerHTML = `<img src="${avatarUrl}" alt="${displayName}" style="width:100%;height:100%;object-fit:cover;">`;
+            if (avatarUrl && avatarUrl !== 'null' && avatarUrl !== 'undefined') {
+              headerPlaceholder.innerHTML = `<img src="${avatarUrl}" alt="${displayName}" style="width:100%;height:100%;object-fit:cover;" onerror="this.onerror=null; this.parentElement.innerHTML='<i class=\'fas fa-user\'></i>';">`;
             } else {
               const initial = displayName.charAt(0).toUpperCase();
-              headerPlaceholder.innerHTML = `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg, #1D4ED8, #F59E0B);border-radius:50%;font-weight:bold;">${initial}</div>`;
+              headerPlaceholder.innerHTML = `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg, #1D4ED8, #F59E0B);border-radius:50%;font-weight:bold;font-size:14px;">${initial}</div>`;
             }
           }
           if (headerName) headerName.textContent = displayName;
+          
+          // Update dropdown profile
+          const dropdownAvatar = document.getElementById('dropdown-avatar');
+          const dropdownName = document.getElementById('dropdown-name');
+          const dropdownEmail = document.getElementById('dropdown-email');
+          
+          if (dropdownAvatar) {
+            if (avatarUrl && avatarUrl !== 'null' && avatarUrl !== 'undefined') {
+              dropdownAvatar.innerHTML = `<img src="${avatarUrl}" alt="${displayName}" style="width:100%;height:100%;object-fit:cover;">`;
+            } else {
+              const initial = displayName.charAt(0).toUpperCase();
+              dropdownAvatar.innerHTML = `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg, #1D4ED8, #F59E0B);border-radius:50%;font-weight:bold;font-size:16px;">${initial}</div>`;
+            }
+          }
+          if (dropdownName) dropdownName.textContent = displayName;
+          if (dropdownEmail) dropdownEmail.textContent = userEmail;
           
           // Update sidebar profile
           const sidebarAvatar = document.getElementById('sidebar-profile-avatar');
@@ -1004,7 +1075,7 @@
           const sidebarEmail = document.getElementById('sidebar-profile-email');
           
           if (sidebarAvatar) {
-            if (avatarUrl) {
+            if (avatarUrl && avatarUrl !== 'null' && avatarUrl !== 'undefined') {
               sidebarAvatar.innerHTML = `<img src="${avatarUrl}" alt="${displayName}" style="width:100%;height:100%;object-fit:cover;">`;
             } else {
               const initial = displayName.charAt(0).toUpperCase();
@@ -1026,23 +1097,31 @@
           // Update comment avatar
           const commentAvatar = document.getElementById('userCommentAvatar');
           if (commentAvatar) {
-            if (avatarUrl) {
+            if (avatarUrl && avatarUrl !== 'null' && avatarUrl !== 'undefined') {
               commentAvatar.innerHTML = `<img src="${avatarUrl}" alt="${displayName}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`;
             } else {
               const initial = displayName.charAt(0).toUpperCase();
-              commentAvatar.innerHTML = `<div style="width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,#1D4ED8,#F59E0B);display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;">${initial}</div>`;
+              commentAvatar.innerHTML = `<div style="width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,#1D4ED8,#F59E0B);display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:14px;">${initial}</div>`;
             }
           }
           
           console.log('✅ User profile updated:', displayName);
         } else {
           currentUser = null;
+          currentProfile = null;
           
           // Reset to guest mode
           const headerPlaceholder = document.getElementById('userProfilePlaceholder');
           const headerName = document.getElementById('current-profile-name');
           if (headerPlaceholder) headerPlaceholder.innerHTML = '<i class="fas fa-user"></i>';
           if (headerName) headerName.textContent = 'Guest';
+          
+          const dropdownAvatar = document.getElementById('dropdown-avatar');
+          const dropdownName = document.getElementById('dropdown-name');
+          const dropdownEmail = document.getElementById('dropdown-email');
+          if (dropdownAvatar) dropdownAvatar.innerHTML = '<i class="fas fa-user"></i>';
+          if (dropdownName) dropdownName.textContent = 'Guest';
+          if (dropdownEmail) dropdownEmail.textContent = 'Sign in to continue';
           
           const sidebarAvatar = document.getElementById('sidebar-profile-avatar');
           const sidebarName = document.getElementById('sidebar-profile-name');
@@ -1067,7 +1146,6 @@
       }
     }
     
-    // Sidebar functions
     function openSidebar() {
       const sidebarMenu = document.getElementById('sidebar-menu');
       const sidebarOverlay = document.getElementById('sidebar-overlay');
@@ -1088,12 +1166,9 @@
       }
     }
     
-    // Initialize everything
     document.addEventListener('DOMContentLoaded', async function() {
-      // Check auth state and update profile
       await updateUserProfile();
       
-      // Listen for auth changes
       window.supabaseClient.auth.onAuthStateChange(async (event, session) => {
         console.log('Auth state changed:', event);
         await updateUserProfile();
@@ -1106,38 +1181,32 @@
       const sidebarOverlay = document.getElementById('sidebar-overlay');
       
       if (headerMenuToggle) {
-        headerMenuToggle.addEventListener('click', function(e) {
+        headerMenuToggle.addEventListener('click', (e) => {
           e.stopPropagation();
           openSidebar();
         });
       }
       
       if (bottomMenuButton) {
-        bottomMenuButton.addEventListener('click', function(e) {
+        bottomMenuButton.addEventListener('click', (e) => {
           e.stopPropagation();
           openSidebar();
         });
       }
       
       if (sidebarClose) {
-        sidebarClose.addEventListener('click', function() {
-          closeSidebar();
-        });
+        sidebarClose.addEventListener('click', closeSidebar);
       }
       
       if (sidebarOverlay) {
-        sidebarOverlay.addEventListener('click', function() {
-          closeSidebar();
-        });
+        sidebarOverlay.addEventListener('click', closeSidebar);
       }
       
-      document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape') {
-          closeSidebar();
-        }
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') closeSidebar();
       });
       
-      // Bottom navigation buttons
+      // Bottom navigation
       const bottomNavHome = document.getElementById('bottom-nav-home');
       const bottomNavHistory = document.getElementById('bottom-nav-history');
       const bottomNavCreate = document.getElementById('bottom-nav-create');
@@ -1175,12 +1244,12 @@
       const profileDropdown = document.getElementById('profile-dropdown');
       
       if (profileBtn && profileDropdown) {
-        profileBtn.addEventListener('click', function(e) {
+        profileBtn.addEventListener('click', (e) => {
           e.stopPropagation();
           profileDropdown.classList.toggle('active');
         });
         
-        document.addEventListener('click', function(e) {
+        document.addEventListener('click', (e) => {
           if (profileBtn && profileDropdown && !profileBtn.contains(e.target) && !profileDropdown.contains(e.target)) {
             profileDropdown.classList.remove('active');
           }
@@ -1190,7 +1259,7 @@
       // Logout button
       const logoutBtn = document.getElementById('logout-btn');
       if (logoutBtn) {
-        logoutBtn.addEventListener('click', async function() {
+        logoutBtn.addEventListener('click', async () => {
           await window.supabaseClient.auth.signOut();
           await updateUserProfile();
           profileDropdown.classList.remove('active');
@@ -1199,7 +1268,20 @@
         });
       }
       
-      // Sidebar profile click - redirect to login if guest, or manage profiles if logged in
+      // Manage profiles button
+      const manageProfilesBtn = document.getElementById('manage-profiles-btn');
+      if (manageProfilesBtn) {
+        manageProfilesBtn.addEventListener('click', async () => {
+          const { data: { session } } = await window.supabaseClient.auth.getSession();
+          if (session) {
+            window.location.href = 'manage-profiles.html';
+          } else {
+            window.location.href = `login.html?redirect=manage-profiles.html`;
+          }
+        });
+      }
+      
+      // Sidebar profile click
       const sidebarProfile = document.getElementById('sidebar-profile');
       if (sidebarProfile) {
         sidebarProfile.addEventListener('click', async () => {
@@ -1217,7 +1299,7 @@
       const themeSelector = document.getElementById('theme-selector');
       
       if (themeToggle && themeSelector) {
-        themeToggle.addEventListener('click', function(e) {
+        themeToggle.addEventListener('click', (e) => {
           e.stopPropagation();
           themeSelector.classList.toggle('active');
         });
@@ -1233,10 +1315,10 @@
         });
       }
       
-      // Back to top button
+      // Back to top
       const backToTopBtn = document.getElementById('backToTopBtn');
       if (backToTopBtn) {
-        window.addEventListener('scroll', function() {
+        window.addEventListener('scroll', () => {
           backToTopBtn.style.display = window.pageYOffset > 300 ? 'flex' : 'none';
         });
         backToTopBtn.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
@@ -1246,11 +1328,11 @@
       const savedTheme = localStorage.getItem('bantu_theme') || 'dark';
       document.body.classList.add('theme-' + savedTheme);
       
-      // Hide loading screen and show app
+      // Hide loading and show app
       document.getElementById('loading').style.display = 'none';
       document.getElementById('app').style.display = 'block';
       
-      console.log('✅ Navigation fully initialized with authentication');
+      console.log('✅ Navigation fully initialized');
     });
   </script>
   <script src="js/state-manager.js"></script>
