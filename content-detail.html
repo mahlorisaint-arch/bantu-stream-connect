@@ -14,14 +14,12 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <!-- Supabase JS SDK -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <!-- PHASE 4: HLS.js Library for Adaptive Streaming -->
-  <script src="https://cdn.jsdelivr.net/npm/hls.js@1.4.12/dist/hls.min.js"></script>
   <!-- Base Styles -->
   <link rel="stylesheet" href="css/base.css">
   <link rel="stylesheet" href="css/components.css">
   <link rel="stylesheet" href="css/content-detail.css">
   
-  <!-- CRITICAL FIX: Home Feed Header & Sidebar Styles - INLINE to ensure they load -->
+  <!-- CRITICAL FIX: Home Feed Header & Sidebar Styles -->
   <style>
     /* ===== HOME FEED HEADER & SIDEBAR STYLES (FIXED) ===== */
     :root {
@@ -136,6 +134,7 @@
       cursor: pointer;
       transition: all 0.3s ease;
       font-size: 16px;
+      position: relative;
     }
     
     .icon-btn:hover {
@@ -190,6 +189,13 @@
       justify-content: center;
       color: white;
       font-size: 14px;
+      overflow: hidden;
+    }
+    
+    .profile-placeholder img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
     }
     
     .profile-name {
@@ -250,10 +256,13 @@
       font-size: 13px;
       width: 100%;
       text-align: center;
+      padding: 8px;
     }
     
     .text-btn:hover {
       color: var(--soft-white);
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 6px;
     }
     
     /* RSA Badge */
@@ -389,6 +398,12 @@
       font-weight: 600;
       font-size: 16px;
       overflow: hidden;
+    }
+    
+    .sidebar-profile-avatar img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
     }
     
     .sidebar-profile-info {
@@ -768,7 +783,7 @@
     <!-- ============================================ -->
     <header class="header">
       <div class="logo" onclick="window.location.href='index.html'">
-        <button class="menu-toggle" id="menu-toggle" title="Open Menu" aria-label="Open navigation menu">
+        <button class="menu-toggle" id="header-menu-toggle" title="Open Menu" aria-label="Open navigation menu">
           <i class="fas fa-bars"></i>
         </button>
         <div class="logo-icon">
@@ -931,23 +946,23 @@
     <!-- ============================================ -->
     <div class="navigation-button-container">
       <div class="navigation-button">
-        <div class="nav-icon" id="nav-home-btn" title="Home">
+        <div class="nav-icon" id="bottom-nav-home" title="Home">
           <i class="fas fa-home"></i>
         </div>
-        <div class="nav-icon" id="nav-history-btn" title="Watch History">
+        <div class="nav-icon" id="bottom-nav-history" title="Watch History">
           <i class="fas fa-history"></i>
         </div>
-        <div class="nav-icon" id="nav-create-btn" title="Create Content">
+        <div class="nav-icon" id="bottom-nav-create" title="Create Content">
           <i class="fas fa-plus-circle"></i>
         </div>
-        <div class="nav-icon" id="nav-menu-btn" title="Menu">
+        <div class="nav-icon" id="bottom-nav-menu" title="Menu">
           <i class="fas fa-bars"></i>
         </div>
       </div>
     </div>
 
     <!-- ============================================ -->
-    <!-- MAIN CONTENT (Rest of the page remains the same) -->
+    <!-- MAIN CONTENT (Rest of the page) -->
     <!-- ============================================ -->
     <main class="container">
       <!-- Video Player -->
@@ -1060,7 +1075,7 @@
         </div>
       </section>
 
-      <!-- Rest of the content remains the same -->
+      <!-- Rest of the content sections -->
       <section class="creator-section">
         <div class="creator-info">
           <div class="creator-avatar" id="creatorAvatar"><i class="fas fa-user"></i></div>
@@ -1099,7 +1114,7 @@
       <div class="footer-links"><a href="privacy-policy.html">Privacy Policy</a><a href="terms-of-service.html">Terms of Service</a><a href="support.html">Support</a></div>
     </footer>
 
-    <!-- Modals (kept minimal for brevity) -->
+    <!-- Modals -->
     <div id="analytics-modal" class="analytics-modal"><div class="analytics-content"><div class="analytics-header"><h2>Content Analytics</h2><button class="close-search-btn" id="close-analytics"><i class="fas fa-times"></i></button></div><div class="analytics-body"><div class="analytics-grid"><div class="analytics-card"><h3>Total Views</h3><div class="analytics-value" id="content-total-views">0</div></div></div><div class="charts-container"><canvas id="content-engagement-chart"></canvas></div></div></div></div>
     <div id="search-modal" class="search-modal"><div class="search-modal-content"><div class="search-modal-header"><div class="search-input-container"><i class="fas fa-search search-icon"></i><input type="text" id="search-input" class="search-input" placeholder="Search videos, creators, genres..."></div><button class="close-search-btn" id="close-search-btn"><i class="fas fa-times"></i></button></div><div class="search-results"><div class="search-results-grid" id="search-results-grid"></div></div></div></div>
     <div id="notifications-panel" class="notifications-panel"><div class="notifications-header"><h3>Notifications</h3><button class="close-search-btn" id="close-notifications"><i class="fas fa-times"></i></button></div><div class="notifications-list" id="notifications-list"><div class="empty-notifications"><i class="fas fa-bell-slash"></i><p>No notifications yet</p></div></div><div class="notifications-footer"><button class="text-btn" id="mark-all-read">Mark all as read</button></div></div>
@@ -1138,58 +1153,102 @@
   <script src="js/content-detail.js"></script>
   
   <script>
-    // Initialize sidebar and navigation functionality
+    // CRITICAL FIX: Sidebar and Navigation Functionality
     document.addEventListener('DOMContentLoaded', function() {
-      // Sidebar toggle
-      const menuToggle = document.getElementById('menu-toggle');
+      // Get elements with unique IDs
+      const headerMenuToggle = document.getElementById('header-menu-toggle');
+      const bottomMenuButton = document.getElementById('bottom-nav-menu');
       const sidebarClose = document.getElementById('sidebar-close');
       const sidebarOverlay = document.getElementById('sidebar-overlay');
       const sidebarMenu = document.getElementById('sidebar-menu');
       
-      if (menuToggle && sidebarClose && sidebarOverlay && sidebarMenu) {
-        menuToggle.addEventListener('click', function(e) {
-          e.stopPropagation();
+      // Function to open sidebar
+      function openSidebar() {
+        if (sidebarMenu && sidebarOverlay) {
           sidebarMenu.classList.add('active');
           sidebarOverlay.classList.add('active');
           document.body.style.overflow = 'hidden';
-        });
-        
-        sidebarClose.addEventListener('click', function() {
+          console.log('Sidebar opened');
+        }
+      }
+      
+      // Function to close sidebar
+      function closeSidebar() {
+        if (sidebarMenu && sidebarOverlay) {
           sidebarMenu.classList.remove('active');
           sidebarOverlay.classList.remove('active');
           document.body.style.overflow = '';
+          console.log('Sidebar closed');
+        }
+      }
+      
+      // Header menu button click
+      if (headerMenuToggle) {
+        headerMenuToggle.addEventListener('click', function(e) {
+          e.stopPropagation();
+          console.log('Header menu button clicked');
+          openSidebar();
         });
-        
-        sidebarOverlay.addEventListener('click', function() {
-          sidebarMenu.classList.remove('active');
-          sidebarOverlay.classList.remove('active');
-          document.body.style.overflow = '';
+      }
+      
+      // Bottom navigation menu button click
+      if (bottomMenuButton) {
+        bottomMenuButton.addEventListener('click', function(e) {
+          e.stopPropagation();
+          console.log('Bottom menu button clicked');
+          openSidebar();
         });
-        
-        document.addEventListener('keydown', function(e) {
-          if (e.key === 'Escape' && sidebarMenu.classList.contains('active')) {
-            sidebarMenu.classList.remove('active');
-            sidebarOverlay.classList.remove('active');
-            document.body.style.overflow = '';
+      }
+      
+      // Sidebar close button
+      if (sidebarClose) {
+        sidebarClose.addEventListener('click', function(e) {
+          e.stopPropagation();
+          closeSidebar();
+        });
+      }
+      
+      // Click overlay to close
+      if (sidebarOverlay) {
+        sidebarOverlay.addEventListener('click', function(e) {
+          if (e.target === sidebarOverlay) {
+            closeSidebar();
           }
         });
       }
       
-      // Bottom navigation
-      const navHomeBtn = document.getElementById('nav-home-btn');
-      const navHistoryBtn = document.getElementById('nav-history-btn');
-      const navCreateBtn = document.getElementById('nav-create-btn');
-      const navMenuBtn = document.getElementById('nav-menu-btn');
+      // ESC key to close sidebar
+      document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && sidebarMenu && sidebarMenu.classList.contains('active')) {
+          closeSidebar();
+        }
+      });
       
-      if (navHomeBtn) navHomeBtn.addEventListener('click', () => window.location.href = 'index.html');
-      if (navHistoryBtn) navHistoryBtn.addEventListener('click', () => window.location.href = 'watch-history.html');
-      if (navCreateBtn) navCreateBtn.addEventListener('click', () => window.location.href = 'creator-upload.html');
-      if (navMenuBtn) {
-        navMenuBtn.addEventListener('click', function() {
-          if (sidebarMenu && sidebarOverlay) {
-            sidebarMenu.classList.add('active');
-            sidebarOverlay.classList.add('active');
-            document.body.style.overflow = 'hidden';
+      // Bottom navigation other buttons
+      const bottomNavHome = document.getElementById('bottom-nav-home');
+      const bottomNavHistory = document.getElementById('bottom-nav-history');
+      const bottomNavCreate = document.getElementById('bottom-nav-create');
+      
+      if (bottomNavHome) {
+        bottomNavHome.addEventListener('click', function() {
+          window.location.href = 'index.html';
+        });
+      }
+      
+      if (bottomNavHistory) {
+        bottomNavHistory.addEventListener('click', function() {
+          window.location.href = 'watch-history.html';
+        });
+      }
+      
+      if (bottomNavCreate) {
+        bottomNavCreate.addEventListener('click', async function() {
+          const { data } = await supabaseClient.auth.getSession();
+          if (data?.session) {
+            window.location.href = 'creator-upload.html';
+          } else {
+            alert('Please sign in to create content');
+            window.location.href = 'login.html?redirect=creator-upload.html';
           }
         });
       }
@@ -1197,25 +1256,51 @@
       // Profile dropdown
       const profileBtn = document.getElementById('current-profile-btn');
       const profileDropdown = document.getElementById('profile-dropdown');
+      
       if (profileBtn && profileDropdown) {
         profileBtn.addEventListener('click', function(e) {
           e.stopPropagation();
           profileDropdown.classList.toggle('active');
         });
+        
         document.addEventListener('click', function(e) {
-          if (!profileBtn.contains(e.target) && !profileDropdown.contains(e.target)) {
+          if (profileBtn && profileDropdown && !profileBtn.contains(e.target) && !profileDropdown.contains(e.target)) {
             profileDropdown.classList.remove('active');
           }
         });
       }
       
+      // Update profile placeholder
+      function updateProfilePlaceholder() {
+        const profilePlaceholder = document.getElementById('userProfilePlaceholder');
+        const profileName = document.getElementById('current-profile-name');
+        
+        if (profilePlaceholder && profileName) {
+          // Check if user is logged in (you can expand this logic)
+          const isLoggedIn = localStorage.getItem('bantu_user');
+          
+          if (isLoggedIn) {
+            profilePlaceholder.innerHTML = '<i class="fas fa-user-circle"></i>';
+            profileName.textContent = 'User';
+          } else {
+            profilePlaceholder.innerHTML = '<i class="fas fa-user"></i>';
+            profileName.textContent = 'Guest';
+          }
+        }
+      }
+      
+      updateProfilePlaceholder();
+      
       // Theme selector
       const themeToggle = document.getElementById('sidebar-theme-toggle');
       const themeSelector = document.getElementById('theme-selector');
+      
       if (themeToggle && themeSelector) {
-        themeToggle.addEventListener('click', function() {
+        themeToggle.addEventListener('click', function(e) {
+          e.stopPropagation();
           themeSelector.classList.toggle('active');
         });
+        
         document.querySelectorAll('.theme-option').forEach(option => {
           option.addEventListener('click', function() {
             const theme = this.dataset.theme;
@@ -1233,6 +1318,7 @@
         window.addEventListener('scroll', function() {
           backToTopBtn.style.display = window.pageYOffset > 300 ? 'flex' : 'none';
         });
+        
         backToTopBtn.addEventListener('click', function() {
           window.scrollTo({ top: 0, behavior: 'smooth' });
         });
@@ -1241,6 +1327,8 @@
       // Apply saved theme
       const savedTheme = localStorage.getItem('bantu_theme') || 'dark';
       document.body.classList.add('theme-' + savedTheme);
+      
+      console.log('Navigation fully initialized');
     });
   </script>
 </body>
