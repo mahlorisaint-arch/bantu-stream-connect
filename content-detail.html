@@ -93,7 +93,7 @@
     <header class="header">
         <div class="logo" onclick="window.location.href='index.html'">
             <!-- Hamburger Menu Button -->
-            <button class="menu-toggle" id="menu-toggle" title="Open Menu">
+            <button class="menu-toggle" id="menu-toggle" title="Open Menu" aria-label="Open navigation menu">
                 <i class="fas fa-bars"></i>
             </button>
             <div class="logo-icon">
@@ -102,21 +102,26 @@
             <div class="logo-text">BANTU STREAM CONNECT</div>
         </div>
         <div class="header-actions">
+            <!-- Voice Search Button -->
             <button id="voice-search-btn" class="icon-btn" title="Voice Search">
                 <i class="fas fa-microphone"></i>
             </button>
-            <button id="analytics-btn" class="icon-btn" title="Analytics">
+            <!-- Analytics Button -->
+            <button id="analytics-btn" class="icon-btn" title="Analytics (Alt+A)">
                 <i class="fas fa-chart-line"></i>
             </button>
-            <button id="search-btn" class="icon-btn search-btn" title="Search">
+            <!-- Search Button -->
+            <button id="search-btn" class="icon-btn search-btn" title="Search (Ctrl+K)">
                 <i class="fas fa-search"></i>
             </button>
-            <button id="notifications-btn" class="icon-btn" title="Notifications">
+            <!-- Notifications Button -->
+            <button id="notifications-btn" class="icon-btn" title="Notifications (Alt+N)">
                 <i class="fas fa-bell"></i>
                 <span class="notification-badge" id="notification-count" style="display: none;">0</span>
             </button>
+            <!-- Profile Button with Dropdown -->
             <div class="profile-switcher">
-                <button id="current-profile-btn" class="profile-btn" title="Profile">
+                <button id="current-profile-btn" class="profile-btn" title="Profile (Alt+P)">
                     <div class="profile-placeholder" id="userProfilePlaceholder">
                         <i class="fas fa-user"></i>
                     </div>
@@ -135,6 +140,7 @@
                     </div>
                 </div>
             </div>
+            <!-- "Built in South Africa" Badge -->
             <div class="rsa-badge" title="Proudly South African">
                 <i class="fas fa-map-marker-alt"></i>
                 <span>RSA</span>
@@ -154,10 +160,11 @@
                 </div>
                 <span class="sidebar-logo-text">BANTU</span>
             </div>
-            <button class="sidebar-close" id="sidebar-close">
+            <button class="sidebar-close" id="sidebar-close" aria-label="Close menu">
                 <i class="fas fa-times"></i>
             </button>
         </div>
+        <!-- Profile Section -->
         <div class="sidebar-profile" id="sidebar-profile">
             <div class="sidebar-profile-avatar" id="sidebar-profile-avatar">
                 <i class="fas fa-user"></i>
@@ -168,6 +175,7 @@
             </div>
             <i class="fas fa-chevron-right" style="color: var(--slate-grey);"></i>
         </div>
+        <!-- Navigation Items -->
         <nav class="sidebar-nav">
             <a href="index.html" class="sidebar-nav-item active">
                 <i class="fas fa-home"></i>
@@ -211,6 +219,7 @@
                 <span>Manage Profiles</span>
             </a>
         </nav>
+        <!-- Footer: Theme & Scale -->
         <div class="sidebar-footer">
             <div class="sidebar-theme-toggle" id="sidebar-theme-toggle">
                 <span><i class="fas fa-palette"></i> Theme</span>
@@ -220,23 +229,24 @@
                 <div class="scale-control-row">
                     <span><i class="fas fa-text-height"></i> UI Size</span>
                     <div style="display: flex; align-items: center; gap: 8px;">
-                        <button class="scale-btn" id="sidebar-scale-decrease">
+                        <button class="scale-btn" id="sidebar-scale-decrease" title="Smaller">
                             <i class="fas fa-minus"></i>
                         </button>
                         <span class="scale-value" id="sidebar-scale-value">100%</span>
-                        <button class="scale-btn" id="sidebar-scale-increase">
+                        <button class="scale-btn" id="sidebar-scale-increase" title="Larger">
                             <i class="fas fa-plus"></i>
                         </button>
                     </div>
                 </div>
                 <div class="scale-control-row">
-                    <button class="scale-btn" id="sidebar-scale-reset" style="width: 100%;">
+                    <button class="scale-btn" id="sidebar-scale-reset" title="Reset" style="width: 100%;">
                         <i class="fas fa-undo"></i> Reset to Default
                     </button>
                 </div>
             </div>
         </div>
     </div>
+    <!-- Theme Selector -->
     <div id="theme-selector" class="theme-selector">
         <button class="theme-option" data-theme="dark">
             <i class="fas fa-moon"></i> Dark
@@ -604,18 +614,212 @@
     </footer>
 
     <!-- ============================================ -->
-    <!-- ALL MODALS (kept as original) -->
+    <!-- ALL MODALS -->
     <!-- ============================================ -->
-    <div id="analytics-modal" class="analytics-modal"><!-- content unchanged for brevity, exists in full file --></div>
-    <div id="search-modal" class="search-modal"><!-- content unchanged --></div>
-    <div id="notifications-panel" class="notifications-panel"><!-- content unchanged --></div>
-    <div id="watch-party-modal" class="watch-party-modal"><!-- content unchanged --></div>
-    <div id="tip-modal" class="tip-modal"><!-- content unchanged --></div>
-    <div id="badges-modal" class="badges-modal"><!-- content unchanged --></div>
-    <div id="voice-search-status" class="voice-search-status"><!-- content unchanged --></div>
+    
+    <!-- Analytics Modal -->
+    <div id="analytics-modal" class="analytics-modal">
+        <div class="analytics-content">
+            <div class="analytics-header">
+                <h2>Content Analytics</h2>
+                <button class="close-search-btn" id="close-analytics">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="analytics-body">
+                <div class="analytics-grid">
+                    <div class="analytics-card">
+                        <h3>Total Views</h3>
+                        <div class="analytics-value" id="content-total-views">0</div>
+                        <div class="analytics-trend" id="views-trend">+0%</div>
+                    </div>
+                    <div class="analytics-card">
+                        <h3>Comments</h3>
+                        <div class="analytics-value" id="total-comments">0</div>
+                        <div class="analytics-trend" id="comments-trend">+0%</div>
+                    </div>
+                    <div class="analytics-card">
+                        <h3>Avg. Watch Time</h3>
+                        <div class="analytics-value" id="avg-watch-time">0m</div>
+                        <div class="analytics-trend" id="watch-time-trend">+0%</div>
+                    </div>
+                    <div class="analytics-card">
+                        <h3>Engagement Rate</h3>
+                        <div class="analytics-value" id="engagement-rate">0%</div>
+                        <div class="analytics-trend" id="engagement-trend">+0%</div>
+                    </div>
+                </div>
+                <div class="charts-container">
+                    <canvas id="content-engagement-chart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search Modal -->
+    <div id="search-modal" class="search-modal">
+        <div class="search-modal-content">
+            <div class="search-modal-header">
+                <div class="search-input-container">
+                    <i class="fas fa-search search-icon"></i>
+                    <input type="text" id="search-input" class="search-input" placeholder="Search videos, creators, genres...">
+                </div>
+                <button class="close-search-btn" id="close-search-btn">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="search-filters">
+                <div class="filter-group">
+                    <label class="filter-label">Category</label>
+                    <select id="category-filter" class="filter-select">
+                        <option value="">All</option>
+                        <option value="Music">Music</option>
+                        <option value="Education">Education</option>
+                        <option value="Entertainment">Entertainment</option>
+                        <option value="Gaming">Gaming</option>
+                        <option value="Sports">Sports</option>
+                        <option value="Tech">Tech</option>
+                        <option value="Culture">Culture</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label class="filter-label">Sort By</label>
+                    <select id="sort-filter" class="filter-select">
+                        <option value="recent">Most Recent</option>
+                        <option value="popular">Most Popular</option>
+                        <option value="trending">Trending</option>
+                    </select>
+                </div>
+            </div>
+            <div class="search-results">
+                <div class="search-results-grid" id="search-results-grid"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notifications Panel -->
+    <div id="notifications-panel" class="notifications-panel">
+        <div class="notifications-header">
+            <h3>Notifications</h3>
+            <button class="close-search-btn" id="close-notifications">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="notifications-list" id="notifications-list">
+            <div class="empty-notifications">
+                <i class="fas fa-bell-slash"></i>
+                <p>No notifications yet</p>
+            </div>
+        </div>
+        <div class="notifications-footer">
+            <button class="text-btn" id="mark-all-read">Mark all as read</button>
+        </div>
+    </div>
+
+    <!-- Watch Party Modal -->
+    <div id="watch-party-modal" class="watch-party-modal">
+        <div class="watch-party-content">
+            <div class="watch-party-header">
+                <h2>Start a Watch Party</h2>
+                <button class="close-watch-party">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="watch-party-body">
+                <div class="watch-party-content-list" id="watch-party-content-list">
+                    <!-- Content list will be populated here -->
+                </div>
+                <button class="start-party-btn" id="start-party-btn">
+                    <i class="fas fa-play"></i> Start Party
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tip Modal -->
+    <div id="tip-modal" class="tip-modal">
+        <div class="tip-content">
+            <div class="tip-header">
+                <h2>Support This Creator</h2>
+                <button class="close-tip">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="tip-body">
+                <p>Send a tip to show your appreciation</p>
+                <div class="tip-amounts">
+                    <button class="tip-amount" data-amount="5">R5</button>
+                    <button class="tip-amount" data-amount="10">R10</button>
+                    <button class="tip-amount" data-amount="25">R25</button>
+                    <button class="tip-amount" data-amount="50">R50</button>
+                    <button class="tip-amount" data-amount="100">R100</button>
+                </div>
+                <div class="custom-tip">
+                    <input type="number" id="custom-tip-amount" placeholder="Custom amount (R)">
+                    <button id="send-tip-btn">Send Tip</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Badges Modal -->
+    <div id="badges-modal" class="badges-modal">
+        <div class="badges-content">
+            <div class="badges-header">
+                <h2>My Achievements</h2>
+                <button class="close-badges">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="badges-body">
+                <div class="badges-stats">
+                    <div class="badge-stat">
+                        <span class="badge-count" id="badges-earned">0</span>
+                        <span>Badges Earned</span>
+                    </div>
+                </div>
+                <div class="badges-grid" id="badges-grid">
+                    <!-- Badges will be populated here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Voice Search Status -->
+    <div id="voice-search-status" class="voice-search-status">
+        <i class="fas fa-microphone-alt"></i>
+        <span>Listening...</span>
+    </div>
+
+    <!-- Toast Container -->
     <div id="toast-container"></div>
+
+    <!-- Back to Top Button -->
     <button id="backToTopBtn" class="back-to-top"><i class="fas fa-arrow-up"></i></button>
-    <div id="shortcuts-modal" class="analytics-modal" style="display: none;"><!-- content unchanged --></div>
+
+    <!-- Shortcuts Modal -->
+    <div id="shortcuts-modal" class="analytics-modal" style="display: none;">
+        <div class="analytics-content">
+            <div class="analytics-header">
+                <h2>Keyboard Shortcuts</h2>
+                <button class="close-search-btn" id="close-shortcuts">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="analytics-body">
+                <div class="shortcuts-list">
+                    <div class="shortcut-item"><kbd>Space</kbd> - Play/Pause</div>
+                    <div class="shortcut-item"><kbd>K</kbd> - Play/Pause</div>
+                    <div class="shortcut-item"><kbd>←</kbd> - Rewind 5 seconds</div>
+                    <div class="shortcut-item"><kbd>→</kbd> - Forward 5 seconds</div>
+                    <div class="shortcut-item"><kbd>F</kbd> - Fullscreen</div>
+                    <div class="shortcut-item"><kbd>M</kbd> - Mute/Unmute</div>
+                    <div class="shortcut-item"><kbd>↑</kbd> - Volume Up</div>
+                    <div class="shortcut-item"><kbd>↓</kbd> - Volume Down</div>
+                </div>
+            </div>
+        </div>
+    </div>
 
   </div> <!-- Closing div for #app -->
 
@@ -647,7 +851,7 @@
   <!-- Main Content Detail Script - now with sidebar and nav logic -->
   <script src="js/content-detail.js"></script>
   
-  <!-- PHASE 4 quality updates and streaming manager UI (kept as original) -->
+  <!-- PHASE 4 quality updates and streaming manager UI -->
   <script>
     window.updateQualityOptions = function() { /* quality logic unchanged */ };
     document.addEventListener('qualityChanged', function(e) {});
@@ -665,48 +869,359 @@
     }
   </script>
 
-  <!-- STEP 5 CSS: Additional styles for sidebar and menu (must be in content-detail.css but also added here for safety) -->
+  <!-- STEP 5 CSS: Additional styles for sidebar and menu (ensuring full integration) -->
   <style>
-    /* ===== HOME FEAD HEADER & SIDEBAR STYLES (STEP 4) ===== */
-    .menu-toggle { width: 38px; height: 38px; border-radius: 50%; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: var(--soft-white); display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 18px; margin-right: 8px; border: none; }
-    .menu-toggle:hover { background: rgba(255,255,255,0.2); }
-    .sidebar-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); z-index: 1000; opacity: 0; visibility: hidden; transition: all 0.3s ease; }
-    .sidebar-overlay.active { opacity: 1; visibility: visible; }
-    .sidebar-menu { position: fixed; top: 0; left: -280px; width: 280px; height: 100vh; background: var(--card-bg); backdrop-filter: blur(20px); border-right: 1px solid var(--card-border); z-index: 1001; transition: left 0.3s ease; display: flex; flex-direction: column; padding: 20px; overflow-y: auto; }
-    .sidebar-menu.active { left: 0; }
-    .sidebar-header { display: flex; align-items: center; justify-content: space-between; padding-bottom: 16px; border-bottom: 1px solid var(--card-border); margin-bottom: 16px; }
-    .sidebar-logo { display: flex; align-items: center; gap: 12px; cursor: pointer; }
-    .sidebar-logo .logo-icon { width: 32px; height: 32px; }
-    .sidebar-logo-text { font-family: 'Orbitron', sans-serif; font-size: 18px; font-weight: 700; background: linear-gradient(to right, var(--soft-white), var(--bantu-blue)); -webkit-background-clip: text; background-clip: text; color: transparent; }
-    .sidebar-close { width: 36px; height: 36px; border-radius: 50%; background: rgba(255,255,255,0.1); border: 1px solid var(--card-border); color: var(--soft-white); display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 16px; border: none; }
-    .sidebar-close:hover { background: var(--error-color); }
-    .sidebar-profile { display: flex; align-items: center; gap: 12px; padding: 12px; background: rgba(255,255,255,0.05); border-radius: 12px; margin-bottom: 16px; cursor: pointer; }
-    .sidebar-profile:hover { background: rgba(255,255,255,0.1); }
-    .sidebar-profile-avatar { width: 44px; height: 44px; border-radius: 50%; background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold)); display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 16px; overflow: hidden; }
-    .sidebar-profile-info { flex: 1; min-width: 0; }
-    .sidebar-profile-name { font-size: 14px; font-weight: 600; color: var(--soft-white); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .sidebar-profile-email { font-size: 12px; color: var(--slate-grey); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .sidebar-nav { flex: 1; display: flex; flex-direction: column; gap: 4px; overflow-y: auto; }
-    .sidebar-nav-item { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-radius: 12px; color: var(--soft-white); text-decoration: none; font-size: 14px; transition: all 0.3s ease; }
-    .sidebar-nav-item:hover { background: rgba(255,255,255,0.1); transform: translateX(4px); }
-    .sidebar-nav-item.active { background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold)); }
-    .sidebar-nav-item i { width: 20px; text-align: center; font-size: 16px; }
-    .sidebar-nav-item .badge { margin-left: auto; background: var(--error-color); color: white; font-size: 10px; padding: 2px 8px; border-radius: 10px; }
-    .sidebar-footer { padding-top: 16px; border-top: 1px solid var(--card-border); }
-    .sidebar-theme-toggle { display: flex; align-items: center; justify-content: space-between; padding: 12px; background: rgba(255,255,255,0.05); border-radius: 12px; cursor: pointer; margin-bottom: 12px; }
-    .sidebar-theme-toggle:hover { background: rgba(255,255,255,0.1); }
-    .sidebar-scale-control { padding: 12px; background: rgba(255,255,255,0.05); border-radius: 12px; }
-    .scale-control-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
-    .scale-control-row:last-child { margin-bottom: 0; }
-    .scale-btn { width: 32px; height: 32px; border-radius: 50%; background: rgba(255,255,255,0.1); border: 1px solid var(--card-border); color: var(--soft-white); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 12px; border: none; }
-    .scale-btn:hover { background: var(--warm-gold); color: var(--deep-black); }
-    .scale-value { font-size: 13px; color: var(--soft-white); min-width: 45px; text-align: center; font-weight: 600; }
-    .theme-selector { position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%); background: var(--card-bg); backdrop-filter: blur(20px); border: 1px solid var(--card-border); border-radius: 12px; padding: 8px; display: flex; gap: 8px; z-index: 1002; opacity: 0; visibility: hidden; transition: all 0.3s ease; }
-    .theme-selector.active { opacity: 1; visibility: visible; }
-    .theme-option { padding: 8px 12px; background: rgba(255,255,255,0.1); border: 1px solid var(--card-border); border-radius: 8px; color: var(--soft-white); cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 14px; border: none; }
-    .theme-option:hover { background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold)); }
-    .theme-option.active { background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold)); }
-    @media (max-width: 768px) { .sidebar-menu { width: 260px; } }
+    /* ===== HOME FEED HEADER & SIDEBAR STYLES (STEP 4) ===== */
+    .menu-toggle {
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        background: rgba(255,255,255,0.1);
+        border: 1px solid rgba(255,255,255,0.2);
+        color: var(--soft-white);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        font-size: 18px;
+        margin-right: 8px;
+        border: none;
+    }
+    .menu-toggle:hover {
+        background: rgba(255,255,255,0.2);
+        transform: translateY(-2px);
+    }
+    .sidebar-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.6);
+        backdrop-filter: blur(4px);
+        z-index: 1000;
+        opacity: 0;
+        visibility: hidden;
+        transition: all 0.3s ease;
+    }
+    .sidebar-overlay.active {
+        opacity: 1;
+        visibility: visible;
+    }
+    .sidebar-menu {
+        position: fixed;
+        top: 0;
+        left: -320px;
+        width: 300px;
+        height: 100vh;
+        background: var(--card-bg);
+        backdrop-filter: blur(20px);
+        border-right: 1px solid var(--card-border);
+        z-index: 1001;
+        transition: left 0.3s ease;
+        display: flex;
+        flex-direction: column;
+        padding: 20px;
+        overflow-y: auto;
+    }
+    .sidebar-menu.active {
+        left: 0;
+    }
+    .sidebar-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding-bottom: 16px;
+        border-bottom: 1px solid var(--card-border);
+        margin-bottom: 16px;
+    }
+    .sidebar-logo {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        cursor: pointer;
+    }
+    .sidebar-logo .logo-icon {
+        width: 32px;
+        height: 32px;
+    }
+    .sidebar-logo-text {
+        font-family: 'Orbitron', sans-serif;
+        font-size: 18px;
+        font-weight: 700;
+        background: linear-gradient(to right, var(--soft-white), var(--bantu-blue));
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+    }
+    .sidebar-close {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background: rgba(255,255,255,0.1);
+        border: 1px solid var(--card-border);
+        color: var(--soft-white);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        font-size: 16px;
+        border: none;
+    }
+    .sidebar-close:hover {
+        background: var(--error-color);
+    }
+    .sidebar-profile {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px;
+        background: rgba(255,255,255,0.05);
+        border-radius: 12px;
+        margin-bottom: 16px;
+        cursor: pointer;
+        transition: background 0.3s ease;
+    }
+    .sidebar-profile:hover {
+        background: rgba(255,255,255,0.1);
+    }
+    .sidebar-profile-avatar {
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: 600;
+        font-size: 16px;
+        overflow: hidden;
+    }
+    .sidebar-profile-info {
+        flex: 1;
+        min-width: 0;
+    }
+    .sidebar-profile-name {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--soft-white);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .sidebar-profile-email {
+        font-size: 12px;
+        color: var(--slate-grey);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .sidebar-nav {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        overflow-y: auto;
+    }
+    .sidebar-nav-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 16px;
+        border-radius: 12px;
+        color: var(--soft-white);
+        text-decoration: none;
+        font-size: 14px;
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+    .sidebar-nav-item:hover {
+        background: rgba(255,255,255,0.1);
+        transform: translateX(4px);
+    }
+    .sidebar-nav-item.active {
+        background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+    }
+    .sidebar-nav-item i {
+        width: 20px;
+        text-align: center;
+        font-size: 16px;
+    }
+    .sidebar-nav-item .badge {
+        margin-left: auto;
+        background: var(--error-color);
+        color: white;
+        font-size: 10px;
+        padding: 2px 8px;
+        border-radius: 10px;
+    }
+    .sidebar-footer {
+        padding-top: 16px;
+        border-top: 1px solid var(--card-border);
+    }
+    .sidebar-theme-toggle {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px;
+        background: rgba(255,255,255,0.05);
+        border-radius: 12px;
+        cursor: pointer;
+        transition: background 0.3s ease;
+        margin-bottom: 12px;
+        border: none;
+        width: 100%;
+        color: var(--soft-white);
+    }
+    .sidebar-theme-toggle:hover {
+        background: rgba(255,255,255,0.1);
+    }
+    .sidebar-scale-control {
+        padding: 12px;
+        background: rgba(255,255,255,0.05);
+        border-radius: 12px;
+    }
+    .scale-control-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 8px;
+    }
+    .scale-control-row:last-child {
+        margin-bottom: 0;
+    }
+    .scale-btn {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: rgba(255,255,255,0.1);
+        border: 1px solid var(--card-border);
+        color: var(--soft-white);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        border: none;
+        transition: all 0.3s ease;
+    }
+    .scale-btn:hover {
+        background: var(--warm-gold);
+        color: var(--deep-black);
+        transform: scale(1.1);
+    }
+    .scale-value {
+        font-size: 13px;
+        color: var(--soft-white);
+        min-width: 45px;
+        text-align: center;
+        font-weight: 600;
+    }
+    .theme-selector {
+        position: fixed;
+        bottom: 100px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: var(--card-bg);
+        backdrop-filter: blur(20px);
+        border: 1px solid var(--card-border);
+        border-radius: 12px;
+        padding: 8px;
+        display: flex;
+        gap: 8px;
+        z-index: 1002;
+        opacity: 0;
+        visibility: hidden;
+        transition: all 0.3s ease;
+    }
+    .theme-selector.active {
+        opacity: 1;
+        visibility: visible;
+    }
+    .theme-option {
+        padding: 8px 12px;
+        background: rgba(255,255,255,0.1);
+        border: 1px solid var(--card-border);
+        border-radius: 8px;
+        color: var(--soft-white);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 14px;
+        border: none;
+        transition: all 0.3s ease;
+    }
+    .theme-option:hover {
+        background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+    }
+    .theme-option.active {
+        background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+    }
+    @media (max-width: 768px) {
+        .sidebar-menu {
+            width: 280px;
+            left: -300px;
+        }
+    }
+    /* Toast Container */
+    #toast-container {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        z-index: 9999;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+    .toast {
+        padding: 12px 24px;
+        border-radius: 8px;
+        color: white;
+        font-weight: 500;
+        animation: slideIn 0.3s ease;
+        max-width: 300px;
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255,255,255,0.2);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .toast i {
+        font-size: 16px;
+    }
+    .toast.error { background: rgba(239, 68, 68, 0.9); }
+    .toast.success { background: rgba(16, 185, 129, 0.9); }
+    .toast.warning { background: rgba(245, 158, 11, 0.9); }
+    .toast.info { background: rgba(29, 78, 216, 0.9); }
+    @keyframes slideIn {
+        from { transform: translateX(100%); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
+    }
+    /* Back to Top Button */
+    .back-to-top {
+        position: fixed;
+        bottom: 120px;
+        right: 20px;
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+        border: 1px solid rgba(255,255,255,0.2);
+        color: white;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        z-index: 97;
+        font-size: 18px;
+        border: none;
+    }
+    .back-to-top:hover {
+        transform: translateY(-5px);
+    }
   </style>
 
   <!-- STEP 5: JavaScript for sidebar and navigation (embedded to ensure execution) -->
@@ -723,6 +1238,11 @@
         menuToggle.addEventListener('click', openSidebar);
         sidebarClose.addEventListener('click', closeSidebar);
         sidebarOverlay.addEventListener('click', closeSidebar);
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && sidebarMenu.classList.contains('active')) {
+                closeSidebar();
+            }
+        });
         updateSidebarProfile();
         setupSidebarThemeToggle();
         setupSidebarScaleControls();
@@ -777,9 +1297,26 @@
     }
     function setupContentDetailNavigation() {
         document.getElementById('nav-home-btn')?.addEventListener('click', () => { window.location.href = 'index.html'; });
-        document.getElementById('nav-menu-btn')?.addEventListener('click', () => { document.getElementById('sidebar-menu')?.classList.add('active'); document.getElementById('sidebar-overlay')?.classList.add('active'); });
-        document.getElementById('nav-history-btn')?.addEventListener('click', () => { if (window.currentUser) window.location.href = 'watch-history.html'; else if(window.showToast) window.showToast('Please sign in', 'warning'); else alert('Please sign in'); });
-        document.getElementById('nav-create-btn')?.addEventListener('click', () => { if (window.currentUser) window.location.href = 'creator-upload.html'; else if(window.showToast) window.showToast('Please sign in', 'warning'); else alert('Please sign in'); });
+        document.getElementById('nav-menu-btn')?.addEventListener('click', () => { 
+            const sidebar = document.getElementById('sidebar-menu');
+            const overlay = document.getElementById('sidebar-overlay');
+            if(sidebar && overlay) {
+                sidebar.classList.add('active');
+                overlay.classList.add('active');
+                document.body.style.overflow = 'hidden';
+            }
+        });
+        document.getElementById('nav-history-btn')?.addEventListener('click', () => { 
+            if (window.currentUser) window.location.href = 'watch-history.html'; 
+            else if(window.showToast) window.showToast('Please sign in to view watch history', 'warning');
+            else alert('Please sign in');
+        });
+        document.getElementById('nav-create-btn')?.addEventListener('click', async () => { 
+            const { data } = await supabaseClient.auth.getSession();
+            if (data?.session) window.location.href = 'creator-upload.html';
+            else if(window.showToast) window.showToast('Please sign in to create content', 'warning');
+            else alert('Please sign in');
+        });
     }
     function applyThemeFallback(theme) {
         const root = document.documentElement;
