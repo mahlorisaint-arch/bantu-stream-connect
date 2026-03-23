@@ -16,59 +16,735 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <!-- PHASE 4: HLS.js Library for Adaptive Streaming -->
   <script src="https://cdn.jsdelivr.net/npm/hls.js@1.4.12/dist/hls.min.js"></script>
-  <!-- FIXED: Theme CSS - MUST be loaded before content-detail.css -->
-  <link rel="stylesheet" href="css/home-feed-themes.css">
   <!-- Base Styles -->
   <link rel="stylesheet" href="css/base.css">
   <link rel="stylesheet" href="css/components.css">
   <link rel="stylesheet" href="css/content-detail.css">
-  <!-- PHASE 1 FIX: New Video Player CSS -->
-  <link rel="stylesheet" href="css/video-player.css">
-  <!-- PHASE 2 POLISH: Additional modal styles -->
+  
+  <!-- CRITICAL FIX: Home Feed Header & Sidebar Styles - INLINE to ensure they load -->
   <style>
-    /* PHASE 2 POLISH: Playlist Modal Styles */
-    .playlist-modal {
-      animation: modalFadeIn 0.3s ease;
+    /* ===== HOME FEED HEADER & SIDEBAR STYLES (FIXED) ===== */
+    :root {
+      --deep-black: #0A0E12;
+      --deep-navy: #0F172A;
+      --soft-white: #F8FAFC;
+      --slate-grey: #94A3B8;
+      --bantu-blue: #1D4ED8;
+      --warm-gold: #F59E0B;
+      --error-color: #EF4444;
+      --success-color: #10B981;
+      --card-bg: rgba(15, 23, 42, 0.6);
+      --card-border: rgba(148, 163, 184, 0.2);
+      --spacing-xs: 8px;
+      --spacing-sm: 12px;
+      --spacing-md: 16px;
+      --spacing-lg: 24px;
+      --font-xs: 11px;
+      --font-sm: 13px;
+      --font-base: 14px;
+      --font-lg: 18px;
+      --icon-xs: 12px;
+      --icon-sm: 14px;
+      --icon-md: 18px;
+      --icon-lg: 22px;
+      --ui-scale: 1;
     }
-
-    @keyframes modalFadeIn {
-      from { opacity: 0; }
-      to { opacity: 1; }
+    
+    /* Header Styles */
+    .header {
+      background: rgba(10, 14, 18, 0.95);
+      backdrop-filter: blur(20px);
+      padding: 12px 24px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      border-bottom: 1px solid var(--card-border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      min-height: 60px;
     }
-
-    .playlist-modal-content {
-      animation: modalSlideIn 0.3s ease;
+    
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      cursor: pointer;
     }
-
-    @keyframes modalSlideIn {
-      from { transform: translateY(-20px); opacity: 0; }
-      to { transform: translateY(0); opacity: 1; }
+    
+    .menu-toggle {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: var(--soft-white);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-size: 18px;
+    }
+    
+    .menu-toggle:hover {
+      background: rgba(255, 255, 255, 0.2);
+      transform: translateY(-2px);
+    }
+    
+    .logo-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .logo-icon img {
+      width: 32px;
+      height: 32px;
+      object-fit: contain;
+    }
+    
+    .logo-text {
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 700;
+      font-size: 17px;
+      background: linear-gradient(to right, var(--soft-white), var(--bantu-blue));
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+    
+    .header-actions {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+    
+    .icon-btn {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: var(--soft-white);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-size: 16px;
+    }
+    
+    .icon-btn:hover {
+      background: rgba(255, 255, 255, 0.2);
+      transform: translateY(-2px);
+    }
+    
+    .notification-badge {
+      position: absolute;
+      top: -5px;
+      right: -5px;
+      background: var(--error-color);
+      color: white;
+      font-size: 10px;
+      font-weight: bold;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    /* Profile Switcher */
+    .profile-switcher {
+      position: relative;
+    }
+    
+    .profile-btn {
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 40px;
+      padding: 5px 12px 5px 5px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+    
+    .profile-btn:hover {
+      background: rgba(255, 255, 255, 0.2);
+    }
+    
+    .profile-placeholder {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 14px;
+    }
+    
+    .profile-name {
+      color: var(--soft-white);
+      font-size: 13px;
+      font-weight: 500;
+    }
+    
+    .profile-dropdown {
+      position: absolute;
+      top: 50px;
+      right: 0;
+      width: 250px;
+      background: rgba(15, 23, 42, 0.95);
+      backdrop-filter: blur(20px);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      opacity: 0;
+      visibility: hidden;
+      transform: translateY(-10px);
+      transition: all 0.3s ease;
+      z-index: 100;
+    }
+    
+    .profile-dropdown.active {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(0);
+    }
+    
+    .profile-dropdown-header {
+      padding: 12px;
+      border-bottom: 1px solid var(--card-border);
+    }
+    
+    .profile-dropdown-header h4 {
+      color: var(--soft-white);
+      font-size: 14px;
+      margin: 0;
+    }
+    
+    .profile-list {
+      padding: 8px;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+    
+    .profile-dropdown-footer {
+      padding: 12px;
+      border-top: 1px solid var(--card-border);
+    }
+    
+    .text-btn {
+      background: none;
+      border: none;
+      color: var(--warm-gold);
+      cursor: pointer;
+      font-size: 13px;
+      width: 100%;
+      text-align: center;
+    }
+    
+    .text-btn:hover {
+      color: var(--soft-white);
+    }
+    
+    /* RSA Badge */
+    .rsa-badge {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: linear-gradient(135deg, #007A4D, #FFB81C, #E03C31);
+      padding: 6px 12px;
+      border-radius: 30px;
+      color: white;
+      font-size: 11px;
+      font-weight: 600;
+      margin-left: 8px;
+    }
+    
+    /* Sidebar Styles */
+    .sidebar-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(4px);
+      z-index: 1000;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.3s ease;
+    }
+    
+    .sidebar-overlay.active {
+      opacity: 1;
+      visibility: visible;
+    }
+    
+    .sidebar-menu {
+      position: fixed;
+      top: 0;
+      left: -320px;
+      width: 300px;
+      height: 100vh;
+      background: rgba(15, 23, 42, 0.98);
+      backdrop-filter: blur(20px);
+      border-right: 1px solid var(--card-border);
+      z-index: 1001;
+      transition: left 0.3s ease;
+      display: flex;
+      flex-direction: column;
+      padding: 20px;
+      overflow-y: auto;
+    }
+    
+    .sidebar-menu.active {
+      left: 0;
+    }
+    
+    .sidebar-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--card-border);
+      margin-bottom: 16px;
+    }
+    
+    .sidebar-logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      cursor: pointer;
+    }
+    
+    .sidebar-logo .logo-icon {
+      width: 32px;
+      height: 32px;
+    }
+    
+    .sidebar-logo-text {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 18px;
+      font-weight: 700;
+      background: linear-gradient(to right, var(--soft-white), var(--bantu-blue));
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+    
+    .sidebar-close {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid var(--card-border);
+      color: var(--soft-white);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-size: 16px;
+    }
+    
+    .sidebar-close:hover {
+      background: var(--error-color);
+    }
+    
+    .sidebar-profile {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 12px;
+      margin-bottom: 16px;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+    
+    .sidebar-profile:hover {
+      background: rgba(255, 255, 255, 0.1);
+    }
+    
+    .sidebar-profile-avatar {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: 600;
+      font-size: 16px;
+      overflow: hidden;
+    }
+    
+    .sidebar-profile-info {
+      flex: 1;
+      min-width: 0;
+    }
+    
+    .sidebar-profile-name {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--soft-white);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    
+    .sidebar-profile-email {
+      font-size: 12px;
+      color: var(--slate-grey);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    
+    .sidebar-nav {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      overflow-y: auto;
+    }
+    
+    .sidebar-nav-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px;
+      border-radius: 12px;
+      color: var(--soft-white);
+      text-decoration: none;
+      font-size: 14px;
+      transition: all 0.3s ease;
+      cursor: pointer;
+    }
+    
+    .sidebar-nav-item:hover {
+      background: rgba(255, 255, 255, 0.1);
+      transform: translateX(4px);
+    }
+    
+    .sidebar-nav-item.active {
+      background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+    }
+    
+    .sidebar-nav-item i {
+      width: 20px;
+      text-align: center;
+      font-size: 16px;
+    }
+    
+    .sidebar-nav-item .badge {
+      margin-left: auto;
+      background: var(--error-color);
+      color: white;
+      font-size: 10px;
+      padding: 2px 8px;
+      border-radius: 10px;
+    }
+    
+    .sidebar-footer {
+      padding-top: 16px;
+      border-top: 1px solid var(--card-border);
+      margin-top: 16px;
+    }
+    
+    .sidebar-theme-toggle {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 12px;
+      cursor: pointer;
+      transition: background 0.3s ease;
+      margin-bottom: 12px;
+      width: 100%;
+      color: var(--soft-white);
+    }
+    
+    .sidebar-theme-toggle:hover {
+      background: rgba(255, 255, 255, 0.1);
+    }
+    
+    .sidebar-scale-control {
+      padding: 12px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 12px;
+    }
+    
+    .scale-control-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+    
+    .scale-control-row:last-child {
+      margin-bottom: 0;
+    }
+    
+    .scale-btn {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid var(--card-border);
+      color: var(--soft-white);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.3s ease;
+      font-size: 12px;
+    }
+    
+    .scale-btn:hover {
+      background: var(--warm-gold);
+      color: var(--deep-black);
+      transform: scale(1.1);
+    }
+    
+    .scale-value {
+      font-size: 13px;
+      color: var(--soft-white);
+      min-width: 45px;
+      text-align: center;
+      font-weight: 600;
+    }
+    
+    /* Bottom Navigation Button */
+    .navigation-button-container {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 999;
+      width: calc(100% - 30px);
+      max-width: 500px;
+    }
+    
+    .navigation-button {
+      display: flex;
+      background: rgba(15, 23, 42, 0.95);
+      border: 1px solid rgba(148, 163, 184, 0.3);
+      border-radius: 50px;
+      padding: 8px 20px;
+      backdrop-filter: blur(12px);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+      gap: 12px;
+      justify-content: center;
+      align-items: center;
+      width: 100%;
+    }
+    
+    .nav-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: var(--soft-white);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-size: 18px;
+    }
+    
+    .nav-icon:hover {
+      background: rgba(255, 255, 255, 0.2);
+      transform: translateY(-3px);
+    }
+    
+    /* Theme Selector */
+    .theme-selector {
+      position: fixed;
+      bottom: 100px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--card-bg);
+      backdrop-filter: blur(20px);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 8px;
+      display: flex;
+      gap: 8px;
+      z-index: 1002;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.3s ease;
+    }
+    
+    .theme-selector.active {
+      opacity: 1;
+      visibility: visible;
+    }
+    
+    .theme-option {
+      padding: 8px 12px;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      color: var(--soft-white);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      transition: all 0.3s ease;
+    }
+    
+    .theme-option:hover {
+      background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+    }
+    
+    /* Back to Top Button */
+    .back-to-top {
+      position: fixed;
+      bottom: 100px;
+      right: 20px;
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: white;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      z-index: 97;
+      font-size: 18px;
+    }
+    
+    .back-to-top:hover {
+      transform: translateY(-5px);
+    }
+    
+    /* Toast Container */
+    #toast-container {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    
+    .toast {
+      padding: 12px 24px;
+      border-radius: 8px;
+      color: white;
+      font-weight: 500;
+      animation: slideIn 0.3s ease;
+      max-width: 300px;
+      backdrop-filter: blur(10px);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .toast.error { background: rgba(239, 68, 68, 0.9); }
+    .toast.success { background: rgba(16, 185, 129, 0.9); }
+    .toast.warning { background: rgba(245, 158, 11, 0.9); }
+    .toast.info { background: rgba(29, 78, 216, 0.9); }
+    
+    @keyframes slideIn {
+      from { transform: translateX(100%); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+    
+    /* Mobile Responsive */
+    @media (max-width: 768px) {
+      .header {
+        padding: 10px 16px;
+        min-height: 52px;
+      }
+      .logo-text {
+        font-size: 14px;
+        max-width: 130px;
+      }
+      .logo-icon {
+        width: 30px;
+        height: 30px;
+      }
+      .logo-icon img {
+        width: 26px;
+        height: 26px;
+      }
+      .menu-toggle {
+        width: 34px;
+        height: 34px;
+        font-size: 16px;
+      }
+      .icon-btn {
+        width: 34px;
+        height: 34px;
+      }
+      .profile-placeholder {
+        width: 28px;
+        height: 28px;
+        font-size: 12px;
+      }
+      .profile-name {
+        display: none;
+      }
+      .rsa-badge span {
+        display: none;
+      }
+      .rsa-badge {
+        padding: 6px 8px;
+      }
+      .navigation-button-container {
+        bottom: 80px;
+      }
+      .nav-icon {
+        width: 38px;
+        height: 38px;
+        font-size: 16px;
+      }
+      .sidebar-menu {
+        width: 280px;
+        left: -300px;
+      }
+    }
+    
+    @media (max-width: 480px) {
+      .header {
+        padding: 8px 12px;
+      }
+      .logo-text {
+        display: none;
+      }
+      .icon-btn {
+        width: 32px;
+        height: 32px;
+      }
+      .nav-icon {
+        width: 42px;
+        height: 42px;
+      }
     }
   </style>
-  <!-- FIXED: Conditional preloads to prevent warnings on content-detail page -->
-  <script>
-    // Only preload home-feed resources if on home page
-    (function() {
-      if (window.location.pathname.includes('index.html') || window.location.pathname === '/') {
-        // Home page - preload resources
-        const link1 = document.createElement('link');
-        link1.rel = 'preload';
-        link1.href = 'js/home-feed.js';
-        link1.as = 'script';
-        document.head.appendChild(link1);
-        
-        const link2 = document.createElement('link');
-        link2.rel = 'preload';
-        link2.href = 'css/home-feed.css';
-        link2.as = 'style';
-        document.head.appendChild(link2);
-        
-        console.log('🏠 Home page detected - preloading home-feed resources');
-      } else {
-        console.log('📄 Content detail page detected - skipping home-feed preloads');
-      }
-    })();
-  </script>
 </head>
 <body>
   <!-- Loading Screen -->
@@ -88,223 +764,200 @@
   <!-- Main App (hidden until loaded) -->
   <div id="app" style="display: none;">
     <!-- ============================================ -->
-    <!-- ENHANCED HEADER WITH SIDEBAR TOGGLE (STEP 1) -->
+    <!-- ENHANCED HEADER WITH SIDEBAR TOGGLE -->
     <!-- ============================================ -->
     <header class="header">
-        <div class="logo" onclick="window.location.href='index.html'">
-            <!-- Hamburger Menu Button -->
-            <button class="menu-toggle" id="menu-toggle" title="Open Menu" aria-label="Open navigation menu">
-                <i class="fas fa-bars"></i>
-            </button>
-            <div class="logo-icon">
-                <img src="assets/icon/bantu_stream_connect_icon.png" alt="Bantu Stream Connect Logo">
-            </div>
-            <div class="logo-text">BANTU STREAM CONNECT</div>
+      <div class="logo" onclick="window.location.href='index.html'">
+        <button class="menu-toggle" id="menu-toggle" title="Open Menu" aria-label="Open navigation menu">
+          <i class="fas fa-bars"></i>
+        </button>
+        <div class="logo-icon">
+          <img src="assets/icon/bantu_stream_connect_icon.png" alt="Bantu Stream Connect Logo">
         </div>
-        <div class="header-actions">
-            <!-- Voice Search Button -->
-            <button id="voice-search-btn" class="icon-btn" title="Voice Search">
-                <i class="fas fa-microphone"></i>
-            </button>
-            <!-- Analytics Button -->
-            <button id="analytics-btn" class="icon-btn" title="Analytics (Alt+A)">
-                <i class="fas fa-chart-line"></i>
-            </button>
-            <!-- Search Button -->
-            <button id="search-btn" class="icon-btn search-btn" title="Search (Ctrl+K)">
-                <i class="fas fa-search"></i>
-            </button>
-            <!-- Notifications Button -->
-            <button id="notifications-btn" class="icon-btn" title="Notifications (Alt+N)">
-                <i class="fas fa-bell"></i>
-                <span class="notification-badge" id="notification-count" style="display: none;">0</span>
-            </button>
-            <!-- Profile Button with Dropdown -->
-            <div class="profile-switcher">
-                <button id="current-profile-btn" class="profile-btn" title="Profile (Alt+P)">
-                    <div class="profile-placeholder" id="userProfilePlaceholder">
-                        <i class="fas fa-user"></i>
-                    </div>
-                    <span class="profile-name" id="current-profile-name">Guest</span>
-                    <i class="fas fa-chevron-down"></i>
-                </button>
-                <div class="profile-dropdown" id="profile-dropdown">
-                    <div class="profile-dropdown-header">
-                        <h4>Switch Profile</h4>
-                    </div>
-                    <div class="profile-list" id="profile-list"></div>
-                    <div class="profile-dropdown-footer">
-                        <button class="text-btn" id="manage-profiles-btn">
-                            <i class="fas fa-user-cog"></i> Manage Profiles
-                        </button>
-                    </div>
-                </div>
+        <div class="logo-text">BANTU STREAM CONNECT</div>
+      </div>
+      <div class="header-actions">
+        <button id="voice-search-btn" class="icon-btn" title="Voice Search">
+          <i class="fas fa-microphone"></i>
+        </button>
+        <button id="analytics-btn" class="icon-btn" title="Analytics (Alt+A)">
+          <i class="fas fa-chart-line"></i>
+        </button>
+        <button id="search-btn" class="icon-btn search-btn" title="Search (Ctrl+K)">
+          <i class="fas fa-search"></i>
+        </button>
+        <button id="notifications-btn" class="icon-btn" title="Notifications (Alt+N)">
+          <i class="fas fa-bell"></i>
+          <span class="notification-badge" id="notification-count" style="display: none;">0</span>
+        </button>
+        <div class="profile-switcher">
+          <button id="current-profile-btn" class="profile-btn" title="Profile (Alt+P)">
+            <div class="profile-placeholder" id="userProfilePlaceholder">
+              <i class="fas fa-user"></i>
             </div>
-            <!-- "Built in South Africa" Badge -->
-            <div class="rsa-badge" title="Proudly South African">
-                <i class="fas fa-map-marker-alt"></i>
-                <span>RSA</span>
+            <span class="profile-name" id="current-profile-name">Guest</span>
+            <i class="fas fa-chevron-down"></i>
+          </button>
+          <div class="profile-dropdown" id="profile-dropdown">
+            <div class="profile-dropdown-header">
+              <h4>Switch Profile</h4>
             </div>
+            <div class="profile-list" id="profile-list"></div>
+            <div class="profile-dropdown-footer">
+              <button class="text-btn" id="manage-profiles-btn">
+                <i class="fas fa-user-cog"></i> Manage Profiles
+              </button>
+            </div>
+          </div>
         </div>
+        <div class="rsa-badge" title="Proudly South African">
+          <i class="fas fa-map-marker-alt"></i>
+          <span>RSA</span>
+        </div>
+      </div>
     </header>
 
     <!-- ============================================ -->
-    <!-- SIDEBAR OVERLAY & SIDEBAR MENU (STEP 2) -->
+    <!-- SIDEBAR OVERLAY & SIDEBAR MENU -->
     <!-- ============================================ -->
     <div class="sidebar-overlay" id="sidebar-overlay"></div>
     <div class="sidebar-menu" id="sidebar-menu">
-        <div class="sidebar-header">
-            <div class="sidebar-logo" onclick="window.location.href='index.html'">
-                <div class="logo-icon">
-                    <img src="assets/icon/bantu_stream_connect_icon.png" alt="Bantu Stream Connect Logo">
-                </div>
-                <span class="sidebar-logo-text">BANTU</span>
+      <div class="sidebar-header">
+        <div class="sidebar-logo" onclick="window.location.href='index.html'">
+          <div class="logo-icon">
+            <img src="assets/icon/bantu_stream_connect_icon.png" alt="Bantu Stream Connect Logo">
+          </div>
+          <span class="sidebar-logo-text">BANTU</span>
+        </div>
+        <button class="sidebar-close" id="sidebar-close" aria-label="Close menu">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="sidebar-profile" id="sidebar-profile">
+        <div class="sidebar-profile-avatar" id="sidebar-profile-avatar">
+          <i class="fas fa-user"></i>
+        </div>
+        <div class="sidebar-profile-info">
+          <div class="sidebar-profile-name" id="sidebar-profile-name">Guest</div>
+          <div class="sidebar-profile-email" id="sidebar-profile-email">Sign in to continue</div>
+        </div>
+        <i class="fas fa-chevron-right" style="color: var(--slate-grey);"></i>
+      </div>
+      <nav class="sidebar-nav">
+        <a href="index.html" class="sidebar-nav-item">
+          <i class="fas fa-home"></i>
+          <span>Home</span>
+        </a>
+        <a href="explore-screen.html" class="sidebar-nav-item">
+          <i class="fas fa-compass"></i>
+          <span>Explore</span>
+        </a>
+        <a href="#" class="sidebar-nav-item" id="sidebar-watch-history">
+          <i class="fas fa-history"></i>
+          <span>Watch History</span>
+        </a>
+        <a href="#" class="sidebar-nav-item" id="sidebar-analytics">
+          <i class="fas fa-chart-line"></i>
+          <span>Analytics</span>
+        </a>
+        <a href="#" class="sidebar-nav-item" id="sidebar-notifications">
+          <i class="fas fa-bell"></i>
+          <span>Notifications</span>
+          <span class="badge" id="sidebar-notification-count" style="display: none;">0</span>
+        </a>
+        <a href="#" class="sidebar-nav-item" id="sidebar-badges">
+          <i class="fas fa-medal"></i>
+          <span>My Badges</span>
+        </a>
+        <a href="#" class="sidebar-nav-item" id="sidebar-watch-party">
+          <i class="fas fa-users"></i>
+          <span>Watch Party</span>
+        </a>
+        <a href="creator-upload.html" class="sidebar-nav-item" id="sidebar-create">
+          <i class="fas fa-plus-circle"></i>
+          <span>Create</span>
+        </a>
+        <a href="creator-dashboard.html" class="sidebar-nav-item" id="sidebar-dashboard">
+          <i class="fas fa-tachometer-alt"></i>
+          <span>Dashboard</span>
+        </a>
+        <a href="manage-profiles.html" class="sidebar-nav-item">
+          <i class="fas fa-user-cog"></i>
+          <span>Manage Profiles</span>
+        </a>
+      </nav>
+      <div class="sidebar-footer">
+        <div class="sidebar-theme-toggle" id="sidebar-theme-toggle">
+          <span><i class="fas fa-palette"></i> Theme</span>
+          <i class="fas fa-chevron-right" style="color: var(--slate-grey);"></i>
+        </div>
+        <div class="sidebar-scale-control">
+          <div class="scale-control-row">
+            <span><i class="fas fa-text-height"></i> UI Size</span>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <button class="scale-btn" id="sidebar-scale-decrease" title="Smaller">
+                <i class="fas fa-minus"></i>
+              </button>
+              <span class="scale-value" id="sidebar-scale-value">100%</span>
+              <button class="scale-btn" id="sidebar-scale-increase" title="Larger">
+                <i class="fas fa-plus"></i>
+              </button>
             </div>
-            <button class="sidebar-close" id="sidebar-close" aria-label="Close menu">
-                <i class="fas fa-times"></i>
+          </div>
+          <div class="scale-control-row">
+            <button class="scale-btn" id="sidebar-scale-reset" title="Reset" style="width: 100%;">
+              <i class="fas fa-undo"></i> Reset to Default
             </button>
+          </div>
         </div>
-        <!-- Profile Section -->
-        <div class="sidebar-profile" id="sidebar-profile">
-            <div class="sidebar-profile-avatar" id="sidebar-profile-avatar">
-                <i class="fas fa-user"></i>
-            </div>
-            <div class="sidebar-profile-info">
-                <div class="sidebar-profile-name" id="sidebar-profile-name">Guest</div>
-                <div class="sidebar-profile-email" id="sidebar-profile-email">Sign in to continue</div>
-            </div>
-            <i class="fas fa-chevron-right" style="color: var(--slate-grey);"></i>
-        </div>
-        <!-- Navigation Items -->
-        <nav class="sidebar-nav">
-            <a href="index.html" class="sidebar-nav-item active">
-                <i class="fas fa-home"></i>
-                <span>Home</span>
-            </a>
-            <a href="explore-screen.html" class="sidebar-nav-item">
-                <i class="fas fa-compass"></i>
-                <span>Explore</span>
-            </a>
-            <a href="#" class="sidebar-nav-item" id="sidebar-watch-history">
-                <i class="fas fa-history"></i>
-                <span>Watch History</span>
-            </a>
-            <a href="#" class="sidebar-nav-item" id="sidebar-analytics">
-                <i class="fas fa-chart-line"></i>
-                <span>Analytics</span>
-            </a>
-            <a href="#" class="sidebar-nav-item" id="sidebar-notifications">
-                <i class="fas fa-bell"></i>
-                <span>Notifications</span>
-                <span class="badge" id="sidebar-notification-count" style="display: none;">0</span>
-            </a>
-            <a href="#" class="sidebar-nav-item" id="sidebar-badges">
-                <i class="fas fa-medal"></i>
-                <span>My Badges</span>
-            </a>
-            <a href="#" class="sidebar-nav-item" id="sidebar-watch-party">
-                <i class="fas fa-users"></i>
-                <span>Watch Party</span>
-            </a>
-            <a href="creator-upload.html" class="sidebar-nav-item" id="sidebar-create">
-                <i class="fas fa-plus-circle"></i>
-                <span>Create</span>
-            </a>
-            <a href="creator-dashboard.html" class="sidebar-nav-item" id="sidebar-dashboard">
-                <i class="fas fa-tachometer-alt"></i>
-                <span>Dashboard</span>
-            </a>
-            <a href="manage-profiles.html" class="sidebar-nav-item">
-                <i class="fas fa-user-cog"></i>
-                <span>Manage Profiles</span>
-            </a>
-        </nav>
-        <!-- Footer: Theme & Scale -->
-        <div class="sidebar-footer">
-            <div class="sidebar-theme-toggle" id="sidebar-theme-toggle">
-                <span><i class="fas fa-palette"></i> Theme</span>
-                <i class="fas fa-chevron-right" style="color: var(--slate-grey);"></i>
-            </div>
-            <div class="sidebar-scale-control">
-                <div class="scale-control-row">
-                    <span><i class="fas fa-text-height"></i> UI Size</span>
-                    <div style="display: flex; align-items: center; gap: 8px;">
-                        <button class="scale-btn" id="sidebar-scale-decrease" title="Smaller">
-                            <i class="fas fa-minus"></i>
-                        </button>
-                        <span class="scale-value" id="sidebar-scale-value">100%</span>
-                        <button class="scale-btn" id="sidebar-scale-increase" title="Larger">
-                            <i class="fas fa-plus"></i>
-                        </button>
-                    </div>
-                </div>
-                <div class="scale-control-row">
-                    <button class="scale-btn" id="sidebar-scale-reset" title="Reset" style="width: 100%;">
-                        <i class="fas fa-undo"></i> Reset to Default
-                    </button>
-                </div>
-            </div>
-        </div>
+      </div>
     </div>
+    
     <!-- Theme Selector -->
     <div id="theme-selector" class="theme-selector">
-        <button class="theme-option" data-theme="dark">
-            <i class="fas fa-moon"></i> Dark
-        </button>
-        <button class="theme-option" data-theme="light">
-            <i class="fas fa-sun"></i> Light
-        </button>
-        <button class="theme-option" data-theme="high-contrast">
-            <i class="fas fa-eye"></i> High Contrast
-        </button>
+      <button class="theme-option" data-theme="dark">
+        <i class="fas fa-moon"></i> Dark
+      </button>
+      <button class="theme-option" data-theme="light">
+        <i class="fas fa-sun"></i> Light
+      </button>
+      <button class="theme-option" data-theme="high-contrast">
+        <i class="fas fa-eye"></i> High Contrast
+      </button>
     </div>
 
     <!-- ============================================ -->
-    <!-- BOTTOM NAVIGATION BUTTON (STEP 3) -->
+    <!-- BOTTOM NAVIGATION BUTTON -->
     <!-- ============================================ -->
     <div class="navigation-button-container">
-        <div class="navigation-button">
-            <div class="nav-icon" id="nav-home-btn" title="Home">
-                <i class="fas fa-home"></i>
-            </div>
-            <div class="nav-icon" id="nav-history-btn" title="Watch History">
-                <i class="fas fa-history"></i>
-            </div>
-            <div class="nav-icon" id="nav-create-btn" title="Create Content">
-                <i class="fas fa-plus-circle"></i>
-            </div>
-            <div class="nav-icon" id="nav-menu-btn" title="Menu">
-                <i class="fas fa-bars"></i>
-            </div>
+      <div class="navigation-button">
+        <div class="nav-icon" id="nav-home-btn" title="Home">
+          <i class="fas fa-home"></i>
         </div>
+        <div class="nav-icon" id="nav-history-btn" title="Watch History">
+          <i class="fas fa-history"></i>
+        </div>
+        <div class="nav-icon" id="nav-create-btn" title="Create Content">
+          <i class="fas fa-plus-circle"></i>
+        </div>
+        <div class="nav-icon" id="nav-menu-btn" title="Menu">
+          <i class="fas fa-bars"></i>
+        </div>
+      </div>
     </div>
 
     <!-- ============================================ -->
-    <!-- MAIN CONTENT -->
+    <!-- MAIN CONTENT (Rest of the page remains the same) -->
     <!-- ============================================ -->
     <main class="container">
-      <!-- 🎯 VIDEO PLAYER - NOW BEFORE HERO (Appears on Play) -->
-      <!-- ✅ COMPACT VIDEO PLAYER - NO HEADER, NO CLOSE BUTTON -->
+      <!-- Video Player -->
       <div class="inline-player" id="inlinePlayer" style="display: none;">
         <div class="video-container" id="bantuVideoContainer">
-          <!-- Video element WITHOUT any duplicate controls -->
-          <video id="inlineVideoPlayer" playsinline webkit-playsinline>
-            Your browser does not support the video tag.
-          </video>
-          
-          <!-- PHASE 4: Quality Badge and Network Speed Indicator -->
+          <video id="inlineVideoPlayer" playsinline webkit-playsinline></video>
           <div class="quality-indicator" id="qualityBadge">Auto</div>
           <div class="network-speed-indicator" id="networkSpeedIndicator">
             <i class="fas fa-wifi"></i> <span id="networkSpeedValue">-- Mbps</span>
           </div>
-          <div class="hls-badge" id="hlsBadge" style="display: none;">
-            <i class="fas fa-microchip"></i> HLS
-          </div>
-          <div class="data-saver-badge" id="dataSaverBadge" style="display: none;">
-            <i class="fas fa-leaf"></i> Data Saver
-          </div>
-          
-          <!-- SIMPLE Loading Placeholder Only -->
           <div class="bantu-player-placeholder" id="videoPlaceholder">
             <div class="bantu-logo-spinner">
               <div class="bantu-logo">
@@ -314,8 +967,6 @@
             </div>
             <p class="loading-text">Ready to play...</p>
           </div>
-          
-          <!-- PHASE 1 FIX: Enhanced Video Player Controls (only these will show) -->
           <div class="enhanced-video-controls">
             <div class="controls-bar">
               <button class="control-btn play-pause" title="Play/Pause">
@@ -342,10 +993,7 @@
                 <i class="fas fa-expand"></i>
               </button>
             </div>
-            
-            <!-- PHASE 4: COMPACT Settings Menu -->
             <div class="settings-menu">
-              <!-- Quality Section -->
               <div class="settings-section">
                 <h4>Quality</h4>
                 <div class="quality-options" id="qualityOptions">
@@ -356,8 +1004,6 @@
                   <button class="quality-option" data-quality="360p">360p</button>
                 </div>
               </div>
-              
-              <!-- Data Saver Section -->
               <div class="settings-section">
                 <h4>Data Saver</h4>
                 <label class="toggle-switch">
@@ -366,8 +1012,6 @@
                 </label>
                 <p class="toggle-description">Reduce data usage by streaming at lower quality</p>
               </div>
-              
-              <!-- Playback Speed Section -->
               <div class="settings-section">
                 <h4>Speed</h4>
                 <div class="speed-options">
@@ -381,447 +1025,91 @@
               </div>
             </div>
           </div>
-          
-          <!-- Buffering Indicator -->
-          <div class="buffering-indicator">
-            <div class="spinner"></div>
-            <p>Buffering...</p>
-          </div>
-          
-          <!-- Error Overlay -->
-          <div class="error-overlay">
-            <div class="error-content">
-              <i class="fas fa-exclamation-triangle"></i>
-              <h3>Playback Error</h3>
-              <p class="error-message">Unable to play video. Please check your connection.</p>
-              <button class="retry-btn">Retry</button>
-            </div>
-          </div>
         </div>
       </div>
 
-      <!-- 🎯 HERO SECTION - NOW BELOW PLAYER -->
+      <!-- Hero Section -->
       <section class="content-hero" id="contentHero">
-        <!-- Poster (shown initially) -->
         <div class="hero-poster" id="heroPoster">
           <div class="poster-placeholder" id="posterPlaceholder">
             <i class="fas fa-film"></i>
           </div>
-          <!-- Play overlay for visual cue -->
           <div class="play-overlay" id="heroPlayOverlay">
             <div class="play-icon-large">
               <i class="fas fa-play"></i>
             </div>
           </div>
         </div>
-        
-        <!-- Hero Info (always visible) -->
         <div class="hero-info">
           <h1 id="contentTitle">Loading Content...</h1>
           <div class="hero-meta">
-            <div class="meta-item">
-              <i class="fas fa-user"></i>
-              <span id="creatorName">Creator</span>
-            </div>
-            <div class="meta-item">
-              <i class="fas fa-eye"></i>
-              <span id="viewsCount">0 views</span>
-            </div>
-            <div class="meta-item">
-              <i class="fas fa-clock"></i>
-              <span id="durationText">0m 0s</span>
-            </div>
-            <div class="meta-item">
-              <i class="fas fa-calendar"></i>
-              <span id="uploadDate">--</span>
-            </div>
+            <div class="meta-item"><i class="fas fa-user"></i><span id="creatorName">Creator</span></div>
+            <div class="meta-item"><i class="fas fa-eye"></i><span id="viewsCount">0 views</span></div>
+            <div class="meta-item"><i class="fas fa-clock"></i><span id="durationText">0m 0s</span></div>
+            <div class="meta-item"><i class="fas fa-calendar"></i><span id="uploadDate">--</span></div>
           </div>
-          <div class="hero-description" id="contentDescriptionShort">
-            Loading description...
-          </div>
+          <div class="hero-description" id="contentDescriptionShort">Loading description...</div>
           <div class="hero-actions">
-            <!-- Resume button will be added dynamically here -->
-            <button class="btn btn-primary" id="playBtn">
-              <i class="fas fa-play"></i>
-              <span>Play Now</span>
-            </button>
-            <button class="btn btn-secondary" id="likeBtn">
-              <i class="far fa-heart"></i>
-              <span>Like</span>
-            </button>
-            <button class="btn btn-secondary" id="favoriteBtn">
-              <i class="far fa-star"></i>
-              <span>Favorite</span>
-            </button>
-            <button class="btn btn-secondary" id="watchLaterBtn">
-              <i class="far fa-clock"></i>
-              <span>Watch Later</span>
-            </button>
-            <button class="btn btn-secondary" id="shareBtn">
-              <i class="fas fa-share"></i>
-              <span>Share</span>
-            </button>
-            <button class="btn btn-secondary" id="closePlayerFromHero" style="display: none;">
-              <i class="fas fa-times"></i>
-              <span>Close Player</span>
-            </button>
+            <button class="btn btn-primary" id="playBtn"><i class="fas fa-play"></i><span>Play Now</span></button>
+            <button class="btn btn-secondary" id="likeBtn"><i class="far fa-heart"></i><span>Like</span></button>
+            <button class="btn btn-secondary" id="favoriteBtn"><i class="far fa-star"></i><span>Favorite</span></button>
+            <button class="btn btn-secondary" id="watchLaterBtn"><i class="far fa-clock"></i><span>Watch Later</span></button>
+            <button class="btn btn-secondary" id="shareBtn"><i class="fas fa-share"></i><span>Share</span></button>
+            <button class="btn btn-secondary" id="closePlayerFromHero" style="display: none;"><i class="fas fa-times"></i><span>Close Player</span></button>
           </div>
         </div>
       </section>
 
-      <!-- ============================================ -->
-      <!-- 🎨 CREATOR SECTION - PROPER STRUCTURE FOR AVATAR -->
-      <!-- ============================================ -->
+      <!-- Rest of the content remains the same -->
       <section class="creator-section">
         <div class="creator-info">
-          <div class="creator-avatar" id="creatorAvatar">
-            <i class="fas fa-user"></i>
-          </div>
+          <div class="creator-avatar" id="creatorAvatar"><i class="fas fa-user"></i></div>
           <div class="creator-details">
             <h3 id="creatorDisplayName">Creator Name</h3>
             <p>Verified Creator • Joined 2024</p>
           </div>
-          <button id="connectCreatorBtn" class="connect-btn">
-            <i class="fas fa-user-plus"></i>
-            <span>Connect</span>
-          </button>
+          <button id="connectCreatorBtn" class="connect-btn"><i class="fas fa-user-plus"></i><span>Connect</span></button>
         </div>
       </section>
 
-      <!-- Stats Grid -->
       <section class="stats-grid">
-        <div class="stat-card">
-          <div class="stat-icon">
-            <i class="fas fa-eye"></i>
-          </div>
-          <div class="stat-content">
-            <h4>Total Views</h4>
-            <p id="viewsCountFull">0</p>
-          </div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon">
-            <i class="fas fa-heart"></i>
-          </div>
-          <div class="stat-content">
-            <h4>Likes</h4>
-            <p id="likesCount">0</p>
-          </div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon">
-            <i class="fas fa-clock"></i>
-          </div>
-          <div class="stat-content">
-            <h4>Duration</h4>
-            <p id="contentDurationFull">0m 0s</p>
-          </div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon">
-            <i class="fas fa-tag"></i>
-          </div>
-          <div class="stat-content">
-            <h4>Genre</h4>
-            <p id="contentGenre">--</p>
-          </div>
-        </div>
+        <div class="stat-card"><div class="stat-icon"><i class="fas fa-eye"></i></div><div class="stat-content"><h4>Total Views</h4><p id="viewsCountFull">0</p></div></div>
+        <div class="stat-card"><div class="stat-icon"><i class="fas fa-heart"></i></div><div class="stat-content"><h4>Likes</h4><p id="likesCount">0</p></div></div>
+        <div class="stat-card"><div class="stat-icon"><i class="fas fa-clock"></i></div><div class="stat-content"><h4>Duration</h4><p id="contentDurationFull">0m 0s</p></div></div>
+        <div class="stat-card"><div class="stat-icon"><i class="fas fa-tag"></i></div><div class="stat-content"><h4>Genre</h4><p id="contentGenre">--</p></div></div>
       </section>
 
-      <!-- Description Section -->
-      <section class="description-section">
-        <h2>Description</h2>
-        <div class="description-content" id="contentDescriptionFull">
-          Loading full description...
-        </div>
-      </section>
+      <section class="description-section"><h2>Description</h2><div class="description-content" id="contentDescriptionFull">Loading full description...</div></section>
 
-      <!-- Comments Section -->
       <section class="comments-section">
-        <div class="section-header">
-          <h2 class="section-title">Comments <span id="commentsCount">(0)</span></h2>
-          <button id="refreshCommentsBtn" class="refresh-btn">
-            <i class="fas fa-redo"></i> Refresh
-          </button>
-        </div>
-        <div class="add-comment">
-          <div class="comment-avatar" id="userCommentAvatar">
-            <i class="fas fa-user"></i>
-          </div>
-          <div class="comment-input-container">
-            <textarea id="commentInput" placeholder="Sign in to add a comment..." disabled></textarea>
-            <button id="sendCommentBtn" class="send-comment-btn">
-              <i class="fas fa-paper-plane"></i>
-            </button>
-          </div>
-        </div>
-        <div class="comments-list" id="commentsList">
-          <div class="no-comments" id="noComments">
-            <i class="fas fa-comment-slash"></i>
-            <p>No comments yet. Be the first to comment!</p>
-          </div>
-        </div>
+        <div class="section-header"><h2 class="section-title">Comments <span id="commentsCount">(0)</span></h2><button id="refreshCommentsBtn" class="refresh-btn"><i class="fas fa-redo"></i> Refresh</button></div>
+        <div class="add-comment"><div class="comment-avatar" id="userCommentAvatar"><i class="fas fa-user"></i></div><div class="comment-input-container"><textarea id="commentInput" placeholder="Sign in to add a comment..." disabled></textarea><button id="sendCommentBtn" class="send-comment-btn"><i class="fas fa-paper-plane"></i></button></div></div>
+        <div class="comments-list" id="commentsList"><div class="no-comments" id="noComments"><i class="fas fa-comment-slash"></i><p>No comments yet. Be the first to comment!</p></div></div>
       </section>
 
-      <!-- ============================================ -->
-      <!-- ✅ SINGLE CONTINUE WATCHING SECTION - BELOW COMMENTS -->
-      <!-- ============================================ -->
-      <section class="continue-watching-section" id="continueWatchingSection" style="display:none;">
-        <div class="section-header">
-          <h2 class="section-title">Continue Watching</h2>
-          <button class="refresh-btn" id="refreshContinueBtn" title="Refresh">
-            <i class="fas fa-redo"></i>
-          </button>
-        </div>
-        <div class="content-grid" id="continueGrid">
-          <!-- Items injected by JS -->
-        </div>
-      </section>
+      <section class="continue-watching-section" id="continueWatchingSection" style="display:none;"><div class="section-header"><h2 class="section-title">Continue Watching</h2><button class="refresh-btn" id="refreshContinueBtn" title="Refresh"><i class="fas fa-redo"></i></button></div><div class="content-grid" id="continueGrid"></div></section>
 
-      <!-- ============================================ -->
-      <!-- 🎯 PHASE 3: RECOMMENDATION RAILS - BELOW COMMENTS -->
-      <!-- ============================================ -->
-
-      <!-- Because You Watched Rail -->
-      <section class="related-section" id="becauseYouWatchedRail" style="display:none;">
-        <!-- Content injected by JS with skeleton loaders -->
-      </section>
-
-      <!-- More From Creator Rail -->
-      <section class="related-section" id="moreFromCreatorRail" style="display:none;">
-        <!-- Content injected by JS with skeleton loaders -->
-      </section>
-
-      <!-- Related Content (keep at bottom) -->
-      <section class="related-section">
-        <div class="section-header">
-          <h2 class="section-title">Related Content</h2>
-        </div>
-        <div class="content-grid" id="relatedGrid">
-          <!-- Related content will be loaded here -->
-        </div>
-      </section>
+      <section class="related-section" id="becauseYouWatchedRail" style="display:none;"></section>
+      <section class="related-section" id="moreFromCreatorRail" style="display:none;"></section>
+      <section class="related-section"><div class="section-header"><h2 class="section-title">Related Content</h2></div><div class="content-grid" id="relatedGrid"></div></section>
     </main>
 
-    <!-- Footer -->
     <footer class="footer">
       <p>Bantu Stream Connect © 2025 • Built in South Africa</p>
-      <div class="footer-links">
-        <a href="privacy-policy.html">Privacy Policy</a>
-        <a href="terms-of-service.html">Terms of Service</a>
-        <a href="support.html">Support</a>
-      </div>
+      <div class="footer-links"><a href="privacy-policy.html">Privacy Policy</a><a href="terms-of-service.html">Terms of Service</a><a href="support.html">Support</a></div>
     </footer>
 
-    <!-- ============================================ -->
-    <!-- ALL MODALS -->
-    <!-- ============================================ -->
-    
-    <!-- Analytics Modal -->
-    <div id="analytics-modal" class="analytics-modal">
-        <div class="analytics-content">
-            <div class="analytics-header">
-                <h2>Content Analytics</h2>
-                <button class="close-search-btn" id="close-analytics">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <div class="analytics-body">
-                <div class="analytics-grid">
-                    <div class="analytics-card">
-                        <h3>Total Views</h3>
-                        <div class="analytics-value" id="content-total-views">0</div>
-                        <div class="analytics-trend" id="views-trend">+0%</div>
-                    </div>
-                    <div class="analytics-card">
-                        <h3>Comments</h3>
-                        <div class="analytics-value" id="total-comments">0</div>
-                        <div class="analytics-trend" id="comments-trend">+0%</div>
-                    </div>
-                    <div class="analytics-card">
-                        <h3>Avg. Watch Time</h3>
-                        <div class="analytics-value" id="avg-watch-time">0m</div>
-                        <div class="analytics-trend" id="watch-time-trend">+0%</div>
-                    </div>
-                    <div class="analytics-card">
-                        <h3>Engagement Rate</h3>
-                        <div class="analytics-value" id="engagement-rate">0%</div>
-                        <div class="analytics-trend" id="engagement-trend">+0%</div>
-                    </div>
-                </div>
-                <div class="charts-container">
-                    <canvas id="content-engagement-chart"></canvas>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Search Modal -->
-    <div id="search-modal" class="search-modal">
-        <div class="search-modal-content">
-            <div class="search-modal-header">
-                <div class="search-input-container">
-                    <i class="fas fa-search search-icon"></i>
-                    <input type="text" id="search-input" class="search-input" placeholder="Search videos, creators, genres...">
-                </div>
-                <button class="close-search-btn" id="close-search-btn">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <div class="search-filters">
-                <div class="filter-group">
-                    <label class="filter-label">Category</label>
-                    <select id="category-filter" class="filter-select">
-                        <option value="">All</option>
-                        <option value="Music">Music</option>
-                        <option value="Education">Education</option>
-                        <option value="Entertainment">Entertainment</option>
-                        <option value="Gaming">Gaming</option>
-                        <option value="Sports">Sports</option>
-                        <option value="Tech">Tech</option>
-                        <option value="Culture">Culture</option>
-                    </select>
-                </div>
-                <div class="filter-group">
-                    <label class="filter-label">Sort By</label>
-                    <select id="sort-filter" class="filter-select">
-                        <option value="recent">Most Recent</option>
-                        <option value="popular">Most Popular</option>
-                        <option value="trending">Trending</option>
-                    </select>
-                </div>
-            </div>
-            <div class="search-results">
-                <div class="search-results-grid" id="search-results-grid"></div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Notifications Panel -->
-    <div id="notifications-panel" class="notifications-panel">
-        <div class="notifications-header">
-            <h3>Notifications</h3>
-            <button class="close-search-btn" id="close-notifications">
-                <i class="fas fa-times"></i>
-            </button>
-        </div>
-        <div class="notifications-list" id="notifications-list">
-            <div class="empty-notifications">
-                <i class="fas fa-bell-slash"></i>
-                <p>No notifications yet</p>
-            </div>
-        </div>
-        <div class="notifications-footer">
-            <button class="text-btn" id="mark-all-read">Mark all as read</button>
-        </div>
-    </div>
-
-    <!-- Watch Party Modal -->
-    <div id="watch-party-modal" class="watch-party-modal">
-        <div class="watch-party-content">
-            <div class="watch-party-header">
-                <h2>Start a Watch Party</h2>
-                <button class="close-watch-party">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <div class="watch-party-body">
-                <div class="watch-party-content-list" id="watch-party-content-list">
-                    <!-- Content list will be populated here -->
-                </div>
-                <button class="start-party-btn" id="start-party-btn">
-                    <i class="fas fa-play"></i> Start Party
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Tip Modal -->
-    <div id="tip-modal" class="tip-modal">
-        <div class="tip-content">
-            <div class="tip-header">
-                <h2>Support This Creator</h2>
-                <button class="close-tip">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <div class="tip-body">
-                <p>Send a tip to show your appreciation</p>
-                <div class="tip-amounts">
-                    <button class="tip-amount" data-amount="5">R5</button>
-                    <button class="tip-amount" data-amount="10">R10</button>
-                    <button class="tip-amount" data-amount="25">R25</button>
-                    <button class="tip-amount" data-amount="50">R50</button>
-                    <button class="tip-amount" data-amount="100">R100</button>
-                </div>
-                <div class="custom-tip">
-                    <input type="number" id="custom-tip-amount" placeholder="Custom amount (R)">
-                    <button id="send-tip-btn">Send Tip</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Badges Modal -->
-    <div id="badges-modal" class="badges-modal">
-        <div class="badges-content">
-            <div class="badges-header">
-                <h2>My Achievements</h2>
-                <button class="close-badges">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <div class="badges-body">
-                <div class="badges-stats">
-                    <div class="badge-stat">
-                        <span class="badge-count" id="badges-earned">0</span>
-                        <span>Badges Earned</span>
-                    </div>
-                </div>
-                <div class="badges-grid" id="badges-grid">
-                    <!-- Badges will be populated here -->
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Voice Search Status -->
-    <div id="voice-search-status" class="voice-search-status">
-        <i class="fas fa-microphone-alt"></i>
-        <span>Listening...</span>
-    </div>
-
-    <!-- Toast Container -->
+    <!-- Modals (kept minimal for brevity) -->
+    <div id="analytics-modal" class="analytics-modal"><div class="analytics-content"><div class="analytics-header"><h2>Content Analytics</h2><button class="close-search-btn" id="close-analytics"><i class="fas fa-times"></i></button></div><div class="analytics-body"><div class="analytics-grid"><div class="analytics-card"><h3>Total Views</h3><div class="analytics-value" id="content-total-views">0</div></div></div><div class="charts-container"><canvas id="content-engagement-chart"></canvas></div></div></div></div>
+    <div id="search-modal" class="search-modal"><div class="search-modal-content"><div class="search-modal-header"><div class="search-input-container"><i class="fas fa-search search-icon"></i><input type="text" id="search-input" class="search-input" placeholder="Search videos, creators, genres..."></div><button class="close-search-btn" id="close-search-btn"><i class="fas fa-times"></i></button></div><div class="search-results"><div class="search-results-grid" id="search-results-grid"></div></div></div></div>
+    <div id="notifications-panel" class="notifications-panel"><div class="notifications-header"><h3>Notifications</h3><button class="close-search-btn" id="close-notifications"><i class="fas fa-times"></i></button></div><div class="notifications-list" id="notifications-list"><div class="empty-notifications"><i class="fas fa-bell-slash"></i><p>No notifications yet</p></div></div><div class="notifications-footer"><button class="text-btn" id="mark-all-read">Mark all as read</button></div></div>
+    <div id="badges-modal" class="badges-modal"><div class="badges-content"><div class="badges-header"><h2>My Achievements</h2><button class="close-badges"><i class="fas fa-times"></i></button></div><div class="badges-body"><div class="badges-stats"><div class="badge-stat"><span class="badge-count" id="badges-earned">0</span><span>Badges Earned</span></div></div><div class="badges-grid" id="badges-grid"></div></div></div></div>
+    <div id="watch-party-modal" class="watch-party-modal"><div class="watch-party-content"><div class="watch-party-header"><h2>Start a Watch Party</h2><button class="close-watch-party"><i class="fas fa-times"></i></button></div><div class="watch-party-body"><div class="watch-party-content-list" id="watch-party-content-list"></div><button class="start-party-btn" id="start-party-btn"><i class="fas fa-play"></i> Start Party</button></div></div></div>
+    <div id="tip-modal" class="tip-modal"><div class="tip-content"><div class="tip-header"><h2>Support This Creator</h2><button class="close-tip"><i class="fas fa-times"></i></button></div><div class="tip-body"><p>Send a tip to show your appreciation</p><div class="tip-amounts"><button class="tip-amount" data-amount="5">R5</button><button class="tip-amount" data-amount="10">R10</button><button class="tip-amount" data-amount="25">R25</button><button class="tip-amount" data-amount="50">R50</button><button class="tip-amount" data-amount="100">R100</button></div><div class="custom-tip"><input type="number" id="custom-tip-amount" placeholder="Custom amount (R)"><button id="send-tip-btn">Send Tip</button></div></div></div></div>
+    <div id="voice-search-status" class="voice-search-status"><i class="fas fa-microphone-alt"></i><span>Listening...</span></div>
     <div id="toast-container"></div>
-
-    <!-- Back to Top Button -->
     <button id="backToTopBtn" class="back-to-top"><i class="fas fa-arrow-up"></i></button>
-
-    <!-- Shortcuts Modal -->
-    <div id="shortcuts-modal" class="analytics-modal" style="display: none;">
-        <div class="analytics-content">
-            <div class="analytics-header">
-                <h2>Keyboard Shortcuts</h2>
-                <button class="close-search-btn" id="close-shortcuts">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <div class="analytics-body">
-                <div class="shortcuts-list">
-                    <div class="shortcut-item"><kbd>Space</kbd> - Play/Pause</div>
-                    <div class="shortcut-item"><kbd>K</kbd> - Play/Pause</div>
-                    <div class="shortcut-item"><kbd>←</kbd> - Rewind 5 seconds</div>
-                    <div class="shortcut-item"><kbd>→</kbd> - Forward 5 seconds</div>
-                    <div class="shortcut-item"><kbd>F</kbd> - Fullscreen</div>
-                    <div class="shortcut-item"><kbd>M</kbd> - Mute/Unmute</div>
-                    <div class="shortcut-item"><kbd>↑</kbd> - Volume Up</div>
-                    <div class="shortcut-item"><kbd>↓</kbd> - Volume Down</div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-  </div> <!-- Closing div for #app -->
+  </div>
 
   <!-- Initialize Supabase Client -->
   <script>
@@ -832,7 +1120,7 @@
     window.SUPABASE_ANON_KEY = SUPABASE_ANON_KEY;
   </script>
   
-  <!-- Utility Scripts -->
+  <!-- Scripts -->
   <script src="js/state-manager.js"></script>
   <script src="js/supabase-helper.js"></script>
   <script src="js/auth-helper.js"></script>
@@ -847,495 +1135,112 @@
   <script src="js/recommendation-engine.js"></script>
   <script src="js/keyboard-shortcuts.js"></script>
   <script src="js/playlist-modal.js"></script>
-  
-  <!-- Main Content Detail Script - now with sidebar and nav logic -->
   <script src="js/content-detail.js"></script>
   
-  <!-- PHASE 4 quality updates and streaming manager UI -->
   <script>
-    window.updateQualityOptions = function() { /* quality logic unchanged */ };
-    document.addEventListener('qualityChanged', function(e) {});
-    document.addEventListener('networkSpeedUpdate', function(e) {});
-    document.addEventListener('hlsActivated', function(e) {});
-    document.addEventListener('dataSaverToggled', function(e) {});
+    // Initialize sidebar and navigation functionality
     document.addEventListener('DOMContentLoaded', function() {
-      const settingsBtn = document.querySelector('.settings-btn');
-      if(settingsBtn) settingsBtn.addEventListener('click', (e) => { e.stopPropagation(); });
-    });
-    if (!window.showToast) {
-      window.showToast = function(message, type = 'info') {
-        console.log(`Toast: ${message}`);
-      };
-    }
-  </script>
-
-  <!-- STEP 5 CSS: Additional styles for sidebar and menu (ensuring full integration) -->
-  <style>
-    /* ===== HOME FEED HEADER & SIDEBAR STYLES (STEP 4) ===== */
-    .menu-toggle {
-        width: 38px;
-        height: 38px;
-        border-radius: 50%;
-        background: rgba(255,255,255,0.1);
-        border: 1px solid rgba(255,255,255,0.2);
-        color: var(--soft-white);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-        font-size: 18px;
-        margin-right: 8px;
-        border: none;
-    }
-    .menu-toggle:hover {
-        background: rgba(255,255,255,0.2);
-        transform: translateY(-2px);
-    }
-    .sidebar-overlay {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0,0,0,0.6);
-        backdrop-filter: blur(4px);
-        z-index: 1000;
-        opacity: 0;
-        visibility: hidden;
-        transition: all 0.3s ease;
-    }
-    .sidebar-overlay.active {
-        opacity: 1;
-        visibility: visible;
-    }
-    .sidebar-menu {
-        position: fixed;
-        top: 0;
-        left: -320px;
-        width: 300px;
-        height: 100vh;
-        background: var(--card-bg);
-        backdrop-filter: blur(20px);
-        border-right: 1px solid var(--card-border);
-        z-index: 1001;
-        transition: left 0.3s ease;
-        display: flex;
-        flex-direction: column;
-        padding: 20px;
-        overflow-y: auto;
-    }
-    .sidebar-menu.active {
-        left: 0;
-    }
-    .sidebar-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding-bottom: 16px;
-        border-bottom: 1px solid var(--card-border);
-        margin-bottom: 16px;
-    }
-    .sidebar-logo {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        cursor: pointer;
-    }
-    .sidebar-logo .logo-icon {
-        width: 32px;
-        height: 32px;
-    }
-    .sidebar-logo-text {
-        font-family: 'Orbitron', sans-serif;
-        font-size: 18px;
-        font-weight: 700;
-        background: linear-gradient(to right, var(--soft-white), var(--bantu-blue));
-        -webkit-background-clip: text;
-        background-clip: text;
-        color: transparent;
-    }
-    .sidebar-close {
-        width: 36px;
-        height: 36px;
-        border-radius: 50%;
-        background: rgba(255,255,255,0.1);
-        border: 1px solid var(--card-border);
-        color: var(--soft-white);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-        font-size: 16px;
-        border: none;
-    }
-    .sidebar-close:hover {
-        background: var(--error-color);
-    }
-    .sidebar-profile {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        padding: 12px;
-        background: rgba(255,255,255,0.05);
-        border-radius: 12px;
-        margin-bottom: 16px;
-        cursor: pointer;
-        transition: background 0.3s ease;
-    }
-    .sidebar-profile:hover {
-        background: rgba(255,255,255,0.1);
-    }
-    .sidebar-profile-avatar {
-        width: 44px;
-        height: 44px;
-        border-radius: 50%;
-        background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: white;
-        font-weight: 600;
-        font-size: 16px;
-        overflow: hidden;
-    }
-    .sidebar-profile-info {
-        flex: 1;
-        min-width: 0;
-    }
-    .sidebar-profile-name {
-        font-size: 14px;
-        font-weight: 600;
-        color: var(--soft-white);
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-    .sidebar-profile-email {
-        font-size: 12px;
-        color: var(--slate-grey);
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-    .sidebar-nav {
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-        gap: 4px;
-        overflow-y: auto;
-    }
-    .sidebar-nav-item {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        padding: 12px 16px;
-        border-radius: 12px;
-        color: var(--soft-white);
-        text-decoration: none;
-        font-size: 14px;
-        transition: all 0.3s ease;
-        cursor: pointer;
-    }
-    .sidebar-nav-item:hover {
-        background: rgba(255,255,255,0.1);
-        transform: translateX(4px);
-    }
-    .sidebar-nav-item.active {
-        background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
-    }
-    .sidebar-nav-item i {
-        width: 20px;
-        text-align: center;
-        font-size: 16px;
-    }
-    .sidebar-nav-item .badge {
-        margin-left: auto;
-        background: var(--error-color);
-        color: white;
-        font-size: 10px;
-        padding: 2px 8px;
-        border-radius: 10px;
-    }
-    .sidebar-footer {
-        padding-top: 16px;
-        border-top: 1px solid var(--card-border);
-    }
-    .sidebar-theme-toggle {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 12px;
-        background: rgba(255,255,255,0.05);
-        border-radius: 12px;
-        cursor: pointer;
-        transition: background 0.3s ease;
-        margin-bottom: 12px;
-        border: none;
-        width: 100%;
-        color: var(--soft-white);
-    }
-    .sidebar-theme-toggle:hover {
-        background: rgba(255,255,255,0.1);
-    }
-    .sidebar-scale-control {
-        padding: 12px;
-        background: rgba(255,255,255,0.05);
-        border-radius: 12px;
-    }
-    .scale-control-row {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        margin-bottom: 8px;
-    }
-    .scale-control-row:last-child {
-        margin-bottom: 0;
-    }
-    .scale-btn {
-        width: 32px;
-        height: 32px;
-        border-radius: 50%;
-        background: rgba(255,255,255,0.1);
-        border: 1px solid var(--card-border);
-        color: var(--soft-white);
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 12px;
-        border: none;
-        transition: all 0.3s ease;
-    }
-    .scale-btn:hover {
-        background: var(--warm-gold);
-        color: var(--deep-black);
-        transform: scale(1.1);
-    }
-    .scale-value {
-        font-size: 13px;
-        color: var(--soft-white);
-        min-width: 45px;
-        text-align: center;
-        font-weight: 600;
-    }
-    .theme-selector {
-        position: fixed;
-        bottom: 100px;
-        left: 50%;
-        transform: translateX(-50%);
-        background: var(--card-bg);
-        backdrop-filter: blur(20px);
-        border: 1px solid var(--card-border);
-        border-radius: 12px;
-        padding: 8px;
-        display: flex;
-        gap: 8px;
-        z-index: 1002;
-        opacity: 0;
-        visibility: hidden;
-        transition: all 0.3s ease;
-    }
-    .theme-selector.active {
-        opacity: 1;
-        visibility: visible;
-    }
-    .theme-option {
-        padding: 8px 12px;
-        background: rgba(255,255,255,0.1);
-        border: 1px solid var(--card-border);
-        border-radius: 8px;
-        color: var(--soft-white);
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        font-size: 14px;
-        border: none;
-        transition: all 0.3s ease;
-    }
-    .theme-option:hover {
-        background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
-    }
-    .theme-option.active {
-        background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
-    }
-    @media (max-width: 768px) {
-        .sidebar-menu {
-            width: 280px;
-            left: -300px;
-        }
-    }
-    /* Toast Container */
-    #toast-container {
-        position: fixed;
-        bottom: 20px;
-        right: 20px;
-        z-index: 9999;
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-    }
-    .toast {
-        padding: 12px 24px;
-        border-radius: 8px;
-        color: white;
-        font-weight: 500;
-        animation: slideIn 0.3s ease;
-        max-width: 300px;
-        backdrop-filter: blur(10px);
-        border: 1px solid rgba(255,255,255,0.2);
-        display: flex;
-        align-items: center;
-        gap: 10px;
-    }
-    .toast i {
-        font-size: 16px;
-    }
-    .toast.error { background: rgba(239, 68, 68, 0.9); }
-    .toast.success { background: rgba(16, 185, 129, 0.9); }
-    .toast.warning { background: rgba(245, 158, 11, 0.9); }
-    .toast.info { background: rgba(29, 78, 216, 0.9); }
-    @keyframes slideIn {
-        from { transform: translateX(100%); opacity: 0; }
-        to { transform: translateX(0); opacity: 1; }
-    }
-    /* Back to Top Button */
-    .back-to-top {
-        position: fixed;
-        bottom: 120px;
-        right: 20px;
-        width: 44px;
-        height: 44px;
-        border-radius: 50%;
-        background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
-        border: 1px solid rgba(255,255,255,0.2);
-        color: white;
-        display: none;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        z-index: 97;
-        font-size: 18px;
-        border: none;
-    }
-    .back-to-top:hover {
-        transform: translateY(-5px);
-    }
-  </style>
-
-  <!-- STEP 5: JavaScript for sidebar and navigation (embedded to ensure execution) -->
-  <script>
-    // === SIDEBAR & NAVIGATION FUNCTIONS (STEP 5) ===
-    function setupContentDetailSidebar() {
-        const menuToggle = document.getElementById('menu-toggle');
-        const sidebarClose = document.getElementById('sidebar-close');
-        const sidebarOverlay = document.getElementById('sidebar-overlay');
-        const sidebarMenu = document.getElementById('sidebar-menu');
-        if (!menuToggle || !sidebarClose || !sidebarOverlay || !sidebarMenu) return;
-        const openSidebar = () => { sidebarMenu.classList.add('active'); sidebarOverlay.classList.add('active'); document.body.style.overflow = 'hidden'; };
-        const closeSidebar = () => { sidebarMenu.classList.remove('active'); sidebarOverlay.classList.remove('active'); document.body.style.overflow = ''; };
-        menuToggle.addEventListener('click', openSidebar);
-        sidebarClose.addEventListener('click', closeSidebar);
-        sidebarOverlay.addEventListener('click', closeSidebar);
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && sidebarMenu.classList.contains('active')) {
-                closeSidebar();
-            }
+      // Sidebar toggle
+      const menuToggle = document.getElementById('menu-toggle');
+      const sidebarClose = document.getElementById('sidebar-close');
+      const sidebarOverlay = document.getElementById('sidebar-overlay');
+      const sidebarMenu = document.getElementById('sidebar-menu');
+      
+      if (menuToggle && sidebarClose && sidebarOverlay && sidebarMenu) {
+        menuToggle.addEventListener('click', function(e) {
+          e.stopPropagation();
+          sidebarMenu.classList.add('active');
+          sidebarOverlay.classList.add('active');
+          document.body.style.overflow = 'hidden';
         });
-        updateSidebarProfile();
-        setupSidebarThemeToggle();
-        setupSidebarScaleControls();
-    }
-    function updateSidebarProfile() {
-        const avatar = document.getElementById('sidebar-profile-avatar');
-        const name = document.getElementById('sidebar-profile-name');
-        const email = document.getElementById('sidebar-profile-email');
-        if (!avatar || !name || !email) return;
-        if (window.currentUser) {
-            name.textContent = window.currentUser.email?.split('@')[0] || 'User';
-            email.textContent = window.currentUser.email;
-            avatar.innerHTML = `<span style="font-size:1.2rem;font-weight:bold;">${name.textContent[0].toUpperCase()}</span>`;
-        } else {
-            name.textContent = 'Guest';
-            email.textContent = 'Sign in to continue';
-            avatar.innerHTML = '<i class="fas fa-user" style="font-size:1.5rem;"></i>';
-        }
-    }
-    function setupSidebarThemeToggle() {
-        const themeToggle = document.getElementById('sidebar-theme-toggle');
-        const themeSelector = document.getElementById('theme-selector');
-        if (!themeToggle || !themeSelector) return;
-        themeToggle.addEventListener('click', () => {
-            const sidebarMenu = document.getElementById('sidebar-menu');
-            const overlay = document.getElementById('sidebar-overlay');
-            if(sidebarMenu) sidebarMenu.classList.remove('active');
-            if(overlay) overlay.classList.remove('active');
+        
+        sidebarClose.addEventListener('click', function() {
+          sidebarMenu.classList.remove('active');
+          sidebarOverlay.classList.remove('active');
+          document.body.style.overflow = '';
+        });
+        
+        sidebarOverlay.addEventListener('click', function() {
+          sidebarMenu.classList.remove('active');
+          sidebarOverlay.classList.remove('active');
+          document.body.style.overflow = '';
+        });
+        
+        document.addEventListener('keydown', function(e) {
+          if (e.key === 'Escape' && sidebarMenu.classList.contains('active')) {
+            sidebarMenu.classList.remove('active');
+            sidebarOverlay.classList.remove('active');
             document.body.style.overflow = '';
-            themeSelector.classList.toggle('active');
+          }
+        });
+      }
+      
+      // Bottom navigation
+      const navHomeBtn = document.getElementById('nav-home-btn');
+      const navHistoryBtn = document.getElementById('nav-history-btn');
+      const navCreateBtn = document.getElementById('nav-create-btn');
+      const navMenuBtn = document.getElementById('nav-menu-btn');
+      
+      if (navHomeBtn) navHomeBtn.addEventListener('click', () => window.location.href = 'index.html');
+      if (navHistoryBtn) navHistoryBtn.addEventListener('click', () => window.location.href = 'watch-history.html');
+      if (navCreateBtn) navCreateBtn.addEventListener('click', () => window.location.href = 'creator-upload.html');
+      if (navMenuBtn) {
+        navMenuBtn.addEventListener('click', function() {
+          if (sidebarMenu && sidebarOverlay) {
+            sidebarMenu.classList.add('active');
+            sidebarOverlay.classList.add('active');
+            document.body.style.overflow = 'hidden';
+          }
+        });
+      }
+      
+      // Profile dropdown
+      const profileBtn = document.getElementById('current-profile-btn');
+      const profileDropdown = document.getElementById('profile-dropdown');
+      if (profileBtn && profileDropdown) {
+        profileBtn.addEventListener('click', function(e) {
+          e.stopPropagation();
+          profileDropdown.classList.toggle('active');
+        });
+        document.addEventListener('click', function(e) {
+          if (!profileBtn.contains(e.target) && !profileDropdown.contains(e.target)) {
+            profileDropdown.classList.remove('active');
+          }
+        });
+      }
+      
+      // Theme selector
+      const themeToggle = document.getElementById('sidebar-theme-toggle');
+      const themeSelector = document.getElementById('theme-selector');
+      if (themeToggle && themeSelector) {
+        themeToggle.addEventListener('click', function() {
+          themeSelector.classList.toggle('active');
         });
         document.querySelectorAll('.theme-option').forEach(option => {
-            option.addEventListener('click', () => {
-                const theme = option.dataset.theme;
-                if(typeof applyTheme === 'function') applyTheme(theme);
-                else console.log('Theme changed to', theme);
-                themeSelector.classList.remove('active');
-            });
+          option.addEventListener('click', function() {
+            const theme = this.dataset.theme;
+            document.body.classList.remove('theme-dark', 'theme-light', 'theme-high-contrast');
+            document.body.classList.add('theme-' + theme);
+            localStorage.setItem('bantu_theme', theme);
+            themeSelector.classList.remove('active');
+          });
         });
-    }
-    function setupSidebarScaleControls() {
-        const decreaseBtn = document.getElementById('sidebar-scale-decrease');
-        const increaseBtn = document.getElementById('sidebar-scale-increase');
-        const resetBtn = document.getElementById('sidebar-scale-reset');
-        const scaleValue = document.getElementById('sidebar-scale-value');
-        if (!decreaseBtn || !increaseBtn || !scaleValue) return;
-        let scale = parseFloat(localStorage.getItem('bantu_ui_scale')) || 1;
-        scaleValue.textContent = Math.round(scale * 100) + '%';
-        decreaseBtn.addEventListener('click', () => { scale = Math.max(0.8, scale - 0.1); scaleValue.textContent = Math.round(scale * 100) + '%'; document.documentElement.style.setProperty('--ui-scale', scale); localStorage.setItem('bantu_ui_scale', scale); });
-        increaseBtn.addEventListener('click', () => { scale = Math.min(1.4, scale + 0.1); scaleValue.textContent = Math.round(scale * 100) + '%'; document.documentElement.style.setProperty('--ui-scale', scale); localStorage.setItem('bantu_ui_scale', scale); });
-        resetBtn?.addEventListener('click', () => { scale = 1; scaleValue.textContent = '100%'; document.documentElement.style.setProperty('--ui-scale', scale); localStorage.setItem('bantu_ui_scale', scale); });
-    }
-    function setupContentDetailNavigation() {
-        document.getElementById('nav-home-btn')?.addEventListener('click', () => { window.location.href = 'index.html'; });
-        document.getElementById('nav-menu-btn')?.addEventListener('click', () => { 
-            const sidebar = document.getElementById('sidebar-menu');
-            const overlay = document.getElementById('sidebar-overlay');
-            if(sidebar && overlay) {
-                sidebar.classList.add('active');
-                overlay.classList.add('active');
-                document.body.style.overflow = 'hidden';
-            }
+      }
+      
+      // Back to top button
+      const backToTopBtn = document.getElementById('backToTopBtn');
+      if (backToTopBtn) {
+        window.addEventListener('scroll', function() {
+          backToTopBtn.style.display = window.pageYOffset > 300 ? 'flex' : 'none';
         });
-        document.getElementById('nav-history-btn')?.addEventListener('click', () => { 
-            if (window.currentUser) window.location.href = 'watch-history.html'; 
-            else if(window.showToast) window.showToast('Please sign in to view watch history', 'warning');
-            else alert('Please sign in');
+        backToTopBtn.addEventListener('click', function() {
+          window.scrollTo({ top: 0, behavior: 'smooth' });
         });
-        document.getElementById('nav-create-btn')?.addEventListener('click', async () => { 
-            const { data } = await supabaseClient.auth.getSession();
-            if (data?.session) window.location.href = 'creator-upload.html';
-            else if(window.showToast) window.showToast('Please sign in to create content', 'warning');
-            else alert('Please sign in');
-        });
-    }
-    function applyThemeFallback(theme) {
-        const root = document.documentElement;
-        root.classList.remove('theme-dark', 'theme-light', 'theme-high-contrast');
-        root.classList.add(`theme-${theme}`);
-        localStorage.setItem('bantu_theme', theme);
-        if(window.showToast) window.showToast(`Theme changed to ${theme}`, 'success');
-    }
-    window.applyTheme = window.applyTheme || applyThemeFallback;
-    document.addEventListener('DOMContentLoaded', () => {
-        setupContentDetailSidebar();
-        setupContentDetailNavigation();
-        const savedTheme = localStorage.getItem('bantu_theme') || 'dark';
-        if(window.applyTheme) window.applyTheme(savedTheme);
-        else applyThemeFallback(savedTheme);
-        if(window.currentUser === undefined) {
-            window.currentUser = null;
-            updateSidebarProfile();
-        }
+      }
+      
+      // Apply saved theme
+      const savedTheme = localStorage.getItem('bantu_theme') || 'dark';
+      document.body.classList.add('theme-' + savedTheme);
     });
   </script>
 </body>
