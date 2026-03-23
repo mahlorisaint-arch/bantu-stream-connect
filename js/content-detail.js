@@ -17,6 +17,7 @@
 // 🎵 AUDIO SUPPORT: Added MP3, WAV, OGG playback with thumbnail as poster
 // 🎨 CREATOR AVATAR FIX: Show actual creator profile picture from user_profiles
 // 🔄 HOME FEED INTEGRATION: Complete header, sidebar, and navigation from home feed
+// 🚀 UPDATED: Added Profile Dropdown, RSA Badge, Voice Search, Notifications Badge, UI Scale Controls
 
 console.log('🎬 Content Detail Initializing with RLS-compliant fixes and view tracking on Play button click...');
 
@@ -31,6 +32,60 @@ let keyboardShortcuts = null; // PHASE 1 POLISH: Keyboard shortcuts
 let playlistModal = null; // PHASE 2 POLISH: Playlist modal
 let isInitialized = false;
 let currentUserId = null;
+
+// UI Scale Controller
+class UIScaleController {
+  constructor() {
+    this.scale = parseFloat(localStorage.getItem('bantu_ui_scale')) || 1;
+    this.minScale = 0.8;
+    this.maxScale = 1.4;
+    this.step = 0.1;
+  }
+
+  init() {
+    this.applyScale();
+    this.setupEventListeners();
+  }
+
+  setupEventListeners() {
+    document.addEventListener('scaleChanged', (e) => {
+      this.updateScaleDisplay(e.detail.scale);
+    });
+  }
+
+  applyScale() {
+    document.documentElement.style.setProperty('--ui-scale', this.scale);
+    localStorage.setItem('bantu_ui_scale', this.scale.toString());
+    document.dispatchEvent(new CustomEvent('scaleChanged', { detail: { scale: this.scale } }));
+  }
+
+  increase() {
+    if (this.scale < this.maxScale) {
+      this.scale = Math.min(this.maxScale, this.scale + this.step);
+      this.applyScale();
+    }
+  }
+
+  decrease() {
+    if (this.scale > this.minScale) {
+      this.scale = Math.max(this.minScale, this.scale - this.step);
+      this.applyScale();
+    }
+  }
+
+  reset() {
+    this.scale = 1;
+    this.applyScale();
+  }
+
+  getScale() { return this.scale; }
+
+  updateScaleDisplay(scale) {
+    document.querySelectorAll('.scale-value, #sidebar-scale-value').forEach(el => {
+      if (el) el.textContent = Math.round(scale * 100) + '%';
+    });
+  }
+}
 
 // Initialize when DOM is ready
 document.addEventListener('DOMContentLoaded', async () => {
@@ -86,6 +141,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   setupContentDetailAnalytics();
   loadNotifications();
   
+  // Voice Search Setup
+  setupVoiceSearch();
+  
   // PHASE 1: Load Continue Watching section (SINGLE SECTION - now below comments)
   if (currentUserId) {
     await loadContinueWatching(currentUserId);
@@ -120,6 +178,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     setTimeout(() => {
       initializePlaylistModal();
     }, 500);
+  }
+  
+  // Initialize UI Scale Controller
+  if (!window.uiScaleController) {
+    window.uiScaleController = new UIScaleController();
+    window.uiScaleController.init();
+    setupSidebarScaleControls();
+    setupGlobalScaleShortcuts();
   }
   
   // Show app
@@ -160,6 +226,175 @@ if (!window.StreamingManager) {
   const script = document.createElement('script');
   script.src = 'js/streaming-manager.js';
   document.head.appendChild(script);
+}
+
+// ============================================
+// VOICE SEARCH SETUP
+// ============================================
+function setupVoiceSearch() {
+  const voiceSearchBtn = document.getElementById('voice-search-btn');
+  const voiceStatus = document.getElementById('voice-search-status');
+  
+  // Check browser support
+  if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+    if (voiceSearchBtn) voiceSearchBtn.style.display = 'none';
+    return;
+  }
+  
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const recognition = new SpeechRecognition();
+  recognition.continuous = false;
+  recognition.interimResults = false;
+  recognition.lang = 'en-ZA';
+  
+  const startVoiceSearch = () => {
+    if (!window.currentUser) {
+      showToast('Please sign in to use voice search', 'warning');
+      return;
+    }
+    recognition.start();
+    if (voiceStatus) voiceStatus.classList.add('active');
+  };
+  
+  recognition.onresult = (event) => {
+    const transcript = event.results[0][0].transcript;
+    const searchInput = document.getElementById('search-input');
+    if (searchInput) {
+      searchInput.value = transcript;
+      searchInput.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+    if (voiceStatus) voiceStatus.classList.remove('active');
+    showToast(`Searching: "${transcript}"`, 'info');
+  };
+  
+  recognition.onerror = (event) => {
+    console.error('Voice search error:', event.error);
+    if (voiceStatus) voiceStatus.classList.remove('active');
+    if (event.error === 'not-allowed') showToast('Microphone access denied', 'error');
+  };
+  
+  recognition.onend = () => {
+    if (voiceStatus) voiceStatus.classList.remove('active');
+  };
+  
+  if (voiceSearchBtn) {
+    voiceSearchBtn.addEventListener('click', startVoiceSearch);
+  }
+}
+
+// ============================================
+// GLOBAL SCALE SHORTCUTS
+// ============================================
+function setupGlobalScaleShortcuts() {
+  document.addEventListener('keydown', function(e) {
+    // Ctrl++ for increase
+    if ((e.ctrlKey || e.metaKey) && (e.key === '+' || e.key === '=')) {
+      e.preventDefault();
+      window.uiScaleController?.increase();
+    }
+    // Ctrl+- for decrease
+    if ((e.ctrlKey || e.metaKey) && e.key === '-') {
+      e.preventDefault();
+      window.uiScaleController?.decrease();
+    }
+    // Ctrl+0 for reset
+    if ((e.ctrlKey || e.metaKey) && e.key === '0') {
+      e.preventDefault();
+      window.uiScaleController?.reset();
+    }
+    // Alt+P for profile dropdown
+    if (e.altKey && e.key === 'p') {
+      e.preventDefault();
+      toggleProfileDropdown();
+    }
+    // Alt+N for notifications
+    if (e.altKey && e.key === 'n') {
+      e.preventDefault();
+      const notificationsPanel = document.getElementById('notifications-panel');
+      if (notificationsPanel) {
+        notificationsPanel.classList.add('active');
+        renderNotifications();
+      }
+    }
+    // Alt+A for analytics
+    if (e.altKey && e.key === 'a') {
+      e.preventDefault();
+      const analyticsModal = document.getElementById('analytics-modal');
+      if (analyticsModal && window.currentUser) {
+        analyticsModal.classList.add('active');
+        loadPersonalAnalytics();
+      } else if (!window.currentUser) {
+        showToast('Please sign in to view analytics', 'warning');
+      }
+    }
+    // Ctrl+K for search
+    if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+      e.preventDefault();
+      const searchModal = document.getElementById('search-modal');
+      const searchInput = document.getElementById('search-input');
+      if (searchModal) {
+        searchModal.classList.add('active');
+        setTimeout(() => searchInput?.focus(), 300);
+      }
+    }
+  });
+}
+
+// ============================================
+// PROFILE DROPDOWN TOGGLE
+// ============================================
+function toggleProfileDropdown() {
+  const dropdown = document.getElementById('profile-dropdown');
+  if (dropdown) dropdown.classList.toggle('active');
+}
+
+// ============================================
+// UPDATE PROFILE SWITCHER
+// ============================================
+function updateProfileSwitcher() {
+  const profileList = document.getElementById('profile-list');
+  if (!profileList || !window.userProfiles) return;
+  
+  profileList.innerHTML = window.userProfiles.map(profile => {
+    const initials = getInitials(profile.name);
+    const isActive = window.currentProfile?.id === profile.id;
+    return `
+      <div class="profile-item ${isActive ? 'active' : ''}" data-profile-id="${profile.id}">
+        <div class="profile-avatar-small">
+          ${profile.avatar_url 
+            ? `<img src="${fixAvatarUrl(profile.avatar_url)}" alt="${escapeHtml(profile.name)}">`
+            : `<div class="profile-initials">${initials}</div>`}
+        </div>
+        <span class="profile-name">${escapeHtml(profile.name)}</span>
+        ${isActive ? '<i class="fas fa-check"></i>' : ''}
+      </div>`;
+  }).join('');
+  
+  document.querySelectorAll('.profile-item').forEach(item => {
+    item.addEventListener('click', async () => {
+      const profileId = item.dataset.profileId;
+      const profile = window.userProfiles.find(p => p.id === profileId);
+      if (profile) {
+        window.currentProfile = profile;
+        localStorage.setItem('currentProfileId', profileId);
+        updateProfileSwitcher();
+        await loadContinueWatchingSection();
+        await loadForYouSection();
+        showToast(`Switched to ${profile.name}`, 'success');
+      }
+    });
+  });
+}
+
+// ============================================
+// FIX AVATAR URL
+// ============================================
+function fixAvatarUrl(url) {
+  if (!url) return '';
+  if (url.startsWith('http')) return url;
+  if (url.includes('supabase.co')) return url;
+  const SUPABASE_URL = window.ENV?.SUPABASE_URL || 'https://ydnxqnbjoshvxteevemc.supabase.co';
+  return `${SUPABASE_URL}/storage/v1/object/public/${url.replace(/^\/+/, '')}`;
 }
 
 // ============================================
@@ -816,6 +1051,8 @@ function setupAuthListeners() {
       await window.AuthHelper.initialize();
       currentUserId = window.AuthHelper.getUserProfile()?.id || null;
       updateProfileUI();
+      updateHeaderProfile();
+      updateSidebarProfile();
       showToast('Welcome back!', 'success');
       
       if (currentUserId) {
@@ -844,6 +1081,8 @@ function setupAuthListeners() {
       playlistManager = null;
       playlistModal = null;
       resetProfileUI();
+      updateHeaderProfile();
+      updateSidebarProfile();
       showToast('Signed out successfully', 'info');
       
       const continueSection = document.getElementById('continueWatchingSection');
@@ -4509,6 +4748,9 @@ window.streamingManager = streamingManager;
 window.keyboardShortcuts = keyboardShortcuts;
 window.playlistModal = playlistModal;
 window.closeVideoPlayer = closeVideoPlayer; // ✅ Export close function
+window.uiScaleController = window.uiScaleController;
+window.toggleProfileDropdown = toggleProfileDropdown;
+window.fixAvatarUrl = fixAvatarUrl;
 
 // PHASE 1: Page unload handler - clean up watch session
 window.addEventListener('beforeunload', function() {
@@ -4523,4 +4765,4 @@ window.addEventListener('beforeunload', function() {
   }
 });
 
-console.log('✅ Content detail script loaded with PHASE 4 STREAMING MANAGER integration, PHASE 1-3 POLISH, 🎵 AUDIO SUPPORT, and 🎨 CREATOR AVATAR FIX');
+console.log('✅ Content detail script loaded with PHASE 4 STREAMING MANAGER integration, PHASE 1-3 POLISH, 🎵 AUDIO SUPPORT, 🎨 CREATOR AVATAR FIX, and 🚀 HOME FEED INTEGRATION');
