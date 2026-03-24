@@ -1303,13 +1303,14 @@ padding: 20px;
 <!-- INLINE SCRIPT: Handles Authentication UI Updates -->
 <!-- ============================================ -->
 <script>
-// Supabase configuration
+// Supabase configuration - MUST run before any other scripts
 const SUPABASE_URL = 'https://ydnxqnbjoshvxteevemc.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U';
 window.supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 window.supabaseAuth = window.supabaseClient;
 window.SUPABASE_URL = SUPABASE_URL;
 window.SUPABASE_ANON_KEY = SUPABASE_ANON_KEY;
+</script>
 
 // Helper function to show toast messages
 function showToast(message, type = 'info') {
@@ -1500,12 +1501,14 @@ setTimeout(() => {
 }, 500);
 </script>
 
-<!-- External Scripts -->
+<!-- Scripts - MUST BE IN THIS ORDER -->
 <script src="js/state-manager.js"></script>
 <script src="js/supabase-helper.js"></script>
 <script src="js/auth-helper.js"></script>
 <script src="js/security.js"></script>
 <script src="js/analytics.js"></script>
+
+<!-- Phase modules -->
 <script src="js/playlist-manager.js"></script>
 <script src="js/streaming-manager.js"></script>
 <script src="js/video-player.js"></script>
@@ -1515,6 +1518,8 @@ setTimeout(() => {
 <script src="js/recommendation-engine.js"></script>
 <script src="js/keyboard-shortcuts.js"></script>
 <script src="js/playlist-modal.js"></script>
+
+<!-- MAIN FILE - MUST BE LAST -->
 <script src="js/content-detail.js"></script>
 </body>
 </html>
