@@ -611,49 +611,66 @@ text-align: center;
 font-weight: 600;
 }
 
-/* Bottom Navigation Button */
+/* Bottom Navigation Button - FIXED VERSION */
 .navigation-button-container {
-position: fixed;
-bottom: calc(1.875rem * var(--ui-scale));
-left: 0;
-right: 0;
-display: flex;
-justify-content: center;
-z-index: 98;
-pointer-events: none;
+position: fixed !important;
+bottom: 20px !important;
+left: 50% !important;
+transform: translateX(-50%) !important;
+z-index: 999 !important;
+width: auto !important;
+max-width: 90vw !important;
+pointer-events: none !important;
+display: flex !important;
+justify-content: center !important;
 }
 
 .navigation-button {
-display: flex;
-background: rgba(10, 14, 18, 0.85);
-backdrop-filter: blur(20px);
-border: 1px solid var(--card-border);
-border-radius: calc(3.75rem * var(--ui-scale));
-padding: calc(0.625rem * var(--ui-scale)) calc(1.125rem * var(--ui-scale));
-gap: var(--spacing-xs);
-box-shadow: 0 calc(0.625rem * var(--ui-scale)) calc(1.875rem * var(--ui-scale)) rgba(0, 0, 0, 0.5);
-pointer-events: auto;
+display: flex !important;
+background: rgba(15, 23, 42, 0.95) !important;
+backdrop-filter: blur(20px) !important;
+border: 1px solid rgba(148, 163, 184, 0.3) !important;
+border-radius: 50px !important;
+padding: 8px 16px !important;
+gap: 12px !important;
+box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4) !important;
+pointer-events: auto !important;
+justify-content: center !important;
+align-items: center !important;
 }
 
 .nav-icon {
-width: calc(2.75rem * var(--ui-scale));
-height: calc(2.75rem * var(--ui-scale));
-border-radius: 50%;
-background: rgba(255, 255, 255, 0.1);
-border: 1px solid rgba(255, 255, 255, 0.2);
-color: var(--soft-white);
-display: flex;
-align-items: center;
-justify-content: center;
-cursor: pointer;
-transition: all 0.3s ease;
-font-size: var(--icon-lg);
-position: relative;
+width: 44px !important;
+height: 44px !important;
+border-radius: 50% !important;
+background: rgba(255, 255, 255, 0.1) !important;
+border: 1px solid rgba(255, 255, 255, 0.2) !important;
+color: var(--soft-white) !important;
+display: flex !important;
+align-items: center !important;
+justify-content: center !important;
+cursor: pointer !important;
+transition: all 0.2s ease !important;
+font-size: 18px !important;
+flex-shrink: 0 !important;
 }
 
 .nav-icon:hover {
-background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
-transform: translateY(calc(-0.3125rem * var(--ui-scale)));
+background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold)) !important;
+transform: translateY(-3px) !important;
+border-color: transparent !important;
+}
+
+/* Mobile: slightly higher to avoid gesture area */
+@media (max-width: 768px) {
+.navigation-button-container {
+bottom: 70px !important;
+}
+.nav-icon {
+width: 40px !important;
+height: 40px !important;
+font-size: 16px !important;
+}
 }
 
 /* Theme Selector */
@@ -912,8 +929,6 @@ padding: 20px;
 .profile-name { display: none; }
 .rsa-badge span { display: none; }
 .rsa-badge { padding: calc(0.375rem * var(--ui-scale)) calc(0.5rem * var(--ui-scale)); margin-left: var(--spacing-xs); }
-.navigation-button-container { bottom: calc(1.25rem * var(--ui-scale)); }
-.nav-icon { width: calc(2.25rem * var(--ui-scale)); height: calc(2.25rem * var(--ui-scale)); font-size: var(--icon-md); }
 .sidebar-menu { width: calc(16rem * var(--ui-scale)); left: calc(-17rem * var(--ui-scale)); }
 .back-to-top { bottom: calc(6rem * var(--ui-scale)); right: calc(1rem * var(--ui-scale)); width: calc(2.5rem * var(--ui-scale)); height: calc(2.5rem * var(--ui-scale)); font-size: var(--icon-sm); }
 }
@@ -924,7 +939,6 @@ padding: 20px;
 .icon-btn { width: calc(1.75rem * var(--ui-scale)); height: calc(1.75rem * var(--ui-scale)); font-size: var(--font-sm); }
 .profile-btn { padding: calc(0.25rem * var(--ui-scale)) calc(0.5rem * var(--ui-scale)); }
 .profile-placeholder { width: calc(1.5rem * var(--ui-scale)); height: calc(1.5rem * var(--ui-scale)); }
-.nav-icon { width: calc(2rem * var(--ui-scale)); height: calc(2rem * var(--ui-scale)); font-size: var(--font-base); }
 }
 </style>
 </head>
@@ -1144,7 +1158,7 @@ padding: 20px;
 <span>Listening...</span>
 </div>
 
-<!-- Bottom Navigation -->
+<!-- Bottom Navigation - Fixed with YouTube-style positioning -->
 <div class="navigation-button-container">
 <div class="navigation-button">
 <div class="nav-icon" id="nav-home-btn" title="Home">
@@ -1455,9 +1469,17 @@ console.error('Error updating user profile:', error);
 }
 }
 
-// Hide loading and show app
-document.getElementById('loading').style.display = 'none';
-document.getElementById('app').style.display = 'block';
+// ✅ CRITICAL: Force hide loading screen after all init
+setTimeout(() => {
+const loading = document.getElementById('loading');
+const app = document.getElementById('app');
+if (loading) loading.style.display = 'none';
+if (app) {
+app.style.display = 'block';
+app.style.opacity = '1';
+}
+console.log('🎬 Loading screen forced hidden');
+}, 800);
 
 // Initialize everything after DOM
 document.addEventListener('DOMContentLoaded', async function() {
