@@ -485,6 +485,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Setup sidebar scale controls
   setupSidebarScaleControls();
   
+  // Setup global scale shortcuts
+  setupGlobalScaleShortcuts();
+  
   // ✅ CRITICAL: Force hide loading screen after ALL init is complete
   setTimeout(() => {
     const loading = document.getElementById('loading');
@@ -697,9 +700,6 @@ function setupSidebarScaleControls() {
     scaleValue.textContent = Math.round((window.uiScaleController?.getScale() || 1) * 100) + '%';
   }
 }
-
-// Call this after UI Scale Controller is initialized
-setupGlobalScaleShortcuts();
 
 // ============================================
 // PROFILE DROPDOWN TOGGLE
