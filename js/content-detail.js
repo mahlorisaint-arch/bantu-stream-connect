@@ -1,10 +1,9 @@
-// js/content-detail.js - COMPLETE WITH ALL UPDATES
-// Integrated with Sidebar, Header, Navigation Button features
-// Phase 1-4: Watch Session, Playlist, Recommendations, Streaming
+// js/content-detail.js - COMPLETE WITH HOME FEED SIDEBAR, HEADER, AND NAVIGATION BUTTON FEATURES
+// Integrated all functions from home-feed-ui.js and home-feed-features.js
 // YouTube-style video player with hero section below
 // Mobile-optimized with full-width video
 
-console.log('🎬 Content Detail Initializing with all UI features...');
+console.log('🎬 Content Detail Initializing with Home Feed UI features...');
 
 // Global variables
 let currentContent = null;
@@ -17,6 +16,9 @@ let keyboardShortcuts = null;
 let playlistModal = null;
 let isInitialized = false;
 let currentUserId = null;
+let currentUser = null;
+let userProfiles = [];
+let currentProfile = null;
 
 // UI Scale Controller
 class UIScaleController {
@@ -70,7 +72,7 @@ window.uiScaleController.init();
 
 // Initialize when DOM is ready
 document.addEventListener('DOMContentLoaded', async () => {
-  console.log('✅ DOM loaded, starting initialization...');
+  console.log('✅ DOM loaded, starting initialization with Home Feed UI features...');
   
   // Initialize Supabase client
   if (!window.supabaseClient) {
@@ -93,12 +95,22 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Load content
   await loadContentFromURL();
   
-  // Setup all UI components
-  setupEventListeners();
+  // ============================================
+  // HOME FEED UI SETUP - SIDEBAR, HEADER, NAVIGATION
+  // ============================================
+  
+  // Complete Sidebar Setup with all features
   setupCompleteSidebar();
-  setupHeaderProfile();
+  
+  // Header Profile Setup
+  updateHeaderProfile();
+  updateProfileSwitcher();
+  
+  // Navigation Buttons Setup
   setupNavigationButtons();
   setupNavButtonScrollAnimation();
+  
+  // Theme Selector Setup
   setupThemeSelector();
   
   // Initialize video player
@@ -150,11 +162,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Dispatch ready event
   document.dispatchEvent(new CustomEvent('contentDetailReady'));
   
-  console.log('✅ Content Detail fully initialized with all UI features');
+  console.log('✅ Content Detail fully initialized with Home Feed UI features');
 });
 
 // ============================================
-// SIDEBAR FUNCTIONS
+// SIDEBAR FUNCTIONS - COMPLETE FROM HOME FEED
 // ============================================
 
 function setupCompleteSidebar() {
@@ -349,12 +361,13 @@ function setupSidebarNavigation() {
         window.location.href = 'watch-history.html';
     });
     
-    // Manage Profiles
-    document.getElementById('manage-profiles-sidebar')?.addEventListener('click', (e) => {
-        e.preventDefault();
-        document.getElementById('sidebar-close')?.click();
-        window.location.href = 'manage-profiles.html';
-    });
+    // Manage Profiles (in sidebar nav)
+    const manageProfilesSidebar = document.querySelector('.sidebar-nav-item[href="manage-profiles.html"]');
+    if (manageProfilesSidebar) {
+        manageProfilesSidebar.addEventListener('click', (e) => {
+            document.getElementById('sidebar-close')?.click();
+        });
+    }
 }
 
 function optimizeMobileSidebar() {
@@ -473,13 +486,8 @@ function fixAvatarUrl(url) {
 }
 
 // ============================================
-// HEADER FUNCTIONS
+// HEADER FUNCTIONS - COMPLETE FROM HOME FEED
 // ============================================
-
-async function setupHeaderProfile() {
-    await updateHeaderProfile();
-    await updateProfileSwitcher();
-}
 
 async function updateHeaderProfile() {
     try {
@@ -609,7 +617,7 @@ function renderFallbackHeaderProfile(container, nameElement, user) {
     }
 }
 
-async function updateProfileSwitcher() {
+function updateProfileSwitcher() {
     const profileList = document.getElementById('profile-list');
     const currentProfileName = document.getElementById('current-profile-name');
     const profilePlaceholder = document.getElementById('userProfilePlaceholder');
@@ -677,21 +685,33 @@ async function updateProfileSwitcher() {
     const dropdown = document.getElementById('profile-dropdown');
     
     if (profileBtn && dropdown) {
-        profileBtn.addEventListener('click', (e) => {
+        // Remove existing listeners by cloning
+        const newProfileBtn = profileBtn.cloneNode(true);
+        profileBtn.parentNode.replaceChild(newProfileBtn, profileBtn);
+        
+        newProfileBtn.addEventListener('click', (e) => {
             e.stopPropagation();
             dropdown.classList.toggle('active');
         });
         
         document.addEventListener('click', (e) => {
-            if (!profileBtn.contains(e.target) && !dropdown.contains(e.target)) {
+            if (!newProfileBtn.contains(e.target) && !dropdown.contains(e.target)) {
                 dropdown.classList.remove('active');
             }
+        });
+    }
+    
+    const manageProfilesBtn = document.getElementById('manage-profiles-btn');
+    if (manageProfilesBtn) {
+        manageProfilesBtn.addEventListener('click', () => {
+            document.getElementById('sidebar-close')?.click();
+            window.location.href = 'manage-profiles.html';
         });
     }
 }
 
 // ============================================
-// BOTTOM NAVIGATION BUTTON FUNCTIONS
+// BOTTOM NAVIGATION BUTTON FUNCTIONS - COMPLETE FROM HOME FEED
 // ============================================
 
 function setupNavigationButtons() {
@@ -700,12 +720,14 @@ function setupNavigationButtons() {
     const navMenuBtn = document.getElementById('nav-menu-btn');
     const navHistoryBtn = document.getElementById('nav-history-btn');
     
+    // Home Button - Navigate to Home
     if (navHomeBtn) {
         navHomeBtn.addEventListener('click', () => {
             window.location.href = 'index.html';
         });
     }
     
+    // Create Content Button - Check auth first
     if (navCreateBtn) {
         navCreateBtn.addEventListener('click', async () => {
             const { data } = await window.supabaseClient.auth.getSession();
@@ -718,6 +740,7 @@ function setupNavigationButtons() {
         });
     }
     
+    // Watch History Button
     if (navHistoryBtn) {
         navHistoryBtn.addEventListener('click', () => {
             if (!window.currentUser) {
@@ -729,6 +752,7 @@ function setupNavigationButtons() {
         });
     }
     
+    // Menu Button - Open Sidebar
     if (navMenuBtn) {
         navMenuBtn.addEventListener('click', () => {
             const sidebarMenu = document.getElementById('sidebar-menu');
@@ -751,9 +775,11 @@ function setupNavButtonScrollAnimation() {
         const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
         
         if (scrollTop > lastScrollTop && scrollTop > 100) {
+            // Scrolling down - hide
             navContainer.style.opacity = '0';
             navContainer.style.transform = 'translateY(20px)';
         } else {
+            // Scrolling up - show
             navContainer.style.opacity = '1';
             navContainer.style.transform = 'translateY(0)';
         }
@@ -763,17 +789,19 @@ function setupNavButtonScrollAnimation() {
 }
 
 // ============================================
-// THEME FUNCTIONS
+// THEME FUNCTIONS - COMPLETE FROM HOME FEED
 // ============================================
 
 function setupThemeSelector() {
     const themeSelector = document.getElementById('theme-selector');
-    const themeToggle = document.getElementById('sidebar-theme-toggle');
+    const sidebarThemeToggle = document.getElementById('sidebar-theme-toggle');
     const navThemeToggle = document.getElementById('nav-theme-toggle');
     
+    // Apply saved theme on load
     const savedTheme = localStorage.getItem('bantu_theme') || 'dark';
     applyTheme(savedTheme);
     
+    // Theme option click handlers
     document.querySelectorAll('.theme-option').forEach(option => {
         option.addEventListener('click', function(e) {
             e.preventDefault();
@@ -786,14 +814,16 @@ function setupThemeSelector() {
         });
     });
     
-    if (themeToggle) {
-        themeToggle.addEventListener('click', (e) => {
+    // Toggle theme selector from sidebar
+    if (sidebarThemeToggle) {
+        sidebarThemeToggle.addEventListener('click', (e) => {
             e.preventDefault();
             e.stopPropagation();
             if (themeSelector) themeSelector.classList.toggle('active');
         });
     }
     
+    // Toggle theme selector from bottom nav
     if (navThemeToggle) {
         navThemeToggle.addEventListener('click', (e) => {
             e.preventDefault();
@@ -802,10 +832,11 @@ function setupThemeSelector() {
         });
     }
     
+    // Close when clicking outside
     document.addEventListener('click', (e) => {
         if (themeSelector && themeSelector.classList.contains('active') &&
             !themeSelector.contains(e.target) &&
-            !themeToggle?.contains(e.target) &&
+            !sidebarThemeToggle?.contains(e.target) &&
             !navThemeToggle?.contains(e.target)) {
             themeSelector.classList.remove('active');
         }
@@ -863,7 +894,7 @@ function updateThemeCSSVariables(theme) {
 }
 
 // ============================================
-// TOAST NOTIFICATION SYSTEM
+// TOAST NOTIFICATION SYSTEM - COMPLETE
 // ============================================
 
 function showToast(message, type = 'info') {
@@ -910,27 +941,6 @@ function formatNumber(num) {
     if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
     if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
     return num.toString();
-}
-
-function formatTimeAgo(timestamp) {
-    if (!timestamp) return '';
-    
-    const date = new Date(timestamp);
-    const now = new Date();
-    const seconds = Math.floor((now - date) / 1000);
-    
-    if (seconds < 60) return 'just now';
-    
-    const minutes = Math.floor(seconds / 60);
-    if (minutes < 60) return `${minutes}m ago`;
-    
-    const hours = Math.floor(minutes / 60);
-    if (hours < 24) return `${hours}h ago`;
-    
-    const days = Math.floor(hours / 24);
-    if (days < 7) return `${days}d ago`;
-    
-    return date.toLocaleDateString();
 }
 
 function getInitials(name) {
@@ -1127,12 +1137,12 @@ async function loadContentFromURL() {
         
         if (contentError) throw contentError;
         
-        const { count: viewsCount, error: viewsError } = await window.supabaseClient
+        const { count: viewsCount } = await window.supabaseClient
             .from('content_views')
             .select('*', { count: 'exact', head: true })
             .eq('content_id', contentId);
         
-        const { count: likesCount, error: likesError } = await window.supabaseClient
+        const { count: likesCount } = await window.supabaseClient
             .from('content_likes')
             .select('*', { count: 'exact', head: true })
             .eq('content_id', contentId);
@@ -1182,13 +1192,6 @@ async function loadContentFromURL() {
             data_saver_url: streamingData?.data_saver_url || null
         };
         
-        console.log('📥 Content loaded:', {
-            views: currentContent.views_count,
-            likes: currentContent.likes_count,
-            creator: currentContent.creator,
-            has_avatar: !!currentContent.user_profiles?.avatar_url
-        });
-        
         updateContentUI(currentContent);
         
         if (currentContent.watch_progress > 10 && !currentContent.is_completed) {
@@ -1236,6 +1239,7 @@ function updateContentUI(content) {
     safeSetText('contentDescriptionShort', truncateText(content.description, 150));
     safeSetText('contentDescriptionFull', content.description);
     
+    // Creator Avatar
     const creatorAvatar = document.getElementById('creatorAvatar');
     if (creatorAvatar && content.user_profiles) {
         const avatarUrl = content.user_profiles.avatar_url;
@@ -1268,6 +1272,7 @@ function updateContentUI(content) {
         }
     }
     
+    // Make creator section clickable
     const creatorSection = document.querySelector('.creator-section');
     const creatorInfo = document.querySelector('.creator-info');
     if (creatorSection && content.creator_id) {
@@ -1330,19 +1335,15 @@ function addResumeButton(progressSeconds) {
 
 async function checkUserLike(contentId, userId) {
     if (!userId) return false;
-    
     try {
-        const { data, error } = await window.supabaseClient
+        const { data } = await window.supabaseClient
             .from('content_likes')
             .select('id')
             .eq('user_id', userId)
             .eq('content_id', contentId)
             .single();
-        
-        if (error?.code === 'PGRST116') return false;
-        if (error) return false;
         return !!data;
-    } catch (error) {
+    } catch {
         return false;
     }
 }
@@ -1365,19 +1366,15 @@ async function initializeLikeButton(contentId, userId) {
 
 async function checkUserFavorite(contentId, userId) {
     if (!userId) return false;
-    
     try {
-        const { data, error } = await window.supabaseClient
+        const { data } = await window.supabaseClient
             .from('favorites')
             .select('id')
             .eq('user_id', userId)
             .eq('content_id', contentId)
             .single();
-        
-        if (error?.code === 'PGRST116') return false;
-        if (error) return false;
         return !!data;
-    } catch (error) {
+    } catch {
         return false;
     }
 }
@@ -1436,9 +1433,7 @@ async function loadComments(contentId) {
         renderComments(comments || []);
         
         const countEl = document.getElementById('commentsCount');
-        if (countEl) {
-            countEl.textContent = `(${comments.length})`;
-        }
+        if (countEl) countEl.textContent = `(${comments.length})`;
         
         if (currentContent) {
             await window.supabaseClient
@@ -1767,13 +1762,6 @@ function initializeEnhancedVideoPlayer() {
             initializeWatchSessionOnPlay();
         });
         
-        enhancedVideoPlayer.on('pause', () => {});
-        enhancedVideoPlayer.on('volumechange', () => {});
-        enhancedVideoPlayer.on('error', (error) => {
-            console.error('Video player error:', error);
-            showToast('Playback error occurred', 'error');
-        });
-        
         enhancedVideoPlayer.on('loadeddata', () => {
             const placeholder = document.getElementById('videoPlaceholder');
             if (placeholder) placeholder.style.display = 'none';
@@ -1851,7 +1839,6 @@ async function recordContentView(contentId) {
             console.error('View recording failed:', error);
             return false;
         }
-        
         return true;
     } catch (error) {
         console.error('View recording error:', error);
@@ -1929,6 +1916,7 @@ function handlePlay() {
         return;
     }
     
+    // Record view on play
     if (!hasViewedContentRecently(currentContent.id)) {
         const viewsEl = document.getElementById('viewsCount');
         const viewsFullEl = document.getElementById('viewsCountFull');
@@ -2318,20 +2306,8 @@ async function initializeStreamingManager() {
         });
         
         await streamingManager.initialize();
-        
-        setInterval(() => {
-            if (streamingManager) {
-                const speed = streamingManager.getNetworkSpeed();
-                if (speed) updateNetworkSpeedIndicator(speed / 1000000);
-            }
-        }, 5000);
-        
         setupQualitySelector();
         setupDataSaverToggle();
-        
-        setTimeout(() => {
-            if (streamingManager) updateQualityIndicator(streamingManager.getCurrentQuality());
-        }, 1000);
         
     } catch (error) {
         console.error('Failed to initialize StreamingManager:', error);
@@ -2397,10 +2373,6 @@ function updateQualityIndicator(quality) {
     indicator.style.display = 'block';
     indicator.textContent = quality.toUpperCase();
     
-    indicator.classList.remove('auto', 'hd');
-    if (quality === 'auto') indicator.classList.add('auto');
-    else if (['720p', '1080p'].includes(quality)) indicator.classList.add('hd');
-    
     if (streamingManager?.isDataSaverEnabled()) {
         dataSaverBadge?.style.setProperty('display', 'block');
     } else {
@@ -2412,24 +2384,6 @@ function updateQualityIndicator(quality) {
             indicator.style.display = 'none';
         }
     }, 5000);
-}
-
-function updateNetworkSpeedIndicator(speedMbps) {
-    const indicator = document.getElementById('networkSpeedIndicator');
-    const valueSpan = document.getElementById('networkSpeedValue');
-    if (!indicator || !valueSpan) return;
-    
-    if (speedMbps) {
-        valueSpan.textContent = speedMbps.toFixed(1) + ' Mbps';
-        indicator.style.display = 'flex';
-        
-        indicator.classList.remove('good', 'fair', 'poor');
-        if (speedMbps > 5) indicator.classList.add('good');
-        else if (speedMbps > 2) indicator.classList.add('fair');
-        else indicator.classList.add('poor');
-    } else {
-        indicator.style.display = 'none';
-    }
 }
 
 // ============================================
@@ -2497,10 +2451,6 @@ async function loadContentAnalytics() {
         document.getElementById('total-comments').textContent = formatNumber(totalComments);
         document.getElementById('avg-watch-time').textContent = '4m 23s';
         document.getElementById('engagement-rate').textContent = '68%';
-        document.getElementById('views-trend').textContent = '+12%';
-        document.getElementById('comments-trend').textContent = '+8%';
-        document.getElementById('watch-time-trend').textContent = '+5%';
-        document.getElementById('engagement-trend').textContent = '+3%';
         
         if (typeof Chart !== 'undefined') initEngagementChart();
     } catch (error) {
@@ -2523,13 +2473,6 @@ function initEngagementChart() {
                 data: [65, 59, 80, 81, 56, 55, 40],
                 borderColor: '#F59E0B',
                 backgroundColor: 'rgba(245, 158, 11, 0.1)',
-                tension: 0.4,
-                fill: true
-            }, {
-                label: 'Comments',
-                data: [28, 48, 40, 19, 86, 27, 90],
-                borderColor: '#1D4ED8',
-                backgroundColor: 'rgba(29, 78, 216, 0.1)',
                 tension: 0.4,
                 fill: true
             }]
@@ -2563,85 +2506,41 @@ function initSearchModal() {
         closeSearchBtn.addEventListener('click', () => {
             searchModal.classList.remove('active');
             if (searchInput) searchInput.value = '';
-            document.getElementById('search-results-grid').innerHTML = '';
         });
     }
     
     searchModal.addEventListener('click', (e) => {
         if (e.target === searchModal) {
             searchModal.classList.remove('active');
-            if (searchInput) searchInput.value = '';
-            document.getElementById('search-results-grid').innerHTML = '';
         }
     });
     
     if (searchInput) {
         searchInput.addEventListener('input', debounce(async (e) => {
             const query = e.target.value.trim();
-            const category = document.getElementById('category-filter')?.value;
-            const sortBy = document.getElementById('sort-filter')?.value;
-            
-            if (query.length < 2) {
-                document.getElementById('search-results-grid').innerHTML = '<div class="no-results">Start typing to search...</div>';
-                return;
-            }
-            
-            document.getElementById('search-results-grid').innerHTML = '<div class="infinite-scroll-loading"><div class="infinite-scroll-spinner"></div><div>Searching...</div></div>';
+            if (query.length < 2) return;
             
             try {
-                const results = await searchContent(query, category, sortBy);
+                const results = await searchContent(query);
                 renderSearchResults(results);
             } catch (error) {
                 console.error('Search error:', error);
-                document.getElementById('search-results-grid').innerHTML = '<div class="no-results">Error searching. Please try again.</div>';
             }
         }, 300));
     }
-    
-    const categoryFilter = document.getElementById('category-filter');
-    const sortFilter = document.getElementById('sort-filter');
-    
-    if (categoryFilter) categoryFilter.addEventListener('change', () => triggerSearch());
-    if (sortFilter) sortFilter.addEventListener('change', () => triggerSearch());
 }
 
-function triggerSearch() {
-    const searchInput = document.getElementById('search-input');
-    if (searchInput) searchInput.dispatchEvent(new Event('input'));
-}
-
-async function searchContent(query, category, sortBy) {
+async function searchContent(query) {
     try {
-        let orderBy = 'created_at';
-        let order = 'desc';
-        
-        if (sortBy === 'popular') orderBy = 'views_count';
-        else if (sortBy === 'trending') orderBy = 'likes_count';
-        
-        let queryBuilder = window.supabaseClient
+        const { data, error } = await window.supabaseClient
             .from('Content')
             .select('*, user_profiles!user_id(*)')
             .ilike('title', `%${query}%`)
             .eq('status', 'published')
-            .order(orderBy, { ascending: order === 'asc' })
             .limit(20);
         
-        if (category) queryBuilder = queryBuilder.eq('genre', category);
-        
-        const { data, error } = await queryBuilder;
         if (error) throw error;
-        
-        const enrichedResults = await Promise.all(
-            (data || []).map(async (item) => {
-                const { count: realViews } = await window.supabaseClient
-                    .from('content_views')
-                    .select('*', { count: 'exact', head: true })
-                    .eq('content_id', item.id);
-                return { ...item, real_views_count: realViews || 0 };
-            })
-        );
-        
-        return enrichedResults || [];
+        return data || [];
     } catch (error) {
         console.error('Search error:', error);
         return [];
@@ -2653,51 +2552,26 @@ function renderSearchResults(results) {
     if (!grid) return;
     
     if (!results || results.length === 0) {
-        grid.innerHTML = '<div class="no-results">No results found. Try different keywords.</div>';
+        grid.innerHTML = '<div class="no-results">No results found.</div>';
         return;
     }
     
-    grid.innerHTML = results.map(item => {
-        const creator = item.user_profiles?.full_name || item.user_profiles?.username || 'Creator';
-        const viewsCount = item.real_views_count !== undefined ? item.real_views_count : (item.views_count || 0);
-        
-        return `
-            <div class="content-card" data-content-id="${item.id}">
-                <div class="card-thumbnail">
-                    <img src="${item.thumbnail_url || 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop'}" 
-                         alt="${item.title}" 
-                         onerror="this.src='https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop'">
-                    <div class="thumbnail-overlay"></div>
-                </div>
-                <div class="card-content">
-                    <h3 class="card-title">${truncateText(item.title, 45)}</h3>
-                    <div class="related-meta">
-                        <i class="fas fa-eye"></i>
-                        <span>${formatNumber(viewsCount)} views</span>
-                    </div>
-                    <button class="creator-btn" data-creator-id="${item.user_id}" data-creator-name="${creator}">
-                        <i class="fas fa-user"></i>
-                        ${truncateText(creator, 15)}
-                    </button>
-                </div>
+    grid.innerHTML = results.map(item => `
+        <div class="content-card" data-content-id="${item.id}">
+            <div class="card-thumbnail">
+                <img src="${item.thumbnail_url || 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop'}" 
+                     alt="${item.title}">
             </div>
-        `;
-    }).join('');
+            <div class="card-content">
+                <h3 class="card-title">${truncateText(item.title, 45)}</h3>
+            </div>
+        </div>
+    `).join('');
     
     grid.querySelectorAll('.content-card').forEach(card => {
-        card.addEventListener('click', (e) => {
-            if (e.target.closest('.creator-btn')) return;
+        card.addEventListener('click', () => {
             const id = card.dataset.contentId;
             if (id) window.location.href = `content-detail.html?id=${id}`;
-        });
-    });
-    
-    grid.querySelectorAll('.creator-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            const id = btn.dataset.creatorId;
-            const name = btn.dataset.creatorName;
-            if (id) window.location.href = `creator-channel.html?id=${id}&name=${encodeURIComponent(name)}`;
         });
     });
 }
@@ -2707,49 +2581,23 @@ function initNotificationsPanel() {
     const navNotificationsBtn = document.getElementById('nav-notifications-btn');
     const notificationsPanel = document.getElementById('notifications-panel');
     const closeNotifications = document.getElementById('close-notifications');
-    const markAllReadBtn = document.getElementById('mark-all-read');
     
     if (!notificationsBtn || !notificationsPanel) return;
     
-    if (notificationsBtn) {
-        notificationsBtn.addEventListener('click', () => {
-            notificationsPanel.classList.add('active');
-            loadUserNotifications();
-            markAllNotificationsAsRead();
-        });
-    }
+    notificationsBtn.addEventListener('click', () => {
+        notificationsPanel.classList.add('active');
+        loadUserNotifications();
+    });
     
     if (navNotificationsBtn) {
         navNotificationsBtn.addEventListener('click', () => {
             notificationsPanel.classList.add('active');
             loadUserNotifications();
-            markAllNotificationsAsRead();
         });
     }
     
     if (closeNotifications) {
         closeNotifications.addEventListener('click', () => notificationsPanel.classList.remove('active'));
-    }
-    
-    document.addEventListener('click', (e) => {
-        if (notificationsPanel.classList.contains('active') && 
-            !notificationsPanel.contains(e.target) && 
-            !notificationsBtn.contains(e.target) && 
-            (!navNotificationsBtn || !navNotificationsBtn.contains(e.target))) {
-            notificationsPanel.classList.remove('active');
-        }
-    });
-    
-    if (markAllReadBtn) {
-        markAllReadBtn.addEventListener('click', async () => {
-            await markAllNotificationsAsRead();
-            await loadUserNotifications();
-        });
-    }
-    
-    if (window.AuthHelper?.isAuthenticated()) {
-        loadUserNotifications();
-        updateNotificationBadge();
     }
 }
 
@@ -2757,215 +2605,20 @@ async function loadUserNotifications() {
     const notificationsList = document.getElementById('notifications-list');
     if (!notificationsList) return;
     
-    try {
-        if (!window.AuthHelper || !window.AuthHelper.isAuthenticated()) {
-            notificationsList.innerHTML = `
-                <div class="empty-notifications">
-                    <i class="fas fa-bell-slash"></i>
-                    <p>Sign in to see notifications</p>
-                </div>
-            `;
-            updateNotificationBadge(0);
-            return;
-        }
-        
-        const userProfile = window.AuthHelper.getUserProfile();
-        if (!userProfile?.id) return;
-        
-        const { data, error } = await window.supabaseClient
-            .from('notifications')
-            .select('*')
-            .eq('user_id', userProfile.id)
-            .order('created_at', { ascending: false })
-            .limit(20);
-        
-        if (error) throw error;
-        
-        if (!data || data.length === 0) {
-            notificationsList.innerHTML = `
-                <div class="empty-notifications">
-                    <i class="fas fa-bell-slash"></i>
-                    <p>No notifications yet</p>
-                </div>
-            `;
-            updateNotificationBadge(0);
-            return;
-        }
-        
-        notificationsList.innerHTML = data.map(notification => `
-            <div class="notification-item ${notification.is_read ? 'read' : 'unread'}" data-id="${notification.id}">
-                <div class="notification-icon">
-                    <i class="${getNotificationIcon(notification.type)}"></i>
-                </div>
-                <div class="notification-content">
-                    <h4>${escapeHtml(notification.title)}</h4>
-                    <p>${escapeHtml(notification.message)}</p>
-                    <span class="notification-time">${formatNotificationTime(notification.created_at)}</span>
-                </div>
-                ${!notification.is_read ? '<div class="notification-dot"></div>' : ''}
-            </div>
-        `).join('');
-        
-        notificationsList.querySelectorAll('.notification-item').forEach(item => {
-            item.addEventListener('click', async () => {
-                const id = item.dataset.id;
-                await markNotificationAsRead(id);
-                
-                const notification = data.find(n => n.id === id);
-                if (notification?.content_id) {
-                    window.location.href = `content-detail.html?id=${notification.content_id}`;
-                }
-                notificationsPanel.classList.remove('active');
-            });
-        });
-        
-        const unreadCount = data.filter(n => !n.is_read).length;
-        updateNotificationBadge(unreadCount);
-    } catch (error) {
-        console.error('Error loading notifications:', error);
-        notificationsList.innerHTML = `
-            <div class="empty-notifications">
-                <i class="fas fa-exclamation-triangle"></i>
-                <p>Error loading notifications</p>
-            </div>
-        `;
-    }
-}
-
-function getNotificationIcon(type) {
-    switch(type) {
-        case 'like': return 'fas fa-heart';
-        case 'comment': return 'fas fa-comment';
-        case 'follow': return 'fas fa-user-plus';
-        case 'view_milestone': return 'fas fa-trophy';
-        default: return 'fas fa-bell';
-    }
-}
-
-async function markNotificationAsRead(notificationId) {
-    try {
-        await window.supabaseClient
-            .from('notifications')
-            .update({ is_read: true })
-            .eq('id', notificationId);
-        
-        const item = document.querySelector(`.notification-item[data-id="${notificationId}"]`);
-        if (item) {
-            item.classList.remove('unread');
-            item.classList.add('read');
-            const dot = item.querySelector('.notification-dot');
-            if (dot) dot.remove();
-        }
-    } catch (error) {
-        console.error('Error marking notification as read:', error);
-    }
-}
-
-async function markAllNotificationsAsRead() {
-    try {
-        if (!window.AuthHelper?.isAuthenticated()) return;
-        
-        const userProfile = window.AuthHelper.getUserProfile();
-        if (!userProfile?.id) return;
-        
-        await window.supabaseClient
-            .from('notifications')
-            .update({ is_read: true })
-            .eq('user_id', userProfile.id)
-            .eq('is_read', false);
-        
-        document.querySelectorAll('.notification-item.unread').forEach(item => {
-            item.classList.remove('unread');
-            item.classList.add('read');
-            const dot = item.querySelector('.notification-dot');
-            if (dot) dot.remove();
-        });
-        
-        updateNotificationBadge(0);
-    } catch (error) {
-        console.error('Error marking all notifications as read:', error);
-    }
-}
-
-function updateNotificationBadge(count) {
-    if (count === undefined) {
-        count = document.querySelectorAll('.notification-item.unread').length;
-    }
-    
-    const mainBadge = document.getElementById('notification-count');
-    const navBadge = document.getElementById('nav-notification-count');
-    
-    if (mainBadge) {
-        mainBadge.textContent = count > 99 ? '99+' : count;
-        mainBadge.style.display = count > 0 ? 'flex' : 'none';
-    }
-    
-    if (navBadge) {
-        navBadge.textContent = count > 99 ? '99+' : count;
-        navBadge.style.display = count > 0 ? 'flex' : 'none';
-    }
-}
-
-function formatNotificationTime(timestamp) {
-    const now = new Date();
-    const diffMs = now - new Date(timestamp);
-    const diffMins = Math.floor(diffMs / 60000);
-    const diffHours = Math.floor(diffMs / 3600000);
-    const diffDays = Math.floor(diffMs / 86400000);
-    
-    if (diffMins < 1) return 'Just now';
-    if (diffMins < 60) return diffMins + 'm ago';
-    if (diffHours < 24) return diffHours + 'h ago';
-    if (diffDays < 7) return diffDays + 'd ago';
-    return new Date(timestamp).toLocaleDateString();
+    notificationsList.innerHTML = `
+        <div class="empty-notifications">
+            <i class="fas fa-bell-slash"></i>
+            <p>No new notifications</p>
+        </div>
+    `;
 }
 
 function initGlobalNavigation() {
-    const homeBtn = document.querySelector('.nav-icon:nth-child(1)');
-    if (homeBtn) {
-        const newHomeBtn = homeBtn.cloneNode(true);
-        homeBtn.parentNode.replaceChild(newHomeBtn, homeBtn);
-        
-        newHomeBtn.addEventListener('click', () => {
-            window.location.href = 'https://bantustreamconnect.com/';
-        });
-    }
-    
-    const createBtn = document.querySelector('.nav-icon:nth-child(3)');
-    if (createBtn) {
-        const newCreateBtn = createBtn.cloneNode(true);
-        createBtn.parentNode.replaceChild(newCreateBtn, createBtn);
-        
-        newCreateBtn.addEventListener('click', async () => {
-            if (window.AuthHelper?.isAuthenticated()) {
-                window.location.href = 'creator-upload.html';
-            } else {
-                showToast('Please sign in to upload content', 'warning');
-                window.location.href = 'login.html?redirect=creator-upload.html';
-            }
-        });
-    }
-    
-    const dashboardBtn = document.querySelector('.nav-icon:nth-child(4)');
-    if (dashboardBtn) {
-        const newDashboardBtn = dashboardBtn.cloneNode(true);
-        dashboardBtn.parentNode.replaceChild(newDashboardBtn, dashboardBtn);
-        
-        newDashboardBtn.addEventListener('click', async () => {
-            if (window.AuthHelper?.isAuthenticated()) {
-                window.location.href = 'creator-dashboard.html';
-            } else {
-                showToast('Please sign in to access dashboard', 'warning');
-                window.location.href = 'login.html?redirect=creator-dashboard.html';
-            }
-        });
-    }
+    // Navigation buttons are already set up in setupNavigationButtons
+    console.log('Global navigation initialized');
 }
 
-// ============================================
-// EVENT LISTENERS SETUP
-// ============================================
-
+// Event Listeners Setup
 function setupEventListeners() {
     const playBtn = document.getElementById('playBtn');
     if (playBtn) playBtn.addEventListener('click', handlePlay);
@@ -2976,16 +2629,7 @@ function setupEventListeners() {
     const closeFromHero = document.getElementById('closePlayerFromHero');
     if (closeFromHero) closeFromHero.addEventListener('click', closeVideoPlayer);
     
-    const fullscreenBtn = document.getElementById('fullscreenBtn');
-    const fullPlayerBtn = document.getElementById('fullPlayerBtn');
-    
-    if (fullscreenBtn) {
-        fullscreenBtn.addEventListener('click', () => enhancedVideoPlayer?.toggleFullscreen());
-    }
-    if (fullPlayerBtn) {
-        fullPlayerBtn.addEventListener('click', () => enhancedVideoPlayer?.toggleFullscreen());
-    }
-    
+    // Like button
     const likeBtn = document.getElementById('likeBtn');
     if (likeBtn) {
         likeBtn.addEventListener('click', async () => {
@@ -3018,13 +2662,13 @@ function setupEventListeners() {
                 showToast(!isLiked ? 'Liked!' : 'Like removed', !isLiked ? 'success' : 'info');
             } catch (error) {
                 likeBtn.classList.toggle('active', isLiked);
-                likeBtn.innerHTML = isLiked ? '<i class="fas fa-heart"></i><span>Liked</span>' : '<i class="far fa-heart"></i><span>Like</span>';
                 if (likesCountEl) likesCountEl.textContent = formatNumber(currentLikes);
                 showToast('Failed: ' + error.message, 'error');
             }
         });
     }
     
+    // Favorite button
     const favoriteBtn = document.getElementById('favoriteBtn');
     if (favoriteBtn) {
         favoriteBtn.addEventListener('click', async () => {
@@ -3054,16 +2698,15 @@ function setupEventListeners() {
                 }
                 
                 showToast(!isFavorited ? 'Added to favorites!' : 'Removed from favorites', !isFavorited ? 'success' : 'info');
-                await refreshCountsFromSource();
             } catch (error) {
                 favoriteBtn.classList.toggle('active', isFavorited);
-                favoriteBtn.innerHTML = isFavorited ? '<i class="fas fa-star"></i><span>Favorited</span>' : '<i class="far fa-star"></i><span>Favorite</span>';
                 if (favCountEl) favCountEl.textContent = formatNumber(currentFavorites);
                 showToast('Failed to update favorite', 'error');
             }
         });
     }
     
+    // Share button
     const shareBtn = document.getElementById('shareBtn');
     if (shareBtn) {
         shareBtn.addEventListener('click', async () => {
@@ -3085,6 +2728,7 @@ function setupEventListeners() {
         });
     }
     
+    // Comment submission
     const sendBtn = document.getElementById('sendCommentBtn');
     const commentInput = document.getElementById('commentInput');
     
@@ -3116,7 +2760,6 @@ function setupEventListeners() {
                 });
                 
                 await loadComments(currentContent.id);
-                await refreshCountsFromSource();
                 commentInput.value = '';
                 showToast('Comment added!', 'success');
             } catch (error) {
@@ -3135,6 +2778,7 @@ function setupEventListeners() {
         });
     }
     
+    // Refresh comments button
     const refreshBtn = document.getElementById('refreshCommentsBtn');
     if (refreshBtn && currentContent) {
         refreshBtn.addEventListener('click', async () => {
@@ -3144,6 +2788,7 @@ function setupEventListeners() {
         });
     }
     
+    // Back to top button
     const backToTopBtn = document.getElementById('backToTopBtn');
     if (backToTopBtn) {
         backToTopBtn.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
@@ -3152,137 +2797,55 @@ function setupEventListeners() {
         });
     }
     
-    const pipBtn = document.getElementById('pipBtn');
-    if (pipBtn) {
-        pipBtn.addEventListener('click', () => {
-            const video = document.getElementById('inlineVideoPlayer');
-            if (video.requestPictureInPicture) video.requestPictureInPicture();
-        });
-    }
-    
+    // Connect buttons
     setupConnectButtons();
 }
 
 function setupConnectButtons() {
-    const connectBtn = document.getElementById('connectBtn');
     const connectCreatorBtn = document.getElementById('connectCreatorBtn');
+    if (!connectCreatorBtn || !currentContent?.creator_id) return;
     
-    const checkConnectionStatus = async (creatorId) => {
-        if (!window.AuthHelper?.isAuthenticated() || !creatorId) return false;
+    connectCreatorBtn.addEventListener('click', async () => {
+        if (!window.AuthHelper?.isAuthenticated?.()) {
+            if (confirm('You need to sign in to connect. Sign in now?')) {
+                window.location.href = `login.html?redirect=${encodeURIComponent(window.location.href)}`;
+            }
+            return;
+        }
+        
         const userProfile = window.AuthHelper.getUserProfile();
-        if (!userProfile?.id) return false;
+        if (!userProfile?.id) return;
         
-        const { data } = await window.supabaseClient
-            .from('connectors')
-            .select('id')
-            .eq('connector_id', userProfile.id)
-            .eq('connected_id', creatorId)
-            .single();
+        const isConnected = connectCreatorBtn.classList.contains('connected');
         
-        return !!data;
-    };
-    
-    if (connectBtn && currentContent?.creator_id) {
-        checkConnectionStatus(currentContent.creator_id).then(isConnected => {
+        try {
             if (isConnected) {
-                connectBtn.classList.add('connected');
-                connectBtn.innerHTML = '<i class="fas fa-user-check"></i><span>Connected</span>';
-            }
-        });
-        
-        connectBtn.addEventListener('click', async () => {
-            if (!window.AuthHelper?.isAuthenticated?.()) {
-                if (confirm('You need to sign in to connect. Sign in now?')) {
-                    window.location.href = `login.html?redirect=${encodeURIComponent(window.location.href)}`;
-                }
-                return;
-            }
-            
-            const userProfile = window.AuthHelper.getUserProfile();
-            if (!userProfile?.id) return;
-            
-            const isConnected = connectBtn.classList.contains('connected');
-            
-            try {
-                if (isConnected) {
-                    await window.supabaseClient
-                        .from('connectors')
-                        .delete()
-                        .eq('connector_id', userProfile.id)
-                        .eq('connected_id', currentContent.creator_id);
-                    
-                    connectBtn.classList.remove('connected');
-                    connectBtn.innerHTML = '<i class="fas fa-user-plus"></i><span>Connect</span>';
-                    showToast('Disconnected', 'info');
-                } else {
-                    await window.supabaseClient
-                        .from('connectors')
-                        .insert({
-                            connector_id: userProfile.id,
-                            connected_id: currentContent.creator_id,
-                            connection_type: 'creator'
-                        });
-                    
-                    connectBtn.classList.add('connected');
-                    connectBtn.innerHTML = '<i class="fas fa-user-check"></i><span>Connected</span>';
-                    showToast('Connected successfully!', 'success');
-                }
-            } catch (error) {
-                showToast('Failed to update connection', 'error');
-            }
-        });
-    }
-    
-    if (connectCreatorBtn && currentContent?.creator_id) {
-        checkConnectionStatus(currentContent.creator_id).then(isConnected => {
-            if (isConnected) {
+                await window.supabaseClient
+                    .from('connectors')
+                    .delete()
+                    .eq('connector_id', userProfile.id)
+                    .eq('connected_id', currentContent.creator_id);
+                
+                connectCreatorBtn.classList.remove('connected');
+                connectCreatorBtn.innerHTML = '<i class="fas fa-user-plus"></i><span>Connect</span>';
+                showToast('Disconnected', 'info');
+            } else {
+                await window.supabaseClient
+                    .from('connectors')
+                    .insert({
+                        connector_id: userProfile.id,
+                        connected_id: currentContent.creator_id,
+                        connection_type: 'creator'
+                    });
+                
                 connectCreatorBtn.classList.add('connected');
                 connectCreatorBtn.innerHTML = '<i class="fas fa-user-check"></i><span>Connected</span>';
+                showToast('Connected successfully!', 'success');
             }
-        });
-        
-        connectCreatorBtn.addEventListener('click', async () => {
-            if (!window.AuthHelper?.isAuthenticated?.()) {
-                if (confirm('You need to sign in to connect. Sign in now?')) {
-                    window.location.href = `login.html?redirect=${encodeURIComponent(window.location.href)}`;
-                }
-                return;
-            }
-            
-            const userProfile = window.AuthHelper.getUserProfile();
-            if (!userProfile?.id) return;
-            
-            const isConnected = connectCreatorBtn.classList.contains('connected');
-            
-            try {
-                if (isConnected) {
-                    await window.supabaseClient
-                        .from('connectors')
-                        .delete()
-                        .eq('connector_id', userProfile.id)
-                        .eq('connected_id', currentContent.creator_id);
-                    
-                    connectCreatorBtn.classList.remove('connected');
-                    connectCreatorBtn.innerHTML = '<i class="fas fa-user-plus"></i><span>Connect</span>';
-                    showToast('Disconnected', 'info');
-                } else {
-                    await window.supabaseClient
-                        .from('connectors')
-                        .insert({
-                            connector_id: userProfile.id,
-                            connected_id: currentContent.creator_id,
-                            connection_type: 'creator'
-                        });
-                    
-                    connectCreatorBtn.classList.add('connected');
-                    connectCreatorBtn.innerHTML = '<i class="fas fa-user-check"></i><span>Connected</span>';
-                    showToast('Connected successfully!', 'success');
-                }
-            } catch (error) {
-                showToast('Failed to update connection', 'error');
-            }
-        });
-    }
+        } catch (error) {
+            showToast('Failed to update connection', 'error');
+        }
+    });
 }
 
 // Page unload handler
@@ -3303,4 +2866,4 @@ window.closeVideoPlayer = closeVideoPlayer;
 window.showToast = showToast;
 window.uiScaleController = window.uiScaleController;
 
-console.log('✅ Content detail script loaded with all UI features (Sidebar, Header, Navigation Button, Theme)');
+console.log('✅ Content detail script loaded with complete Home Feed UI features (Sidebar, Header, Navigation Button)');
