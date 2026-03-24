@@ -21,27 +21,429 @@
   <!-- Base Styles -->
   <link rel="stylesheet" href="css/base.css">
   <link rel="stylesheet" href="css/components.css">
-  <!-- Content Detail CSS (includes sidebar, header, nav button styles) -->
+  <!-- Content Detail CSS -->
   <link rel="stylesheet" href="css/content-detail.css">
   <!-- Video Player CSS -->
   <link rel="stylesheet" href="css/video-player.css">
-  <!-- Additional Modal Styles -->
   <style>
-    /* Playlist Modal Styles */
-    .playlist-modal {
-      animation: modalFadeIn 0.3s ease;
+    /* Additional styles for home feed header integration */
+    .header {
+      background: rgba(10, 14, 18, 0.9);
+      backdrop-filter: blur(20px);
+      padding: 0.75rem 1.5rem;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      border-bottom: 1px solid var(--card-border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      min-height: 3.75rem;
     }
-    @keyframes modalFadeIn {
-      from { opacity: 0; }
-      to { opacity: 1; }
+    
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      cursor: pointer;
     }
-    .playlist-modal-content {
-      animation: modalSlideIn 0.3s ease;
+    
+    .menu-toggle {
+      width: 2.375rem;
+      height: 2.375rem;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: var(--soft-white);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-size: 1.25rem;
+      margin-right: 0.5rem;
     }
-    @keyframes modalSlideIn {
-      from { transform: translateY(-20px); opacity: 0; }
-      to { transform: translateY(0); opacity: 1; }
+    
+    .logo-icon {
+      width: 2.5rem;
+      height: 2.5rem;
+      border-radius: 0.625rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: transparent;
+      border: 1px solid rgba(255, 255, 255, 0.1);
     }
+    
+    .logo-text {
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 700;
+      font-size: 1.125rem;
+      background: linear-gradient(to right, var(--soft-white), var(--bantu-blue));
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+    
+    .header-actions {
+      display: flex;
+      gap: 0.625rem;
+      align-items: center;
+    }
+    
+    .icon-btn {
+      width: 2.375rem;
+      height: 2.375rem;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: var(--soft-white);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      position: relative;
+      font-size: 1rem;
+    }
+    
+    .icon-btn:hover {
+      background: rgba(255, 255, 255, 0.2);
+      transform: translateY(-0.125rem);
+    }
+    
+    .notification-badge {
+      position: absolute;
+      top: -0.3125rem;
+      right: -0.3125rem;
+      background: var(--error-color);
+      color: white;
+      font-size: 0.625rem;
+      font-weight: bold;
+      width: 1.125rem;
+      height: 1.125rem;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 2px solid var(--deep-black);
+    }
+    
+    .profile-switcher {
+      position: relative;
+      margin-right: 0.5rem;
+    }
+    
+    .profile-btn {
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid var(--card-border);
+      border-radius: 2.5rem;
+      padding: 0.3125rem 0.75rem 0.3125rem 0.3125rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+    
+    .profile-btn:hover {
+      background: rgba(255, 255, 255, 0.15);
+      border-color: var(--warm-gold);
+    }
+    
+    .profile-placeholder {
+      width: 2.25rem;
+      height: 2.25rem;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 0.875rem;
+      overflow: hidden;
+    }
+    
+    .profile-name {
+      color: var(--soft-white);
+      font-size: 0.875rem;
+      font-weight: 500;
+    }
+    
+    .profile-dropdown {
+      position: absolute;
+      top: 3.75rem;
+      right: 0;
+      width: 15.625rem;
+      background: var(--card-bg);
+      backdrop-filter: blur(20px);
+      border: 1px solid var(--card-border);
+      border-radius: 0.75rem;
+      opacity: 0;
+      visibility: hidden;
+      transform: translateY(-0.625rem);
+      transition: all 0.3s ease;
+      z-index: 100;
+    }
+    
+    .profile-dropdown.active {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(0);
+    }
+    
+    .profile-dropdown-header {
+      padding: 0.75rem 1rem;
+      border-bottom: 1px solid var(--card-border);
+    }
+    
+    .profile-dropdown-header h4 {
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: var(--soft-white);
+      margin: 0;
+    }
+    
+    .profile-list {
+      max-height: 300px;
+      overflow-y: auto;
+    }
+    
+    .profile-item {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.75rem 1rem;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+    
+    .profile-item:hover {
+      background: rgba(255, 255, 255, 0.1);
+    }
+    
+    .profile-item.active {
+      background: rgba(29, 78, 216, 0.2);
+    }
+    
+    .profile-avatar-small {
+      width: 2rem;
+      height: 2rem;
+      border-radius: 50%;
+      overflow: hidden;
+      background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .profile-avatar-small img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    
+    .profile-initials {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: bold;
+      font-size: 0.75rem;
+    }
+    
+    .profile-item .profile-name {
+      flex: 1;
+      font-size: 0.875rem;
+    }
+    
+    .profile-item i {
+      color: var(--warm-gold);
+      font-size: 0.75rem;
+    }
+    
+    .profile-dropdown-footer {
+      padding: 0.75rem 1rem;
+      border-top: 1px solid var(--card-border);
+    }
+    
+    .text-btn {
+      background: none;
+      border: none;
+      color: var(--warm-gold);
+      cursor: pointer;
+      font-size: 0.875rem;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    
+    .rsa-badge {
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+      background: linear-gradient(135deg, #007A4D, #FFB81C, #E03C31);
+      padding: 0.375rem 0.75rem;
+      border-radius: 1.875rem;
+      color: white;
+      font-size: 0.75rem;
+      font-weight: 600;
+      margin-left: 0.5rem;
+    }
+    
+    /* Navigation Button - Home Feed Style */
+    .navigation-button-container {
+      position: fixed;
+      bottom: 1.875rem;
+      left: 0;
+      right: 0;
+      display: flex;
+      justify-content: center;
+      z-index: 98;
+      pointer-events: none;
+      transition: opacity 0.3s ease, transform 0.3s ease;
+    }
+    
+    .navigation-button {
+      background: rgba(10, 14, 18, 0.85);
+      backdrop-filter: blur(20px);
+      border: 1px solid var(--card-border);
+      border-radius: 3.75rem;
+      padding: 0.625rem 1.125rem;
+      display: inline-flex;
+      gap: 0.5rem;
+      box-shadow: 0 0.625rem 1.875rem rgba(0, 0, 0, 0.5);
+      pointer-events: auto;
+    }
+    
+    .nav-icon {
+      width: 2.75rem;
+      height: 2.75rem;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: var(--soft-white);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-size: 1.25rem;
+      position: relative;
+    }
+    
+    .nav-icon:hover {
+      background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+      transform: translateY(-0.3125rem);
+    }
+    
+    .nav-notification-badge {
+      position: absolute;
+      top: -0.3125rem;
+      right: -0.3125rem;
+      background: var(--error-color);
+      color: white;
+      font-size: 0.625rem;
+      font-weight: bold;
+      width: 1.125rem;
+      height: 1.125rem;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 2px solid var(--deep-black);
+    }
+    
+    /* Theme Selector - Home Feed Style */
+    .theme-selector {
+      position: fixed;
+      top: 80px;
+      right: 20px;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 10px;
+      z-index: 1000;
+      display: none;
+      flex-direction: column;
+      gap: 5px;
+      backdrop-filter: blur(20px);
+      min-width: 180px;
+    }
+    
+    .theme-selector.active {
+      display: flex;
+    }
+    
+    .theme-option {
+      background: none;
+      border: none;
+      color: var(--soft-white);
+      padding: 10px 15px;
+      border-radius: 8px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      transition: all 0.3s ease;
+      font-size: 14px;
+    }
+    
+    .theme-option:hover {
+      background: rgba(255, 255, 255, 0.1);
+    }
+    
+    .theme-option.active {
+      background: rgba(29, 78, 216, 0.2);
+      color: var(--bantu-blue);
+    }
+    
+    /* Mobile Responsive */
+    @media (max-width: 768px) {
+      .logo-text {
+        font-size: 0.875rem;
+        max-width: 140px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      
+      .profile-name {
+        display: none;
+      }
+      
+      .rsa-badge {
+        display: none;
+      }
+      
+      .navigation-button {
+        padding: 0.5rem 1rem;
+        gap: 0.5rem;
+      }
+      
+      .nav-icon {
+        width: 2.5rem;
+        height: 2.5rem;
+        font-size: 1rem;
+      }
+    }
+    
+    @media (max-width: 480px) {
+      .navigation-button {
+        padding: 0.375rem 0.875rem;
+        gap: 0.375rem;
+      }
+      
+      .nav-icon {
+        width: 2.25rem;
+        height: 2.25rem;
+        font-size: 0.875rem;
+      }
+    }
+    
     /* Toast Container */
     #toast-container {
       position: fixed;
@@ -55,6 +457,7 @@
       gap: 10px;
       pointer-events: none;
     }
+    
     .toast {
       background: var(--card-bg);
       backdrop-filter: blur(20px);
@@ -71,18 +474,21 @@
       animation: toastIn 0.3s ease;
       pointer-events: auto;
     }
+    
     .toast.toast-hide {
       animation: toastOut 0.3s ease forwards;
     }
+    
     @keyframes toastIn {
       from { opacity: 0; transform: translateY(20px); }
       to { opacity: 1; transform: translateY(0); }
     }
+    
     @keyframes toastOut {
       from { opacity: 1; transform: translateY(0); }
       to { opacity: 0; transform: translateY(20px); }
     }
-    /* Back to Top Button */
+    
     .back-to-top {
       position: fixed;
       bottom: 100px;
@@ -101,18 +507,7 @@
       z-index: 99;
       box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
     }
-    .back-to-top:hover {
-      transform: translateY(-5px);
-    }
-    @media (max-width: 768px) {
-      .back-to-top {
-        bottom: 100px;
-        right: 15px;
-        width: 40px;
-        height: 40px;
-      }
-    }
-    /* Loading Screen */
+    
     .loading-screen {
       position: fixed;
       top: 0;
@@ -126,6 +521,7 @@
       justify-content: center;
       z-index: 9999;
     }
+    
     .spinner {
       width: 50px;
       height: 50px;
@@ -134,79 +530,22 @@
       border-radius: 50%;
       animation: spin 1s linear infinite;
     }
+    
     @keyframes spin {
       to { transform: rotate(360deg); }
     }
-    #loading-text {
-      margin-top: 20px;
-      color: var(--soft-white);
-      font-size: 14px;
-    }
-    /* Animated Background */
-    .animated-bg {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      z-index: -2;
-      overflow: hidden;
-    }
-    .glow-cycle {
-      position: absolute;
-      border-radius: 50%;
-      filter: blur(80px);
-      opacity: 0.3;
-      animation: float 20s infinite ease-in-out;
-    }
-    .glow-1 {
-      width: 500px;
-      height: 500px;
-      background: radial-gradient(circle, rgba(29, 78, 216, 0.4), transparent);
-      top: -200px;
-      left: -200px;
-    }
-    .glow-2 {
-      width: 600px;
-      height: 600px;
-      background: radial-gradient(circle, rgba(245, 158, 11, 0.3), transparent);
-      bottom: -250px;
-      right: -250px;
-      animation-delay: 5s;
-    }
-    .glow-3 {
-      width: 400px;
-      height: 400px;
-      background: radial-gradient(circle, rgba(29, 78, 216, 0.3), transparent);
-      top: 50%;
-      left: 50%;
-      animation-delay: 10s;
-    }
-    .glow-4 {
-      width: 450px;
-      height: 450px;
-      background: radial-gradient(circle, rgba(245, 158, 11, 0.25), transparent);
-      bottom: 20%;
-      left: 10%;
-      animation-delay: 15s;
-    }
-    @keyframes float {
-      0%, 100% { transform: translate(0, 0) scale(1); }
-      33% { transform: translate(30px, -30px) scale(1.1); }
-      66% { transform: translate(-20px, 20px) scale(0.9); }
-    }
-    /* Container padding for bottom nav */
+    
     .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 0 20px;
       padding-bottom: 100px;
     }
+    
     @media (max-width: 768px) {
       .container {
+        padding: 0 16px;
         padding-bottom: 120px;
-      }
-    }
-    @media (max-width: 480px) {
-      .container {
-        padding-bottom: 130px;
       }
     }
   </style>
@@ -230,7 +569,7 @@
   <div id="app" style="display: none;">
     
     <!-- ============================================ -->
-    <!-- SIDEBAR MENU - COMPLETE -->
+    <!-- SIDEBAR MENU - COMPLETE FROM HOME FEED -->
     <!-- ============================================ -->
     <div class="sidebar-overlay" id="sidebar-overlay"></div>
     <div class="sidebar-menu" id="sidebar-menu">
@@ -286,7 +625,7 @@
     </div>
 
     <!-- ============================================ -->
-    <!-- HEADER - COMPLETE WITH PROFILE SWITCHER -->
+    <!-- HEADER - COMPLETE FROM HOME FEED -->
     <!-- ============================================ -->
     <header class="header">
       <div class="logo" onclick="window.location.href='index.html'">
@@ -343,727 +682,167 @@
     <!-- Main Content -->
     <main class="container">
       
-      <!-- ============================================ -->
-      <!-- VIDEO PLAYER - BEFORE HERO (Appears on Play) -->
-      <!-- ============================================ -->
+      <!-- VIDEO PLAYER - BEFORE HERO -->
       <div class="inline-player" id="inlinePlayer" style="display: none;">
         <div class="video-container" id="bantuVideoContainer">
-          <!-- Video element WITHOUT any duplicate controls -->
-          <video id="inlineVideoPlayer" playsinline webkit-playsinline>
-            Your browser does not support the video tag.
-          </video>
-          
-          <!-- Quality Badge and Network Speed Indicator -->
+          <video id="inlineVideoPlayer" playsinline webkit-playsinline></video>
           <div class="quality-indicator" id="qualityBadge">Auto</div>
           <div class="network-speed-indicator" id="networkSpeedIndicator">
             <i class="fas fa-wifi"></i> <span id="networkSpeedValue">-- Mbps</span>
           </div>
-          <div class="hls-badge" id="hlsBadge" style="display: none;">
-            <i class="fas fa-microchip"></i> HLS
-          </div>
-          <div class="data-saver-badge" id="dataSaverBadge" style="display: none;">
-            <i class="fas fa-leaf"></i> Data Saver
-          </div>
-          
-          <!-- Loading Placeholder -->
+          <div class="hls-badge" id="hlsBadge" style="display: none;"><i class="fas fa-microchip"></i> HLS</div>
+          <div class="data-saver-badge" id="dataSaverBadge" style="display: none;"><i class="fas fa-leaf"></i> Data Saver</div>
           <div class="bantu-player-placeholder" id="videoPlaceholder">
             <div class="bantu-logo-spinner">
-              <div class="bantu-logo">
-                <i class="fas fa-film"></i>
-              </div>
+              <div class="bantu-logo"><i class="fas fa-film"></i></div>
               <div class="bantu-brand-text">BANTU STREAM CONNECT</div>
             </div>
             <p class="loading-text">Ready to play...</p>
           </div>
-          
-          <!-- Enhanced Video Player Controls -->
           <div class="enhanced-video-controls">
             <div class="controls-bar">
-              <button class="control-btn play-pause" title="Play/Pause">
-                <i class="fas fa-play"></i>
-              </button>
-              <div class="time-display">
-                <span class="current-time">0:00</span>
-                <span> / </span>
-                <span class="duration">0:00</span>
-              </div>
-              <div class="progress-container">
-                <input type="range" class="progress-bar" min="0" max="100" value="0">
-              </div>
+              <button class="control-btn play-pause"><i class="fas fa-play"></i></button>
+              <div class="time-display"><span class="current-time">0:00</span><span> / </span><span class="duration">0:00</span></div>
+              <div class="progress-container"><input type="range" class="progress-bar" min="0" max="100" value="0"></div>
               <div class="volume-controls">
-                <button class="control-btn volume-btn" title="Volume">
-                  <i class="fas fa-volume-up"></i>
-                </button>
+                <button class="control-btn volume-btn"><i class="fas fa-volume-up"></i></button>
                 <input type="range" class="volume-bar" min="0" max="100" value="100">
               </div>
-              <button class="control-btn settings-btn" title="Settings">
-                <i class="fas fa-cog"></i>
-              </button>
-              <button class="control-btn fullscreen-btn" title="Fullscreen">
-                <i class="fas fa-expand"></i>
-              </button>
+              <button class="control-btn settings-btn"><i class="fas fa-cog"></i></button>
+              <button class="control-btn fullscreen-btn"><i class="fas fa-expand"></i></button>
             </div>
-            
-            <!-- Settings Menu -->
             <div class="settings-menu">
-              <div class="settings-section">
-                <h4>Quality</h4>
-                <div class="quality-options" id="qualityOptions">
-                  <button class="quality-option active" data-quality="auto">Auto</button>
-                  <button class="quality-option" data-quality="1080p">1080p</button>
-                  <button class="quality-option" data-quality="720p">720p</button>
-                  <button class="quality-option" data-quality="480p">480p</button>
-                  <button class="quality-option" data-quality="360p">360p</button>
-                </div>
-              </div>
-              <div class="settings-section">
-                <h4>Data Saver</h4>
-                <label class="toggle-switch">
-                  <input type="checkbox" id="dataSaverToggle">
-                  <span class="toggle-slider"></span>
-                </label>
-                <p class="toggle-description">Reduce data usage by streaming at lower quality</p>
-              </div>
-              <div class="settings-section">
-                <h4>Speed</h4>
-                <div class="speed-options">
-                  <button class="speed-option" data-speed="0.5">0.5x</button>
-                  <button class="speed-option" data-speed="0.75">0.75x</button>
-                  <button class="speed-option active" data-speed="1">1x</button>
-                  <button class="speed-option" data-speed="1.25">1.25x</button>
-                  <button class="speed-option" data-speed="1.5">1.5x</button>
-                  <button class="speed-option" data-speed="2">2x</button>
-                </div>
-              </div>
+              <div class="settings-section"><h4>Quality</h4><div class="quality-options" id="qualityOptions"></div></div>
+              <div class="settings-section"><h4>Data Saver</h4><label class="toggle-switch"><input type="checkbox" id="dataSaverToggle"><span class="toggle-slider"></span></label></div>
+              <div class="settings-section"><h4>Speed</h4><div class="speed-options"><button class="speed-option" data-speed="0.5">0.5x</button><button class="speed-option" data-speed="0.75">0.75x</button><button class="speed-option active" data-speed="1">1x</button><button class="speed-option" data-speed="1.25">1.25x</button><button class="speed-option" data-speed="1.5">1.5x</button><button class="speed-option" data-speed="2">2x</button></div></div>
             </div>
           </div>
-          
-          <!-- Buffering Indicator -->
-          <div class="buffering-indicator">
-            <div class="spinner"></div>
-            <p>Buffering...</p>
-          </div>
-          
-          <!-- Error Overlay -->
-          <div class="error-overlay">
-            <div class="error-content">
-              <i class="fas fa-exclamation-triangle"></i>
-              <h3>Playback Error</h3>
-              <p class="error-message">Unable to play video. Please check your connection.</p>
-              <button class="retry-btn">Retry</button>
-            </div>
-          </div>
+          <div class="buffering-indicator"><div class="spinner"></div><p>Buffering...</p></div>
+          <div class="error-overlay"><div class="error-content"><i class="fas fa-exclamation-triangle"></i><h3>Playback Error</h3><p class="error-message">Unable to play video.</p><button class="retry-btn">Retry</button></div></div>
         </div>
       </div>
 
-      <!-- ============================================ -->
-      <!-- HERO SECTION - BELOW PLAYER -->
-      <!-- ============================================ -->
+      <!-- HERO SECTION -->
       <section class="content-hero" id="contentHero">
         <div class="hero-poster" id="heroPoster">
-          <div class="poster-placeholder" id="posterPlaceholder">
-            <i class="fas fa-film"></i>
-          </div>
-          <div class="play-overlay" id="heroPlayOverlay">
-            <div class="play-icon-large">
-              <i class="fas fa-play"></i>
-            </div>
-          </div>
+          <div class="poster-placeholder" id="posterPlaceholder"><i class="fas fa-film"></i></div>
+          <div class="play-overlay"><div class="play-icon-large"><i class="fas fa-play"></i></div></div>
         </div>
-        
         <div class="hero-info">
           <h1 id="contentTitle">Loading Content...</h1>
           <div class="hero-meta">
-            <div class="meta-item">
-              <i class="fas fa-user"></i>
-              <span id="creatorName">Creator</span>
-            </div>
-            <div class="meta-item">
-              <i class="fas fa-eye"></i>
-              <span id="viewsCount">0 views</span>
-            </div>
-            <div class="meta-item">
-              <i class="fas fa-clock"></i>
-              <span id="durationText">0m 0s</span>
-            </div>
-            <div class="meta-item">
-              <i class="fas fa-calendar"></i>
-              <span id="uploadDate">--</span>
-            </div>
+            <div class="meta-item"><i class="fas fa-user"></i><span id="creatorName">Creator</span></div>
+            <div class="meta-item"><i class="fas fa-eye"></i><span id="viewsCount">0 views</span></div>
+            <div class="meta-item"><i class="fas fa-clock"></i><span id="durationText">0m 0s</span></div>
+            <div class="meta-item"><i class="fas fa-calendar"></i><span id="uploadDate">--</span></div>
           </div>
-          <div class="hero-description" id="contentDescriptionShort">
-            Loading description...
-          </div>
+          <div class="hero-description" id="contentDescriptionShort">Loading description...</div>
           <div class="hero-actions">
-            <button class="btn btn-primary" id="playBtn">
-              <i class="fas fa-play"></i>
-              <span>Play Now</span>
-            </button>
-            <button class="btn btn-secondary" id="likeBtn">
-              <i class="far fa-heart"></i>
-              <span>Like</span>
-            </button>
-            <button class="btn btn-secondary" id="favoriteBtn">
-              <i class="far fa-star"></i>
-              <span>Favorite</span>
-            </button>
-            <button class="btn btn-secondary" id="watchLaterBtn">
-              <i class="far fa-clock"></i>
-              <span>Watch Later</span>
-            </button>
-            <button class="btn btn-secondary" id="shareBtn">
-              <i class="fas fa-share"></i>
-              <span>Share</span>
-            </button>
-            <button class="btn btn-secondary" id="closePlayerFromHero" style="display: none;">
-              <i class="fas fa-times"></i>
-              <span>Close Player</span>
-            </button>
+            <button class="btn btn-primary" id="playBtn"><i class="fas fa-play"></i><span>Play Now</span></button>
+            <button class="btn btn-secondary" id="likeBtn"><i class="far fa-heart"></i><span>Like</span></button>
+            <button class="btn btn-secondary" id="favoriteBtn"><i class="far fa-star"></i><span>Favorite</span></button>
+            <button class="btn btn-secondary" id="watchLaterBtn"><i class="far fa-clock"></i><span>Watch Later</span></button>
+            <button class="btn btn-secondary" id="shareBtn"><i class="fas fa-share"></i><span>Share</span></button>
+            <button class="btn btn-secondary" id="closePlayerFromHero" style="display: none;"><i class="fas fa-times"></i><span>Close Player</span></button>
           </div>
         </div>
       </section>
 
-      <!-- ============================================ -->
       <!-- CREATOR SECTION -->
-      <!-- ============================================ -->
       <section class="creator-section">
         <div class="creator-info">
-          <div class="creator-avatar" id="creatorAvatar">
-            <i class="fas fa-user"></i>
-          </div>
-          <div class="creator-details">
-            <h3 id="creatorDisplayName">Creator Name</h3>
-            <p>Verified Creator • Joined 2024</p>
-          </div>
-          <button id="connectCreatorBtn" class="connect-btn">
-            <i class="fas fa-user-plus"></i>
-            <span>Connect</span>
-          </button>
+          <div class="creator-avatar" id="creatorAvatar"><i class="fas fa-user"></i></div>
+          <div class="creator-details"><h3 id="creatorDisplayName">Creator Name</h3><p>Verified Creator</p></div>
+          <button id="connectCreatorBtn" class="connect-btn"><i class="fas fa-user-plus"></i><span>Connect</span></button>
         </div>
       </section>
 
-      <!-- Stats Grid -->
+      <!-- STATS GRID -->
       <section class="stats-grid">
-        <div class="stat-card">
-          <div class="stat-icon">
-            <i class="fas fa-eye"></i>
-          </div>
-          <div class="stat-content">
-            <h4>Total Views</h4>
-            <p id="viewsCountFull">0</p>
-          </div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon">
-            <i class="fas fa-heart"></i>
-          </div>
-          <div class="stat-content">
-            <h4>Likes</h4>
-            <p id="likesCount">0</p>
-          </div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon">
-            <i class="fas fa-clock"></i>
-          </div>
-          <div class="stat-content">
-            <h4>Duration</h4>
-            <p id="contentDurationFull">0m 0s</p>
-          </div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon">
-            <i class="fas fa-tag"></i>
-          </div>
-          <div class="stat-content">
-            <h4>Genre</h4>
-            <p id="contentGenre">--</p>
-          </div>
-        </div>
+        <div class="stat-card"><div class="stat-icon"><i class="fas fa-eye"></i></div><div class="stat-content"><h4>Total Views</h4><p id="viewsCountFull">0</p></div></div>
+        <div class="stat-card"><div class="stat-icon"><i class="fas fa-heart"></i></div><div class="stat-content"><h4>Likes</h4><p id="likesCount">0</p></div></div>
+        <div class="stat-card"><div class="stat-icon"><i class="fas fa-clock"></i></div><div class="stat-content"><h4>Duration</h4><p id="contentDurationFull">0m 0s</p></div></div>
+        <div class="stat-card"><div class="stat-icon"><i class="fas fa-tag"></i></div><div class="stat-content"><h4>Genre</h4><p id="contentGenre">--</p></div></div>
       </section>
 
-      <!-- Description Section -->
-      <section class="description-section">
-        <h2>Description</h2>
-        <div class="description-content" id="contentDescriptionFull">
-          Loading full description...
-        </div>
-      </section>
+      <!-- DESCRIPTION SECTION -->
+      <section class="description-section"><h2>Description</h2><div class="description-content" id="contentDescriptionFull"></div></section>
 
-      <!-- Comments Section -->
+      <!-- COMMENTS SECTION -->
       <section class="comments-section">
-        <div class="section-header">
-          <h2 class="section-title">Comments <span id="commentsCount">(0)</span></h2>
-          <button id="refreshCommentsBtn" class="refresh-btn">
-            <i class="fas fa-redo"></i> Refresh
-          </button>
-        </div>
-        <div class="add-comment">
-          <div class="comment-avatar" id="userCommentAvatar">
-            <i class="fas fa-user"></i>
-          </div>
-          <div class="comment-input-container">
-            <textarea id="commentInput" placeholder="Sign in to add a comment..." disabled></textarea>
-            <button id="sendCommentBtn" class="send-comment-btn">
-              <i class="fas fa-paper-plane"></i>
-            </button>
-          </div>
-        </div>
-        <div class="comments-list" id="commentsList">
-          <div class="no-comments" id="noComments">
-            <i class="fas fa-comment-slash"></i>
-            <p>No comments yet. Be the first to comment!</p>
-          </div>
-        </div>
+        <div class="section-header"><h2 class="section-title">Comments <span id="commentsCount">(0)</span></h2><button id="refreshCommentsBtn" class="refresh-btn"><i class="fas fa-redo"></i> Refresh</button></div>
+        <div class="add-comment"><div class="comment-avatar" id="userCommentAvatar"><i class="fas fa-user"></i></div><div class="comment-input-container"><textarea id="commentInput" placeholder="Sign in to add a comment..." disabled></textarea><button id="sendCommentBtn" class="send-comment-btn"><i class="fas fa-paper-plane"></i></button></div></div>
+        <div class="comments-list" id="commentsList"><div class="no-comments" id="noComments"><i class="fas fa-comment-slash"></i><p>No comments yet.</p></div></div>
       </section>
 
-      <!-- Continue Watching Section (Single Section Below Comments) -->
-      <section class="continue-watching-section" id="continueWatchingSection" style="display:none;">
-        <div class="section-header">
-          <h2 class="section-title">Continue Watching</h2>
-          <button class="refresh-btn" id="refreshContinueBtn" title="Refresh">
-            <i class="fas fa-redo"></i>
-          </button>
-        </div>
-        <div class="content-grid" id="continueGrid">
-          <!-- Items injected by JS -->
-        </div>
-      </section>
+      <!-- CONTINUE WATCHING -->
+      <section class="continue-watching-section" id="continueWatchingSection" style="display:none;"><div class="section-header"><h2 class="section-title">Continue Watching</h2><button class="refresh-btn" id="refreshContinueBtn"><i class="fas fa-redo"></i></button></div><div class="content-grid" id="continueGrid"></div></section>
 
-      <!-- Because You Watched Rail -->
-      <section class="related-section" id="becauseYouWatchedRail" style="display:none;">
-        <!-- Content injected by JS -->
-      </section>
-
-      <!-- More From Creator Rail -->
-      <section class="related-section" id="moreFromCreatorRail" style="display:none;">
-        <!-- Content injected by JS -->
-      </section>
-
-      <!-- Related Content -->
-      <section class="related-section">
-        <div class="section-header">
-          <h2 class="section-title">Related Content</h2>
-        </div>
-        <div class="content-grid" id="relatedGrid">
-          <!-- Related content will be loaded here -->
-        </div>
-      </section>
+      <!-- RECOMMENDATION RAILS -->
+      <section class="related-section" id="becauseYouWatchedRail" style="display:none;"></section>
+      <section class="related-section" id="moreFromCreatorRail" style="display:none;"></section>
+      <section class="related-section"><div class="section-header"><h2 class="section-title">Related Content</h2></div><div class="content-grid" id="relatedGrid"></div></section>
     </main>
 
-    <!-- Footer -->
-    <footer class="footer">
-      <p>Bantu Stream Connect © 2025 • Built in South Africa • NO DNA, JUST RSA</p>
-      <div class="footer-links">
-        <a href="privacy-policy.html">Privacy Policy</a>
-        <a href="terms-of-service.html">Terms of Service</a>
-        <a href="support.html">Support</a>
-        <a href="about.html">About</a>
-      </div>
-    </footer>
+    <!-- FOOTER -->
+    <footer class="footer"><p>Bantu Stream Connect © 2025 • Built in South Africa • NO DNA, JUST RSA</p><div class="footer-links"><a href="privacy-policy.html">Privacy Policy</a><a href="terms-of-service.html">Terms of Service</a><a href="support.html">Support</a></div></footer>
 
     <!-- ============================================ -->
-    <!-- BOTTOM NAVIGATION BUTTON - COMPLETE -->
+    <!-- BOTTOM NAVIGATION BUTTON - HOME FEED STYLE -->
     <!-- ============================================ -->
     <div class="navigation-button-container">
       <div class="navigation-button">
-        <div class="nav-icon" id="nav-home-btn" title="Home">
-          <i class="fas fa-home"></i>
-        </div>
-        <div class="nav-icon" id="nav-history-btn" title="Watch History">
-          <i class="fas fa-history"></i>
-        </div>
-        <div class="nav-icon" id="nav-create-btn" title="Create Content">
-          <i class="fas fa-plus-circle"></i>
-        </div>
-        <div class="nav-icon" id="nav-menu-btn" title="Menu">
-          <i class="fas fa-bars"></i>
-        </div>
-        <div class="nav-icon" id="nav-theme-toggle" title="Change Theme">
-          <i class="fas fa-palette"></i>
-        </div>
-        <div class="nav-icon" id="nav-notifications-btn" title="Notifications">
-          <i class="fas fa-bell"></i>
-          <span class="nav-notification-badge" id="nav-notification-count" style="display: none;">0</span>
-        </div>
+        <div class="nav-icon" id="nav-home-btn" title="Home"><i class="fas fa-home"></i></div>
+        <div class="nav-icon" id="nav-history-btn" title="Watch History"><i class="fas fa-history"></i></div>
+        <div class="nav-icon" id="nav-create-btn" title="Create Content"><i class="fas fa-plus-circle"></i></div>
+        <div class="nav-icon" id="nav-menu-btn" title="Menu"><i class="fas fa-bars"></i></div>
+        <div class="nav-icon" id="nav-theme-toggle" title="Change Theme"><i class="fas fa-palette"></i></div>
+        <div class="nav-icon" id="nav-notifications-btn" title="Notifications"><i class="fas fa-bell"></i><span class="nav-notification-badge" id="nav-notification-count" style="display: none;">0</span></div>
       </div>
     </div>
 
-    <!-- Toast Container -->
+    <!-- TOAST CONTAINER -->
     <div id="toast-container"></div>
     
-    <!-- Back to Top Button -->
-    <button id="backToTopBtn" class="back-to-top">
-      <i class="fas fa-arrow-up"></i>
-    </button>
+    <!-- BACK TO TOP -->
+    <button id="backToTopBtn" class="back-to-top"><i class="fas fa-arrow-up"></i></button>
 
-    <!-- ============================================ -->
-    <!-- MODALS & PANELS -->
-    <!-- ============================================ -->
+    <!-- MODALS -->
+    <div id="analytics-modal" class="analytics-modal"><div class="analytics-content"><div class="analytics-header"><h2>Content Analytics</h2><button id="close-analytics" class="close-search-btn"><i class="fas fa-times"></i></button></div><div class="analytics-body"><div class="analytics-grid"><div class="analytics-card"><h3>Total Views</h3><div class="analytics-value" id="content-total-views">0</div><div class="analytics-trend" id="views-trend">+0%</div></div><div class="analytics-card"><h3>Avg. Watch Time</h3><div class="analytics-value" id="avg-watch-time">0m</div><div class="analytics-trend" id="watch-time-trend">+0%</div></div><div class="analytics-card"><h3>Engagement Rate</h3><div class="analytics-value" id="engagement-rate">0%</div><div class="analytics-trend" id="engagement-trend">+0%</div></div><div class="analytics-card"><h3>Comments</h3><div class="analytics-value" id="total-comments">0</div><div class="analytics-trend" id="comments-trend">+0%</div></div></div><div class="charts-container"><canvas id="content-engagement-chart"></canvas></div></div></div></div>
 
-    <!-- Analytics Modal -->
-    <div id="analytics-modal" class="analytics-modal">
-      <div class="analytics-content">
-        <div class="analytics-header">
-          <h2>Content Analytics</h2>
-          <button id="close-analytics" class="close-search-btn">
-            <i class="fas fa-times"></i>
-          </button>
-        </div>
-        <div class="analytics-body">
-          <div class="analytics-grid">
-            <div class="analytics-card">
-              <h3>Total Views</h3>
-              <div class="analytics-value" id="content-total-views">0</div>
-              <div class="analytics-trend" id="views-trend">+0%</div>
-            </div>
-            <div class="analytics-card">
-              <h3>Avg. Watch Time</h3>
-              <div class="analytics-value" id="avg-watch-time">0m</div>
-              <div class="analytics-trend" id="watch-time-trend">+0%</div>
-            </div>
-            <div class="analytics-card">
-              <h3>Engagement Rate</h3>
-              <div class="analytics-value" id="engagement-rate">0%</div>
-              <div class="analytics-trend" id="engagement-trend">+0%</div>
-            </div>
-            <div class="analytics-card">
-              <h3>Comments</h3>
-              <div class="analytics-value" id="total-comments">0</div>
-              <div class="analytics-trend" id="comments-trend">+0%</div>
-            </div>
-          </div>
-          <div class="charts-container">
-            <canvas id="content-engagement-chart"></canvas>
-          </div>
-        </div>
-      </div>
-    </div>
+    <div id="search-modal" class="search-modal"><div class="search-modal-header"><div class="search-input-container"><i class="search-icon fas fa-search"></i><input type="text" id="search-input" class="search-input" placeholder="Search content, creators, or categories..."></div><button id="close-search-btn" class="close-search-btn"><i class="fas fa-times"></i></button></div><div class="search-filters"><div class="filter-group"><label class="filter-label">Category</label><select id="category-filter" class="filter-select"><option value="">All Categories</option><option value="Music">Music</option><option value="STEM">STEM</option><option value="Culture">Culture</option></select></div><div class="filter-group"><label class="filter-label">Sort By</label><select id="sort-filter" class="filter-select"><option value="newest">Newest First</option><option value="popular">Most Popular</option><option value="trending">Trending</option></select></div></div><div id="search-results" class="search-results"><div id="search-results-grid" class="search-results-grid"></div></div></div>
 
-    <!-- Search Modal -->
-    <div id="search-modal" class="search-modal">
-      <div class="search-modal-header">
-        <div class="search-input-container">
-          <i class="search-icon fas fa-search"></i>
-          <input type="text" id="search-input" class="search-input" placeholder="Search content, creators, or categories..." autocomplete="off">
-        </div>
-        <button id="close-search-btn" class="close-search-btn">
-          <i class="fas fa-times"></i>
-        </button>
-      </div>
-      <div class="search-filters">
-        <div class="filter-group">
-          <label class="filter-label">Category</label>
-          <select id="category-filter" class="filter-select">
-            <option value="">All Categories</option>
-            <option value="Music">Music</option>
-            <option value="STEM">STEM</option>
-            <option value="Culture">Culture</option>
-            <option value="News">News</option>
-            <option value="Sports">Sports</option>
-            <option value="Entertainment">Entertainment</option>
-            <option value="Education">Education</option>
-          </select>
-        </div>
-        <div class="filter-group">
-          <label class="filter-label">Sort By</label>
-          <select id="sort-filter" class="filter-select">
-            <option value="newest">Newest First</option>
-            <option value="popular">Most Popular</option>
-            <option value="trending">Trending</option>
-          </select>
-        </div>
-      </div>
-      <div id="search-results" class="search-results">
-        <div id="search-results-grid" class="search-results-grid">
-          <!-- Results loaded here -->
-        </div>
-      </div>
-    </div>
+    <div id="notifications-panel" class="notifications-panel"><div class="notifications-header"><h2>Notifications</h2><button id="close-notifications" class="icon-btn"><i class="fas fa-times"></i></button></div><div class="notifications-list" id="notifications-list"></div><div class="notifications-footer"><button id="mark-all-read" class="text-btn">Mark all as read</button></div></div>
 
-    <!-- Notifications Panel -->
-    <div id="notifications-panel" class="notifications-panel">
-      <div class="notifications-header">
-        <h2>Notifications</h2>
-        <button id="close-notifications" class="icon-btn">
-          <i class="fas fa-times"></i>
-        </button>
-      </div>
-      <div class="notifications-list" id="notifications-list">
-        <div class="empty-notifications">
-          <i class="fas fa-bell-slash"></i>
-          <p>Loading notifications...</p>
-        </div>
-      </div>
-      <div class="notifications-footer">
-        <button id="mark-all-read" class="text-btn">Mark all as read</button>
-        <button id="notification-settings" class="text-btn">Settings</button>
-      </div>
-    </div>
-
-    <!-- Theme Selector -->
+    <!-- THEME SELECTOR - HOME FEED STYLE -->
     <div id="theme-selector" class="theme-selector">
-      <button class="theme-option" data-theme="dark">
-        <i class="fas fa-moon"></i> Dark
-      </button>
-      <button class="theme-option" data-theme="light">
-        <i class="fas fa-sun"></i> Light
-      </button>
-      <button class="theme-option" data-theme="high-contrast">
-        <i class="fas fa-eye"></i> High Contrast
-      </button>
+      <button class="theme-option" data-theme="dark"><i class="fas fa-moon"></i> Dark</button>
+      <button class="theme-option" data-theme="light"><i class="fas fa-sun"></i> Light</button>
+      <button class="theme-option" data-theme="high-contrast"><i class="fas fa-eye"></i> High Contrast</button>
     </div>
 
-  </div> <!-- Closing div for #app -->
+  </div>
 
-  <!-- Initialize Supabase Client -->
+  <!-- Initialize Supabase -->
   <script>
     const SUPABASE_URL = 'https://ydnxqnbjoshvxteevemc.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U';
-    
     window.supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    window.SUPABASE_URL = SUPABASE_URL;
-    window.SUPABASE_ANON_KEY = SUPABASE_ANON_KEY;
   </script>
   
-  <!-- Utility Scripts -->
+  <!-- Scripts -->
   <script src="js/state-manager.js"></script>
   <script src="js/supabase-helper.js"></script>
   <script src="js/auth-helper.js"></script>
   <script src="js/security.js"></script>
   <script src="js/analytics.js"></script>
-  
-  <!-- Playlist Manager -->
   <script src="js/playlist-manager.js"></script>
-  
-  <!-- Streaming Manager -->
   <script src="js/streaming-manager.js"></script>
-  
-  <!-- Video Player Scripts -->
   <script src="js/video-player.js"></script>
-  <script src="js/virtual-scroll.js"></script>
-  <script src="js/video-player-features.js"></script>
-  
-  <!-- Watch Session Lifecycle Manager -->
   <script src="js/watch-session.js"></script>
-  
-  <!-- Recommendation Engine -->
   <script src="js/recommendation-engine.js"></script>
-  
-  <!-- Keyboard Shortcuts -->
   <script src="js/keyboard-shortcuts.js"></script>
-  
-  <!-- Playlist Modal UI -->
   <script src="js/playlist-modal.js"></script>
-  
-  <!-- Main Content Detail Script -->
   <script src="js/content-detail.js"></script>
-  
-  <!-- Additional Initialization Scripts -->
-  <script>
-    // Toast notification function if not defined
-    if (!window.showToast) {
-      window.showToast = function(message, type = 'info') {
-        console.log(`📢 Toast (${type}): ${message}`);
-        let toastContainer = document.getElementById('toast-container');
-        if (!toastContainer) {
-          toastContainer = document.createElement('div');
-          toastContainer.id = 'toast-container';
-          document.body.appendChild(toastContainer);
-        }
-        
-        const toast = document.createElement('div');
-        toast.className = `toast toast-${type}`;
-        const icons = {
-          success: 'fa-check-circle',
-          error: 'fa-exclamation-circle',
-          warning: 'fa-exclamation-triangle',
-          info: 'fa-info-circle'
-        };
-        toast.innerHTML = `
-          <i class="fas ${icons[type] || 'fa-info-circle'}"></i>
-          <span>${message}</span>
-        `;
-        toastContainer.appendChild(toast);
-        
-        setTimeout(() => toast.classList.add('toast-hide'), 3000);
-        setTimeout(() => toast.remove(), 3300);
-      };
-    }
-    
-    // Manage Profiles button handler
-    document.addEventListener('DOMContentLoaded', function() {
-      const manageProfilesBtn = document.getElementById('manage-profiles-btn');
-      if (manageProfilesBtn) {
-        manageProfilesBtn.addEventListener('click', function() {
-          window.location.href = 'manage-profiles.html';
-        });
-      }
-    });
-    
-    // Quality options update function
-    window.updateQualityOptions = function() {
-      const qualityContainer = document.getElementById('qualityOptions');
-      if (!qualityContainer) return;
-      
-      let qualities = [];
-      if (window.streamingManager && typeof window.streamingManager.getAvailableQualities === 'function') {
-        qualities = window.streamingManager.getAvailableQualities();
-      }
-      
-      if (!qualities || qualities.length === 0) {
-        qualities = [
-          { label: 'Auto', value: 'auto' },
-          { label: '1080p', value: '1080p' },
-          { label: '720p', value: '720p' },
-          { label: '480p', value: '480p' },
-          { label: '360p', value: '360p' }
-        ];
-      }
-      
-      qualityContainer.innerHTML = '';
-      qualities.forEach(q => {
-        const button = document.createElement('button');
-        button.className = 'quality-option';
-        if (window.streamingManager && q.value === window.streamingManager.getCurrentQuality()) {
-          button.classList.add('active');
-        }
-        button.dataset.quality = q.value;
-        button.textContent = q.label;
-        qualityContainer.appendChild(button);
-      });
-      
-      qualityContainer.querySelectorAll('.quality-option').forEach(btn => {
-        btn.addEventListener('click', async function() {
-          const quality = this.dataset.quality;
-          qualityContainer.querySelectorAll('.quality-option').forEach(b => b.classList.remove('active'));
-          this.classList.add('active');
-          
-          if (window.streamingManager && typeof window.streamingManager.setQuality === 'function') {
-            await window.streamingManager.setQuality(quality);
-            const qualityBadge = document.getElementById('qualityBadge');
-            if (qualityBadge) {
-              qualityBadge.textContent = quality === 'auto' ? 'Auto' : quality;
-              qualityBadge.style.display = 'block';
-              setTimeout(() => { qualityBadge.style.display = 'none'; }, 5000);
-            }
-          }
-          
-          const settingsMenu = document.querySelector('.settings-menu');
-          if (settingsMenu) settingsMenu.classList.remove('active');
-          if (window.showToast) window.showToast('Quality: ' + (quality === 'auto' ? 'Auto' : quality), 'info');
-        });
-      });
-    };
-    
-    // Quality changed event listener
-    document.addEventListener('qualityChanged', function(e) {
-      const qualityBadge = document.getElementById('qualityBadge');
-      if (qualityBadge && e.detail) {
-        qualityBadge.textContent = e.detail.quality === 'auto' ? 'Auto' : e.detail.quality;
-        qualityBadge.style.display = 'block';
-        setTimeout(() => { qualityBadge.style.display = 'none'; }, 5000);
-      }
-    });
-    
-    // Network speed update event listener
-    document.addEventListener('networkSpeedUpdate', function(e) {
-      const speedIndicator = document.getElementById('networkSpeedIndicator');
-      const speedValue = document.getElementById('networkSpeedValue');
-      if (speedIndicator && speedValue && e.detail) {
-        const speedMbps = (e.detail.speed / 1000000).toFixed(1);
-        speedValue.textContent = speedMbps + ' Mbps';
-        speedIndicator.style.display = 'flex';
-        speedIndicator.classList.remove('good', 'fair', 'poor');
-        if (e.detail.speed > 5000000) speedIndicator.classList.add('good');
-        else if (e.detail.speed > 2000000) speedIndicator.classList.add('fair');
-        else speedIndicator.classList.add('poor');
-      }
-    });
-    
-    // Data saver toggle handler
-    document.addEventListener('DOMContentLoaded', function() {
-      const dataSaverToggle = document.getElementById('dataSaverToggle');
-      if (dataSaverToggle) {
-        dataSaverToggle.addEventListener('change', function() {
-          if (window.streamingManager && typeof window.streamingManager.toggleDataSaver === 'function') {
-            window.streamingManager.toggleDataSaver(this.checked);
-          }
-        });
-      }
-      
-      const settingsBtn = document.querySelector('.settings-btn');
-      const settingsMenu = document.querySelector('.settings-menu');
-      if (settingsBtn && settingsMenu) {
-        settingsBtn.addEventListener('click', function(e) {
-          e.stopPropagation();
-          settingsMenu.classList.toggle('active');
-        });
-        document.addEventListener('click', function(e) {
-          if (settingsMenu.classList.contains('active') &&
-              !settingsMenu.contains(e.target) &&
-              !settingsBtn.contains(e.target)) {
-            settingsMenu.classList.remove('active');
-          }
-        });
-      }
-    });
-    
-    // View deduplication cleanup
-    document.addEventListener('DOMContentLoaded', function() {
-      try {
-        const viewedContent = JSON.parse(localStorage.getItem('bantu_viewed_content') || '{}');
-        const thirtyDaysAgo = Date.now() - (30 * 24 * 60 * 60 * 1000);
-        let needsCleanup = false;
-        Object.keys(viewedContent).forEach(id => {
-          if (viewedContent[id] < thirtyDaysAgo) {
-            delete viewedContent[id];
-            needsCleanup = true;
-          }
-        });
-        if (needsCleanup) localStorage.setItem('bantu_viewed_content', JSON.stringify(viewedContent));
-      } catch (error) {
-        console.warn('Error cleaning up view data:', error);
-      }
-    });
-    
-    // Streaming manager ready event
-    document.addEventListener('streamingManagerReady', function() {
-      if (window.updateQualityOptions) setTimeout(window.updateQualityOptions, 100);
-      const dataSaverToggle = document.getElementById('dataSaverToggle');
-      if (dataSaverToggle && window.streamingManager && typeof window.streamingManager.isDataSaverEnabled === 'function') {
-        dataSaverToggle.checked = window.streamingManager.isDataSaverEnabled();
-      }
-      const speedIndicator = document.getElementById('networkSpeedIndicator');
-      if (speedIndicator && window.streamingManager && typeof window.streamingManager.getNetworkSpeed === 'function') {
-        const speed = window.streamingManager.getNetworkSpeed();
-        if (speed) {
-          const speedValue = document.getElementById('networkSpeedValue');
-          if (speedValue) {
-            const speedMbps = (speed / 1000000).toFixed(1);
-            speedValue.textContent = speedMbps + ' Mbps';
-            speedIndicator.style.display = 'flex';
-          }
-        }
-      }
-      const qualityBadge = document.getElementById('qualityBadge');
-      if (qualityBadge && window.streamingManager && typeof window.streamingManager.getCurrentQuality === 'function') {
-        const quality = window.streamingManager.getCurrentQuality();
-        qualityBadge.textContent = quality === 'auto' ? 'Auto' : quality;
-      }
-      const dataSaverBadge = document.getElementById('dataSaverBadge');
-      if (dataSaverBadge && window.streamingManager && typeof window.streamingManager.isDataSaverEnabled === 'function') {
-        if (window.streamingManager.isDataSaverEnabled()) dataSaverBadge.style.display = 'block';
-      }
-    });
-    
-    if (window.streamingManager) {
-      setTimeout(() => document.dispatchEvent(new CustomEvent('streamingManagerReady')), 500);
-    }
-    
-    document.addEventListener('contentDetailReady', function() {
-      if (window.streamingManager) document.dispatchEvent(new CustomEvent('streamingManagerReady'));
-    });
-  </script>
 </body>
 </html>
