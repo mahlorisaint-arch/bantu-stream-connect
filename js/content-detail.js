@@ -11,6 +11,8 @@
 // ✅ FIXED: Voice search with proper browser support detection
 // ✅ FIXED: Notification badge updates in real-time
 // ✅ FIXED: setupWatchLaterButton not defined error
+// ✅ FIXED: setupContentDetailAnalytics not defined error
+// ✅ FIXED: Duplicate initialization functions
 console.log('🎬 Content Detail Initializing - PRODUCTION BUILD with ALL fixes applied...');
 
 // ============================================
@@ -313,7 +315,7 @@ function setupAuthListeners() {
         }
         
         // Reload notifications
-        await loadNotifications();
+        await loadUserNotifications();
       }
     } else if (event === 'SIGNED_OUT') {
       window.currentUser = null;
@@ -426,20 +428,20 @@ document.addEventListener('DOMContentLoaded', async () => {
   // ✅ Initialize streaming manager (PHASE 4)
   await initializeStreamingManager();
   
-  // Initialize all modals/panels
-  setupContentDetailAnalytics();
-  setupContentDetailSearch();
-  setupContentDetailNotifications();
-  setupContentDetailThemeSelector();
-  setupContentDetailNavigation();
+  // ✅ FIXED: Initialize all modals/panels with correct function names
+  initAnalyticsModal();
+  initSearchModal();
+  initNotificationsPanel();
+  initThemeSelector();
+  initGlobalNavigation();
   
-  // ✅ HOME FEED INTEGRATION - ALL FEATURES
+  // ✅ HOME FEED INTEGRATION - These are now defined as placeholder functions
   setupContentDetailSidebar();
   setupContentDetailHeaderProfile();
   setupContentDetailBackToTop();
   
   // ✅ Load notifications with badge - CRITICAL: Call after auth
-  await loadNotifications();
+  await loadUserNotifications();
   
   // ✅ Voice Search Setup
   setupVoiceSearch();
@@ -473,6 +475,15 @@ document.addEventListener('DOMContentLoaded', async () => {
       initializePlaylistModal();
     }, 500);
   }
+  
+  // ✅ Initialize UI Scale Controller if not already
+  if (!window.uiScaleController) {
+    window.uiScaleController = new UIScaleController();
+    window.uiScaleController.init();
+  }
+  
+  // Setup sidebar scale controls
+  setupSidebarScaleControls();
   
   // ✅ CRITICAL: Force hide loading screen after ALL init is complete
   setTimeout(() => {
@@ -650,6 +661,41 @@ function setupGlobalScaleShortcuts() {
       }
     }
   });
+}
+
+// ============================================
+// SIDEBAR SCALE CONTROLS
+// ============================================
+function setupSidebarScaleControls() {
+  const increaseScaleBtn = document.getElementById('sidebar-increase-scale');
+  const decreaseScaleBtn = document.getElementById('sidebar-decrease-scale');
+  const resetScaleBtn = document.getElementById('sidebar-reset-scale');
+  const scaleValue = document.getElementById('sidebar-scale-value');
+  
+  if (increaseScaleBtn) {
+    increaseScaleBtn.addEventListener('click', () => {
+      window.uiScaleController?.increase();
+      if (scaleValue) scaleValue.textContent = Math.round((window.uiScaleController?.getScale() || 1) * 100) + '%';
+    });
+  }
+  
+  if (decreaseScaleBtn) {
+    decreaseScaleBtn.addEventListener('click', () => {
+      window.uiScaleController?.decrease();
+      if (scaleValue) scaleValue.textContent = Math.round((window.uiScaleController?.getScale() || 1) * 100) + '%';
+    });
+  }
+  
+  if (resetScaleBtn) {
+    resetScaleBtn.addEventListener('click', () => {
+      window.uiScaleController?.reset();
+      if (scaleValue) scaleValue.textContent = '100%';
+    });
+  }
+  
+  if (scaleValue) {
+    scaleValue.textContent = Math.round((window.uiScaleController?.getScale() || 1) * 100) + '%';
+  }
 }
 
 // Call this after UI Scale Controller is initialized
@@ -1574,8 +1620,6 @@ function updateContentUI(content) {
       </div>
     `;
   }
-  
-  // 🎯 REMOVED: Player title "Now Playing" header - no longer used
 }
 
 // ============================================
@@ -2381,525 +2425,28 @@ function setupWatchLaterButton() {
   // If you need to ensure the Watch Later button works, verify initializePlaylistModal is called
 }
 
-// Setup event listeners
-function setupEventListeners() {
-  console.log('🔧 Setting up event listeners...');
-  
-  const playBtn = document.getElementById('playBtn');
-  if (playBtn) {
-    playBtn.addEventListener('click', handlePlay);
-  }
-  
-  const poster = document.getElementById('heroPoster');
-  if (poster) {
-    poster.addEventListener('click', handlePlay);
-  }
-  
-  // ✅ Close player from hero actions button
-  const closeFromHero = document.getElementById('closePlayerFromHero');
-  if (closeFromHero) {
-    closeFromHero.addEventListener('click', function() {
-      closeVideoPlayer();
-    });
-  }
-  
-  // ❌ Old close button removed - no longer in DOM
-  
-  const fullscreenBtn = document.getElementById('fullscreenBtn');
-  const fullPlayerBtn = document.getElementById('fullPlayerBtn');
-  
-  if (fullscreenBtn) {
-    fullscreenBtn.addEventListener('click', function(e) {
-      e.stopPropagation();
-      if (enhancedVideoPlayer) {
-        enhancedVideoPlayer.toggleFullscreen();
-      }
-    });
-  }
-  
-  if (fullPlayerBtn) {
-    fullPlayerBtn.addEventListener('click', function(e) {
-      e.stopPropagation();
-      if (enhancedVideoPlayer) {
-        enhancedVideoPlayer.toggleFullscreen();
-      }
-    });
-  }
-  
-  // ============================================
-  // LIKE BUTTON - RLS-COMPLIANT
-  // ============================================
-  const likeBtn = document.getElementById('likeBtn');
-  if (likeBtn) {
-    likeBtn.addEventListener('click', async function() {
-      if (!currentContent) return;
-      if (!window.AuthHelper?.isAuthenticated?.()) {
-        showToast('Sign in to like content', 'warning');
-        return;
-      }
-      
-      const userProfile = window.AuthHelper.getUserProfile();
-      if (!userProfile?.id) {
-        showToast('User profile not found', 'error');
-        return;
-      }
-      
-      const isLiked = likeBtn.classList.contains('active');
-      const likesCountEl = document.getElementById('likesCount');
-      const currentLikes = parseInt(likesCountEl?.textContent.replace(/\D/g, '') || '0') || 0;
-      const newLikes = isLiked ? currentLikes - 1 : currentLikes + 1;
-      
-      try {
-        likeBtn.classList.toggle('active', !isLiked);
-        likeBtn.innerHTML = !isLiked
-          ? '<i class="fas fa-heart"></i><span>Liked</span>'
-          : '<i class="far fa-heart"></i><span>Like</span>';
-        
-        if (likesCountEl) {
-          likesCountEl.textContent = formatNumber(newLikes);
-        }
-        
-        if (!isLiked) {
-          const { error } = await window.supabaseClient
-            .from('content_likes')
-            .insert({
-              user_id: userProfile.id,
-              content_id: currentContent.id
-            });
-          if (error) throw error;
-        } else {
-          const { error } = await window.supabaseClient
-            .from('content_likes')
-            .delete()
-            .eq('user_id', userProfile.id)
-            .eq('content_id', currentContent.id);
-          if (error) throw error;
-        }
-        
-        await refreshCountsFromSource();
-        showToast(!isLiked ? 'Liked!' : 'Like removed', !isLiked ? 'success' : 'info');
-        
-        if (window.track?.contentLike) {
-          window.track.contentLike(currentContent.id, !isLiked);
-        }
-        
-      } catch (error) {
-        console.error('Like operation failed:', error);
-        likeBtn.classList.toggle('active', isLiked);
-        likeBtn.innerHTML = isLiked
-          ? '<i class="fas fa-heart"></i><span>Liked</span>'
-          : '<i class="far fa-heart"></i><span>Like</span>';
-        if (likesCountEl) {
-          likesCountEl.textContent = formatNumber(currentLikes);
-        }
-        showToast('Failed: ' + error.message, 'error');
-      }
-    });
-  }
-  
-  // ============================================
-  // FAVORITE BUTTON
-  // ============================================
-  const favoriteBtn = document.getElementById('favoriteBtn');
-  if (favoriteBtn) {
-    favoriteBtn.addEventListener('click', async function() {
-      if (!currentContent) return;
-      if (!window.AuthHelper?.isAuthenticated?.()) {
-        showToast('Sign in to favorite content', 'warning');
-        return;
-      }
-      
-      const userProfile = window.AuthHelper.getUserProfile();
-      if (!userProfile?.id) {
-        showToast('User profile not found', 'error');
-        return;
-      }
-      
-      const isFavorited = favoriteBtn.classList.contains('active');
-      const favCountEl = document.getElementById('favoritesCount');
-      const currentFavorites = parseInt(favCountEl?.textContent.replace(/\D/g, '') || '0') || 0;
-      const newFavorites = isFavorited ? currentFavorites - 1 : currentFavorites + 1;
-      
-      try {
-        favoriteBtn.classList.toggle('active', !isFavorited);
-        favoriteBtn.innerHTML = !isFavorited
-          ? '<i class="fas fa-star"></i><span>Favorited</span>'
-          : '<i class="far fa-star"></i><span>Favorite</span>';
-        
-        if (favCountEl) {
-          favCountEl.textContent = formatNumber(newFavorites);
-        }
-        
-        if (!isFavorited) {
-          const { error } = await window.supabaseClient
-            .from('favorites')
-            .insert({
-              user_id: userProfile.id,
-              content_id: currentContent.id
-            });
-          if (error) throw error;
-        } else {
-          const { error } = await window.supabaseClient
-            .from('favorites')
-            .delete()
-            .eq('user_id', userProfile.id)
-            .eq('content_id', currentContent.id);
-          if (error) throw error;
-        }
-        
-        const { error: updateError } = await window.supabaseClient
-          .from('Content')
-          .update({ favorites_count: newFavorites })
-          .eq('id', currentContent.id);
-        
-        if (updateError) {
-          console.warn('Favorites count update failed:', updateError);
-        }
-        currentContent.favorites_count = newFavorites;
-        
-        showToast(!isFavorited ? 'Added to favorites!' : 'Removed from favorites', !isFavorited ? 'success' : 'info');
-        await refreshCountsFromSource();
-        
-      } catch (error) {
-        console.error('Favorite update failed:', error);
-        favoriteBtn.classList.toggle('active', isFavorited);
-        favoriteBtn.innerHTML = isFavorited
-          ? '<i class="fas fa-star"></i><span>Favorited</span>'
-          : '<i class="far fa-star"></i><span>Favorite</span>';
-        if (favCountEl) {
-          favCountEl.textContent = formatNumber(currentFavorites);
-        }
-        showToast('Failed to update favorite', 'error');
-      }
-    });
-  }
-  
-  // ============================================
-  // PHASE 2: WATCH LATER BUTTON (uses modal now)
-  // ✅ FIXED: Added defensive check to prevent ReferenceError
-  // ============================================
-  // The Watch Later button is now handled in initializePlaylistModal
-  // This is a fallback in case modal isn't initialized yet
-  if (typeof setupWatchLaterButton === 'function') {
-    setupWatchLaterButton();
-  } else {
-    console.warn('⚠️ setupWatchLaterButton not defined - skipping (will be handled by initializePlaylistModal)');
-  }
-  
-  const refreshBtn = document.getElementById('refreshCommentsBtn');
-  if (refreshBtn) {
-    refreshBtn.addEventListener('click', async function() {
-      if (currentContent) {
-        showToast('Refreshing comments...', 'info');
-        await loadComments(currentContent.id);
-        showToast('Comments refreshed!', 'success');
-      }
-    });
-  }
-  
-  // ============================================
-  // COMMENT SUBMISSION HANDLER
-  // ============================================
-  const sendBtn = document.getElementById('sendCommentBtn');
-  const commentInput = document.getElementById('commentInput');
-  
-  if (sendBtn && commentInput) {
-    sendBtn.addEventListener('click', async function() {
-      const text = commentInput.value.trim();
-      if (!text) {
-        showToast('Please enter a comment', 'warning');
-        return;
-      }
-      
-      if (!window.AuthHelper?.isAuthenticated?.()) {
-        showToast('You need to sign in to comment', 'warning');
-        return;
-      }
-      
-      if (!currentContent) return;
-      
-      const originalHTML = sendBtn.innerHTML;
-      sendBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-      sendBtn.disabled = true;
-      
-      try {
-        const userProfile = window.AuthHelper.getUserProfile();
-        const displayName = window.AuthHelper.getDisplayName();
-        const avatarUrl = window.AuthHelper.getAvatarUrl();
-        
-        if (!userProfile?.id) {
-          throw new Error('User profile not found');
-        }
-        
-        const { data: newComment, error: insertError } = await window.supabaseClient
-          .from('comments')
-          .insert({
-            content_id: currentContent.id,
-            user_id: userProfile.id,
-            author_name: displayName,
-            comment_text: text,
-            author_avatar: avatarUrl || null,
-            created_at: new Date().toISOString()
-          })
-          .select()
-          .single();
-        
-        if (insertError) {
-          console.error('Comment insert error:', insertError);
-          throw insertError;
-        }
-        
-        console.log('✅ Comment inserted:', newComment);
-        await loadComments(currentContent.id);
-        await refreshCountsFromSource();
-        commentInput.value = '';
-        showToast('Comment added!', 'success');
-        
-        if (window.track?.contentComment) {
-          window.track.contentComment(currentContent.id);
-        }
-        
-      } catch (error) {
-        console.error('❌ Comment submission failed:', error);
-        showToast(error.message || 'Failed to add comment', 'error');
-      } finally {
-        sendBtn.innerHTML = originalHTML;
-        sendBtn.disabled = false;
-      }
-    });
-    
-    commentInput.addEventListener('keypress', function(e) {
-      if (e.key === 'Enter' && !e.shiftKey && !commentInput.disabled) {
-        e.preventDefault();
-        sendBtn.click();
-      }
-    });
-  }
-  
-  const backToTopBtn = document.getElementById('backToTopBtn');
-  if (backToTopBtn) {
-    backToTopBtn.addEventListener('click', function() {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    });
-    
-    window.addEventListener('scroll', function() {
-      if (window.pageYOffset > 300) {
-        backToTopBtn.style.display = 'flex';
-      } else {
-        backToTopBtn.style.display = 'none';
-      }
-    });
-  }
-  
-  const pipBtn = document.getElementById('pipBtn');
-  if (pipBtn) {
-    pipBtn.addEventListener('click', function() {
-      const video = document.getElementById('inlineVideoPlayer');
-      if (video.requestPictureInPicture && document.pictureInPictureElement !== video) {
-        video.requestPictureInPicture();
-      }
-    });
-  }
-  
-  // ============================================
-  // FIXED: SHARE BUTTON WITH BRAND IDENTITY
-  // ============================================
-  const shareBtn = document.getElementById('shareBtn');
-  if (shareBtn) {
-    shareBtn.addEventListener('click', async function() {
-      if (!currentContent) return;
-      
-      const shareText = `📺 ${currentContent.title}
-${currentContent.description || 'Check out this amazing content!'}
-👉 Watch on Bantu Stream Connect
-NO DNA, JUST RSA
-`;
-      const shareUrl = window.location.href;
-      
-      try {
-        if (navigator.share && navigator.canShare({ text: shareText, url: shareUrl })) {
-          await navigator.share({
-            title: 'Bantu Stream Connect',
-            text: shareText,
-            url: shareUrl
-          });
-        } else {
-          await navigator.clipboard.writeText(`${shareText}${shareUrl}`);
-          showToast('✨ Link copied! Share with "NO DNA, JUST RSA" ✨', 'success');
-          if (window.track?.contentShare) {
-            window.track.contentShare(currentContent.id, 'clipboard');
-          }
-        }
-      } catch (err) {
-        if (err.name !== 'AbortError') {
-          console.error('Share failed:', err);
-          showToast('Failed to share. Try copying link manually.', 'error');
-        }
-      }
-    });
-  }
-  
-  setupConnectButtons();
-  console.log('✅ Event listeners setup complete');
+// ============================================
+// SETUP CONTENT DETAIL FUNCTIONS - HOME FEED INTEGRATION
+// ============================================
+function setupContentDetailSidebar() {
+  console.log('📱 Sidebar setup - sidebar functionality will be handled by existing sidebar code');
+  // Sidebar is already handled by the HTML and CSS
+  // This is a placeholder for future enhancements
 }
 
-// ====================================================
-// SINGLE-TABLE FIX: CONNECT BUTTONS WITH CONNECTORS TABLE
-// ====================================================
-function setupConnectButtons() {
-  async function checkConnectionStatus(creatorId) {
-    if (!window.AuthHelper?.isAuthenticated() || !creatorId) return false;
-    const userProfile = window.AuthHelper.getUserProfile();
-    if (!userProfile?.id) return false;
-    
-    return window.supabaseClient
-      .from('connectors')
-      .select('id')
-      .eq('connector_id', userProfile.id)
-      .eq('connected_id', creatorId)
-      .single()
-      .then(function(result) {
-        return !result.error && result.data !== null;
-      })
-      .catch(function() {
-        return false;
-      });
-  }
-  
-  const connectBtn = document.getElementById('connectBtn');
-  if (connectBtn && currentContent?.creator_id) {
-    checkConnectionStatus(currentContent.creator_id).then(function(isConnected) {
-      if (isConnected) {
-        connectBtn.classList.add('connected');
-        connectBtn.innerHTML = '<i class="fas fa-user-check"></i><span>Connected</span>';
-      }
-    });
-    
-    connectBtn.addEventListener('click', async function() {
-      if (!window.AuthHelper?.isAuthenticated?.()) {
-        const shouldLogin = confirm('You need to sign in to connect. Would you like to sign in now?');
-        if (shouldLogin) {
-          window.location.href = `login.html?redirect=${encodeURIComponent(window.location.href)}`;
-        }
-        return;
-      }
-      
-      const userProfile = window.AuthHelper.getUserProfile();
-      if (!userProfile?.id) {
-        showToast('User profile not found', 'error');
-        return;
-      }
-      
-      const isConnected = connectBtn.classList.contains('connected');
-      
-      try {
-        if (isConnected) {
-          const { error } = await window.supabaseClient
-            .from('connectors')
-            .delete()
-            .eq('connector_id', userProfile.id)
-            .eq('connected_id', currentContent.creator_id);
-          if (error) throw error;
-          
-          connectBtn.classList.remove('connected');
-          connectBtn.innerHTML = '<i class="fas fa-user-plus"></i><span>Connect</span>';
-          showToast('Disconnected', 'info');
-        } else {
-          const { error } = await window.supabaseClient
-            .from('connectors')
-            .insert({
-              connector_id: userProfile.id,
-              connected_id: currentContent.creator_id,
-              connection_type: 'creator'
-            });
-          if (error) throw error;
-          
-          connectBtn.classList.add('connected');
-          connectBtn.innerHTML = '<i class="fas fa-user-check"></i><span>Connected</span>';
-          showToast('Connected successfully!', 'success');
-          
-          if (window.track?.userConnect) {
-            window.track.userConnect(currentContent.creator_id);
-          }
-        }
-      } catch (error) {
-        console.error('Connection update failed:', error);
-        showToast('Failed to update connection', 'error');
-      }
-    });
-  }
-  
-  const connectCreatorBtn = document.getElementById('connectCreatorBtn');
-  if (connectCreatorBtn && currentContent?.creator_id) {
-    checkConnectionStatus(currentContent.creator_id).then(function(isConnected) {
-      if (isConnected) {
-        connectCreatorBtn.classList.add('connected');
-        connectCreatorBtn.innerHTML = '<i class="fas fa-user-check"></i><span>Connected</span>';
-      }
-    });
-    
-    connectCreatorBtn.addEventListener('click', async function() {
-      if (!window.AuthHelper?.isAuthenticated?.()) {
-        const shouldLogin = confirm('You need to sign in to connect. Would you like to sign in now?');
-        if (shouldLogin) {
-          window.location.href = `login.html?redirect=${encodeURIComponent(window.location.href)}`;
-        }
-        return;
-      }
-      
-      const userProfile = window.AuthHelper.getUserProfile();
-      if (!userProfile?.id) {
-        showToast('User profile not found', 'error');
-        return;
-      }
-      
-      const isConnected = connectCreatorBtn.classList.contains('connected');
-      
-      try {
-        if (isConnected) {
-          const { error } = await window.supabaseClient
-            .from('connectors')
-            .delete()
-            .eq('connector_id', userProfile.id)
-            .eq('connected_id', currentContent.creator_id);
-          if (error) throw error;
-          
-          connectCreatorBtn.classList.remove('connected');
-          connectCreatorBtn.innerHTML = '<i class="fas fa-user-plus"></i><span>Connect</span>';
-          showToast('Disconnected', 'info');
-        } else {
-          const { error } = await window.supabaseClient
-            .from('connectors')
-            .insert({
-              connector_id: userProfile.id,
-              connected_id: currentContent.creator_id,
-              connection_type: 'creator'
-            });
-          if (error) throw error;
-          
-          connectCreatorBtn.classList.add('connected');
-          connectCreatorBtn.innerHTML = '<i class="fas fa-user-check"></i><span>Connected</span>';
-          showToast('Connected successfully!', 'success');
-          
-          if (window.track?.userConnect) {
-            window.track.userConnect(currentContent.creator_id);
-          }
-        }
-      } catch (error) {
-        console.error('Connection update failed:', error);
-        showToast('Failed to update connection', 'error');
-      }
-    });
-  }
+function setupContentDetailHeaderProfile() {
+  console.log('👤 Header profile - profile functionality already handled by updateUIWithUser()');
+  // Header profile is already updated via updateUIWithUser()
 }
 
-// ===================================================================
-// MODAL & PANEL SYSTEMS
-// ===================================================================
+function setupContentDetailBackToTop() {
+  console.log('⬆️ Back to top - back to top button already has event listener in setupEventListeners()');
+  // Back to top button is already handled in setupEventListeners()
+}
 
-// ======================
+// ============================================
 // ANALYTICS MODAL
-// ======================
+// ============================================
 function initAnalyticsModal() {
   const analyticsBtn = document.getElementById('analytics-btn');
   const analyticsModal = document.getElementById('analytics-modal');
@@ -3832,6 +3379,516 @@ function setupContinueWatchingRefresh() {
       refreshBtn.innerHTML = '<i class="fas fa-redo"></i>';
     }
   });
+}
+
+// Setup event listeners
+function setupEventListeners() {
+  console.log('🔧 Setting up event listeners...');
+  
+  const playBtn = document.getElementById('playBtn');
+  if (playBtn) {
+    playBtn.addEventListener('click', handlePlay);
+  }
+  
+  const poster = document.getElementById('heroPoster');
+  if (poster) {
+    poster.addEventListener('click', handlePlay);
+  }
+  
+  // ✅ Close player from hero actions button
+  const closeFromHero = document.getElementById('closePlayerFromHero');
+  if (closeFromHero) {
+    closeFromHero.addEventListener('click', function() {
+      closeVideoPlayer();
+    });
+  }
+  
+  const fullscreenBtn = document.getElementById('fullscreenBtn');
+  const fullPlayerBtn = document.getElementById('fullPlayerBtn');
+  
+  if (fullscreenBtn) {
+    fullscreenBtn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      if (enhancedVideoPlayer) {
+        enhancedVideoPlayer.toggleFullscreen();
+      }
+    });
+  }
+  
+  if (fullPlayerBtn) {
+    fullPlayerBtn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      if (enhancedVideoPlayer) {
+        enhancedVideoPlayer.toggleFullscreen();
+      }
+    });
+  }
+  
+  // ============================================
+  // LIKE BUTTON - RLS-COMPLIANT
+  // ============================================
+  const likeBtn = document.getElementById('likeBtn');
+  if (likeBtn) {
+    likeBtn.addEventListener('click', async function() {
+      if (!currentContent) return;
+      if (!window.AuthHelper?.isAuthenticated?.()) {
+        showToast('Sign in to like content', 'warning');
+        return;
+      }
+      
+      const userProfile = window.AuthHelper.getUserProfile();
+      if (!userProfile?.id) {
+        showToast('User profile not found', 'error');
+        return;
+      }
+      
+      const isLiked = likeBtn.classList.contains('active');
+      const likesCountEl = document.getElementById('likesCount');
+      const currentLikes = parseInt(likesCountEl?.textContent.replace(/\D/g, '') || '0') || 0;
+      const newLikes = isLiked ? currentLikes - 1 : currentLikes + 1;
+      
+      try {
+        likeBtn.classList.toggle('active', !isLiked);
+        likeBtn.innerHTML = !isLiked
+          ? '<i class="fas fa-heart"></i><span>Liked</span>'
+          : '<i class="far fa-heart"></i><span>Like</span>';
+        
+        if (likesCountEl) {
+          likesCountEl.textContent = formatNumber(newLikes);
+        }
+        
+        if (!isLiked) {
+          const { error } = await window.supabaseClient
+            .from('content_likes')
+            .insert({
+              user_id: userProfile.id,
+              content_id: currentContent.id
+            });
+          if (error) throw error;
+        } else {
+          const { error } = await window.supabaseClient
+            .from('content_likes')
+            .delete()
+            .eq('user_id', userProfile.id)
+            .eq('content_id', currentContent.id);
+          if (error) throw error;
+        }
+        
+        await refreshCountsFromSource();
+        showToast(!isLiked ? 'Liked!' : 'Like removed', !isLiked ? 'success' : 'info');
+        
+        if (window.track?.contentLike) {
+          window.track.contentLike(currentContent.id, !isLiked);
+        }
+        
+      } catch (error) {
+        console.error('Like operation failed:', error);
+        likeBtn.classList.toggle('active', isLiked);
+        likeBtn.innerHTML = isLiked
+          ? '<i class="fas fa-heart"></i><span>Liked</span>'
+          : '<i class="far fa-heart"></i><span>Like</span>';
+        if (likesCountEl) {
+          likesCountEl.textContent = formatNumber(currentLikes);
+        }
+        showToast('Failed: ' + error.message, 'error');
+      }
+    });
+  }
+  
+  // ============================================
+  // FAVORITE BUTTON
+  // ============================================
+  const favoriteBtn = document.getElementById('favoriteBtn');
+  if (favoriteBtn) {
+    favoriteBtn.addEventListener('click', async function() {
+      if (!currentContent) return;
+      if (!window.AuthHelper?.isAuthenticated?.()) {
+        showToast('Sign in to favorite content', 'warning');
+        return;
+      }
+      
+      const userProfile = window.AuthHelper.getUserProfile();
+      if (!userProfile?.id) {
+        showToast('User profile not found', 'error');
+        return;
+      }
+      
+      const isFavorited = favoriteBtn.classList.contains('active');
+      const favCountEl = document.getElementById('favoritesCount');
+      const currentFavorites = parseInt(favCountEl?.textContent.replace(/\D/g, '') || '0') || 0;
+      const newFavorites = isFavorited ? currentFavorites - 1 : currentFavorites + 1;
+      
+      try {
+        favoriteBtn.classList.toggle('active', !isFavorited);
+        favoriteBtn.innerHTML = !isFavorited
+          ? '<i class="fas fa-star"></i><span>Favorited</span>'
+          : '<i class="far fa-star"></i><span>Favorite</span>';
+        
+        if (favCountEl) {
+          favCountEl.textContent = formatNumber(newFavorites);
+        }
+        
+        if (!isFavorited) {
+          const { error } = await window.supabaseClient
+            .from('favorites')
+            .insert({
+              user_id: userProfile.id,
+              content_id: currentContent.id
+            });
+          if (error) throw error;
+        } else {
+          const { error } = await window.supabaseClient
+            .from('favorites')
+            .delete()
+            .eq('user_id', userProfile.id)
+            .eq('content_id', currentContent.id);
+          if (error) throw error;
+        }
+        
+        const { error: updateError } = await window.supabaseClient
+          .from('Content')
+          .update({ favorites_count: newFavorites })
+          .eq('id', currentContent.id);
+        
+        if (updateError) {
+          console.warn('Favorites count update failed:', updateError);
+        }
+        currentContent.favorites_count = newFavorites;
+        
+        showToast(!isFavorited ? 'Added to favorites!' : 'Removed from favorites', !isFavorited ? 'success' : 'info');
+        await refreshCountsFromSource();
+        
+      } catch (error) {
+        console.error('Favorite update failed:', error);
+        favoriteBtn.classList.toggle('active', isFavorited);
+        favoriteBtn.innerHTML = isFavorited
+          ? '<i class="fas fa-star"></i><span>Favorited</span>'
+          : '<i class="far fa-star"></i><span>Favorite</span>';
+        if (favCountEl) {
+          favCountEl.textContent = formatNumber(currentFavorites);
+        }
+        showToast('Failed to update favorite', 'error');
+      }
+    });
+  }
+  
+  // ============================================
+  // PHASE 2: WATCH LATER BUTTON (uses modal now)
+  // ✅ FIXED: Added defensive check to prevent ReferenceError
+  // ============================================
+  // The Watch Later button is now handled in initializePlaylistModal
+  // This is a fallback in case modal isn't initialized yet
+  if (typeof setupWatchLaterButton === 'function') {
+    setupWatchLaterButton();
+  } else {
+    console.warn('⚠️ setupWatchLaterButton not defined - skipping (will be handled by initializePlaylistModal)');
+  }
+  
+  const refreshBtn = document.getElementById('refreshCommentsBtn');
+  if (refreshBtn) {
+    refreshBtn.addEventListener('click', async function() {
+      if (currentContent) {
+        showToast('Refreshing comments...', 'info');
+        await loadComments(currentContent.id);
+        showToast('Comments refreshed!', 'success');
+      }
+    });
+  }
+  
+  // ============================================
+  // COMMENT SUBMISSION HANDLER
+  // ============================================
+  const sendBtn = document.getElementById('sendCommentBtn');
+  const commentInput = document.getElementById('commentInput');
+  
+  if (sendBtn && commentInput) {
+    sendBtn.addEventListener('click', async function() {
+      const text = commentInput.value.trim();
+      if (!text) {
+        showToast('Please enter a comment', 'warning');
+        return;
+      }
+      
+      if (!window.AuthHelper?.isAuthenticated?.()) {
+        showToast('You need to sign in to comment', 'warning');
+        return;
+      }
+      
+      if (!currentContent) return;
+      
+      const originalHTML = sendBtn.innerHTML;
+      sendBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+      sendBtn.disabled = true;
+      
+      try {
+        const userProfile = window.AuthHelper.getUserProfile();
+        const displayName = window.AuthHelper.getDisplayName();
+        const avatarUrl = window.AuthHelper.getAvatarUrl();
+        
+        if (!userProfile?.id) {
+          throw new Error('User profile not found');
+        }
+        
+        const { data: newComment, error: insertError } = await window.supabaseClient
+          .from('comments')
+          .insert({
+            content_id: currentContent.id,
+            user_id: userProfile.id,
+            author_name: displayName,
+            comment_text: text,
+            author_avatar: avatarUrl || null,
+            created_at: new Date().toISOString()
+          })
+          .select()
+          .single();
+        
+        if (insertError) {
+          console.error('Comment insert error:', insertError);
+          throw insertError;
+        }
+        
+        console.log('✅ Comment inserted:', newComment);
+        await loadComments(currentContent.id);
+        await refreshCountsFromSource();
+        commentInput.value = '';
+        showToast('Comment added!', 'success');
+        
+        if (window.track?.contentComment) {
+          window.track.contentComment(currentContent.id);
+        }
+        
+      } catch (error) {
+        console.error('❌ Comment submission failed:', error);
+        showToast(error.message || 'Failed to add comment', 'error');
+      } finally {
+        sendBtn.innerHTML = originalHTML;
+        sendBtn.disabled = false;
+      }
+    });
+    
+    commentInput.addEventListener('keypress', function(e) {
+      if (e.key === 'Enter' && !e.shiftKey && !commentInput.disabled) {
+        e.preventDefault();
+        sendBtn.click();
+      }
+    });
+  }
+  
+  const backToTopBtn = document.getElementById('backToTopBtn');
+  if (backToTopBtn) {
+    backToTopBtn.addEventListener('click', function() {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+    
+    window.addEventListener('scroll', function() {
+      if (window.pageYOffset > 300) {
+        backToTopBtn.style.display = 'flex';
+      } else {
+        backToTopBtn.style.display = 'none';
+      }
+    });
+  }
+  
+  const pipBtn = document.getElementById('pipBtn');
+  if (pipBtn) {
+    pipBtn.addEventListener('click', function() {
+      const video = document.getElementById('inlineVideoPlayer');
+      if (video.requestPictureInPicture && document.pictureInPictureElement !== video) {
+        video.requestPictureInPicture();
+      }
+    });
+  }
+  
+  // ============================================
+  // FIXED: SHARE BUTTON WITH BRAND IDENTITY
+  // ============================================
+  const shareBtn = document.getElementById('shareBtn');
+  if (shareBtn) {
+    shareBtn.addEventListener('click', async function() {
+      if (!currentContent) return;
+      
+      const shareText = `📺 ${currentContent.title}
+${currentContent.description || 'Check out this amazing content!'}
+👉 Watch on Bantu Stream Connect
+NO DNA, JUST RSA
+`;
+      const shareUrl = window.location.href;
+      
+      try {
+        if (navigator.share && navigator.canShare({ text: shareText, url: shareUrl })) {
+          await navigator.share({
+            title: 'Bantu Stream Connect',
+            text: shareText,
+            url: shareUrl
+          });
+        } else {
+          await navigator.clipboard.writeText(`${shareText}${shareUrl}`);
+          showToast('✨ Link copied! Share with "NO DNA, JUST RSA" ✨', 'success');
+          if (window.track?.contentShare) {
+            window.track.contentShare(currentContent.id, 'clipboard');
+          }
+        }
+      } catch (err) {
+        if (err.name !== 'AbortError') {
+          console.error('Share failed:', err);
+          showToast('Failed to share. Try copying link manually.', 'error');
+        }
+      }
+    });
+  }
+  
+  setupConnectButtons();
+  console.log('✅ Event listeners setup complete');
+}
+
+// ====================================================
+// SINGLE-TABLE FIX: CONNECT BUTTONS WITH CONNECTORS TABLE
+// ====================================================
+function setupConnectButtons() {
+  async function checkConnectionStatus(creatorId) {
+    if (!window.AuthHelper?.isAuthenticated() || !creatorId) return false;
+    const userProfile = window.AuthHelper.getUserProfile();
+    if (!userProfile?.id) return false;
+    
+    return window.supabaseClient
+      .from('connectors')
+      .select('id')
+      .eq('connector_id', userProfile.id)
+      .eq('connected_id', creatorId)
+      .single()
+      .then(function(result) {
+        return !result.error && result.data !== null;
+      })
+      .catch(function() {
+        return false;
+      });
+  }
+  
+  const connectBtn = document.getElementById('connectBtn');
+  if (connectBtn && currentContent?.creator_id) {
+    checkConnectionStatus(currentContent.creator_id).then(function(isConnected) {
+      if (isConnected) {
+        connectBtn.classList.add('connected');
+        connectBtn.innerHTML = '<i class="fas fa-user-check"></i><span>Connected</span>';
+      }
+    });
+    
+    connectBtn.addEventListener('click', async function() {
+      if (!window.AuthHelper?.isAuthenticated?.()) {
+        const shouldLogin = confirm('You need to sign in to connect. Would you like to sign in now?');
+        if (shouldLogin) {
+          window.location.href = `login.html?redirect=${encodeURIComponent(window.location.href)}`;
+        }
+        return;
+      }
+      
+      const userProfile = window.AuthHelper.getUserProfile();
+      if (!userProfile?.id) {
+        showToast('User profile not found', 'error');
+        return;
+      }
+      
+      const isConnected = connectBtn.classList.contains('connected');
+      
+      try {
+        if (isConnected) {
+          const { error } = await window.supabaseClient
+            .from('connectors')
+            .delete()
+            .eq('connector_id', userProfile.id)
+            .eq('connected_id', currentContent.creator_id);
+          if (error) throw error;
+          
+          connectBtn.classList.remove('connected');
+          connectBtn.innerHTML = '<i class="fas fa-user-plus"></i><span>Connect</span>';
+          showToast('Disconnected', 'info');
+        } else {
+          const { error } = await window.supabaseClient
+            .from('connectors')
+            .insert({
+              connector_id: userProfile.id,
+              connected_id: currentContent.creator_id,
+              connection_type: 'creator'
+            });
+          if (error) throw error;
+          
+          connectBtn.classList.add('connected');
+          connectBtn.innerHTML = '<i class="fas fa-user-check"></i><span>Connected</span>';
+          showToast('Connected successfully!', 'success');
+          
+          if (window.track?.userConnect) {
+            window.track.userConnect(currentContent.creator_id);
+          }
+        }
+      } catch (error) {
+        console.error('Connection update failed:', error);
+        showToast('Failed to update connection', 'error');
+      }
+    });
+  }
+  
+  const connectCreatorBtn = document.getElementById('connectCreatorBtn');
+  if (connectCreatorBtn && currentContent?.creator_id) {
+    checkConnectionStatus(currentContent.creator_id).then(function(isConnected) {
+      if (isConnected) {
+        connectCreatorBtn.classList.add('connected');
+        connectCreatorBtn.innerHTML = '<i class="fas fa-user-check"></i><span>Connected</span>';
+      }
+    });
+    
+    connectCreatorBtn.addEventListener('click', async function() {
+      if (!window.AuthHelper?.isAuthenticated?.()) {
+        const shouldLogin = confirm('You need to sign in to connect. Would you like to sign in now?');
+        if (shouldLogin) {
+          window.location.href = `login.html?redirect=${encodeURIComponent(window.location.href)}`;
+        }
+        return;
+      }
+      
+      const userProfile = window.AuthHelper.getUserProfile();
+      if (!userProfile?.id) {
+        showToast('User profile not found', 'error');
+        return;
+      }
+      
+      const isConnected = connectCreatorBtn.classList.contains('connected');
+      
+      try {
+        if (isConnected) {
+          const { error } = await window.supabaseClient
+            .from('connectors')
+            .delete()
+            .eq('connector_id', userProfile.id)
+            .eq('connected_id', currentContent.creator_id);
+          if (error) throw error;
+          
+          connectCreatorBtn.classList.remove('connected');
+          connectCreatorBtn.innerHTML = '<i class="fas fa-user-plus"></i><span>Connect</span>';
+          showToast('Disconnected', 'info');
+        } else {
+          const { error } = await window.supabaseClient
+            .from('connectors')
+            .insert({
+              connector_id: userProfile.id,
+              connected_id: currentContent.creator_id,
+              connection_type: 'creator'
+            });
+          if (error) throw error;
+          
+          connectCreatorBtn.classList.add('connected');
+          connectCreatorBtn.innerHTML = '<i class="fas fa-user-check"></i><span>Connected</span>';
+          showToast('Connected successfully!', 'success');
+          
+          if (window.track?.userConnect) {
+            window.track.userConnect(currentContent.creator_id);
+          }
+        }
+      } catch (error) {
+        console.error('Connection update failed:', error);
+        showToast('Failed to update connection', 'error');
+      }
+    });
+  }
 }
 
 // Utility functions
