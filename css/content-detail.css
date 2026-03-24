@@ -3059,3 +3059,49 @@ display: block !important;
 opacity: 1 !important;
 pointer-events: all !important;
 }
+
+/* ===== SIDEBAR Z-INDEX FIX ===== */
+.sidebar-overlay {
+  z-index: 1000 !important;
+}
+
+.sidebar-menu {
+  z-index: 1001 !important;
+}
+
+.theme-selector {
+  z-index: 1002 !important;
+}
+
+/* Ensure sidebar items are clickable */
+.sidebar-nav-item,
+.sidebar-theme-toggle,
+.scale-btn {
+  cursor: pointer !important;
+  pointer-events: auto !important;
+}
+
+/* Prevent sidebar from being blocked */
+.sidebar-menu.active {
+  pointer-events: auto !important;
+}
+
+/* ===== HEADER PROFILE CLICKABLE ===== */
+.profile-btn,
+.profile-switcher {
+  cursor: pointer !important;
+  position: relative;
+  z-index: 100;
+}
+
+/* ===== MOBILE TOUCH TARGETS ===== */
+@media (max-width: 768px) {
+  .menu-toggle,
+  .nav-icon,
+  .icon-btn,
+  .profile-btn {
+    min-width: 44px !important;
+    min-height: 44px !important;
+    padding: 8px !important;
+  }
+}
