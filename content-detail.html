@@ -1299,7 +1299,9 @@ padding: 20px;
 <button id="backToTopBtn" class="back-to-top"><i class="fas fa-arrow-up"></i></button>
 </div>
 
-<!-- Scripts -->
+<!-- ============================================ -->
+<!-- INLINE SCRIPT: Handles Authentication UI Updates -->
+<!-- ============================================ -->
 <script>
 // Supabase configuration
 const SUPABASE_URL = 'https://ydnxqnbjoshvxteevemc.supabase.co';
@@ -1309,189 +1311,196 @@ window.supabaseAuth = window.supabaseClient;
 window.SUPABASE_URL = SUPABASE_URL;
 window.SUPABASE_ANON_KEY = SUPABASE_ANON_KEY;
 
-let currentUser = null;
-let currentProfile = null;
-
-// Helper functions
+// Helper function to show toast messages
 function showToast(message, type = 'info') {
-const container = document.getElementById('toast-container');
-if (!container) return;
-const toast = document.createElement('div');
-toast.className = `toast ${type}`;
-toast.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-exclamation-circle' : type === 'warning' ? 'fa-exclamation-triangle' : 'fa-info-circle'}"></i><span>${message}</span>`;
-container.appendChild(toast);
-setTimeout(() => {
-toast.style.opacity = '0';
-toast.style.transform = 'translateX(100%)';
-setTimeout(() => toast.remove(), 300);
-}, 3000);
+    const container = document.getElementById('toast-container');
+    if (!container) return;
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    toast.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-exclamation-circle' : type === 'warning' ? 'fa-exclamation-triangle' : 'fa-info-circle'}"></i><span>${message}</span>`;
+    container.appendChild(toast);
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateX(100%)';
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
 }
 
 window.showToast = showToast;
 
-async function updateUserProfile() {
-try {
-const { data: { session } } = await window.supabaseClient.auth.getSession();
-
-if (session && session.user) {
-currentUser = session.user;
-
-const { data: profile } = await window.supabaseClient
-.from('user_profiles')
-.select('*')
-.eq('id', currentUser.id)
-.maybeSingle();
-
-currentProfile = profile;
-const displayName = profile?.full_name || profile?.username || currentUser.email?.split('@')[0] || 'User';
-const userEmail = currentUser.email || 'user@example.com';
-const avatarUrl = profile?.avatar_url;
-
-// Update header profile
-const headerPlaceholder = document.getElementById('userProfilePlaceholder');
-const headerName = document.getElementById('current-profile-name');
-
-if (headerPlaceholder) {
-headerPlaceholder.innerHTML = '';
-if (avatarUrl && avatarUrl !== 'null' && avatarUrl !== 'undefined') {
-const img = document.createElement('img');
-img.src = avatarUrl.startsWith('http') ? avatarUrl : `${SUPABASE_URL}/storage/v1/object/public/${avatarUrl.replace(/^\/+/, '')}`;
-img.style.cssText = 'width:100%;height:100%;border-radius:50%;object-fit:cover;';
-headerPlaceholder.appendChild(img);
-} else {
-const initial = displayName.charAt(0).toUpperCase();
-const div = document.createElement('div');
-div.style.cssText = 'width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg, #1D4ED8, #F59E0B);border-radius:50%;font-weight:bold;font-size:14px;color:white;';
-div.textContent = initial;
-headerPlaceholder.appendChild(div);
+// Main function to update header and sidebar when user is logged in
+async function updateHeaderAndSidebar() {
+    try {
+        const { data: { session } } = await window.supabaseClient.auth.getSession();
+        
+        if (session && session.user) {
+            console.log('✅ User is logged in:', session.user.email);
+            
+            // Get profile
+            const { data: profile } = await window.supabaseClient
+                .from('user_profiles')
+                .select('*')
+                .eq('id', session.user.id)
+                .maybeSingle();
+            
+            const displayName = profile?.full_name || profile?.username || session.user.email?.split('@')[0] || 'User';
+            const avatarUrl = profile?.avatar_url;
+            const initial = displayName.charAt(0).toUpperCase();
+            
+            // Store globally for other scripts
+            window.currentUser = session.user;
+            window.currentProfile = profile;
+            
+            // Update header profile
+            const headerPlaceholder = document.getElementById('userProfilePlaceholder');
+            const headerName = document.getElementById('current-profile-name');
+            
+            if (headerPlaceholder) {
+                headerPlaceholder.innerHTML = '';
+                if (avatarUrl && avatarUrl !== 'null' && avatarUrl !== 'undefined') {
+                    const img = document.createElement('img');
+                    img.src = avatarUrl.startsWith('http') ? avatarUrl : `${SUPABASE_URL}/storage/v1/object/public/${avatarUrl.replace(/^\/+/, '')}`;
+                    img.style.cssText = 'width:100%;height:100%;border-radius:50%;object-fit:cover;';
+                    headerPlaceholder.appendChild(img);
+                } else {
+                    const div = document.createElement('div');
+                    div.style.cssText = 'width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg, #1D4ED8, #F59E0B);border-radius:50%;font-weight:bold;font-size:14px;color:white;';
+                    div.textContent = initial;
+                    headerPlaceholder.appendChild(div);
+                }
+            }
+            if (headerName) headerName.textContent = displayName;
+            
+            // Update sidebar profile
+            const sidebarAvatar = document.getElementById('sidebar-profile-avatar');
+            const sidebarName = document.getElementById('sidebar-profile-name');
+            const sidebarEmail = document.getElementById('sidebar-profile-email');
+            
+            if (sidebarAvatar) {
+                sidebarAvatar.innerHTML = '';
+                if (avatarUrl && avatarUrl !== 'null' && avatarUrl !== 'undefined') {
+                    const img = document.createElement('img');
+                    img.src = avatarUrl.startsWith('http') ? avatarUrl : `${SUPABASE_URL}/storage/v1/object/public/${avatarUrl.replace(/^\/+/, '')}`;
+                    img.style.cssText = 'width:100%;height:100%;object-fit:cover;border-radius:50%;';
+                    sidebarAvatar.appendChild(img);
+                } else {
+                    const span = document.createElement('span');
+                    span.style.cssText = 'font-size:1.2rem;font-weight:bold;color:var(--soft-white);';
+                    span.textContent = initial;
+                    sidebarAvatar.appendChild(span);
+                }
+            }
+            if (sidebarName) sidebarName.textContent = displayName;
+            if (sidebarEmail) sidebarEmail.textContent = session.user.email;
+            
+            // Enable comment input
+            const commentInput = document.getElementById('commentInput');
+            const sendCommentBtn = document.getElementById('sendCommentBtn');
+            if (commentInput) {
+                commentInput.disabled = false;
+                commentInput.placeholder = 'Write a comment...';
+            }
+            if (sendCommentBtn) sendCommentBtn.disabled = false;
+            
+            const commentAvatar = document.getElementById('userCommentAvatar');
+            if (commentAvatar) {
+                commentAvatar.innerHTML = '';
+                if (avatarUrl && avatarUrl !== 'null' && avatarUrl !== 'undefined') {
+                    const img = document.createElement('img');
+                    img.src = avatarUrl.startsWith('http') ? avatarUrl : `${SUPABASE_URL}/storage/v1/object/public/${avatarUrl.replace(/^\/+/, '')}`;
+                    img.style.cssText = 'width:100%;height:100%;border-radius:50%;object-fit:cover;';
+                    commentAvatar.appendChild(img);
+                } else {
+                    const div = document.createElement('div');
+                    div.style.cssText = 'width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,#1D4ED8,#F59E0B);display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:14px;';
+                    div.textContent = initial;
+                    commentAvatar.appendChild(div);
+                }
+            }
+            
+            console.log('✅ UI updated for:', displayName);
+        } else {
+            console.log('⚠️ No user logged in');
+            
+            // Reset to guest mode
+            const headerPlaceholder = document.getElementById('userProfilePlaceholder');
+            const headerName = document.getElementById('current-profile-name');
+            if (headerPlaceholder) {
+                headerPlaceholder.innerHTML = '';
+                const div = document.createElement('div');
+                div.style.cssText = 'width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg, #1D4ED8, #F59E0B);border-radius:50%;font-weight:bold;font-size:14px;color:white;';
+                div.textContent = 'G';
+                headerPlaceholder.appendChild(div);
+            }
+            if (headerName) headerName.textContent = 'Guest';
+            
+            const sidebarAvatar = document.getElementById('sidebar-profile-avatar');
+            const sidebarName = document.getElementById('sidebar-profile-name');
+            const sidebarEmail = document.getElementById('sidebar-profile-email');
+            if (sidebarAvatar) {
+                sidebarAvatar.innerHTML = '';
+                const icon = document.createElement('i');
+                icon.className = 'fas fa-user';
+                icon.style.cssText = 'font-size:1.5rem;color:var(--soft-white);';
+                sidebarAvatar.appendChild(icon);
+            }
+            if (sidebarName) sidebarName.textContent = 'Guest';
+            if (sidebarEmail) sidebarEmail.textContent = 'Sign in to continue';
+            
+            const commentInput = document.getElementById('commentInput');
+            const sendCommentBtn = document.getElementById('sendCommentBtn');
+            if (commentInput) {
+                commentInput.disabled = true;
+                commentInput.placeholder = 'Sign in to add a comment...';
+            }
+            if (sendCommentBtn) sendCommentBtn.disabled = true;
+            
+            const commentAvatar = document.getElementById('userCommentAvatar');
+            if (commentAvatar) {
+                commentAvatar.innerHTML = '';
+                const icon = document.createElement('i');
+                icon.className = 'fas fa-user';
+                icon.style.cssText = 'font-size:1rem;color:var(--slate-grey);';
+                commentAvatar.appendChild(icon);
+            }
+            
+            window.currentUser = null;
+            window.currentProfile = null;
+        }
+    } catch (error) {
+        console.error('Error updating UI:', error);
+    }
 }
-}
-if (headerName) headerName.textContent = displayName;
 
-// Update sidebar profile
-const sidebarAvatar = document.getElementById('sidebar-profile-avatar');
-const sidebarName = document.getElementById('sidebar-profile-name');
-const sidebarEmail = document.getElementById('sidebar-profile-email');
+// Run immediately when page loads
+updateHeaderAndSidebar();
 
-if (sidebarAvatar) {
-sidebarAvatar.innerHTML = '';
-if (avatarUrl && avatarUrl !== 'null' && avatarUrl !== 'undefined') {
-const img = document.createElement('img');
-img.src = avatarUrl.startsWith('http') ? avatarUrl : `${SUPABASE_URL}/storage/v1/object/public/${avatarUrl.replace(/^\/+/, '')}`;
-img.style.cssText = 'width:100%;height:100%;object-fit:cover;border-radius:50%;';
-sidebarAvatar.appendChild(img);
-} else {
-const initial = displayName.charAt(0).toUpperCase();
-const span = document.createElement('span');
-span.style.cssText = 'font-size:1.2rem;font-weight:bold;color:var(--soft-white);';
-span.textContent = initial;
-sidebarAvatar.appendChild(span);
-}
-}
-if (sidebarName) sidebarName.textContent = displayName;
-if (sidebarEmail) sidebarEmail.textContent = userEmail;
+// Listen for auth changes
+window.supabaseClient.auth.onAuthStateChange(async (event, session) => {
+    console.log('🔐 Auth state changed:', event);
+    if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+        await updateHeaderAndSidebar();
+        showToast('Welcome back!', 'success');
+    } else if (event === 'SIGNED_OUT') {
+        await updateHeaderAndSidebar();
+        showToast('Signed out', 'info');
+    }
+});
 
-// Enable comment input
-const commentInput = document.getElementById('commentInput');
-const sendCommentBtn = document.getElementById('sendCommentBtn');
-if (commentInput) {
-commentInput.disabled = false;
-commentInput.placeholder = 'Write a comment...';
-}
-if (sendCommentBtn) sendCommentBtn.disabled = false;
-
-const commentAvatar = document.getElementById('userCommentAvatar');
-if (commentAvatar) {
-commentAvatar.innerHTML = '';
-if (avatarUrl && avatarUrl !== 'null' && avatarUrl !== 'undefined') {
-const img = document.createElement('img');
-img.src = avatarUrl.startsWith('http') ? avatarUrl : `${SUPABASE_URL}/storage/v1/object/public/${avatarUrl.replace(/^\/+/, '')}`;
-img.style.cssText = 'width:100%;height:100%;border-radius:50%;object-fit:cover;';
-commentAvatar.appendChild(img);
-} else {
-const initial = displayName.charAt(0).toUpperCase();
-const div = document.createElement('div');
-div.style.cssText = 'width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,#1D4ED8,#F59E0B);display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:14px;';
-div.textContent = initial;
-commentAvatar.appendChild(div);
-}
-}
-
-console.log('✅ User profile updated:', displayName);
-} else {
-currentUser = null;
-currentProfile = null;
-
-// Reset to guest mode
-const headerPlaceholder = document.getElementById('userProfilePlaceholder');
-const headerName = document.getElementById('current-profile-name');
-if (headerPlaceholder) {
-headerPlaceholder.innerHTML = '';
-const div = document.createElement('div');
-div.style.cssText = 'width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg, #1D4ED8, #F59E0B);border-radius:50%;font-weight:bold;font-size:14px;color:white;';
-div.textContent = 'G';
-headerPlaceholder.appendChild(div);
-}
-if (headerName) headerName.textContent = 'Guest';
-
-const sidebarAvatar = document.getElementById('sidebar-profile-avatar');
-const sidebarName = document.getElementById('sidebar-profile-name');
-const sidebarEmail = document.getElementById('sidebar-profile-email');
-if (sidebarAvatar) {
-sidebarAvatar.innerHTML = '';
-const icon = document.createElement('i');
-icon.className = 'fas fa-user';
-icon.style.cssText = 'font-size:1.5rem;color:var(--soft-white);';
-sidebarAvatar.appendChild(icon);
-}
-if (sidebarName) sidebarName.textContent = 'Guest';
-if (sidebarEmail) sidebarEmail.textContent = 'Sign in to continue';
-
-const commentInput = document.getElementById('commentInput');
-const sendCommentBtn = document.getElementById('sendCommentBtn');
-if (commentInput) {
-commentInput.disabled = true;
-commentInput.placeholder = 'Sign in to add a comment...';
-}
-if (sendCommentBtn) sendCommentBtn.disabled = true;
-
-const commentAvatar = document.getElementById('userCommentAvatar');
-if (commentAvatar) {
-commentAvatar.innerHTML = '';
-const icon = document.createElement('i');
-icon.className = 'fas fa-user';
-icon.style.cssText = 'font-size:1rem;color:var(--soft-white);';
-commentAvatar.appendChild(icon);
-}
-}
-} catch (error) {
-console.error('Error updating user profile:', error);
-}
-}
-
-// ✅ CRITICAL: Force hide loading screen after all init
+// Hide loading and show app
 setTimeout(() => {
-const loading = document.getElementById('loading');
-const app = document.getElementById('app');
-if (loading) loading.style.display = 'none';
-if (app) {
-app.style.display = 'block';
-app.style.opacity = '1';
-}
-console.log('🎬 Loading screen forced hidden');
-}, 800);
-
-// Initialize everything after DOM
-document.addEventListener('DOMContentLoaded', async function() {
-await updateUserProfile();
-
-window.supabaseClient.auth.onAuthStateChange(async () => {
-await updateUserProfile();
-});
-
-console.log('✅ Content detail page initialized');
-});
+    const loading = document.getElementById('loading');
+    const app = document.getElementById('app');
+    if (loading) loading.style.display = 'none';
+    if (app) {
+        app.style.display = 'block';
+        app.style.opacity = '1';
+    }
+    console.log('🎬 Loading screen hidden');
+}, 500);
 </script>
+
+<!-- External Scripts -->
 <script src="js/state-manager.js"></script>
 <script src="js/supabase-helper.js"></script>
 <script src="js/auth-helper.js"></script>
