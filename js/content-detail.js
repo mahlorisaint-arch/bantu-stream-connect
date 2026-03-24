@@ -6,6 +6,7 @@
 // ✅ FIXED: Loading screen hides properly
 // ✅ FIXED: Sidebar menu clickable with direct onclick handlers
 // ✅ FIXED: Navigation button positioning
+// ✅ FIXED: Authentication conflicts - UI now reflects logged-in state correctly
 
 console.log('🎬 Content Detail Initializing with ALL fixes applied...');
 
@@ -22,6 +23,7 @@ let keyboardShortcuts = null;
 let playlistModal = null;
 let isInitialized = false;
 let currentUserId = null;
+let authInitialized = false;
 
 // ============================================
 // UI SCALE CONTROLLER - FIXED VERSION
@@ -90,7 +92,295 @@ if (!window.uiScaleController) {
 }
 
 // ============================================
-// DOM READY INITIALIZATION
+// FIXED AUTH INITIALIZATION - NO CONFLICTS
+// ============================================
+
+async function initializeAuth() {
+    if (authInitialized) return;
+    
+    try {
+        console.log('🔐 Initializing auth...');
+        
+        // Get existing session first - DON'T create new locks
+        const { data: { session }, error: sessionError } = await window.supabaseClient.auth.getSession();
+        
+        if (sessionError) {
+            console.error('❌ Session error:', sessionError);
+            return;
+        }
+        
+        if (session && session.user) {
+            window.currentUser = session.user;
+            currentUserId = session.user.id;
+            
+            console.log('✅ User authenticated from session:', window.currentUser.email);
+            
+            // Get profile
+            const { data: profile } = await window.supabaseClient
+                .from('user_profiles')
+                .select('*')
+                .eq('id', currentUserId)
+                .maybeSingle();
+            
+            if (profile) {
+                window.currentProfile = profile;
+                console.log('✅ Profile loaded:', profile.full_name || profile.username);
+            }
+        } else {
+            console.log('⚠️ No session found, checking localStorage...');
+            
+            // Check localStorage for session as fallback
+            const storedSession = localStorage.getItem('sb-ydnxqnbjoshvxteevemc-auth-token');
+            if (storedSession) {
+                try {
+                    const parsed = JSON.parse(storedSession);
+                    if (parsed && parsed.user) {
+                        window.currentUser = parsed.user;
+                        currentUserId = parsed.user.id;
+                        console.log('✅ User restored from localStorage');
+                        
+                        // Try to get profile
+                        const { data: profile } = await window.supabaseClient
+                            .from('user_profiles')
+                            .select('*')
+                            .eq('id', currentUserId)
+                            .maybeSingle();
+                        
+                        if (profile) {
+                            window.currentProfile = profile;
+                        }
+                    }
+                } catch (e) {
+                    console.warn('Failed to parse stored session');
+                }
+            }
+        }
+        
+        // Update UI with user info
+        await updateUIWithUser();
+        
+        authInitialized = true;
+        
+    } catch (error) {
+        console.error('❌ Auth initialization error:', error);
+    }
+}
+
+async function updateUIWithUser() {
+    try {
+        const displayName = window.currentProfile?.full_name || 
+                           window.currentProfile?.username || 
+                           window.currentUser?.email?.split('@')[0] || 
+                           'User';
+        const userEmail = window.currentUser?.email || 'user@example.com';
+        const avatarUrl = window.currentProfile?.avatar_url;
+        
+        // Update header profile
+        const headerPlaceholder = document.getElementById('userProfilePlaceholder');
+        const headerName = document.getElementById('current-profile-name');
+        
+        if (headerPlaceholder) {
+            headerPlaceholder.innerHTML = '';
+            if (avatarUrl && avatarUrl !== 'null' && avatarUrl !== 'undefined') {
+                const img = document.createElement('img');
+                const fixedUrl = avatarUrl.startsWith('http') ? avatarUrl : `${window.SUPABASE_URL || 'https://ydnxqnbjoshvxteevemc.supabase.co'}/storage/v1/object/public/${avatarUrl.replace(/^\/+/, '')}`;
+                img.src = fixedUrl;
+                img.style.cssText = 'width:100%;height:100%;border-radius:50%;object-fit:cover;';
+                headerPlaceholder.appendChild(img);
+            } else {
+                const initial = displayName.charAt(0).toUpperCase();
+                const div = document.createElement('div');
+                div.style.cssText = 'width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg, #1D4ED8, #F59E0B);border-radius:50%;font-weight:bold;font-size:14px;color:white;';
+                div.textContent = initial;
+                headerPlaceholder.appendChild(div);
+            }
+        }
+        if (headerName) headerName.textContent = displayName;
+        
+        // Update sidebar profile
+        const sidebarAvatar = document.getElementById('sidebar-profile-avatar');
+        const sidebarName = document.getElementById('sidebar-profile-name');
+        const sidebarEmail = document.getElementById('sidebar-profile-email');
+        
+        if (sidebarAvatar) {
+            sidebarAvatar.innerHTML = '';
+            if (avatarUrl && avatarUrl !== 'null' && avatarUrl !== 'undefined') {
+                const img = document.createElement('img');
+                const fixedUrl = avatarUrl.startsWith('http') ? avatarUrl : `${window.SUPABASE_URL || 'https://ydnxqnbjoshvxteevemc.supabase.co'}/storage/v1/object/public/${avatarUrl.replace(/^\/+/, '')}`;
+                img.src = fixedUrl;
+                img.style.cssText = 'width:100%;height:100%;object-fit:cover;border-radius:50%;';
+                sidebarAvatar.appendChild(img);
+            } else {
+                const initial = displayName.charAt(0).toUpperCase();
+                const span = document.createElement('span');
+                span.style.cssText = 'font-size:1.2rem;font-weight:bold;color:var(--soft-white);';
+                span.textContent = initial;
+                sidebarAvatar.appendChild(span);
+            }
+        }
+        if (sidebarName) sidebarName.textContent = displayName;
+        if (sidebarEmail) sidebarEmail.textContent = userEmail;
+        
+        // Enable comment input
+        const commentInput = document.getElementById('commentInput');
+        const sendCommentBtn = document.getElementById('sendCommentBtn');
+        if (commentInput) {
+            commentInput.disabled = false;
+            commentInput.placeholder = 'Write a comment...';
+        }
+        if (sendCommentBtn) sendCommentBtn.disabled = false;
+        
+        const commentAvatar = document.getElementById('userCommentAvatar');
+        if (commentAvatar) {
+            commentAvatar.innerHTML = '';
+            if (avatarUrl && avatarUrl !== 'null' && avatarUrl !== 'undefined') {
+                const img = document.createElement('img');
+                const fixedUrl = avatarUrl.startsWith('http') ? avatarUrl : `${window.SUPABASE_URL || 'https://ydnxqnbjoshvxteevemc.supabase.co'}/storage/v1/object/public/${avatarUrl.replace(/^\/+/, '')}`;
+                img.src = fixedUrl;
+                img.style.cssText = 'width:100%;height:100%;border-radius:50%;object-fit:cover;';
+                commentAvatar.appendChild(img);
+            } else {
+                const initial = displayName.charAt(0).toUpperCase();
+                const div = document.createElement('div');
+                div.style.cssText = 'width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,#1D4ED8,#F59E0B);display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:14px;';
+                div.textContent = initial;
+                commentAvatar.appendChild(div);
+            }
+        }
+        
+        console.log('✅ UI updated with user:', displayName);
+        
+    } catch (error) {
+        console.error('Error updating UI:', error);
+    }
+}
+
+// ============================================
+// SIMPLIFIED AUTH LISTENERS - NO CONFLICTS
+// ============================================
+function setupAuthListeners() {
+    // Don't create multiple listeners that cause lock conflicts
+    // Just listen for the initial state and handle it once
+    window.supabaseClient.auth.onAuthStateChange(async (event, session) => {
+        console.log('🔐 Auth state changed:', event);
+        
+        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+            if (session && session.user) {
+                window.currentUser = session.user;
+                currentUserId = session.user.id;
+                
+                // Get profile
+                const { data: profile } = await window.supabaseClient
+                    .from('user_profiles')
+                    .select('*')
+                    .eq('id', currentUserId)
+                    .maybeSingle();
+                
+                if (profile) {
+                    window.currentProfile = profile;
+                }
+                
+                await updateUIWithUser();
+                showToast('Welcome back!', 'success');
+                
+                if (currentUserId) {
+                    await loadContinueWatching(currentUserId);
+                }
+                
+                if (window.PlaylistManager && !playlistManager) {
+                    await initializePlaylistManager();
+                }
+                
+                if (recommendationEngine) {
+                    recommendationEngine.userId = currentUserId;
+                    await loadRecommendationRails();
+                }
+                
+                if (streamingManager) {
+                    streamingManager.userId = currentUserId;
+                }
+                
+                if (currentContent?.id && !playlistModal) {
+                    setTimeout(initializePlaylistModal, 500);
+                }
+                
+                // Reload notifications
+                await loadNotifications();
+            }
+        } else if (event === 'SIGNED_OUT') {
+            window.currentUser = null;
+            currentUserId = null;
+            window.currentProfile = null;
+            playlistManager = null;
+            playlistModal = null;
+            
+            // Reset UI to guest mode
+            const headerPlaceholder = document.getElementById('userProfilePlaceholder');
+            if (headerPlaceholder) {
+                headerPlaceholder.innerHTML = '';
+                const div = document.createElement('div');
+                div.style.cssText = 'width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg, #1D4ED8, #F59E0B);border-radius:50%;font-weight:bold;font-size:14px;color:white;';
+                div.textContent = 'G';
+                headerPlaceholder.appendChild(div);
+            }
+            const headerName = document.getElementById('current-profile-name');
+            if (headerName) headerName.textContent = 'Guest';
+            
+            const sidebarAvatar = document.getElementById('sidebar-profile-avatar');
+            if (sidebarAvatar) {
+                sidebarAvatar.innerHTML = '';
+                const icon = document.createElement('i');
+                icon.className = 'fas fa-user';
+                icon.style.cssText = 'font-size:1.5rem;color:var(--soft-white);';
+                sidebarAvatar.appendChild(icon);
+            }
+            const sidebarName = document.getElementById('sidebar-profile-name');
+            if (sidebarName) sidebarName.textContent = 'Guest';
+            const sidebarEmail = document.getElementById('sidebar-profile-email');
+            if (sidebarEmail) sidebarEmail.textContent = 'Sign in to continue';
+            
+            // Reset comment input
+            const commentInput = document.getElementById('commentInput');
+            const sendCommentBtn = document.getElementById('sendCommentBtn');
+            if (commentInput) {
+                commentInput.disabled = true;
+                commentInput.placeholder = 'Sign in to add a comment...';
+            }
+            if (sendCommentBtn) sendCommentBtn.disabled = true;
+            
+            showToast('Signed out', 'info');
+            
+            const continueSection = document.getElementById('continueWatchingSection');
+            if (continueSection) continueSection.style.display = 'none';
+            
+            if (watchSession) {
+                watchSession.stop();
+                watchSession = null;
+            }
+            
+            const watchLaterBtn = document.getElementById('watchLaterBtn');
+            if (watchLaterBtn) {
+                watchLaterBtn.classList.remove('active');
+                watchLaterBtn.innerHTML = '<i class="far fa-clock"></i><span>Watch Later</span>';
+            }
+            
+            if (recommendationEngine) {
+                recommendationEngine.userId = null;
+                await loadRecommendationRails();
+            }
+            
+            if (streamingManager) {
+                streamingManager.userId = null;
+            }
+            
+            // Update notification badge
+            updateNotificationBadge(0);
+        }
+    });
+}
+
+// ============================================
+// DOM READY INITIALIZATION - FIXED
 // ============================================
 document.addEventListener('DOMContentLoaded', async () => {
     console.log('✅ DOM loaded, starting initialization...');
@@ -104,14 +394,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         window.supabaseAuth = window.supabaseClient;
     }
 
-    // ✅ Wait for helpers to load
-    await waitForHelpers();
-
-    // ✅ Setup auth listeners BEFORE loading content
+    // ✅ Initialize auth FIRST - no conflicts
+    await initializeAuth();
+    
+    // ✅ Setup auth listeners AFTER initial auth
     setupAuthListeners();
 
-    // ✅ Load current user profile
-    await loadCurrentUser();
+    // ✅ Wait for helpers to load
+    await waitForHelpers();
 
     // ✅ Load content from URL
     await loadContentFromURL();
@@ -216,246 +506,6 @@ async function waitForHelpers() {
             resolve();
         }, 3000);
     });
-}
-
-// ============================================
-// LOAD CURRENT USER
-// ============================================
-async function loadCurrentUser() {
-    try {
-        const { data: { session } } = await window.supabaseClient.auth.getSession();
-        if (session && session.user) {
-            window.currentUser = session.user;
-            currentUserId = session.user.id;
-            console.log('✅ User authenticated:', window.currentUser.email);
-
-            // Load user profile
-            const { data: profile } = await window.supabaseClient
-                .from('user_profiles')
-                .select('*')
-                .eq('id', currentUserId)
-                .maybeSingle();
-
-            if (profile) {
-                window.currentProfile = profile;
-            }
-        } else {
-            window.currentUser = null;
-            currentUserId = null;
-            console.log('⚠️ User not authenticated');
-        }
-    } catch (error) {
-        console.error('❌ Error loading current user:', error);
-        window.currentUser = null;
-        currentUserId = null;
-    }
-}
-
-// ============================================
-// AUTHENTICATION SETUP
-// ============================================
-function setupAuthListeners() {
-    window.supabaseClient.auth.onAuthStateChange(async (event, session) => {
-        console.log('🔐 Auth state changed:', event);
-
-        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-            window.currentUser = session?.user || null;
-            currentUserId = window.currentUser?.id || null;
-
-            if (currentUserId) {
-                const { data: profile } = await window.supabaseClient
-                    .from('user_profiles')
-                    .select('*')
-                    .eq('id', currentUserId)
-                    .maybeSingle();
-
-                if (profile) {
-                    window.currentProfile = profile;
-                }
-            }
-
-            updateProfileUI();
-            updateHeaderProfile();
-            updateSidebarProfile();
-            showToast('Welcome back!', 'success');
-
-            if (currentUserId) {
-                await loadContinueWatching(currentUserId);
-            }
-
-            if (window.PlaylistManager && !playlistManager) {
-                await initializePlaylistManager();
-            }
-
-            if (recommendationEngine) {
-                recommendationEngine.userId = currentUserId;
-                await loadRecommendationRails();
-            }
-
-            if (streamingManager) {
-                streamingManager.userId = currentUserId;
-            }
-
-            if (currentContent?.id && !playlistModal) {
-                setTimeout(initializePlaylistModal, 500);
-            }
-
-            // Reload notifications
-            await loadNotifications();
-        } else if (event === 'SIGNED_OUT') {
-            window.currentUser = null;
-            currentUserId = null;
-            window.currentProfile = null;
-            playlistManager = null;
-            playlistModal = null;
-
-            resetProfileUI();
-            updateHeaderProfile();
-            updateSidebarProfile();
-            showToast('Signed out successfully', 'info');
-
-            const continueSection = document.getElementById('continueWatchingSection');
-            if (continueSection) continueSection.style.display = 'none';
-
-            if (watchSession) {
-                watchSession.stop();
-                watchSession = null;
-            }
-
-            const watchLaterBtn = document.getElementById('watchLaterBtn');
-            if (watchLaterBtn) {
-                watchLaterBtn.classList.remove('active');
-                watchLaterBtn.innerHTML = '<i class="far fa-clock"></i><span>Watch Later</span>';
-            }
-
-            if (recommendationEngine) {
-                recommendationEngine.userId = null;
-                await loadRecommendationRails();
-            }
-
-            if (streamingManager) {
-                streamingManager.userId = null;
-            }
-
-            // Update notification badge
-            updateNotificationBadge(0);
-        }
-    });
-
-    // Check initial auth state
-    if (window.AuthHelper?.isAuthenticated?.()) {
-        currentUserId = window.AuthHelper.getUserProfile()?.id || null;
-        updateProfileUI();
-    } else {
-        resetProfileUI();
-    }
-}
-
-// ============================================
-// UPDATE PROFILE UI
-// ============================================
-function updateProfileUI() {
-    const profileBtn = document.getElementById('profile-btn');
-    const userProfilePlaceholder = document.getElementById('userProfilePlaceholder');
-
-    if (!profileBtn || !userProfilePlaceholder) return;
-
-    if (window.AuthHelper?.isAuthenticated?.()) {
-        const userProfile = window.AuthHelper.getUserProfile();
-        const displayName = window.AuthHelper.getDisplayName();
-        const avatarUrl = window.AuthHelper.getAvatarUrl();
-        const initial = displayName.charAt(0).toUpperCase();
-
-        if (avatarUrl) {
-            userProfilePlaceholder.innerHTML = `
-                <img src="${avatarUrl}" alt="${displayName}"
-                    class="profile-img"
-                    style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover;">
-            `;
-        } else {
-            userProfilePlaceholder.innerHTML = `
-                <div class="profile-placeholder" style="
-                    width: 32px;
-                    height: 32px;
-                    border-radius: 50%;
-                    background: linear-gradient(135deg, #1D4ED8, #F59E0B);
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    color: white;
-                    font-weight: bold;
-                ">${initial}</div>
-            `;
-        }
-
-        profileBtn.onclick = () => {
-            window.location.href = 'profile.html';
-        };
-    } else {
-        userProfilePlaceholder.innerHTML = `
-            <div class="profile-placeholder">
-                <i class="fas fa-user"></i>
-            </div>
-        `;
-
-        profileBtn.onclick = () => {
-            window.location.href = `login.html?redirect=${encodeURIComponent(window.location.href)}`;
-        };
-    }
-
-    // Update comment input
-    const commentInput = document.getElementById('commentInput');
-    const sendCommentBtn = document.getElementById('sendCommentBtn');
-
-    if (commentInput && sendCommentBtn) {
-        if (window.AuthHelper?.isAuthenticated?.()) {
-            commentInput.disabled = false;
-            commentInput.placeholder = 'Write a comment...';
-            sendCommentBtn.disabled = false;
-
-            const userProfile = window.AuthHelper.getUserProfile();
-            const displayName = window.AuthHelper.getDisplayName();
-            const avatarUrl = window.AuthHelper.getAvatarUrl();
-            const commentAvatar = document.getElementById('userCommentAvatar');
-
-            if (commentAvatar) {
-                if (avatarUrl) {
-                    commentAvatar.innerHTML = `<img src="${avatarUrl}" alt="${displayName}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`;
-                } else {
-                    commentAvatar.innerHTML = `<div style="width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,#1D4ED8,#F59E0B);display:flex;align-items:center;justify-content:center;color:white;font-weight:bold">${displayName.charAt(0)}</div>`;
-                }
-            }
-        } else {
-            commentInput.disabled = true;
-            commentInput.placeholder = 'Sign in to add a comment...';
-            sendCommentBtn.disabled = true;
-
-            const commentAvatar = document.getElementById('userCommentAvatar');
-            if (commentAvatar) {
-                commentAvatar.innerHTML = '<i class="fas fa-user"></i>';
-            }
-        }
-    }
-}
-
-// ============================================
-// RESET PROFILE UI
-// ============================================
-function resetProfileUI() {
-    const profileBtn = document.getElementById('profile-btn');
-    const userProfilePlaceholder = document.getElementById('userProfilePlaceholder');
-
-    if (!profileBtn || !userProfilePlaceholder) return;
-
-    userProfilePlaceholder.innerHTML = `
-        <div class="profile-placeholder">
-            <i class="fas fa-user"></i>
-        </div>
-    `;
-
-    profileBtn.onclick = () => {
-        window.location.href = `login.html?redirect=${encodeURIComponent(window.location.href)}`;
-    };
 }
 
 // ============================================
@@ -1187,94 +1237,6 @@ async function updateWatchLaterButtonState() {
 }
 
 // ============================================
-// PHASE 2: HANDLE WATCH LATER BUTTON CLICK
-// ============================================
-async function handleWatchLaterToggle() {
-    const btn = document.getElementById('watchLaterBtn');
-
-    if (!currentContent?.id) {
-        showToast('No content selected', 'error');
-        return;
-    }
-
-    if (!currentUserId) {
-        showToast('Sign in to save to Watch Later', 'warning');
-        const redirect = encodeURIComponent(window.location.href);
-        window.location.href = `login.html?redirect=${redirect}`;
-        return;
-    }
-
-    if (window.playlistModal) {
-        window.playlistModal.contentId = currentContent.id;
-        window.playlistModal.open();
-        return;
-    }
-
-    if (!playlistManager) {
-        showToast('Playlist system loading...', 'info');
-        return;
-    }
-
-    if (!btn) {
-        console.error('❌ Watch Later button not found');
-        return;
-    }
-
-    const originalHTML = btn.innerHTML;
-    const originalDisabled = btn.disabled;
-
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-    btn.disabled = true;
-
-    try {
-        const result = await playlistManager.toggleWatchLater(currentContent.id);
-
-        if (result.success) {
-            if (result.action === 'added') {
-                showToast('✅ Added to Watch Later', 'success');
-            } else if (result.action === 'removed') {
-                showToast('🗑️ Removed from Watch Later', 'info');
-            } else if (result.action === 'already_exists') {
-                showToast('Already in Watch Later', 'info');
-            }
-        } else {
-            showToast('❌ ' + (result.error || 'Failed to update'), 'error');
-            await updateWatchLaterButtonState();
-        }
-    } catch (error) {
-        console.error('❌ Watch Later toggle failed:', error);
-        showToast('Failed to update Watch Later', 'error');
-        await updateWatchLaterButtonState();
-    } finally {
-        btn.disabled = originalDisabled;
-        setTimeout(() => updateWatchLaterButtonState(), 100);
-    }
-}
-
-// ============================================
-// PHASE 2: SETUP WATCH LATER BUTTON
-// ============================================
-function setupWatchLaterButton() {
-    const watchLaterBtn = document.getElementById('watchLaterBtn');
-
-    if (!watchLaterBtn) {
-        console.warn('⚠️ Watch Later button not found in DOM');
-        setTimeout(setupWatchLaterButton, 300);
-        return;
-    }
-
-    const newBtn = watchLaterBtn.cloneNode(true);
-    watchLaterBtn.parentNode.replaceChild(newBtn, watchLaterBtn);
-
-    newBtn.addEventListener('click', handleWatchLaterToggle);
-    newBtn.setAttribute('role', 'button');
-    newBtn.setAttribute('aria-label', 'Add to Watch Later');
-    newBtn.setAttribute('aria-pressed', 'false');
-
-    console.log('✅ Watch Later button event listener attached');
-}
-
-// ============================================
 // LOAD CONTENT FROM URL
 // ============================================
 async function loadContentFromURL() {
@@ -1938,9 +1900,8 @@ function initializeWatchSessionOnPlay() {
 async function recordContentView(contentId) {
     try {
         let viewerId = null;
-        if (window.AuthHelper?.isAuthenticated?.()) {
-            const userProfile = window.AuthHelper.getUserProfile();
-            viewerId = userProfile?.id || null;
+        if (window.currentUser) {
+            viewerId = window.currentUser.id || null;
         }
 
         const { data, error } = await window.supabaseClient
@@ -2408,14 +2369,8 @@ function setupEventListeners() {
         likeBtn.addEventListener('click', async function() {
             if (!currentContent) return;
 
-            if (!window.AuthHelper?.isAuthenticated?.()) {
+            if (!window.currentUser) {
                 showToast('Sign in to like content', 'warning');
-                return;
-            }
-
-            const userProfile = window.AuthHelper.getUserProfile();
-            if (!userProfile?.id) {
-                showToast('User profile not found', 'error');
                 return;
             }
 
@@ -2438,7 +2393,7 @@ function setupEventListeners() {
                     const { error } = await window.supabaseClient
                         .from('content_likes')
                         .insert({
-                            user_id: userProfile.id,
+                            user_id: window.currentUser.id,
                             content_id: currentContent.id
                         });
 
@@ -2447,7 +2402,7 @@ function setupEventListeners() {
                     const { error } = await window.supabaseClient
                         .from('content_likes')
                         .delete()
-                        .eq('user_id', userProfile.id)
+                        .eq('user_id', window.currentUser.id)
                         .eq('content_id', currentContent.id);
 
                     if (error) throw error;
@@ -2481,14 +2436,8 @@ function setupEventListeners() {
         favoriteBtn.addEventListener('click', async function() {
             if (!currentContent) return;
 
-            if (!window.AuthHelper?.isAuthenticated?.()) {
+            if (!window.currentUser) {
                 showToast('Sign in to favorite content', 'warning');
-                return;
-            }
-
-            const userProfile = window.AuthHelper.getUserProfile();
-            if (!userProfile?.id) {
-                showToast('User profile not found', 'error');
                 return;
             }
 
@@ -2511,7 +2460,7 @@ function setupEventListeners() {
                     const { error } = await window.supabaseClient
                         .from('favorites')
                         .insert({
-                            user_id: userProfile.id,
+                            user_id: window.currentUser.id,
                             content_id: currentContent.id
                         });
 
@@ -2520,7 +2469,7 @@ function setupEventListeners() {
                     const { error } = await window.supabaseClient
                         .from('favorites')
                         .delete()
-                        .eq('user_id', userProfile.id)
+                        .eq('user_id', window.currentUser.id)
                         .eq('content_id', currentContent.id);
 
                     if (error) throw error;
@@ -2582,7 +2531,7 @@ function setupEventListeners() {
                 return;
             }
 
-            if (!window.AuthHelper?.isAuthenticated?.()) {
+            if (!window.currentUser) {
                 showToast('You need to sign in to comment', 'warning');
                 return;
             }
@@ -2594,19 +2543,17 @@ function setupEventListeners() {
             sendBtn.disabled = true;
 
             try {
-                const userProfile = window.AuthHelper.getUserProfile();
-                const displayName = window.AuthHelper.getDisplayName();
-                const avatarUrl = window.AuthHelper.getAvatarUrl();
-
-                if (!userProfile?.id) {
-                    throw new Error('User profile not found');
-                }
+                const displayName = window.currentProfile?.full_name ||
+                                   window.currentProfile?.username ||
+                                   window.currentUser.email?.split('@')[0] ||
+                                   'User';
+                const avatarUrl = window.currentProfile?.avatar_url;
 
                 const { data: newComment, error: insertError } = await window.supabaseClient
                     .from('comments')
                     .insert({
                         content_id: currentContent.id,
-                        user_id: userProfile.id,
+                        user_id: window.currentUser.id,
                         author_name: displayName,
                         comment_text: text,
                         author_avatar: avatarUrl || null,
@@ -2709,15 +2656,12 @@ NO DNA, JUST RSA
 // ============================================
 function setupConnectButtons() {
     async function checkConnectionStatus(creatorId) {
-        if (!window.AuthHelper?.isAuthenticated() || !creatorId) return false;
-
-        var userProfile = window.AuthHelper.getUserProfile();
-        if (!userProfile?.id) return false;
+        if (!window.currentUser || !creatorId) return false;
 
         return window.supabaseClient
             .from('connectors')
             .select('id')
-            .eq('connector_id', userProfile.id)
+            .eq('connector_id', window.currentUser.id)
             .eq('connected_id', creatorId)
             .single()
             .then(function(result) {
@@ -2738,17 +2682,11 @@ function setupConnectButtons() {
         });
 
         connectBtn.addEventListener('click', async function() {
-            if (!window.AuthHelper?.isAuthenticated?.()) {
+            if (!window.currentUser) {
                 var shouldLogin = confirm('You need to sign in to connect. Would you like to sign in now?');
                 if (shouldLogin) {
                     window.location.href = `login.html?redirect=${encodeURIComponent(window.location.href)}`;
                 }
-                return;
-            }
-
-            var userProfile = window.AuthHelper.getUserProfile();
-            if (!userProfile?.id) {
-                showToast('User profile not found', 'error');
                 return;
             }
 
@@ -2759,7 +2697,7 @@ function setupConnectButtons() {
                     var { error } = await window.supabaseClient
                         .from('connectors')
                         .delete()
-                        .eq('connector_id', userProfile.id)
+                        .eq('connector_id', window.currentUser.id)
                         .eq('connected_id', currentContent.creator_id);
 
                     if (error) throw error;
@@ -2771,7 +2709,7 @@ function setupConnectButtons() {
                     var { error } = await window.supabaseClient
                         .from('connectors')
                         .insert({
-                            connector_id: userProfile.id,
+                            connector_id: window.currentUser.id,
                             connected_id: currentContent.creator_id,
                             connection_type: 'creator'
                         });
@@ -2803,17 +2741,11 @@ function setupConnectButtons() {
         });
 
         connectCreatorBtn.addEventListener('click', async function() {
-            if (!window.AuthHelper?.isAuthenticated?.()) {
+            if (!window.currentUser) {
                 var shouldLogin = confirm('You need to sign in to connect. Would you like to sign in now?');
                 if (shouldLogin) {
                     window.location.href = `login.html?redirect=${encodeURIComponent(window.location.href)}`;
                 }
-                return;
-            }
-
-            var userProfile = window.AuthHelper.getUserProfile();
-            if (!userProfile?.id) {
-                showToast('User profile not found', 'error');
                 return;
             }
 
@@ -2824,7 +2756,7 @@ function setupConnectButtons() {
                     var { error } = await window.supabaseClient
                         .from('connectors')
                         .delete()
-                        .eq('connector_id', userProfile.id)
+                        .eq('connector_id', window.currentUser.id)
                         .eq('connected_id', currentContent.creator_id);
 
                     if (error) throw error;
@@ -2836,7 +2768,7 @@ function setupConnectButtons() {
                     var { error } = await window.supabaseClient
                         .from('connectors')
                         .insert({
-                            connector_id: userProfile.id,
+                            connector_id: window.currentUser.id,
                             connected_id: currentContent.creator_id,
                             connection_type: 'creator'
                         });
@@ -2930,30 +2862,24 @@ function updateSidebarProfile() {
     }
 
     if (window.currentUser) {
-        window.supabaseClient
-            .from('user_profiles')
-            .select('*')
-            .eq('id', window.currentUser.id)
-            .maybeSingle()
-            .then(({ data: profile }) => {
-                if (profile) {
-                    name.textContent = profile.full_name || profile.username || 'User';
-                    email.textContent = window.currentUser.email;
+        // Profile is already loaded via initializeAuth
+        const displayName = window.currentProfile?.full_name ||
+                           window.currentProfile?.username ||
+                           window.currentUser.email?.split('@')[0] ||
+                           'User';
+        const userEmail = window.currentUser.email || 'user@example.com';
+        const avatarUrl = window.currentProfile?.avatar_url;
 
-                    if (profile.avatar_url) {
-                        const fixedUrl = window.SupabaseHelper?.fixMediaUrl?.(profile.avatar_url) || profile.avatar_url;
-                        avatar.innerHTML = `<img src="${fixedUrl}" alt="Profile" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
-                    } else {
-                        const initials = getInitials(profile.full_name || profile.username);
-                        avatar.innerHTML = `<span style="font-size:1.2rem;font-weight:bold;">${initials}</span>`;
-                    }
-                } else {
-                    const initials = window.currentUser.email ? window.currentUser.email[0].toUpperCase() : '?';
-                    avatar.innerHTML = `<span style="font-size:1.2rem;font-weight:bold;">${initials}</span>`;
-                    name.textContent = window.currentUser.email?.split('@')[0] || 'User';
-                    email.textContent = window.currentUser.email || 'Signed in';
-                }
-            });
+        name.textContent = displayName;
+        email.textContent = userEmail;
+
+        if (avatarUrl && avatarUrl !== 'null' && avatarUrl !== 'undefined') {
+            const fixedUrl = window.SupabaseHelper?.fixMediaUrl?.(avatarUrl) || avatarUrl;
+            avatar.innerHTML = `<img src="${fixedUrl}" alt="Profile" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
+        } else {
+            const initials = getInitials(displayName);
+            avatar.innerHTML = `<span style="font-size:1.2rem;font-weight:bold;">${initials}</span>`;
+        }
 
         if (profileSection) {
             profileSection.addEventListener('click', () => {
@@ -3315,77 +3241,7 @@ function setupContentDetailHeaderProfile() {
         }
     });
 
-    updateHeaderProfile();
     console.log('✅ Header profile initialized');
-}
-
-// ============================================
-// UPDATE HEADER PROFILE
-// ============================================
-async function updateHeaderProfile() {
-    try {
-        const profilePlaceholder = document.getElementById('userProfilePlaceholder');
-        const currentProfileName = document.getElementById('current-profile-name');
-
-        if (!profilePlaceholder || !currentProfileName) {
-            console.warn('⚠️ Header profile elements not found');
-            return;
-        }
-
-        if (window.currentUser) {
-            const { data: profile } = await window.supabaseClient
-                .from('user_profiles')
-                .select('*')
-                .eq('id', window.currentUser.id)
-                .maybeSingle();
-
-            if (profile) {
-                profilePlaceholder.innerHTML = '';
-
-                if (profile.avatar_url) {
-                    const img = document.createElement('img');
-                    img.className = 'profile-img';
-                    const fixedUrl = window.SupabaseHelper?.fixMediaUrl?.(profile.avatar_url) || profile.avatar_url;
-                    img.src = fixedUrl;
-                    img.alt = profile.full_name || 'Profile';
-                    img.style.cssText = 'width: 100%; height: 100%; border-radius: 50%; object-fit: cover;';
-                    profilePlaceholder.appendChild(img);
-                } else {
-                    const initials = getInitials(profile.full_name || profile.username || 'User');
-                    const div = document.createElement('div');
-                    div.className = 'profile-placeholder';
-                    div.style.cssText = 'width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,#1D4ED8,#F59E0B);display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:16px';
-                    div.textContent = initials;
-                    profilePlaceholder.appendChild(div);
-                }
-
-                currentProfileName.textContent = profile.full_name || profile.username || 'Profile';
-            } else {
-                const initials = window.currentUser.email ? window.currentUser.email[0].toUpperCase() : 'U';
-                profilePlaceholder.innerHTML = '';
-
-                const div = document.createElement('div');
-                div.className = 'profile-placeholder';
-                div.style.cssText = 'width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,#1D4ED8,#F59E0B);display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:16px';
-                div.textContent = initials;
-                profilePlaceholder.appendChild(div);
-
-                currentProfileName.textContent = window.currentUser.email?.split('@')[0] || 'User';
-            }
-        } else {
-            profilePlaceholder.innerHTML = '';
-
-            const div = document.createElement('div');
-            div.className = 'profile-placeholder';
-            div.style.cssText = 'width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,#1D4ED8,#F59E0B);display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:16px';
-            div.textContent = 'G';
-            profilePlaceholder.appendChild(div);
-
-            currentProfileName.textContent = 'Guest';
-        }
-    } catch (error) {
-        console.error('Error updating header profile:', error);
-    }
 }
 
 // ============================================
@@ -4060,6 +3916,94 @@ function setupContinueWatchingRefresh() {
 }
 
 // ============================================
+// PHASE 2: SETUP WATCH LATER BUTTON
+// ============================================
+function setupWatchLaterButton() {
+    const watchLaterBtn = document.getElementById('watchLaterBtn');
+
+    if (!watchLaterBtn) {
+        console.warn('⚠️ Watch Later button not found in DOM');
+        setTimeout(setupWatchLaterButton, 300);
+        return;
+    }
+
+    const newBtn = watchLaterBtn.cloneNode(true);
+    watchLaterBtn.parentNode.replaceChild(newBtn, watchLaterBtn);
+
+    newBtn.addEventListener('click', handleWatchLaterToggle);
+    newBtn.setAttribute('role', 'button');
+    newBtn.setAttribute('aria-label', 'Add to Watch Later');
+    newBtn.setAttribute('aria-pressed', 'false');
+
+    console.log('✅ Watch Later button event listener attached');
+}
+
+// ============================================
+// PHASE 2: HANDLE WATCH LATER BUTTON CLICK
+// ============================================
+async function handleWatchLaterToggle() {
+    const btn = document.getElementById('watchLaterBtn');
+
+    if (!currentContent?.id) {
+        showToast('No content selected', 'error');
+        return;
+    }
+
+    if (!currentUserId) {
+        showToast('Sign in to save to Watch Later', 'warning');
+        const redirect = encodeURIComponent(window.location.href);
+        window.location.href = `login.html?redirect=${redirect}`;
+        return;
+    }
+
+    if (window.playlistModal) {
+        window.playlistModal.contentId = currentContent.id;
+        window.playlistModal.open();
+        return;
+    }
+
+    if (!playlistManager) {
+        showToast('Playlist system loading...', 'info');
+        return;
+    }
+
+    if (!btn) {
+        console.error('❌ Watch Later button not found');
+        return;
+    }
+
+    const originalHTML = btn.innerHTML;
+    const originalDisabled = btn.disabled;
+
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+    btn.disabled = true;
+
+    try {
+        const result = await playlistManager.toggleWatchLater(currentContent.id);
+
+        if (result.success) {
+            if (result.action === 'added') {
+                showToast('✅ Added to Watch Later', 'success');
+            } else if (result.action === 'removed') {
+                showToast('🗑️ Removed from Watch Later', 'info');
+            } else if (result.action === 'already_exists') {
+                showToast('Already in Watch Later', 'info');
+            }
+        } else {
+            showToast('❌ ' + (result.error || 'Failed to update'), 'error');
+            await updateWatchLaterButtonState();
+        }
+    } catch (error) {
+        console.error('❌ Watch Later toggle failed:', error);
+        showToast('Failed to update Watch Later', 'error');
+        await updateWatchLaterButtonState();
+    } finally {
+        btn.disabled = originalDisabled;
+        setTimeout(() => updateWatchLaterButtonState(), 100);
+    }
+}
+
+// ============================================
 // EXPORT KEY FUNCTIONS
 // ============================================
 window.hasViewedContentRecently = hasViewedContentRecently;
@@ -4075,6 +4019,8 @@ window.uiScaleController = window.uiScaleController;
 window.toggleProfileDropdown = toggleProfileDropdown;
 window.fixAvatarUrl = fixAvatarUrl;
 window.showToast = showToast;
+window.currentUser = window.currentUser;
+window.currentProfile = window.currentProfile;
 
 // ============================================
 // PAGE UNLOAD HANDLER
