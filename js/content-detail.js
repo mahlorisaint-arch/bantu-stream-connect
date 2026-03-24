@@ -115,14 +115,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     // ✅ Initialize streaming manager (PHASE 4)
     await initializeStreamingManager();
 
-    // ✅ Initialize all modals/panels
-    initAnalyticsModal();
-    initSearchModal();
-    initNotificationsPanel();
-    initThemeSelector();
-    initGlobalNavigation();
+    // Initialize all modals/panels - using correctly named functions
+setupContentDetailAnalytics();
+setupContentDetailSearch();
+setupContentDetailNotifications();
+setupContentDetailThemeSelector();
+setupContentDetailNavigation();
 
-    // ✅ HOME FEED INTEGRATION - All 8 Features
+// ============================================
+// HOME FEED INTEGRATION - ADD AT END OF DOMContentLoaded
+// ============================================
     setupContentDetailSidebar();
     setupContentDetailNavigation();
     setupContentDetailThemeSelector();
