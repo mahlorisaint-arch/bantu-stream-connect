@@ -22,6 +22,460 @@ let currentUserId = null;
 let authInitialized = false;
 
 // ============================================
+// ⚠️ CRITICAL: UTILITY FUNCTIONS MUST BE DEFINED FIRST
+// ============================================
+
+// View deduplication helpers
+function hasViewedContentRecently(contentId) {
+  try {
+    const viewedContent = JSON.parse(localStorage.getItem('bantu_viewed_content') || '{}');
+    const viewTime = viewedContent[contentId];
+    if (!viewTime) return false;
+    const hoursSinceView = (Date.now() - viewTime) / (1000 * 60 * 60);
+    return hoursSinceView < 24;
+  } catch (error) {
+    console.error('Error checking view history:', error);
+    return false;
+  }
+}
+
+function markContentAsViewed(contentId) {
+  try {
+    const viewedContent = JSON.parse(localStorage.getItem('bantu_viewed_content') || '{}');
+    viewedContent[contentId] = Date.now();
+    const sevenDaysAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);
+    Object.keys(viewedContent).forEach(id => {
+      if (viewedContent[id] < sevenDaysAgo) {
+        delete viewedContent[id];
+      }
+    });
+    localStorage.setItem('bantu_viewed_content', JSON.stringify(viewedContent));
+    return true;
+  } catch (error) {
+    console.error('Error marking content as viewed:', error);
+    return false;
+  }
+}
+
+function recordContentView(contentId, userId, duration = null) {
+  // Placeholder for view recording logic
+  console.log('Recording view:', contentId, userId, duration);
+}
+
+function refreshCountsFromSource() {
+  // Placeholder for refreshing counts
+  console.log('Refreshing counts from source');
+}
+
+function clearViewCache() {
+  try {
+    localStorage.removeItem('bantu_viewed_content');
+    console.log('View cache cleared');
+  } catch (error) {
+    console.error('Error clearing view cache:', error);
+  }
+}
+
+function closeVideoPlayer() {
+  // Placeholder for closing video player
+  console.log('Closing video player');
+}
+
+// Formatting utilities
+function formatDuration(seconds) {
+  if (!seconds || seconds <= 0 || isNaN(seconds)) return '0m 0s';
+  seconds = Math.floor(seconds);
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  const secs = seconds % 60;
+  if (hours > 0) return hours + 'h ' + minutes + 'm';
+  if (minutes > 0) return minutes + 'm ' + secs + 's';
+  return secs + 's';
+}
+
+function formatNumber(num) {
+  if (!num) return '0';
+  if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+  if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+  return num.toString();
+}
+
+function truncateText(text, maxLength) {
+  if (!text) return '';
+  if (text.length <= maxLength) return text;
+  return text.substring(0, maxLength) + '...';
+}
+
+function escapeHtml(text) {
+  if (!text) return '';
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+function safeSetText(id, text) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = text || '';
+}
+
+function formatDate(dateString) {
+  if (!dateString) return '-';
+  try {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+  } catch (e) { return '-'; }
+}
+
+function formatCommentTime(timestamp) {
+  if (!timestamp) return 'Just now';
+  try {
+    const date = new Date(timestamp);
+    const diffMs = Date.now() - date;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return diffMins + ' min ago';
+    if (diffHours < 24) return diffHours + ' hour' + (diffHours !== 1 ? 's' : '') + ' ago';
+    if (diffDays < 7) return diffDays + ' day' + (diffDays !== 1 ? 's' : '') + ' ago';
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  } catch (e) { return 'Recently'; }
+}
+
+function showToast(message, type = 'info') {
+  let container = document.getElementById('toast-container');
+  if (!container) {
+    container = document.createElement('div');
+    container.id = 'toast-container';
+    document.body.appendChild(container);
+  }
+  
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  toast.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-exclamation-circle' : type === 'warning' ? 'fa-exclamation-triangle' : 'fa-info-circle'}"></i><span>${escapeHtml(message)}</span>`;
+  
+  container.appendChild(toast);
+  
+  setTimeout(() => {
+    toast.style.opacity = '0';
+    toast.style.transform = 'translateX(100%)';
+    setTimeout(() => toast.remove(), 300);
+  }, 3000);
+}
+
+// Avatar URL helper
+function fixAvatarUrl(url) {
+  if (!url) return '';
+  if (url.startsWith('http')) return url;
+  if (url.includes('supabase.co')) return url;
+  const SUPABASE_URL = window.ENV?.SUPABASE_URL || 'https://ydnxqnbjoshvxteevemc.supabase.co';
+  return `${SUPABASE_URL}/storage/v1/object/public/${url.replace(/^\/+/, '')}`;
+}
+
+function getInitials(name) {
+  if (!name) return '?';
+  return name.charAt(0).toUpperCase();
+}
+
+// ============================================
+// CRITICAL: loadContentFromURL MUST BE DEFINED BEFORE DOMContentLoaded
+// ============================================
+async function loadContentFromURL() {
+  console.log('📄 Loading content from URL...');
+  
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const contentId = params.get('id');
+    
+    if (!contentId) {
+      console.error('❌ No content ID in URL');
+      showToast('No content specified', 'error');
+      return;
+    }
+    
+    console.log('📄 Loading content ID:', contentId);
+    
+    // Fetch content from Supabase
+    const { data: content, error } = await window.supabaseClient
+      .from('content')
+      .select('*, user_profiles!inner(full_name, username, avatar_url)')
+      .eq('id', contentId)
+      .single();
+    
+    if (error) {
+      console.error('❌ Error loading content:', error);
+      showToast('Failed to load content', 'error');
+      return;
+    }
+    
+    if (!content) {
+      console.error('❌ Content not found');
+      showToast('Content not found', 'error');
+      return;
+    }
+    
+    currentContent = content;
+    console.log('✅ Content loaded:', content.title);
+    
+    // Render content to UI
+    renderContentDetails(content);
+    
+    // Load comments
+    await loadComments(contentId);
+    
+    // Load related content
+    await loadRelatedContent(content.category, contentId);
+    
+    // Record view if user is logged in
+    if (window.currentUser) {
+      await recordContentView(contentId, window.currentUser.id);
+    }
+    
+    // Update watch later button state
+    if (window.currentUser) {
+      await updateWatchLaterButtonState();
+    }
+    
+  } catch (error) {
+    console.error('❌ Error in loadContentFromURL:', error);
+    showToast('Error loading content', 'error');
+  }
+}
+
+async function loadComments(contentId) {
+  try {
+    const { data: comments, error } = await window.supabaseClient
+      .from('comments')
+      .select('*')
+      .eq('content_id', contentId)
+      .order('created_at', { ascending: false });
+    
+    if (error) throw error;
+    
+    const commentsList = document.getElementById('commentsList');
+    const commentsCount = document.getElementById('commentsCount');
+    
+    if (commentsCount) {
+      commentsCount.textContent = formatNumber(comments?.length || 0);
+    }
+    
+    if (!commentsList) return;
+    
+    if (!comments || comments.length === 0) {
+      commentsList.innerHTML = '<div class="empty-comments"><i class="fas fa-comments"></i><p>No comments yet. Be the first to comment!</p></div>';
+      return;
+    }
+    
+    commentsList.innerHTML = comments.map(comment => `
+      <div class="comment-item">
+        <div class="comment-avatar">
+          ${comment.author_avatar ? `<img src="${fixAvatarUrl(comment.author_avatar)}" alt="${escapeHtml(comment.author_name)}">` : `<div class="avatar-placeholder">${getInitials(comment.author_name)}</div>`}
+        </div>
+        <div class="comment-content">
+          <div class="comment-header">
+            <span class="comment-author">${escapeHtml(comment.author_name)}</span>
+            <span class="comment-time">${formatCommentTime(comment.created_at)}</span>
+          </div>
+          <p class="comment-text">${escapeHtml(comment.comment_text)}</p>
+        </div>
+      </div>
+    `).join('');
+    
+  } catch (error) {
+    console.error('Error loading comments:', error);
+    const commentsList = document.getElementById('commentsList');
+    if (commentsList) {
+      commentsList.innerHTML = '<div class="error-comments"><i class="fas fa-exclamation-circle"></i><p>Failed to load comments</p></div>';
+    }
+  }
+}
+
+async function loadRelatedContent(category, currentId) {
+  try {
+    const { data: related, error } = await window.supabaseClient
+      .from('content')
+      .select('id, title, thumbnail_url, duration, views, content_type')
+      .eq('category', category)
+      .neq('id', currentId)
+      .limit(10);
+    
+    if (error) throw error;
+    
+    const relatedGrid = document.getElementById('relatedContentGrid');
+    if (!relatedGrid) return;
+    
+    if (!related || related.length === 0) {
+      relatedGrid.innerHTML = '<div class="empty-related"><p>No related content found</p></div>';
+      return;
+    }
+    
+    relatedGrid.innerHTML = related.map(content => `
+      <div class="related-card" onclick="window.location.href='content-detail.html?id=${content.id}'">
+        <div class="related-thumbnail">
+          <img src="${fixAvatarUrl(content.thumbnail_url) || '/images/placeholder.jpg'}" alt="${escapeHtml(content.title)}">
+          ${content.duration ? `<span class="duration-badge">${formatDuration(content.duration)}</span>` : ''}
+        </div>
+        <div class="related-info">
+          <h4 class="related-title">${escapeHtml(truncateText(content.title, 60))}</h4>
+          <div class="related-stats">
+            <span><i class="fas fa-eye"></i> ${formatNumber(content.views)}</span>
+          </div>
+        </div>
+      </div>
+    `).join('');
+    
+  } catch (error) {
+    console.error('Error loading related content:', error);
+  }
+}
+
+function renderContentDetails(content) {
+  // Update page title
+  document.title = `${content.title} | Bantu Stream Connect`;
+  
+  // Set hero poster
+  const heroPoster = document.getElementById('heroPoster');
+  if (heroPoster && content.thumbnail_url) {
+    heroPoster.style.backgroundImage = `url(${fixAvatarUrl(content.thumbnail_url)})`;
+  }
+  
+  // Set title
+  safeSetText('contentTitle', content.title);
+  
+  // Set creator info
+  const creatorName = content.user_profiles?.full_name || content.user_profiles?.username || 'Anonymous';
+  safeSetText('creatorName', creatorName);
+  
+  // Set description
+  safeSetText('contentDescription', content.description || 'No description available');
+  
+  // Set stats
+  safeSetText('viewsCount', formatNumber(content.views || 0));
+  safeSetText('likesCount', formatNumber(content.likes_count || 0));
+  safeSetText('favoritesCount', formatNumber(content.favorites_count || 0));
+  safeSetText('commentsCount', formatNumber(content.comments_count || 0));
+  
+  // Set duration
+  const durationElement = document.getElementById('duration');
+  if (durationElement && content.duration) {
+    durationElement.textContent = formatDuration(content.duration);
+  }
+  
+  // Set category
+  const categoryElement = document.getElementById('category');
+  if (categoryElement && content.category) {
+    categoryElement.textContent = content.category;
+  }
+  
+  // Set upload date
+  const uploadDateElement = document.getElementById('uploadDate');
+  if (uploadDateElement && content.created_at) {
+    uploadDateElement.textContent = formatDate(content.created_at);
+  }
+  
+  // Set creator avatar
+  const creatorAvatar = document.getElementById('creatorAvatar');
+  if (creatorAvatar && content.user_profiles?.avatar_url) {
+    const img = document.createElement('img');
+    img.src = fixAvatarUrl(content.user_profiles.avatar_url);
+    img.alt = creatorName;
+    creatorAvatar.innerHTML = '';
+    creatorAvatar.appendChild(img);
+  } else if (creatorAvatar) {
+    creatorAvatar.innerHTML = `<div class="avatar-placeholder">${getInitials(creatorName)}</div>`;
+  }
+  
+  console.log('✅ Content details rendered');
+}
+
+async function updateWatchLaterButtonState() {
+  if (!window.currentUser || !currentContent) return;
+  
+  const watchLaterBtn = document.getElementById('watchLaterBtn');
+  if (!watchLaterBtn) return;
+  
+  try {
+    const { data, error } = await window.supabaseClient
+      .from('watch_later')
+      .select('id')
+      .eq('user_id', window.currentUser.id)
+      .eq('content_id', currentContent.id)
+      .maybeSingle();
+    
+    if (error) throw error;
+    
+    if (data) {
+      watchLaterBtn.classList.add('active');
+      watchLaterBtn.innerHTML = '<i class="fas fa-clock"></i><span>Saved</span>';
+    } else {
+      watchLaterBtn.classList.remove('active');
+      watchLaterBtn.innerHTML = '<i class="far fa-clock"></i><span>Watch Later</span>';
+    }
+  } catch (error) {
+    console.error('Error checking watch later:', error);
+  }
+}
+
+function setupWatchLaterButton() {
+  const watchLaterBtn = document.getElementById('watchLaterBtn');
+  if (!watchLaterBtn) return;
+  
+  watchLaterBtn.addEventListener('click', async function() {
+    if (!currentContent) return;
+    if (!window.currentUser) {
+      showToast('Sign in to save for later', 'warning');
+      return;
+    }
+    
+    const isSaved = watchLaterBtn.classList.contains('active');
+    
+    try {
+      if (!isSaved) {
+        // Add to watch later
+        const { error } = await window.supabaseClient
+          .from('watch_later')
+          .insert({
+            user_id: window.currentUser.id,
+            content_id: currentContent.id,
+            created_at: new Date().toISOString()
+          });
+        
+        if (error) throw error;
+        
+        watchLaterBtn.classList.add('active');
+        watchLaterBtn.innerHTML = '<i class="fas fa-clock"></i><span>Saved</span>';
+        showToast('Added to Watch Later', 'success');
+      } else {
+        // Remove from watch later
+        const { error } = await window.supabaseClient
+          .from('watch_later')
+          .delete()
+          .eq('user_id', window.currentUser.id)
+          .eq('content_id', currentContent.id);
+        
+        if (error) throw error;
+        
+        watchLaterBtn.classList.remove('active');
+        watchLaterBtn.innerHTML = '<i class="far fa-clock"></i><span>Watch Later</span>';
+        showToast('Removed from Watch Later', 'info');
+      }
+    } catch (error) {
+      console.error('Watch later error:', error);
+      showToast('Failed to update', 'error');
+    }
+  });
+}
+
+function setupConnectButtons() {
+  const connectBtns = document.querySelectorAll('.connect-btn');
+  connectBtns.forEach(btn => {
+    btn.addEventListener('click', function() {
+      showToast('🎉 NO DNA, JUST RSA - Stay connected! 🎉', 'success');
+    });
+  });
+}
+
+// ============================================
 // UI SCALE CONTROLLER
 // ============================================
 class UIScaleController {
@@ -309,11 +763,78 @@ function setupAuthListeners() {
   });
 }
 
+// Placeholder functions for missing implementations
+async function loadContinueWatching(userId) {
+  console.log('Loading continue watching for:', userId);
+}
+
+function setupContinueWatchingRefresh() {
+  console.log('Setting up continue watching refresh');
+}
+
+async function initializePlaylistManager() {
+  console.log('Initializing playlist manager');
+}
+
+async function initializeRecommendationEngine() {
+  console.log('Initializing recommendation engine');
+}
+
+function initializeKeyboardShortcuts() {
+  console.log('Initializing keyboard shortcuts');
+}
+
+function initializePlaylistModal() {
+  console.log('Initializing playlist modal');
+}
+
+async function loadRecommendationRails() {
+  console.log('Loading recommendation rails');
+}
+
+function initAnalyticsModal() {
+  console.log('Initializing analytics modal');
+}
+
+function initSearchModal() {
+  console.log('Initializing search modal');
+}
+
+function initNotificationsPanel() {
+  console.log('Initializing notifications panel');
+}
+
+function initThemeSelector() {
+  console.log('Initializing theme selector');
+}
+
+function initializeEnhancedVideoPlayer() {
+  console.log('Initializing enhanced video player');
+}
+
+async function initializeStreamingManager() {
+  console.log('Initializing streaming manager');
+}
+
+function handlePlay() {
+  console.log('Handle play');
+}
+
 // ============================================
 // DOM READY - MAIN INITIALIZATION
 // ============================================
 document.addEventListener('DOMContentLoaded', async () => {
   console.log('✅ DOM loaded - starting initialization');
+  
+  // Safety check: ensure critical functions exist
+  if (typeof loadContentFromURL !== 'function') {
+    console.error('❌ CRITICAL: loadContentFromURL not defined! Check script order.');
+    const loading = document.getElementById('loading');
+    const app = document.getElementById('app');
+    if (loading) loading.style.display = 'none';
+    if (app) app.style.display = 'block';
+    return;
+  }
   
   // 1. Initialize Supabase client FIRST
   if (!window.supabaseClient) {
@@ -984,87 +1505,6 @@ function setupAllEventListeners() {
   setupConnectButtons();
   
   console.log('✅ All event listeners setup complete');
-}
-
-// ============================================
-// UTILITY FUNCTIONS
-// ============================================
-function fixAvatarUrl(url) {
-  if (!url) return '';
-  if (url.startsWith('http')) return url;
-  if (url.includes('supabase.co')) return url;
-  const SUPABASE_URL = window.ENV?.SUPABASE_URL || 'https://ydnxqnbjoshvxteevemc.supabase.co';
-  return `${SUPABASE_URL}/storage/v1/object/public/${url.replace(/^\/+/, '')}`;
-}
-
-function getInitials(name) {
-  if (!name) return '?';
-  return name.charAt(0).toUpperCase();
-}
-
-function escapeHtml(text) {
-  if (!text) return '';
-  const div = document.createElement('div');
-  div.textContent = text;
-  return div.innerHTML;
-}
-
-function showToast(message, type = 'info') {
-  let container = document.getElementById('toast-container');
-  if (!container) {
-    container = document.createElement('div');
-    container.id = 'toast-container';
-    document.body.appendChild(container);
-  }
-  
-  const toast = document.createElement('div');
-  toast.className = `toast ${type}`;
-  toast.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-exclamation-circle' : type === 'warning' ? 'fa-exclamation-triangle' : 'fa-info-circle'}"></i><span>${escapeHtml(message)}</span>`;
-  
-  container.appendChild(toast);
-  
-  setTimeout(() => {
-    toast.style.opacity = '0';
-    toast.style.transform = 'translateX(100%)';
-    setTimeout(() => toast.remove(), 300);
-  }, 3000);
-}
-
-function safeSetText(id, text) {
-  const el = document.getElementById(id);
-  if (el) el.textContent = text || '';
-}
-
-function formatDate(dateString) {
-  if (!dateString) return '-';
-  try {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
-  } catch (e) { return '-'; }
-}
-
-function formatDuration(seconds) {
-  if (!seconds || seconds <= 0 || isNaN(seconds)) return '0m 0s';
-  seconds = Math.floor(seconds);
-  const hours = Math.floor(seconds / 3600);
-  const minutes = Math.floor((seconds % 3600) / 60);
-  const secs = seconds % 60;
-  if (hours > 0) return hours + 'h ' + minutes + 'm';
-  if (minutes > 0) return minutes + 'm ' + secs + 's';
-  return secs + 's';
-}
-
-function formatNumber(num) {
-  if (!num) return '0';
-  if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
-  if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
-  return num.toString();
-}
-
-function truncateText(text, maxLength) {
-  if (!text) return '';
-  if (text.length <= maxLength) return text;
-  return text.substring(0, maxLength) + '...';
 }
 
 // ============================================
