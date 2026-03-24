@@ -3,6 +3,9 @@
 // ✅ RLS-Compliant with Accurate View Counts
 // ✅ Home Feed Header & Sidebar Integration Complete
 // ✅ PHASE 1-4 Features Integrated
+// ✅ FIXED: Loading screen hides properly
+// ✅ FIXED: Sidebar menu clickable with direct onclick handlers
+// ✅ FIXED: Navigation button positioning
 
 console.log('🎬 Content Detail Initializing with ALL fixes applied...');
 
@@ -170,11 +173,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         }, 500);
     }
 
-    // ✅ Show app (hide loading screen)
-    const loadingEl = document.getElementById('loading');
-    const appEl = document.getElementById('app');
-    if (loadingEl) loadingEl.style.display = 'none';
-    if (appEl) appEl.style.display = 'block';
+    // ✅ CRITICAL: Force hide loading screen after all init
+    setTimeout(() => {
+        const loading = document.getElementById('loading');
+        const app = document.getElementById('app');
+        if (loading) loading.style.display = 'none';
+        if (app) {
+            app.style.display = 'block';
+            app.style.opacity = '1';
+        }
+        console.log('🎬 Loading screen forced hidden');
+    }, 800);
 
     console.log('✅ Content Detail FULLY INITIALIZED with all features working!');
     console.log('✅ Home Feed Header & Sidebar Integration Complete');
@@ -2855,7 +2864,7 @@ function setupConnectButtons() {
 // ============================================
 
 // ============================================
-// SIDEBAR SETUP - FIXED VERSION
+// SIDEBAR SETUP - FIXED VERSION (DIRECT ONCLICK HANDLERS)
 // ============================================
 function setupContentDetailSidebar() {
     const menuToggle = document.getElementById('menu-toggle');
@@ -2864,42 +2873,46 @@ function setupContentDetailSidebar() {
     const sidebarMenu = document.getElementById('sidebar-menu');
 
     if (!menuToggle || !sidebarClose || !sidebarOverlay || !sidebarMenu) {
-        console.warn('⚠️ Sidebar elements not found');
+        console.warn('⚠️ Sidebar elements missing, retrying in 500ms');
+        setTimeout(setupContentDetailSidebar, 500);
         return;
     }
 
-    const openSidebar = () => {
+    // ✅ Use direct onclick for maximum reliability
+    menuToggle.onclick = function(e) {
+        e.stopPropagation();
         sidebarMenu.classList.add('active');
         sidebarOverlay.classList.add('active');
         document.body.style.overflow = 'hidden';
+        console.log('📱 Sidebar opened');
     };
 
-    const closeSidebar = () => {
+    sidebarClose.onclick = function() {
+        sidebarMenu.classList.remove('active');
+        sidebarOverlay.classList.remove('active');
+        document.body.style.overflow = '';
+        console.log('📱 Sidebar closed');
+    };
+
+    sidebarOverlay.onclick = function() {
         sidebarMenu.classList.remove('active');
         sidebarOverlay.classList.remove('active');
         document.body.style.overflow = '';
     };
 
-    menuToggle.addEventListener('click', (e) => {
-        e.stopPropagation();
-        openSidebar();
-    });
-
-    sidebarClose.addEventListener('click', closeSidebar);
-    sidebarOverlay.addEventListener('click', closeSidebar);
-
-    document.addEventListener('keydown', (e) => {
+    // Escape key
+    document.onkeydown = function(e) {
         if (e.key === 'Escape' && sidebarMenu.classList.contains('active')) {
-            closeSidebar();
+            sidebarClose.onclick();
         }
-    });
+    };
 
     updateSidebarProfile();
     setupSidebarNavigation();
     setupSidebarThemeToggle();
     setupSidebarScaleControls();
 
-    console.log('✅ Sidebar initialized');
+    console.log('✅ Sidebar click handlers attached with onclick');
 }
 
 // ============================================
