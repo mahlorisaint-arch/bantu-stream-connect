@@ -1,6 +1,1117 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover">
+<title>Bantu Stream Connect - Content Detail</title>
+
+<!-- Google Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Orbitron:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<!-- Font Awesome -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+<!-- Chart.js for Analytics -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" async></script>
+
+<!-- Supabase JS SDK -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<!-- Base Styles -->
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/components.css">
+<link rel="stylesheet" href="css/content-detail.css">
+
+<style>
+/* ===== HOME FEED HEADER & SIDEBAR STYLES ===== */
+:root {
+--deep-black: #0A0E12;
+--deep-navy: #0F172A;
+--soft-white: #F8FAFC;
+--slate-grey: #94A3B8;
+--bantu-blue: #1D4ED8;
+--warm-gold: #F59E0B;
+--error-color: #EF4444;
+--success-color: #10B981;
+--card-bg: rgba(15, 23, 42, 0.6);
+--card-border: rgba(148, 163, 184, 0.2);
+--ui-scale: 1;
+--spacing-xs: calc(0.5rem * var(--ui-scale));
+--spacing-sm: calc(0.75rem * var(--ui-scale));
+--spacing-md: calc(1rem * var(--ui-scale));
+--spacing-lg: calc(1.5rem * var(--ui-scale));
+--font-xs: calc(0.75rem * var(--ui-scale));
+--font-sm: calc(0.875rem * var(--ui-scale));
+--font-base: calc(1rem * var(--ui-scale));
+--font-lg: calc(1.125rem * var(--ui-scale));
+--icon-xs: calc(0.75rem * var(--ui-scale));
+--icon-sm: calc(0.875rem * var(--ui-scale));
+--icon-md: calc(1rem * var(--ui-scale));
+--icon-lg: calc(1.25rem * var(--ui-scale));
+}
+
+/* Header Styles */
+.header {
+background: rgba(10, 14, 18, 0.95);
+backdrop-filter: blur(20px);
+padding: calc(0.75rem * var(--ui-scale)) calc(1.5rem * var(--ui-scale));
+position: sticky;
+top: 0;
+z-index: 100;
+border-bottom: 1px solid var(--card-border);
+display: flex;
+justify-content: space-between;
+align-items: center;
+min-height: calc(3.75rem * var(--ui-scale));
+}
+
+.logo {
+display: flex;
+align-items: center;
+gap: calc(0.75rem * var(--ui-scale));
+cursor: pointer;
+}
+
+.menu-toggle {
+width: calc(2.375rem * var(--ui-scale));
+height: calc(2.375rem * var(--ui-scale));
+border-radius: 50%;
+background: rgba(255, 255, 255, 0.1);
+border: 1px solid rgba(255, 255, 255, 0.2);
+color: var(--soft-white);
+display: flex;
+align-items: center;
+justify-content: center;
+cursor: pointer;
+transition: all 0.3s ease;
+font-size: var(--icon-md);
+border: none;
+}
+
+.menu-toggle:hover {
+background: rgba(255, 255, 255, 0.2);
+transform: translateY(calc(-0.125rem * var(--ui-scale)));
+}
+
+.logo-icon {
+width: calc(2.5rem * var(--ui-scale));
+height: calc(2.5rem * var(--ui-scale));
+border-radius: calc(0.625rem * var(--ui-scale));
+display: flex;
+align-items: center;
+justify-content: center;
+background: transparent;
+border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.logo-icon img {
+width: 100%;
+height: 100%;
+object-fit: contain;
+}
+
+.logo-text {
+font-family: 'Orbitron', sans-serif;
+font-weight: 700;
+font-size: var(--font-lg);
+background: linear-gradient(to right, var(--soft-white), var(--bantu-blue));
+-webkit-background-clip: text;
+background-clip: text;
+color: transparent;
+}
+
+.header-actions {
+display: flex;
+gap: calc(0.625rem * var(--ui-scale));
+align-items: center;
+}
+
+.icon-btn {
+width: calc(2.375rem * var(--ui-scale));
+height: calc(2.375rem * var(--ui-scale));
+border-radius: 50%;
+background: rgba(255, 255, 255, 0.1);
+border: 1px solid rgba(255, 255, 255, 0.2);
+color: var(--soft-white);
+display: flex;
+align-items: center;
+justify-content: center;
+cursor: pointer;
+transition: all 0.3s ease;
+font-size: var(--icon-md);
+position: relative;
+border: none;
+}
+
+.icon-btn:hover {
+background: rgba(255, 255, 255, 0.2);
+transform: translateY(calc(-0.125rem * var(--ui-scale)));
+}
+
+.search-btn {
+color: var(--warm-gold);
+}
+
+.notification-badge {
+position: absolute;
+top: calc(-0.3125rem * var(--ui-scale));
+right: calc(-0.3125rem * var(--ui-scale));
+background: var(--error-color);
+color: white;
+font-size: calc(0.625rem * var(--ui-scale));
+font-weight: bold;
+width: calc(1.125rem * var(--ui-scale));
+height: calc(1.125rem * var(--ui-scale));
+border-radius: 50%;
+display: flex;
+align-items: center;
+justify-content: center;
+border: 2px solid var(--deep-black);
+}
+
+/* Profile Switcher */
+.profile-switcher {
+position: relative;
+margin-right: var(--spacing-xs);
+}
+
+.profile-btn {
+background: rgba(255, 255, 255, 0.1);
+border: 1px solid var(--card-border);
+border-radius: calc(2.5rem * var(--ui-scale));
+padding: calc(0.3125rem * var(--ui-scale)) var(--spacing-sm) calc(0.3125rem * var(--ui-scale)) calc(0.3125rem * var(--ui-scale));
+display: flex;
+align-items: center;
+gap: var(--spacing-xs);
+cursor: pointer;
+transition: all 0.3s ease;
+border: none;
+}
+
+.profile-btn:hover {
+background: rgba(255, 255, 255, 0.15);
+}
+
+.profile-placeholder {
+width: calc(2.25rem * var(--ui-scale));
+height: calc(2.25rem * var(--ui-scale));
+border-radius: 50%;
+background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+display: flex;
+align-items: center;
+justify-content: center;
+color: white;
+font-size: var(--font-sm);
+overflow: hidden;
+}
+
+.profile-placeholder img {
+width: 100%;
+height: 100%;
+object-fit: cover;
+}
+
+.profile-name {
+color: var(--soft-white);
+font-size: var(--font-sm);
+font-weight: 500;
+}
+
+.profile-dropdown {
+position: absolute;
+top: calc(3.75rem * var(--ui-scale));
+right: 0;
+width: calc(15.625rem * var(--ui-scale));
+background: var(--card-bg);
+backdrop-filter: blur(20px);
+border: 1px solid var(--card-border);
+border-radius: calc(0.75rem * var(--ui-scale));
+opacity: 0;
+visibility: hidden;
+transform: translateY(calc(-0.625rem * var(--ui-scale)));
+transition: all 0.3s ease;
+z-index: 100;
+}
+
+.profile-dropdown.active {
+opacity: 1;
+visibility: visible;
+transform: translateY(0);
+}
+
+.profile-dropdown-header {
+padding: var(--spacing-sm);
+border-bottom: 1px solid var(--card-border);
+}
+
+.profile-dropdown-header h4 {
+font-size: var(--font-sm);
+color: var(--soft-white);
+margin: 0;
+}
+
+.profile-list {
+padding: var(--spacing-xs);
+max-height: calc(15rem * var(--ui-scale));
+overflow-y: auto;
+}
+
+.profile-item {
+display: flex;
+align-items: center;
+gap: var(--spacing-xs);
+padding: var(--spacing-xs);
+border-radius: calc(0.5rem * var(--ui-scale));
+cursor: pointer;
+transition: background 0.3s ease;
+}
+
+.profile-item:hover {
+background: rgba(255, 255, 255, 0.1);
+}
+
+.profile-item.active {
+background: rgba(245, 158, 11, 0.1);
+}
+
+.profile-avatar-small {
+width: calc(2rem * var(--ui-scale));
+height: calc(2rem * var(--ui-scale));
+border-radius: 50%;
+overflow: hidden;
+background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+display: flex;
+align-items: center;
+justify-content: center;
+color: white;
+font-weight: bold;
+font-size: var(--font-sm);
+}
+
+.profile-avatar-small img {
+width: 100%;
+height: 100%;
+object-fit: cover;
+}
+
+.profile-item .profile-name {
+flex: 1;
+font-size: var(--font-sm);
+color: var(--soft-white);
+}
+
+.profile-item i {
+color: var(--warm-gold);
+font-size: var(--icon-xs);
+}
+
+.profile-dropdown-footer {
+padding: var(--spacing-xs);
+border-top: 1px solid var(--card-border);
+}
+
+.text-btn {
+background: none;
+border: none;
+color: var(--warm-gold);
+cursor: pointer;
+font-size: var(--font-sm);
+transition: all 0.3s ease;
+width: 100%;
+text-align: center;
+padding: var(--spacing-xs);
+}
+
+.text-btn:hover {
+color: var(--soft-white);
+background: rgba(255, 255, 255, 0.1);
+border-radius: calc(0.5rem * var(--ui-scale));
+}
+
+/* RSA Badge */
+.rsa-badge {
+display: flex;
+align-items: center;
+gap: var(--spacing-xs);
+background: linear-gradient(135deg, #007A4D, #FFB81C, #E03C31);
+padding: calc(0.375rem * var(--ui-scale)) calc(0.75rem * var(--ui-scale));
+border-radius: calc(1.875rem * var(--ui-scale));
+color: white;
+font-size: var(--font-xs);
+font-weight: 600;
+margin-left: var(--spacing-xs);
+}
+
+/* Sidebar Styles */
+.sidebar-overlay {
+position: fixed;
+top: 0;
+left: 0;
+width: 100%;
+height: 100%;
+background: rgba(0, 0, 0, 0.7);
+backdrop-filter: blur(4px);
+z-index: 1000;
+opacity: 0;
+visibility: hidden;
+transition: all 0.3s ease;
+}
+
+.sidebar-overlay.active {
+opacity: 1;
+visibility: visible;
+}
+
+.sidebar-menu {
+position: fixed;
+top: 0;
+left: calc(-20rem * var(--ui-scale));
+width: calc(18rem * var(--ui-scale));
+height: 100vh;
+background: rgba(15, 23, 42, 0.98);
+backdrop-filter: blur(20px);
+border-right: 1px solid var(--card-border);
+z-index: 1001;
+transition: left 0.3s ease;
+display: flex;
+flex-direction: column;
+padding: calc(1.25rem * var(--ui-scale));
+overflow-y: auto;
+}
+
+.sidebar-menu.active {
+left: 0;
+}
+
+.sidebar-header {
+display: flex;
+align-items: center;
+justify-content: space-between;
+padding-bottom: calc(1.25rem * var(--ui-scale));
+border-bottom: 1px solid var(--card-border);
+margin-bottom: calc(1.25rem * var(--ui-scale));
+}
+
+.sidebar-logo {
+display: flex;
+align-items: center;
+gap: calc(0.75rem * var(--ui-scale));
+cursor: pointer;
+}
+
+.sidebar-logo .logo-icon {
+width: calc(2rem * var(--ui-scale));
+height: calc(2rem * var(--ui-scale));
+}
+
+.sidebar-logo-text {
+font-family: 'Orbitron', sans-serif;
+font-size: var(--font-lg);
+font-weight: 700;
+background: linear-gradient(to right, var(--soft-white), var(--bantu-blue));
+-webkit-background-clip: text;
+background-clip: text;
+color: transparent;
+}
+
+.sidebar-close {
+width: calc(2.25rem * var(--ui-scale));
+height: calc(2.25rem * var(--ui-scale));
+border-radius: 50%;
+background: rgba(255, 255, 255, 0.1);
+border: 1px solid var(--card-border);
+color: var(--soft-white);
+display: flex;
+align-items: center;
+justify-content: center;
+cursor: pointer;
+transition: all 0.3s ease;
+font-size: var(--icon-md);
+border: none;
+}
+
+.sidebar-close:hover {
+background: var(--error-color);
+}
+
+.sidebar-profile {
+display: flex;
+align-items: center;
+gap: calc(0.75rem * var(--ui-scale));
+padding: calc(0.75rem * var(--ui-scale));
+background: rgba(255, 255, 255, 0.05);
+border-radius: calc(0.75rem * var(--ui-scale));
+margin-bottom: calc(1.25rem * var(--ui-scale));
+cursor: pointer;
+transition: background 0.3s ease;
+}
+
+.sidebar-profile:hover {
+background: rgba(255, 255, 255, 0.1);
+}
+
+.sidebar-profile-avatar {
+width: calc(2.75rem * var(--ui-scale));
+height: calc(2.75rem * var(--ui-scale));
+border-radius: 50%;
+background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+display: flex;
+align-items: center;
+justify-content: center;
+color: white;
+font-weight: 600;
+font-size: var(--font-base);
+overflow: hidden;
+}
+
+.sidebar-profile-avatar img {
+width: 100%;
+height: 100%;
+object-fit: cover;
+}
+
+.sidebar-profile-info {
+flex: 1;
+min-width: 0;
+}
+
+.sidebar-profile-name {
+font-size: var(--font-base);
+font-weight: 600;
+color: var(--soft-white);
+white-space: nowrap;
+overflow: hidden;
+text-overflow: ellipsis;
+}
+
+.sidebar-profile-email {
+font-size: var(--font-xs);
+color: var(--slate-grey);
+white-space: nowrap;
+overflow: hidden;
+text-overflow: ellipsis;
+}
+
+.sidebar-nav {
+flex: 1;
+display: flex;
+flex-direction: column;
+gap: calc(0.5rem * var(--ui-scale));
+overflow-y: auto;
+}
+
+.sidebar-nav-item {
+display: flex;
+align-items: center;
+gap: calc(0.75rem * var(--ui-scale));
+padding: calc(0.875rem * var(--ui-scale)) calc(1rem * var(--ui-scale));
+border-radius: calc(0.75rem * var(--ui-scale));
+color: var(--soft-white);
+text-decoration: none;
+font-size: var(--font-base);
+transition: all 0.3s ease;
+cursor: pointer;
+}
+
+.sidebar-nav-item:hover {
+background: rgba(255, 255, 255, 0.1);
+transform: translateX(calc(0.25rem * var(--ui-scale)));
+}
+
+.sidebar-nav-item.active {
+background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+}
+
+.sidebar-nav-item i {
+width: calc(1.25rem * var(--ui-scale));
+text-align: center;
+font-size: var(--icon-md);
+}
+
+.sidebar-nav-item .badge {
+margin-left: auto;
+background: var(--error-color);
+color: white;
+font-size: calc(0.625rem * var(--ui-scale));
+padding: calc(0.125rem * var(--ui-scale)) calc(0.5rem * var(--ui-scale));
+border-radius: calc(0.625rem * var(--ui-scale));
+}
+
+.sidebar-footer {
+padding-top: calc(1.25rem * var(--ui-scale));
+border-top: 1px solid var(--card-border);
+margin-top: auto;
+}
+
+.sidebar-theme-toggle {
+display: flex;
+align-items: center;
+justify-content: space-between;
+padding: calc(0.75rem * var(--ui-scale));
+background: rgba(255, 255, 255, 0.05);
+border-radius: calc(0.75rem * var(--ui-scale));
+cursor: pointer;
+transition: background 0.3s ease;
+width: 100%;
+color: var(--soft-white);
+border: none;
+margin-bottom: calc(0.75rem * var(--ui-scale));
+}
+
+.sidebar-theme-toggle:hover {
+background: rgba(255, 255, 255, 0.1);
+}
+
+.sidebar-scale-control {
+padding: calc(0.75rem * var(--ui-scale));
+background: rgba(255, 255, 255, 0.05);
+border-radius: calc(0.75rem * var(--ui-scale));
+}
+
+.scale-control-row {
+display: flex;
+align-items: center;
+justify-content: space-between;
+margin-bottom: calc(0.5rem * var(--ui-scale));
+}
+
+.scale-control-row:last-child {
+margin-bottom: 0;
+}
+
+.scale-btn {
+width: calc(2rem * var(--ui-scale));
+height: calc(2rem * var(--ui-scale));
+border-radius: 50%;
+background: rgba(255, 255, 255, 0.1);
+border: 1px solid var(--card-border);
+color: var(--soft-white);
+cursor: pointer;
+display: flex;
+align-items: center;
+justify-content: center;
+transition: all 0.3s ease;
+font-size: var(--font-sm);
+border: none;
+}
+
+.scale-btn:hover {
+background: var(--warm-gold);
+color: var(--deep-black);
+transform: scale(1.1);
+}
+
+.scale-value {
+font-size: var(--font-sm);
+color: var(--soft-white);
+min-width: calc(3rem * var(--ui-scale));
+text-align: center;
+font-weight: 600;
+}
+
+/* Bottom Navigation Button */
+.navigation-button-container {
+position: fixed;
+bottom: calc(1.875rem * var(--ui-scale));
+left: 0;
+right: 0;
+display: flex;
+justify-content: center;
+z-index: 98;
+pointer-events: none;
+}
+
+.navigation-button {
+display: flex;
+background: rgba(10, 14, 18, 0.85);
+backdrop-filter: blur(20px);
+border: 1px solid var(--card-border);
+border-radius: calc(3.75rem * var(--ui-scale));
+padding: calc(0.625rem * var(--ui-scale)) calc(1.125rem * var(--ui-scale));
+gap: var(--spacing-xs);
+box-shadow: 0 calc(0.625rem * var(--ui-scale)) calc(1.875rem * var(--ui-scale)) rgba(0, 0, 0, 0.5);
+pointer-events: auto;
+}
+
+.nav-icon {
+width: calc(2.75rem * var(--ui-scale));
+height: calc(2.75rem * var(--ui-scale));
+border-radius: 50%;
+background: rgba(255, 255, 255, 0.1);
+border: 1px solid rgba(255, 255, 255, 0.2);
+color: var(--soft-white);
+display: flex;
+align-items: center;
+justify-content: center;
+cursor: pointer;
+transition: all 0.3s ease;
+font-size: var(--icon-lg);
+position: relative;
+}
+
+.nav-icon:hover {
+background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+transform: translateY(calc(-0.3125rem * var(--ui-scale)));
+}
+
+/* Theme Selector */
+.theme-selector {
+position: fixed;
+bottom: calc(6.25rem * var(--ui-scale));
+left: 50%;
+transform: translateX(-50%);
+background: var(--card-bg);
+backdrop-filter: blur(20px);
+border: 1px solid var(--card-border);
+border-radius: calc(0.75rem * var(--ui-scale));
+padding: var(--spacing-xs);
+display: flex;
+gap: var(--spacing-xs);
+z-index: 1002;
+opacity: 0;
+visibility: hidden;
+transition: all 0.3s ease;
+}
+
+.theme-selector.active {
+opacity: 1;
+visibility: visible;
+}
+
+.theme-option {
+padding: var(--spacing-xs) var(--spacing-sm);
+background: rgba(255, 255, 255, 0.1);
+border: 1px solid var(--card-border);
+border-radius: calc(0.5rem * var(--ui-scale));
+color: var(--soft-white);
+cursor: pointer;
+display: flex;
+align-items: center;
+gap: var(--spacing-xs);
+font-size: var(--font-sm);
+transition: all 0.3s ease;
+border: none;
+}
+
+.theme-option:hover {
+background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+transform: translateY(calc(-0.125rem * var(--ui-scale)));
+}
+
+/* Back to Top Button */
+.back-to-top {
+position: fixed;
+bottom: calc(7.5rem * var(--ui-scale));
+right: calc(1.875rem * var(--ui-scale));
+width: calc(3.125rem * var(--ui-scale));
+height: calc(3.125rem * var(--ui-scale));
+border-radius: 50%;
+background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+border: 1px solid rgba(255, 255, 255, 0.2);
+color: white;
+display: none;
+align-items: center;
+justify-content: center;
+cursor: pointer;
+transition: all 0.3s ease;
+z-index: 97;
+font-size: var(--icon-md);
+border: none;
+}
+
+.back-to-top:hover {
+transform: translateY(calc(-0.3125rem * var(--ui-scale)));
+}
+
+/* Toast Container */
+#toast-container {
+position: fixed;
+bottom: calc(1.25rem * var(--ui-scale));
+right: calc(1.25rem * var(--ui-scale));
+z-index: 9999;
+display: flex;
+flex-direction: column;
+gap: var(--spacing-xs);
+}
+
+.toast {
+padding: var(--spacing-sm) var(--spacing-lg);
+border-radius: calc(0.75rem * var(--ui-scale));
+color: white;
+font-weight: 500;
+animation: slideIn 0.3s ease;
+max-width: calc(18.75rem * var(--ui-scale));
+backdrop-filter: blur(10px);
+display: flex;
+align-items: center;
+gap: var(--spacing-xs);
+font-size: var(--font-sm);
+}
+
+.toast.error { background: rgba(239, 68, 68, 0.9); }
+.toast.success { background: rgba(16, 185, 129, 0.9); }
+.toast.warning { background: rgba(245, 158, 11, 0.9); }
+.toast.info { background: var(--card-bg); }
+
+@keyframes slideIn {
+from { transform: translateX(100%); opacity: 0; }
+to { transform: translateX(0); opacity: 1; }
+}
+
+/* Voice Search Status */
+.voice-search-status {
+position: fixed;
+bottom: 50%;
+left: 50%;
+transform: translate(-50%, -50%);
+background: rgba(0, 0, 0, 0.9);
+padding: 20px 40px;
+border-radius: 50px;
+color: white;
+font-size: 18px;
+z-index: 10000;
+display: none;
+align-items: center;
+gap: 15px;
+backdrop-filter: blur(10px);
+border: 1px solid var(--warm-gold);
+}
+
+.voice-search-status.active {
+display: flex;
+}
+
+.voice-search-status i {
+animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+0%, 100% { opacity: 1; transform: scale(1); }
+50% { opacity: 0.5; transform: scale(1.2); }
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+.header { padding: calc(0.625rem * var(--ui-scale)) calc(1rem * var(--ui-scale)); min-height: calc(3.25rem * var(--ui-scale)); }
+.logo-text { font-size: calc(0.875rem * var(--ui-scale)); max-width: 130px; }
+.logo-icon { width: calc(2rem * var(--ui-scale)); height: calc(2rem * var(--ui-scale)); }
+.logo-icon img { width: calc(1.75rem * var(--ui-scale)); height: calc(1.75rem * var(--ui-scale)); }
+.menu-toggle { width: calc(2rem * var(--ui-scale)); height: calc(2rem * var(--ui-scale)); font-size: var(--font-sm); }
+.icon-btn { width: calc(2rem * var(--ui-scale)); height: calc(2rem * var(--ui-scale)); }
+.profile-placeholder { width: calc(1.75rem * var(--ui-scale)); height: calc(1.75rem * var(--ui-scale)); font-size: var(--font-xs); }
+.profile-name { display: none; }
+.rsa-badge span { display: none; }
+.rsa-badge { padding: calc(0.375rem * var(--ui-scale)) calc(0.5rem * var(--ui-scale)); margin-left: var(--spacing-xs); }
+.navigation-button-container { bottom: calc(1.25rem * var(--ui-scale)); }
+.nav-icon { width: calc(2.25rem * var(--ui-scale)); height: calc(2.25rem * var(--ui-scale)); font-size: var(--icon-md); }
+.sidebar-menu { width: calc(16rem * var(--ui-scale)); left: calc(-17rem * var(--ui-scale)); }
+.back-to-top { bottom: calc(6rem * var(--ui-scale)); right: calc(1rem * var(--ui-scale)); width: calc(2.5rem * var(--ui-scale)); height: calc(2.5rem * var(--ui-scale)); font-size: var(--icon-sm); }
+}
+
+@media (max-width: 480px) {
+.header { padding: calc(0.5rem * var(--ui-scale)) calc(0.75rem * var(--ui-scale)); }
+.logo-text { display: none; }
+.icon-btn { width: calc(1.75rem * var(--ui-scale)); height: calc(1.75rem * var(--ui-scale)); font-size: var(--font-sm); }
+.profile-btn { padding: calc(0.25rem * var(--ui-scale)) calc(0.5rem * var(--ui-scale)); }
+.profile-placeholder { width: calc(1.5rem * var(--ui-scale)); height: calc(1.5rem * var(--ui-scale)); }
+.nav-icon { width: calc(2rem * var(--ui-scale)); height: calc(2rem * var(--ui-scale)); font-size: var(--font-base); }
+}
+</style>
+</head>
+<body>
+<!-- Loading Screen -->
+<div id="loading" class="loading-screen">
+<div class="spinner"></div>
+<div id="loading-text">Loading content details...</div>
+</div>
+
+<!-- Animated Background -->
+<div class="animated-bg">
+<div class="glow-cycle glow-1"></div>
+<div class="glow-cycle glow-2"></div>
+<div class="glow-cycle glow-3"></div>
+<div class="glow-cycle glow-4"></div>
+</div>
+
+<!-- Main App -->
+<div id="app" style="display: none;">
+<!-- Header -->
+<header class="header">
+<div class="logo">
+<button class="menu-toggle" id="menu-toggle" title="Open Menu">
+<i class="fas fa-bars"></i>
+</button>
+<div class="logo-icon" onclick="window.location.href='index.html'">
+<img src="assets/icon/bantu_stream_connect_icon.png" alt="Bantu Stream Connect Logo">
+</div>
+<div class="logo-text" onclick="window.location.href='index.html'">BANTU STREAM CONNECT</div>
+</div>
+<div class="header-actions">
+<button id="voice-search-btn" class="icon-btn" title="Voice Search (Alt+V)">
+<i class="fas fa-microphone"></i>
+</button>
+<button id="analytics-btn" class="icon-btn" title="Analytics (Alt+A)">
+<i class="fas fa-chart-line"></i>
+</button>
+<button id="search-btn" class="icon-btn search-btn" title="Search (Ctrl+K)">
+<i class="fas fa-search"></i>
+</button>
+<button id="notifications-btn" class="icon-btn" title="Notifications (Alt+N)">
+<i class="fas fa-bell"></i>
+<span class="notification-badge" id="notification-count" style="display: none;">0</span>
+</button>
+<div class="profile-switcher">
+<button id="current-profile-btn" class="profile-btn" title="Profile (Alt+P)">
+<div class="profile-placeholder" id="userProfilePlaceholder">
+<i class="fas fa-user"></i>
+</div>
+<span class="profile-name" id="current-profile-name">Guest</span>
+<i class="fas fa-chevron-down"></i>
+</button>
+<div class="profile-dropdown" id="profile-dropdown">
+<div class="profile-dropdown-header">
+<h4>Switch Profile</h4>
+</div>
+<div class="profile-list" id="profile-list"></div>
+<div class="profile-dropdown-footer">
+<button class="text-btn" id="manage-profiles-btn">
+<i class="fas fa-user-cog"></i> Manage Profiles
+</button>
+</div>
+</div>
+</div>
+<div class="rsa-badge" title="Proudly South African">
+<i class="fas fa-map-marker-alt"></i>
+<span>RSA</span>
+</div>
+</div>
+</header>
+
+<!-- Sidebar Menu -->
+<div class="sidebar-overlay" id="sidebar-overlay"></div>
+<div class="sidebar-menu" id="sidebar-menu">
+<div class="sidebar-header">
+<div class="sidebar-logo" onclick="window.location.href='index.html'">
+<div class="logo-icon">
+<img src="assets/icon/bantu_stream_connect_icon.png" alt="Bantu Stream Connect Logo">
+</div>
+<span class="sidebar-logo-text">BANTU</span>
+</div>
+<button class="sidebar-close" id="sidebar-close" aria-label="Close menu">
+<i class="fas fa-times"></i>
+</button>
+</div>
+<div class="sidebar-profile" id="sidebar-profile">
+<div class="sidebar-profile-avatar" id="sidebar-profile-avatar">
+<i class="fas fa-user"></i>
+</div>
+<div class="sidebar-profile-info">
+<div class="sidebar-profile-name" id="sidebar-profile-name">Guest</div>
+<div class="sidebar-profile-email" id="sidebar-profile-email">Sign in to continue</div>
+</div>
+<i class="fas fa-chevron-right" style="color: var(--slate-grey); flex-shrink: 0;"></i>
+</div>
+<nav class="sidebar-nav" id="sidebar-nav">
+<a href="index.html" class="sidebar-nav-item"><i class="fas fa-home"></i><span>Home</span></a>
+<a href="explore-screen.html" class="sidebar-nav-item"><i class="fas fa-compass"></i><span>Explore</span></a>
+<a href="#" class="sidebar-nav-item" id="sidebar-watch-history"><i class="fas fa-history"></i><span>Watch History</span></a>
+<a href="#" class="sidebar-nav-item" id="sidebar-analytics"><i class="fas fa-chart-line"></i><span>Analytics</span></a>
+<a href="#" class="sidebar-nav-item" id="sidebar-notifications"><i class="fas fa-bell"></i><span>Notifications</span><span class="badge" id="sidebar-notification-count" style="display: none;">0</span></a>
+<a href="#" class="sidebar-nav-item" id="sidebar-badges"><i class="fas fa-medal"></i><span>My Badges</span></a>
+<a href="#" class="sidebar-nav-item" id="sidebar-watch-party"><i class="fas fa-users"></i><span>Watch Party</span></a>
+<a href="creator-upload.html" class="sidebar-nav-item" id="sidebar-create"><i class="fas fa-plus-circle"></i><span>Create</span></a>
+<a href="creator-dashboard.html" class="sidebar-nav-item" id="sidebar-dashboard"><i class="fas fa-tachometer-alt"></i><span>Dashboard</span></a>
+<a href="manage-profiles.html" class="sidebar-nav-item"><i class="fas fa-user-cog"></i><span>Manage Profiles</span></a>
+</nav>
+<div class="sidebar-footer" id="sidebar-footer">
+<div class="sidebar-theme-toggle" id="sidebar-theme-toggle">
+<span><i class="fas fa-palette"></i> Theme</span>
+<i class="fas fa-chevron-right"></i>
+</div>
+<div class="sidebar-scale-control">
+<div class="scale-control-row">
+<span><i class="fas fa-text-height"></i> UI Size</span>
+<div style="display: flex; align-items: center; gap: 8px;">
+<button class="scale-btn" id="sidebar-scale-decrease" title="Smaller">
+<i class="fas fa-minus"></i>
+</button>
+<span class="scale-value" id="sidebar-scale-value">100%</span>
+<button class="scale-btn" id="sidebar-scale-increase" title="Larger">
+<i class="fas fa-plus"></i>
+</button>
+</div>
+</div>
+<div class="scale-control-row">
+<button class="scale-btn" id="sidebar-scale-reset" title="Reset" style="width: 100%;">
+<i class="fas fa-undo"></i> Reset to Default
+</button>
+</div>
+</div>
+</div>
+</div>
+
+<!-- Theme Selector -->
+<div id="theme-selector" class="theme-selector">
+<button class="theme-option" data-theme="dark"><i class="fas fa-moon"></i> Dark</button>
+<button class="theme-option" data-theme="light"><i class="fas fa-sun"></i> Light</button>
+<button class="theme-option" data-theme="high-contrast"><i class="fas fa-eye"></i> High Contrast</button>
+</div>
+
+<!-- Voice Search Status -->
+<div id="voice-search-status" class="voice-search-status">
+<i class="fas fa-microphone"></i>
+<span>Listening...</span>
+</div>
+
+<!-- Bottom Navigation -->
+<div class="navigation-button-container">
+<div class="navigation-button">
+<div class="nav-icon" id="nav-home-btn" title="Home">
+<i class="fas fa-home"></i>
+</div>
+<div class="nav-icon" id="nav-history-btn" title="Watch History">
+<i class="fas fa-history"></i>
+</div>
+<div class="nav-icon" id="nav-create-btn" title="Create Content">
+<i class="fas fa-plus-circle"></i>
+</div>
+<div class="nav-icon" id="nav-menu-btn" title="Menu">
+<i class="fas fa-bars"></i>
+</div>
+</div>
+</div>
+
+<!-- Main Content -->
+<main class="container">
+<!-- Inline Player -->
+<div class="inline-player" id="inlinePlayer" style="display: none;">
+<div class="video-container" id="bantuVideoContainer">
+<video id="inlineVideoPlayer" playsinline webkit-playsinline></video>
+<div class="quality-indicator" id="qualityBadge">Auto</div>
+<div class="network-speed-indicator" id="networkSpeedIndicator">
+<i class="fas fa-wifi"></i> <span id="networkSpeedValue">-- Mbps</span>
+</div>
+<div class="bantu-player-placeholder" id="videoPlaceholder">
+<div class="bantu-logo-spinner">
+<div class="bantu-logo"><i class="fas fa-film"></i></div>
+<div class="bantu-brand-text">BANTU STREAM CONNECT</div>
+</div>
+<p class="loading-text">Ready to play...</p>
+</div>
+<div class="enhanced-video-controls">
+<div class="controls-bar">
+<button class="control-btn play-pause"><i class="fas fa-play"></i></button>
+<div class="time-display"><span class="current-time">0:00</span><span> / </span><span class="duration">0:00</span></div>
+<div class="progress-container"><input type="range" class="progress-bar" min="0" max="100" value="0"></div>
+<div class="volume-controls">
+<button class="control-btn volume-btn"><i class="fas fa-volume-up"></i></button>
+<input type="range" class="volume-bar" min="0" max="100" value="100">
+</div>
+<button class="control-btn settings-btn"><i class="fas fa-cog"></i></button>
+<button class="control-btn fullscreen-btn"><i class="fas fa-expand"></i></button>
+</div>
+<div class="settings-menu">
+<div class="settings-section"><h4>Quality</h4><div class="quality-options" id="qualityOptions"><button class="quality-option active" data-quality="auto">Auto</button><button class="quality-option" data-quality="1080p">1080p</button><button class="quality-option" data-quality="720p">720p</button><button class="quality-option" data-quality="480p">480p</button><button class="quality-option" data-quality="360p">360p</button></div></div>
+<div class="settings-section"><h4>Data Saver</h4><label class="toggle-switch"><input type="checkbox" id="dataSaverToggle"><span class="toggle-slider"></span></label><p class="toggle-description">Reduce data usage</p></div>
+<div class="settings-section"><h4>Speed</h4><div class="speed-options"><button class="speed-option" data-speed="0.5">0.5x</button><button class="speed-option" data-speed="0.75">0.75x</button><button class="speed-option active" data-speed="1">1x</button><button class="speed-option" data-speed="1.25">1.25x</button><button class="speed-option" data-speed="1.5">1.5x</button><button class="speed-option" data-speed="2">2x</button></div></div>
+</div>
+</div>
+</div>
+</div>
+
+<!-- Content Hero -->
+<section class="content-hero" id="contentHero">
+<div class="hero-poster" id="heroPoster">
+<div class="poster-placeholder" id="posterPlaceholder"><i class="fas fa-film"></i></div>
+<div class="play-overlay" id="heroPlayOverlay"><div class="play-icon-large"><i class="fas fa-play"></i></div></div>
+</div>
+<div class="hero-info">
+<h1 id="contentTitle">Loading Content...</h1>
+<div class="hero-meta">
+<div class="meta-item"><i class="fas fa-user"></i><span id="creatorName">Creator</span></div>
+<div class="meta-item"><i class="fas fa-eye"></i><span id="viewsCount">0 views</span></div>
+<div class="meta-item"><i class="fas fa-clock"></i><span id="durationText">0m 0s</span></div>
+<div class="meta-item"><i class="fas fa-calendar"></i><span id="uploadDate">--</span></div>
+</div>
+<div class="hero-description" id="contentDescriptionShort">Loading description...</div>
+<div class="hero-actions">
+<button class="btn btn-primary" id="playBtn"><i class="fas fa-play"></i><span>Play Now</span></button>
+<button class="btn btn-secondary" id="likeBtn"><i class="far fa-heart"></i><span>Like</span></button>
+<button class="btn btn-secondary" id="favoriteBtn"><i class="far fa-star"></i><span>Favorite</span></button>
+<button class="btn btn-secondary" id="watchLaterBtn"><i class="far fa-clock"></i><span>Watch Later</span></button>
+<button class="btn btn-secondary" id="shareBtn"><i class="fas fa-share"></i><span>Share</span></button>
+<button class="btn btn-secondary" id="closePlayerFromHero" style="display: none;"><i class="fas fa-times"></i><span>Close Player</span></button>
+</div>
+</div>
+</section>
+
+<!-- Creator Section -->
+<section class="creator-section">
+<div class="creator-info">
+<div class="creator-avatar" id="creatorAvatar"><i class="fas fa-user"></i></div>
+<div class="creator-details">
+<h3 id="creatorDisplayName">Creator Name</h3>
+<p>Verified Creator • Joined 2024</p>
+</div>
+<button id="connectCreatorBtn" class="connect-btn"><i class="fas fa-user-plus"></i><span>Connect</span></button>
+</div>
+</section>
+
+<!-- Stats Grid -->
+<section class="stats-grid">
+<div class="stat-card"><div class="stat-icon"><i class="fas fa-eye"></i></div><div class="stat-content"><h4>Total Views</h4><p id="viewsCountFull">0</p></div></div>
+<div class="stat-card"><div class="stat-icon"><i class="fas fa-heart"></i></div><div class="stat-content"><h4>Likes</h4><p id="likesCount">0</p></div></div>
+<div class="stat-card"><div class="stat-icon"><i class="fas fa-clock"></i></div><div class="stat-content"><h4>Duration</h4><p id="contentDurationFull">0m 0s</p></div></div>
+<div class="stat-card"><div class="stat-icon"><i class="fas fa-tag"></i></div><div class="stat-content"><h4>Genre</h4><p id="contentGenre">--</p></div></div>
+</section>
+
+<!-- Description Section -->
+<section class="description-section"><h2>Description</h2><div class="description-content" id="contentDescriptionFull">Loading full description...</div></section>
+
+<!-- Comments Section -->
+<section class="comments-section">
+<div class="section-header"><h2 class="section-title">Comments <span id="commentsCount">(0)</span></h2><button id="refreshCommentsBtn" class="refresh-btn"><i class="fas fa-redo"></i> Refresh</button></div>
+<div class="add-comment"><div class="comment-avatar" id="userCommentAvatar"><i class="fas fa-user"></i></div><div class="comment-input-container"><textarea id="commentInput" placeholder="Sign in to add a comment..." disabled></textarea><button id="sendCommentBtn" class="send-comment-btn"><i class="fas fa-paper-plane"></i></button></div></div>
+<div class="comments-list" id="commentsList"><div class="no-comments" id="noComments"><i class="fas fa-comment-slash"></i><p>No comments yet. Be the first to comment!</p></div></div>
+</section>
+
+<!-- Continue Watching Section -->
+<section class="continue-watching-section" id="continueWatchingSection" style="display:none;">
+<div class="section-header">
+<h2 class="section-title">Continue Watching</h2>
+<button class="refresh-btn" id="refreshContinueBtn"><i class="fas fa-redo"></i></button>
+</div>
+<div class="content-grid" id="continueGrid"></div>
+</section>
+
+<!-- Recommendation Rails -->
+<section class="related-section" id="becauseYouWatchedRail" style="display:none;"></section>
+<section class="related-section" id="moreFromCreatorRail" style="display:none;"></section>
+<section class="related-section"><div class="section-header"><h2 class="section-title">Related Content</h2></div><div class="content-grid" id="relatedGrid"></div></section>
+</main>
+
+<!-- Footer -->
+<footer class="footer">
+<p>Bantu Stream Connect © 2025 • Built in South Africa • NO DNA, JUST RSA</p>
+<div class="footer-links"><a href="privacy-policy.html">Privacy Policy</a><a href="terms-of-service.html">Terms of Service</a><a href="support.html">Support</a></div>
+</footer>
+
+<!-- Toast Container -->
+<div id="toast-container"></div>
+
+<!-- Back to Top Button -->
+<button id="backToTopBtn" class="back-to-top"><i class="fas fa-arrow-up"></i></button>
+</div>
+
+<!-- Scripts -->
+<script>
+// Supabase configuration
+const SUPABASE_URL = 'https://ydnxqnbjoshvxteevemc.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzd<!DOCTYPE html>
+<html lang="en">
+<head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover">
   <title>Bantu Stream Connect - Content Detail</title>
