@@ -21,7 +21,7 @@ let isInitialized = false;
 let currentUserId = null;
 
 // ============================================
-// UI SCALE CONTROLLER
+// UI SCALE CONTROLLER - FIXED VERSION
 // ============================================
 class UIScaleController {
     constructor() {
@@ -34,6 +34,7 @@ class UIScaleController {
     init() {
         this.applyScale();
         this.setupEventListeners();
+        console.log('📏 UI Scale Controller initialized with scale:', this.scale);
     }
 
     setupEventListeners() {
@@ -79,6 +80,12 @@ class UIScaleController {
     }
 }
 
+// Initialize UI Scale Controller globally
+if (!window.uiScaleController) {
+    window.uiScaleController = new UIScaleController();
+    window.uiScaleController.init();
+}
+
 // ============================================
 // DOM READY INITIALIZATION
 // ============================================
@@ -115,24 +122,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     // ✅ Initialize streaming manager (PHASE 4)
     await initializeStreamingManager();
 
-    // Initialize all modals/panels - using correctly named functions
-setupContentDetailAnalytics();
-setupContentDetailSearch();
-setupContentDetailNotifications();
-setupContentDetailThemeSelector();
-setupContentDetailNavigation();
-
-// ============================================
-// HOME FEED INTEGRATION - ADD AT END OF DOMContentLoaded
-// ============================================
-    setupContentDetailSidebar();
-    setupContentDetailNavigation();
-    setupContentDetailThemeSelector();
-    setupContentDetailHeaderProfile();
-    setupContentDetailBackToTop();
+    // Initialize all modals/panels
+    setupContentDetailAnalytics();
     setupContentDetailSearch();
     setupContentDetailNotifications();
-    setupContentDetailAnalytics();
+    setupContentDetailThemeSelector();
+    setupContentDetailNavigation();
+
+    // ✅ HOME FEED INTEGRATION
+    setupContentDetailSidebar();
+    setupContentDetailHeaderProfile();
+    setupContentDetailBackToTop();
 
     // ✅ Load notifications with badge
     await loadNotifications();
@@ -170,19 +170,13 @@ setupContentDetailNavigation();
         }, 500);
     }
 
-    // ✅ Initialize UI Scale Controller
-    if (!window.uiScaleController) {
-        window.uiScaleController = new UIScaleController();
-        window.uiScaleController.init();
-        setupSidebarScaleControls();
-        setupGlobalScaleShortcuts();
-    }
-
     // ✅ Show app (hide loading screen)
-    document.getElementById('loading').style.display = 'none';
-    document.getElementById('app').style.display = 'block';
+    const loadingEl = document.getElementById('loading');
+    const appEl = document.getElementById('app');
+    if (loadingEl) loadingEl.style.display = 'none';
+    if (appEl) appEl.style.display = 'block';
 
-    console.log('✅ Content Detail FULLY INITIALIZED with all 8 features working!');
+    console.log('✅ Content Detail FULLY INITIALIZED with all features working!');
     console.log('✅ Home Feed Header & Sidebar Integration Complete');
 
     // ✅ Debug: Verify critical elements exist
@@ -590,6 +584,9 @@ function setupGlobalScaleShortcuts() {
         }
     });
 }
+
+// Call this after UI Scale Controller is initialized
+setupGlobalScaleShortcuts();
 
 // ============================================
 // PROFILE DROPDOWN TOGGLE
@@ -2858,7 +2855,7 @@ function setupConnectButtons() {
 // ============================================
 
 // ============================================
-// SIDEBAR SETUP
+// SIDEBAR SETUP - FIXED VERSION
 // ============================================
 function setupContentDetailSidebar() {
     const menuToggle = document.getElementById('menu-toggle');
@@ -3100,7 +3097,7 @@ function setupSidebarThemeToggle() {
 }
 
 // ============================================
-// SETUP SIDEBAR SCALE CONTROLS
+// SETUP SIDEBAR SCALE CONTROLS - FIXED VERSION
 // ============================================
 function setupSidebarScaleControls() {
     if (!window.uiScaleController) {
@@ -3114,29 +3111,35 @@ function setupSidebarScaleControls() {
     const scaleValue = document.getElementById('sidebar-scale-value');
 
     const updateDisplay = () => {
-        if (scaleValue) {
+        if (scaleValue && window.uiScaleController.getScale) {
             scaleValue.textContent = Math.round(window.uiScaleController.getScale() * 100) + '%';
         }
     };
 
     if (decreaseBtn) {
         decreaseBtn.addEventListener('click', () => {
-            window.uiScaleController.decrease();
-            updateDisplay();
+            if (window.uiScaleController.decrease) {
+                window.uiScaleController.decrease();
+                updateDisplay();
+            }
         });
     }
 
     if (increaseBtn) {
         increaseBtn.addEventListener('click', () => {
-            window.uiScaleController.increase();
-            updateDisplay();
+            if (window.uiScaleController.increase) {
+                window.uiScaleController.increase();
+                updateDisplay();
+            }
         });
     }
 
     if (resetBtn) {
         resetBtn.addEventListener('click', () => {
-            window.uiScaleController.reset();
-            updateDisplay();
+            if (window.uiScaleController.reset) {
+                window.uiScaleController.reset();
+                updateDisplay();
+            }
         });
     }
 
@@ -3413,7 +3416,8 @@ function setupContentDetailSearch() {
         closeSearchBtn.addEventListener('click', () => {
             searchModal.classList.remove('active');
             if (searchInput) searchInput.value = '';
-            document.getElementById('search-results-grid').innerHTML = '';
+            const resultsGrid = document.getElementById('search-results-grid');
+            if (resultsGrid) resultsGrid.innerHTML = '';
         });
     }
 
@@ -3421,7 +3425,8 @@ function setupContentDetailSearch() {
         if (e.target === searchModal) {
             searchModal.classList.remove('active');
             if (searchInput) searchInput.value = '';
-            document.getElementById('search-results-grid').innerHTML = '';
+            const resultsGrid = document.getElementById('search-results-grid');
+            if (resultsGrid) resultsGrid.innerHTML = '';
         }
     });
 
@@ -3643,14 +3648,19 @@ async function loadPersonalAnalytics() {
         const totalWatchTime = views?.reduce((acc, v) => acc + (v.view_duration || 0), 0) || 0;
         const hours = Math.floor(totalWatchTime / 3600);
 
-        document.getElementById('personal-watch-time').textContent = hours + 'h';
-        document.getElementById('personal-views').textContent = totalViews;
-        document.getElementById('personal-sessions').textContent = Math.ceil(totalViews / 5) || 1;
+        const watchTimeEl = document.getElementById('personal-watch-time');
+        const viewsEl = document.getElementById('personal-views');
+        const sessionsEl = document.getElementById('personal-sessions');
+        const returnRateEl = document.getElementById('return-rate');
+
+        if (watchTimeEl) watchTimeEl.textContent = hours + 'h';
+        if (viewsEl) viewsEl.textContent = totalViews;
+        if (sessionsEl) sessionsEl.textContent = Math.ceil(totalViews / 5) || 1;
 
         const uniqueDays = new Set(views?.map(v => new Date(v.created_at).toDateString())).size;
         const returnRate = uniqueDays > 0 ? Math.min(100, Math.floor((uniqueDays / 7) * 100)) : 0;
 
-        document.getElementById('return-rate').textContent = returnRate + '%';
+        if (returnRateEl) returnRateEl.textContent = returnRate + '%';
 
         console.log('✅ Personal analytics loaded');
     } catch (error) {
@@ -3687,27 +3697,29 @@ async function loadUserBadges() {
         const badgesGrid = document.getElementById('badges-grid');
         const badgesEarned = document.getElementById('badges-earned');
 
-        badgesGrid.innerHTML = allBadges.map(badge => {
-            const earned = window.userBadges.some(b => b.badge_name === badge.name);
+        if (badgesGrid) {
+            badgesGrid.innerHTML = allBadges.map(badge => {
+                const earned = window.userBadges.some(b => b.badge_name === badge.name);
 
-            return `
-                <div class="badge-item ${earned ? 'earned' : 'locked'}">
-                    <div class="badge-icon ${earned ? 'earned' : ''}">
-                        <i class="fas ${badge.icon}"></i>
+                return `
+                    <div class="badge-item ${earned ? 'earned' : 'locked'}">
+                        <div class="badge-icon ${earned ? 'earned' : ''}">
+                            <i class="fas ${badge.icon}"></i>
+                        </div>
+                        <div class="badge-info">
+                            <h4>${badge.name}</h4>
+                            <p>${badge.description}</p>
+                            ${earned ?
+                                `<span class="badge-earned-date">Earned!</span>` :
+                                `<span class="badge-requirement">Keep watching</span>`
+                            }
+                        </div>
                     </div>
-                    <div class="badge-info">
-                        <h4>${badge.name}</h4>
-                        <p>${badge.description}</p>
-                        ${earned ?
-                            `<span class="badge-earned-date">Earned!</span>` :
-                            `<span class="badge-requirement">Keep watching</span>`
-                        }
-                    </div>
-                </div>
-            `;
-        }).join('');
+                `;
+            }).join('');
+        }
 
-        badgesEarned.textContent = window.userBadges.length;
+        if (badgesEarned) badgesEarned.textContent = window.userBadges.length;
 
         console.log('✅ User badges loaded');
     } catch (error) {
@@ -3765,15 +3777,15 @@ async function loadWatchPartyContent() {
 // SHOW TOAST
 // ============================================
 function showToast(message, type = 'info') {
-    const container = document.getElementById('toast-container');
+    let container = document.getElementById('toast-container');
     if (!container) {
-        const newContainer = document.createElement('div');
-        newContainer.id = 'toast-container';
-        document.body.appendChild(newContainer);
+        container = document.createElement('div');
+        container.id = 'toast-container';
+        document.body.appendChild(container);
     }
 
     const toast = document.createElement('div');
-    toast.className = `toast toast-${type}`;
+    toast.className = `toast ${type}`;
     toast.innerHTML = `
         <i class="fas ${type === 'success' ? 'fa-check-circle' :
             type === 'error' ? 'fa-exclamation-circle' :
@@ -3794,7 +3806,7 @@ function showToast(message, type = 'info') {
 // UTILITY FUNCTIONS
 // ============================================
 function safeSetText(id, text) {
-    var el = document.getElementById(id);
+    const el = document.getElementById(id);
     if (el) {
         el.textContent = text || '';
     }
@@ -3804,7 +3816,7 @@ function formatDate(dateString) {
     if (!dateString) return '-';
 
     try {
-        var date = new Date(dateString);
+        const date = new Date(dateString);
         return date.toLocaleDateString('en-US', {
             year: 'numeric',
             month: 'short',
@@ -3821,9 +3833,9 @@ function formatDuration(seconds) {
     }
 
     seconds = Math.floor(seconds);
-    var hours = Math.floor(seconds / 3600);
-    var minutes = Math.floor((seconds % 3600) / 60);
-    var secs = seconds % 60;
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
 
     if (hours > 0) {
         return hours + 'h ' + minutes + 'm';
@@ -3853,7 +3865,7 @@ function truncateText(text, maxLength) {
 
 function escapeHtml(text) {
     if (!text) return '';
-    var div = document.createElement('div');
+    const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
 }
@@ -3862,12 +3874,12 @@ function formatCommentTime(timestamp) {
     if (!timestamp) return 'Just now';
 
     try {
-        var date = new Date(timestamp);
-        var now = new Date();
-        var diffMs = now - date;
-        var diffMins = Math.floor(diffMs / 60000);
-        var diffHours = Math.floor(diffMs / 3600000);
-        var diffDays = Math.floor(diffMs / 86400000);
+        const date = new Date(timestamp);
+        const now = new Date();
+        const diffMs = now - date;
+        const diffMins = Math.floor(diffMs / 60000);
+        const diffHours = Math.floor(diffMs / 3600000);
+        const diffDays = Math.floor(diffMs / 86400000);
 
         if (diffMins < 1) return 'Just now';
         if (diffMins < 60) return diffMins + ' min ago';
@@ -3894,7 +3906,7 @@ function getInitials(name) {
 async function loadContinueWatching(userId, limit) {
     if (limit === undefined) limit = 8;
 
-    var section = document.getElementById('continueWatchingSection');
+    const section = document.getElementById('continueWatchingSection');
     if (!section) return;
 
     if (!userId || !window.supabaseClient) {
@@ -3903,7 +3915,7 @@ async function loadContinueWatching(userId, limit) {
     }
 
     try {
-        var { data, error } = await window.supabaseClient
+        const { data, error } = await window.supabaseClient
             .from('watch_progress')
             .select(`
                 content_id,
@@ -3950,25 +3962,25 @@ async function loadContinueWatching(userId, limit) {
 }
 
 function renderContinueWatching(items) {
-    var container = document.getElementById('continueGrid');
+    const container = document.getElementById('continueGrid');
     if (!container) return;
 
     container.innerHTML = items.map(function(item) {
-        var content = item.Content;
+        const content = item.Content;
         if (!content) return '';
 
-        var progress = content.duration > 0
+        const progress = content.duration > 0
             ? Math.min(100, Math.round((item.last_position / content.duration) * 100))
             : 0;
 
-        var timeWatched = formatDuration(item.last_position);
-        var totalTime = formatDuration(content.duration);
+        const timeWatched = formatDuration(item.last_position);
+        const totalTime = formatDuration(content.duration);
 
-        var thumbnailUrl = window.SupabaseHelper?.fixMediaUrl?.(content.thumbnail_url)
+        const thumbnailUrl = window.SupabaseHelper?.fixMediaUrl?.(content.thumbnail_url)
             || content.thumbnail_url
             || 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop';
 
-        var creatorName = content.user_profiles?.full_name
+        const creatorName = content.user_profiles?.full_name
             || content.user_profiles?.username
             || 'Creator';
 
@@ -4003,7 +4015,7 @@ function renderContinueWatching(items) {
     container.querySelectorAll('.continue-card').forEach(function(card) {
         card.addEventListener('click', function(e) {
             if (window.track?.continueWatchingClick) {
-                var contentId = card.dataset.contentId;
+                const contentId = card.dataset.contentId;
                 window.track.continueWatchingClick(contentId);
             }
         });
@@ -4011,7 +4023,7 @@ function renderContinueWatching(items) {
 }
 
 function setupContinueWatchingRefresh() {
-    var refreshBtn = document.getElementById('refreshContinueBtn');
+    const refreshBtn = document.getElementById('refreshContinueBtn');
     if (!refreshBtn) return;
 
     refreshBtn.addEventListener('click', async function() {
@@ -4049,6 +4061,7 @@ window.closeVideoPlayer = closeVideoPlayer;
 window.uiScaleController = window.uiScaleController;
 window.toggleProfileDropdown = toggleProfileDropdown;
 window.fixAvatarUrl = fixAvatarUrl;
+window.showToast = showToast;
 
 // ============================================
 // PAGE UNLOAD HANDLER
@@ -4065,4 +4078,4 @@ window.addEventListener('beforeunload', function() {
     }
 });
 
-console.log('✅ Content detail script FULLY LOADED with all 8 features working!');
+console.log('✅ Content detail script FULLY LOADED with all features working!');
