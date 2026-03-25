@@ -3243,3 +3243,162 @@ input:checked + .toggle-slider:before {
     opacity: 1 !important;
     pointer-events: all !important;
 }
+
+/* ============================================ */
+/* ✅ FIX 2: Header Profile Button - Match Home Feed Sizing */
+/* ============================================ */
+.profile-btn {
+    background: rgba(255, 255, 255, 0.1) !important;
+    border: 1px solid var(--card-border) !important;
+    border-radius: 2.5rem !important;
+    padding: 0.3125rem 0.75rem 0.3125rem 0.3125rem !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 0.5rem !important;
+    cursor: pointer !important;
+    transition: all 0.3s ease !important;
+    min-width: unset !important;
+    height: auto !important;
+}
+
+.profile-btn:hover {
+    background: rgba(255, 255, 255, 0.15) !important;
+    border-color: var(--warm-gold) !important;
+}
+
+.profile-placeholder {
+    width: 2.25rem !important;
+    height: 2.25rem !important;
+    border-radius: 50% !important;
+    background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold)) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    color: white !important;
+    font-size: var(--font-sm) !important;
+    overflow: hidden !important;
+    flex-shrink: 0 !important;
+}
+
+.profile-placeholder img {
+    width: 100% !important;
+    height: 100% !important;
+    border-radius: 50% !important;
+    object-fit: cover !important;
+}
+
+.profile-name {
+    color: var(--soft-white) !important;
+    font-size: var(--font-sm) !important;
+    font-weight: 500 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    max-width: 120px !important;
+}
+
+/* Responsive adjustments for profile name */
+@media (max-width: 768px) {
+    .profile-name {
+        display: none !important;
+    }
+    .profile-placeholder {
+        width: 2rem !important;
+        height: 2rem !important;
+    }
+}
+
+/* ============================================ */
+/* ✅ FIX 3: Sidebar Scale Control - Prevent Button Overlap */
+/* ============================================ */
+.sidebar-scale-control {
+    padding: 0.75rem !important;
+    background: rgba(255, 255, 255, 0.05) !important;
+    border-radius: 0.75rem !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 0.5rem !important;
+    min-width: 0 !important;
+}
+
+.scale-control-row {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    margin-bottom: 0.5rem !important;
+    gap: 0.5rem !important;
+    flex-wrap: wrap !important;
+}
+
+.scale-control-row:last-child {
+    margin-bottom: 0 !important;
+}
+
+.scale-btn {
+    width: 2rem !important;
+    height: 2rem !important;
+    border-radius: 50% !important;
+    background: rgba(255, 255, 255, 0.1) !important;
+    border: none !important;
+    color: var(--soft-white) !important;
+    cursor: pointer !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    transition: all 0.3s ease !important;
+    flex-shrink: 0 !important;
+    font-size: 0.875rem !important;
+    padding: 0 !important;
+    white-space: nowrap !important;
+}
+
+/* Reset button - Full width on its own row */
+.scale-control-row:last-child .scale-btn {
+    width: 100% !important;
+    border-radius: 0.5rem !important;
+    justify-content: center !important;
+    gap: 0.5rem !important;
+    font-size: 0.8rem !important;
+    padding: 0.5rem !important;
+    height: auto !important;
+    min-height: 2.5rem !important;
+}
+
+.scale-value {
+    font-size: var(--font-sm) !important;
+    color: var(--soft-white) !important;
+    min-width: 3rem !important;
+    text-align: center !important;
+    font-weight: 600 !important;
+    white-space: nowrap !important;
+}
+
+/* Mobile adjustments for scale control */
+@media (max-width: 768px) {
+    .sidebar-scale-control {
+        padding: 0.5rem !important;
+    }
+    .scale-control-row {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 0.75rem !important;
+    }
+    .scale-control-row:first-child {
+        flex-direction: row !important;
+        justify-content: space-between !important;
+        width: 100% !important;
+    }
+    .scale-value {
+        min-width: 2.5rem !important;
+    }
+    .scale-btn {
+        width: 1.75rem !important;
+        height: 1.75rem !important;
+        font-size: 0.75rem !important;
+    }
+    .scale-control-row:last-child .scale-btn {
+        width: 100% !important;
+        font-size: 0.75rem !important;
+        padding: 0.4rem !important;
+    }
+}
