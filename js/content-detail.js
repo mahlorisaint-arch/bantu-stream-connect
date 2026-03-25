@@ -23,6 +23,7 @@
 // ✅ FIXED: Header profile icon sizing matches home feed
 // ✅ FIXED: Sidebar UI resize section button overlapping
 // ✅ FIXED: Navigation menu button opens sidebar instead of redirecting to dashboard
+// ✅ FIXED: Comments "sign in to comment" bug when already authenticated
 
 console.log('🎬 Content Detail Initializing with RLS-compliant fixes and home feed UI integration...');
 
@@ -852,6 +853,68 @@ function setupNavButtonScrollAnimation() {
     });
 }
 
+// ============================================
+// ✅ FIX: Reliable comment input state update
+// ============================================
+async function updateCommentInputState() {
+    const commentInput = document.getElementById('commentInput');
+    const sendCommentBtn = document.getElementById('sendCommentBtn');
+    const commentAvatar = document.getElementById('userCommentAvatar');
+    
+    if (!commentInput || !sendCommentBtn) return;
+    
+    // More reliable auth check with fallbacks
+    let isAuthenticated = false;
+    let userProfile = null;
+    
+    if (window.AuthHelper?.isAuthenticated?.()) {
+        isAuthenticated = true;
+        userProfile = window.AuthHelper.getUserProfile?.();
+    } else if (window.currentUser?.id) {
+        isAuthenticated = true;
+        userProfile = window.currentUser;
+    } else {
+        try {
+            const { data } = await window.supabaseClient?.auth?.getSession?.();
+            isAuthenticated = !!data?.session;
+            if (isAuthenticated && window.AuthHelper?.getUserProfile) {
+                userProfile = window.AuthHelper.getUserProfile();
+            }
+        } catch (e) {
+            console.warn('Auth check fallback:', e);
+        }
+    }
+    
+    if (isAuthenticated && userProfile) {
+        // Enable comment input
+        commentInput.disabled = false;
+        commentInput.placeholder = 'Write a comment...';
+        sendCommentBtn.disabled = false;
+        
+        // Update avatar
+        const displayName = userProfile?.full_name || userProfile?.username || userProfile?.email?.split('@')[0] || 'User';
+        const avatarUrl = userProfile?.avatar_url || window.AuthHelper?.getAvatarUrl?.();
+        
+        if (commentAvatar) {
+            if (avatarUrl && avatarUrl !== 'null') {
+                const fixedUrl = window.SupabaseHelper?.fixMediaUrl?.(avatarUrl) || avatarUrl;
+                commentAvatar.innerHTML = `<img src="${fixedUrl}" alt="${displayName}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`;
+            } else {
+                const initial = displayName.charAt(0).toUpperCase();
+                commentAvatar.innerHTML = `<div style="width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,#1D4ED8,#F59E0B);display:flex;align-items:center;justify-content:center;color:white;font-weight:bold">${initial}</div>`;
+            }
+        }
+    } else {
+        // Disable for guests
+        commentInput.disabled = true;
+        commentInput.placeholder = 'Sign in to add a comment...';
+        sendCommentBtn.disabled = true;
+        if (commentAvatar) {
+            commentAvatar.innerHTML = '<i class="fas fa-user"></i>';
+        }
+    }
+}
+
 // Initialize when DOM is ready
 document.addEventListener('DOMContentLoaded', async () => {
     console.log('✅ DOM loaded, starting initialization with home feed UI...');
@@ -923,6 +986,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     // ✅ After auth initialization, update sidebar profile again if needed
     if (window.AuthHelper?.isAuthenticated?.()) {
         await updateSidebarProfile();
+    }
+    
+    // ✅ FIX: Update comment input state after a brief delay to ensure auth is ready
+    setTimeout(updateCommentInputState, 1500);
+    
+    // Also update when auth state changes
+    if (window.supabaseClient?.auth) {
+        window.supabaseClient.auth.onAuthStateChange(async () => {
+            setTimeout(updateCommentInputState, 300);
+        });
     }
     
     // PHASE 1: Load Continue Watching section (SINGLE SECTION - now below comments)
@@ -1686,6 +1759,9 @@ function setupAuthListeners() {
             await updateHeaderProfile();
             updateProfileSwitcher();
             
+            // ✅ Update comment input state after sign in
+            setTimeout(updateCommentInputState, 300);
+            
         } else if (event === 'SIGNED_OUT') {
             currentUserId = null;
             playlistManager = null;
@@ -1719,6 +1795,9 @@ function setupAuthListeners() {
             // Reset home feed UI components
             resetSidebarProfile();
             resetHeaderProfile();
+            
+            // ✅ Update comment input state after sign out
+            setTimeout(updateCommentInputState, 300);
         }
     });
     
@@ -1728,6 +1807,9 @@ function setupAuthListeners() {
     } else {
         resetProfileUI();
     }
+    
+    // ✅ Initial comment input state update
+    setTimeout(updateCommentInputState, 500);
 }
 
 function updateProfileUI() {
@@ -1778,38 +1860,8 @@ function updateProfileUI() {
         };
     }
     
-    const commentInput = document.getElementById('commentInput');
-    const sendCommentBtn = document.getElementById('sendCommentBtn');
-    
-    if (commentInput && sendCommentBtn) {
-        if (window.AuthHelper?.isAuthenticated?.()) {
-            commentInput.disabled = false;
-            commentInput.placeholder = 'Write a comment...';
-            sendCommentBtn.disabled = false;
-            
-            const userProfile = window.AuthHelper.getUserProfile();
-            const displayName = window.AuthHelper.getDisplayName();
-            const avatarUrl = window.AuthHelper.getAvatarUrl();
-            
-            const commentAvatar = document.getElementById('userCommentAvatar');
-            if (commentAvatar) {
-                if (avatarUrl) {
-                    commentAvatar.innerHTML = `<img src="${avatarUrl}" alt="${displayName}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`;
-                } else {
-                    commentAvatar.innerHTML = `<div style="width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,#1D4ED8,#F59E0B);display:flex;align-items:center;justify-content:center;color:white;font-weight:bold">${displayName.charAt(0)}</div>`;
-                }
-            }
-        } else {
-            commentInput.disabled = true;
-            commentInput.placeholder = 'Sign in to add a comment...';
-            sendCommentBtn.disabled = true;
-            
-            const commentAvatar = document.getElementById('userCommentAvatar');
-            if (commentAvatar) {
-                commentAvatar.innerHTML = '<i class="fas fa-user"></i>';
-            }
-        }
-    }
+    // ✅ Update comment input state directly (no duplicate check)
+    updateCommentInputState();
 }
 
 function resetProfileUI() {
@@ -1826,6 +1878,9 @@ function resetProfileUI() {
     profileBtn.onclick = () => {
         window.location.href = `login.html?redirect=${encodeURIComponent(window.location.href)}`;
     };
+    
+    // ✅ Update comment input state for guest
+    updateCommentInputState();
 }
 
 // Reset sidebar profile for guest state
