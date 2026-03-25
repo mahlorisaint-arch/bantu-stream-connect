@@ -17,6 +17,7 @@
 // 🎵 AUDIO SUPPORT: Added MP3, WAV, OGG playback with thumbnail as poster
 // 🎨 CREATOR AVATAR FIX: Show actual creator profile picture from user_profiles
 // 🔄 PLATFORM CONSISTENCY: Integrated home feed sidebar, header, navigation, and utilities
+// ✅ FIXED: checkConnectionStatus now returns a Promise to prevent ".then is not a function" error
 
 console.log('🎬 Content Detail Initializing with RLS-compliant fixes and home feed UI integration...');
 
@@ -925,9 +926,23 @@ document.addEventListener('DOMContentLoaded', async () => {
         }, 500);
     }
     
-    // Show app
-    document.getElementById('loading').style.display = 'none';
-    document.getElementById('app').style.display = 'block';
+    // Show app with fallback timeout
+    setTimeout(() => {
+        const loading = document.getElementById('loading');
+        const app = document.getElementById('app');
+        if (loading && app) {
+            loading.style.display = 'none';
+            app.style.display = 'block';
+        }
+    }, 3000); // Fallback after 3 seconds
+    
+    // Hide loading and show app
+    const loading = document.getElementById('loading');
+    const app = document.getElementById('app');
+    if (loading && app) {
+        loading.style.display = 'none';
+        app.style.display = 'block';
+    }
     
     console.log('✅ Content Detail fully initialized with RLS-compliant fixes, PHASE 4 Streaming, and HOME FEED UI');
 });
@@ -3258,29 +3273,41 @@ NO DNA, JUST RSA
 
 // ====================================================
 // SINGLE-TABLE FIX: CONNECT BUTTONS WITH CONNECTORS TABLE
+// ✅ FIXED: Always returns a Promise to prevent ".then is not a function" error
 // ====================================================
 function setupConnectButtons() {
+    // ✅ FIXED: Always return a Promise
     function checkConnectionStatus(creatorId) {
-        if (!window.AuthHelper?.isAuthenticated() || !creatorId) return false;
-        var userProfile = window.AuthHelper.getUserProfile();
-        if (!userProfile?.id) return false;
-        
-        return window.supabaseClient
-            .from('connectors')
-            .select('id')
-            .eq('connector_id', userProfile.id)
-            .eq('connected_id', creatorId)
-            .single()
-            .then(function(result) {
-                return !result.error && result.data !== null;
-            })
-            .catch(function() {
-                return false;
-            });
+        return new Promise(async (resolve) => {
+            if (!window.AuthHelper?.isAuthenticated() || !creatorId) {
+                resolve(false);
+                return;
+            }
+            const userProfile = window.AuthHelper.getUserProfile();
+            if (!userProfile?.id) {
+                resolve(false);
+                return;
+            }
+            
+            try {
+                const { data, error } = await window.supabaseClient
+                    .from('connectors')
+                    .select('id')
+                    .eq('connector_id', userProfile.id)
+                    .eq('connected_id', creatorId)
+                    .single();
+                
+                resolve(!error && data !== null);
+            } catch (err) {
+                console.warn('Connection check error:', err);
+                resolve(false);
+            }
+        });
     }
     
     const connectBtn = document.getElementById('connectBtn');
     if (connectBtn && currentContent?.creator_id) {
+        // ✅ Now .then() will always work
         checkConnectionStatus(currentContent.creator_id).then(function(isConnected) {
             if (isConnected) {
                 connectBtn.classList.add('connected');
@@ -3290,24 +3317,24 @@ function setupConnectButtons() {
         
         connectBtn.addEventListener('click', async function() {
             if (!window.AuthHelper?.isAuthenticated?.()) {
-                var shouldLogin = confirm('You need to sign in to connect. Would you like to sign in now?');
+                const shouldLogin = confirm('You need to sign in to connect. Would you like to sign in now?');
                 if (shouldLogin) {
                     window.location.href = `login.html?redirect=${encodeURIComponent(window.location.href)}`;
                 }
                 return;
             }
             
-            var userProfile = window.AuthHelper.getUserProfile();
+            const userProfile = window.AuthHelper.getUserProfile();
             if (!userProfile?.id) {
                 showToast('User profile not found', 'error');
                 return;
             }
             
-            var isConnected = connectBtn.classList.contains('connected');
+            const isConnected = connectBtn.classList.contains('connected');
             
             try {
                 if (isConnected) {
-                    var { error } = await window.supabaseClient
+                    const { error } = await window.supabaseClient
                         .from('connectors')
                         .delete()
                         .eq('connector_id', userProfile.id)
@@ -3318,7 +3345,7 @@ function setupConnectButtons() {
                     connectBtn.innerHTML = '<i class="fas fa-user-plus"></i><span>Connect</span>';
                     showToast('Disconnected', 'info');
                 } else {
-                    var { error } = await window.supabaseClient
+                    const { error } = await window.supabaseClient
                         .from('connectors')
                         .insert({
                             connector_id: userProfile.id,
@@ -3353,24 +3380,24 @@ function setupConnectButtons() {
         
         connectCreatorBtn.addEventListener('click', async function() {
             if (!window.AuthHelper?.isAuthenticated?.()) {
-                var shouldLogin = confirm('You need to sign in to connect. Would you like to sign in now?');
+                const shouldLogin = confirm('You need to sign in to connect. Would you like to sign in now?');
                 if (shouldLogin) {
                     window.location.href = `login.html?redirect=${encodeURIComponent(window.location.href)}`;
                 }
                 return;
             }
             
-            var userProfile = window.AuthHelper.getUserProfile();
+            const userProfile = window.AuthHelper.getUserProfile();
             if (!userProfile?.id) {
                 showToast('User profile not found', 'error');
                 return;
             }
             
-            var isConnected = connectCreatorBtn.classList.contains('connected');
+            const isConnected = connectCreatorBtn.classList.contains('connected');
             
             try {
                 if (isConnected) {
-                    var { error } = await window.supabaseClient
+                    const { error } = await window.supabaseClient
                         .from('connectors')
                         .delete()
                         .eq('connector_id', userProfile.id)
@@ -3381,7 +3408,7 @@ function setupConnectButtons() {
                     connectCreatorBtn.innerHTML = '<i class="fas fa-user-plus"></i><span>Connect</span>';
                     showToast('Disconnected', 'info');
                 } else {
-                    var { error } = await window.supabaseClient
+                    const { error } = await window.supabaseClient
                         .from('connectors')
                         .insert({
                             connector_id: userProfile.id,
@@ -3597,19 +3624,6 @@ function initSearchModal() {
     if (sortFilter) {
         sortFilter.addEventListener('change', triggerSearch);
     }
-}
-
-function debounce(func, wait) {
-    var timeout;
-    return function executedFunction() {
-        var args = arguments;
-        var later = function() {
-            clearTimeout(timeout);
-            func.apply(null, args);
-        };
-        clearTimeout(timeout);
-        timeout = setTimeout(later, wait);
-    };
 }
 
 function triggerSearch() {
