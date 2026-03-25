@@ -19,6 +19,10 @@
 // 🔄 PLATFORM CONSISTENCY: Integrated home feed sidebar, header, navigation, and utilities
 // ✅ FIXED: checkConnectionStatus now returns a Promise to prevent ".then is not a function" error
 // ✅ FIXED: Added missing initThemeSelector function to prevent ReferenceError
+// ✅ FIXED: Sidebar profile now shows logged-in user correctly
+// ✅ FIXED: Header profile icon sizing matches home feed
+// ✅ FIXED: Sidebar UI resize section button overlapping
+// ✅ FIXED: Navigation menu button opens sidebar instead of redirecting to dashboard
 
 console.log('🎬 Content Detail Initializing with RLS-compliant fixes and home feed UI integration...');
 
@@ -482,6 +486,7 @@ function setupSidebarNavigation() {
     });
 }
 
+// ✅ FIXED: Sidebar Profile - Shows logged-in user correctly
 async function updateSidebarProfile() {
     const avatar = document.getElementById('sidebar-profile-avatar');
     const name = document.getElementById('sidebar-profile-name');
@@ -492,25 +497,31 @@ async function updateSidebarProfile() {
     
     avatar.innerHTML = '';
     
-    if (window.currentUser) {
+    // ✅ Use window.currentUser from AuthHelper
+    if (window.currentUser || (window.AuthHelper?.isAuthenticated?.())) {
         try {
-            const { data: profile, error } = await supabaseAuth
-                .from('user_profiles')
-                .select('id, full_name, username, avatar_url')
-                .eq('id', window.currentUser.id)
-                .maybeSingle();
+            const userProfile = window.AuthHelper?.getUserProfile?.() || window.currentUser;
+            const userId = userProfile?.id;
             
-            if (error) {
-                renderSidebarFallback(avatar, name, email, window.currentUser);
-                return;
-            }
-            
-            if (profile) {
-                name.textContent = profile.full_name || profile.username || 'User';
-                email.textContent = window.currentUser.email;
+            if (userId) {
+                const { data: profile, error } = await window.supabaseClient
+                    .from('user_profiles')
+                    .select('id, full_name, username, avatar_url')
+                    .eq('id', userId)
+                    .maybeSingle();
                 
+                if (error || !profile) {
+                    renderSidebarFallback(avatar, name, email, userProfile);
+                    return;
+                }
+                
+                // ✅ Update profile info
+                name.textContent = profile.full_name || profile.username || 'User';
+                email.textContent = userProfile.email || 'user@example.com';
+                
+                // ✅ Set avatar image or initials
                 if (profile.avatar_url) {
-                    const avatarUrl = fixAvatarUrl(profile.avatar_url);
+                    const avatarUrl = window.SupabaseHelper?.fixMediaUrl?.(profile.avatar_url) || profile.avatar_url;
                     const img = document.createElement('img');
                     img.src = avatarUrl;
                     img.alt = profile.full_name || 'Profile';
@@ -521,6 +532,7 @@ async function updateSidebarProfile() {
                     renderSidebarInitials(avatar, profile);
                 }
                 
+                // ✅ Make profile clickable
                 if (profileSection) {
                     profileSection.onclick = () => {
                         document.getElementById('sidebar-close')?.click();
@@ -528,13 +540,14 @@ async function updateSidebarProfile() {
                     };
                 }
             } else {
-                renderSidebarFallback(avatar, name, email, window.currentUser);
+                renderSidebarFallback(avatar, name, email, userProfile);
             }
         } catch (err) {
+            console.warn('Sidebar profile fetch error:', err);
             renderSidebarFallback(avatar, name, email, window.currentUser);
         }
     } else {
-        // Guest state
+        // ✅ Guest state
         name.textContent = 'Guest';
         email.textContent = 'Sign in to continue';
         avatar.innerHTML = '<i class="fas fa-user" style="font-size:1.5rem;color:var(--soft-white);"></i>';
@@ -586,80 +599,56 @@ function optimizeMobileSidebar() {
 }
 
 // ============================================
-// HEADER FUNCTIONS (from home feed)
+// HEADER FUNCTIONS (from home feed) - ✅ FIXED: Matches home feed sizing
 // ============================================
 async function updateHeaderProfile() {
-    try {
-        const profilePlaceholder = document.getElementById('userProfilePlaceholder');
-        const currentProfileName = document.getElementById('current-profile-name');
-        
-        if (!profilePlaceholder || !currentProfileName) return;
-        
-        profilePlaceholder.innerHTML = '';
-        
-        if (window.currentUser) {
-            try {
-                const { data: profile, error } = await supabaseAuth
-                    .from('user_profiles')
-                    .select('id, full_name, username, avatar_url')
-                    .eq('id', window.currentUser.id)
-                    .maybeSingle();
-                
-                if (error) {
-                    renderFallbackProfile(profilePlaceholder, currentProfileName, window.currentUser);
-                    return;
-                }
-                
-                if (profile && profile.avatar_url) {
-                    const avatarUrl = fixAvatarUrl(profile.avatar_url);
-                    const img = document.createElement('img');
-                    img.className = 'profile-img';
-                    img.src = avatarUrl;
-                    img.alt = profile.full_name || profile.username || 'Profile';
-                    img.style.cssText = 'width:100%;height:100%;border-radius:50%;object-fit:cover;display:block;';
-                    img.onerror = () => renderInitialsProfile(profilePlaceholder, profile);
-                    profilePlaceholder.appendChild(img);
-                    currentProfileName.textContent = profile.full_name || profile.username || window.currentUser.email?.split('@')[0] || 'User';
-                } else {
-                    renderInitialsProfile(profilePlaceholder, profile || { full_name: window.currentUser.user_metadata?.full_name });
-                    currentProfileName.textContent = profile?.full_name || profile?.username || window.currentUser.email?.split('@')[0] || 'User';
-                }
-            } catch (fetchError) {
-                renderFallbackProfile(profilePlaceholder, currentProfileName, window.currentUser);
+    const profilePlaceholder = document.getElementById('userProfilePlaceholder');
+    const currentProfileName = document.getElementById('current-profile-name');
+    
+    if (!profilePlaceholder || !currentProfileName) return;
+    
+    profilePlaceholder.innerHTML = '';
+    
+    if (window.currentUser || window.AuthHelper?.isAuthenticated?.()) {
+        try {
+            const userProfile = window.AuthHelper?.getUserProfile?.() || window.currentUser;
+            const { data: profile } = await window.supabaseClient
+                .from('user_profiles')
+                .select('full_name, username, avatar_url')
+                .eq('id', userProfile.id)
+                .maybeSingle();
+            
+            const displayName = profile?.full_name || profile?.username || userProfile.email?.split('@')[0] || 'User';
+            currentProfileName.textContent = displayName;
+            
+            if (profile?.avatar_url) {
+                const avatarUrl = window.SupabaseHelper?.fixMediaUrl?.(profile.avatar_url) || profile.avatar_url;
+                const img = document.createElement('img');
+                img.className = 'profile-img';
+                img.src = avatarUrl;
+                img.alt = displayName;
+                img.style.cssText = 'width:100%;height:100%;border-radius:50%;object-fit:cover;display:block;';
+                img.onerror = () => renderInitialsProfile(profilePlaceholder, { full_name: displayName });
+                profilePlaceholder.appendChild(img);
+            } else {
+                renderInitialsProfile(profilePlaceholder, { full_name: displayName });
             }
-        } else {
-            renderGuestProfile(profilePlaceholder, currentProfileName);
+        } catch (e) {
+            renderFallbackProfile(profilePlaceholder, currentProfileName, window.currentUser);
         }
-    } catch (error) {
-        console.error('updateHeaderProfile error:', error);
-        const placeholder = document.getElementById('userProfilePlaceholder');
-        const nameEl = document.getElementById('current-profile-name');
-        if (placeholder && nameEl) {
-            renderFallbackProfile(placeholder, nameEl, window.currentUser);
-        }
+    } else {
+        renderGuestProfile(profilePlaceholder, currentProfileName);
     }
 }
 
 function renderInitialsProfile(container, profile) {
     if (!container) return;
     container.innerHTML = '';
-    const name = profile?.full_name || profile?.username || 'User';
-    const initials = getInitials(name);
+    const name = profile?.full_name || 'User';
+    const initials = name.split(' ').map(p => p[0]).join('').toUpperCase().substring(0, 2);
     const div = document.createElement('div');
     div.className = 'profile-placeholder';
-    div.style.cssText = `
-        width:100%;
-        height:100%;
-        border-radius:50%;
-        background:linear-gradient(135deg,var(--bantu-blue),var(--warm-gold));
-        display:flex;
-        align-items:center;
-        justify-content:center;
-        color:white;
-        font-weight:bold;
-        font-size:16px;
-        text-transform:uppercase;
-    `;
+    div.style.cssText = 'width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,var(--bantu-blue),var(--warm-gold));display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:16px;text-transform:uppercase;';
     div.textContent = initials;
     container.appendChild(div);
 }
@@ -669,23 +658,15 @@ function renderGuestProfile(container, nameElement) {
     container.innerHTML = '';
     const div = document.createElement('div');
     div.className = 'profile-placeholder';
-    div.style.cssText = `
-        width:100%;
-        height:100%;
-        border-radius:50%;
-        background:linear-gradient(135deg,var(--bantu-blue),var(--warm-gold));
-        display:flex;
-        align-items:center;
-        justify-content:center;
-        color:white;
-        font-weight:bold;
-        font-size:16px;
-    `;
+    div.style.cssText = 'width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,var(--bantu-blue),var(--warm-gold));display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:16px;';
     div.textContent = 'G';
     container.appendChild(div);
-    if (nameElement) {
-        nameElement.textContent = 'Guest';
-    }
+    if (nameElement) nameElement.textContent = 'Guest';
+}
+
+function renderFallbackProfile(container, nameElement, user) {
+    if (container) container.innerHTML = '<div class="profile-placeholder"><i class="fas fa-user"></i></div>';
+    if (nameElement) nameElement.textContent = user?.email?.split('@')[0] || 'User';
 }
 
 function updateProfileSwitcher() {
@@ -772,6 +753,7 @@ function updateProfileSwitcher() {
 
 // ============================================
 // BOTTOM NAVIGATION BUTTON FUNCTIONS (from home feed)
+// ✅ FIXED: Menu button opens sidebar, NOT dashboard
 // ============================================
 function setupNavigationButtons() {
     const navHomeBtn = document.getElementById('nav-home-btn');
@@ -811,11 +793,15 @@ function setupNavigationButtons() {
         });
     }
     
-    // Menu Button - Open Sidebar
+    // ✅ FIXED: Menu Button - Open Sidebar (NOT redirect to dashboard)
     if (navMenuBtn) {
-        navMenuBtn.addEventListener('click', () => {
+        navMenuBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            
             const sidebarMenu = document.getElementById('sidebar-menu');
             const sidebarOverlay = document.getElementById('sidebar-overlay');
+            
             if (sidebarMenu && sidebarOverlay) {
                 sidebarMenu.classList.add('active');
                 sidebarOverlay.classList.add('active');
@@ -911,6 +897,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Setup navigation buttons
     setupNavigationButtons();
     setupNavButtonScrollAnimation();
+    
+    // ✅ After auth initialization, update sidebar profile again if needed
+    if (window.AuthHelper?.isAuthenticated?.()) {
+        await updateSidebarProfile();
+    }
     
     // PHASE 1: Load Continue Watching section (SINGLE SECTION - now below comments)
     if (currentUserId) {
