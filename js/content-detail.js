@@ -295,6 +295,7 @@ function setupCompleteSidebar() {
     window.addEventListener('resize', () => optimizeMobileSidebar());
 }
 
+// ✅ FIXED: Header menu button - Opens sidebar ONLY (no redirect)
 function setupMobileSidebar() {
     const menuToggle = document.getElementById('menu-toggle');
     const sidebarClose = document.getElementById('sidebar-close');
@@ -315,10 +316,18 @@ function setupMobileSidebar() {
         document.body.style.overflow = '';
     };
     
-    menuToggle.addEventListener('click', (e) => {
-        e.stopPropagation();
-        openSidebar();
-    });
+    // ✅ FIXED: Header menu button - Remove existing listeners by cloning, then open sidebar ONLY
+    if (menuToggle) {
+        const newMenuToggle = menuToggle.cloneNode(true);
+        menuToggle.parentNode.replaceChild(newMenuToggle, menuToggle);
+        
+        newMenuToggle.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('📱 Header menu button clicked - opening sidebar');
+            openSidebar();
+        });
+    }
     
     sidebarClose.addEventListener('click', closeSidebar);
     sidebarOverlay.addEventListener('click', closeSidebar);
@@ -561,6 +570,7 @@ async function updateSidebarProfile() {
     }
 }
 
+// ✅ FIXED: Sidebar Profile Avatar Initials Rendering - Properly centered
 function renderSidebarInitials(container, profile) {
     if (!container) return;
     container.innerHTML = '';
@@ -568,14 +578,15 @@ function renderSidebarInitials(container, profile) {
     const initials = getInitials(name);
     const span = document.createElement('span');
     span.style.cssText = `
-        font-size:1.2rem;
-        font-weight:bold;
-        color:var(--soft-white);
-        display:flex;
-        align-items:center;
-        justify-content:center;
-        width:100%;
-        height:100%;
+        font-size: 1.2rem;
+        font-weight: bold;
+        color: var(--soft-white);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        height: 100%;
+        line-height: 1;
     `;
     span.textContent = initials;
     container.appendChild(span);
@@ -763,14 +774,16 @@ function setupNavigationButtons() {
     
     // Home Button - Navigate to Home
     if (navHomeBtn) {
-        navHomeBtn.addEventListener('click', () => {
+        navHomeBtn.addEventListener('click', (e) => {
+            e.preventDefault();
             window.location.href = 'index.html';
         });
     }
     
     // Create Content Button - Check auth first
     if (navCreateBtn) {
-        navCreateBtn.addEventListener('click', async () => {
+        navCreateBtn.addEventListener('click', async (e) => {
+            e.preventDefault();
             const { data } = await supabaseAuth.auth.getSession();
             if (data?.session) {
                 window.location.href = 'creator-upload.html';
@@ -783,7 +796,8 @@ function setupNavigationButtons() {
     
     // Watch History Button
     if (navHistoryBtn) {
-        navHistoryBtn.addEventListener('click', () => {
+        navHistoryBtn.addEventListener('click', (e) => {
+            e.preventDefault();
             if (!window.currentUser) {
                 showToast('Please sign in to view watch history', 'warning');
                 window.location.href = `login.html?redirect=watch-history.html`;
@@ -793,11 +807,17 @@ function setupNavigationButtons() {
         });
     }
     
-    // ✅ FIXED: Menu Button - Open Sidebar (NOT redirect to dashboard)
+    // ✅ FIXED: Menu Button - Open Sidebar ONLY (no redirect)
     if (navMenuBtn) {
-        navMenuBtn.addEventListener('click', (e) => {
+        // Remove all existing listeners by cloning
+        const newNavMenuBtn = navMenuBtn.cloneNode(true);
+        navMenuBtn.parentNode.replaceChild(newNavMenuBtn, navMenuBtn);
+        
+        newNavMenuBtn.addEventListener('click', (e) => {
             e.preventDefault();
             e.stopPropagation();
+            
+            console.log('📱 Menu button clicked - opening sidebar');
             
             const sidebarMenu = document.getElementById('sidebar-menu');
             const sidebarOverlay = document.getElementById('sidebar-overlay');
@@ -806,6 +826,8 @@ function setupNavigationButtons() {
                 sidebarMenu.classList.add('active');
                 sidebarOverlay.classList.add('active');
                 document.body.style.overflow = 'hidden';
+            } else {
+                console.warn('Sidebar elements not found');
             }
         });
     }
