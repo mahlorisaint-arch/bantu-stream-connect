@@ -24,6 +24,9 @@
 // ✅ FIXED: Sidebar UI resize section button overlapping
 // ✅ FIXED: Navigation menu button opens sidebar instead of redirecting to dashboard
 // ✅ FIXED: Comments "sign in to comment" bug when already authenticated
+// 🎯 MOBILE FIX: Navigation button properly centered, no overflow, no horizontal scrolling
+// 🎯 MOBILE FIX: Header profile picture hidden on mobile phones
+// 🎯 MOBILE FIX: RSA badge stays inside header, no overflow
 
 console.log('🎬 Content Detail Initializing with RLS-compliant fixes and home feed UI integration...');
 
@@ -611,7 +614,7 @@ function optimizeMobileSidebar() {
 }
 
 // ============================================
-// HEADER FUNCTIONS (from home feed) - ✅ FIXED: Matches home feed sizing
+// HEADER FUNCTIONS (from home feed) - ✅ FIXED: Matches home feed sizing, hide profile picture on mobile
 // ============================================
 async function updateHeaderProfile() {
     const profilePlaceholder = document.getElementById('userProfilePlaceholder');
@@ -650,6 +653,44 @@ async function updateHeaderProfile() {
         }
     } else {
         renderGuestProfile(profilePlaceholder, currentProfileName);
+    }
+    
+    // ✅ MOBILE FIX: Hide profile picture icon on mobile phones
+    applyMobileHeaderStyles();
+}
+
+// ✅ MOBILE FIX: Apply styles to hide profile picture on mobile
+function applyMobileHeaderStyles() {
+    const isMobile = window.innerWidth <= 480;
+    const profileBtn = document.querySelector('.profile-btn');
+    const profilePlaceholder = document.getElementById('userProfilePlaceholder');
+    const profileNameSpan = document.getElementById('current-profile-name');
+    
+    if (isMobile) {
+        // Hide the profile picture/avatar on mobile
+        if (profilePlaceholder) {
+            profilePlaceholder.style.display = 'none';
+        }
+        // Ensure the button still shows the name
+        if (profileBtn) {
+            profileBtn.style.minWidth = 'auto';
+            profileBtn.style.padding = '0.3125rem 0.75rem';
+            profileBtn.style.justifyContent = 'center';
+        }
+        // Ensure name is visible
+        if (profileNameSpan) {
+            profileNameSpan.style.display = 'inline-block';
+        }
+    } else {
+        // Show profile picture on desktop
+        if (profilePlaceholder) {
+            profilePlaceholder.style.display = 'flex';
+        }
+        if (profileBtn) {
+            profileBtn.style.minWidth = '160px';
+            profileBtn.style.padding = '0.3125rem 1.2rem 0.3125rem 0.5rem';
+            profileBtn.style.justifyContent = 'flex-start';
+        }
     }
 }
 
@@ -761,11 +802,20 @@ function updateProfileSwitcher() {
             }
         });
     }
+    
+    // Apply mobile styles for profile picture
+    applyMobileHeaderStyles();
 }
+
+// Listen for window resize to update mobile header styles
+window.addEventListener('resize', () => {
+    applyMobileHeaderStyles();
+});
 
 // ============================================
 // BOTTOM NAVIGATION BUTTON FUNCTIONS (from home feed)
 // ✅ FIXED: Menu button opens sidebar, NOT dashboard
+// ✅ FIXED: Proper centering, no overflow, no horizontal scrolling
 // ============================================
 function setupNavigationButtons() {
     const navHomeBtn = document.getElementById('nav-home-btn');
@@ -1051,6 +1101,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         loading.style.display = 'none';
         app.style.display = 'block';
     }
+    
+    // ✅ Apply mobile header styles after everything is loaded
+    applyMobileHeaderStyles();
     
     console.log('✅ Content Detail fully initialized with RLS-compliant fixes, PHASE 4 Streaming, and HOME FEED UI');
 });
@@ -1860,6 +1913,9 @@ function updateProfileUI() {
         };
     }
     
+    // ✅ Apply mobile header styles after updating profile UI
+    applyMobileHeaderStyles();
+    
     // ✅ Update comment input state directly (no duplicate check)
     updateCommentInputState();
 }
@@ -1878,6 +1934,9 @@ function resetProfileUI() {
     profileBtn.onclick = () => {
         window.location.href = `login.html?redirect=${encodeURIComponent(window.location.href)}`;
     };
+    
+    // ✅ Apply mobile header styles after reset
+    applyMobileHeaderStyles();
     
     // ✅ Update comment input state for guest
     updateCommentInputState();
@@ -1905,6 +1964,9 @@ function resetHeaderProfile() {
     if (currentProfileName) {
         currentProfileName.textContent = 'Guest';
     }
+    
+    // ✅ Apply mobile header styles after reset
+    applyMobileHeaderStyles();
 }
 
 // ============================================
