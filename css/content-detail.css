@@ -292,19 +292,21 @@ body {
     border: 2px solid var(--deep-black);
 }
 
-/* ✅ FIXED: Header Profile Button - Match Home Feed Sizing */
+/* ✅ FIXED: Header Profile Button - WIDER to fit avatar + name horizontally */
 .profile-btn {
     background: rgba(255, 255, 255, 0.1) !important;
     border: 1px solid var(--card-border) !important;
     border-radius: 2.5rem !important;
-    padding: 0.3125rem 0.75rem 0.3125rem 0.3125rem !important;
+    padding: 0.3125rem 1.2rem 0.3125rem 0.5rem !important;
     display: flex !important;
     align-items: center !important;
-    gap: 0.5rem !important;
+    gap: 0.75rem !important;
     cursor: pointer !important;
     transition: all 0.3s ease !important;
-    min-width: unset !important;
-    height: auto !important;
+    min-width: 160px !important;
+    width: auto !important;
+    height: 2.75rem !important;
+    white-space: nowrap !important;
 }
 
 .profile-btn:hover {
@@ -335,25 +337,25 @@ body {
 
 .profile-name {
     color: var(--soft-white) !important;
-    font-size: var(--font-sm) !important;
+    font-size: 0.875rem !important;
     font-weight: 500 !important;
     white-space: nowrap !important;
-    overflow: hidden !important;
-    text-overflow: ellipsis !important;
-    max-width: 120px !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+    max-width: 180px !important;
+    display: inline-block !important;
 }
 
-/* Responsive adjustments for profile name */
-@media (max-width: 768px) {
+/* Mobile - hide name on small screens, keep button compact */
+@media (max-width: 480px) {
     .profile-name {
         display: none !important;
     }
-    .profile-placeholder {
-        width: 2rem !important;
-        height: 2rem !important;
+    .profile-btn {
+        padding: 0.3125rem 0.5rem !important;
+        min-width: auto !important;
     }
 }
-
 /* Profile Dropdown */
 .profile-dropdown {
     position: absolute;
