@@ -18,6 +18,7 @@
 // 🎨 CREATOR AVATAR FIX: Show actual creator profile picture from user_profiles
 // 🔄 PLATFORM CONSISTENCY: Integrated home feed sidebar, header, navigation, and utilities
 // ✅ FIXED: checkConnectionStatus now returns a Promise to prevent ".then is not a function" error
+// ✅ FIXED: Added missing initThemeSelector function to prevent ReferenceError
 
 console.log('🎬 Content Detail Initializing with RLS-compliant fixes and home feed UI integration...');
 
@@ -165,9 +166,60 @@ function debounce(func, wait) {
     };
 }
 
-// Theme Functions (from home feed - COMPLETE OVERHAUL)
+// ============================================
+// THEME SELECTOR - HOME FEED INTEGRATION (FIXED: Added missing function)
+// ============================================
+function initThemeSelector() {
+    console.log('🎨 Initializing theme selector...');
+    
+    const themeSelector = document.getElementById('theme-selector');
+    const themeToggle = document.getElementById('sidebar-theme-toggle');
+    
+    if (!themeSelector || !themeToggle) {
+        console.warn('Theme selector elements not found');
+        return;
+    }
+    
+    // Apply saved theme on load
+    const savedTheme = localStorage.getItem('bantu_theme') || 'dark';
+    applyTheme(savedTheme);
+    
+    // Theme option click handlers
+    document.querySelectorAll('.theme-option').forEach(option => {
+        option.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            const theme = this.dataset.theme;
+            applyTheme(theme);
+            setTimeout(() => themeSelector.classList.remove('active'), 100);
+        });
+    });
+    
+    // Toggle theme selector from sidebar
+    themeToggle.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        themeSelector.classList.toggle('active');
+    });
+    
+    // Close when clicking outside
+    document.addEventListener('click', (e) => {
+        if (themeSelector.classList.contains('active') &&
+            !themeSelector.contains(e.target) &&
+            !themeToggle.contains(e.target)) {
+            themeSelector.classList.remove('active');
+        }
+    });
+    
+    console.log('✅ Theme selector initialized');
+}
+
+// ============================================
+// APPLY THEME FUNCTION - HOME FEED INTEGRATION
+// ============================================
 function applyTheme(theme) {
     console.log('🎨 Applying theme:', theme);
+    
     if (!theme || (theme !== 'dark' && theme !== 'light' && theme !== 'high-contrast')) {
         console.warn('Invalid theme:', theme, 'defaulting to dark');
         theme = 'dark';
@@ -218,41 +270,14 @@ function applyTheme(theme) {
     });
     
     // Show confirmation toast
-    showToast(`Theme changed to ${theme}`, 'success');
+    if (typeof showToast === 'function') {
+        showToast(`Theme changed to ${theme}`, 'success');
+    }
     
     // Dispatch custom event
     document.dispatchEvent(new CustomEvent('themeChanged', {
         detail: { theme: theme }
     }));
-}
-
-function setupThemeSelector() {
-    const themeSelector = document.getElementById('theme-selector');
-    const themeToggle = document.getElementById('sidebar-theme-toggle');
-    
-    // Apply saved theme on load
-    const savedTheme = localStorage.getItem('bantu_theme') || 'dark';
-    applyTheme(savedTheme);
-    
-    // Theme option click handlers
-    document.querySelectorAll('.theme-option').forEach(option => {
-        option.addEventListener('click', function(e) {
-            e.preventDefault();
-            e.stopPropagation();
-            const theme = this.dataset.theme;
-            applyTheme(theme);
-            setTimeout(() => themeSelector?.classList.remove('active'), 100);
-        });
-    });
-    
-    // Toggle theme selector from sidebar
-    if (themeToggle) {
-        themeToggle.addEventListener('click', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            themeSelector?.classList.toggle('active');
-        });
-    }
 }
 
 // ============================================
@@ -857,7 +882,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     initAnalyticsModal();
     initSearchModal();
     initNotificationsPanel();
-    initThemeSelector();
+    initThemeSelector(); // ✅ FIXED: Now this function exists!
     initGlobalNavigation();
     
     // ============================================
@@ -886,9 +911,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Setup navigation buttons
     setupNavigationButtons();
     setupNavButtonScrollAnimation();
-    
-    // Setup theme selector
-    setupThemeSelector();
     
     // PHASE 1: Load Continue Watching section (SINGLE SECTION - now below comments)
     if (currentUserId) {
@@ -946,6 +968,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     console.log('✅ Content Detail fully initialized with RLS-compliant fixes, PHASE 4 Streaming, and HOME FEED UI');
 });
+
+// FINAL SAFETY: Ensure loading screen hides even if errors occur
+setTimeout(() => {
+    const loading = document.getElementById('loading');
+    const app = document.getElementById('app');
+    if (loading && app && loading.style.display !== 'none') {
+        console.warn('⚠️ Forcing app display after timeout');
+        loading.style.display = 'none';
+        app.style.display = 'block';
+    }
+}, 5000); // 5 second fallback
 
 // PHASE 1: Import WatchSession class
 if (!window.WatchSession) {
@@ -4195,35 +4228,6 @@ function formatDate(dateString) {
     }
 }
 
-function formatDuration(seconds) {
-    if (!seconds || seconds <= 0 || isNaN(seconds)) {
-        return '0m 0s';
-    }
-    seconds = Math.floor(seconds);
-    var hours = Math.floor(seconds / 3600);
-    var minutes = Math.floor((seconds % 3600) / 60);
-    var secs = seconds % 60;
-    
-    if (hours > 0) {
-        return hours + 'h ' + minutes + 'm';
-    } else if (minutes > 0) {
-        return minutes + 'm ' + secs + 's';
-    } else {
-        return secs + 's';
-    }
-}
-
-function formatNumber(num) {
-    if (!num) return '0';
-    if (num >= 1000000) {
-        return (num / 1000000).toFixed(1) + 'M';
-    }
-    if (num >= 1000) {
-        return (num / 1000).toFixed(1) + 'K';
-    }
-    return num.toString();
-}
-
 function truncateText(text, maxLength) {
     if (!text) return '';
     if (text.length <= maxLength) return text;
@@ -4270,6 +4274,7 @@ window.streamingManager = streamingManager;
 window.keyboardShortcuts = keyboardShortcuts;
 window.playlistModal = playlistModal;
 window.closeVideoPlayer = closeVideoPlayer; // ✅ Export close function
+window.initThemeSelector = initThemeSelector; // ✅ Export theme selector function
 
 // PHASE 1: Page unload handler - clean up watch session
 window.addEventListener('beforeunload', function() {
