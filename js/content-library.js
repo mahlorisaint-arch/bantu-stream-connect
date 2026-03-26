@@ -1,7 +1,6 @@
 /**
  * Core Content Library Module
  * Handles initialization, authentication, content fetching, and rendering
- * WITH HOME FEED UI INTEGRATION
  */
 
 // Supabase Configuration from environment
@@ -19,8 +18,6 @@ window.allContentData = [];
 window.filteredContentData = [];
 window.notifications = [];
 window.selectedCategoryIndex = 0;
-window.currentProfile = null;
-window.userProfiles = [];
 
 // Categories list
 const categories = [
@@ -92,7 +89,6 @@ async function loadUserProfile() {
 // Update profile UI with user data (XSS-safe version)
 function updateProfileUI(profile) {
   const userProfilePlaceholder = document.getElementById('userProfilePlaceholder');
-  const currentProfileName = document.getElementById('current-profile-name');
   if (!userProfilePlaceholder) return;
   
   // Clear existing content safely
@@ -107,10 +103,6 @@ function updateProfileUI(profile) {
                         'User';
     const initial = displayName.charAt(0).toUpperCase();
     const avatarUrl = profile.avatar_url;
-    
-    if (currentProfileName) {
-      currentProfileName.textContent = displayName;
-    }
     
     if (avatarUrl) {
       const img = document.createElement('img');
@@ -157,9 +149,6 @@ function updateProfileUI(profile) {
     const icon = document.createElement('i');
     icon.className = 'fas fa-user';
     userProfilePlaceholder.appendChild(icon);
-    if (currentProfileName) {
-      currentProfileName.textContent = 'Guest';
-    }
   }
 }
 
@@ -185,14 +174,6 @@ function formatDuration(seconds) {
     return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   }
   return `${minutes}:${secs.toString().padStart(2, '0')}`;
-}
-
-// Format large numbers (1k, 1M)
-function formatNumber(num) {
-  if (!num && num !== 0) return '0';
-  if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
-  if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
-  return num.toString();
 }
 
 // Fetch content with pagination and real view/like counts
@@ -704,17 +685,11 @@ function setupCoreListeners() {
     });
   }
   
-  // Watch History navigation button
+  // History button
   const historyBtn = document.getElementById('nav-history-btn');
   if (historyBtn) {
-    historyBtn.addEventListener('click', async () => {
-      const { data: { session } } = await window.supabaseClient.auth.getSession();
-      if (session) {
-        window.location.href = 'watch-history.html';
-      } else {
-        showToast('Please sign in to view watch history', 'warning');
-        window.location.href = `login.html?redirect=watch-history.html`;
-      }
+    historyBtn.addEventListener('click', () => {
+      window.location.href = 'watch-history.html';
     });
   }
   
@@ -732,21 +707,33 @@ function setupCoreListeners() {
     });
   }
   
-  // Menu button - Open sidebar
+  // Menu button (open sidebar)
   const menuBtn = document.getElementById('nav-menu-btn');
-  if (menuBtn) {
-    menuBtn.addEventListener('click', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      const sidebarMenu = document.getElementById('sidebar-menu');
-      const sidebarOverlay = document.getElementById('sidebar-overlay');
-      if (sidebarMenu && sidebarOverlay) {
-        sidebarMenu.classList.add('active');
-        sidebarOverlay.classList.add('active');
-        document.body.style.overflow = 'hidden';
-      }
-    });
-  }
+  const menuToggle = document.getElementById('menu-toggle');
+  const sidebarClose = document.getElementById('sidebar-close');
+  const sidebarOverlay = document.getElementById('sidebar-overlay');
+  const sidebarMenu = document.getElementById('sidebar-menu');
+  
+  const openSidebar = () => {
+    if (sidebarMenu && sidebarOverlay) {
+      sidebarMenu.classList.add('active');
+      sidebarOverlay.classList.add('active');
+      document.body.style.overflow = 'hidden';
+    }
+  };
+  
+  const closeSidebar = () => {
+    if (sidebarMenu && sidebarOverlay) {
+      sidebarMenu.classList.remove('active');
+      sidebarOverlay.classList.remove('active');
+      document.body.style.overflow = '';
+    }
+  };
+  
+  if (menuBtn) menuBtn.addEventListener('click', openSidebar);
+  if (menuToggle) menuToggle.addEventListener('click', openSidebar);
+  if (sidebarClose) sidebarClose.addEventListener('click', closeSidebar);
+  if (sidebarOverlay) sidebarOverlay.addEventListener('click', closeSidebar);
   
   // See all buttons (delegated event)
   document.addEventListener('click', (e) => {
@@ -764,7 +751,7 @@ function setupCoreListeners() {
 
 // Initialize the entire application
 async function initContentLibrary() {
-  console.log('📚 Content Library Initializing with home feed UI integration...');
+  console.log('📚 Content Library Initializing with enhanced features...');
   
   const loadingScreen = document.getElementById('loading');
   const loadingText = document.getElementById('loading-text');
@@ -814,8 +801,12 @@ async function initContentLibrary() {
     if (typeof setupInfiniteScroll === 'function') setupInfiniteScroll();
     if (typeof setupKeyboardNavigation === 'function') setupKeyboardNavigation();
     
+    // Initialize rate limiter cleanup
+    if (window.rateLimiter) window.rateLimiter.startCleanup();
+    if (window.authRateLimiter) window.authRateLimiter.startCleanup();
+    
     // ============================================
-    // 🏠 HOME FEED UI INTEGRATION - Initialize UI Components
+    // 🏠 HOME FEED UI INTEGRATION - Minimal init
     // ============================================
     
     // Initialize UI Scale Controller
@@ -824,7 +815,7 @@ async function initContentLibrary() {
       window.uiScaleController.init();
     }
     
-    // Setup complete sidebar
+    // Setup sidebar
     if (typeof window.setupCompleteSidebar === 'function') {
       window.setupCompleteSidebar();
     }
@@ -859,10 +850,6 @@ async function initContentLibrary() {
       window.setupThemeSelector();
     }
     
-    // Initialize rate limiter cleanup
-    if (window.rateLimiter) window.rateLimiter.startCleanup();
-    if (window.authRateLimiter) window.authRateLimiter.startCleanup();
-    
     // Show app after brief delay for smooth transition
     setTimeout(() => {
       loadingScreen.style.display = 'none';
@@ -877,7 +864,7 @@ async function initContentLibrary() {
       });
     }, 500);
     
-    console.log('✅ Content Library initialized successfully with home feed UI');
+    console.log('✅ Content Library initialized successfully');
   } catch (error) {
     console.error('❌ Initialization error:', error);
     loadingText.textContent = 'Error loading content. Please refresh.';
@@ -890,25 +877,14 @@ async function initContentLibrary() {
   }
   
   // Auth state change listener
-  window.supabaseClient.auth.onAuthStateChange(async (event, session) => {
+  window.supabaseClient.auth.onAuthStateChange((event, session) => {
     console.log('Auth state changed:', event);
     
-    if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+    if (event === 'SIGNED_IN') {
       window.currentUser = session.user;
-      await loadUserProfile();
-      await loadNotifications();
+      loadUserProfile();
+      loadNotifications();
       showToast('Welcome back!', 'success');
-      
-      // Update home feed UI components
-      if (typeof window.updateSidebarProfile === 'function') {
-        await window.updateSidebarProfile();
-      }
-      if (typeof window.updateHeaderProfile === 'function') {
-        await window.updateHeaderProfile();
-      }
-      if (typeof window.updateProfileSwitcher === 'function') {
-        window.updateProfileSwitcher();
-      }
     } else if (event === 'SIGNED_OUT') {
       window.currentUser = null;
       updateProfileUI(null);
@@ -916,14 +892,6 @@ async function initContentLibrary() {
       window.notifications = [];
       if (typeof renderNotifications === 'function') renderNotifications();
       showToast('You have been signed out', 'info');
-      
-      // Reset home feed UI components
-      if (typeof window.resetSidebarProfile === 'function') {
-        window.resetSidebarProfile();
-      }
-      if (typeof window.resetHeaderProfile === 'function') {
-        window.resetHeaderProfile();
-      }
     }
   });
 }
