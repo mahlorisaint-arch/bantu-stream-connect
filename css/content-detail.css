@@ -2,8 +2,9 @@
 /* CONTENT DETAIL PAGE STYLES - BANTU STREAM CONNECT */
 /* ============================================ */
 /* PLATFORM CONSISTENCY: Integrated with home feed UI system */
-/* 🎯 MOBILE FIXES: Navigation button centered, no overflow, RSA badge inside header */
-/* 🎯 FIXED: Header matches home feed exactly on mobile */
+/* 🎯 MOBILE FIXES: Header matches home feed exactly */
+/* 🎯 FIXED: Profile dropdown works like home feed */
+/* 🎯 FIXED: No horizontal scrolling, proper icon sizing */
 /* ============================================ */
 
 /* CSS VARIABLES & THEME SUPPORT */
@@ -201,7 +202,7 @@ width: 100%;
 }
 
 /* ============================================ */
-/* HEADER - HOME FEED INTEGRATION */
+/* 🎯 HEADER - EXACT HOME FEED MATCH */
 /* ============================================ */
 .header {
 background: rgba(10, 14, 18, 0.9);
@@ -215,10 +216,9 @@ display: flex;
 justify-content: space-between;
 align-items: center;
 min-height: 3.75rem;
-flex-wrap: wrap;
-gap: 0.5rem;
 width: 100%;
 max-width: 100vw;
+overflow: visible;
 }
 
 .logo {
@@ -227,6 +227,28 @@ align-items: center;
 gap: 0.75rem;
 cursor: pointer;
 flex-shrink: 0;
+}
+
+.menu-toggle {
+width: 2.375rem;
+height: 2.375rem;
+border-radius: 50%;
+background: rgba(255, 255, 255, 0.1);
+border: 1px solid rgba(255, 255, 255, 0.2);
+color: var(--soft-white);
+display: flex;
+align-items: center;
+justify-content: center;
+cursor: pointer;
+transition: all 0.3s ease;
+font-size: var(--icon-lg);
+margin-right: 0.5rem;
+border: none;
+}
+
+.menu-toggle:hover {
+background: rgba(255, 255, 255, 0.2);
+transform: translateY(-0.125rem);
 }
 
 .logo-icon {
@@ -306,62 +328,190 @@ justify-content: center;
 border: 2px solid var(--deep-black);
 }
 
-/* Profile Button - Home Feed Style */
+/* ============================================ */
+/* 🎯 PROFILE BUTTON - HOME FEED STYLE */
+/* ============================================ */
+.profile-switcher {
+position: relative;
+}
+
 .profile-btn {
-background: rgba(255, 255, 255, 0.1) !important;
-border: 1px solid var(--card-border) !important;
-border-radius: 2.5rem !important;
-padding: 0.3125rem 1.2rem 0.3125rem 0.5rem !important;
-display: flex !important;
-align-items: center !important;
-gap: 0.75rem !important;
-cursor: pointer !important;
-transition: all 0.3s ease !important;
-min-width: 160px !important;
-width: auto !important;
-height: 2.75rem !important;
-white-space: nowrap !important;
-flex-shrink: 0;
+background: rgba(255, 255, 255, 0.1);
+border: 1px solid var(--card-border);
+border-radius: 2.5rem;
+padding: 0.3125rem 1rem 0.3125rem 0.3125rem;
+display: flex;
+align-items: center;
+gap: 0.5rem;
+cursor: pointer;
+transition: all 0.3s ease;
+height: 2.75rem;
+white-space: nowrap;
 }
 
 .profile-btn:hover {
-background: rgba(255, 255, 255, 0.15) !important;
-border-color: var(--warm-gold) !important;
+background: rgba(255, 255, 255, 0.15);
+border-color: var(--warm-gold);
 }
 
 .profile-placeholder {
-width: 2.25rem !important;
-height: 2.25rem !important;
-border-radius: 50% !important;
-background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold)) !important;
-display: flex !important;
-align-items: center !important;
-justify-content: center !important;
-color: white !important;
-font-size: var(--font-sm) !important;
-overflow: hidden !important;
-flex-shrink: 0 !important;
+width: 2.25rem;
+height: 2.25rem;
+border-radius: 50%;
+background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+display: flex;
+align-items: center;
+justify-content: center;
+color: white;
+font-size: var(--font-sm);
+overflow: hidden;
+flex-shrink: 0;
 }
 
 .profile-placeholder img {
-width: 100% !important;
-height: 100% !important;
-border-radius: 50% !important;
-object-fit: cover !important;
+width: 100%;
+height: 100%;
+border-radius: 50%;
+object-fit: cover;
 }
 
 .profile-name {
-color: var(--soft-white) !important;
-font-size: 0.875rem !important;
-font-weight: 500 !important;
-white-space: nowrap !important;
-overflow: hidden !important;
-text-overflow: ellipsis !important;
-max-width: 120px !important;
-display: inline-block !important;
+color: var(--soft-white);
+font-size: 0.875rem;
+font-weight: 500;
+white-space: nowrap;
+overflow: hidden;
+text-overflow: ellipsis;
+max-width: 120px;
+display: inline-block;
 }
 
-/* RSA Badge - Inside Header */
+.profile-btn i {
+color: var(--slate-grey);
+font-size: 0.75rem;
+}
+
+/* ============================================ */
+/* 🎯 PROFILE DROPDOWN - HOME FEED STYLE */
+/* ============================================ */
+.profile-dropdown {
+position: absolute;
+top: 3.75rem;
+right: 0;
+width: 15.625rem;
+background: var(--card-bg);
+backdrop-filter: blur(20px);
+border: 1px solid var(--card-border);
+border-radius: 0.75rem;
+opacity: 0;
+visibility: hidden;
+transform: translateY(-0.625rem);
+transition: all 0.3s ease;
+z-index: 1000;
+}
+
+.profile-dropdown.active {
+opacity: 1;
+visibility: visible;
+transform: translateY(0);
+}
+
+.profile-dropdown-header {
+padding: 15px;
+border-bottom: 1px solid var(--card-border);
+}
+
+.profile-dropdown-header h4 {
+font-size: 14px;
+color: var(--soft-white);
+margin: 0;
+}
+
+.profile-list {
+max-height: 300px;
+overflow-y: auto;
+padding: 10px;
+}
+
+.profile-item {
+display: flex;
+align-items: center;
+gap: 10px;
+padding: 10px;
+border-radius: 8px;
+cursor: pointer;
+transition: all 0.2s ease;
+}
+
+.profile-item:hover {
+background: rgba(255, 255, 255, 0.1);
+}
+
+.profile-item.active {
+background: rgba(29, 78, 216, 0.2);
+border: 1px solid var(--bantu-blue);
+}
+
+.profile-avatar-small {
+width: 36px;
+height: 36px;
+border-radius: 50%;
+background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+display: flex;
+align-items: center;
+justify-content: center;
+overflow: hidden;
+flex-shrink: 0;
+}
+
+.profile-avatar-small img {
+width: 100%;
+height: 100%;
+object-fit: cover;
+border-radius: 50%;
+}
+
+.profile-initials {
+color: white;
+font-weight: bold;
+font-size: 14px;
+}
+
+.profile-item .profile-name {
+flex: 1;
+font-size: 14px;
+}
+
+.profile-item i {
+color: var(--success-color);
+}
+
+.profile-dropdown-footer {
+padding: 15px;
+border-top: 1px solid var(--card-border);
+}
+
+.text-btn {
+background: none;
+border: none;
+color: var(--warm-gold);
+cursor: pointer;
+font-size: 14px;
+transition: all 0.3s ease;
+width: 100%;
+text-align: left;
+padding: 8px;
+border-radius: 6px;
+}
+
+.text-btn:hover {
+background: rgba(255, 255, 255, 0.1);
+color: var(--soft-white);
+}
+
+/* ============================================ */
+/* RSA BADGE - INSIDE HEADER */
+/* ============================================ */
 .rsa-badge {
 display: flex;
 align-items: center;
@@ -378,24 +528,28 @@ white-space: nowrap;
 }
 
 /* ============================================ */
-/* 🎯 MOBILE HEADER FIXES - Match Home Feed */
+/* 🎯 MOBILE HEADER - EXACT HOME FEED MATCH */
 /* ============================================ */
 @media (max-width: 768px) {
 .header {
 padding: 0.625rem 1rem !important;
 min-height: 3.25rem !important;
-flex-wrap: wrap !important;
-gap: 0.5rem !important;
 }
 
-.logo-text {
-font-size: 0.875rem !important;
-max-width: 120px;
+.menu-toggle {
+width: 2.125rem !important;
+height: 2.125rem !important;
+margin-right: 0.375rem !important;
 }
 
 .logo-icon {
 width: 2rem !important;
 height: 2rem !important;
+}
+
+.logo-text {
+font-size: 0.875rem !important;
+max-width: 120px;
 }
 
 .icon-btn {
@@ -405,30 +559,43 @@ font-size: 0.875rem !important;
 }
 
 .header-actions {
-flex-wrap: wrap !important;
 gap: 0.375rem !important;
 }
 
-/* Hide profile picture on mobile - show only name */
-.profile-btn .profile-placeholder {
+/* Hide voice search on mobile */
+#voice-search-btn {
 display: none !important;
 }
 
+/* Hide analytics on mobile */
+#analytics-btn {
+display: none !important;
+}
+
+/* Profile button compact on mobile */
 .profile-btn {
-padding: 0.3125rem 0.75rem !important;
-min-width: auto !important;
-justify-content: center !important;
+padding: 0.25rem 0.5rem !important;
+height: 2.5rem !important;
+}
+
+.profile-placeholder {
+width: 2rem !important;
+height: 2rem !important;
 }
 
 .profile-name {
-display: inline-block !important;
-max-width: 100px !important;
+display: none !important;
 }
 
 .rsa-badge {
 padding: 0.25rem 0.5rem !important;
 font-size: 0.6875rem !important;
 margin-left: 0.25rem !important;
+}
+
+.profile-dropdown {
+width: 14rem !important;
+right: -10px !important;
 }
 }
 
@@ -438,14 +605,19 @@ padding: 0.5rem 0.75rem !important;
 min-height: 3rem !important;
 }
 
-.logo-text {
-font-size: 0.75rem !important;
-max-width: 100px;
+.menu-toggle {
+width: 2rem !important;
+height: 2rem !important;
 }
 
 .logo-icon {
 width: 1.75rem !important;
 height: 1.75rem !important;
+}
+
+.logo-text {
+font-size: 0.75rem !important;
+max-width: 100px;
 }
 
 .icon-btn {
@@ -458,19 +630,29 @@ font-size: 0.8125rem !important;
 gap: 0.25rem !important;
 }
 
-.profile-btn {
-padding: 0.25rem 0.5rem !important;
-height: 2.5rem !important;
+/* Hide search on ultra mobile */
+#search-btn {
+display: none !important;
 }
 
-.profile-name {
-font-size: 0.8125rem !important;
-max-width: 80px !important;
+.profile-btn {
+padding: 0.25rem !important;
+height: 2.25rem !important;
+}
+
+.profile-placeholder {
+width: 1.75rem !important;
+height: 1.75rem !important;
 }
 
 .rsa-badge {
 font-size: 0.625rem !important;
 padding: 0.1875rem 0.375rem !important;
+}
+
+.profile-dropdown {
+width: 13rem !important;
+right: -15px !important;
 }
 }
 
@@ -485,23 +667,9 @@ font-size: 0.6875rem !important;
 max-width: 90px;
 }
 
-.logo-icon {
-width: 1.625rem !important;
-height: 1.625rem !important;
-}
-
 .icon-btn {
 width: 1.875rem !important;
 height: 1.875rem !important;
-}
-
-.profile-name {
-display: none !important;
-}
-
-.profile-btn {
-padding: 0.25rem !important;
-min-width: 2.5rem !important;
 }
 
 .rsa-badge {
@@ -744,7 +912,6 @@ margin-bottom: 0.75rem;
 background: rgba(255, 255, 255, 0.1);
 }
 
-/* Sidebar Scale Control */
 .sidebar-scale-control {
 padding: 0.75rem;
 background: rgba(255, 255, 255, 0.05);
@@ -806,12 +973,7 @@ font-weight: 600;
 white-space: nowrap;
 }
 
-/* Mobile sidebar adjustments */
 @media (max-width: 768px) {
-.sidebar-menu {
-width: 16rem;
-}
-
 .sidebar-scale-control {
 padding: 0.5rem;
 }
@@ -846,7 +1008,7 @@ padding: 0.4rem;
 }
 
 /* ============================================ */
-/* 🎯 NAVIGATION BUTTON - CENTERED & FIXED */
+/* NAVIGATION BUTTON - CENTERED */
 /* ============================================ */
 .navigation-button-container {
 position: fixed;
@@ -920,7 +1082,6 @@ justify-content: center;
 border: 2px solid var(--deep-black);
 }
 
-/* Mobile navigation adjustments - CENTERED */
 @media (max-width: 768px) {
 .navigation-button-container {
 bottom: 15px;
@@ -2875,19 +3036,6 @@ display: flex;
 justify-content: space-between;
 }
 
-.text-btn {
-background: none;
-border: none;
-color: var(--slate-grey);
-cursor: pointer;
-transition: color 0.3s ease;
-font-size: var(--font-sm);
-}
-
-.text-btn:hover {
-color: var(--warm-gold);
-}
-
 .theme-selector {
 position: fixed;
 top: 80px;
@@ -3075,233 +3223,6 @@ transition: all 0.2s ease;
 #create-playlist-btn:hover {
 transform: translateY(-2px);
 box-shadow: 0 5px 15px rgba(29, 78, 216, 0.3);
-}
-
-/* ============================================ */
-/* RESPONSIVE DESIGN - Content Detail Page */
-/* ============================================ */
-@media (min-width: 769px) {
-.header {
-padding: 12px 24px !important;
-min-height: 60px !important;
-}
-
-.logo-icon {
-width: 36px !important;
-height: 36px !important;
-}
-
-.logo-text {
-font-size: 17px !important;
-}
-
-.navigation-button-container {
-bottom: 30px;
-}
-
-.navigation-button {
-padding: 10px 24px;
-gap: 14px;
-}
-
-.nav-icon {
-width: 52px;
-height: 52px;
-font-size: 22px;
-}
-
-.footer {
-padding: 24px 20px !important;
-}
-}
-
-@media (max-width: 768px) {
-.container {
-padding: 16px;
-padding-bottom: 140px;
-}
-
-.header {
-padding: 10px 16px !important;
-min-height: 52px !important;
-}
-
-.logo-icon {
-width: 34px !important;
-height: 34px !important;
-}
-
-.logo-text {
-font-size: 16px !important;
-max-width: 160px;
-}
-
-.content-hero {
-grid-template-columns: 1fr;
-padding: 20px 16px;
-}
-
-.content-hero.video-active {
-padding: 0;
-margin: 0 -16px;
-border-radius: 0;
-width: calc(100% + 32px);
-max-width: none;
-}
-
-.hero-poster {
-height: 200px;
-}
-
-.hero-info h1 {
-font-size: 18px !important;
-}
-
-.footer {
-padding: 20px 16px !important;
-font-size: 13px !important;
-}
-
-.footer-links {
-flex-direction: row !important;
-flex-wrap: wrap !important;
-gap: 10px !important;
-}
-
-.enhanced-video-controls {
-padding: 4px 8px !important;
-}
-
-.controls-bar {
-padding: 4px 6px !important;
-gap: 4px !important;
-flex-wrap: wrap !important;
-}
-
-.control-btn {
-width: 28px !important;
-height: 28px !important;
-}
-
-.settings-menu {
-min-width: 85% !important;
-max-width: 90% !important;
-bottom: 50px !important;
-right: 5% !important;
-left: 5% !important;
-padding: 8px !important;
-max-height: 10vh !important;
-font-size: 9px !important;
-}
-
-.quality-option {
-padding: 4px 2px !important;
-font-size: 8px !important;
-}
-
-.speed-option {
-padding: 3px 2px !important;
-font-size: 8px !important;
-}
-
-.toggle-switch {
-transform: scale(0.7) !important;
-}
-
-.toggle-description {
-display: none !important;
-}
-}
-
-@media (max-width: 480px) {
-.header {
-padding: 8px 12px !important;
-min-height: 48px !important;
-}
-
-.logo-icon {
-width: 30px !important;
-height: 30px !important;
-}
-
-.logo-text {
-font-size: 14px !important;
-max-width: 130px;
-}
-
-.icon-btn, .profile-btn {
-width: 34px !important;
-height: 34px !important;
-}
-
-.content-grid {
-grid-template-columns: repeat(2, 1fr) !important;
-gap: 10px !important;
-}
-
-.card-thumbnail {
-height: 90px !important;
-}
-
-.stats-grid {
-grid-template-columns: repeat(2, 1fr) !important;
-gap: 8px !important;
-}
-
-.creator-info {
-flex-direction: column;
-text-align: center;
-}
-
-.creator-avatar {
-width: 70px !important;
-height: 70px !important;
-}
-
-.connect-btn {
-width: 100%;
-justify-content: center;
-}
-}
-
-@media (max-width: 360px) {
-.header {
-padding: 6px 10px !important;
-min-height: 44px !important;
-}
-
-.logo-icon {
-width: 28px !important;
-height: 28px !important;
-}
-
-.logo-text {
-font-size: 12px !important;
-max-width: 100px;
-}
-
-.icon-btn, .profile-btn {
-width: 30px !important;
-height: 30px !important;
-font-size: 12px !important;
-}
-
-.rsa-badge {
-font-size: 0.5625rem !important;
-padding: 0.1875rem 0.3125rem !important;
-}
-}
-
-@media (hover: none) and (pointer: coarse) {
-.icon-btn, .profile-btn, .nav-icon, .send-comment-btn {
-min-width: 44px !important;
-min-height: 44px !important;
-}
-
-.header, .navigation-button, .footer {
--webkit-tap-highlight-color: transparent;
-user-select: none;
-}
 }
 
 /* ============================================ */
