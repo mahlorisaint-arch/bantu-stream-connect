@@ -1,6 +1,7 @@
 /**
  * Core Content Library Module
  * Handles initialization, authentication, content fetching, and rendering
+ * WITH HOME FEED UI INTEGRATION
  */
 
 // Supabase Configuration from environment
@@ -18,6 +19,8 @@ window.allContentData = [];
 window.filteredContentData = [];
 window.notifications = [];
 window.selectedCategoryIndex = 0;
+window.currentProfile = null;
+window.userProfiles = [];
 
 // Categories list
 const categories = [
@@ -89,6 +92,7 @@ async function loadUserProfile() {
 // Update profile UI with user data (XSS-safe version)
 function updateProfileUI(profile) {
   const userProfilePlaceholder = document.getElementById('userProfilePlaceholder');
+  const currentProfileName = document.getElementById('current-profile-name');
   if (!userProfilePlaceholder) return;
   
   // Clear existing content safely
@@ -103,6 +107,10 @@ function updateProfileUI(profile) {
                         'User';
     const initial = displayName.charAt(0).toUpperCase();
     const avatarUrl = profile.avatar_url;
+    
+    if (currentProfileName) {
+      currentProfileName.textContent = displayName;
+    }
     
     if (avatarUrl) {
       const img = document.createElement('img');
@@ -149,6 +157,9 @@ function updateProfileUI(profile) {
     const icon = document.createElement('i');
     icon.className = 'fas fa-user';
     userProfilePlaceholder.appendChild(icon);
+    if (currentProfileName) {
+      currentProfileName.textContent = 'Guest';
+    }
   }
 }
 
@@ -174,6 +185,14 @@ function formatDuration(seconds) {
     return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   }
   return `${minutes}:${secs.toString().padStart(2, '0')}`;
+}
+
+// Format large numbers (1k, 1M)
+function formatNumber(num) {
+  if (!num && num !== 0) return '0';
+  if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+  if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+  return num.toString();
 }
 
 // Fetch content with pagination and real view/like counts
@@ -685,6 +704,20 @@ function setupCoreListeners() {
     });
   }
   
+  // Watch History navigation button
+  const historyBtn = document.getElementById('nav-history-btn');
+  if (historyBtn) {
+    historyBtn.addEventListener('click', async () => {
+      const { data: { session } } = await window.supabaseClient.auth.getSession();
+      if (session) {
+        window.location.href = 'watch-history.html';
+      } else {
+        showToast('Please sign in to view watch history', 'warning');
+        window.location.href = `login.html?redirect=watch-history.html`;
+      }
+    });
+  }
+  
   // Create content button
   const createBtn = document.getElementById('nav-create-btn');
   if (createBtn) {
@@ -699,16 +732,18 @@ function setupCoreListeners() {
     });
   }
   
-  // Dashboard button
-  const dashboardBtn = document.getElementById('nav-dashboard-btn');
-  if (dashboardBtn) {
-    dashboardBtn.addEventListener('click', async () => {
-      const { data: { session } } = await window.supabaseClient.auth.getSession();
-      if (session) {
-        window.location.href = 'creator-dashboard.html';
-      } else {
-        showToast('Please sign in to access dashboard', 'warning');
-        window.location.href = `login.html?redirect=creator-dashboard.html`;
+  // Menu button - Open sidebar
+  const menuBtn = document.getElementById('nav-menu-btn');
+  if (menuBtn) {
+    menuBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const sidebarMenu = document.getElementById('sidebar-menu');
+      const sidebarOverlay = document.getElementById('sidebar-overlay');
+      if (sidebarMenu && sidebarOverlay) {
+        sidebarMenu.classList.add('active');
+        sidebarOverlay.classList.add('active');
+        document.body.style.overflow = 'hidden';
       }
     });
   }
@@ -729,7 +764,7 @@ function setupCoreListeners() {
 
 // Initialize the entire application
 async function initContentLibrary() {
-  console.log('📚 Content Library Initializing with enhanced features...');
+  console.log('📚 Content Library Initializing with home feed UI integration...');
   
   const loadingScreen = document.getElementById('loading');
   const loadingText = document.getElementById('loading-text');
@@ -779,6 +814,51 @@ async function initContentLibrary() {
     if (typeof setupInfiniteScroll === 'function') setupInfiniteScroll();
     if (typeof setupKeyboardNavigation === 'function') setupKeyboardNavigation();
     
+    // ============================================
+    // 🏠 HOME FEED UI INTEGRATION - Initialize UI Components
+    // ============================================
+    
+    // Initialize UI Scale Controller
+    if (typeof window.UIScaleController !== 'undefined') {
+      window.uiScaleController = new window.UIScaleController();
+      window.uiScaleController.init();
+    }
+    
+    // Setup complete sidebar
+    if (typeof window.setupCompleteSidebar === 'function') {
+      window.setupCompleteSidebar();
+    }
+    
+    // Setup sidebar navigation
+    if (typeof window.setupSidebarNavigation === 'function') {
+      window.setupSidebarNavigation();
+    }
+    
+    // Update sidebar profile
+    if (typeof window.updateSidebarProfile === 'function') {
+      await window.updateSidebarProfile();
+    }
+    
+    // Update header profile
+    if (typeof window.updateHeaderProfile === 'function') {
+      await window.updateHeaderProfile();
+    }
+    
+    // Update profile switcher
+    if (typeof window.updateProfileSwitcher === 'function') {
+      window.updateProfileSwitcher();
+    }
+    
+    // Setup navigation buttons
+    if (typeof window.setupNavigationButtons === 'function') {
+      window.setupNavigationButtons();
+    }
+    
+    // Setup theme selector
+    if (typeof window.setupThemeSelector === 'function') {
+      window.setupThemeSelector();
+    }
+    
     // Initialize rate limiter cleanup
     if (window.rateLimiter) window.rateLimiter.startCleanup();
     if (window.authRateLimiter) window.authRateLimiter.startCleanup();
@@ -797,7 +877,7 @@ async function initContentLibrary() {
       });
     }, 500);
     
-    console.log('✅ Content Library initialized successfully');
+    console.log('✅ Content Library initialized successfully with home feed UI');
   } catch (error) {
     console.error('❌ Initialization error:', error);
     loadingText.textContent = 'Error loading content. Please refresh.';
@@ -810,14 +890,25 @@ async function initContentLibrary() {
   }
   
   // Auth state change listener
-  window.supabaseClient.auth.onAuthStateChange((event, session) => {
+  window.supabaseClient.auth.onAuthStateChange(async (event, session) => {
     console.log('Auth state changed:', event);
     
-    if (event === 'SIGNED_IN') {
+    if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
       window.currentUser = session.user;
-      loadUserProfile();
-      loadNotifications();
+      await loadUserProfile();
+      await loadNotifications();
       showToast('Welcome back!', 'success');
+      
+      // Update home feed UI components
+      if (typeof window.updateSidebarProfile === 'function') {
+        await window.updateSidebarProfile();
+      }
+      if (typeof window.updateHeaderProfile === 'function') {
+        await window.updateHeaderProfile();
+      }
+      if (typeof window.updateProfileSwitcher === 'function') {
+        window.updateProfileSwitcher();
+      }
     } else if (event === 'SIGNED_OUT') {
       window.currentUser = null;
       updateProfileUI(null);
@@ -825,6 +916,14 @@ async function initContentLibrary() {
       window.notifications = [];
       if (typeof renderNotifications === 'function') renderNotifications();
       showToast('You have been signed out', 'info');
+      
+      // Reset home feed UI components
+      if (typeof window.resetSidebarProfile === 'function') {
+        window.resetSidebarProfile();
+      }
+      if (typeof window.resetHeaderProfile === 'function') {
+        window.resetHeaderProfile();
+      }
     }
   });
 }
