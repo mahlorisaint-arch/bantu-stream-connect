@@ -13,8 +13,7 @@
   <!-- Font Awesome -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   
-  <!-- CSS Files - Order matters for theme overrides -->
-  <link rel="stylesheet" href="css/home-feed-themes.css">
+  <!-- CSS Files -->
   <link rel="stylesheet" href="css/content-library-themes.css">
   <link rel="stylesheet" href="css/content-library.css">
   <link rel="stylesheet" href="css/content-library-features.css">
@@ -22,21 +21,7 @@
   <!-- Supabase JS SDK -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
-<body class="content-library-page">
-  <!-- Loading Screen -->
-  <div id="loading" class="loading-screen">
-    <div class="spinner"></div>
-    <div id="loading-text">Loading Content Library...</div>
-  </div>
-  
-  <!-- Animated Background -->
-  <div class="animated-bg">
-    <div class="glow-cycle glow-1"></div>
-    <div class="glow-cycle glow-2"></div>
-    <div class="glow-cycle glow-3"></div>
-    <div class="glow-cycle glow-4"></div>
-  </div>
-  
+<body>
   <!-- ============================================ -->
   <!-- 🏠 HOME FEED UI INTEGRATION: SIDEBAR MENU -->
   <!-- ============================================ -->
@@ -45,7 +30,7 @@
     <div class="sidebar-header">
       <div class="sidebar-logo" onclick="window.location.href='index.html'">
         <div class="logo-icon">
-          <img src="assets/icon/bantu_stream_connect_icon.png" alt="Bantu Stream Connect Logo">
+          <i class="fas fa-film" style="color: var(--warm-gold); font-size: 20px;"></i>
         </div>
         <span class="sidebar-logo-text">BANTU</span>
       </div>
@@ -139,6 +124,20 @@
     </div>
   </div>
   
+  <!-- Loading Screen -->
+  <div id="loading" class="loading-screen">
+    <div class="spinner"></div>
+    <div id="loading-text">Loading Content Library...</div>
+  </div>
+  
+  <!-- Animated Background -->
+  <div class="animated-bg">
+    <div class="glow-cycle glow-1"></div>
+    <div class="glow-cycle glow-2"></div>
+    <div class="glow-cycle glow-3"></div>
+    <div class="glow-cycle glow-4"></div>
+  </div>
+  
   <!-- Main Content (hidden until loaded) -->
   <div id="app" style="display: none;">
     <!-- ============================================ -->
@@ -150,7 +149,7 @@
           <i class="fas fa-bars"></i>
         </button>
         <div class="logo-icon">
-          <img src="assets/icon/bantu_stream_connect_icon.png" alt="Bantu Stream Connect Logo">
+          <i class="fas fa-film" style="color: var(--warm-gold); font-size: 20px;"></i>
         </div>
         <div class="logo-text">BANTU STREAM CONNECT</div>
       </div>
@@ -228,7 +227,7 @@
     
     <!-- Footer -->
     <footer class="footer">
-      <p>Bantu Stream Connect © 2025 • <i class="fas fa-heart" style="color: var(--warm-gold);"></i> Built in South Africa • NO DNA, JUST RSA</p>
+      <p>Bantu Stream Connect © 2025 • Built in South Africa • NO DNA, JUST RSA</p>
       <div class="footer-links">
         <a href="privacy-policy.html">Privacy Policy</a>
         <a href="terms-of-service.html">Terms of Service</a>
@@ -383,15 +382,13 @@
   <!-- JavaScript Files (load in correct order) -->
   <script src="env.js"></script>
   <script src="js/rate-limiter.js"></script>
+  <script src="js/content-library-themes.js"></script>
+  <script src="js/content-library-features.js"></script>
+  <script src="js/content-library.js"></script>
   
   <!-- Home Feed UI Components (for sidebar, header, navigation) -->
   <script src="js/home-feed-ui.js"></script>
   <script src="js/home-feed-features.js"></script>
-  
-  <!-- Content Library Scripts -->
-  <script src="js/content-library-themes.js"></script>
-  <script src="js/content-library-features.js"></script>
-  <script src="js/content-library.js"></script>
   
   <!-- Debug Script for Loading Issues -->
   <script>
@@ -399,7 +396,6 @@
     console.log('🔍 Debug: Script loading order check');
     console.log('- env.js loaded:', !!window.ENV);
     console.log('- rate-limiter.js loaded:', !!(window.rateLimiter || window.authRateLimiter));
-    console.log('- home-feed-ui.js loaded:', typeof window.UIScaleController !== 'undefined');
     console.log('- themes.js loaded:', typeof initTheme === 'function');
     console.log('- features.js loaded:', typeof initFeatures === 'function');
     console.log('- content-library.js loaded:', typeof initContentLibrary === 'function');
@@ -415,6 +411,7 @@
       console.error('❌ Variable conflicts detected:', conflicts);
       console.error('These variables should be on window object or removed');
       
+      // Provide more detailed debugging info
       conflicts.forEach(varName => {
         console.error(`- ${varName}: local=${eval(varName)}, window.${varName}=${window[varName]}`);
       });
@@ -436,8 +433,7 @@
     // Check if all required DOM elements exist
     const requiredElements = [
       'loading', 'app', 'content-sections', 'category-tabs',
-      'infinite-scroll-sentinel', 'toast-container',
-      'sidebar-menu', 'sidebar-overlay', 'navigation-button-container'
+      'infinite-scroll-sentinel', 'toast-container'
     ];
     
     const missingElements = requiredElements.filter(id => !document.getElementById(id));
