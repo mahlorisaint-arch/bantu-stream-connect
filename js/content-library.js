@@ -41,6 +41,11 @@ const categories = [
 // Check authentication status
 async function checkAuth() {
   try {
+    if (!window.supabaseClient) {
+      console.error('❌ Supabase client not initialized');
+      return null;
+    }
+    
     const { data: { session }, error } = await window.supabaseClient.auth.getSession();
     if (error) throw error;
     
@@ -89,6 +94,11 @@ async function loadUserProfile() {
 // Update profile UI with user data (XSS-safe version)
 function updateProfileUI(profile) {
   const userProfilePlaceholder = document.getElementById('userProfilePlaceholder');
+  const currentProfileName = document.getElementById('current-profile-name');
+  const sidebarProfileName = document.getElementById('sidebar-profile-name');
+  const sidebarProfileEmail = document.getElementById('sidebar-profile-email');
+  const sidebarProfileAvatar = document.getElementById('sidebar-profile-avatar');
+  
   if (!userProfilePlaceholder) return;
   
   // Clear existing content safely
@@ -99,14 +109,19 @@ function updateProfileUI(profile) {
   if (profile) {
     const displayName = profile.full_name || 
                         profile.username || 
-                        window.currentUser?.email || 
+                        window.currentUser?.email?.split('@')[0] || 
                         'User';
+    const email = window.currentUser?.email || profile.email || '';
     const initial = displayName.charAt(0).toUpperCase();
     const avatarUrl = profile.avatar_url;
     
+    // Update profile name displays
+    if (currentProfileName) currentProfileName.textContent = displayName;
+    if (sidebarProfileName) sidebarProfileName.textContent = displayName;
+    if (sidebarProfileEmail) sidebarProfileEmail.textContent = email;
+    
     if (avatarUrl) {
       const img = document.createElement('img');
-      img.className = 'profile-img';
       img.alt = displayName;
       img.style.cssText = 'width: 100%; height: 100%; border-radius: 50%; object-fit: cover;';
       
@@ -130,25 +145,57 @@ function updateProfileUI(profile) {
         };
         
         userProfilePlaceholder.appendChild(img);
+        
+        // Update sidebar avatar
+        if (sidebarProfileAvatar) {
+          sidebarProfileAvatar.innerHTML = '';
+          const sidebarImg = document.createElement('img');
+          sidebarImg.src = img.src;
+          sidebarImg.alt = displayName;
+          sidebarImg.style.cssText = 'width: 100%; height: 100%; border-radius: 50%; object-fit: cover;';
+          sidebarProfileAvatar.appendChild(sidebarImg);
+        }
       } catch (e) {
         console.error('Invalid avatar URL:', e);
-        const fallback = document.createElement('div');
-        fallback.className = 'profile-placeholder';
-        fallback.style.cssText = 'width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,#1D4ED8,#F59E0B);display:flex;align-items:center;justify-content:center;color:white;font-weight:bold';
-        fallback.textContent = initial;
-        userProfilePlaceholder.appendChild(fallback);
+        setFallbackAvatar(initial, userProfilePlaceholder, sidebarProfileAvatar);
       }
     } else {
-      const fallback = document.createElement('div');
-      fallback.className = 'profile-placeholder';
-      fallback.style.cssText = 'width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,#1D4ED8,#F59E0B);display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:16px';
-      fallback.textContent = initial;
-      userProfilePlaceholder.appendChild(fallback);
+      setFallbackAvatar(initial, userProfilePlaceholder, sidebarProfileAvatar);
     }
   } else {
+    // Guest user
+    if (currentProfileName) currentProfileName.textContent = 'Guest';
+    if (sidebarProfileName) sidebarProfileName.textContent = 'Guest';
+    if (sidebarProfileEmail) sidebarProfileEmail.textContent = 'Sign in to continue';
+    
     const icon = document.createElement('i');
     icon.className = 'fas fa-user';
     userProfilePlaceholder.appendChild(icon);
+    
+    if (sidebarProfileAvatar) {
+      sidebarProfileAvatar.innerHTML = '';
+      const fallbackIcon = document.createElement('i');
+      fallbackIcon.className = 'fas fa-user';
+      fallbackIcon.style.cssText = 'font-size: 1.5rem;';
+      sidebarProfileAvatar.appendChild(fallbackIcon);
+    }
+  }
+}
+
+function setFallbackAvatar(initial, userPlaceholder, sidebarAvatar) {
+  const fallback = document.createElement('div');
+  fallback.className = 'profile-placeholder';
+  fallback.style.cssText = 'width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,#1D4ED8,#F59E0B);display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:16px';
+  fallback.textContent = initial;
+  userPlaceholder.innerHTML = '';
+  userPlaceholder.appendChild(fallback);
+  
+  if (sidebarAvatar) {
+    sidebarAvatar.innerHTML = '';
+    const sidebarFallback = document.createElement('div');
+    sidebarFallback.style.cssText = 'width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,#1D4ED8,#F59E0B);display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:1rem';
+    sidebarFallback.textContent = initial;
+    sidebarAvatar.appendChild(sidebarFallback);
   }
 }
 
@@ -655,9 +702,40 @@ function renderContentCards(contentItems, isTrending = false) {
 // Setup core event listeners
 function setupCoreListeners() {
   // Profile button navigation
-  const profileBtn = document.getElementById('profile-btn');
+  const profileBtn = document.getElementById('current-profile-btn');
   if (profileBtn) {
-    profileBtn.addEventListener('click', async () => {
+    profileBtn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const dropdown = document.getElementById('profile-dropdown');
+      if (dropdown) {
+        dropdown.classList.toggle('active');
+      }
+    });
+  }
+  
+  // Close dropdown when clicking outside
+  document.addEventListener('click', (e) => {
+    const dropdown = document.getElementById('profile-dropdown');
+    const profileBtn = document.getElementById('current-profile-btn');
+    if (dropdown && dropdown.classList.contains('active') && 
+        !dropdown.contains(e.target) && 
+        !profileBtn?.contains(e.target)) {
+      dropdown.classList.remove('active');
+    }
+  });
+  
+  // Manage profiles button
+  const manageProfilesBtn = document.getElementById('manage-profiles-btn');
+  if (manageProfilesBtn) {
+    manageProfilesBtn.addEventListener('click', () => {
+      window.location.href = 'manage-profiles.html';
+    });
+  }
+  
+  // Sidebar profile click
+  const sidebarProfile = document.getElementById('sidebar-profile');
+  if (sidebarProfile) {
+    sidebarProfile.addEventListener('click', async () => {
       const { data: { session } } = await window.supabaseClient.auth.getSession();
       if (session) {
         window.location.href = 'profile.html';
@@ -877,23 +955,117 @@ async function initContentLibrary() {
   }
   
   // Auth state change listener
-  window.supabaseClient.auth.onAuthStateChange((event, session) => {
-    console.log('Auth state changed:', event);
-    
-    if (event === 'SIGNED_IN') {
-      window.currentUser = session.user;
-      loadUserProfile();
-      loadNotifications();
-      showToast('Welcome back!', 'success');
-    } else if (event === 'SIGNED_OUT') {
-      window.currentUser = null;
-      updateProfileUI(null);
+  if (window.supabaseClient) {
+    window.supabaseClient.auth.onAuthStateChange((event, session) => {
+      console.log('Auth state changed:', event);
+      
+      if (event === 'SIGNED_IN') {
+        window.currentUser = session.user;
+        loadUserProfile();
+        loadNotifications();
+        showToast('Welcome back!', 'success');
+      } else if (event === 'SIGNED_OUT') {
+        window.currentUser = null;
+        updateProfileUI(null);
+        updateNotificationBadge(0);
+        window.notifications = [];
+        if (typeof renderNotifications === 'function') renderNotifications();
+        showToast('You have been signed out', 'info');
+      }
+    });
+  }
+}
+
+// Load notifications
+async function loadNotifications() {
+  try {
+    if (!window.currentUser) {
       updateNotificationBadge(0);
-      window.notifications = [];
-      if (typeof renderNotifications === 'function') renderNotifications();
-      showToast('You have been signed out', 'info');
+      return;
+    }
+    
+    const { data, error } = await window.supabaseClient
+      .from('notifications')
+      .select('*')
+      .eq('user_id', window.currentUser.id)
+      .order('created_at', { ascending: false })
+      .limit(20);
+    
+    if (error) throw error;
+    
+    window.notifications = data || [];
+    const unreadCount = window.notifications.filter(n => !n.is_read).length;
+    updateNotificationBadge(unreadCount);
+  } catch (error) {
+    console.error('Error loading notifications:', error);
+    updateNotificationBadge(0);
+  }
+}
+
+// Update notification badge counts in UI
+function updateNotificationBadge(count) {
+  const mainBadge = document.getElementById('notification-count');
+  const navBadge = document.getElementById('nav-notification-count');
+  const sidebarBadge = document.getElementById('sidebar-notification-count');
+  
+  [mainBadge, navBadge, sidebarBadge].forEach(badge => {
+    if (badge) {
+      badge.textContent = count > 99 ? '99+' : count;
+      badge.style.display = count > 0 ? 'flex' : 'none';
     }
   });
+}
+
+// Show toast notification
+function showToast(message, type = 'info') {
+  const container = document.getElementById('toast-container');
+  if (!container) return;
+  
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  
+  const icons = {
+    error: 'fa-exclamation-triangle',
+    success: 'fa-check-circle',
+    warning: 'fa-exclamation-circle',
+    info: 'fa-info-circle'
+  };
+  
+  toast.innerHTML = `
+    <i class="fas ${icons[type] || 'fa-info-circle'}"></i>
+    <span>${escapeHtml(message)}</span>
+  `;
+  
+  container.appendChild(toast);
+  
+  // Auto-dismiss after 3 seconds
+  setTimeout(() => {
+    toast.style.opacity = '0';
+    toast.style.transform = 'translateX(100%)';
+    setTimeout(() => toast.remove(), 300);
+  }, 3000);
+}
+
+// Format large numbers (1k, 1M)
+function formatNumber(num) {
+  if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+  if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+  return num.toString();
+}
+
+// Truncate text with ellipsis
+function truncateText(text, maxLength) {
+  if (!text) return '';
+  if (text.length <= maxLength) return text;
+  return text.substring(0, maxLength) + '...';
+}
+
+// Escape HTML to prevent XSS
+function escapeHtml(text) {
+  if (!text) return '';
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
 }
 
 // Start initialization when DOM is ready
