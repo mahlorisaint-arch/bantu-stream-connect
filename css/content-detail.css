@@ -3,6 +3,7 @@
 /* ============================================ */
 /* PLATFORM CONSISTENCY: Integrated with home feed UI system */
 /* 🎯 MOBILE FIXES: Navigation button centered, no overflow, RSA badge inside header */
+/* 🎯 UPDATED: Header now matches home feed on mobile devices (responsive & consistent) */
 /* 🎯 FIXED: Only affects content detail page, home feed remains untouched */
 
 /* ============================================ */
@@ -224,7 +225,7 @@ body {
 }
 
 /* ============================================ */
-/* HEADER - HOME FEED INTEGRATION */
+/* HEADER - HOME FEED INTEGRATION & MOBILE CONSISTENCY */
 /* ============================================ */
 .header {
     background: rgba(10, 14, 18, 0.9);
@@ -324,59 +325,59 @@ body {
     border: 2px solid var(--deep-black);
 }
 
-/* Profile Button */
+/* Profile Button (Matches Home Feed) */
 .profile-btn {
-    background: rgba(255, 255, 255, 0.1) !important;
-    border: 1px solid var(--card-border) !important;
-    border-radius: 2.5rem !important;
-    padding: 0.3125rem 1.2rem 0.3125rem 0.5rem !important;
-    display: flex !important;
-    align-items: center !important;
-    gap: 0.75rem !important;
-    cursor: pointer !important;
-    transition: all 0.3s ease !important;
-    min-width: 160px !important;
-    width: auto !important;
-    height: 2.75rem !important;
-    white-space: nowrap !important;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid var(--card-border);
+    border-radius: 2.5rem;
+    padding: 0.3125rem 1.2rem 0.3125rem 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    min-width: 160px;
+    width: auto;
+    height: 2.75rem;
+    white-space: nowrap;
     flex-shrink: 0;
 }
 
 .profile-btn:hover {
-    background: rgba(255, 255, 255, 0.15) !important;
-    border-color: var(--warm-gold) !important;
+    background: rgba(255, 255, 255, 0.15);
+    border-color: var(--warm-gold);
 }
 
 .profile-placeholder {
-    width: 2.25rem !important;
-    height: 2.25rem !important;
-    border-radius: 50% !important;
-    background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold)) !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    color: white !important;
-    font-size: var(--font-sm) !important;
-    overflow: hidden !important;
-    flex-shrink: 0 !important;
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: var(--font-sm);
+    overflow: hidden;
+    flex-shrink: 0;
 }
 
 .profile-placeholder img {
-    width: 100% !important;
-    height: 100% !important;
-    border-radius: 50% !important;
-    object-fit: cover !important;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
 }
 
 .profile-name {
-    color: var(--soft-white) !important;
-    font-size: 0.875rem !important;
-    font-weight: 500 !important;
-    white-space: nowrap !important;
-    overflow: visible !important;
-    text-overflow: clip !important;
-    max-width: 180px !important;
-    display: inline-block !important;
+    color: var(--soft-white);
+    font-size: 0.875rem;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: visible;
+    text-overflow: clip;
+    max-width: 180px;
+    display: inline-block;
 }
 
 /* RSA Badge - Fixed positioning, no overlap */
@@ -396,10 +397,10 @@ body {
 }
 
 /* ============================================ */
-/* 🎯 MOBILE HEADER FIXES - Hide profile icon & RSA badge adjustment */
+/* 🎯 MOBILE HEADER FIXES - Consistent with Home Page */
 /* ============================================ */
 @media (max-width: 768px) {
-    /* Hide profile icon on mobile (both avatar and name) */
+    /* Hide profile picture/avatar on mobile (matching home feed) */
     .content-detail-page .profile-btn .profile-placeholder {
         display: none !important;
     }
@@ -415,7 +416,7 @@ body {
         display: none !important;
     }
     
-    /* Keep RSA badge visible but prevent overlap */
+    /* Keep RSA badge visible but compact */
     .content-detail-page .rsa-badge {
         padding: 0.25rem 0.5rem !important;
         font-size: 0.6875rem !important;
@@ -433,6 +434,12 @@ body {
     .content-detail-page .header-actions {
         flex-wrap: wrap !important;
         gap: 0.375rem !important;
+    }
+    
+    /* Logo text adjustment for mobile */
+    .content-detail-page .logo-text {
+        font-size: 0.9rem !important;
+        white-space: nowrap;
     }
 }
 
