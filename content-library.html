@@ -22,9 +22,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
-  <!-- ============================================ -->
-  <!-- 🏠 HOME FEED UI INTEGRATION: SIDEBAR MENU -->
-  <!-- ============================================ -->
+  <!-- Sidebar Menu -->
   <div class="sidebar-overlay" id="sidebar-overlay"></div>
   <div class="sidebar-menu" id="sidebar-menu">
     <div class="sidebar-header">
@@ -34,12 +32,11 @@
         </div>
         <span class="sidebar-logo-text">BANTU</span>
       </div>
-      <button class="sidebar-close" id="sidebar-close" aria-label="Close menu">
+      <button class="sidebar-close" id="sidebar-close">
         <i class="fas fa-times"></i>
       </button>
     </div>
     
-    <!-- Profile Section -->
     <div class="sidebar-profile" id="sidebar-profile">
       <div class="sidebar-profile-avatar" id="sidebar-profile-avatar">
         <i class="fas fa-user"></i>
@@ -51,7 +48,6 @@
       <i class="fas fa-chevron-right" style="color: var(--slate-grey); flex-shrink: 0;"></i>
     </div>
     
-    <!-- Navigation Items -->
     <nav class="sidebar-nav">
       <a href="index.html" class="sidebar-nav-item">
         <i class="fas fa-home"></i>
@@ -61,32 +57,15 @@
         <i class="fas fa-compass"></i>
         <span>Explore</span>
       </a>
-      <a href="watch-history.html" class="sidebar-nav-item" id="sidebar-watch-history">
+      <a href="watch-history.html" class="sidebar-nav-item">
         <i class="fas fa-history"></i>
         <span>Watch History</span>
       </a>
-      <a href="#" class="sidebar-nav-item" id="sidebar-analytics">
-        <i class="fas fa-chart-line"></i>
-        <span>Analytics</span>
-      </a>
-      <a href="#" class="sidebar-nav-item" id="sidebar-notifications">
-        <i class="fas fa-bell"></i>
-        <span>Notifications</span>
-        <span class="badge" id="sidebar-notification-count" style="display: none;">0</span>
-      </a>
-      <a href="#" class="sidebar-nav-item" id="sidebar-badges">
-        <i class="fas fa-medal"></i>
-        <span>My Badges</span>
-      </a>
-      <a href="#" class="sidebar-nav-item" id="sidebar-watch-party">
-        <i class="fas fa-users"></i>
-        <span>Watch Party</span>
-      </a>
-      <a href="creator-upload.html" class="sidebar-nav-item" id="sidebar-create">
+      <a href="creator-upload.html" class="sidebar-nav-item">
         <i class="fas fa-plus-circle"></i>
         <span>Create</span>
       </a>
-      <a href="creator-dashboard.html" class="sidebar-nav-item" id="sidebar-dashboard">
+      <a href="creator-dashboard.html" class="sidebar-nav-item">
         <i class="fas fa-tachometer-alt"></i>
         <span>Dashboard</span>
       </a>
@@ -96,27 +75,26 @@
       </a>
     </nav>
     
-    <!-- Footer: Theme & Scale -->
-    <div class="sidebar-footer" id="sidebar-footer">
+    <div class="sidebar-footer">
       <div class="sidebar-theme-toggle" id="sidebar-theme-toggle">
         <span><i class="fas fa-palette"></i> Theme</span>
-        <i class="fas fa-chevron-right" style="color: var(--slate-grey);"></i>
+        <i class="fas fa-chevron-right"></i>
       </div>
       <div class="sidebar-scale-control">
         <div class="scale-control-row">
           <span><i class="fas fa-text-height"></i> UI Size</span>
           <div style="display: flex; align-items: center; gap: 8px;">
-            <button class="scale-btn" id="sidebar-scale-decrease" title="Smaller">
+            <button class="scale-btn" id="sidebar-scale-decrease">
               <i class="fas fa-minus"></i>
             </button>
             <span class="scale-value" id="sidebar-scale-value">100%</span>
-            <button class="scale-btn" id="sidebar-scale-increase" title="Larger">
+            <button class="scale-btn" id="sidebar-scale-increase">
               <i class="fas fa-plus"></i>
             </button>
           </div>
         </div>
         <div class="scale-control-row">
-          <button class="scale-btn" id="sidebar-scale-reset" title="Reset" style="width: 100%;">
+          <button class="scale-btn" id="sidebar-scale-reset" style="width: 100%;">
             <i class="fas fa-undo"></i> Reset to Default
           </button>
         </div>
@@ -138,14 +116,12 @@
     <div class="glow-cycle glow-4"></div>
   </div>
   
-  <!-- Main Content (hidden until loaded) -->
+  <!-- Main Content -->
   <div id="app" style="display: none;">
-    <!-- ============================================ -->
-    <!-- 🏠 HOME FEED UI INTEGRATION: HEADER -->
-    <!-- ============================================ -->
+    <!-- Header -->
     <header class="header">
       <div class="logo" onclick="window.location.href='index.html'">
-        <button class="menu-toggle" id="menu-toggle" title="Open Menu" aria-label="Open navigation menu">
+        <button class="menu-toggle" id="menu-toggle">
           <i class="fas fa-bars"></i>
         </button>
         <div class="logo-icon">
@@ -154,26 +130,18 @@
         <div class="logo-text">BANTU STREAM CONNECT</div>
       </div>
       <div class="header-actions">
-        <!-- Voice Search Button -->
-        <button id="voice-search-btn" class="icon-btn" title="Voice Search">
-          <i class="fas fa-microphone"></i>
-        </button>
-        <!-- Analytics Button -->
-        <button id="analytics-btn" class="icon-btn" title="Analytics (Alt+A)">
+        <button id="analytics-btn" class="icon-btn" title="Analytics">
           <i class="fas fa-chart-line"></i>
         </button>
-        <!-- Search Button -->
-        <button id="search-btn" class="icon-btn search-btn" title="Search (Ctrl+K)">
+        <button id="search-btn" class="icon-btn search-btn" title="Search">
           <i class="fas fa-search"></i>
         </button>
-        <!-- Notifications Button -->
-        <button id="notifications-btn" class="icon-btn" title="Notifications (Alt+N)">
+        <button id="notifications-btn" class="icon-btn" title="Notifications">
           <i class="fas fa-bell"></i>
           <span class="notification-badge" id="notification-count" style="display: none;">0</span>
         </button>
-        <!-- Profile Switcher -->
         <div class="profile-switcher">
-          <button id="current-profile-btn" class="profile-btn" title="Profile (Alt+P)">
+          <button id="current-profile-btn" class="profile-btn">
             <div class="profile-placeholder" id="userProfilePlaceholder">
               <i class="fas fa-user"></i>
             </div>
@@ -192,8 +160,7 @@
             </div>
           </div>
         </div>
-        <!-- RSA Badge -->
-        <div class="rsa-badge" title="Proudly South African">
+        <div class="rsa-badge">
           <i class="fas fa-map-marker-alt"></i>
           <span>RSA</span>
         </div>
@@ -202,26 +169,18 @@
     
     <!-- Category Tabs -->
     <div class="category-tabs-container">
-      <div id="category-tabs" class="category-tabs">
-        <!-- Categories will be loaded here -->
-      </div>
+      <div id="category-tabs" class="category-tabs"></div>
     </div>
     
     <!-- Main Content -->
     <main class="container">
-      <!-- Hero Section -->
       <section class="hero">
         <h1>CONTENT LIBRARY</h1>
         <p>Browse and discover amazing content from creators across Africa</p>
         <button id="browse-all-btn" class="hero-btn">Explore All Content</button>
       </section>
       
-      <!-- Content Sections -->
-      <div id="content-sections">
-        <!-- Content will be loaded here -->
-      </div>
-      
-      <!-- Infinite Scroll Sentinel -->
+      <div id="content-sections"></div>
       <div id="infinite-scroll-sentinel" style="height: 20px;"></div>
     </main>
     
@@ -235,9 +194,7 @@
       </div>
     </footer>
     
-    <!-- ============================================ -->
-    <!-- 🏠 HOME FEED UI INTEGRATION: NAVIGATION BUTTON -->
-    <!-- ============================================ -->
+    <!-- Navigation Button -->
     <div class="navigation-button-container">
       <div class="navigation-button">
         <div class="nav-icon" id="nav-home-btn" title="Home">
@@ -263,11 +220,7 @@
       <i class="fas fa-arrow-up"></i>
     </button>
     
-    <!-- =================================================================== -->
-    <!-- MODALS & PANELS                                                     -->
-    <!-- =================================================================== -->
-    
-    <!-- Analytics Modal -->
+    <!-- Modals -->
     <div id="analytics-modal" class="analytics-modal">
       <div class="analytics-content">
         <div class="analytics-header">
@@ -281,37 +234,29 @@
             <div class="analytics-card">
               <h3>Total Views</h3>
               <div class="analytics-value" id="total-views">0</div>
-              <div class="analytics-trend" id="views-trend">+0%</div>
             </div>
             <div class="analytics-card">
               <h3>Total Content</h3>
               <div class="analytics-value" id="total-content">0</div>
-              <div class="analytics-trend" id="content-trend">+0%</div>
             </div>
             <div class="analytics-card">
               <h3>Active Creators</h3>
               <div class="analytics-value" id="active-creators">0</div>
-              <div class="analytics-trend" id="creators-trend">+0%</div>
             </div>
             <div class="analytics-card">
               <h3>Engagement</h3>
               <div class="analytics-value" id="engagement-rate">0%</div>
-              <div class="analytics-trend" id="engagement-trend">+0%</div>
             </div>
-          </div>
-          <div class="charts-container">
-            <!-- Charts would be rendered here dynamically -->
           </div>
         </div>
       </div>
     </div>
     
-    <!-- Search Modal -->
     <div id="search-modal" class="search-modal">
       <div class="search-modal-header">
         <div class="search-input-container">
           <i class="search-icon fas fa-search"></i>
-          <input type="text" id="search-input" class="search-input" placeholder="Search content, creators, or categories..." autocomplete="off">
+          <input type="text" id="search-input" class="search-input" placeholder="Search content..." autocomplete="off">
         </div>
         <button id="close-search-btn" class="close-search-btn">
           <i class="fas fa-times"></i>
@@ -328,8 +273,6 @@
             <option value="News">News</option>
             <option value="Sports">Sports</option>
             <option value="Movies">Movies</option>
-            <option value="Documentaries">Documentaries</option>
-            <option value="Podcasts">Podcasts</option>
           </select>
         </div>
         <div class="filter-group">
@@ -342,13 +285,10 @@
         </div>
       </div>
       <div id="search-results" class="search-results">
-        <div id="search-results-grid" class="search-results-grid">
-          <!-- Results loaded here -->
-        </div>
+        <div id="search-results-grid" class="search-results-grid"></div>
       </div>
     </div>
     
-    <!-- Notifications Panel -->
     <div id="notifications-panel" class="notifications-panel">
       <div class="notifications-header">
         <h2>Notifications</h2>
@@ -356,16 +296,12 @@
           <i class="fas fa-times"></i>
         </button>
       </div>
-      <div class="notifications-list" id="notifications-list">
-        <!-- Notifications loaded here -->
-      </div>
+      <div class="notifications-list" id="notifications-list"></div>
       <div class="notifications-footer">
         <button id="mark-all-read" class="text-btn">Mark all as read</button>
-        <button id="notification-settings" class="text-btn">Settings</button>
       </div>
     </div>
     
-    <!-- Theme Selector -->
     <div id="theme-selector" class="theme-selector">
       <button class="theme-option" data-theme="dark">
         <i class="fas fa-moon"></i> Dark
@@ -379,114 +315,11 @@
     </div>
   </div>
   
-  <!-- JavaScript Files (load in correct order) -->
+  <!-- JavaScript Files - ONLY content library files -->
   <script src="env.js"></script>
   <script src="js/rate-limiter.js"></script>
   <script src="js/content-library-themes.js"></script>
   <script src="js/content-library-features.js"></script>
   <script src="js/content-library.js"></script>
-  
-  <!-- Home Feed UI Components (for sidebar, header, navigation) -->
-  <script src="js/home-feed-ui.js"></script>
-  <script src="js/home-feed-features.js"></script>
-  
-  <!-- Debug Script for Loading Issues -->
-  <script>
-    // Debug loading issues
-    console.log('🔍 Debug: Script loading order check');
-    console.log('- env.js loaded:', !!window.ENV);
-    console.log('- rate-limiter.js loaded:', !!(window.rateLimiter || window.authRateLimiter));
-    console.log('- themes.js loaded:', typeof initTheme === 'function');
-    console.log('- features.js loaded:', typeof initFeatures === 'function');
-    console.log('- content-library.js loaded:', typeof initContentLibrary === 'function');
-    
-    // Check for variable conflicts
-    const conflicts = [];
-    if (typeof currentPage !== 'undefined' && currentPage !== window.currentPage) conflicts.push('currentPage');
-    if (typeof isLoadingMore !== 'undefined' && isLoadingMore !== window.isLoadingMore) conflicts.push('isLoadingMore');
-    if (typeof hasMoreContent !== 'undefined' && hasMoreContent !== window.hasMoreContent) conflicts.push('hasMoreContent');
-    if (typeof PAGE_SIZE !== 'undefined' && PAGE_SIZE !== window.PAGE_SIZE) conflicts.push('PAGE_SIZE');
-    
-    if (conflicts.length > 0) {
-      console.error('❌ Variable conflicts detected:', conflicts);
-      console.error('These variables should be on window object or removed');
-      
-      // Provide more detailed debugging info
-      conflicts.forEach(varName => {
-        console.error(`- ${varName}: local=${eval(varName)}, window.${varName}=${window[varName]}`);
-      });
-    } else {
-      console.log('✅ No variable conflicts detected');
-    }
-    
-    // Check pagination state
-    console.log('📊 Pagination state:', {
-      currentPage: window.currentPage,
-      isLoadingMore: window.isLoadingMore,
-      hasMoreContent: window.hasMoreContent,
-      PAGE_SIZE: window.PAGE_SIZE
-    });
-    
-    // Check Supabase client
-    console.log('🔌 Supabase client:', !!window.supabaseClient);
-    
-    // Check if all required DOM elements exist
-    const requiredElements = [
-      'loading', 'app', 'content-sections', 'category-tabs',
-      'infinite-scroll-sentinel', 'toast-container'
-    ];
-    
-    const missingElements = requiredElements.filter(id => !document.getElementById(id));
-    if (missingElements.length > 0) {
-      console.warn('⚠️ Missing DOM elements:', missingElements);
-    } else {
-      console.log('✅ All required DOM elements present');
-    }
-    
-    // Performance monitoring
-    if (window.performance) {
-      const perfData = window.performance.timing;
-      const pageLoadTime = perfData.loadEventEnd - perfData.navigationStart;
-      console.log(`⏱️ Page load time: ${pageLoadTime}ms`);
-    }
-    
-    // Memory usage if available
-    if (window.performance && window.performance.memory) {
-      console.log('💾 Memory usage:', {
-        usedJSHeapSize: Math.round(window.performance.memory.usedJSHeapSize / 1048576) + 'MB',
-        totalJSHeapSize: Math.round(window.performance.memory.totalJSHeapSize / 1048576) + 'MB'
-      });
-    }
-    
-    console.log('🚀 Ready to initialize content library...');
-  </script>
-  
-  <!-- Fallback error handler -->
-  <script>
-    // Global error handler for debugging
-    window.addEventListener('error', function(e) {
-      console.error('❌ Global error caught:', {
-        message: e.message,
-        filename: e.filename,
-        lineno: e.lineno,
-        colno: e.colno,
-        error: e.error
-      });
-      
-      // Show user-friendly error message
-      const loadingScreen = document.getElementById('loading');
-      const loadingText = document.getElementById('loading-text');
-      if (loadingScreen && loadingText) {
-        loadingText.innerHTML = `Error loading page. Please refresh.<br><small>${e.message}</small>`;
-      }
-      
-      return false;
-    });
-    
-    // Handle unhandled promise rejections
-    window.addEventListener('unhandledrejection', function(e) {
-      console.error('❌ Unhandled promise rejection:', e.reason);
-    });
-  </script>
 </body>
 </html>
