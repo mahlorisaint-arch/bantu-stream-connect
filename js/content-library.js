@@ -1,6 +1,8 @@
 /**
  * Core Content Library Module
  * Handles initialization, authentication, content fetching, and rendering
+ * 
+ * 🎯 UPDATED: Mobile header fixes, navigation button centering, UI scale improvements
  */
 
 // Supabase Configuration from environment
@@ -37,6 +39,62 @@ const categories = [
   'Skits',
   'Videos'
 ];
+
+// ============================================
+// UI SCALE CONTROLLER (from home feed)
+// ============================================
+class UIScaleController {
+    constructor() {
+        this.scale = parseFloat(localStorage.getItem('bantu_ui_scale')) || 1;
+        this.minScale = 0.8;
+        this.maxScale = 1.4;
+        this.step = 0.1;
+    }
+    init() {
+        this.applyScale();
+        this.setupEventListeners();
+    }
+    setupEventListeners() {
+        document.addEventListener('scaleChanged', (e) => {
+            this.updateScaleDisplay(e.detail.scale);
+        });
+    }
+    applyScale() {
+        document.documentElement.style.setProperty('--ui-scale', this.scale);
+        localStorage.setItem('bantu_ui_scale', this.scale.toString());
+        document.dispatchEvent(new CustomEvent('scaleChanged', {
+            detail: { scale: this.scale }
+        }));
+    }
+    increase() {
+        if (this.scale < this.maxScale) {
+            this.scale = Math.min(this.maxScale, this.scale + this.step);
+            this.applyScale();
+        }
+    }
+    decrease() {
+        if (this.scale > this.minScale) {
+            this.scale = Math.max(this.minScale, this.scale - this.step);
+            this.applyScale();
+        }
+    }
+    reset() {
+        this.scale = 1;
+        this.applyScale();
+    }
+    getScale() {
+        return this.scale;
+    }
+    updateScaleDisplay(scale) {
+        const displays = document.querySelectorAll('.scale-value, #sidebar-scale-value');
+        displays.forEach(el => {
+            if (el) el.textContent = Math.round(scale * 100) + '%';
+        });
+    }
+}
+
+// Initialize UI Scale Controller globally
+window.uiScaleController = new UIScaleController();
 
 // ============================================
 // AUTHENTICATION FUNCTIONS
@@ -178,6 +236,9 @@ function updateProfileUI(profile) {
       sidebarProfileAvatar.appendChild(fallbackIcon);
     }
   }
+  
+  // Apply mobile header styles
+  applyMobileHeaderStyles();
 }
 
 function setFallbackAvatar(initial, userPlaceholder, sidebarAvatar) {
@@ -196,6 +257,55 @@ function setFallbackAvatar(initial, userPlaceholder, sidebarAvatar) {
     sidebarAvatar.appendChild(sidebarFallback);
   }
 }
+
+// ✅ MOBILE FIX: Apply styles to hide profile picture on mobile
+function applyMobileHeaderStyles() {
+    const isMobile = window.innerWidth <= 480;
+    const profileBtn = document.querySelector('.profile-btn');
+    const profilePlaceholder = document.getElementById('userProfilePlaceholder');
+    const profileNameSpan = document.getElementById('current-profile-name');
+    const analyticsBtn = document.getElementById('analytics-btn');
+    
+    if (isMobile) {
+        // Hide the profile picture/avatar on mobile
+        if (profilePlaceholder) {
+            profilePlaceholder.style.display = 'none';
+        }
+        // Hide analytics button on mobile
+        if (analyticsBtn) {
+            analyticsBtn.style.display = 'none';
+        }
+        // Ensure the button still shows the name
+        if (profileBtn) {
+            profileBtn.style.minWidth = 'auto';
+            profileBtn.style.padding = '0.3125rem 0.75rem';
+            profileBtn.style.justifyContent = 'center';
+        }
+        // Ensure name is visible
+        if (profileNameSpan) {
+            profileNameSpan.style.display = 'inline-block';
+        }
+    } else {
+        // Show profile picture on desktop
+        if (profilePlaceholder) {
+            profilePlaceholder.style.display = 'flex';
+        }
+        // Show analytics button on desktop
+        if (analyticsBtn) {
+            analyticsBtn.style.display = 'flex';
+        }
+        if (profileBtn) {
+            profileBtn.style.minWidth = '160px';
+            profileBtn.style.padding = '0.3125rem 1.2rem 0.3125rem 0.5rem';
+            profileBtn.style.justifyContent = 'flex-start';
+        }
+    }
+}
+
+// Listen for window resize to update mobile header styles
+window.addEventListener('resize', () => {
+    applyMobileHeaderStyles();
+});
 
 // ============================================
 // CONTENT FUNCTIONS
@@ -1294,7 +1404,7 @@ function setupCoreListeners() {
     });
   }
   
-  // Navigation buttons
+  // Navigation buttons - ✅ FIXED: Menu button opens sidebar, not dashboard
   const homeBtn = document.getElementById('nav-home-btn');
   if (homeBtn) {
     homeBtn.addEventListener('click', () => {
@@ -1322,7 +1432,7 @@ function setupCoreListeners() {
     });
   }
   
-  // Menu button (open sidebar)
+  // ✅ FIXED: Menu button - Open Sidebar ONLY (no redirect)
   const menuBtn = document.getElementById('nav-menu-btn');
   const menuToggle = document.getElementById('menu-toggle');
   const sidebarClose = document.getElementById('sidebar-close');
@@ -1345,10 +1455,33 @@ function setupCoreListeners() {
     }
   };
   
-  if (menuBtn) menuBtn.addEventListener('click', openSidebar);
-  if (menuToggle) menuToggle.addEventListener('click', openSidebar);
+  if (menuBtn) {
+    // Remove existing listeners by cloning
+    const newMenuBtn = menuBtn.cloneNode(true);
+    menuBtn.parentNode.replaceChild(newMenuBtn, menuBtn);
+    newMenuBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      console.log('📱 Menu button clicked - opening sidebar');
+      openSidebar();
+    });
+  }
+  
+  if (menuToggle) {
+    const newMenuToggle = menuToggle.cloneNode(true);
+    menuToggle.parentNode.replaceChild(newMenuToggle, menuToggle);
+    newMenuToggle.addEventListener('click', openSidebar);
+  }
+  
   if (sidebarClose) sidebarClose.addEventListener('click', closeSidebar);
   if (sidebarOverlay) sidebarOverlay.addEventListener('click', closeSidebar);
+  
+  // ESC key to close
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && sidebarMenu?.classList.contains('active')) {
+      closeSidebar();
+    }
+  });
   
   // See all buttons
   document.addEventListener('click', (e) => {
@@ -1389,37 +1522,53 @@ function setupThemeSelector() {
       });
     });
   }
+  
+  // Apply saved theme
+  const savedTheme = localStorage.getItem('theme') || 'dark';
+  document.body.classList.add(`theme-${savedTheme}`);
 }
 
 // Setup UI scale controller
 function setupUIScale() {
-  const decreaseBtn = document.getElementById('sidebar-scale-decrease');
-  const increaseBtn = document.getElementById('sidebar-scale-increase');
-  const resetBtn = document.getElementById('sidebar-scale-reset');
-  const scaleValue = document.getElementById('sidebar-scale-value');
-  
-  let currentScale = parseInt(localStorage.getItem('ui-scale') || '100');
-  
-  const applyScale = (scale) => {
-    currentScale = Math.min(150, Math.max(70, scale));
-    document.documentElement.style.fontSize = `${currentScale}%`;
-    if (scaleValue) scaleValue.textContent = `${currentScale}%`;
-    localStorage.setItem('ui-scale', currentScale);
-  };
-  
-  if (decreaseBtn) {
-    decreaseBtn.addEventListener('click', () => applyScale(currentScale - 10));
+  if (window.uiScaleController) {
+    window.uiScaleController.init();
+    
+    // Update sidebar scale display
+    const scaleValue = document.getElementById('sidebar-scale-value');
+    const updateDisplay = () => {
+      if (scaleValue) {
+        scaleValue.textContent = Math.round(window.uiScaleController.getScale() * 100) + '%';
+      }
+    };
+    
+    const decreaseBtn = document.getElementById('sidebar-scale-decrease');
+    const increaseBtn = document.getElementById('sidebar-scale-increase');
+    const resetBtn = document.getElementById('sidebar-scale-reset');
+    
+    if (decreaseBtn) {
+      decreaseBtn.addEventListener('click', () => {
+        window.uiScaleController.decrease();
+        updateDisplay();
+      });
+    }
+    
+    if (increaseBtn) {
+      increaseBtn.addEventListener('click', () => {
+        window.uiScaleController.increase();
+        updateDisplay();
+      });
+    }
+    
+    if (resetBtn) {
+      resetBtn.addEventListener('click', () => {
+        window.uiScaleController.reset();
+        updateDisplay();
+      });
+    }
+    
+    updateDisplay();
+    document.addEventListener('scaleChanged', updateDisplay);
   }
-  
-  if (increaseBtn) {
-    increaseBtn.addEventListener('click', () => applyScale(currentScale + 10));
-  }
-  
-  if (resetBtn) {
-    resetBtn.addEventListener('click', () => applyScale(100));
-  }
-  
-  applyScale(currentScale);
 }
 
 // ============================================
@@ -1436,9 +1585,10 @@ async function initContentLibrary() {
   
   try {
     // Initialize theme
-    const savedTheme = localStorage.getItem('theme') || 'dark';
-    document.body.classList.add(`theme-${savedTheme}`);
-    if (typeof initTheme === 'function') initTheme();
+    setupThemeSelector();
+    
+    // Initialize UI Scale Controller
+    setupUIScale();
     
     // Check authentication
     loadingText.textContent = 'Checking authentication...';
@@ -1480,8 +1630,9 @@ async function initContentLibrary() {
     setupNotifications();
     setupAnalytics();
     setupBackToTop();
-    setupThemeSelector();
-    setupUIScale();
+    
+    // Apply mobile header styles after everything is loaded
+    applyMobileHeaderStyles();
     
     // Initialize rate limiter cleanup
     if (window.rateLimiter) window.rateLimiter.startCleanup();
