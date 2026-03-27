@@ -3,6 +3,10 @@
  * Handles initialization, authentication, content fetching, and rendering
  * 
  * 🎯 UPDATED: Mobile header fixes, navigation button centering, UI scale improvements
+ * 🎯 FIXED: No profile dropdown on mobile, smaller header icons
+ * 🎯 FIXED: Menu button opens sidebar (not redirect)
+ * 🎯 FIXED: Theme system matches content-detail page
+ * 🎯 FIXED: UI scale applies to whole page
  */
 
 // Supabase Configuration from environment
@@ -41,7 +45,119 @@ const categories = [
 ];
 
 // ============================================
-// UI SCALE CONTROLLER (from home feed)
+// THEME FUNCTIONS (Matches content-detail page)
+// ============================================
+
+function initThemeSelector() {
+    console.log('🎨 Initializing theme selector...');
+    
+    const themeSelector = document.getElementById('theme-selector');
+    const themeToggle = document.getElementById('sidebar-theme-toggle');
+    
+    if (!themeSelector || !themeToggle) {
+        console.warn('Theme selector elements not found');
+        return;
+    }
+    
+    // Apply saved theme on load
+    const savedTheme = localStorage.getItem('bantu_theme') || 'dark';
+    applyTheme(savedTheme);
+    
+    // Theme option click handlers
+    document.querySelectorAll('.theme-option').forEach(option => {
+        option.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            const theme = this.dataset.theme;
+            applyTheme(theme);
+            setTimeout(() => themeSelector.classList.remove('active'), 100);
+        });
+    });
+    
+    // Toggle theme selector from sidebar
+    themeToggle.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        themeSelector.classList.toggle('active');
+    });
+    
+    // Close when clicking outside
+    document.addEventListener('click', (e) => {
+        if (themeSelector.classList.contains('active') &&
+            !themeSelector.contains(e.target) &&
+            !themeToggle.contains(e.target)) {
+            themeSelector.classList.remove('active');
+        }
+    });
+    
+    console.log('✅ Theme selector initialized');
+}
+
+function applyTheme(theme) {
+    console.log('🎨 Applying theme:', theme);
+    
+    if (!theme || (theme !== 'dark' && theme !== 'light' && theme !== 'high-contrast')) {
+        console.warn('Invalid theme:', theme, 'defaulting to dark');
+        theme = 'dark';
+    }
+    
+    const root = document.documentElement;
+    root.classList.remove('theme-dark', 'theme-light', 'theme-high-contrast');
+    root.classList.add(`theme-${theme}`);
+    
+    // Apply theme-specific CSS variables
+    switch(theme) {
+        case 'light':
+            root.style.setProperty('--deep-black', '#ffffff');
+            root.style.setProperty('--soft-white', '#1a1a1a');
+            root.style.setProperty('--slate-grey', '#666666');
+            root.style.setProperty('--card-bg', 'rgba(255, 255, 255, 0.9)');
+            root.style.setProperty('--card-border', 'rgba(0, 0, 0, 0.1)');
+            break;
+        case 'high-contrast':
+            root.style.setProperty('--deep-black', '#000000');
+            root.style.setProperty('--soft-white', '#ffffff');
+            root.style.setProperty('--slate-grey', '#ffff00');
+            root.style.setProperty('--warm-gold', '#ff0000');
+            root.style.setProperty('--bantu-blue', '#00ff00');
+            root.style.setProperty('--card-bg', '#000000');
+            root.style.setProperty('--card-border', '#ffffff');
+            break;
+        default: // dark
+            root.style.setProperty('--deep-black', '#0A0A0A');
+            root.style.setProperty('--soft-white', '#F5F5F5');
+            root.style.setProperty('--slate-grey', '#A0A0A0');
+            root.style.setProperty('--warm-gold', '#F59E0B');
+            root.style.setProperty('--bantu-blue', '#1D4ED8');
+            root.style.setProperty('--card-bg', 'rgba(18, 18, 18, 0.95)');
+            root.style.setProperty('--card-border', 'rgba(255, 255, 255, 0.1)');
+            break;
+    }
+    
+    // Force CSS variable update for INSTANT visual effect
+    void root.offsetWidth;
+    
+    // Save preference
+    localStorage.setItem('bantu_theme', theme);
+    
+    // Update active state on theme options
+    document.querySelectorAll('.theme-option').forEach(option => {
+        option.classList.toggle('active', option.dataset.theme === theme);
+    });
+    
+    // Show confirmation toast
+    if (typeof showToast === 'function') {
+        showToast(`Theme changed to ${theme}`, 'success');
+    }
+    
+    // Dispatch custom event
+    document.dispatchEvent(new CustomEvent('themeChanged', {
+        detail: { theme: theme }
+    }));
+}
+
+// ============================================
+// UI SCALE CONTROLLER (Applies to whole page)
 // ============================================
 class UIScaleController {
     constructor() {
@@ -60,6 +176,7 @@ class UIScaleController {
         });
     }
     applyScale() {
+        // Apply to root element for whole page scaling
         document.documentElement.style.setProperty('--ui-scale', this.scale);
         localStorage.setItem('bantu_ui_scale', this.scale.toString());
         document.dispatchEvent(new CustomEvent('scaleChanged', {
@@ -258,46 +375,67 @@ function setFallbackAvatar(initial, userPlaceholder, sidebarAvatar) {
   }
 }
 
-// ✅ MOBILE FIX: Apply styles to hide profile picture on mobile
+// ✅ MOBILE FIX: Apply styles to hide profile dropdown on mobile and reduce header size
 function applyMobileHeaderStyles() {
-    const isMobile = window.innerWidth <= 480;
+    const isMobile = window.innerWidth <= 768;
+    const profileSwitcher = document.querySelector('.profile-switcher');
     const profileBtn = document.querySelector('.profile-btn');
     const profilePlaceholder = document.getElementById('userProfilePlaceholder');
     const profileNameSpan = document.getElementById('current-profile-name');
     const analyticsBtn = document.getElementById('analytics-btn');
+    const profileDropdown = document.getElementById('profile-dropdown');
     
     if (isMobile) {
-        // Hide the profile picture/avatar on mobile
-        if (profilePlaceholder) {
-            profilePlaceholder.style.display = 'none';
+        // ✅ Hide entire profile switcher (including dropdown) on mobile
+        if (profileSwitcher) {
+            profileSwitcher.style.display = 'none';
         }
         // Hide analytics button on mobile
         if (analyticsBtn) {
             analyticsBtn.style.display = 'none';
         }
-        // Ensure the button still shows the name
-        if (profileBtn) {
-            profileBtn.style.minWidth = 'auto';
-            profileBtn.style.padding = '0.3125rem 0.75rem';
-            profileBtn.style.justifyContent = 'center';
+        // Ensure header icons are smaller
+        const headerActions = document.querySelector('.header-actions');
+        if (headerActions) {
+            headerActions.style.gap = '0.375rem';
         }
-        // Ensure name is visible
-        if (profileNameSpan) {
-            profileNameSpan.style.display = 'inline-block';
+        const iconBtns = document.querySelectorAll('.icon-btn');
+        iconBtns.forEach(btn => {
+            btn.style.width = '2rem';
+            btn.style.height = '2rem';
+            btn.style.fontSize = '0.875rem';
+        });
+        // Ensure RSA badge is compact
+        const rsaBadge = document.querySelector('.rsa-badge');
+        if (rsaBadge) {
+            rsaBadge.style.padding = '0.25rem 0.5rem';
+            rsaBadge.style.fontSize = '0.6875rem';
         }
     } else {
-        // Show profile picture on desktop
-        if (profilePlaceholder) {
-            profilePlaceholder.style.display = 'flex';
+        // Desktop: show profile switcher
+        if (profileSwitcher) {
+            profileSwitcher.style.display = 'block';
         }
-        // Show analytics button on desktop
         if (analyticsBtn) {
             analyticsBtn.style.display = 'flex';
         }
-        if (profileBtn) {
-            profileBtn.style.minWidth = '160px';
-            profileBtn.style.padding = '0.3125rem 1.2rem 0.3125rem 0.5rem';
-            profileBtn.style.justifyContent = 'flex-start';
+        // Reset header actions gap
+        const headerActions = document.querySelector('.header-actions');
+        if (headerActions) {
+            headerActions.style.gap = '';
+        }
+        // Reset icon sizes
+        const iconBtns = document.querySelectorAll('.icon-btn');
+        iconBtns.forEach(btn => {
+            btn.style.width = '';
+            btn.style.height = '';
+            btn.style.fontSize = '';
+        });
+        // Reset RSA badge
+        const rsaBadge = document.querySelector('.rsa-badge');
+        if (rsaBadge) {
+            rsaBadge.style.padding = '';
+            rsaBadge.style.fontSize = '';
         }
     }
 }
@@ -1354,7 +1492,7 @@ function setupBackToTop() {
 
 // Setup core event listeners
 function setupCoreListeners() {
-  // Profile dropdown toggle
+  // ✅ FIXED: Profile dropdown toggle - but hidden on mobile via CSS
   const profileBtn = document.getElementById('current-profile-btn');
   const profileDropdown = document.getElementById('profile-dropdown');
   
@@ -1493,7 +1631,7 @@ function setupCoreListeners() {
   });
 }
 
-// Setup theme selector
+// Setup theme selector (matches content-detail page)
 function setupThemeSelector() {
   const themeToggle = document.getElementById('sidebar-theme-toggle');
   const themeSelector = document.getElementById('theme-selector');
@@ -1512,23 +1650,22 @@ function setupThemeSelector() {
       }
     });
     
+    // Use the same theme options as content-detail page
     document.querySelectorAll('.theme-option').forEach(option => {
       option.addEventListener('click', () => {
         const theme = option.dataset.theme;
-        document.body.classList.remove('theme-dark', 'theme-light', 'theme-high-contrast');
-        document.body.classList.add(`theme-${theme}`);
-        localStorage.setItem('theme', theme);
+        applyTheme(theme);
         themeSelector.classList.remove('active');
       });
     });
   }
   
   // Apply saved theme
-  const savedTheme = localStorage.getItem('theme') || 'dark';
-  document.body.classList.add(`theme-${savedTheme}`);
+  const savedTheme = localStorage.getItem('bantu_theme') || 'dark';
+  applyTheme(savedTheme);
 }
 
-// Setup UI scale controller
+// Setup UI scale controller (applies to whole page)
 function setupUIScale() {
   if (window.uiScaleController) {
     window.uiScaleController.init();
@@ -1584,10 +1721,10 @@ async function initContentLibrary() {
   const app = document.getElementById('app');
   
   try {
-    // Initialize theme
+    // Initialize theme (matches content-detail)
     setupThemeSelector();
     
-    // Initialize UI Scale Controller
+    // Initialize UI Scale Controller (applies to whole page)
     setupUIScale();
     
     // Check authentication
