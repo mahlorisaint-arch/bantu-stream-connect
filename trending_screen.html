@@ -1850,10 +1850,10 @@
             <!-- Trending Sections Container -->
             <div id="trending-sections"></div>
 
-            <!-- Shorts Section -->
+            <!-- Shorts Section (Renamed and will be inserted above The Pulse via JS) -->
             <div id="shorts-section" class="shorts-section" style="display: none;">
                 <div class="section-header">
-                    <h2 class="section-title"><i class="fas fa-bolt section-icon"></i>BANTU SHORTS</h2>
+                    <h2 class="section-title"><i class="fas fa-bolt section-icon"></i>BSC SHORTS</h2>
                     <button id="view-all-shorts" class="see-all-btn">SEE ALL</button>
                 </div>
                 <div id="shorts-scroll" class="shorts-scroll"></div>
@@ -2059,6 +2059,44 @@
             return `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/${cleanPath}`;
         }
 
+        // ============================================
+        // PROFILE PICTURE FIX: Update Header Profile with actual image
+        // ============================================
+        async function updateHeaderProfile() {
+            const placeholder = document.getElementById('userProfilePlaceholder');
+            const nameSpan = document.getElementById('current-profile-name');
+            
+            if (!currentUser) {
+                placeholder.innerHTML = '<i class="fas fa-user"></i>';
+                nameSpan.textContent = 'Guest';
+                return;
+            }
+            
+            try {
+                const { data: profile } = await window.supabaseClient
+                    .from('user_profiles')
+                    .select('full_name, username, avatar_url')
+                    .eq('id', currentUser.id)
+                    .maybeSingle();
+                
+                const displayName = profile?.full_name || profile?.username || currentUser.email?.split('@')[0] || 'User';
+                nameSpan.textContent = displayName;
+                
+                if (profile?.avatar_url) {
+                    const avatarUrl = buildThumbnailUrl(profile.avatar_url);
+                    placeholder.innerHTML = `<img src="${avatarUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
+                } else {
+                    const initial = displayName.charAt(0).toUpperCase();
+                    placeholder.innerHTML = `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--bantu-blue),var(--warm-gold));color:white;font-weight:bold;font-size:1rem;">${initial}</div>`;
+                }
+            } catch (error) {
+                console.error('Error loading profile avatar:', error);
+                const fallbackName = currentUser.email?.split('@')[0] || 'User';
+                nameSpan.textContent = fallbackName;
+                placeholder.innerHTML = `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--bantu-blue),var(--warm-gold));color:white;font-weight:bold;font-size:1rem;">${fallbackName.charAt(0).toUpperCase()}</div>`;
+            }
+        }
+
         function getInitials(name) {
             if (!name) return 'U';
             const parts = name.split(' ');
@@ -2193,22 +2231,6 @@
             } catch (error) {
                 console.error('Error loading profile:', error);
             }
-        }
-
-        function updateHeaderProfile() {
-            const placeholder = document.getElementById('userProfilePlaceholder');
-            const nameSpan = document.getElementById('current-profile-name');
-            
-            if (!currentUser) {
-                placeholder.innerHTML = '<i class="fas fa-user"></i>';
-                nameSpan.textContent = 'Guest';
-                return;
-            }
-            
-            const displayName = currentUser.email?.split('@')[0] || 'User';
-            nameSpan.textContent = displayName;
-            const initial = displayName.charAt(0).toUpperCase();
-            placeholder.innerHTML = `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--bantu-blue),var(--warm-gold));color:white;font-weight:bold;font-size:1rem;">${initial}</div>`;
         }
 
         // ============================================
@@ -2764,7 +2786,7 @@
         }
 
         // ============================================
-        // MAIN LOAD FUNCTION
+        // MAIN LOAD FUNCTION (UPDATED: Shorts section moved above The Pulse)
         // ============================================
         async function loadContent() {
             const loading = document.getElementById('loading');
@@ -2782,23 +2804,33 @@
                 .slice(0, 12);
             const personalized = generatePersonalizedRow(contentData);
             
+            // Build HTML: Shorts section will be placed BEFORE The Pulse
             let html = '';
+            
+            // 1. SHORTS SECTION (renamed to BSC Shorts) - now placed first
+            if (shorts.length) {
+                const shortsContainer = document.getElementById('shorts-scroll');
+                const shortsSection = document.getElementById('shorts-section');
+                if (shortsContainer && shortsSection) {
+                    shortsContainer.innerHTML = renderShorts(shorts);
+                    shortsSection.style.display = 'block';
+                }
+                // Add shorts section to the HTML stream at the top (before The Pulse)
+                html += `<section class="section"><div class="section-header"><h2 class="section-title"><i class="fas fa-bolt section-icon"></i>BSC SHORTS</h2><button class="see-all-btn" onclick="window.location.href='content-library.html?type=shorts'">SEE ALL</button></div><div class="shorts-scroll">${renderShorts(shorts)}</div></section>`;
+            } else {
+                document.getElementById('shorts-section')?.style.setProperty('display', 'none');
+            }
+            
+            // 2. THE PULSE (featured content)
             if (featured) html += `<section class="section"><div class="section-header"><h2 class="section-title"><i class="fas fa-rocket section-icon"></i>THE PULSE</h2></div>${renderFeatured(featured)}</section>`;
+            
+            // 3. Rest of sections
             if (personalized.length) html += `<section class="section"><div class="section-header"><h2 class="section-title"><i class="fas fa-magic section-icon"></i>MADE FOR YOU</h2><button class="see-all-btn" onclick="window.location.href='content-library.html?for-you=true'">SEE ALL</button></div><div class="content-horizontal-scroll">${renderCards(personalized)}</div></section>`;
             if (liveStreams.length) html += `<section class="section"><div class="section-header"><h2 class="section-title"><i class="fas fa-tv section-icon"></i>LIVE NOW</h2><button class="see-all-btn" onclick="window.location.href='content-library.html?genre=Live'">SEE ALL</button></div><div class="content-horizontal-scroll">${renderCards(liveStreams)}</div></section>`;
             html += `<section class="section"><div class="section-header"><h2 class="section-title"><i class="fas fa-hashtag section-icon"></i>TRENDING TOPICS</h2></div><div class="hashtags-container">${renderHashtags()}</div></section>`;
             if (communityGems.length) html += `<section class="section"><div class="section-header"><h2 class="section-title"><i class="fas fa-gem section-icon"></i>COMMUNITY GEMS</h2><button class="see-all-btn" onclick="window.location.href='content-library.html?sort=popular'">SEE ALL</button></div><div class="community-grid">${renderCards(communityGems, 'grid')}</div></section>`;
             
             document.getElementById('trending-sections').innerHTML = html;
-            
-            const shortsContainer = document.getElementById('shorts-scroll');
-            const shortsSection = document.getElementById('shorts-section');
-            if (shorts.length) {
-                shortsContainer.innerHTML = renderShorts(shorts);
-                shortsSection.style.display = 'block';
-            } else {
-                shortsSection.style.display = 'none';
-            }
             
             attachCardListeners();
             
@@ -2820,7 +2852,7 @@
             if (session?.user) {
                 currentUser = session.user;
                 await updateSidebarProfile();
-                updateHeaderProfile();
+                await updateHeaderProfile(); // Now loads actual profile picture
                 await loadUserStreak();
                 await loadNotifications();
                 await loadUserWatchHistory();
@@ -2846,7 +2878,7 @@
                 if (event === 'SIGNED_IN' && session?.user) {
                     currentUser = session.user;
                     await updateSidebarProfile();
-                    updateHeaderProfile();
+                    await updateHeaderProfile();
                     await loadUserStreak();
                     await loadNotifications();
                     await loadUserWatchHistory();
