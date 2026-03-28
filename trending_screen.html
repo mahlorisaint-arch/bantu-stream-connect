@@ -166,6 +166,7 @@ body {
   cursor: pointer;
   transition: all 0.3s ease;
   font-size: 1.2rem;
+  position: relative;
 }
 .icon-btn:hover {
   background: rgba(255, 255, 255, 0.2);
@@ -202,6 +203,10 @@ body {
   padding: 20px;
   max-width: 1200px;
   margin: 0 auto;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
 }
 .filter-container {
   display: flex;
@@ -210,6 +215,7 @@ body {
   padding-bottom: 10px;
   scrollbar-width: thin;
   scrollbar-color: var(--bantu-blue) transparent;
+  flex: 1;
 }
 .filter-chip {
   padding: 10px 20px;
@@ -250,6 +256,7 @@ body {
   max-width: 1200px;
   margin: 0 auto;
   padding: 20px;
+  padding-bottom: 80px;
 }
 .section { margin-bottom: 40px; }
 .section-header {
@@ -1097,6 +1104,8 @@ body {
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   display: flex;
   gap: 12px;
+  position: relative;
+  cursor: pointer;
 }
 .notification-item.read { opacity: 0.7; }
 .notification-icon {
@@ -1312,7 +1321,7 @@ body {
           <button id="refresh-btn" class="icon-btn refresh-btn" title="Refresh"><i class="fas fa-sync-alt"></i></button>
           <button id="notifications-btn" class="icon-btn" title="Notifications">
             <i class="fas fa-bell"></i>
-            <span class="notification-badge" id="notification-count" style="display: none; position: absolute; top: -5px; right: -5px; background: var(--error-color); color: white; font-size: 10px; font-weight: bold; width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid var(--deep-black);">0</span>
+            <span id="notification-count" style="display: none; position: absolute; top: -5px; right: -5px; background: var(--error-color); color: white; font-size: 10px; font-weight: bold; width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid var(--deep-black);">0</span>
           </button>
           <button id="profile-btn" class="profile-btn" title="Profile">
             <div class="profile-placeholder" id="userProfilePlaceholder"><i class="fas fa-user"></i></div>
@@ -1426,7 +1435,7 @@ document.addEventListener('DOMContentLoaded', function() {
   // State
   var currentUser = null;
   var allContentData = [];
-  var creatorProfilesCache = {}; // Cache creator profiles
+  var creatorProfilesCache = {};
   var featuredTrend = [];
   var liveStreams = [];
   var communityGems = [];
@@ -1683,8 +1692,8 @@ document.addEventListener('DOMContentLoaded', function() {
           document.getElementById('continue-thumbnail-img').src = buildThumbnailUrl(content.thumbnail_url);
           document.getElementById('continue-title-text').textContent = content.title;
           document.getElementById('continue-meta-text').textContent = 
-            `${progressPercent}% complete • ${timeRemaining} remaining`;
-          document.getElementById('continue-progress-bar').style.width = `${progressPercent}%`;
+            progressPercent + '% complete • ' + timeRemaining + ' remaining';
+          document.getElementById('continue-progress-bar').style.width = progressPercent + '%';
           document.getElementById('continue-watch-btn').onclick = function() {
             playContent(content.id);
           };
@@ -1847,11 +1856,10 @@ document.addEventListener('DOMContentLoaded', function() {
       });
   }
 
-  // ⭐ NEW: LOAD CREATOR PROFILES (Fix for username display)
+  // ⭐ NEW: LOAD CREATOR PROFILES
   async function loadCreatorProfiles(creatorIds) {
     if (!creatorIds || creatorIds.length === 0) return {};
     
-    // Filter out already cached profiles
     var uncachedIds = creatorIds.filter(function(id) {
       return id && !creatorProfilesCache[id];
     });
@@ -1861,14 +1869,16 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     try {
-      const { data, error } = await window.supabaseClient
+      var response = await window.supabaseClient
         .from('user_profiles')
         .select('id, username, avatar_url, is_verified')
         .in('id', uncachedIds);
       
+      var data = response.data;
+      var error = response.error;
+      
       if (error) throw error;
       
-      // Cache the profiles
       if (data) {
         data.forEach(function(profile) {
           creatorProfilesCache[profile.id] = profile;
@@ -1882,12 +1892,14 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
 
-  // ⭐ NEW: LOAD PERSONALIZED TRENDING
-  async function loadPersonalizedTrending(limit = 50, genre = null) {
+  // ⭐ NEW: LOAD PERSONALIZED TRENDING (FIXED SYNTAX ERROR)
+  async function loadPersonalizedTrending(limit, genre) {
+    limit = limit || 50;
     console.log('🎯 Loading personalized trending...');
     
-    const {  { session } } = await window.supabaseClient.auth.getSession();
-    const userId = session?.user?.id;
+    var sessionResponse = await window.supabaseClient.auth.getSession();
+    var session = sessionResponse.data.session;
+    var userId = session?.user?.id;
     
     if (!userId) {
       console.log('⚠️ No user session, loading global trending');
@@ -1895,12 +1907,15 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     try {
-      const { data, error } = await window.supabaseClient.rpc('get_personalized_trending', {
+      var rpcResponse = await window.supabaseClient.rpc('get_personalized_trending', {
         p_user_id: userId,
         p_limit: limit,
         p_genre: genre,
         p_exclude_content_ids: []
       });
+      
+      var data = rpcResponse.data;
+      var error = rpcResponse.error;
       
       if (error) {
         console.error('❌ Personalized trending error:', error);
@@ -1909,7 +1924,6 @@ document.addEventListener('DOMContentLoaded', function() {
       
       console.log('✅ Loaded personalized trending:', data.length, 'items');
       
-      // Extract creator IDs and load profiles
       var creatorIds = data.map(function(item) { return item.creator_id; }).filter(Boolean);
       await loadCreatorProfiles(creatorIds);
       
@@ -1936,48 +1950,50 @@ document.addEventListener('DOMContentLoaded', function() {
       });
       
     } catch (error) {
-      console.error('Fallback to global trending');
+      console.error('Fallback to global trending', error);
       return loadGlobalTrending(limit, genre);
     }
   }
 
   // ✅ LOAD GLOBAL TRENDING (Fallback)
-  async function loadGlobalTrending(limit = 50, genre = null) {
+  async function loadGlobalTrending(limit, genre) {
+    limit = limit || 50;
     console.log('🌍 Loading global trending...');
     
     try {
-      // First get trending scores
-      let query = window.supabaseClient
+      var trendingQuery = window.supabaseClient
         .from('mv_trending_scores')
         .select('content_id, trending_score, global_rank, genre, creator_id, duration, created_at')
         .order('global_rank', { ascending: true })
         .limit(limit);
       
       if (genre && genre !== 'All') {
-        query = query.eq('genre', genre);
+        trendingQuery = trendingQuery.eq('genre', genre);
       }
       
-      const {  data: trendingData, error: trendingError } = await query;
+      var trendingResponse = await trendingQuery;
+      var trendingData = trendingResponse.data;
+      var trendingError = trendingResponse.error;
       
       if (trendingError) throw trendingError;
       if (!trendingData || trendingData.length === 0) {
         return [];
       }
       
-      // Get content details
       var contentIds = trendingData.map(function(item) { return item.content_id; });
-      const {  data: contentData, error: contentError } = await window.supabaseClient
+      var contentResponse = await window.supabaseClient
         .from('Content')
         .select('id, title, thumbnail_url, views_count, likes_count, comments_count, is_live, user_id, duration, created_at')
         .in('id', contentIds);
       
+      var contentData = contentResponse.data;
+      var contentError = contentResponse.error;
+      
       if (contentError) throw contentError;
       
-      // Get creator profiles
       var creatorIds = contentData.map(function(item) { return item.user_id; }).filter(Boolean);
       await loadCreatorProfiles(creatorIds);
       
-      // Merge data
       return trendingData.map(function(trend) {
         var content = contentData.find(function(c) { return c.id === trend.content_id; }) || {};
         var creatorProfile = creatorProfilesCache[content.user_id] || {};
@@ -2434,24 +2450,30 @@ document.addEventListener('DOMContentLoaded', function() {
     
     setLoading(true, 'Finding surprise content...');
     
-    const moods = ['feel-good', 'inspiring', 'thrilling', 'relaxing', 'educational'];
-    const randomMood = moods[Math.floor(Math.random() * moods.length)];
-    
-    const { data, error } = await window.supabaseClient.rpc('get_surprise_me_content', {
-      p_user_id: currentUser.id,
-      p_mood: randomMood,
-      p_limit: 5
-    });
-    
-    setLoading(false);
-    
-    if (error || !data || data.length === 0) {
-      showToast('No surprise content available right now', 'info');
-      return;
+    try {
+      var response = await window.supabaseClient.rpc('get_surprise_me_content', {
+        p_user_id: currentUser.id,
+        p_mood: ['feel-good', 'inspiring', 'thrilling', 'relaxing', 'educational'][Math.floor(Math.random() * 5)],
+        p_limit: 5
+      });
+      
+      var data = response.data;
+      var error = response.error;
+      
+      setLoading(false);
+      
+      if (error || !data || data.length === 0) {
+        showToast('No surprise content available right now', 'info');
+        return;
+      }
+      
+      showToast('🎲 ' + (data[0].reason || 'Enjoy this recommendation!'), 'success');
+      console.log('Surprise content:', data);
+    } catch (error) {
+      setLoading(false);
+      console.error('Error loading surprise content:', error);
+      showToast('Something went wrong', 'error');
     }
-    
-    showToast(`🎲 ${data[0].reason}`, 'success');
-    console.log('Surprise content:', data);
   }
 
   // ✅ GLOBAL FUNCTIONS FOR HTML ONCLICK
@@ -2476,7 +2498,7 @@ document.addEventListener('DOMContentLoaded', function() {
     contentOffset = 100;
     hasMoreContent = true;
     try {
-      const contentData = await loadPersonalizedTrending(100, selectedFilter !== 'All' ? selectedFilter : null);
+      var contentData = await loadPersonalizedTrending(100, selectedFilter !== 'All' ? selectedFilter : null);
       processTrendingSections(contentData);
       renderFilterChips();
       renderTrendingSections();
