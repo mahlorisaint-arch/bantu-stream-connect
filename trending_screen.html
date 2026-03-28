@@ -1567,14 +1567,14 @@ document.addEventListener('DOMContentLoaded', function() {
       });
   }
   
-  // ✅ LOAD CONTENT - SIMPLIFIED & FIXED
+  // ✅ LOAD CONTENT - FINAL FIXED VERSION (NO QUOTES AROUND TABLE NAME)
   async function loadContent() {
     setLoading(true, 'Loading trending content...');
     
     try {
-      // ✅ Direct query to Content table with proper joins
+      // ✅ CORRECT: No extra quotes around table name - Supabase handles it
       const { data: contentData, error } = await window.supabaseClient
-        .from('"Content"')  // ✅ Quotes for capital C table name
+        .from('Content')  // ✅ Just 'Content' - NO extra quotes!
         .select(`
           id,
           title,
@@ -1631,7 +1631,7 @@ document.addEventListener('DOMContentLoaded', function() {
           duration: item.duration,
           created_at: item.created_at,
           genre: item.genre,
-          // ✅ CORRECT USERNAME: from joined user_profiles
+          // ✅ CORRECT USERNAME from joined user_profiles
           creator_username: profile.username || 'Creator',
           creator_avatar: profile.avatar_url,
           is_verified: profile.is_verified || false,
@@ -1649,7 +1649,7 @@ document.addEventListener('DOMContentLoaded', function() {
       
     } catch (error) {
       console.error('❌ Error loading content:', error);
-      showToast('Failed to load content', 'error');
+      showToast('Failed to load content: ' + error.message, 'error');
     } finally {
       setLoading(false);
     }
@@ -2009,7 +2009,7 @@ document.addEventListener('DOMContentLoaded', function() {
       .from('watch_progress')
       .select(`
         *,
-        "Content"!inner (
+        Content!inner (
           id,
           title,
           thumbnail_url,
@@ -2366,7 +2366,7 @@ document.addEventListener('DOMContentLoaded', function() {
     setupEventListeners();
     setupSearch();
     
-    // ✅ Just load content directly - no personalization RPC for now
+    // ✅ Just load content directly
     await loadContent();
     
     console.log('✅ Trending Screen initialized');
