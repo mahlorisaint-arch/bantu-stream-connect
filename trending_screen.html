@@ -1426,6 +1426,7 @@ document.addEventListener('DOMContentLoaded', function() {
   // State
   var currentUser = null;
   var allContentData = [];
+  var creatorProfilesCache = {}; // Cache creator profiles
   var featuredTrend = [];
   var liveStreams = [];
   var communityGems = [];
@@ -1846,11 +1847,46 @@ document.addEventListener('DOMContentLoaded', function() {
       });
   }
 
+  // ⭐ NEW: LOAD CREATOR PROFILES (Fix for username display)
+  async function loadCreatorProfiles(creatorIds) {
+    if (!creatorIds || creatorIds.length === 0) return {};
+    
+    // Filter out already cached profiles
+    var uncachedIds = creatorIds.filter(function(id) {
+      return id && !creatorProfilesCache[id];
+    });
+    
+    if (uncachedIds.length === 0) {
+      return creatorProfilesCache;
+    }
+    
+    try {
+      const { data, error } = await window.supabaseClient
+        .from('user_profiles')
+        .select('id, username, avatar_url, is_verified')
+        .in('id', uncachedIds);
+      
+      if (error) throw error;
+      
+      // Cache the profiles
+      if (data) {
+        data.forEach(function(profile) {
+          creatorProfilesCache[profile.id] = profile;
+        });
+      }
+      
+      return creatorProfilesCache;
+    } catch (error) {
+      console.error('Error loading creator profiles:', error);
+      return creatorProfilesCache;
+    }
+  }
+
   // ⭐ NEW: LOAD PERSONALIZED TRENDING
   async function loadPersonalizedTrending(limit = 50, genre = null) {
     console.log('🎯 Loading personalized trending...');
     
-    const { data: { session } } = await window.supabaseClient.auth.getSession();
+    const {  { session } } = await window.supabaseClient.auth.getSession();
     const userId = session?.user?.id;
     
     if (!userId) {
@@ -1873,21 +1909,31 @@ document.addEventListener('DOMContentLoaded', function() {
       
       console.log('✅ Loaded personalized trending:', data.length, 'items');
       
-      return data.map(item => ({
-        id: item.content_id,
-        title: item.title,
-        thumbnail_url: item.thumbnail_url,
-        genre: item.genre,
-        creator_id: item.creator_id,
-        views_count: Math.round(item.trending_score),
-        likes_count: 0,
-        comments_count: 0,
-        created_at: new Date().toISOString(),
-        duration: null,
-        is_live: false,
-        user_profiles: null,
-        recommendation_reason: item.reason
-      }));
+      // Extract creator IDs and load profiles
+      var creatorIds = data.map(function(item) { return item.creator_id; }).filter(Boolean);
+      await loadCreatorProfiles(creatorIds);
+      
+      return data.map(function(item) {
+        var creatorProfile = creatorProfilesCache[item.creator_id] || {};
+        return {
+          id: item.content_id,
+          title: item.title,
+          thumbnail_url: item.thumbnail_url,
+          genre: item.genre,
+          creator_id: item.creator_id,
+          creator_username: creatorProfile.username || 'Creator',
+          creator_avatar: creatorProfile.avatar_url,
+          is_verified: creatorProfile.is_verified || false,
+          views_count: Math.round(item.trending_score),
+          likes_count: 0,
+          comments_count: 0,
+          created_at: new Date().toISOString(),
+          duration: null,
+          is_live: false,
+          user_profiles: creatorProfile,
+          recommendation_reason: item.reason
+        };
+      });
       
     } catch (error) {
       console.error('Fallback to global trending');
@@ -1899,138 +1945,84 @@ document.addEventListener('DOMContentLoaded', function() {
   async function loadGlobalTrending(limit = 50, genre = null) {
     console.log('🌍 Loading global trending...');
     
-    let query = window.supabaseClient
-      .from('mv_trending_scores')
-      .select(`
-        content_id,
-        trending_score,
-        global_rank,
-        genre,
-        creator_id,
-        duration,
-        created_at,
-        Content!inner (
-          id,
-          title,
-          thumbnail_url,
-          views_count,
-          likes_count,
-          comments_count,
-          is_live,
-          user_profiles!user_id (
-            id,
-            username,
-            avatar_url,
-            is_verified
-          )
-        )
-      `)
-      .order('global_rank', { ascending: true })
-      .limit(limit);
-    
-    if (genre && genre !== 'All') {
-      query = query.eq('genre', genre);
+    try {
+      // First get trending scores
+      let query = window.supabaseClient
+        .from('mv_trending_scores')
+        .select('content_id, trending_score, global_rank, genre, creator_id, duration, created_at')
+        .order('global_rank', { ascending: true })
+        .limit(limit);
+      
+      if (genre && genre !== 'All') {
+        query = query.eq('genre', genre);
+      }
+      
+      const {  data: trendingData, error: trendingError } = await query;
+      
+      if (trendingError) throw trendingError;
+      if (!trendingData || trendingData.length === 0) {
+        return [];
+      }
+      
+      // Get content details
+      var contentIds = trendingData.map(function(item) { return item.content_id; });
+      const {  data: contentData, error: contentError } = await window.supabaseClient
+        .from('Content')
+        .select('id, title, thumbnail_url, views_count, likes_count, comments_count, is_live, user_id, duration, created_at')
+        .in('id', contentIds);
+      
+      if (contentError) throw contentError;
+      
+      // Get creator profiles
+      var creatorIds = contentData.map(function(item) { return item.user_id; }).filter(Boolean);
+      await loadCreatorProfiles(creatorIds);
+      
+      // Merge data
+      return trendingData.map(function(trend) {
+        var content = contentData.find(function(c) { return c.id === trend.content_id; }) || {};
+        var creatorProfile = creatorProfilesCache[content.user_id] || {};
+        
+        return {
+          id: trend.content_id,
+          title: content.title || 'Untitled',
+          thumbnail_url: content.thumbnail_url,
+          genre: trend.genre,
+          creator_id: content.user_id,
+          creator_username: creatorProfile.username || 'Creator',
+          creator_avatar: creatorProfile.avatar_url,
+          is_verified: creatorProfile.is_verified || false,
+          views_count: content.views_count || 0,
+          likes_count: content.likes_count || 0,
+          comments_count: content.comments_count || 0,
+          is_live: content.is_live || false,
+          created_at: content.created_at || trend.created_at,
+          duration: content.duration || trend.duration,
+          user_profiles: creatorProfile,
+          trending_score: trend.trending_score,
+          global_rank: trend.global_rank,
+          recommendation_reason: 'Trending now'
+        };
+      });
+      
+    } catch (error) {
+      console.error('Error loading global trending:', error);
+      return [];
     }
-    
-    const { data, error } = await query;
-    
-    if (error) throw error;
-    
-    return data.map(item => ({
-      id: item.content_id,
-      title: item.Content.title,
-      thumbnail_url: item.Content.thumbnail_url,
-      genre: item.genre,
-      creator_id: item.creator_id,
-      views_count: item.Content.views_count,
-      likes_count: item.Content.likes_count,
-      comments_count: item.Content.comments_count,
-      is_live: item.Content.is_live,
-      created_at: item.created_at,
-      duration: item.duration,
-      user_profiles: item.Content.user_profiles,
-      trending_score: item.trending_score,
-      global_rank: item.global_rank,
-      recommendation_reason: 'Trending now'
-    }));
   }
 
-  // ✅ FETCH CONTENT (Legacy - Keep for fallback)
-  function fetchContent(offset = 0, limit = 100) {
-    console.log('🔄 Fetching trending content...', offset, limit);
-    return window.supabaseClient
-      .from('Content')
-      .select('*, user_profiles!user_id(*)')
-      .eq('status', 'published')
-      .order('created_at', { ascending: false })
-      .range(offset, offset + limit - 1)
-      .then(function(response) {
-        var contentData = response.data;
-        var error = response.error;
-        if (error) {
-          console.log('⚠️ Trying lowercase content table...');
-          return window.supabaseClient
-            .from('content')
-            .select('*, user_profiles!user_id(*)')
-            .eq('status', 'published')
-            .order('created_at', { ascending: false })
-            .range(offset, offset + limit - 1);
-        }
-        return response;
-      })
-      .then(function(response) {
-        var contentData = response.data || [];
-        console.log('✅ Fetched content:', contentData.length, 'items');
-        var enrichPromises = contentData.map(function(item) {
-          return window.supabaseClient
-            .from('content_views')
-            .select('*', { count: 'exact', head: true })
-            .eq('content_id', item.id)
-            .then(function(viewsResponse) {
-              var viewsCount = viewsResponse.count || 0;
-              return {
-                ...item,
-                real_views: viewsCount,
-                is_live: item.is_live || false,
-                viewer_count: item.viewer_count || viewsCount,
-                is_new: isContentNew(item.created_at),
-                duration: item.duration || 0
-              };
-            });
-        });
-        return Promise.all(enrichPromises);
-      })
-      .catch(function(error) {
-        console.error('❌ Error fetching content:', error);
-        showToast('Failed to load content. Please refresh.', 'error');
-        return [];
-      });
-  }
-  
-  function isContentNew(createdAt) {
-    if (!createdAt) return false;
-    try {
-      var createdDate = new Date(createdAt);
-      var daysAgo = (Date.now() - createdDate.getTime()) / (1000 * 60 * 60 * 24);
-      return daysAgo < 7;
-    } catch (e) {
-      return false;
-    }
-  }
-  
   // ✅ PROCESS SECTIONS
   function processTrendingSections(contentData) {
     allContentData = contentData;
     featuredTrend = contentData.slice().sort(function(a, b) {
-      return (b.real_views || b.views_count || 0) - (a.real_views || a.views_count || 0);
+      return (b.views_count || 0) - (a.views_count || 0);
     }).slice(0, 1);
     liveStreams = contentData.filter(function(item) { return item.is_live; }).slice(0, 10);
     shortsContent = contentData.filter(function(item) {
       return (item.duration || 0) < 60 && !item.is_live;
     }).slice(0, 15);
     communityGems = contentData.slice().sort(function(a, b) {
-      var aScore = (a.real_views || a.views_count || 0) + ((a.likes_count || 0) * 2);
-      var bScore = (b.real_views || b.views_count || 0) + ((b.likes_count || 0) * 2);
+      var aScore = (a.views_count || 0) + ((a.likes_count || 0) * 2);
+      var bScore = (b.views_count || 0) + ((b.likes_count || 0) * 2);
       return bScore - aScore;
     }).slice(0, 20);
     trendingHashtags = ['#OwnYourStage', '#BantuFuture', '#1MinComedy', '#SofaTalks', '#JoburgVibes', '#AfricanTalent', '#StreamConnect', '#RisingStars'];
@@ -2107,8 +2099,8 @@ document.addEventListener('DOMContentLoaded', function() {
     if (featuredTrend.length === 0) return '';
     var content = featuredTrend[0];
     var thumbnailUrl = buildThumbnailUrl(content.thumbnail_url);
-    var creatorName = content.user_profiles ? content.user_profiles.username : 'Creator';
-    var isVerified = content.user_profiles && content.user_profiles.is_verified;
+    var creatorName = content.creator_username || content.user_profiles?.username || 'Creator';
+    var isVerified = content.is_verified || content.user_profiles?.is_verified || false;
     var verifiedBadge = isVerified ? '<i class="fas fa-check-circle verified-badge"></i>' : '';
     var recencyText = '<span class="recency-text">' + formatNotificationTime(content.created_at) + '</span>';
     var reasonHtml = content.recommendation_reason ? renderRecommendationReason(content.recommendation_reason) : '';
@@ -2119,7 +2111,8 @@ document.addEventListener('DOMContentLoaded', function() {
       '<h2 class="featured-title">' + escapeHtml(content.title) + '</h2>' +
       '<div class="featured-creator">@' + escapeHtml(creatorName) + verifiedBadge + recencyText + '</div>' +
       '<div class="featured-stats">' +
-      '<span><i class="fas fa-eye"></i> ' + formatNumber(content.real_views || content.views_count || 0) + ' views</span>' +
+      '<span><i class="fas fa-eye"></i> ' + formatNumber(content.views_count || 0) + ' views</span>' +
+      '<span><i class="fas fa-heart"></i> ' + formatNumber(content.likes_count || 0) + ' likes</span>' +
       '</div>' +
       reasonHtml +
       '<button class="watch-now-btn" onclick="playContent(\'' + content.id + '\')">' + (content.is_live ? 'WATCH LIVE' : 'WATCH NOW') + '</button>' +
@@ -2137,9 +2130,8 @@ document.addEventListener('DOMContentLoaded', function() {
   function renderLiveStreams() {
     return liveStreams.map(function(content) {
       var thumbnailUrl = buildThumbnailUrl(content.thumbnail_url);
-      var isUpcoming = content.scheduled_time && new Date(content.scheduled_time) > new Date();
-      var creatorName = content.user_profiles ? content.user_profiles.username : 'Creator';
-      var isVerified = content.user_profiles && content.user_profiles.is_verified;
+      var creatorName = content.creator_username || content.user_profiles?.username || 'Creator';
+      var isVerified = content.is_verified || content.user_profiles?.is_verified || false;
       var verifiedBadge = isVerified ? '<i class="fas fa-check-circle verified-badge"></i>' : '';
       var fallbackImg = 'https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=800&h=450&fit=crop';
       var duration = content.duration ? formatDuration(content.duration) : 'LIVE';
@@ -2150,9 +2142,8 @@ document.addEventListener('DOMContentLoaded', function() {
         '<img src="' + thumbnailUrl + '" alt="' + escapeHtml(content.title) + '" loading="lazy" onerror="this.src=\'' + fallbackImg + '\'">' +
         '<div class="thumbnail-overlay"></div>' +
         '<div class="card-badges">' +
-        (isUpcoming ? '<div class="badge upcoming">UPCOMING</div>' : '<div class="badge live">LIVE</div>') +
-        '<div class="badge viewers"><i class="fas fa-eye"></i> ' + formatNumber(content.viewer_count || content.views_count || 0) + '</div>' +
-        (content.is_new ? '<div class="badge new">NEW</div>' : '') +
+        '<div class="badge live">LIVE</div>' +
+        '<div class="badge viewers"><i class="fas fa-eye"></i> ' + formatNumber(content.views_count || 0) + '</div>' +
         '</div>' +
         '<div class="duration-badge">' + duration + '</div>' +
         '<div class="card-actions">' +
@@ -2169,9 +2160,9 @@ document.addEventListener('DOMContentLoaded', function() {
         '<div class="card-creator">@' + escapeHtml(creatorName) + verifiedBadge + ' <span class="recency-text">• ' + recencyText + '</span></div>' +
         '<div class="card-stats">' +
         '<span><i class="fas fa-heart"></i> ' + formatNumber(content.likes_count || 0) + '</span>' +
+        '<span><i class="fas fa-comment"></i> ' + formatNumber(content.comments_count || 0) + '</span>' +
         '</div>' +
         reasonHtml +
-        (isUpcoming ? '<button class="reminder-btn" onclick="setReminder(\'' + content.id + '\')"><i class="fas fa-bell"></i> REMIND ME</button>' : '') +
         '</div>' +
         '</div>';
     }).join('');
@@ -2181,8 +2172,8 @@ document.addEventListener('DOMContentLoaded', function() {
   function renderCommunityGems() {
     return communityGems.map(function(content) {
       var thumbnailUrl = buildThumbnailUrl(content.thumbnail_url);
-      var creatorName = content.user_profiles ? content.user_profiles.username : 'Creator';
-      var isVerified = content.user_profiles && content.user_profiles.is_verified;
+      var creatorName = content.creator_username || content.user_profiles?.username || 'Creator';
+      var isVerified = content.is_verified || content.user_profiles?.is_verified || false;
       var verifiedBadge = isVerified ? '<i class="fas fa-check-circle verified-badge"></i>' : '';
       var fallbackImg = 'https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=800&h=450&fit=crop';
       var duration = content.duration ? formatDuration(content.duration) : '';
@@ -2205,7 +2196,7 @@ document.addEventListener('DOMContentLoaded', function() {
         '<h3 class="card-title">' + escapeHtml(content.title) + '</h3>' +
         '<div class="card-creator">@' + escapeHtml(creatorName) + verifiedBadge + ' <span class="recency-text">• ' + recencyText + '</span></div>' +
         '<div class="card-stats">' +
-        '<span><i class="fas fa-eye"></i> ' + formatNumber(content.real_views || content.views_count || 0) + '</span>' +
+        '<span><i class="fas fa-eye"></i> ' + formatNumber(content.views_count || 0) + '</span>' +
         '<span><i class="fas fa-heart"></i> ' + formatNumber(content.likes_count || 0) + '</span>' +
         '</div>' +
         reasonHtml +
@@ -2227,7 +2218,7 @@ document.addEventListener('DOMContentLoaded', function() {
         '<div class="duration-badge">' + duration + '</div>' +
         '<div class="shorts-overlay">' +
         '<div class="shorts-title">' + escapeHtml(content.title) + '</div>' +
-        '<div class="shorts-stats"><i class="fas fa-eye"></i> ' + formatNumber(content.real_views || content.views_count || 0) + ' views</div>' +
+        '<div class="shorts-stats"><i class="fas fa-eye"></i> ' + formatNumber(content.views_count || 0) + ' views</div>' +
         '</div>' +
         '</div>' +
         '</div>';
@@ -2461,9 +2452,6 @@ document.addEventListener('DOMContentLoaded', function() {
     
     showToast(`🎲 ${data[0].reason}`, 'success');
     console.log('Surprise content:', data);
-    
-    // Display in a modal or special section (implement as needed)
-    // For now, just log to console
   }
 
   // ✅ GLOBAL FUNCTIONS FOR HTML ONCLICK
