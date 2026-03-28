@@ -13,6 +13,12 @@
 <!-- Supabase JS SDK -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
 :root {
   --deep-black: #0A0E12;
   --deep-navy: #0F172A;
@@ -24,7 +30,7 @@
   --success-color: #10B981;
   --purple-glow: #8B5CF6;
 }
-* { margin: 0; padding: 0; box-sizing: border-box; }
+
 body {
   font-family: 'Inter', sans-serif;
   background: linear-gradient(135deg, #001F54 0%, #0A0E3F 50%, #000000 100%);
@@ -32,20 +38,24 @@ body {
   min-height: 100vh;
   overflow-x: hidden;
 }
-/* skeleton loaders */
+
+/* Skeleton Loaders */
 .skeleton {
   background: linear-gradient(90deg, rgba(255,255,255,0.05) 25%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0.05) 75%);
   background-size: 200% 100%;
   animation: skeleton-loading 1.5s infinite;
   border-radius: 8px;
 }
-.skeleton-text { height: 16px; margin-bottom: 8px; }
-.skeleton-title { height: 20px; margin-bottom: 10px; }
+.skeleton-text { height: 16px; margin-bottom: 8px; width: 100%; }
+.skeleton-title { height: 20px; margin-bottom: 10px; width: 80%; }
 .skeleton-thumbnail { height: 180px; border-radius: 15px; }
+.skeleton-avatar { width: 40px; height: 40px; border-radius: 50%; }
 @keyframes skeleton-loading {
   0% { background-position: 200% 0; }
   100% { background-position: -200% 0; }
 }
+
+/* Loading Screen */
 .loading-screen {
   position: fixed;
   top: 0;
@@ -69,12 +79,16 @@ body {
   margin-bottom: 20px;
 }
 @keyframes spin { to { transform: rotate(360deg); } }
+
+/* Glassmorphism */
 .glassmorphism {
   background: rgba(255, 255, 255, 0.05);
   backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 16px;
 }
+
+/* Header */
 .header-container {
   position: relative;
   min-height: 30vh;
@@ -87,7 +101,7 @@ body {
   width: 100%;
   height: 100%;
   background: radial-gradient(circle at 20% 80%, var(--bantu-blue) 0%, transparent 50%),
-              radial-gradient(circle at 80% 20%, #8B5CF6 0%, transparent 50%);
+              radial-gradient(circle at 80% 20%, var(--purple-glow) 0%, transparent 50%);
   opacity: 0.3;
 }
 .grid-pattern {
@@ -123,8 +137,8 @@ body {
   animation: pulse 2s infinite;
 }
 @keyframes pulse {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.1); }
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.1); opacity: 0.9; }
 }
 .title-text {
   font-family: 'Orbitron', sans-serif;
@@ -138,10 +152,29 @@ body {
 }
 .header-actions {
   display: flex;
-  gap: 10px;
+  gap: 12px;
   align-items: center;
   flex-wrap: wrap;
 }
+
+/* Location Filter */
+.location-filter {
+  padding: 10px 20px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 25px;
+  color: var(--soft-white);
+  font-family: 'Inter', sans-serif;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+.location-filter:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: var(--warm-gold);
+}
+
+/* Icon Buttons */
 .icon-btn {
   width: 50px;
   height: 50px;
@@ -161,16 +194,47 @@ body {
   background: rgba(255, 255, 255, 0.2);
   transform: translateY(-2px);
 }
-.location-filter {
-  padding: 10px 20px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 25px;
-  color: var(--soft-white);
-  font-family: 'Inter', sans-serif;
-  font-size: 0.9rem;
-  cursor: pointer;
+.refresh-btn:hover {
+  animation: rotate 0.5s ease;
 }
+@keyframes rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Profile Button */
+.profile-btn {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  cursor: pointer;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+.profile-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(29, 78, 216, 0.3);
+}
+.profile-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+  color: white;
+  font-size: 20px;
+  font-weight: bold;
+}
+.profile-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Filter Section */
 .filter-section {
   position: relative;
   padding: 20px;
@@ -179,32 +243,56 @@ body {
 }
 .filter-container {
   display: flex;
-  gap: 10px;
+  gap: 12px;
   overflow-x: auto;
   padding-bottom: 10px;
   scrollbar-width: thin;
+  scrollbar-color: var(--warm-gold) transparent;
+}
+.filter-container::-webkit-scrollbar {
+  height: 4px;
+}
+.filter-container::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 10px;
+}
+.filter-container::-webkit-scrollbar-thumb {
+  background: var(--warm-gold);
+  border-radius: 10px;
 }
 .filter-chip {
-  padding: 10px 20px;
+  padding: 10px 24px;
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 25px;
+  border-radius: 30px;
   color: var(--soft-white);
+  font-family: 'Inter', sans-serif;
+  font-size: 0.9rem;
   font-weight: 500;
   cursor: pointer;
+  transition: all 0.3s ease;
   white-space: nowrap;
+}
+.filter-chip:hover {
+  background: rgba(255, 255, 255, 0.15);
+  transform: translateY(-2px);
 }
 .filter-chip.active {
   background: var(--warm-gold);
+  border-color: transparent;
   color: var(--deep-black);
-  font-weight: 600;
+  font-weight: 700;
 }
+
+/* Main Content */
 .main-content {
   max-width: 1200px;
   margin: 0 auto;
   padding: 20px;
 }
-.section { margin-bottom: 40px; }
+.section {
+  margin-bottom: 48px;
+}
 .section-header {
   display: flex;
   justify-content: space-between;
@@ -215,191 +303,165 @@ body {
   font-family: 'Orbitron', sans-serif;
   font-size: 1.8rem;
   font-weight: 700;
+  color: var(--soft-white);
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
 }
-.section-icon { color: var(--warm-gold); }
+.section-icon {
+  color: var(--warm-gold);
+  font-size: 1.5rem;
+}
 .see-all-btn {
   padding: 8px 20px;
   background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 10px;
+  color: var(--bantu-blue);
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
 }
-.content-horizontal-scroll {
-  display: flex;
-  gap: 20px;
-  overflow-x: auto;
-  padding-bottom: 20px;
+.see-all-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: translateX(5px);
 }
-.content-card, .gem-card, .shorts-card {
-  flex: 0 0 300px;
-  border-radius: 15px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  transition: all 0.3s ease;
-  cursor: pointer;
-  position: relative;
-}
-.content-card:hover, .gem-card:hover, .shorts-card:hover {
-  transform: translateY(-10px);
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
-}
-.card-thumbnail, .gem-thumbnail, .shorts-thumbnail {
-  position: relative;
-  height: 180px;
-  overflow: hidden;
-  background: linear-gradient(135deg, #1D4ED8, #8B5CF6);
-}
-.card-thumbnail img, .gem-thumbnail img, .shorts-thumbnail img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  transition: transform 0.3s ease;
-}
-.content-card:hover .card-thumbnail img { transform: scale(1.1); }
-.duration-badge {
-  position: absolute;
-  bottom: 10px;
-  right: 10px;
-  padding: 4px 10px;
-  background: rgba(0, 0, 0, 0.85);
-  border-radius: 6px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  z-index: 2;
-}
-.badge.live { background: rgba(239, 68, 68, 0.9); }
-.badge.viewers { background: rgba(0, 0, 0, 0.7); }
-.card-content, .gem-content { padding: 20px; }
-.card-title {
-  font-weight: 600;
-  margin-bottom: 10px;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-.card-creator {
-  font-size: 0.9rem;
-  color: var(--slate-grey);
-  margin-bottom: 10px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-.card-stats { display: flex; gap: 15px; font-size: 0.8rem; color: rgba(255,255,255,0.6); }
-.verified-badge { color: var(--bantu-blue); font-size: 0.9rem; }
-.recency-text { font-size: 0.75rem; color: var(--slate-grey); }
-.card-actions {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  z-index: 10;
-}
-.action-menu-btn {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  background: rgba(0,0,0,0.7);
-  border: none;
-  color: white;
-  cursor: pointer;
-  opacity: 0;
-  transition: all 0.2s;
-}
-.content-card:hover .action-menu-btn,
-.gem-card:hover .action-menu-btn,
-.shorts-card:hover .action-menu-btn {
-  opacity: 1;
-}
-.action-menu-dropdown {
-  position: absolute;
-  top: 40px;
-  right: 0;
-  background: rgba(15, 23, 42, 0.95);
-  border-radius: 12px;
-  min-width: 180px;
-  display: none;
-  z-index: 100;
-}
-.action-menu-dropdown.active { display: block; }
-.action-menu-item {
-  padding: 10px 16px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  cursor: pointer;
-}
-.action-menu-item:hover { background: rgba(255,255,255,0.1); }
+
+/* Featured Card */
 .featured-trend-card {
   position: relative;
-  border-radius: 20px;
+  border-radius: 24px;
   overflow: hidden;
-  height: 400px;
+  height: 450px;
   margin-bottom: 30px;
+  cursor: pointer;
 }
 .featured-bg {
   position: absolute;
+  top: 0;
+  left: 0;
   width: 100%;
   height: 100%;
   background-size: cover;
   background-position: center;
+  transition: transform 0.5s ease;
+}
+.featured-trend-card:hover .featured-bg {
+  transform: scale(1.05);
 }
 .featured-overlay {
   position: absolute;
   bottom: 0;
   left: 0;
-  width: 100%;
-  background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, transparent 100%);
-  padding: 30px;
+  right: 0;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.95) 0%, rgba(0, 0, 0, 0.7) 50%, transparent 100%);
+  padding: 40px 30px;
 }
-.watch-now-btn {
-  padding: 15px 40px;
-  background: linear-gradient(135deg, var(--warm-gold), #f97316);
-  border: none;
-  border-radius: 12px;
-  font-weight: 700;
-  cursor: pointer;
-  margin-top: 15px;
-}
-.shorts-scroll {
-  display: flex;
-  gap: 15px;
-  overflow-x: auto;
-  padding-bottom: 20px;
-}
-.shorts-card { flex: 0 0 180px; }
-.shorts-thumbnail { height: 320px; }
-.shorts-overlay {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  width: 100%;
-  padding: 15px;
-  background: linear-gradient(to top, rgba(0,0,0,0.9), transparent);
-}
-.shorts-title { font-size: 0.9rem; font-weight: 600; }
-/* Continue Watching bar */
-.continue-watching-bar {
-  background: rgba(0,0,0,0.7);
-  backdrop-filter: blur(12px);
+.live-badge {
+  display: inline-block;
+  padding: 6px 16px;
+  background: rgba(239, 68, 68, 0.95);
   border-radius: 20px;
-  margin: 20px 20px 0 20px;
-  padding: 15px 20px;
+  color: white;
+  font-weight: 700;
+  font-size: 0.85rem;
+  margin-bottom: 20px;
+  animation: pulse-red 1.5s infinite;
+}
+@keyframes pulse-red {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+.featured-title {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 2.5rem;
+  font-weight: 800;
+  color: white;
+  margin-bottom: 12px;
+  line-height: 1.2;
+}
+.featured-creator {
+  font-size: 1.1rem;
+  color: var(--warm-gold);
+  margin-bottom: 12px;
   display: flex;
   align-items: center;
-  gap: 15px;
-  flex-wrap: wrap;
-  border: 1px solid rgba(255,215,0,0.3);
+  gap: 8px;
 }
-.progress-container { flex: 1; min-width: 200px; }
+.verified-badge {
+  color: var(--bantu-blue);
+  font-size: 1rem;
+}
+.featured-stats {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 25px;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 0.9rem;
+}
+.recency-text {
+  font-size: 0.85rem;
+  color: var(--slate-grey);
+  margin-left: 8px;
+}
+.watch-now-btn {
+  padding: 14px 40px;
+  background: linear-gradient(135deg, var(--warm-gold) 0%, #f97316 100%);
+  border: none;
+  border-radius: 12px;
+  color: var(--deep-black);
+  font-family: 'Inter', sans-serif;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.watch-now-btn:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 25px rgba(245, 158, 11, 0.4);
+}
+
+/* Continue Watching Bar */
+.continue-watching-bar {
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(12px);
+  border-radius: 20px;
+  margin-bottom: 30px;
+  padding: 16px 24px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+.continue-watching-bar:hover {
+  transform: translateY(-2px);
+  border-color: var(--warm-gold);
+}
+.continue-thumbnail {
+  width: 120px;
+  height: 68px;
+  border-radius: 10px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+.progress-container {
+  flex: 1;
+  min-width: 200px;
+}
 .progress-track {
   height: 6px;
-  background: rgba(255,255,255,0.2);
+  background: rgba(255, 255, 255, 0.2);
   border-radius: 3px;
   overflow: hidden;
+  margin: 8px 0;
 }
 .progress-fill {
   width: 0%;
@@ -407,23 +469,462 @@ body {
   background: var(--warm-gold);
   transition: width 0.3s;
 }
-/* toast */
+
+/* Content Cards */
+.content-horizontal-scroll {
+  display: flex;
+  gap: 20px;
+  overflow-x: auto;
+  padding-bottom: 20px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--warm-gold) transparent;
+}
+.content-horizontal-scroll::-webkit-scrollbar {
+  height: 6px;
+}
+.content-horizontal-scroll::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 10px;
+}
+.content-horizontal-scroll::-webkit-scrollbar-thumb {
+  background: var(--warm-gold);
+  border-radius: 10px;
+}
+.content-card {
+  flex: 0 0 300px;
+  border-radius: 16px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.3s ease;
+  cursor: pointer;
+  position: relative;
+}
+.content-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+  border-color: rgba(245, 158, 11, 0.3);
+}
+.card-thumbnail {
+  position: relative;
+  height: 180px;
+  overflow: hidden;
+  background: linear-gradient(135deg, #1D4ED8, #8B5CF6);
+}
+.card-thumbnail img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+.content-card:hover .card-thumbnail img {
+  transform: scale(1.1);
+}
+.card-thumbnail video {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+.content-card:hover .card-thumbnail video {
+  opacity: 1;
+}
+.content-card:hover .card-thumbnail img {
+  opacity: 0;
+}
+.thumbnail-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(to bottom, transparent 0%, rgba(0, 0, 0, 0.5) 100%);
+}
+.card-badges {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  display: flex;
+  gap: 8px;
+  z-index: 2;
+}
+.badge {
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+.badge.live {
+  background: rgba(239, 68, 68, 0.95);
+  color: white;
+}
+.badge.upcoming {
+  background: rgba(29, 78, 216, 0.95);
+  color: white;
+}
+.badge.viewers {
+  background: rgba(0, 0, 0, 0.75);
+  color: white;
+}
+.badge.new {
+  background: var(--success-color);
+  color: white;
+}
+.duration-badge {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  padding: 4px 8px;
+  background: rgba(0, 0, 0, 0.85);
+  border-radius: 6px;
+  color: white;
+  font-size: 0.7rem;
+  font-weight: 600;
+  z-index: 2;
+}
+.card-content {
+  padding: 16px;
+}
+.card-title {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 8px;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.card-creator {
+  font-size: 0.85rem;
+  color: var(--slate-grey);
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.card-stats {
+  display: flex;
+  gap: 12px;
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.6);
+  align-items: center;
+}
+
+/* Card Action Menu */
+.card-actions {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 15;
+}
+.action-menu-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.7);
+  border: none;
+  color: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  opacity: 0;
+  backdrop-filter: blur(4px);
+}
+.content-card:hover .action-menu-btn,
+.gem-card:hover .action-menu-btn {
+  opacity: 1;
+}
+.action-menu-btn:hover {
+  background: var(--warm-gold);
+  color: var(--deep-black);
+}
+.action-menu-dropdown {
+  position: absolute;
+  top: 40px;
+  right: 0;
+  background: rgba(15, 23, 42, 0.98);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 8px 0;
+  min-width: 180px;
+  display: none;
+  z-index: 100;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+.action-menu-dropdown.active {
+  display: block;
+}
+.action-menu-item {
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--soft-white);
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.action-menu-item:hover {
+  background: rgba(245, 158, 11, 0.2);
+}
+.action-menu-item i {
+  width: 20px;
+  text-align: center;
+  color: var(--warm-gold);
+}
+
+/* Reminder Button */
+.reminder-btn {
+  width: 100%;
+  padding: 10px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  color: white;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-top: 12px;
+}
+.reminder-btn:hover {
+  background: rgba(245, 158, 11, 0.2);
+  border-color: var(--warm-gold);
+}
+
+/* Community Gems Grid */
+.community-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+}
+.gem-card {
+  border-radius: 16px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.3s ease;
+  cursor: pointer;
+  position: relative;
+}
+.gem-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3);
+  border-color: rgba(245, 158, 11, 0.3);
+}
+.gem-thumbnail {
+  height: 160px;
+  overflow: hidden;
+  background: linear-gradient(135deg, #1D4ED8, #8B5CF6);
+  position: relative;
+}
+.gem-thumbnail img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+.gem-card:hover .gem-thumbnail img {
+  transform: scale(1.1);
+}
+.gem-content {
+  padding: 16px;
+}
+
+/* Hashtags */
+.hashtags-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 15px;
+}
+.hashtag {
+  padding: 8px 20px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 30px;
+  color: var(--warm-gold);
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+.hashtag:hover {
+  background: rgba(245, 158, 11, 0.15);
+  transform: translateY(-2px);
+  border-color: var(--warm-gold);
+}
+
+/* Shorts Section */
+.shorts-section {
+  margin-bottom: 48px;
+}
+.shorts-scroll {
+  display: flex;
+  gap: 15px;
+  overflow-x: auto;
+  padding-bottom: 20px;
+  scrollbar-width: thin;
+}
+.shorts-card {
+  flex: 0 0 180px;
+  border-radius: 16px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.3s ease;
+  cursor: pointer;
+  position: relative;
+}
+.shorts-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3);
+}
+.shorts-thumbnail {
+  height: 320px;
+  overflow: hidden;
+  position: relative;
+}
+.shorts-thumbnail img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+.shorts-card:hover .shorts-thumbnail img {
+  transform: scale(1.1);
+}
+.shorts-overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  padding: 15px;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.9) 0%, transparent 100%);
+}
+.shorts-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-bottom: 5px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.shorts-stats {
+  font-size: 0.7rem;
+  color: rgba(255, 255, 255, 0.7);
+}
+.shorts-badge {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  padding: 4px 10px;
+  background: rgba(239, 68, 68, 0.95);
+  border-radius: 8px;
+  color: white;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+/* User Streak Badge */
+.user-streak {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(245, 158, 11, 0.15);
+  padding: 6px 14px;
+  border-radius: 30px;
+  font-size: 0.85rem;
+  margin-left: 10px;
+  cursor: pointer;
+}
+.user-streak i {
+  color: var(--warm-gold);
+  animation: flame-flicker 1s infinite;
+}
+@keyframes flame-flicker {
+  0%, 100% { text-shadow: 0 0 2px #f59e0b; }
+  50% { text-shadow: 0 0 8px #f97316; }
+}
+
+/* Explore All */
+.explore-all-section {
+  text-align: center;
+  padding: 40px 20px;
+}
+.explore-btn {
+  padding: 18px 50px;
+  background: linear-gradient(135deg, var(--bantu-blue) 0%, #3730a3 100%);
+  border: none;
+  border-radius: 50px;
+  color: white;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1.1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 15px;
+}
+.explore-btn:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 15px 30px rgba(29, 78, 216, 0.4);
+  gap: 20px;
+}
+
+/* Infinite Scroll Loader */
+.infinite-scroll-loader {
+  text-align: center;
+  padding: 40px 20px;
+  display: none;
+}
+.infinite-scroll-loader.active {
+  display: block;
+}
+.infinite-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  border-top-color: var(--warm-gold);
+  animation: spin 1s linear infinite;
+  margin: 0 auto 15px;
+}
+
+/* Toast Notifications */
 .toast {
   position: fixed;
-  bottom: 20px;
+  bottom: 80px;
   right: 20px;
-  padding: 15px 25px;
-  border-radius: 10px;
+  padding: 14px 24px;
+  border-radius: 12px;
   color: white;
   font-weight: 500;
   z-index: 2000;
-  animation: slideIn 0.3s ease;
+  animation: slideInRight 0.3s ease;
+  max-width: 320px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
 }
-.toast.success { background: linear-gradient(135deg, #10B981, #059669); }
-@keyframes slideIn {
+.toast.success { background: linear-gradient(135deg, #10B981 0%, #059669 100%); }
+.toast.info { background: linear-gradient(135deg, #3B82F6 0%, #1D4ED8 100%); }
+.toast.error { background: linear-gradient(135deg, #EF4444 0%, #DC2626 100%); }
+@keyframes slideInRight {
   from { transform: translateX(100%); opacity: 0; }
   to { transform: translateX(0); opacity: 1; }
 }
+
+/* Navigation */
 .global-nav {
   position: fixed;
   bottom: 0;
@@ -433,7 +934,7 @@ body {
   backdrop-filter: blur(10px);
   display: flex;
   justify-content: space-around;
-  padding: 15px 0;
+  padding: 12px 0;
   z-index: 100;
   border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
@@ -443,220 +944,1306 @@ body {
   align-items: center;
   color: var(--slate-grey);
   text-decoration: none;
-  font-size: 0.8rem;
+  font-size: 0.75rem;
+  transition: all 0.3s ease;
+  gap: 4px;
 }
-.nav-item.active { color: var(--warm-gold); }
-.auth-modal, .search-modal {
+.nav-item i {
+  font-size: 1.3rem;
+}
+.nav-item:hover {
+  color: var(--soft-white);
+  transform: translateY(-2px);
+}
+.nav-item.active {
+  color: var(--warm-gold);
+}
+
+/* Auth Modal */
+.auth-modal {
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0,0,0,0.8);
+  background: rgba(0, 0, 0, 0.85);
   display: none;
   align-items: center;
   justify-content: center;
   z-index: 2000;
+  backdrop-filter: blur(8px);
 }
-.auth-modal.active, .search-modal.active { display: flex; }
+.auth-modal.active {
+  display: flex;
+}
 .auth-content {
-  background: rgba(15, 23, 42, 0.9);
-  border-radius: 20px;
+  background: rgba(15, 23, 42, 0.95);
+  backdrop-filter: blur(10px);
+  border-radius: 24px;
   padding: 40px;
   max-width: 400px;
+  width: 90%;
   text-align: center;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  animation: modalPop 0.3s ease;
+}
+@keyframes modalPop {
+  from { transform: scale(0.9); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+.auth-icon {
+  font-size: 64px;
+  color: var(--warm-gold);
+  margin-bottom: 20px;
+}
+.auth-title {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 28px;
+  margin-bottom: 15px;
+}
+.auth-message {
+  color: var(--slate-grey);
+  margin-bottom: 30px;
+  line-height: 1.6;
+}
+.auth-buttons {
+  display: flex;
+  gap: 15px;
+}
+.auth-btn {
+  flex: 1;
+  padding: 14px;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: none;
+}
+.auth-btn.login {
+  background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+  color: var(--soft-white);
+}
+.auth-btn.login:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(29, 78, 216, 0.4);
+}
+.auth-btn.cancel {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--soft-white);
+}
+.auth-btn.cancel:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* Search Modal */
+.search-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.9);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  backdrop-filter: blur(8px);
+}
+.search-modal.active {
+  display: flex;
+}
+.search-modal-content {
+  width: 90%;
+  max-width: 800px;
+  background: rgba(15, 23, 42, 0.95);
+  border-radius: 24px;
+  padding: 30px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+.search-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
 }
 .search-input-container {
   position: relative;
-  width: 100%;
-  max-width: 600px;
+  flex: 1;
+}
+.search-icon {
+  position: absolute;
+  left: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--slate-grey);
 }
 .search-input {
   width: 100%;
-  padding: 15px 45px;
+  padding: 14px 15px 14px 45px;
   border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
   background: rgba(15, 23, 42, 0.7);
-  border: 1px solid rgba(255,255,255,0.1);
-  color: white;
+  color: var(--soft-white);
+  font-size: 16px;
+}
+.search-input:focus {
+  outline: none;
+  border-color: var(--warm-gold);
+}
+.close-search-btn {
+  background: none;
+  border: none;
+  color: var(--soft-white);
+  font-size: 24px;
+  cursor: pointer;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  margin-left: 15px;
+}
+.close-search-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  transform: rotate(90deg);
+}
+.search-filters {
+  display: flex;
+  gap: 15px;
+  margin-bottom: 20px;
+}
+.filter-group {
+  flex: 1;
+}
+.filter-label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 12px;
+  color: var(--slate-grey);
+}
+.filter-select {
+  width: 100%;
+  padding: 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(15, 23, 42, 0.7);
+  color: var(--soft-white);
+}
+.search-results-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 15px;
+  max-height: 60vh;
+  overflow-y: auto;
+  padding: 5px;
 }
 .search-suggestions {
   position: absolute;
   top: 100%;
   left: 0;
   width: 100%;
-  background: rgba(15, 23, 42, 0.95);
+  background: rgba(15, 23, 42, 0.98);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 12px;
   margin-top: 5px;
+  max-height: 300px;
+  overflow-y: auto;
   display: none;
   z-index: 100;
 }
-.search-suggestions.active { display: block; }
+.search-suggestions.active {
+  display: block;
+}
 .suggestion-item {
   padding: 12px 15px;
   display: flex;
-  gap: 10px;
+  align-items: center;
+  gap: 12px;
+  color: var(--soft-white);
   cursor: pointer;
+  transition: all 0.2s ease;
 }
-.suggestion-item:hover { background: rgba(255,255,255,0.1); }
+.suggestion-item:hover {
+  background: rgba(245, 158, 11, 0.2);
+}
+.suggestion-item i {
+  color: var(--warm-gold);
+}
+
+/* Notifications Panel */
 .notifications-panel {
   position: fixed;
   top: 0;
   right: -100%;
-  width: 400px;
+  width: 380px;
   height: 100%;
-  background: rgba(15, 23, 42, 0.95);
-  backdrop-filter: blur(10px);
-  transition: right 0.3s;
+  background: rgba(15, 23, 42, 0.98);
+  backdrop-filter: blur(12px);
+  border-left: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: -5px 0 25px rgba(0, 0, 0, 0.3);
   z-index: 1500;
+  transition: right 0.3s ease;
+  display: flex;
+  flex-direction: column;
 }
-.notifications-panel.active { right: 0; }
+.notifications-panel.active {
+  right: 0;
+}
+.notifications-header {
+  padding: 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.notifications-header h2 {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1.3rem;
+}
+.notifications-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 15px;
+}
+.notification-item {
+  padding: 15px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  display: flex;
+  gap: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+}
+.notification-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+.notification-item.read {
+  opacity: 0.6;
+}
+.notification-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--bantu-blue), var(--warm-gold));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.notification-content {
+  flex: 1;
+}
+.notification-content h4 {
+  font-weight: 600;
+  margin-bottom: 5px;
+  font-size: 0.9rem;
+}
+.notification-content p {
+  font-size: 0.8rem;
+  color: var(--slate-grey);
+  margin-bottom: 5px;
+}
+.notification-time {
+  font-size: 0.7rem;
+  color: var(--warm-gold);
+}
+.notification-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--warm-gold);
+  position: absolute;
+  top: 20px;
+  right: 15px;
+}
+.notifications-footer {
+  padding: 15px 20px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  gap: 12px;
+}
+.text-btn {
+  flex: 1;
+  padding: 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--soft-white);
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+.text-btn:hover {
+  background: rgba(245, 158, 11, 0.2);
+  border-color: var(--warm-gold);
+}
+
+/* Notification Badge */
+.notification-badge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  background: var(--error-color);
+  color: white;
+  font-size: 10px;
+  font-weight: bold;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--deep-black);
+}
+
+/* Responsive */
 @media (max-width: 768px) {
-  .title-text { font-size: 1.8rem; }
-  .content-card, .gem-card { flex: 0 0 250px; }
-  .shorts-card { flex: 0 0 140px; }
+  .title-text { font-size: 1.5rem; }
+  .fire-icon { font-size: 1.8rem; }
+  .featured-trend-card { height: 350px; }
+  .featured-title { font-size: 1.5rem; }
+  .featured-creator { font-size: 0.9rem; }
+  .section-title { font-size: 1.3rem; }
+  .content-card { flex: 0 0 260px; }
+  .community-grid { grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }
+  .shorts-card { flex: 0 0 150px; }
+  .shorts-thumbnail { height: 280px; }
+  .notifications-panel { width: 100%; }
+  .header-actions { gap: 8px; }
+  .icon-btn { width: 40px; height: 40px; font-size: 1rem; }
+  .profile-btn { width: 40px; height: 40px; }
+  .location-filter { padding: 6px 12px; font-size: 0.8rem; }
+  .user-streak { display: none; }
+}
+
+@media (max-width: 480px) {
+  .title-text { font-size: 1.2rem; }
+  .featured-trend-card { height: 280px; }
+  .featured-title { font-size: 1.2rem; }
+  .featured-overlay { padding: 20px; }
+  .content-card { flex: 0 0 220px; }
+  .shorts-card { flex: 0 0 130px; }
+  .shorts-thumbnail { height: 240px; }
+  .watch-now-btn { padding: 10px 24px; font-size: 0.85rem; }
 }
 </style>
 </head>
 <body>
-<div id="loading" class="loading-screen"><div class="spinner"></div><div>Loading trending content...</div></div>
-<div id="auth-modal" class="auth-modal"><div class="auth-content"><i class="fas fa-lock" style="font-size:48px;color:var(--warm-gold);margin-bottom:20px"></i><h2>Sign In Required</h2><p style="margin:20px 0">Join the movement to see trending content</p><div style="display:flex;gap:15px"><button id="auth-login-btn" class="watch-now-btn" style="background:var(--bantu-blue)">Log In</button><button id="auth-cancel-btn" style="background:transparent;border:1px solid white;padding:15px;border-radius:12px">Cancel</button></div></div></div>
-<div id="search-modal" class="search-modal"><div style="width:90%;max-width:800px;background:rgba(15,23,42,0.95);border-radius:20px;padding:30px"><div class="search-input-container"><i class="fas fa-search" style="position:absolute;left:15px;top:50%;transform:translateY(-50%);color:var(--slate-grey)"></i><input type="text" id="search-input" class="search-input" placeholder="Search videos, creators..."><div id="search-suggestions" class="search-suggestions"></div></div><button id="close-search-btn" style="margin-top:20px;background:none;border:none;color:white;cursor:pointer">Close</button></div></div>
-<div id="notifications-panel" class="notifications-panel"><div style="padding:20px;border-bottom:1px solid rgba(255,255,255,0.1)"><h2>Notifications</h2><button id="close-notifications" style="float:right;background:none;border:none;color:white">✕</button></div><div id="notifications-list" style="padding:20px"></div><div style="padding:20px;border-top:1px solid rgba(255,255,255,0.1)"><button id="mark-all-read" class="see-all-btn">Mark all read</button></div></div>
 
-<div id="app" style="display:none">
-<div class="header-container"><div class="header-bg"></div><div class="grid-pattern"></div>
-<header class="main-header"><div class="header-content"><div class="trending-title"><div class="fire-icon">🔥</div><h1 class="title-text">TRENDING NOW</h1></div>
-<div class="header-actions"><select id="location-filter" class="location-filter"><option value="global">🌍 Global</option><option value="ZA">🇿🇦 South Africa</option><option value="NG">🇳🇬 Nigeria</option><option value="KE">🇰🇪 Kenya</option></select>
-<button id="search-btn" class="icon-btn"><i class="fas fa-search"></i></button>
-<button id="refresh-btn" class="icon-btn"><i class="fas fa-sync-alt"></i></button>
-<button id="notifications-btn" class="icon-btn"><i class="fas fa-bell"></i><span id="notification-count" style="display:none;position:absolute;top:-5px;right:-5px;background:red;border-radius:50%;width:18px;height:18px;font-size:10px">0</span></button>
-<button id="profile-btn" class="profile-btn"><div id="userProfilePlaceholder" class="profile-placeholder"><i class="fas fa-user"></i></div></button>
-</div></div></header>
-<div class="filter-section"><div id="filter-container" class="filter-container"></div></div>
+<!-- Loading Screen -->
+<div id="loading" class="loading-screen">
+  <div class="spinner"></div>
+  <div id="loading-text">Loading Trending Content...</div>
 </div>
-<main class="main-content">
-  <!-- Continue Watching Bar (dynamic) -->
-  <div id="continue-watching-container" style="display:none; margin-bottom:30px"></div>
-  <div id="trending-sections"></div>
-  <div id="shorts-section" class="shorts-section" style="display:none"><div class="section-header"><h2 class="section-title"><i class="fas fa-bolt section-icon"></i>BANTU SHORTS</h2><button class="see-all-btn" id="viewAllShortsBtn">SEE ALL</button></div><div id="shorts-scroll" class="shorts-scroll"></div></div>
-  <div class="explore-all-section"><button id="explore-all-btn" class="explore-btn" style="padding:20px 50px;background:linear-gradient(135deg,var(--bantu-blue),#3730a3);border-radius:15px;font-weight:700">EXPLORE ALL <i class="fas fa-arrow-right"></i></button></div>
-  <div id="infinite-scroll-loader" class="infinite-scroll-loader" style="display:none;text-align:center;padding:40px"><div class="spinner" style="width:40px;height:40px"></div></div>
-</main>
-<nav class="global-nav"><a href="index.html" class="nav-item"><i class="fas fa-home"></i>Home</a><a href="trending_screen.html" class="nav-item active"><i class="fas fa-fire"></i>Trending</a><a href="content-library.html" class="nav-item"><i class="fas fa-th-large"></i>Library</a><a href="creator-dashboard.html" class="nav-item"><i class="fas fa-user"></i>Creator</a></nav>
+
+<!-- Auth Modal -->
+<div id="auth-modal" class="auth-modal">
+  <div class="auth-content">
+    <div class="auth-icon"><i class="fas fa-lock"></i></div>
+    <h2 class="auth-title">Welcome to Bantu Stream Connect</h2>
+    <p class="auth-message">Sign in to discover trending content, save your favorites, and join the community.</p>
+    <div class="auth-buttons">
+      <button id="auth-login-btn" class="auth-btn login">Log In / Sign Up</button>
+      <button id="auth-cancel-btn" class="auth-btn cancel">Browse as Guest</button>
+    </div>
+  </div>
 </div>
+
+<!-- Search Modal -->
+<div id="search-modal" class="search-modal">
+  <div class="search-modal-content">
+    <div class="search-modal-header">
+      <div class="search-input-container">
+        <i class="fas fa-search search-icon"></i>
+        <input type="text" id="search-input" class="search-input" placeholder="Search videos, creators, hashtags..." autocomplete="off">
+        <div id="search-suggestions" class="search-suggestions"></div>
+      </div>
+      <button id="close-search-btn" class="close-search-btn"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="search-filters">
+      <div class="filter-group">
+        <label class="filter-label">Category</label>
+        <select id="category-filter" class="filter-select">
+          <option value="">All Categories</option>
+          <option value="Music">Music</option>
+          <option value="STEM">STEM</option>
+          <option value="Culture">Culture</option>
+          <option value="News">News</option>
+          <option value="Sports">Sports</option>
+          <option value="Movies">Movies</option>
+          <option value="Documentaries">Documentaries</option>
+          <option value="Podcasts">Podcasts</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label class="filter-label">Sort By</label>
+        <select id="sort-filter" class="filter-select">
+          <option value="trending">Trending</option>
+          <option value="newest">Newest First</option>
+          <option value="popular">Most Popular</option>
+        </select>
+      </div>
+    </div>
+    <div id="search-results-grid" class="search-results-grid"></div>
+  </div>
+</div>
+
+<!-- Notifications Panel -->
+<div id="notifications-panel" class="notifications-panel">
+  <div class="notifications-header">
+    <h2><i class="fas fa-bell"></i> Notifications</h2>
+    <button id="close-notifications" class="close-search-btn"><i class="fas fa-times"></i></button>
+  </div>
+  <div class="notifications-list" id="notifications-list"></div>
+  <div class="notifications-footer">
+    <button id="mark-all-read" class="text-btn">Mark all as read</button>
+    <button id="notification-settings" class="text-btn">Settings</button>
+  </div>
+</div>
+
+<!-- Main App -->
+<div id="app" style="display: none;">
+  <div class="header-container">
+    <div class="header-bg"></div>
+    <div class="grid-pattern"></div>
+    <header class="main-header">
+      <div class="header-content">
+        <div class="trending-title">
+          <div class="fire-icon">🔥</div>
+          <h1 class="title-text">TRENDING NOW</h1>
+        </div>
+        <div class="header-actions">
+          <select id="location-filter" class="location-filter">
+            <option value="global">🌍 Global</option>
+            <option value="ZA">🇿🇦 South Africa</option>
+            <option value="NG">🇳🇬 Nigeria</option>
+            <option value="KE">🇰🇪 Kenya</option>
+            <option value="GH">🇬🇭 Ghana</option>
+            <option value="US">🇺🇸 USA</option>
+            <option value="UK">🇬🇧 UK</option>
+          </select>
+          <button id="search-btn" class="icon-btn" title="Search"><i class="fas fa-search"></i></button>
+          <button id="refresh-btn" class="icon-btn refresh-btn" title="Refresh"><i class="fas fa-sync-alt"></i></button>
+          <button id="notifications-btn" class="icon-btn" title="Notifications">
+            <i class="fas fa-bell"></i>
+            <span id="notification-count" class="notification-badge" style="display: none;">0</span>
+          </button>
+          <div id="user-streak" class="user-streak" style="display: none;">
+            <i class="fas fa-fire"></i>
+            <span id="streak-count">0</span>
+            <span>day streak</span>
+          </div>
+          <button id="profile-btn" class="profile-btn" title="Profile">
+            <div id="userProfilePlaceholder" class="profile-placeholder"><i class="fas fa-user"></i></div>
+          </button>
+        </div>
+      </div>
+    </header>
+    <div class="filter-section">
+      <div id="filter-container" class="filter-container"></div>
+    </div>
+  </div>
+
+  <main class="main-content">
+    <!-- Continue Watching Bar -->
+    <div id="continue-watching-container" style="display: none;"></div>
+    
+    <!-- Trending Sections Container -->
+    <div id="trending-sections"></div>
+
+    <!-- Shorts Section -->
+    <div id="shorts-section" class="shorts-section" style="display: none;">
+      <div class="section-header">
+        <h2 class="section-title"><i class="fas fa-bolt section-icon"></i>BANTU SHORTS</h2>
+        <button id="view-all-shorts" class="see-all-btn">SEE ALL</button>
+      </div>
+      <div id="shorts-scroll" class="shorts-scroll"></div>
+    </div>
+
+    <!-- Explore All Button -->
+    <div class="explore-all-section">
+      <button id="explore-all-btn" class="explore-btn">
+        EXPLORE ALL TRENDING CONTENT
+        <i class="fas fa-arrow-right"></i>
+      </button>
+    </div>
+
+    <!-- Infinite Scroll Loader -->
+    <div id="infinite-scroll-loader" class="infinite-scroll-loader">
+      <div class="infinite-spinner"></div>
+      <p style="color: var(--slate-grey);">Loading more content...</p>
+    </div>
+  </main>
+
+  <!-- Bottom Navigation -->
+  <nav class="global-nav">
+    <a href="index.html" class="nav-item"><i class="fas fa-home"></i><span>Home</span></a>
+    <a href="trending_screen.html" class="nav-item active"><i class="fas fa-fire"></i><span>Trending</span></a>
+    <a href="content-library.html" class="nav-item"><i class="fas fa-th-large"></i><span>Library</span></a>
+    <a href="creator-dashboard.html" class="nav-item"><i class="fas fa-user"></i><span>Creator</span></a>
+  </nav>
+</div>
+
+<!-- Toast Container -->
 <div id="toast-container"></div>
 
+<!-- Main JavaScript -->
 <script>
+// Supabase Initialization
 if (!window.supabaseClient) {
-  window.supabaseClient = supabase.createClient('https://ydnxqnbjoshvxteevemc.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U');
+  window.supabaseClient = supabase.createClient(
+    'https://ydnxqnbjoshvxteevemc.supabase.co',
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U'
+  );
+  console.log('✅ Supabase client initialized');
 }
-let currentUser = null, allContent = [], continueWatching = [], userHistory = [], selectedFilter = 'All', isLoadingMore = false, offset = 100;
-const filters = ['All', 'Music', 'Film & Series', 'Podcasts', 'Gaming', 'Comedy', 'Live', 'Rising Creators'];
 
-function showToast(msg, type='info'){ let t=document.createElement('div');t.className=`toast ${type}`;t.innerText=msg;document.getElementById('toast-container').appendChild(t);setTimeout(()=>t.remove(),3000);}
-function formatNumber(n){ if(n>=1e6) return (n/1e6).toFixed(1)+'M'; if(n>=1e3) return (n/1e3).toFixed(1)+'K'; return n;}
-function formatDuration(sec){ if(!sec) return '0:00'; let m=Math.floor(sec/60), s=sec%60; return m+':'+(s<10?'0':'')+s;}
-function buildThumbnail(url){ if(!url) return 'https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=800&h=450&fit=crop'; if(url.startsWith('http')) return url; return 'https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/'+url.replace(/^\/+/,'');}
-function isContentNew(created){ if(!created) return false; return (Date.now()-new Date(created).getTime())/(86400000)<7;}
+// Global State
+let currentUser = null;
+let allContentData = [];
+let userProfile = null;
+let userStreak = { current_streak_days: 0 };
+let continueWatchingItems = [];
+let notifications = [];
+let selectedFilter = 'All';
+let isLoadingMore = false;
+let contentOffset = 0;
+let hasMoreContent = true;
+const CONTENT_LIMIT = 50;
+let searchDebounceTimer = null;
+let hoverPreviewVideos = new Map();
 
-async function fetchContent(offset=0,limit=100){
-  let {data,error}=await window.supabaseClient.from('Content').select('*, user_profiles!user_id(*)').eq('status','published').order('created_at',{ascending:false}).range(offset,offset+limit-1);
-  if(error) return [];
-  for(let item of data){
-    let {count}=await window.supabaseClient.from('content_views').select('*',{count:'exact',head:true}).eq('content_id',item.id);
-    item.real_views = count || 0;
-    item.is_new = isContentNew(item.created_at);
-    item.duration = item.duration || 0;
+// Filter options
+const filters = ['All', 'Music', 'Film & Series', 'Podcasts', 'Gaming', 'Comedy', 'Live', 'Top 24 Hrs', 'Rising Creators'];
+
+// Trending hashtags
+const trendingHashtags = ['#OwnYourStage', '#BantuFuture', '#1MinComedy', '#SofaTalks', '#JoburgVibes', '#AfricanTalent', '#StreamConnect', '#RisingStars'];
+
+// ========== UTILITY FUNCTIONS ==========
+function showToast(message, type = 'info') {
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  toast.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-exclamation-circle' : 'fa-info-circle'}"></i> ${message}`;
+  const container = document.getElementById('toast-container');
+  if (container) {
+    container.appendChild(toast);
+    setTimeout(() => {
+      toast.style.opacity = '0';
+      toast.style.transform = 'translateX(100%)';
+      setTimeout(() => toast.remove(), 300);
+    }, 3000);
   }
-  return data;
 }
-async function loadContinueWatching(){
-  if(!currentUser) return [];
-  let {data}=await window.supabaseClient.from('watch_progress').select('*, Content(*)').eq('user_id',currentUser.id).eq('is_completed',false).order('updated_at',{ascending:false}).limit(5);
-  return data || [];
+
+function formatNumber(num) {
+  if (num === undefined || num === null) return '0';
+  if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+  if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+  return num.toString();
 }
-function renderContinueBar(progressItems){
-  if(!progressItems.length) return '';
-  let item=progressItems[0];
-  let percent = (item.last_position / (item.Content?.duration||1))*100;
-  return `<div class="continue-watching-bar" data-content-id="${item.content_id}"><img src="${buildThumbnail(item.Content?.thumbnail_url)}" style="width:100px;height:56px;border-radius:8px;object-fit:cover"><div class="progress-container"><strong>Continue: ${escapeHtml(item.Content?.title)}</strong><div class="progress-track"><div class="progress-fill" style="width:${Math.min(100,percent)}%"></div></div><span style="font-size:0.8rem">${Math.floor(percent)}% complete</span></div><button class="watch-now-btn" style="padding:8px 20px" onclick="playContent('${item.content_id}')">Resume</button></div>`;
+
+function formatDuration(seconds) {
+  if (!seconds || seconds === 0) return '0:00';
+  const hrs = Math.floor(seconds / 3600);
+  const mins = Math.floor((seconds % 3600) / 60);
+  const secs = Math.floor(seconds % 60);
+  if (hrs > 0) {
+    return `${hrs}:${mins < 10 ? '0' : ''}${mins}:${secs < 10 ? '0' : ''}${secs}`;
+  }
+  return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
 }
-function renderFeatured(content){ if(!content) return ''; return `<div class="featured-trend-card" data-content-id="${content.id}"><div class="featured-bg" style="background-image:url('${buildThumbnail(content.thumbnail_url)}')"></div><div class="featured-overlay"><h2 class="featured-title">${escapeHtml(content.title)}</h2><div class="card-creator">@${escapeHtml(content.user_profiles?.username||'Creator')}<i class="fas fa-check-circle verified-badge"></i><span class="recency-text">${formatNotificationTime(content.created_at)}</span></div><button class="watch-now-btn" onclick="playContent('${content.id}')">WATCH NOW</button></div></div>`;}
-function renderCards(list, type='horizontal'){ return list.map(c=>`<div class="content-card" data-content-id="${c.id}"><div class="card-thumbnail"><img src="${buildThumbnail(c.thumbnail_url)}" loading="lazy"><div class="duration-badge">${formatDuration(c.duration)}</div><div class="card-actions"><button class="action-menu-btn" onclick="event.stopPropagation();toggleMenu(event,'${c.id}')"><i class="fas fa-ellipsis-v"></i></button><div class="action-menu-dropdown" id="menu-${c.id}"><div class="action-menu-item" onclick="saveLater('${c.id}')"><i class="fas fa-clock"></i> Watch Later</div><div class="action-menu-item" onclick="shareContent('${c.id}')"><i class="fas fa-share"></i> Share</div></div></div></div><div class="card-content"><h3 class="card-title">${escapeHtml(c.title)}</h3><div class="card-creator">@${escapeHtml(c.user_profiles?.username||'Creator')} <span class="recency-text">• ${formatNotificationTime(c.created_at)}</span></div><div class="card-stats"><i class="fas fa-eye"></i> ${formatNumber(c.real_views)} <i class="fas fa-heart"></i> ${formatNumber(c.likes_count||0)}</div></div></div>`).join('');}
-function renderShorts(list){ return list.map(s=>`<div class="shorts-card" data-content-id="${s.id}"><div class="shorts-thumbnail"><img src="${buildThumbnail(s.thumbnail_url)}"><div class="shorts-badge">SHORTS</div><div class="shorts-overlay"><div class="shorts-title">${escapeHtml(s.title)}</div><div class="shorts-stats"><i class="fas fa-eye"></i> ${formatNumber(s.real_views)}</div></div></div></div>`).join('');}
-function escapeHtml(str){ if(!str) return ''; return str.replace(/[&<>]/g,function(m){if(m==='&') return '&amp;'; if(m==='<') return '&lt;'; if(m==='>') return '&gt;'; return m;});}
-function formatNotificationTime(ts){ if(!ts) return 'recent'; let diff=Date.now()-new Date(ts).getTime(); let min=Math.floor(diff/60000); if(min<60) return min+'m'; if(min<1440) return Math.floor(min/60)+'h'; return Math.floor(min/1440)+'d';}
-async function loadContentAndRender(){
-  let content=await fetchContent(0,100);
-  allContent=content;
-  let featured=content.slice().sort((a,b)=>(b.real_views||0)-(a.real_views||0))[0];
-  let liveStreams=content.filter(c=>c.is_live).slice(0,8);
-  let gems=content.slice().sort((a,b)=>(b.real_views||0)+(b.likes_count||0)*2-(a.real_views||0)-(a.likes_count||0)*2).slice(0,12);
-  let shorts=content.filter(c=>(c.duration||0)<60).slice(0,15);
-  let personalized=[];
-  if(userHistory.length && currentUser){
-    let watchedGenres=[...new Set(userHistory.map(h=>h.Content?.genre).filter(Boolean))];
-    personalized=content.filter(c=>watchedGenres.includes(c.genre) && !userHistory.some(h=>h.content_id===c.id)).slice(0,12);
-  } else { personalized=content.slice(0,12); }
-  let html='';
-  if(featured) html+=`<section class="section"><div class="section-header"><h2 class="section-title"><i class="fas fa-rocket"></i> THE PULSE</h2></div>${renderFeatured(featured)}</section>`;
-  if(personalized.length) html+=`<section class="section"><div class="section-header"><h2 class="section-title"><i class="fas fa-magic"></i> MADE FOR YOU</h2></div><div class="content-horizontal-scroll">${renderCards(personalized)}</div></section>`;
-  if(liveStreams.length) html+=`<section class="section"><div class="section-header"><h2 class="section-title"><i class="fas fa-tv"></i> LIVE NOW</h2></div><div class="content-horizontal-scroll">${renderCards(liveStreams)}</div></section>`;
-  if(gems.length) html+=`<section class="section"><div class="section-header"><h2 class="section-title"><i class="fas fa-gem"></i> COMMUNITY GEMS</h2></div><div class="community-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:20px">${renderCards(gems,'grid')}</div></section>`;
-  document.getElementById('trending-sections').innerHTML=html;
-  if(shorts.length){ document.getElementById('shorts-section').style.display='block'; document.getElementById('shorts-scroll').innerHTML=renderShorts(shorts); }
-  else document.getElementById('shorts-section').style.display='none';
-  setupCardListeners();
+
+function formatTimeAgo(timestamp) {
+  if (!timestamp) return 'Just now';
+  const diffMs = Date.now() - new Date(timestamp).getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+  if (diffMins < 1) return 'Just now';
+  if (diffMins < 60) return `${diffMins}m ago`;
+  if (diffHours < 24) return `${diffHours}h ago`;
+  if (diffDays < 7) return `${diffDays}d ago`;
+  return new Date(timestamp).toLocaleDateString();
 }
-function setupCardListeners(){ document.querySelectorAll('[data-content-id]').forEach(el=>{ el.addEventListener('click',(e)=>{ if(e.target.closest('.action-menu-btn')) return; playContent(el.dataset.contentId); }); }); }
-window.playContent=function(id){ window.location.href=`content-detail.html?id=${id}`; };
-window.toggleMenu=function(e,id){ e.stopPropagation(); document.querySelectorAll('.action-menu-dropdown').forEach(d=>d.classList.remove('active')); let m=document.getElementById(`menu-${id}`); if(m) m.classList.toggle('active'); };
-window.saveLater=function(id){ showToast('Added to Watch Later','success'); };
-window.shareContent=function(id){ navigator.clipboard?.writeText(window.location.origin+`/content-detail.html?id=${id}`); showToast('Link copied','success'); };
-async function loadNotifications(){ if(!currentUser) return; let {data}=await window.supabaseClient.from('notifications').select('*').eq('user_id',currentUser.id).order('created_at',{ascending:false}).limit(20); let unread=(data||[]).filter(n=>!n.is_read).length; let badge=document.getElementById('notification-count'); if(badge){ badge.innerText=unread>99?'99+':unread; badge.style.display=unread? 'flex':'none'; } }
-async function init(){
-  let {data:{session}}=await window.supabaseClient.auth.getSession();
-  if(!session){ document.getElementById('auth-modal').classList.add('active'); document.getElementById('loading').style.display='none'; return; }
-  currentUser=session.user;
-  let {data:profile}=await window.supabaseClient.from('user_profiles').select('*').eq('id',currentUser.id).single();
-  let placeholder=document.getElementById('userProfilePlaceholder'); if(placeholder) placeholder.innerHTML=profile?.avatar_url?`<img src="${buildThumbnail(profile.avatar_url)}" style="width:100%;height:100%;border-radius:50%;object-fit:cover">`:`<div style="background:linear-gradient(135deg,#1D4ED8,#F59E0B);width:100%;height:100%;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:bold">${currentUser.email?.charAt(0).toUpperCase()||'U'}</div>`;
-  await loadNotifications();
-  let watchData=await window.supabaseClient.from('watch_progress').select('*, Content(genre)').eq('user_id',currentUser.id).limit(20); userHistory=watchData.data||[];
-  continueWatching=await loadContinueWatching();
-  if(continueWatching.length){ document.getElementById('continue-watching-container').innerHTML=renderContinueBar(continueWatching); document.getElementById('continue-watching-container').style.display='block'; }
-  await loadContentAndRender();
-  document.getElementById('loading').style.display='none'; document.getElementById('app').style.display='block';
-  setupEvents();
+
+function isContentNew(createdAt) {
+  if (!createdAt) return false;
+  const daysAgo = (Date.now() - new Date(createdAt).getTime()) / (1000 * 60 * 60 * 24);
+  return daysAgo < 7;
 }
-function setupEvents(){
-  document.getElementById('search-btn').onclick=()=>document.getElementById('search-modal').classList.add('active');
-  document.getElementById('close-search-btn').onclick=()=>document.getElementById('search-modal').classList.remove('active');
-  document.getElementById('refresh-btn').onclick=()=>{ loadContentAndRender(); showToast('Refreshed','success'); };
-  document.getElementById('notifications-btn').onclick=()=>document.getElementById('notifications-panel').classList.add('active');
-  document.getElementById('close-notifications').onclick=()=>document.getElementById('notifications-panel').classList.remove('active');
-  document.getElementById('mark-all-read').onclick=async()=>{ if(currentUser){ await window.supabaseClient.from('notifications').update({is_read:true}).eq('user_id',currentUser.id).eq('is_read',false); loadNotifications(); showToast('All marked read'); } };
-  document.getElementById('profile-btn').onclick=()=>window.location.href='profile.html';
-  document.getElementById('explore-all-btn').onclick=()=>window.location.href='content-library.html?sort=trending';
-  document.getElementById('viewAllShortsBtn').onclick=()=>window.location.href='content-library.html?type=shorts';
-  document.getElementById('auth-login-btn').onclick=()=>window.location.href='login.html';
-  document.getElementById('auth-cancel-btn').onclick=()=>document.getElementById('auth-modal').classList.remove('active');
-  document.getElementById('location-filter').onchange=()=>{ showToast('Filter by region','info'); loadContentAndRender(); };
-  // search suggestions
-  let searchInput=document.getElementById('search-input');
-  let suggestionsDiv=document.getElementById('search-suggestions');
-  searchInput.addEventListener('input',(e)=>{
-    let q=e.target.value.trim().toLowerCase();
-    if(q.length<2){ suggestionsDiv.classList.remove('active'); return; }
-    let matches=allContent.filter(c=>c.title?.toLowerCase().includes(q)).slice(0,5);
-    if(!matches.length){ suggestionsDiv.classList.remove('active'); return; }
-    suggestionsDiv.innerHTML=matches.map(m=>`<div class="suggestion-item" data-id="${m.id}"><i class="fas fa-search"></i> ${escapeHtml(m.title)}</div>`).join('');
-    suggestionsDiv.classList.add('active');
-    suggestionsDiv.querySelectorAll('.suggestion-item').forEach(el=>el.addEventListener('click',()=>{ let id=el.dataset.id; document.getElementById('search-modal').classList.remove('active'); playContent(id); }));
+
+function escapeHtml(text) {
+  if (!text) return '';
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+function buildThumbnailUrl(thumbnailPath) {
+  const fallbackImages = [
+    'https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=800&h=450&fit=crop',
+    'https://images.unsplash.com/photo-1574375927938-d5a98e8ffe85?w=800&h=450&fit=crop',
+    'https://images.unsplash.com/photo-1585829365295-ab7cd400c167?w=800&h=450&fit=crop'
+  ];
+  if (!thumbnailPath || thumbnailPath.trim() === '') {
+    return fallbackImages[0];
+  }
+  if (thumbnailPath.startsWith('http')) {
+    return thumbnailPath;
+  }
+  const cleanPath = thumbnailPath.replace(/^\/+/, '');
+  return `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/${cleanPath}`;
+}
+
+function getInitials(name) {
+  if (!name) return 'U';
+  const parts = name.split(' ');
+  if (parts.length >= 2) {
+    return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
+  }
+  return name.charAt(0).toUpperCase();
+}
+
+// ========== LOADING STATE ==========
+function setLoading(loading, text) {
+  const loadingScreen = document.getElementById('loading');
+  const loadingText = document.getElementById('loading-text');
+  const app = document.getElementById('app');
+  if (text && loadingText) loadingText.textContent = text;
+  if (loading) {
+    if (loadingScreen) loadingScreen.style.display = 'flex';
+    if (app) app.style.display = 'none';
+  } else {
+    setTimeout(() => {
+      if (loadingScreen) loadingScreen.style.display = 'none';
+      if (app) app.style.display = 'block';
+    }, 500);
+  }
+}
+
+// ========== AUTHENTICATION ==========
+async function checkAuthentication() {
+  setLoading(true, 'Checking authentication...');
+  try {
+    const { data: { session }, error } = await window.supabaseClient.auth.getSession();
+    if (error || !session || !session.user) {
+      console.log('⚠️ User not authenticated');
+      showToast('Sign in for personalized trending content', 'info');
+      document.getElementById('auth-modal').classList.add('active');
+      setLoading(false);
+      return false;
+    }
+    currentUser = session.user;
+    console.log('✅ User authenticated:', currentUser.email);
+    await loadUserProfile();
+    await loadUserStreak();
+    await loadNotifications();
+    await loadContinueWatching();
+    return true;
+  } catch (error) {
+    console.error('❌ Authentication error:', error);
+    setLoading(false);
+    return false;
+  }
+}
+
+async function loadUserProfile() {
+  if (!currentUser) return;
+  try {
+    const { data, error } = await window.supabaseClient
+      .from('user_profiles')
+      .select('*')
+      .eq('id', currentUser.id)
+      .maybeSingle();
+    if (error) throw error;
+    userProfile = data;
+    updateProfileButton();
+  } catch (error) {
+    console.error('Error loading profile:', error);
+  }
+}
+
+function updateProfileButton() {
+  const placeholder = document.getElementById('userProfilePlaceholder');
+  if (!placeholder) return;
+  const displayName = userProfile?.full_name || userProfile?.username || currentUser?.email || 'User';
+  const initials = getInitials(displayName);
+  if (userProfile?.avatar_url) {
+    const avatarUrl = buildThumbnailUrl(userProfile.avatar_url);
+    placeholder.innerHTML = `<img src="${avatarUrl}" class="profile-img" alt="Profile">`;
+  } else {
+    placeholder.innerHTML = `<div class="profile-placeholder">${initials}</div>`;
+  }
+}
+
+// ========== USER STREAK (GAMIFICATION) ==========
+async function loadUserStreak() {
+  if (!currentUser) return;
+  try {
+    const { data, error } = await window.supabaseClient
+      .from('user_streaks')
+      .select('current_streak_days')
+      .eq('user_id', currentUser.id)
+      .eq('streak_type', 'watch')
+      .maybeSingle();
+    if (!error && data) {
+      userStreak = data;
+      const streakEl = document.getElementById('user-streak');
+      const streakCountEl = document.getElementById('streak-count');
+      if (streakEl && streakCountEl && userStreak.current_streak_days > 0) {
+        streakCountEl.textContent = userStreak.current_streak_days;
+        streakEl.style.display = 'flex';
+      }
+    }
+  } catch (error) {
+    console.error('Error loading streak:', error);
+  }
+}
+
+// ========== NOTIFICATIONS ==========
+async function loadNotifications() {
+  if (!currentUser) return;
+  try {
+    const { data, error } = await window.supabaseClient
+      .from('notifications')
+      .select('*')
+      .eq('user_id', currentUser.id)
+      .order('created_at', { ascending: false })
+      .limit(30);
+    if (error) throw error;
+    notifications = data || [];
+    const unreadCount = notifications.filter(n => !n.is_read).length;
+    updateNotificationBadge(unreadCount);
+    renderNotifications();
+  } catch (error) {
+    console.error('Error loading notifications:', error);
+  }
+}
+
+function updateNotificationBadge(count) {
+  const badge = document.getElementById('notification-count');
+  if (badge) {
+    badge.textContent = count > 99 ? '99+' : count;
+    badge.style.display = count > 0 ? 'flex' : 'none';
+  }
+}
+
+function renderNotifications() {
+  const container = document.getElementById('notifications-list');
+  if (!container) return;
+  if (!currentUser) {
+    container.innerHTML = '<div style="text-align:center;padding:40px;color:var(--slate-grey)"><i class="fas fa-bell-slash" style="font-size:48px;margin-bottom:15px"></i><p>Sign in to see notifications</p></div>';
+    return;
+  }
+  if (notifications.length === 0) {
+    container.innerHTML = '<div style="text-align:center;padding:40px;color:var(--slate-grey)"><i class="fas fa-bell" style="font-size:48px;margin-bottom:15px;opacity:0.3"></i><p>No notifications yet</p></div>';
+    return;
+  }
+  container.innerHTML = notifications.map(n => `
+    <div class="notification-item ${n.is_read ? 'read' : ''}" data-id="${n.id}">
+      <div class="notification-icon"><i class="fas ${getNotificationIcon(n.type)}"></i></div>
+      <div class="notification-content">
+        <h4>${escapeHtml(n.title)}</h4>
+        <p>${escapeHtml(n.message)}</p>
+        <span class="notification-time">${formatTimeAgo(n.created_at)}</span>
+      </div>
+      ${!n.is_read ? '<div class="notification-dot"></div>' : ''}
+    </div>
+  `).join('');
+  document.querySelectorAll('.notification-item').forEach(item => {
+    item.addEventListener('click', () => markNotificationRead(item.dataset.id));
   });
-  document.addEventListener('click',()=>{ document.querySelectorAll('.action-menu-dropdown').forEach(d=>d.classList.remove('active')); });
 }
-window.supabaseClient.auth.onAuthStateChange((event)=>{ if(event==='SIGNED_OUT') location.reload(); });
-init();
+
+function getNotificationIcon(type) {
+  const icons = { like: 'fa-heart', comment: 'fa-comment', follow: 'fa-user-plus', view_milestone: 'fa-trophy', system: 'fa-bell' };
+  return icons[type] || 'fa-bell';
+}
+
+async function markNotificationRead(id) {
+  try {
+    await window.supabaseClient.from('notifications').update({ is_read: true }).eq('id', id);
+    await loadNotifications();
+  } catch (error) {
+    console.error('Error marking read:', error);
+  }
+}
+
+async function markAllNotificationsRead() {
+  if (!currentUser) return;
+  try {
+    await window.supabaseClient.from('notifications').update({ is_read: true }).eq('user_id', currentUser.id).eq('is_read', false);
+    await loadNotifications();
+    showToast('All notifications marked as read', 'success');
+  } catch (error) {
+    console.error('Error marking all read:', error);
+  }
+}
+
+// ========== CONTINUE WATCHING ==========
+async function loadContinueWatching() {
+  if (!currentUser) return [];
+  try {
+    const { data, error } = await window.supabaseClient
+      .from('watch_progress')
+      .select('*, Content:content_id(*)')
+      .eq('user_id', currentUser.id)
+      .eq('is_completed', false)
+      .order('updated_at', { ascending: false })
+      .limit(5);
+    if (error) throw error;
+    continueWatchingItems = data || [];
+    renderContinueWatching();
+    return continueWatchingItems;
+  } catch (error) {
+    console.error('Error loading continue watching:', error);
+    return [];
+  }
+}
+
+function renderContinueWatching() {
+  const container = document.getElementById('continue-watching-container');
+  if (!container) return;
+  if (!continueWatchingItems.length) {
+    container.style.display = 'none';
+    return;
+  }
+  const item = continueWatchingItems[0];
+  const content = item.Content;
+  if (!content) return;
+  const percent = Math.min(100, (item.last_position / (content.duration || 1)) * 100);
+  container.innerHTML = `
+    <div class="continue-watching-bar" data-content-id="${content.id}">
+      <img class="continue-thumbnail" src="${buildThumbnailUrl(content.thumbnail_url)}" alt="${escapeHtml(content.title)}">
+      <div class="progress-container">
+        <strong>Continue: ${escapeHtml(content.title)}</strong>
+        <div class="progress-track">
+          <div class="progress-fill" style="width: ${percent}%"></div>
+        </div>
+        <span style="font-size:0.8rem; color:var(--slate-grey)">${Math.floor(percent)}% complete • ${formatDuration(content.duration - item.last_position)} remaining</span>
+      </div>
+      <button class="watch-now-btn" onclick="playContent('${content.id}')" style="padding:10px 24px; font-size:0.9rem;">RESUME</button>
+    </div>
+  `;
+  container.style.display = 'block';
+  const bar = container.querySelector('.continue-watching-bar');
+  if (bar) bar.addEventListener('click', (e) => { if (!e.target.closest('button')) playContent(content.id); });
+}
+
+// ========== FETCH CONTENT ==========
+async function fetchContent(offset = 0, limit = CONTENT_LIMIT) {
+  try {
+    const { data, error } = await window.supabaseClient
+      .from('Content')
+      .select('*, user_profiles!user_id(*)')
+      .eq('status', 'published')
+      .order('created_at', { ascending: false })
+      .range(offset, offset + limit - 1);
+    if (error) {
+      const { data: fallbackData, error: fallbackError } = await window.supabaseClient
+        .from('content')
+        .select('*, user_profiles!user_id(*)')
+        .eq('status', 'published')
+        .order('created_at', { ascending: false })
+        .range(offset, offset + limit - 1);
+      if (fallbackError) throw fallbackError;
+      return await enrichWithViewCounts(fallbackData || []);
+    }
+    return await enrichWithViewCounts(data || []);
+  } catch (error) {
+    console.error('Error fetching content:', error);
+    showToast('Failed to load content. Please refresh.', 'error');
+    return [];
+  }
+}
+
+async function enrichWithViewCounts(contentArray) {
+  const enriched = [];
+  for (const item of contentArray) {
+    const { count } = await window.supabaseClient
+      .from('content_views')
+      .select('*', { count: 'exact', head: true })
+      .eq('content_id', item.id);
+    enriched.push({
+      ...item,
+      real_views: count || 0,
+      is_new: isContentNew(item.created_at),
+      duration: item.duration || 0,
+      is_live: item.is_live || false
+    });
+  }
+  return enriched;
+}
+
+// ========== PROCESS SECTIONS ==========
+function processSections(contentData) {
+  allContentData = contentData;
+  const featured = [...contentData].sort((a, b) => (b.real_views || 0) - (a.real_views || 0))[0];
+  const liveStreams = contentData.filter(c => c.is_live).slice(0, 10);
+  const shorts = contentData.filter(c => (c.duration || 0) < 60).slice(0, 15);
+  const communityGems = [...contentData]
+    .sort((a, b) => ((b.real_views || 0) + (b.likes_count || 0) * 2) - ((a.real_views || 0) + (a.likes_count || 0) * 2))
+    .slice(0, 12);
+  const personalized = generatePersonalizedRow(contentData);
+  return { featured, liveStreams, shorts, communityGems, personalized };
+}
+
+function generatePersonalizedRow(contentData) {
+  if (!userProfile?.content_preferences?.length && !userStreak?.current_streak_days) {
+    return contentData.slice(0, 12);
+  }
+  const preferredGenres = userProfile?.content_preferences || [];
+  if (preferredGenres.length) {
+    const genreMatches = contentData.filter(c => preferredGenres.includes(c.genre));
+    if (genreMatches.length >= 4) return genreMatches.slice(0, 12);
+  }
+  return contentData.slice(0, 12);
+}
+
+// ========== RENDER FUNCTIONS ==========
+function renderFilterChips() {
+  const container = document.getElementById('filter-container');
+  if (!container) return;
+  container.innerHTML = filters.map(filter => `
+    <button class="filter-chip ${filter === selectedFilter ? 'active' : ''}" data-filter="${filter}">${filter.toUpperCase()}</button>
+  `).join('');
+  container.querySelectorAll('.filter-chip').forEach(btn => {
+    btn.addEventListener('click', () => {
+      selectedFilter = btn.dataset.filter;
+      if (selectedFilter !== 'All') {
+        window.location.href = `content-library.html?genre=${encodeURIComponent(selectedFilter)}`;
+      }
+    });
+  });
+}
+
+function renderTrendingSections(sections) {
+  const container = document.getElementById('trending-sections');
+  if (!container) return;
+  let html = '';
+  
+  // Featured Section
+  if (sections.featured) {
+    html += `<section class="section"><div class="section-header"><h2 class="section-title"><i class="fas fa-rocket section-icon"></i>THE PULSE</h2></div>${renderFeaturedCard(sections.featured)}</section>`;
+  }
+  
+  // Personalized For You
+  if (sections.personalized && sections.personalized.length) {
+    html += `<section class="section"><div class="section-header"><h2 class="section-title"><i class="fas fa-magic section-icon"></i>MADE FOR YOU</h2><button class="see-all-btn" onclick="viewAll('personalized')">SEE ALL</button></div><div class="content-horizontal-scroll">${renderContentCards(sections.personalized)}</div></section>`;
+  }
+  
+  // Live Streams
+  if (sections.liveStreams && sections.liveStreams.length) {
+    html += `<section class="section"><div class="section-header"><h2 class="section-title"><i class="fas fa-tv section-icon"></i>LIVE NOW</h2><button class="see-all-btn" onclick="viewAll('live')">SEE ALL</button></div><div class="content-horizontal-scroll">${renderContentCards(sections.liveStreams, true)}</div></section>`;
+  }
+  
+  // Trending Hashtags
+  html += `<section class="section"><div class="section-header"><h2 class="section-title"><i class="fas fa-hashtag section-icon"></i>TRENDING TOPICS</h2></div><div class="hashtags-container">${renderHashtags()}</div></section>`;
+  
+  // Community Gems
+  if (sections.communityGems && sections.communityGems.length) {
+    html += `<section class="section"><div class="section-header"><h2 class="section-title"><i class="fas fa-gem section-icon"></i>COMMUNITY GEMS</h2><button class="see-all-btn" onclick="viewAll('gems')">SEE ALL</button></div><div class="community-grid">${renderContentCards(sections.communityGems, false, true)}</div></section>`;
+  }
+  
+  container.innerHTML = html;
+  attachCardEventListeners();
+  attachHoverPreviews();
+}
+
+function renderFeaturedCard(content) {
+  const thumbnailUrl = buildThumbnailUrl(content.thumbnail_url);
+  const creatorName = content.user_profiles?.username || 'Creator';
+  const isVerified = content.user_profiles?.is_verified;
+  return `
+    <div class="featured-trend-card" data-content-id="${content.id}">
+      <div class="featured-bg" style="background-image: url('${thumbnailUrl}')"></div>
+      <div class="featured-overlay">
+        ${content.is_live ? '<div class="live-badge">LIVE NOW</div>' : ''}
+        <h2 class="featured-title">${escapeHtml(content.title)}</h2>
+        <div class="featured-creator">@${escapeHtml(creatorName)}${isVerified ? '<i class="fas fa-check-circle verified-badge"></i>' : ''}<span class="recency-text">• ${formatTimeAgo(content.created_at)}</span></div>
+        <div class="featured-stats"><span><i class="fas fa-eye"></i> ${formatNumber(content.real_views)} views</span><span><i class="fas fa-heart"></i> ${formatNumber(content.likes_count || 0)} likes</span></div>
+        <button class="watch-now-btn" onclick="playContent('${content.id}')">${content.is_live ? 'WATCH LIVE' : 'WATCH NOW'} <i class="fas fa-play"></i></button>
+      </div>
+    </div>
+  `;
+}
+
+function renderContentCards(items, isLive = false, isGrid = false) {
+  if (!items || !items.length) return '';
+  return items.map(item => {
+    const thumbnailUrl = buildThumbnailUrl(item.thumbnail_url);
+    const creatorName = item.user_profiles?.username || 'Creator';
+    const isVerified = item.user_profiles?.is_verified;
+    const cardClass = isGrid ? 'gem-card' : 'content-card';
+    const hoverVideo = item.file_url ? `<video data-src="${item.file_url}" muted loop preload="none"></video>` : '';
+    return `
+      <div class="${cardClass}" data-content-id="${item.id}">
+        <div class="${isGrid ? 'gem-thumbnail' : 'card-thumbnail'}">
+          <img src="${thumbnailUrl}" alt="${escapeHtml(item.title)}" loading="lazy">
+          ${hoverVideo}
+          <div class="duration-badge">${formatDuration(item.duration)}</div>
+          ${item.is_new ? '<div class="badge new" style="position:absolute; top:12px; left:12px;">NEW</div>' : ''}
+          ${isLive && item.is_live ? '<div class="badge live" style="position:absolute; top:12px; left:12px;">LIVE</div>' : ''}
+          <div class="card-actions">
+            <button class="action-menu-btn" onclick="event.stopPropagation();toggleActionMenu(event, '${item.id}')"><i class="fas fa-ellipsis-vertical"></i></button>
+            <div class="action-menu-dropdown" id="menu-${item.id}">
+              <div class="action-menu-item" onclick="saveToWatchLater('${item.id}')"><i class="fas fa-clock"></i> Save to Watch Later</div>
+              <div class="action-menu-item" onclick="shareContent('${item.id}')"><i class="fas fa-share"></i> Share</div>
+              <div class="action-menu-item" onclick="notInterested('${item.id}')"><i class="fas fa-thumbs-down"></i> Not Interested</div>
+            </div>
+          </div>
+        </div>
+        <div class="${isGrid ? 'gem-content' : 'card-content'}">
+          <h3 class="card-title">${escapeHtml(item.title)}</h3>
+          <div class="card-creator">@${escapeHtml(creatorName)}${isVerified ? '<i class="fas fa-check-circle verified-badge"></i>' : ''}<span class="recency-text">• ${formatTimeAgo(item.created_at)}</span></div>
+          <div class="card-stats"><span><i class="fas fa-eye"></i> ${formatNumber(item.real_views)}</span><span><i class="fas fa-heart"></i> ${formatNumber(item.likes_count || 0)}</span></div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderHashtags() {
+  return trendingHashtags.map(tag => `<div class="hashtag" data-hashtag="${tag}">${tag}</div>`).join('');
+}
+
+function renderShorts(shorts) {
+  const container = document.getElementById('shorts-scroll');
+  const section = document.getElementById('shorts-section');
+  if (!container) return;
+  if (!shorts || !shorts.length) {
+    section.style.display = 'none';
+    return;
+  }
+  container.innerHTML = shorts.map(short => `
+    <div class="shorts-card" data-content-id="${short.id}">
+      <div class="shorts-thumbnail">
+        <img src="${buildThumbnailUrl(short.thumbnail_url)}" alt="${escapeHtml(short.title)}" loading="lazy">
+        <div class="shorts-badge">SHORTS</div>
+        <div class="duration-badge">${formatDuration(short.duration)}</div>
+        <div class="shorts-overlay">
+          <div class="shorts-title">${escapeHtml(short.title)}</div>
+          <div class="shorts-stats"><i class="fas fa-eye"></i> ${formatNumber(short.real_views)} views</div>
+        </div>
+      </div>
+    </div>
+  `).join('');
+  section.style.display = 'block';
+}
+
+// ========== EVENT HANDLERS ==========
+function attachCardEventListeners() {
+  document.querySelectorAll('[data-content-id]').forEach(card => {
+    card.addEventListener('click', (e) => {
+      if (e.target.closest('.action-menu-btn') || e.target.closest('.action-menu-dropdown')) return;
+      playContent(card.dataset.contentId);
+    });
+  });
+  document.querySelectorAll('.hashtag').forEach(tag => {
+    tag.addEventListener('click', () => {
+      window.location.href = `content-library.html?search=${encodeURIComponent(tag.dataset.hashtag)}`;
+    });
+  });
+}
+
+function attachHoverPreviews() {
+  document.querySelectorAll('.card-thumbnail video').forEach(video => {
+    const parent = video.closest('.content-card, .gem-card');
+    if (!parent) return;
+    const src = video.dataset.src;
+    if (src) video.src = src;
+    parent.addEventListener('mouseenter', () => {
+      video.muted = true;
+      video.play().catch(() => {});
+    });
+    parent.addEventListener('mouseleave', () => {
+      video.pause();
+      video.currentTime = 0;
+    });
+  });
+}
+
+window.playContent = function(contentId) {
+  if (!contentId) return;
+  window.location.href = `content-detail.html?id=${contentId}`;
+};
+
+window.toggleActionMenu = function(event, contentId) {
+  event.stopPropagation();
+  document.querySelectorAll('.action-menu-dropdown').forEach(menu => menu.classList.remove('active'));
+  const menu = document.getElementById(`menu-${contentId}`);
+  if (menu) menu.classList.toggle('active');
+};
+
+window.saveToWatchLater = function(contentId) {
+  showToast('Added to Watch Later', 'success');
+  closeAllMenus();
+};
+
+window.shareContent = function(contentId) {
+  const url = `${window.location.origin}/content-detail.html?id=${contentId}`;
+  if (navigator.share) {
+    navigator.share({ title: 'Check this out on Bantu Stream Connect', url });
+  } else {
+    navigator.clipboard.writeText(url);
+    showToast('Link copied to clipboard!', 'success');
+  }
+  closeAllMenus();
+};
+
+window.notInterested = function(contentId) {
+  showToast('We\'ll show less content like this', 'info');
+  closeAllMenus();
+};
+
+function closeAllMenus() {
+  document.querySelectorAll('.action-menu-dropdown').forEach(menu => menu.classList.remove('active'));
+}
+
+document.addEventListener('click', closeAllMenus);
+
+window.viewAll = function(type) {
+  const urls = { live: 'content-library.html?genre=Live', gems: 'content-library.html?sort=popular', personalized: 'content-library.html?for-you=true' };
+  window.location.href = urls[type] || 'content-library.html';
+};
+
+// ========== INFINITE SCROLL ==========
+function setupInfiniteScroll() {
+  window.addEventListener('scroll', async () => {
+    if (isLoadingMore || !hasMoreContent) return;
+    const scrollPosition = window.innerHeight + window.scrollY;
+    const threshold = document.body.offsetHeight - 800;
+    if (scrollPosition >= threshold) {
+      await loadMoreContent();
+    }
+  });
+}
+
+async function loadMoreContent() {
+  isLoadingMore = true;
+  const loader = document.getElementById('infinite-scroll-loader');
+  if (loader) loader.classList.add('active');
+  contentOffset += CONTENT_LIMIT;
+  const newContent = await fetchContent(contentOffset, CONTENT_LIMIT);
+  if (newContent.length === 0) {
+    hasMoreContent = false;
+  } else {
+    allContentData = [...allContentData, ...newContent];
+    const sections = processSections(allContentData);
+    renderShorts(sections.shorts);
+    const gemsContainer = document.querySelector('.community-grid');
+    if (gemsContainer && sections.communityGems.length) {
+      gemsContainer.insertAdjacentHTML('beforeend', renderContentCards(sections.communityGems.slice(-newContent.length), false, true));
+    }
+    attachCardEventListeners();
+    attachHoverPreviews();
+  }
+  if (loader) loader.classList.remove('active');
+  isLoadingMore = false;
+}
+
+// ========== SEARCH FUNCTIONALITY ==========
+function setupSearch() {
+  const searchInput = document.getElementById('search-input');
+  const suggestionsDiv = document.getElementById('search-suggestions');
+  if (!searchInput) return;
+  searchInput.addEventListener('input', (e) => {
+    const query = e.target.value.trim();
+    clearTimeout(searchDebounceTimer);
+    if (query.length < 2) {
+      suggestionsDiv.classList.remove('active');
+      return;
+    }
+    searchDebounceTimer = setTimeout(() => {
+      const matches = allContentData.filter(c => c.title?.toLowerCase().includes(query.toLowerCase())).slice(0, 5);
+      if (!matches.length) {
+        suggestionsDiv.classList.remove('active');
+        return;
+      }
+      suggestionsDiv.innerHTML = matches.map(m => `<div class="suggestion-item" data-id="${m.id}"><i class="fas fa-search"></i> ${escapeHtml(m.title)}</div>`).join('');
+      suggestionsDiv.classList.add('active');
+      suggestionsDiv.querySelectorAll('.suggestion-item').forEach(el => {
+        el.addEventListener('click', () => {
+          document.getElementById('search-modal').classList.remove('active');
+          playContent(el.dataset.id);
+        });
+      });
+    }, 300);
+  });
+}
+
+// ========== EVENT LISTENERS SETUP ==========
+function setupEventListeners() {
+  document.getElementById('search-btn')?.addEventListener('click', () => document.getElementById('search-modal').classList.add('active'));
+  document.getElementById('close-search-btn')?.addEventListener('click', () => document.getElementById('search-modal').classList.remove('active'));
+  document.getElementById('refresh-btn')?.addEventListener('click', async () => { await loadContentAndRender(); showToast('Content refreshed', 'success'); });
+  document.getElementById('notifications-btn')?.addEventListener('click', () => document.getElementById('notifications-panel').classList.add('active'));
+  document.getElementById('close-notifications')?.addEventListener('click', () => document.getElementById('notifications-panel').classList.remove('active'));
+  document.getElementById('mark-all-read')?.addEventListener('click', markAllNotificationsRead);
+  document.getElementById('profile-btn')?.addEventListener('click', () => window.location.href = 'profile.html');
+  document.getElementById('explore-all-btn')?.addEventListener('click', () => window.location.href = 'content-library.html?sort=trending');
+  document.getElementById('view-all-shorts')?.addEventListener('click', () => window.location.href = 'content-library.html?type=shorts');
+  document.getElementById('location-filter')?.addEventListener('change', async () => { showToast('Filtering by region', 'info'); await loadContentAndRender(); });
+  document.getElementById('auth-login-btn')?.addEventListener('click', () => window.location.href = 'login.html?redirect=trending_screen.html');
+  document.getElementById('auth-cancel-btn')?.addEventListener('click', () => document.getElementById('auth-modal').classList.remove('active'));
+  document.getElementById('search-modal')?.addEventListener('click', (e) => { if (e.target === document.getElementById('search-modal')) document.getElementById('search-modal').classList.remove('active'); });
+  document.getElementById('notifications-panel')?.addEventListener('click', (e) => { if (e.target === document.getElementById('notifications-panel')) document.getElementById('notifications-panel').classList.remove('active'); });
+}
+
+// ========== MAIN LOAD FUNCTION ==========
+async function loadContentAndRender() {
+  setLoading(true, 'Loading trending content...');
+  contentOffset = 0;
+  hasMoreContent = true;
+  const contentData = await fetchContent(0, CONTENT_LIMIT);
+  const sections = processSections(contentData);
+  renderFilterChips();
+  renderTrendingSections(sections);
+  renderShorts(sections.shorts);
+  setLoading(false);
+}
+
+// ========== INITIALIZATION ==========
+async function initialize() {
+  console.log('🔥 Initializing Trending Screen...');
+  const isAuth = await checkAuthentication();
+  if (!isAuth) {
+    setLoading(false);
+    return;
+  }
+  setupEventListeners();
+  setupSearch();
+  setupInfiniteScroll();
+  await loadContentAndRender();
+  console.log('✅ Trending Screen initialized');
+}
+
+// Start
+initialize();
+
+// Auth state listener
+window.supabaseClient.auth.onAuthStateChange((event, session) => {
+  if (event === 'SIGNED_IN' && session?.user) {
+    currentUser = session.user;
+    loadUserProfile();
+    loadUserStreak();
+    loadNotifications();
+    loadContinueWatching();
+    loadContentAndRender();
+    showToast('Welcome back!', 'success');
+    document.getElementById('auth-modal')?.classList.remove('active');
+  } else if (event === 'SIGNED_OUT') {
+    currentUser = null;
+    document.getElementById('userProfilePlaceholder').innerHTML = '<div class="profile-placeholder"><i class="fas fa-user"></i></div>';
+    document.getElementById('user-streak').style.display = 'none';
+    document.getElementById('auth-modal').classList.add('active');
+  }
+});
 </script>
 </body>
 </html>
