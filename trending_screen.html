@@ -17,19 +17,13 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
     <!-- Theme CSS (Matching content-detail) -->
-    <link rel="stylesheet" href="css/home-feed-themes.css">
-    
-    <!-- Base Styles -->
     <style>
         /* ============================================ */
         /* COMPLETE STYLES - MATCHING CONTENT-DETAIL PAGE */
+        /* PLATFORM CONSISTENCY: Header, Sidebar, Theme, Background */
         /* ============================================ */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
+        
+        /* CSS VARIABLES & THEME SUPPORT */
         :root {
             --deep-black: #0A0E12;
             --deep-navy: #0F172A;
@@ -67,6 +61,12 @@
 
         html {
             font-size: calc(16px * var(--ui-scale));
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
 
         body {
@@ -286,6 +286,10 @@
             border: 2px solid var(--deep-black);
         }
 
+        .profile-switcher {
+            position: relative;
+        }
+
         .profile-btn {
             background: rgba(255, 255, 255, 0.1);
             border: 1px solid var(--card-border);
@@ -498,7 +502,7 @@
 
         /* Section Styles */
         .section {
-            margin-bottom: 40px;
+            margin-bottom: 48px;
         }
 
         .section-header {
@@ -547,6 +551,21 @@
             gap: 12px;
             overflow-x: auto;
             padding-bottom: 10px;
+            scrollbar-width: thin;
+        }
+
+        .filter-container::-webkit-scrollbar {
+            height: 4px;
+        }
+
+        .filter-container::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+        }
+
+        .filter-container::-webkit-scrollbar-thumb {
+            background: var(--warm-gold);
+            border-radius: 10px;
         }
 
         .filter-chip {
@@ -579,6 +598,21 @@
             gap: 20px;
             overflow-x: auto;
             padding-bottom: 20px;
+            scrollbar-width: thin;
+        }
+
+        .content-horizontal-scroll::-webkit-scrollbar {
+            height: 6px;
+        }
+
+        .content-horizontal-scroll::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+        }
+
+        .content-horizontal-scroll::-webkit-scrollbar-thumb {
+            background: var(--warm-gold);
+            border-radius: 10px;
         }
 
         .content-card {
@@ -670,6 +704,7 @@
             align-items: center;
             gap: 6px;
             margin-bottom: 8px;
+            flex-wrap: wrap;
         }
 
         .card-stats {
@@ -694,7 +729,7 @@
             position: relative;
             border-radius: 20px;
             overflow: hidden;
-            height: 400px;
+            height: 450px;
             margin-bottom: 30px;
             cursor: pointer;
         }
@@ -721,23 +756,45 @@
             padding: 30px;
         }
 
+        .live-badge {
+            display: inline-block;
+            padding: 6px 16px;
+            background: rgba(239, 68, 68, 0.95);
+            border-radius: 20px;
+            color: white;
+            font-weight: 700;
+            font-size: 0.85rem;
+            margin-bottom: 15px;
+            animation: pulse-red 1.5s infinite;
+        }
+
+        @keyframes pulse-red {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
         .featured-title {
             font-family: 'Orbitron', sans-serif;
-            font-size: 1.8rem;
+            font-size: 2rem;
             font-weight: 800;
             margin-bottom: 10px;
+            line-height: 1.2;
         }
 
         .featured-creator {
-            font-size: 0.9rem;
+            font-size: 1rem;
             color: var(--warm-gold);
-            margin-bottom: 10px;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
         }
 
         .featured-stats {
             display: flex;
             gap: 20px;
-            font-size: 0.8rem;
+            font-size: 0.85rem;
             color: rgba(255, 255, 255, 0.8);
             margin-bottom: 20px;
         }
@@ -750,6 +807,7 @@
             font-weight: 700;
             cursor: pointer;
             transition: all 0.3s ease;
+            font-size: 0.9rem;
         }
 
         .watch-now-btn:hover {
@@ -760,7 +818,7 @@
         /* Community Grid */
         .community-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
             gap: 20px;
         }
 
@@ -776,10 +834,11 @@
         .gem-card:hover {
             transform: translateY(-5px);
             box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3);
+            border-color: rgba(245, 158, 11, 0.3);
         }
 
         .gem-thumbnail {
-            height: 150px;
+            height: 160px;
             overflow: hidden;
             position: relative;
         }
@@ -788,6 +847,11 @@
             width: 100%;
             height: 100%;
             object-fit: cover;
+            transition: transform 0.3s ease;
+        }
+
+        .gem-card:hover .gem-thumbnail img {
+            transform: scale(1.1);
         }
 
         .gem-content {
@@ -799,6 +863,7 @@
             display: flex;
             flex-wrap: wrap;
             gap: 12px;
+            margin-top: 10px;
         }
 
         .hashtag {
@@ -815,11 +880,12 @@
         .hashtag:hover {
             background: rgba(245, 158, 11, 0.15);
             transform: translateY(-2px);
+            border-color: var(--warm-gold);
         }
 
         /* Shorts Section */
         .shorts-section {
-            margin-bottom: 40px;
+            margin-bottom: 48px;
         }
 
         .shorts-scroll {
@@ -827,10 +893,15 @@
             gap: 15px;
             overflow-x: auto;
             padding-bottom: 20px;
+            scrollbar-width: thin;
+        }
+
+        .shorts-scroll::-webkit-scrollbar {
+            height: 6px;
         }
 
         .shorts-card {
-            flex: 0 0 160px;
+            flex: 0 0 180px;
             border-radius: 16px;
             overflow: hidden;
             background: var(--card-bg);
@@ -841,10 +912,11 @@
 
         .shorts-card:hover {
             transform: translateY(-5px);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3);
         }
 
         .shorts-thumbnail {
-            height: 280px;
+            height: 320px;
             position: relative;
             overflow: hidden;
         }
@@ -853,6 +925,11 @@
             width: 100%;
             height: 100%;
             object-fit: cover;
+            transition: transform 0.3s ease;
+        }
+
+        .shorts-card:hover .shorts-thumbnail img {
+            transform: scale(1.1);
         }
 
         .shorts-overlay {
@@ -865,8 +942,13 @@
         }
 
         .shorts-title {
-            font-size: 0.8rem;
+            font-size: 0.85rem;
             font-weight: 600;
+            margin-bottom: 4px;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
         }
 
         .shorts-stats {
@@ -891,13 +973,19 @@
             backdrop-filter: blur(12px);
             border-radius: 20px;
             margin-bottom: 30px;
-            padding: 15px 20px;
+            padding: 16px 24px;
             display: flex;
             align-items: center;
             gap: 20px;
             flex-wrap: wrap;
             border: 1px solid rgba(245, 158, 11, 0.3);
             cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .continue-watching-bar:hover {
+            transform: translateY(-2px);
+            border-color: var(--warm-gold);
         }
 
         .continue-thumbnail {
@@ -905,10 +993,12 @@
             height: 68px;
             border-radius: 10px;
             object-fit: cover;
+            flex-shrink: 0;
         }
 
         .progress-container {
             flex: 1;
+            min-width: 200px;
         }
 
         .progress-track {
@@ -923,6 +1013,7 @@
             width: 0%;
             height: 100%;
             background: var(--warm-gold);
+            transition: width 0.3s;
         }
 
         /* Explore Button */
@@ -942,11 +1033,15 @@
             font-weight: 700;
             cursor: pointer;
             transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
         }
 
         .explore-btn:hover {
             transform: translateY(-5px);
             box-shadow: 0 15px 30px rgba(29, 78, 216, 0.4);
+            gap: 18px;
         }
 
         /* Footer */
@@ -991,17 +1086,20 @@
             display: flex;
             justify-content: center;
             z-index: 99;
+            pointer-events: none;
         }
 
         .navigation-button {
             display: flex;
             justify-content: space-evenly;
+            align-items: center;
             background: rgba(15, 23, 42, 0.95);
             border: 1px solid rgba(148, 163, 184, 0.25);
             border-radius: 60px;
             padding: 8px 20px;
             backdrop-filter: blur(12px);
             gap: 15px;
+            pointer-events: auto;
         }
 
         .nav-icon {
@@ -1024,6 +1122,11 @@
             transform: translateY(-3px);
         }
 
+        .nav-icon.active {
+            background: linear-gradient(135deg, var(--warm-gold), #f97316);
+            color: var(--deep-black);
+        }
+
         /* Toast */
         .toast {
             position: fixed;
@@ -1037,6 +1140,16 @@
             font-size: 0.85rem;
             z-index: 2000;
             animation: slideIn 0.3s ease;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .toast.success {
+            border-left-color: var(--success-color);
+        }
+
+        .toast.error {
+            border-left-color: var(--error-color);
         }
 
         @keyframes slideIn {
@@ -1044,11 +1157,28 @@
             to { transform: translateX(0); opacity: 1; }
         }
 
-        /* Skeleton */
+        /* Skeleton Loaders */
         .skeleton {
             background: linear-gradient(90deg, rgba(255,255,255,0.05) 25%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0.05) 75%);
             background-size: 200% 100%;
             animation: skeleton-loading 1.5s infinite;
+            border-radius: 8px;
+        }
+
+        .skeleton-text {
+            height: 16px;
+            margin-bottom: 8px;
+        }
+
+        .skeleton-title {
+            height: 20px;
+            margin-bottom: 10px;
+            width: 80%;
+        }
+
+        .skeleton-thumbnail {
+            height: 160px;
+            border-radius: 12px;
         }
 
         @keyframes skeleton-loading {
@@ -1056,26 +1186,201 @@
             100% { background-position: -200% 0; }
         }
 
-        /* Responsive */
+        /* Theme Selector */
+        .theme-selector {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            padding: 10px;
+            z-index: 1000;
+            display: none;
+            flex-direction: column;
+            gap: 5px;
+            backdrop-filter: blur(20px);
+            min-width: 150px;
+        }
+
+        .theme-selector.active {
+            display: flex;
+        }
+
+        .theme-option {
+            background: none;
+            border: none;
+            color: var(--soft-white);
+            padding: 8px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.3s ease;
+            font-size: 0.85rem;
+        }
+
+        .theme-option:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        /* Responsive Styles */
         @media (max-width: 768px) {
-            .logo-text { display: none; }
-            .profile-name { display: none; }
-            .profile-btn { padding: 0.3125rem; }
-            .section-title { font-size: 1.2rem; }
-            .featured-title { font-size: 1.3rem; }
-            .featured-trend-card { height: 300px; }
-            .content-card { flex: 0 0 240px; }
-            .navigation-button { padding: 6px 15px; gap: 8px; }
-            .nav-icon { width: 40px; height: 40px; font-size: 1rem; }
+            .logo-text {
+                display: none;
+            }
+
+            .profile-name {
+                display: none;
+            }
+
+            .profile-btn {
+                padding: 0.3125rem;
+            }
+
+            .section-title {
+                font-size: 1.2rem;
+            }
+
+            .featured-title {
+                font-size: 1.3rem;
+            }
+
+            .featured-trend-card {
+                height: 350px;
+            }
+
+            .content-card {
+                flex: 0 0 240px;
+            }
+
+            .shorts-card {
+                flex: 0 0 150px;
+            }
+
+            .shorts-thumbnail {
+                height: 280px;
+            }
+
+            .navigation-button {
+                padding: 6px 15px;
+                gap: 10px;
+            }
+
+            .nav-icon {
+                width: 42px;
+                height: 42px;
+                font-size: 1rem;
+            }
+
+            .featured-overlay {
+                padding: 20px;
+            }
         }
 
         @media (max-width: 480px) {
-            .container { padding: 12px; }
-            .content-card { flex: 0 0 200px; }
-            .community-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
-            .shorts-card { flex: 0 0 130px; }
-            .shorts-thumbnail { height: 230px; }
-            .featured-overlay { padding: 20px; }
+            .container {
+                padding: 12px;
+                padding-bottom: 100px;
+            }
+
+            .content-card {
+                flex: 0 0 200px;
+            }
+
+            .community-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 12px;
+            }
+
+            .shorts-card {
+                flex: 0 0 130px;
+            }
+
+            .shorts-thumbnail {
+                height: 230px;
+            }
+
+            .featured-trend-card {
+                height: 280px;
+            }
+
+            .featured-title {
+                font-size: 1.1rem;
+            }
+
+            .featured-creator {
+                font-size: 0.8rem;
+            }
+
+            .featured-stats {
+                font-size: 0.7rem;
+            }
+
+            .watch-now-btn {
+                padding: 8px 20px;
+                font-size: 0.8rem;
+            }
+
+            .nav-icon {
+                width: 36px;
+                height: 36px;
+                font-size: 0.9rem;
+            }
+
+            .navigation-button {
+                padding: 5px 12px;
+                gap: 8px;
+            }
+        }
+
+        @media (max-width: 360px) {
+            .content-card {
+                flex: 0 0 170px;
+            }
+
+            .shorts-card {
+                flex: 0 0 110px;
+            }
+
+            .shorts-thumbnail {
+                height: 200px;
+            }
+
+            .gem-thumbnail {
+                height: 130px;
+            }
+
+            .card-title {
+                font-size: 0.8rem;
+            }
+        }
+
+        /* Scrollbar Styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--warm-gold);
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #f97316;
+        }
+
+        /* Selection */
+        ::selection {
+            background: var(--warm-gold);
+            color: var(--deep-black);
         }
     </style>
 </head>
@@ -1216,61 +1521,82 @@
     <!-- Toast Container -->
     <div id="toast-container"></div>
 
-    <!-- Theme Selector (Hidden initially) -->
-    <div id="theme-selector" style="position: fixed; top: 80px; right: 20px; background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px; padding: 10px; z-index: 1000; display: none; flex-direction: column; gap: 5px;">
+    <!-- Theme Selector -->
+    <div id="theme-selector" class="theme-selector">
         <button class="theme-option" data-theme="dark"><i class="fas fa-moon"></i> Dark</button>
         <button class="theme-option" data-theme="light"><i class="fas fa-sun"></i> Light</button>
         <button class="theme-option" data-theme="high-contrast"><i class="fas fa-eye"></i> High Contrast</button>
     </div>
 
     <script>
-        // Supabase Client
+        // ============================================
+        // SUPABASE CONFIGURATION
+        // ============================================
         const SUPABASE_URL = 'https://ydnxqnbjoshvxteevemc.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U';
         window.supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        // Global State
+        // ============================================
+        // GLOBAL STATE
+        // ============================================
         let currentUser = null;
-        let allContent = [];
-        let continueWatching = [];
+        let allContentData = [];
+        let continueWatchingItems = [];
         let selectedFilter = 'All';
-        const filters = ['All', 'Music', 'Film & Series', 'Podcasts', 'Gaming', 'Comedy', 'Live', 'Rising Creators'];
+        let isLoading = false;
+        let userStreak = 0;
+
+        // Filter options
+        const filters = ['All', 'Music', 'Film & Series', 'Podcasts', 'Gaming', 'Comedy', 'Live', 'Top 24 Hrs', 'Rising Creators'];
+        
+        // Trending hashtags
         const trendingHashtags = ['#OwnYourStage', '#BantuFuture', '#1MinComedy', '#SofaTalks', '#JoburgVibes', '#AfricanTalent', '#StreamConnect', '#RisingStars'];
 
-        // Utility Functions
+        // ============================================
+        // UTILITY FUNCTIONS
+        // ============================================
         function showToast(message, type = 'info') {
             const container = document.getElementById('toast-container');
             if (!container) return;
             const toast = document.createElement('div');
-            toast.className = 'toast';
-            toast.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-exclamation-circle' : 'fa-info-circle'}" style="margin-right: 8px;"></i>${message}`;
+            toast.className = `toast ${type}`;
+            const icon = type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-exclamation-circle' : 'fa-info-circle';
+            toast.innerHTML = `<i class="fas ${icon}" style="margin-right: 8px;"></i>${message}`;
             container.appendChild(toast);
             setTimeout(() => toast.remove(), 3000);
         }
 
         function formatNumber(num) {
+            if (num === undefined || num === null) return '0';
             if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
             if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
             return num.toString();
         }
 
         function formatDuration(seconds) {
-            if (!seconds) return '0:00';
+            if (!seconds || seconds === 0) return '0:00';
             const mins = Math.floor(seconds / 60);
             const secs = Math.floor(seconds % 60);
-            return mins + ':' + (secs < 10 ? '0' : '') + secs;
+            return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
         }
 
         function formatTimeAgo(timestamp) {
-            if (!timestamp) return 'recent';
-            const diff = Date.now() - new Date(timestamp).getTime();
-            const mins = Math.floor(diff / 60000);
-            if (mins < 60) return mins + 'm ago';
-            const hours = Math.floor(mins / 60);
-            if (hours < 24) return hours + 'h ago';
-            const days = Math.floor(hours / 24);
-            if (days < 7) return days + 'd ago';
+            if (!timestamp) return 'Just now';
+            const diffMs = Date.now() - new Date(timestamp).getTime();
+            const diffMins = Math.floor(diffMs / 60000);
+            const diffHours = Math.floor(diffMs / 3600000);
+            const diffDays = Math.floor(diffMs / 86400000);
+            if (diffMins < 1) return 'Just now';
+            if (diffMins < 60) return `${diffMins}m ago`;
+            if (diffHours < 24) return `${diffHours}h ago`;
+            if (diffDays < 7) return `${diffDays}d ago`;
             return new Date(timestamp).toLocaleDateString();
+        }
+
+        function isContentNew(createdAt) {
+            if (!createdAt) return false;
+            const daysAgo = (Date.now() - new Date(createdAt).getTime()) / (1000 * 60 * 60 * 24);
+            return daysAgo < 7;
         }
 
         function escapeHtml(text) {
@@ -1280,17 +1606,47 @@
             return div.innerHTML;
         }
 
-        function buildThumbnailUrl(url) {
-            if (!url) return 'https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=400&h=225&fit=crop';
-            if (url.startsWith('http')) return url;
-            return `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/${url.replace(/^\/+/, '')}`;
+        function buildThumbnailUrl(thumbnailPath) {
+            const fallbackImages = [
+                'https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=400&h=225&fit=crop',
+                'https://images.unsplash.com/photo-1574375927938-d5a98e8ffe85?w=400&h=225&fit=crop',
+                'https://images.unsplash.com/photo-1585829365295-ab7cd400c167?w=400&h=225&fit=crop'
+            ];
+            if (!thumbnailPath || thumbnailPath.trim() === '') {
+                return fallbackImages[0];
+            }
+            if (thumbnailPath.startsWith('http')) {
+                return thumbnailPath;
+            }
+            const cleanPath = thumbnailPath.replace(/^\/+/, '');
+            return `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/${cleanPath}`;
         }
 
-        // Theme Functions
+        function getInitials(name) {
+            if (!name) return 'U';
+            const parts = name.split(' ');
+            if (parts.length >= 2) {
+                return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
+            }
+            return name.charAt(0).toUpperCase();
+        }
+
+        // ============================================
+        // THEME FUNCTIONS
+        // ============================================
         function applyTheme(theme) {
             document.documentElement.classList.remove('theme-dark', 'theme-light', 'theme-high-contrast');
             document.documentElement.classList.add(`theme-${theme}`);
             localStorage.setItem('bantu_theme', theme);
+            
+            // Update active state on theme options
+            document.querySelectorAll('.theme-option').forEach(option => {
+                if (option.dataset.theme === theme) {
+                    option.style.background = 'rgba(245, 158, 11, 0.2)';
+                } else {
+                    option.style.background = '';
+                }
+            });
         }
 
         function initThemeSelector() {
@@ -1299,163 +1655,298 @@
             
             const themeToggle = document.getElementById('sidebar-theme-toggle');
             const themeSelector = document.getElementById('theme-selector');
+            
             if (themeToggle && themeSelector) {
                 themeToggle.addEventListener('click', (e) => {
                     e.stopPropagation();
-                    themeSelector.style.display = themeSelector.style.display === 'flex' ? 'none' : 'flex';
+                    themeSelector.classList.toggle('active');
                 });
+                
                 document.querySelectorAll('.theme-option').forEach(btn => {
                     btn.addEventListener('click', () => {
                         applyTheme(btn.dataset.theme);
-                        themeSelector.style.display = 'none';
+                        themeSelector.classList.remove('active');
+                        showToast(`Theme changed to ${btn.dataset.theme}`, 'success');
                     });
                 });
+                
                 document.addEventListener('click', (e) => {
                     if (!themeSelector.contains(e.target) && !themeToggle.contains(e.target)) {
-                        themeSelector.style.display = 'none';
+                        themeSelector.classList.remove('active');
                     }
                 });
             }
         }
 
-        // Sidebar Functions
+        // ============================================
+        // SIDEBAR FUNCTIONS
+        // ============================================
         function setupSidebar() {
             const menuToggle = document.getElementById('menu-toggle');
             const navMenuBtn = document.getElementById('nav-menu-btn');
             const sidebarClose = document.getElementById('sidebar-close');
             const sidebarOverlay = document.getElementById('sidebar-overlay');
             const sidebarMenu = document.getElementById('sidebar-menu');
-
+            
             function openSidebar() {
                 sidebarMenu.classList.add('active');
                 sidebarOverlay.classList.add('active');
                 document.body.style.overflow = 'hidden';
             }
-
+            
             function closeSidebar() {
                 sidebarMenu.classList.remove('active');
                 sidebarOverlay.classList.remove('active');
                 document.body.style.overflow = '';
             }
-
+            
             if (menuToggle) menuToggle.addEventListener('click', openSidebar);
             if (navMenuBtn) navMenuBtn.addEventListener('click', openSidebar);
             if (sidebarClose) sidebarClose.addEventListener('click', closeSidebar);
             if (sidebarOverlay) sidebarOverlay.addEventListener('click', closeSidebar);
+            
+            // ESC key to close
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && sidebarMenu.classList.contains('active')) {
+                    closeSidebar();
+                }
+            });
         }
 
         async function updateSidebarProfile() {
+            const avatarDiv = document.getElementById('sidebar-profile-avatar');
+            const nameSpan = document.getElementById('sidebar-profile-name');
+            const emailSpan = document.getElementById('sidebar-profile-email');
+            const profileSection = document.getElementById('sidebar-profile');
+            
             if (!currentUser) {
-                document.getElementById('sidebar-profile-name').textContent = 'Guest';
-                document.getElementById('sidebar-profile-email').textContent = 'Sign in to continue';
-                document.getElementById('sidebar-profile-avatar').innerHTML = '<i class="fas fa-user"></i>';
+                nameSpan.textContent = 'Guest';
+                emailSpan.textContent = 'Sign in to continue';
+                avatarDiv.innerHTML = '<i class="fas fa-user"></i>';
+                if (profileSection) {
+                    profileSection.onclick = () => {
+                        window.location.href = 'login.html?redirect=trending_screen.html';
+                    };
+                }
                 return;
             }
-            const { data: profile } = await window.supabaseClient
-                .from('user_profiles')
-                .select('full_name, username, avatar_url')
-                .eq('id', currentUser.id)
-                .maybeSingle();
-            const name = profile?.full_name || profile?.username || currentUser.email?.split('@')[0] || 'User';
-            document.getElementById('sidebar-profile-name').textContent = name;
-            document.getElementById('sidebar-profile-email').textContent = currentUser.email;
-            if (profile?.avatar_url) {
-                document.getElementById('sidebar-profile-avatar').innerHTML = `<img src="${buildThumbnailUrl(profile.avatar_url)}" style="width:100%;height:100%;object-fit:cover;">`;
-            } else {
-                document.getElementById('sidebar-profile-avatar').innerHTML = `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--bantu-blue),var(--warm-gold));color:white;font-weight:bold;">${name.charAt(0).toUpperCase()}</div>`;
+            
+            try {
+                const { data: profile, error } = await window.supabaseClient
+                    .from('user_profiles')
+                    .select('full_name, username, avatar_url')
+                    .eq('id', currentUser.id)
+                    .maybeSingle();
+                
+                const displayName = profile?.full_name || profile?.username || currentUser.email?.split('@')[0] || 'User';
+                nameSpan.textContent = displayName;
+                emailSpan.textContent = currentUser.email;
+                
+                if (profile?.avatar_url) {
+                    const avatarUrl = buildThumbnailUrl(profile.avatar_url);
+                    avatarDiv.innerHTML = `<img src="${avatarUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
+                } else {
+                    const initial = displayName.charAt(0).toUpperCase();
+                    avatarDiv.innerHTML = `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--bantu-blue),var(--warm-gold));color:white;font-weight:bold;font-size:1.2rem;">${initial}</div>`;
+                }
+                
+                if (profileSection) {
+                    profileSection.onclick = () => {
+                        window.location.href = 'profile.html';
+                    };
+                }
+            } catch (error) {
+                console.error('Error loading profile:', error);
+                const initial = (currentUser.email?.charAt(0) || 'U').toUpperCase();
+                avatarDiv.innerHTML = `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--bantu-blue),var(--warm-gold));color:white;font-weight:bold;">${initial}</div>`;
+                nameSpan.textContent = currentUser.email?.split('@')[0] || 'User';
+                emailSpan.textContent = currentUser.email;
             }
         }
 
         function updateHeaderProfile() {
             const placeholder = document.getElementById('userProfilePlaceholder');
             const nameSpan = document.getElementById('current-profile-name');
+            
             if (!currentUser) {
                 placeholder.innerHTML = '<i class="fas fa-user"></i>';
                 nameSpan.textContent = 'Guest';
                 return;
             }
-            nameSpan.textContent = currentUser.email?.split('@')[0] || 'User';
-            placeholder.innerHTML = `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--bantu-blue),var(--warm-gold));color:white;font-weight:bold;">${(currentUser.email?.charAt(0) || 'U').toUpperCase()}</div>`;
+            
+            const displayName = currentUser.email?.split('@')[0] || 'User';
+            nameSpan.textContent = displayName;
+            const initial = displayName.charAt(0).toUpperCase();
+            placeholder.innerHTML = `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--bantu-blue),var(--warm-gold));color:white;font-weight:bold;font-size:1rem;">${initial}</div>`;
         }
 
-        // Navigation Buttons
+        // ============================================
+        // NAVIGATION FUNCTIONS
+        // ============================================
         function setupNavigation() {
-            document.getElementById('nav-home-btn')?.addEventListener('click', () => window.location.href = 'index.html');
+            document.getElementById('nav-home-btn')?.addEventListener('click', () => {
+                window.location.href = 'index.html';
+            });
+            
             document.getElementById('nav-create-btn')?.addEventListener('click', () => {
-                if (currentUser) window.location.href = 'creator-upload.html';
-                else showToast('Please sign in to create content', 'warning');
+                if (currentUser) {
+                    window.location.href = 'creator-upload.html';
+                } else {
+                    showToast('Please sign in to create content', 'warning');
+                    window.location.href = 'login.html?redirect=creator-upload.html';
+                }
             });
+            
             document.getElementById('profile-btn')?.addEventListener('click', () => {
-                if (currentUser) window.location.href = 'profile.html';
-                else window.location.href = 'login.html?redirect=trending_screen.html';
+                if (currentUser) {
+                    window.location.href = 'profile.html';
+                } else {
+                    window.location.href = 'login.html?redirect=trending_screen.html';
+                }
             });
-            document.getElementById('explore-all-btn')?.addEventListener('click', () => window.location.href = 'content-library.html?sort=trending');
-            document.getElementById('view-all-shorts')?.addEventListener('click', () => window.location.href = 'content-library.html?type=shorts');
+            
+            document.getElementById('explore-all-btn')?.addEventListener('click', () => {
+                window.location.href = 'content-library.html?sort=trending';
+            });
+            
+            document.getElementById('view-all-shorts')?.addEventListener('click', () => {
+                window.location.href = 'content-library.html?type=shorts';
+            });
+            
+            document.getElementById('search-btn')?.addEventListener('click', () => {
+                window.location.href = 'content-library.html';
+            });
+            
+            document.getElementById('voice-search-btn')?.addEventListener('click', () => {
+                if ('webkitSpeechRecognition' in window) {
+                    const recognition = new webkitSpeechRecognition();
+                    recognition.lang = 'en-US';
+                    recognition.onresult = (event) => {
+                        const query = event.results[0][0].transcript;
+                        window.location.href = `content-library.html?search=${encodeURIComponent(query)}`;
+                    };
+                    recognition.start();
+                } else {
+                    showToast('Voice search not supported on this browser', 'info');
+                }
+            });
+            
+            document.getElementById('notifications-btn')?.addEventListener('click', () => {
+                if (!currentUser) {
+                    window.location.href = 'login.html?redirect=trending_screen.html';
+                    return;
+                }
+                showToast('Notifications feature coming soon!', 'info');
+            });
         }
 
-        // Fetch Content
-        async function fetchContent(limit = 50) {
-            const { data, error } = await window.supabaseClient
-                .from('Content')
-                .select('*, user_profiles!user_id(*)')
-                .eq('status', 'published')
-                .order('created_at', { ascending: false })
-                .limit(limit);
-            if (error) return [];
+        // ============================================
+        // FETCH CONTENT
+        // ============================================
+        async function fetchContent(limit = 80) {
+            try {
+                const { data, error } = await window.supabaseClient
+                    .from('Content')
+                    .select('*, user_profiles!user_id(*)')
+                    .eq('status', 'published')
+                    .order('created_at', { ascending: false })
+                    .limit(limit);
+                
+                if (error) {
+                    const { data: fallbackData, error: fallbackError } = await window.supabaseClient
+                        .from('content')
+                        .select('*, user_profiles!user_id(*)')
+                        .eq('status', 'published')
+                        .order('created_at', { ascending: false })
+                        .limit(limit);
+                    if (fallbackError) throw fallbackError;
+                    return await enrichWithViewCounts(fallbackData || []);
+                }
+                
+                return await enrichWithViewCounts(data || []);
+            } catch (error) {
+                console.error('Error fetching content:', error);
+                showToast('Failed to load content. Please refresh.', 'error');
+                return [];
+            }
+        }
+
+        async function enrichWithViewCounts(contentArray) {
             const enriched = [];
-            for (const item of data) {
-                const { count } = await window.supabaseClient.from('content_views').select('*', { count: 'exact', head: true }).eq('content_id', item.id);
+            for (const item of contentArray) {
+                const { count } = await window.supabaseClient
+                    .from('content_views')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('content_id', item.id);
+                
                 enriched.push({
                     ...item,
                     real_views: count || 0,
+                    is_new: isContentNew(item.created_at),
                     duration: item.duration || 0,
-                    is_live: item.is_live || false,
-                    is_new: (Date.now() - new Date(item.created_at).getTime()) / 86400000 < 7
+                    is_live: item.is_live || false
                 });
             }
             return enriched;
         }
 
-        // Load Continue Watching
+        // ============================================
+        // LOAD CONTINUE WATCHING
+        // ============================================
         async function loadContinueWatching() {
             if (!currentUser) return [];
-            const { data } = await window.supabaseClient
-                .from('watch_progress')
-                .select('*, Content(*)')
-                .eq('user_id', currentUser.id)
-                .eq('is_completed', false)
-                .order('updated_at', { ascending: false })
-                .limit(1);
-            return data || [];
+            try {
+                const { data, error } = await window.supabaseClient
+                    .from('watch_progress')
+                    .select('*, Content(*)')
+                    .eq('user_id', currentUser.id)
+                    .eq('is_completed', false)
+                    .order('updated_at', { ascending: false })
+                    .limit(1);
+                
+                if (error) throw error;
+                return data || [];
+            } catch (error) {
+                console.error('Error loading continue watching:', error);
+                return [];
+            }
         }
 
         function renderContinueBar(item) {
-            if (!item) return '';
+            if (!item || !item.Content) return '';
             const content = item.Content;
-            if (!content) return '';
             const percent = Math.min(100, (item.last_position / (content.duration || 1)) * 100);
             return `
                 <div class="continue-watching-bar" onclick="window.location.href='content-detail.html?id=${content.id}'">
-                    <img class="continue-thumbnail" src="${buildThumbnailUrl(content.thumbnail_url)}">
+                    <img class="continue-thumbnail" src="${buildThumbnailUrl(content.thumbnail_url)}" alt="${escapeHtml(content.title)}">
                     <div class="progress-container">
                         <strong>Continue: ${escapeHtml(content.title)}</strong>
-                        <div class="progress-track"><div class="progress-fill" style="width:${percent}%"></div></div>
-                        <span style="font-size:0.8rem">${Math.floor(percent)}% complete</span>
+                        <div class="progress-track">
+                            <div class="progress-fill" style="width: ${percent}%"></div>
+                        </div>
+                        <span style="font-size:0.8rem; color:var(--slate-grey)">${Math.floor(percent)}% complete</span>
                     </div>
-                    <button class="watch-now-btn" style="padding:8px 20px" onclick="event.stopPropagation();window.location.href='content-detail.html?id=${content.id}'">RESUME</button>
+                    <button class="watch-now-btn" style="padding:8px 20px; font-size:0.8rem;" onclick="event.stopPropagation();window.location.href='content-detail.html?id=${content.id}'">RESUME</button>
                 </div>
             `;
         }
 
-        // Render Functions
+        // ============================================
+        // RENDER FUNCTIONS
+        // ============================================
         function renderFilterChips() {
             const container = document.getElementById('filter-container');
             if (!container) return;
-            container.innerHTML = filters.map(f => `<button class="filter-chip ${f === selectedFilter ? 'active' : ''}" data-filter="${f}">${f.toUpperCase()}</button>`).join('');
+            
+            container.innerHTML = filters.map(filter => `
+                <button class="filter-chip ${filter === selectedFilter ? 'active' : ''}" data-filter="${filter}">${filter.toUpperCase()}</button>
+            `).join('');
+            
             container.querySelectorAll('.filter-chip').forEach(btn => {
                 btn.addEventListener('click', () => {
-                    if (btn.dataset.filter !== 'All') {
-                        window.location.href = `content-library.html?genre=${encodeURIComponent(btn.dataset.filter)}`;
+                    const filter = btn.dataset.filter;
+                    if (filter !== 'All') {
+                        window.location.href = `content-library.html?genre=${encodeURIComponent(filter)}`;
                     }
                 });
             });
@@ -1463,14 +1954,25 @@
 
         function renderFeatured(content) {
             if (!content) return '';
+            const thumbnailUrl = buildThumbnailUrl(content.thumbnail_url);
+            const creatorName = content.user_profiles?.username || 'Creator';
+            const isVerified = content.user_profiles?.is_verified;
+            
             return `
                 <div class="featured-trend-card" onclick="window.location.href='content-detail.html?id=${content.id}'">
-                    <div class="featured-bg" style="background-image:url('${buildThumbnailUrl(content.thumbnail_url)}')"></div>
+                    <div class="featured-bg" style="background-image: url('${thumbnailUrl}')"></div>
                     <div class="featured-overlay">
-                        ${content.is_live ? '<div class="badge live" style="position:relative;display:inline-block;margin-bottom:15px;">LIVE NOW</div>' : ''}
+                        ${content.is_live ? '<div class="live-badge">LIVE NOW</div>' : ''}
                         <h2 class="featured-title">${escapeHtml(content.title)}</h2>
-                        <div class="featured-creator">@${escapeHtml(content.user_profiles?.username || 'Creator')}<span class="recency-text">• ${formatTimeAgo(content.created_at)}</span></div>
-                        <div class="featured-stats"><span><i class="fas fa-eye"></i> ${formatNumber(content.real_views)} views</span></div>
+                        <div class="featured-creator">
+                            @${escapeHtml(creatorName)}
+                            ${isVerified ? '<i class="fas fa-check-circle verified-badge"></i>' : ''}
+                            <span class="recency-text">• ${formatTimeAgo(content.created_at)}</span>
+                        </div>
+                        <div class="featured-stats">
+                            <span><i class="fas fa-eye"></i> ${formatNumber(content.real_views)} views</span>
+                            <span><i class="fas fa-heart"></i> ${formatNumber(content.likes_count || 0)} likes</span>
+                        </div>
                         <button class="watch-now-btn">WATCH NOW <i class="fas fa-play"></i></button>
                     </div>
                 </div>
@@ -1480,25 +1982,41 @@
         function renderCards(items, type = 'horizontal') {
             if (!items || !items.length) return '';
             const cardClass = type === 'grid' ? 'gem-card' : 'content-card';
-            return items.map(item => `
-                <div class="${cardClass}" onclick="window.location.href='content-detail.html?id=${item.id}'">
-                    <div class="${type === 'grid' ? 'gem-thumbnail' : 'card-thumbnail'}">
-                        <img src="${buildThumbnailUrl(item.thumbnail_url)}" loading="lazy">
-                        <div class="duration-badge">${formatDuration(item.duration)}</div>
-                        ${item.is_live ? '<div class="badge live">LIVE</div>' : ''}
-                        ${item.is_new ? '<div class="badge new" style="background:var(--success-color)">NEW</div>' : ''}
+            
+            return items.map(item => {
+                const thumbnailUrl = buildThumbnailUrl(item.thumbnail_url);
+                const creatorName = item.user_profiles?.username || 'Creator';
+                const isVerified = item.user_profiles?.is_verified;
+                
+                return `
+                    <div class="${cardClass}" onclick="window.location.href='content-detail.html?id=${item.id}'">
+                        <div class="${type === 'grid' ? 'gem-thumbnail' : 'card-thumbnail'}">
+                            <img src="${thumbnailUrl}" alt="${escapeHtml(item.title)}" loading="lazy">
+                            <div class="duration-badge">${formatDuration(item.duration)}</div>
+                            ${item.is_live ? '<div class="badge live">LIVE</div>' : ''}
+                            ${item.is_new ? '<div class="badge new">NEW</div>' : ''}
+                        </div>
+                        <div class="${type === 'grid' ? 'gem-content' : 'card-content'}">
+                            <h3 class="card-title">${escapeHtml(item.title)}</h3>
+                            <div class="card-creator">
+                                @${escapeHtml(creatorName)}
+                                ${isVerified ? '<i class="fas fa-check-circle verified-badge"></i>' : ''}
+                                <span class="recency-text">• ${formatTimeAgo(item.created_at)}</span>
+                            </div>
+                            <div class="card-stats">
+                                <span><i class="fas fa-eye"></i> ${formatNumber(item.real_views)}</span>
+                                <span><i class="fas fa-heart"></i> ${formatNumber(item.likes_count || 0)}</span>
+                            </div>
+                        </div>
                     </div>
-                    <div class="${type === 'grid' ? 'gem-content' : 'card-content'}">
-                        <h3 class="card-title">${escapeHtml(item.title)}</h3>
-                        <div class="card-creator">@${escapeHtml(item.user_profiles?.username || 'Creator')}<span class="recency-text">• ${formatTimeAgo(item.created_at)}</span></div>
-                        <div class="card-stats"><span><i class="fas fa-eye"></i> ${formatNumber(item.real_views)}</span><span><i class="fas fa-heart"></i> ${formatNumber(item.likes_count || 0)}</span></div>
-                    </div>
-                </div>
-            `).join('');
+                `;
+            }).join('');
         }
 
         function renderHashtags() {
-            return trendingHashtags.map(tag => `<div class="hashtag" data-hashtag="${tag}">${tag}</div>`).join('');
+            return trendingHashtags.map(tag => `
+                <div class="hashtag" data-hashtag="${tag}">${tag}</div>
+            `).join('');
         }
 
         function renderShorts(items) {
@@ -1511,37 +2029,108 @@
                         <div class="duration-badge">${formatDuration(item.duration)}</div>
                         <div class="shorts-overlay">
                             <div class="shorts-title">${escapeHtml(item.title)}</div>
-                            <div class="shorts-stats"><i class="fas fa-eye"></i> ${formatNumber(item.real_views)}</div>
+                            <div class="shorts-stats"><i class="fas fa-eye"></i> ${formatNumber(item.real_views)} views</div>
                         </div>
                     </div>
                 </div>
             `).join('');
         }
 
-        // Main Load Function
+        // ============================================
+        // MAIN LOAD FUNCTION
+        // ============================================
         async function loadContent() {
             const loading = document.getElementById('loading');
             const app = document.getElementById('app');
+            
             loading.style.display = 'flex';
             
-            const contentData = await fetchContent(60);
-            allContent = contentData;
+            const contentData = await fetchContent(80);
+            allContentData = contentData;
             
+            // Process sections
             const featured = [...contentData].sort((a, b) => (b.real_views || 0) - (a.real_views || 0))[0];
-            const liveStreams = contentData.filter(c => c.is_live).slice(0, 8);
-            const communityGems = [...contentData].sort((a, b) => (b.real_views || 0) + (b.likes_count || 0) * 2 - (a.real_views || 0) - (a.likes_count || 0) * 2).slice(0, 12);
+            const liveStreams = contentData.filter(c => c.is_live).slice(0, 10);
             const shorts = contentData.filter(c => (c.duration || 0) < 60).slice(0, 15);
+            const communityGems = [...contentData]
+                .sort((a, b) => ((b.real_views || 0) + (b.likes_count || 0) * 2) - ((a.real_views || 0) + (a.likes_count || 0) * 2))
+                .slice(0, 12);
             const personalized = contentData.slice(0, 12);
             
             let html = '';
-            if (featured) html += `<section class="section"><div class="section-header"><h2 class="section-title"><i class="fas fa-rocket section-icon"></i>THE PULSE</h2></div>${renderFeatured(featured)}</section>`;
-            if (personalized.length) html += `<section class="section"><div class="section-header"><h2 class="section-title"><i class="fas fa-magic section-icon"></i>MADE FOR YOU</h2><button class="see-all-btn" onclick="window.location.href='content-library.html?for-you=true'">SEE ALL</button></div><div class="content-horizontal-scroll">${renderCards(personalized)}</div></section>`;
-            if (liveStreams.length) html += `<section class="section"><div class="section-header"><h2 class="section-title"><i class="fas fa-tv section-icon"></i>LIVE NOW</h2><button class="see-all-btn" onclick="window.location.href='content-library.html?genre=Live'">SEE ALL</button></div><div class="content-horizontal-scroll">${renderCards(liveStreams)}</div></section>`;
-            html += `<section class="section"><div class="section-header"><h2 class="section-title"><i class="fas fa-hashtag section-icon"></i>TRENDING TOPICS</h2></div><div class="hashtags-container">${renderHashtags()}</div></section>`;
-            if (communityGems.length) html += `<section class="section"><div class="section-header"><h2 class="section-title"><i class="fas fa-gem section-icon"></i>COMMUNITY GEMS</h2><button class="see-all-btn" onclick="window.location.href='content-library.html?sort=popular'">SEE ALL</button></div><div class="community-grid">${renderCards(communityGems, 'grid')}</div></section>`;
+            
+            // Featured Section
+            if (featured) {
+                html += `
+                    <section class="section">
+                        <div class="section-header">
+                            <h2 class="section-title"><i class="fas fa-rocket section-icon"></i>THE PULSE</h2>
+                        </div>
+                        ${renderFeatured(featured)}
+                    </section>
+                `;
+            }
+            
+            // Personalized For You
+            if (personalized.length) {
+                html += `
+                    <section class="section">
+                        <div class="section-header">
+                            <h2 class="section-title"><i class="fas fa-magic section-icon"></i>MADE FOR YOU</h2>
+                            <button class="see-all-btn" onclick="window.location.href='content-library.html?for-you=true'">SEE ALL</button>
+                        </div>
+                        <div class="content-horizontal-scroll">
+                            ${renderCards(personalized)}
+                        </div>
+                    </section>
+                `;
+            }
+            
+            // Live Streams
+            if (liveStreams.length) {
+                html += `
+                    <section class="section">
+                        <div class="section-header">
+                            <h2 class="section-title"><i class="fas fa-tv section-icon"></i>LIVE NOW</h2>
+                            <button class="see-all-btn" onclick="window.location.href='content-library.html?genre=Live'">SEE ALL</button>
+                        </div>
+                        <div class="content-horizontal-scroll">
+                            ${renderCards(liveStreams)}
+                        </div>
+                    </section>
+                `;
+            }
+            
+            // Trending Hashtags
+            html += `
+                <section class="section">
+                    <div class="section-header">
+                        <h2 class="section-title"><i class="fas fa-hashtag section-icon"></i>TRENDING TOPICS</h2>
+                    </div>
+                    <div class="hashtags-container">
+                        ${renderHashtags()}
+                    </div>
+                </section>
+            `;
+            
+            // Community Gems
+            if (communityGems.length) {
+                html += `
+                    <section class="section">
+                        <div class="section-header">
+                            <h2 class="section-title"><i class="fas fa-gem section-icon"></i>COMMUNITY GEMS</h2>
+                            <button class="see-all-btn" onclick="window.location.href='content-library.html?sort=popular'">SEE ALL</button>
+                        </div>
+                        <div class="community-grid">
+                            ${renderCards(communityGems, 'grid')}
+                        </div>
+                    </section>
+                `;
+            }
             
             document.getElementById('trending-sections').innerHTML = html;
             
+            // Shorts Section
             const shortsContainer = document.getElementById('shorts-scroll');
             const shortsSection = document.getElementById('shorts-section');
             if (shorts.length) {
@@ -1553,7 +2142,9 @@
             
             // Hashtag click handlers
             document.querySelectorAll('.hashtag').forEach(tag => {
-                tag.addEventListener('click', () => window.location.href = `content-library.html?search=${encodeURIComponent(tag.dataset.hashtag)}`);
+                tag.addEventListener('click', () => {
+                    window.location.href = `content-library.html?search=${encodeURIComponent(tag.dataset.hashtag)}`;
+                });
             });
             
             // Continue Watching
@@ -1567,7 +2158,9 @@
             app.style.display = 'block';
         }
 
-        // Auth Check
+        // ============================================
+        // AUTHENTICATION
+        // ============================================
         async function checkAuth() {
             const { data: { session } } = await window.supabaseClient.auth.getSession();
             if (session?.user) {
@@ -1578,81 +2171,42 @@
             return !!currentUser;
         }
 
-        // Search Modal (simple)
-        function setupSearchModal() {
-            const searchBtn = document.getElementById('search-btn');
-            if (searchBtn) {
-                searchBtn.addEventListener('click', () => {
-                    window.location.href = 'content-library.html';
-                });
-            }
-        }
-
-        // Voice Search (placeholder)
-        function setupVoiceSearch() {
-            const voiceBtn = document.getElementById('voice-search-btn');
-            if (voiceBtn) {
-                voiceBtn.addEventListener('click', () => {
-                    if ('webkitSpeechRecognition' in window) {
-                        const recognition = new webkitSpeechRecognition();
-                        recognition.lang = 'en-US';
-                        recognition.onresult = (event) => {
-                            const query = event.results[0][0].transcript;
-                            window.location.href = `content-library.html?search=${encodeURIComponent(query)}`;
-                        };
-                        recognition.start();
-                    } else {
-                        showToast('Voice search not supported on this browser', 'info');
-                    }
-                });
-            }
-        }
-
-        // Notifications (placeholder)
-        function setupNotifications() {
-            const notifBtn = document.getElementById('notifications-btn');
-            if (notifBtn) {
-                notifBtn.addEventListener('click', () => {
-                    if (!currentUser) {
-                        window.location.href = 'login.html?redirect=trending_screen.html';
-                        return;
-                    }
-                    showToast('Notifications coming soon!', 'info');
-                });
-            }
-        }
-
-        // Initialize
+        // ============================================
+        // INITIALIZATION
+        // ============================================
         async function init() {
+            console.log('🔥 Trending Screen Initializing...');
+            
             setupSidebar();
             initThemeSelector();
             setupNavigation();
-            setupSearchModal();
-            setupVoiceSearch();
-            setupNotifications();
             renderFilterChips();
+            
             await checkAuth();
             await loadContent();
+            
+            // Auth state listener
+            window.supabaseClient.auth.onAuthStateChange(async (event, session) => {
+                if (event === 'SIGNED_IN' && session?.user) {
+                    currentUser = session.user;
+                    await updateSidebarProfile();
+                    updateHeaderProfile();
+                    await loadContent();
+                    showToast('Welcome back!', 'success');
+                } else if (event === 'SIGNED_OUT') {
+                    currentUser = null;
+                    updateSidebarProfile();
+                    updateHeaderProfile();
+                    await loadContent();
+                    showToast('Signed out', 'info');
+                }
+            });
+            
+            console.log('✅ Trending Screen Initialized');
         }
-
+        
+        // Start initialization
         init();
-
-        // Auth state listener
-        window.supabaseClient.auth.onAuthStateChange(async (event, session) => {
-            if (event === 'SIGNED_IN' && session?.user) {
-                currentUser = session.user;
-                await updateSidebarProfile();
-                updateHeaderProfile();
-                await loadContent();
-                showToast('Welcome back!', 'success');
-            } else if (event === 'SIGNED_OUT') {
-                currentUser = null;
-                updateSidebarProfile();
-                updateHeaderProfile();
-                await loadContent();
-                showToast('Signed out', 'info');
-            }
-        });
     </script>
 </body>
 </html>
