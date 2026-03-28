@@ -166,6 +166,7 @@ body {
   cursor: pointer;
   transition: all 0.3s ease;
   font-size: 1.2rem;
+  position: relative;
 }
 .icon-btn:hover {
   background: rgba(255, 255, 255, 0.2);
@@ -1299,7 +1300,7 @@ body {
           <button id="refresh-btn" class="icon-btn refresh-btn" title="Refresh"><i class="fas fa-sync-alt"></i></button>
           <button id="notifications-btn" class="icon-btn" title="Notifications">
             <i class="fas fa-bell"></i>
-            <span class="notification-badge" id="notification-count" style="display: none; position: absolute; top: -5px; right: -5px; background: var(--error-color); color: white; font-size: 10px; font-weight: bold; width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid var(--deep-black);">0</span>
+            <span id="notification-count" style="display: none; position: absolute; top: -5px; right: -5px; background: var(--error-color); color: white; font-size: 10px; font-weight: bold; width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid var(--deep-black);">0</span>
           </button>
           <button id="profile-btn" class="profile-btn" title="Profile">
             <div class="profile-placeholder" id="userProfilePlaceholder"><i class="fas fa-user"></i></div>
@@ -1429,7 +1430,7 @@ document.addEventListener('DOMContentLoaded', function() {
   var filters = ['All', 'Music', 'Film & Series', 'Podcasts', 'Gaming', 'Comedy', 'Live', 'Top 24 Hrs', 'Rising Creators'];
   var isLoadingMore = false;
   var hasMoreContent = true;
-  var contentLimit = 50;
+  var contentLimit = 100;
   var currentOffset = 0;
   var searchDebounceTimer = null;
   var currentGenre = null;
@@ -1532,7 +1533,7 @@ document.addEventListener('DOMContentLoaded', function() {
     return new Date(timestamp).toLocaleDateString();
   }
   
-  // ⭐ FIXED: loadUserStreak
+  // ✅ LOAD USER STREAK - FIXED
   function loadUserStreak() {
     if (!currentUser) {
       if (userStreakDisplay) userStreakDisplay.style.display = 'none';
@@ -1566,167 +1567,383 @@ document.addEventListener('DOMContentLoaded', function() {
       });
   }
   
-  // ⭐ FIXED: loadGlobalTrending with correct syntax
-  async function loadGlobalTrending(limit = 50, genre = null) {
-    console.log('🌍 Loading global trending...');
+  // ✅ LOAD CONTENT - SIMPLIFIED & FIXED
+  async function loadContent() {
+    setLoading(true, 'Loading trending content...');
     
     try {
-      var mvQuery = window.supabaseClient
-        .from('mv_trending_scores')
-        .select('content_id, trending_score, global_rank, genre, creator_id')
-        .order('global_rank', { ascending: true })
-        .limit(limit);
+      // ✅ Direct query to Content table with proper joins
+      const { data: contentData, error } = await window.supabaseClient
+        .from('"Content"')  // ✅ Quotes for capital C table name
+        .select(`
+          id,
+          title,
+          thumbnail_url,
+          views_count,
+          likes_count,
+          comments_count,
+          is_live,
+          duration,
+          created_at,
+          genre,
+          status,
+          user_id,
+          user_profiles!user_id (
+            id,
+            username,
+            avatar_url,
+            is_verified
+          )
+        `)
+        .eq('status', 'published')
+        .order('views_count', { ascending: false })
+        .limit(100);
       
-      if (genre && genre !== 'All') {
-        mvQuery = mvQuery.eq('genre', genre);
+      if (error) {
+        console.error('❌ Content fetch error:', error);
+        throw error;
       }
       
-      const { data: mvData, error: mvError } = await mvQuery;
-      
-      if (mvError) {
-        console.error('Trending scores error:', mvError);
-        return [];
+      if (!contentData || contentData.length === 0) {
+        console.log('⚠️ No published content found');
+        showToast('No content available yet', 'info');
+        setLoading(false);
+        return;
       }
       
-      if (!mvData || mvData.length === 0) {
-        return [];
-      }
+      console.log('✅ Loaded content:', contentData.length, 'items');
+      console.log('🔍 Debug - First content item:', contentData[0]);
+      console.log('🔍 Debug - Username:', contentData[0]?.user_profiles?.username);
+      console.log('🔍 Debug - Views:', contentData[0]?.views_count);
+      console.log('🔍 Debug - Likes:', contentData[0]?.likes_count);
       
-      var contentIds = mvData.map(function(item) { return item.content_id; });
-      
-      // ✅ FIXED: Use quoted table name and proper select syntax
-      const { data: contentData, error: contentError } = await window.supabaseClient
-        .from('"Content"')  // ✅ Quotes for capital C
-        .select('id, title, thumbnail_url, views_count, likes_count, comments_count, is_live, user_id, duration, created_at, status')
-        .in('id', contentIds)
-        .eq('status', 'published');
-      
-      if (contentError) {
-        console.error('Content fetch error:', contentError);
-        return [];
-      }
-      
-      var creatorIds = [...new Set(contentData.map(function(c) { return c.user_id; }).filter(Boolean))];
-      var creatorProfiles = {};
-      
-      if (creatorIds.length > 0) {
-        const { data: profiles, error: profileError } = await window.supabaseClient
-          .from('user_profiles')
-          .select('id, username, avatar_url, is_verified')
-          .in('id', creatorIds);
-        
-        if (!profileError && profiles) {
-          profiles.forEach(function(p) { creatorProfiles[p.id] = p; });
-        }
-      }
-      
-      return mvData.map(function(trend) {
-        var content = contentData.find(function(c) { return c.id === trend.content_id; }) || {};
-        var creator = creatorProfiles[content.user_id] || {};
-        
+      // ✅ Transform to match render expectations
+      allContentData = contentData.map(function(item) {
+        var profile = item.user_profiles || {};
         return {
-          id: trend.content_id,
-          title: content.title || 'Untitled',
-          thumbnail_url: content.thumbnail_url,
-          genre: trend.genre || content.genre,
-          creator_id: content.user_id,
-          creator_username: creator.username || 'Creator',
-          creator_avatar: creator.avatar_url,
-          is_verified: creator.is_verified || false,
-          views_count: content.views_count || 0,
-          likes_count: content.likes_count || 0,
-          comments_count: content.comments_count || 0,
-          is_live: content.is_live || false,
-          created_at: content.created_at,
-          duration: content.duration,
-          user_profiles: creator,
-          trending_score: trend.trending_score,
-          global_rank: trend.global_rank,
+          id: item.id,
+          title: item.title,
+          thumbnail_url: item.thumbnail_url,
+          views_count: item.views_count || 0,
+          likes_count: item.likes_count || 0,
+          comments_count: item.comments_count || 0,
+          is_live: item.is_live || false,
+          duration: item.duration,
+          created_at: item.created_at,
+          genre: item.genre,
+          // ✅ CORRECT USERNAME: from joined user_profiles
+          creator_username: profile.username || 'Creator',
+          creator_avatar: profile.avatar_url,
+          is_verified: profile.is_verified || false,
+          user_profiles: profile,
           recommendation_reason: 'Trending now'
         };
       });
       
+      // ✅ Process sections with correct data
+      processTrendingSections(allContentData);
+      renderFilterChips();
+      renderTrendingSections();
+      
+      showToast('Trending content loaded', 'success');
+      
     } catch (error) {
-      console.error('❌ Error in loadGlobalTrending:', error);
-      return [];
+      console.error('❌ Error loading content:', error);
+      showToast('Failed to load content', 'error');
+    } finally {
+      setLoading(false);
     }
   }
   
-  // ⭐ FIXED: loadPersonalizedTrending
-  async function loadPersonalizedTrending(limit = 50, genre = null) {
-    console.log('🎯 Loading personalized trending...');
+  // ✅ PROCESS SECTIONS - Using correct field names
+  function processTrendingSections(contentData) {
+    allContentData = contentData;
     
-    const { data: { session } } = await window.supabaseClient.auth.getSession();
-    const userId = session?.user?.id;
+    // Featured: highest views
+    featuredTrend = contentData.slice().sort(function(a, b) {
+      return (b.views_count || 0) - (a.views_count || 0);
+    }).slice(0, 1);
     
-    if (!userId) {
-      console.log('⚠️ No user session, loading global trending');
-      return loadGlobalTrending(limit, genre);
-    }
+    // Live streams
+    liveStreams = contentData.filter(function(item) { 
+      return item.is_live === true; 
+    }).slice(0, 10);
     
-    try {
-      const { data, error } = await window.supabaseClient.rpc('get_personalized_trending', {
-        p_user_id: userId,
-        p_limit: limit,
-        p_genre: genre,
-        p_exclude_content_ids: []
-      });
+    // Shorts: duration < 60 seconds
+    shortsContent = contentData.filter(function(item) {
+      return (item.duration || 999) < 60 && !item.is_live;
+    }).slice(0, 15);
+    
+    // Community gems: engagement score
+    communityGems = contentData.slice().sort(function(a, b) {
+      var aScore = (a.views_count || 0) + ((a.likes_count || 0) * 2) + ((a.comments_count || 0) * 3);
+      var bScore = (b.views_count || 0) + ((b.likes_count || 0) * 2) + ((b.comments_count || 0) * 3);
+      return bScore - aScore;
+    }).slice(0, 20);
+    
+    trendingHashtags = ['#OwnYourStage', '#BantuFuture', '#1MinComedy', '#SofaTalks', '#JoburgVibes', '#AfricanTalent', '#StreamConnect', '#RisingStars'];
+    
+    console.log('✅ Processed sections:', { 
+      featured: featuredTrend.length, 
+      live: liveStreams.length, 
+      gems: communityGems.length, 
+      shorts: shortsContent.length 
+    });
+  }
+  
+  // ✅ RENDER FEATURED - Correct username & stats
+  function renderFeaturedTrend() {
+    if (featuredTrend.length === 0) return '';
+    var content = featuredTrend[0];
+    
+    var thumbnailUrl = buildThumbnailUrl(content.thumbnail_url);
+    
+    // ✅ CORRECT: Get username from user_profiles join
+    var creatorName = content.user_profiles?.username || content.creator_username || 'Creator';
+    var isVerified = content.user_profiles?.is_verified || content.is_verified || false;
+    var verifiedBadge = isVerified ? '<i class="fas fa-check-circle verified-badge"></i>' : '';
+    
+    var recencyText = '<span class="recency-text">' + formatNotificationTime(content.created_at) + '</span>';
+    
+    return '<div class="featured-trend-card" data-content-id="' + content.id + '">' +
+      '<div class="featured-bg" style="background-image: url(\'' + thumbnailUrl + '\')"></div>' +
+      '<div class="featured-overlay">' +
+      (content.is_live ? '<div class="live-badge">LIVE NOW</div>' : '') +
+      '<h2 class="featured-title">' + escapeHtml(content.title) + '</h2>' +
+      '<div class="featured-creator">@' + escapeHtml(creatorName) + verifiedBadge + recencyText + '</div>' +
+      '<div class="featured-stats">' +
+      '<span><i class="fas fa-eye"></i> ' + formatNumber(content.views_count || 0) + ' views</span>' +
+      '<span><i class="fas fa-heart"></i> ' + formatNumber(content.likes_count || 0) + ' likes</span>' +
+      '</div>' +
+      '<button class="watch-now-btn" onclick="playContent(\'' + content.id + '\')">' + 
+        (content.is_live ? 'WATCH LIVE' : 'WATCH NOW') + 
+      '</button>' +
+      '</div>' +
+      '</div>';
+  }
+  
+  // ✅ RENDER LIVE STREAMS - Correct username & stats
+  function renderLiveStreams() {
+    if (liveStreams.length === 0) return '';
+    return liveStreams.map(function(content) {
+      var thumbnailUrl = buildThumbnailUrl(content.thumbnail_url);
+      var creatorName = content.user_profiles?.username || content.creator_username || 'Creator';
+      var isVerified = content.user_profiles?.is_verified || content.is_verified || false;
+      var verifiedBadge = isVerified ? '<i class="fas fa-check-circle verified-badge"></i>' : '';
+      var fallbackImg = 'https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=800&h=450&fit=crop';
+      var duration = content.duration ? formatDuration(content.duration) : 'LIVE';
       
-      if (error) {
-        console.error('❌ Personalized trending RPC error:', error);
-        return loadGlobalTrending(limit, genre);
-      }
+      return '<div class="content-card" data-content-id="' + content.id + '">' +
+        '<div class="card-thumbnail">' +
+        '<img src="' + thumbnailUrl + '" alt="' + escapeHtml(content.title) + '" loading="lazy" onerror="this.src=\'' + fallbackImg + '\'">' +
+        '<div class="thumbnail-overlay"></div>' +
+        '<div class="card-badges">' +
+        '<div class="badge live">LIVE</div>' +
+        '<div class="badge viewers"><i class="fas fa-eye"></i> ' + formatNumber(content.views_count || 0) + '</div>' +
+        '</div>' +
+        '<div class="duration-badge">' + duration + '</div>' +
+        '<div class="card-actions">' +
+        '<button class="action-menu-btn" onclick="toggleActionMenu(event, \'' + content.id + '\')"><i class="fas fa-ellipsis-vertical"></i></button>' +
+        '<div class="action-menu-dropdown" id="action-menu-' + content.id + '">' +
+        '<div class="action-menu-item" onclick="saveToWatchLater(\'' + content.id + '\')"><i class="fas fa-clock"></i> Save to Watch Later</div>' +
+        '<div class="action-menu-item" onclick="shareContent(\'' + content.id + '\')"><i class="fas fa-share"></i> Share</div>' +
+        '<div class="action-menu-item" onclick="notInterested(\'' + content.id + '\')"><i class="fas fa-thumbs-down"></i> Not Interested</div>' +
+        '</div>' +
+        '</div>' +
+        '</div>' +
+        '<div class="card-content">' +
+        '<h3 class="card-title">' + escapeHtml(content.title) + '</h3>' +
+        '<div class="card-creator">@' + escapeHtml(creatorName) + verifiedBadge + '</div>' +
+        '<div class="card-stats">' +
+        '<span><i class="fas fa-heart"></i> ' + formatNumber(content.likes_count || 0) + '</span>' +
+        '<span><i class="fas fa-comment"></i> ' + formatNumber(content.comments_count || 0) + '</span>' +
+        '</div>' +
+        '</div>' +
+        '</div>';
+    }).join('');
+  }
+  
+  // ✅ RENDER COMMUNITY GEMS - Correct username & stats
+  function renderCommunityGems() {
+    if (communityGems.length === 0) return '';
+    return communityGems.map(function(content) {
+      var thumbnailUrl = buildThumbnailUrl(content.thumbnail_url);
+      var creatorName = content.user_profiles?.username || content.creator_username || 'Creator';
+      var isVerified = content.user_profiles?.is_verified || content.is_verified || false;
+      var verifiedBadge = isVerified ? '<i class="fas fa-check-circle verified-badge"></i>' : '';
+      var fallbackImg = 'https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=800&h=450&fit=crop';
+      var duration = content.duration ? formatDuration(content.duration) : '';
       
-      if (!data || data.length === 0) {
-        console.log('⚠️ No personalized data, falling back to global');
-        return loadGlobalTrending(limit, genre);
-      }
-      
-      console.log('✅ Loaded personalized trending:', data.length, 'items');
-      
-      var creatorIds = [...new Set(data.map(function(item) { return item.creator_id; }).filter(Boolean))];
-      var creatorProfiles = {};
-      
-      if (creatorIds.length > 0) {
-        const { data: profiles, error: profileError } = await window.supabaseClient
-          .from('user_profiles')
-          .select('id, username, avatar_url, is_verified')
-          .in('id', creatorIds);
-        
-        if (!profileError && profiles) {
-          profiles.forEach(function(p) { creatorProfiles[p.id] = p; });
+      return '<div class="gem-card" data-content-id="' + content.id + '">' +
+        '<div class="gem-thumbnail">' +
+        '<img src="' + thumbnailUrl + '" alt="' + escapeHtml(content.title) + '" loading="lazy" onerror="this.src=\'' + fallbackImg + '\'">' +
+        (duration ? '<div class="duration-badge">' + duration + '</div>' : '') +
+        '<div class="card-actions">' +
+        '<button class="action-menu-btn" onclick="toggleActionMenu(event, \'' + content.id + '\')"><i class="fas fa-ellipsis-vertical"></i></button>' +
+        '<div class="action-menu-dropdown" id="action-menu-' + content.id + '">' +
+        '<div class="action-menu-item" onclick="saveToWatchLater(\'' + content.id + '\')"><i class="fas fa-clock"></i> Save to Watch Later</div>' +
+        '<div class="action-menu-item" onclick="shareContent(\'' + content.id + '\')"><i class="fas fa-share"></i> Share</div>' +
+        '<div class="action-menu-item" onclick="notInterested(\'' + content.id + '\')"><i class="fas fa-thumbs-down"></i> Not Interested</div>' +
+        '</div>' +
+        '</div>' +
+        '</div>' +
+        '<div class="gem-content">' +
+        '<h3 class="card-title">' + escapeHtml(content.title) + '</h3>' +
+        '<div class="card-creator">@' + escapeHtml(creatorName) + verifiedBadge + '</div>' +
+        '<div class="card-stats">' +
+        '<span><i class="fas fa-eye"></i> ' + formatNumber(content.views_count || 0) + '</span>' +
+        '<span><i class="fas fa-heart"></i> ' + formatNumber(content.likes_count || 0) + '</span>' +
+        '</div>' +
+        '</div>' +
+        '</div>';
+    }).join('');
+  }
+  
+  // ✅ RENDER SHORTS
+  function renderShorts() {
+    if (shortsContent.length === 0) return '';
+    return shortsContent.map(function(content) {
+      var thumbnailUrl = buildThumbnailUrl(content.thumbnail_url);
+      return '<div class="shorts-card" data-content-id="' + content.id + '">' +
+        '<div class="shorts-thumbnail">' +
+        '<img src="' + thumbnailUrl + '" alt="' + escapeHtml(content.title) + '" loading="lazy">' +
+        '<div class="shorts-badge">SHORTS</div>' +
+        '<div class="duration-badge">' + (content.duration ? formatDuration(content.duration) : '0:59') + '</div>' +
+        '<div class="shorts-overlay">' +
+        '<div class="shorts-title">' + escapeHtml(content.title) + '</div>' +
+        '<div class="shorts-stats"><i class="fas fa-eye"></i> ' + formatNumber(content.views_count || 0) + ' views</div>' +
+        '</div>' +
+        '</div>' +
+        '</div>';
+    }).join('');
+  }
+  
+  // ✅ RENDER HASHTAGS
+  function renderTrendingHashtags() {
+    return trendingHashtags.map(function(hashtag) {
+      return '<div class="hashtag" data-hashtag="' + hashtag + '">' + hashtag + '</div>';
+    }).join('');
+  }
+  
+  // ✅ RENDER FILTER CHIPS
+  function renderFilterChips() {
+    if (!filterContainer) return;
+    var html = filters.map(function(filter) {
+      return '<button class="filter-chip ' + (filter === selectedFilter ? 'active' : '') + '" data-filter="' + filter + '">' + filter.toUpperCase() + '</button>';
+    }).join('');
+    filterContainer.innerHTML = html;
+    var buttons = filterContainer.querySelectorAll('.filter-chip:not(.surprise-me-btn)');
+    buttons.forEach(function(button) {
+      button.addEventListener('click', function() {
+        var filter = button.dataset.filter;
+        selectedFilter = filter;
+        if (filter !== 'All') {
+          window.location.href = 'content-library.html?genre=' + encodeURIComponent(filter);
+        } else {
+          loadContent();
         }
-      }
-      
-      return data.map(function(item) {
-        var creator = creatorProfiles[item.creator_id] || {};
-        return {
-          id: item.content_id,
-          title: item.title,
-          thumbnail_url: item.thumbnail_url,
-          genre: item.genre,
-          creator_id: item.creator_id,
-          creator_username: creator.username || 'Creator',
-          creator_avatar: creator.avatar_url,
-          is_verified: creator.is_verified || false,
-          views_count: Math.round(item.trending_score) || 0,
-          likes_count: 0,
-          comments_count: 0,
-          created_at: new Date().toISOString(),
-          duration: null,
-          is_live: false,
-          user_profiles: creator,
-          recommendation_reason: item.reason
-        };
       });
-      
-    } catch (error) {
-      console.error('Fallback to global trending:', error);
-      return loadGlobalTrending(limit, genre);
-    }
+    });
   }
   
-  // Load user profile picture
+  // ✅ RENDER TRENDING SECTIONS
+  function renderTrendingSections() {
+    if (!trendingSections) return;
+    var html = '';
+    
+    if (featuredTrend.length > 0) {
+      html += '<section class="section">' +
+        '<div class="section-header">' +
+        '<h2 class="section-title"><i class="fas fa-rocket section-icon"></i>THE PULSE</h2>' +
+        '<button class="see-all-btn" onclick="viewAllTrending()">SEE ALL</button>' +
+        '</div>' +
+        renderFeaturedTrend() +
+        '</section>';
+    }
+    
+    if (liveStreams.length > 0) {
+      html += '<section class="section">' +
+        '<div class="section-header">' +
+        '<h2 class="section-title"><i class="fas fa-tv section-icon"></i>LIVE STREAMS</h2>' +
+        '<button class="see-all-btn" onclick="viewAllLiveStreams()">SEE ALL</button>' +
+        '</div>' +
+        '<div class="content-horizontal-scroll">' + renderLiveStreams() + '</div>' +
+        '</section>';
+    }
+    
+    if (trendingHashtags.length > 0) {
+      html += '<section class="section">' +
+        '<div class="section-header">' +
+        '<h2 class="section-title"><i class="fas fa-fire section-icon"></i>TRENDING TOPICS</h2>' +
+        '</div>' +
+        '<div class="hashtags-container">' + renderTrendingHashtags() + '</div>' +
+        '</section>';
+    }
+    
+    if (communityGems.length > 0) {
+      html += '<section class="section">' +
+        '<div class="section-header">' +
+        '<h2 class="section-title"><i class="fas fa-gem section-icon"></i>COMMUNITY GEMS</h2>' +
+        '<button class="see-all-btn" onclick="viewAllCommunityGems()">SEE ALL</button>' +
+        '</div>' +
+        '<div class="community-grid">' + renderCommunityGems() + '</div>' +
+        '</section>';
+    }
+    
+    trendingSections.innerHTML = html;
+    
+    if (shortsContent.length > 0 && shortsScroll) {
+      shortsScroll.innerHTML = renderShorts();
+      shortsSection.style.display = 'block';
+    } else if (shortsSection) {
+      shortsSection.style.display = 'none';
+    }
+    
+    setupContentCardListeners();
+  }
+  
+  // ✅ SETUP CONTENT CARD LISTENERS
+  function setupContentCardListeners() {
+    var cards = document.querySelectorAll('[data-content-id]');
+    cards.forEach(function(card) {
+      card.addEventListener('click', function(e) {
+        if (e.target.closest('button') || e.target.closest('.action-menu-btn')) return;
+        playContent(card.dataset.contentId);
+      });
+    });
+    
+    var hashtags = document.querySelectorAll('[data-hashtag]');
+    hashtags.forEach(function(hashtag) {
+      hashtag.addEventListener('click', function() {
+        window.location.href = 'content-library.html?search=' + encodeURIComponent(hashtag.dataset.hashtag);
+      });
+    });
+  }
+  
+  // ✅ PLAY CONTENT
+  function playContent(contentId) {
+    if (!contentId) return;
+    var viewerId = currentUser ? currentUser.id : null;
+    window.supabaseClient
+      .from('content_views')
+      .insert({
+        content_id: contentId,
+        viewer_id: viewerId,
+        view_duration: 0,
+        device_type: /Mobile|Android|iPhone/i.test(navigator.userAgent) ? 'mobile' : 'desktop',
+        created_at: new Date().toISOString()
+      })
+      .then(function() {
+        console.log('✅ View recorded');
+        window.location.href = 'content-detail.html?id=' + contentId;
+      })
+      .catch(function(error) {
+        console.warn('View recording failed:', error);
+        window.location.href = 'content-detail.html?id=' + contentId;
+      });
+  }
+  
+  // ✅ LOAD USER PROFILE PICTURE
   function loadUserProfilePicture(user) {
     return window.supabaseClient
       .from('user_profiles')
@@ -1781,7 +1998,7 @@ document.addEventListener('DOMContentLoaded', function() {
       });
   }
   
-  // Load continue watching
+  // ✅ LOAD CONTINUE WATCHING
   function loadContinueWatching() {
     if (!currentUser) {
       if (continueWatchingBar) continueWatchingBar.classList.remove('active');
@@ -1836,7 +2053,7 @@ document.addEventListener('DOMContentLoaded', function() {
       });
   }
   
-  // Load notifications
+  // ✅ LOAD NOTIFICATIONS
   function loadNotifications() {
     if (!currentUser) {
       updateNotificationBadge(0);
@@ -1919,13 +2136,6 @@ document.addEventListener('DOMContentLoaded', function() {
       .update({ is_read: true })
       .eq('id', notificationId)
       .then(function() {
-        var item = document.querySelector('.notification-item[data-id="' + notificationId + '"]');
-        if (item) {
-          item.classList.remove('unread');
-          item.classList.add('read');
-          var dot = item.querySelector('.notification-dot');
-          if (dot) dot.remove();
-        }
         loadNotifications();
       })
       .catch(function(error) {
@@ -1949,285 +2159,7 @@ document.addEventListener('DOMContentLoaded', function() {
       });
   }
   
-  // Process sections
-  function processTrendingSections(contentData) {
-    allContentData = contentData;
-    featuredTrend = contentData.slice().sort(function(a, b) {
-      return (b.views_count || 0) - (a.views_count || 0);
-    }).slice(0, 1);
-    liveStreams = contentData.filter(function(item) { return item.is_live; }).slice(0, 10);
-    shortsContent = contentData.filter(function(item) {
-      return (item.duration || 0) < 60 && !item.is_live;
-    }).slice(0, 15);
-    communityGems = contentData.slice().sort(function(a, b) {
-      var aScore = (a.views_count || 0) + ((a.likes_count || 0) * 2);
-      var bScore = (b.views_count || 0) + ((b.likes_count || 0) * 2);
-      return bScore - aScore;
-    }).slice(0, 20);
-    trendingHashtags = ['#OwnYourStage', '#BantuFuture', '#1MinComedy', '#SofaTalks', '#JoburgVibes', '#AfricanTalent', '#StreamConnect', '#RisingStars'];
-    console.log('✅ Processed sections:', { featured: featuredTrend.length, live: liveStreams.length, gems: communityGems.length, shorts: shortsContent.length });
-  }
-  
-  // Render functions
-  function renderFilterChips() {
-    if (!filterContainer) return;
-    var html = filters.map(function(filter) {
-      return '<button class="filter-chip ' + (filter === selectedFilter ? 'active' : '') + '" data-filter="' + filter + '">' + filter.toUpperCase() + '</button>';
-    }).join('');
-    filterContainer.innerHTML = html;
-    var buttons = filterContainer.querySelectorAll('.filter-chip:not(.surprise-me-btn)');
-    buttons.forEach(function(button) {
-      button.addEventListener('click', function() {
-        var filter = button.dataset.filter;
-        selectedFilter = filter;
-        if (filter !== 'All') {
-          window.location.href = 'content-library.html?genre=' + encodeURIComponent(filter);
-        } else {
-          loadContent();
-        }
-      });
-    });
-  }
-  
-  function renderRecommendationReason(reason) {
-    if (!reason || reason === 'Trending now') return '';
-    return '<div class="recommendation-reason"><i class="fas fa-sparkles"></i><span>' + escapeHtml(reason) + '</span></div>';
-  }
-  
-  function renderFeaturedTrend() {
-    if (featuredTrend.length === 0) return '';
-    var content = featuredTrend[0];
-    var thumbnailUrl = buildThumbnailUrl(content.thumbnail_url);
-    var creatorName = content.user_profiles ? content.user_profiles.username : 'Creator';
-    var isVerified = content.user_profiles && content.user_profiles.is_verified;
-    var verifiedBadge = isVerified ? '<i class="fas fa-check-circle verified-badge"></i>' : '';
-    var recencyText = '<span class="recency-text">' + formatNotificationTime(content.created_at) + '</span>';
-    var reasonHtml = content.recommendation_reason ? renderRecommendationReason(content.recommendation_reason) : '';
-    return '<div class="featured-trend-card" data-content-id="' + content.id + '">' +
-      '<div class="featured-bg" style="background-image: url(\'' + thumbnailUrl + '\')"></div>' +
-      '<div class="featured-overlay">' +
-      (content.is_live ? '<div class="live-badge">LIVE NOW</div>' : '') +
-      '<h2 class="featured-title">' + escapeHtml(content.title) + '</h2>' +
-      '<div class="featured-creator">@' + escapeHtml(creatorName) + verifiedBadge + recencyText + '</div>' +
-      '<div class="featured-stats">' +
-      '<span><i class="fas fa-eye"></i> ' + formatNumber(content.views_count || 0) + ' views</span>' +
-      '</div>' +
-      reasonHtml +
-      '<button class="watch-now-btn" onclick="playContent(\'' + content.id + '\')">' + (content.is_live ? 'WATCH LIVE' : 'WATCH NOW') + '</button>' +
-      '</div>' +
-      '</div>';
-  }
-  
-  function renderLiveStreams() {
-    if (liveStreams.length === 0) return '';
-    return liveStreams.map(function(content) {
-      var thumbnailUrl = buildThumbnailUrl(content.thumbnail_url);
-      var creatorName = content.user_profiles ? content.user_profiles.username : 'Creator';
-      var isVerified = content.user_profiles && content.user_profiles.is_verified;
-      var verifiedBadge = isVerified ? '<i class="fas fa-check-circle verified-badge"></i>' : '';
-      var recencyText = formatNotificationTime(content.created_at);
-      var reasonHtml = content.recommendation_reason ? renderRecommendationReason(content.recommendation_reason) : '';
-      return '<div class="content-card" data-content-id="' + content.id + '">' +
-        '<div class="card-thumbnail">' +
-        '<img src="' + thumbnailUrl + '" alt="' + escapeHtml(content.title) + '" loading="lazy">' +
-        '<div class="thumbnail-overlay"></div>' +
-        '<div class="card-badges">' +
-        '<div class="badge live">LIVE</div>' +
-        '<div class="badge viewers"><i class="fas fa-eye"></i> ' + formatNumber(content.views_count || 0) + '</div>' +
-        '</div>' +
-        '<div class="duration-badge">' + (content.duration ? formatDuration(content.duration) : 'LIVE') + '</div>' +
-        '<div class="card-actions">' +
-        '<button class="action-menu-btn" onclick="toggleActionMenu(event, \'' + content.id + '\')"><i class="fas fa-ellipsis-vertical"></i></button>' +
-        '<div class="action-menu-dropdown" id="action-menu-' + content.id + '">' +
-        '<div class="action-menu-item" onclick="saveToWatchLater(\'' + content.id + '\')"><i class="fas fa-clock"></i> Save to Watch Later</div>' +
-        '<div class="action-menu-item" onclick="shareContent(\'' + content.id + '\')"><i class="fas fa-share"></i> Share</div>' +
-        '<div class="action-menu-item" onclick="notInterested(\'' + content.id + '\')"><i class="fas fa-thumbs-down"></i> Not Interested</div>' +
-        '</div>' +
-        '</div>' +
-        '</div>' +
-        '<div class="card-content">' +
-        '<h3 class="card-title">' + escapeHtml(content.title) + '</h3>' +
-        '<div class="card-creator">@' + escapeHtml(creatorName) + verifiedBadge + ' <span class="recency-text">• ' + recencyText + '</span></div>' +
-        '<div class="card-stats">' +
-        '<span><i class="fas fa-heart"></i> ' + formatNumber(content.likes_count || 0) + '</span>' +
-        '</div>' +
-        reasonHtml +
-        '</div>' +
-        '</div>';
-    }).join('');
-  }
-  
-  function renderCommunityGems() {
-    if (communityGems.length === 0) return '';
-    return communityGems.map(function(content) {
-      var thumbnailUrl = buildThumbnailUrl(content.thumbnail_url);
-      var creatorName = content.user_profiles ? content.user_profiles.username : 'Creator';
-      var isVerified = content.user_profiles && content.user_profiles.is_verified;
-      var verifiedBadge = isVerified ? '<i class="fas fa-check-circle verified-badge"></i>' : '';
-      var recencyText = formatNotificationTime(content.created_at);
-      var reasonHtml = content.recommendation_reason ? renderRecommendationReason(content.recommendation_reason) : '';
-      return '<div class="gem-card" data-content-id="' + content.id + '">' +
-        '<div class="gem-thumbnail">' +
-        '<img src="' + thumbnailUrl + '" alt="' + escapeHtml(content.title) + '" loading="lazy">' +
-        '<div class="duration-badge">' + (content.duration ? formatDuration(content.duration) : '') + '</div>' +
-        '<div class="card-actions">' +
-        '<button class="action-menu-btn" onclick="toggleActionMenu(event, \'' + content.id + '\')"><i class="fas fa-ellipsis-vertical"></i></button>' +
-        '<div class="action-menu-dropdown" id="action-menu-' + content.id + '">' +
-        '<div class="action-menu-item" onclick="saveToWatchLater(\'' + content.id + '\')"><i class="fas fa-clock"></i> Save to Watch Later</div>' +
-        '<div class="action-menu-item" onclick="shareContent(\'' + content.id + '\')"><i class="fas fa-share"></i> Share</div>' +
-        '<div class="action-menu-item" onclick="notInterested(\'' + content.id + '\')"><i class="fas fa-thumbs-down"></i> Not Interested</div>' +
-        '</div>' +
-        '</div>' +
-        '</div>' +
-        '<div class="gem-content">' +
-        '<h3 class="card-title">' + escapeHtml(content.title) + '</h3>' +
-        '<div class="card-creator">@' + escapeHtml(creatorName) + verifiedBadge + ' <span class="recency-text">• ' + recencyText + '</span></div>' +
-        '<div class="card-stats">' +
-        '<span><i class="fas fa-eye"></i> ' + formatNumber(content.views_count || 0) + '</span>' +
-        '<span><i class="fas fa-heart"></i> ' + formatNumber(content.likes_count || 0) + '</span>' +
-        '</div>' +
-        reasonHtml +
-        '</div>' +
-        '</div>';
-    }).join('');
-  }
-  
-  function renderShorts() {
-    if (shortsContent.length === 0) return '';
-    return shortsContent.map(function(content) {
-      var thumbnailUrl = buildThumbnailUrl(content.thumbnail_url);
-      return '<div class="shorts-card" data-content-id="' + content.id + '">' +
-        '<div class="shorts-thumbnail">' +
-        '<img src="' + thumbnailUrl + '" alt="' + escapeHtml(content.title) + '" loading="lazy">' +
-        '<div class="shorts-badge">SHORTS</div>' +
-        '<div class="duration-badge">' + (content.duration ? formatDuration(content.duration) : '0:59') + '</div>' +
-        '<div class="shorts-overlay">' +
-        '<div class="shorts-title">' + escapeHtml(content.title) + '</div>' +
-        '<div class="shorts-stats"><i class="fas fa-eye"></i> ' + formatNumber(content.views_count || 0) + ' views</div>' +
-        '</div>' +
-        '</div>' +
-        '</div>';
-    }).join('');
-  }
-  
-  function renderTrendingHashtags() {
-    return trendingHashtags.map(function(hashtag) {
-      return '<div class="hashtag" data-hashtag="' + hashtag + '">' + hashtag + '</div>';
-    }).join('');
-  }
-  
-  function renderTrendingSections() {
-    if (!trendingSections) return;
-    var html = '';
-    
-    if (featuredTrend.length > 0) {
-      html += '<section class="section">' +
-        '<div class="section-header">' +
-        '<h2 class="section-title"><i class="fas fa-rocket section-icon"></i>THE PULSE</h2>' +
-        '<button class="see-all-btn" onclick="viewAllTrending()">SEE ALL</button>' +
-        '</div>' +
-        renderFeaturedTrend() +
-        '</section>';
-    }
-    
-    if (liveStreams.length > 0) {
-      html += '<section class="section">' +
-        '<div class="section-header">' +
-        '<h2 class="section-title"><i class="fas fa-tv section-icon"></i>LIVE STREAMS</h2>' +
-        '<button class="see-all-btn" onclick="viewAllLiveStreams()">SEE ALL</button>' +
-        '</div>' +
-        '<div class="content-horizontal-scroll">' + renderLiveStreams() + '</div>' +
-        '</section>';
-    }
-    
-    if (trendingHashtags.length > 0) {
-      html += '<section class="section">' +
-        '<div class="section-header">' +
-        '<h2 class="section-title"><i class="fas fa-fire section-icon"></i>TRENDING TOPICS</h2>' +
-        '</div>' +
-        '<div class="hashtags-container">' + renderTrendingHashtags() + '</div>' +
-        '</section>';
-    }
-    
-    if (communityGems.length > 0) {
-      html += '<section class="section">' +
-        '<div class="section-header">' +
-        '<h2 class="section-title"><i class="fas fa-gem section-icon"></i>COMMUNITY GEMS</h2>' +
-        '<button class="see-all-btn" onclick="viewAllCommunityGems()">SEE ALL</button>' +
-        '</div>' +
-        '<div class="community-grid">' + renderCommunityGems() + '</div>' +
-        '</section>';
-    }
-    
-    trendingSections.innerHTML = html;
-    
-    if (shortsContent.length > 0 && shortsScroll) {
-      shortsScroll.innerHTML = renderShorts();
-      shortsSection.style.display = 'block';
-    } else if (shortsSection) {
-      shortsSection.style.display = 'none';
-    }
-    
-    setupContentCardListeners();
-  }
-  
-  function setupContentCardListeners() {
-    var cards = document.querySelectorAll('[data-content-id]');
-    cards.forEach(function(card) {
-      card.addEventListener('click', function(e) {
-        if (e.target.closest('button') || e.target.closest('.action-menu-btn')) return;
-        playContent(card.dataset.contentId);
-      });
-    });
-    
-    var hashtags = document.querySelectorAll('[data-hashtag]');
-    hashtags.forEach(function(hashtag) {
-      hashtag.addEventListener('click', function() {
-        window.location.href = 'content-library.html?search=' + encodeURIComponent(hashtag.dataset.hashtag);
-      });
-    });
-  }
-  
-  function playContent(contentId) {
-    if (!contentId) return;
-    var viewerId = currentUser ? currentUser.id : null;
-    window.supabaseClient
-      .from('content_views')
-      .insert({
-        content_id: contentId,
-        viewer_id: viewerId,
-        view_duration: 0,
-        device_type: /Mobile|Android|iPhone/i.test(navigator.userAgent) ? 'mobile' : 'desktop',
-        created_at: new Date().toISOString()
-      })
-      .then(function() {
-        console.log('✅ View recorded');
-        window.location.href = 'content-detail.html?id=' + contentId;
-      })
-      .catch(function(error) {
-        console.warn('View recording failed:', error);
-        window.location.href = 'content-detail.html?id=' + contentId;
-      });
-  }
-  
-  // Load content
-  async function loadContent() {
-    setLoading(true, 'Loading trending content...');
-    try {
-      var contentData = await loadPersonalizedTrending(100, currentGenre);
-      processTrendingSections(contentData);
-      renderFilterChips();
-      renderTrendingSections();
-      showToast('Trending content loaded', 'success');
-    } catch (error) {
-      console.error('Error loading content:', error);
-      showToast('Failed to load content', 'error');
-    } finally {
-      setLoading(false);
-    }
-  }
-  
-  // Search functionality
+  // ✅ SEARCH FUNCTIONALITY
   function setupSearch() {
     if (!searchInput) return;
     
@@ -2275,7 +2207,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
   
-  // Setup event listeners
+  // ✅ SETUP EVENT LISTENERS
   function setupEventListeners() {
     if (refreshBtn) {
       refreshBtn.addEventListener('click', function() {
@@ -2389,7 +2321,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
   
-  // Check authentication
+  // ✅ CHECK AUTHENTICATION
   async function checkAuthentication() {
     setLoading(true, 'Checking authentication...');
     var sessionResponse = await window.supabaseClient.auth.getSession();
@@ -2413,14 +2345,30 @@ document.addEventListener('DOMContentLoaded', function() {
     return true;
   }
   
-  // Initialize
-  async function initialize() {
+  // ✅ SIMPLIFIED INITIALIZE
+  async function initializeTrendingScreen() {
+    console.log('🔥 Initializing Trending Screen...');
+    
+    // Close any open modals
+    var searchModal = document.getElementById('search-modal');
+    var notificationsPanel = document.getElementById('notifications-panel');
+    var authModalEl = document.getElementById('auth-modal');
+    if (searchModal) searchModal.classList.remove('active');
+    if (notificationsPanel) notificationsPanel.classList.remove('active');
+    if (authModalEl) authModalEl.classList.remove('active');
+    
     var isAuthenticated = await checkAuthentication();
-    if (!isAuthenticated) return;
+    if (!isAuthenticated) {
+      setLoading(false);
+      return;
+    }
     
     setupEventListeners();
     setupSearch();
+    
+    // ✅ Just load content directly - no personalization RPC for now
     await loadContent();
+    
     console.log('✅ Trending Screen initialized');
   }
   
@@ -2513,7 +2461,8 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   });
   
-  initialize();
+  // Start initialization
+  initializeTrendingScreen();
 });
 </script>
 </body>
