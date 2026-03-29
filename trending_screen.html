@@ -997,7 +997,6 @@ padding: 30px;
 .analytics-card { background: rgba(255, 255, 255, 0.05); border-radius: 12px; padding: 15px; text-align: center; }
 .analytics-value { font-size: 28px; font-weight: 700; color: var(--warm-gold); }
 .charts-container { height: 250px; }
-
 /* ============================================ */
 /* 🎧 SOUNDSPHERE STYLES */
 /* ============================================ */
@@ -1255,7 +1254,6 @@ border: 1px solid rgba(139, 92, 246, 0.3);
 .sound-dna-item { background: rgba(255, 255, 255, 0.05); border-radius: 12px; padding: 12px; text-align: center; }
 .sound-dna-icon { font-size: 1.5rem; margin-bottom: 6px; }
 .sound-dna-label { font-size: 0.75rem; color: var(--slate-grey); }
-
 /* ============================================ */
 /* 🧠 CREATOR MOMENTUM ENGINE STYLES */
 /* ============================================ */
@@ -1464,7 +1462,6 @@ border: 1px solid rgba(245, 158, 11, 0.3);
 .audience-pulse-stat { background: rgba(255, 255, 255, 0.05); border-radius: 10px; padding: 12px; text-align: center; }
 .audience-pulse-stat-value { font-size: 1.2rem; font-weight: 700; color: var(--warm-gold); }
 .audience-pulse-stat-label { font-size: 0.7rem; color: var(--slate-grey); }
-
 /* Responsive */
 @media (max-width: 768px) {
 .logo-text, .profile-name { display: none; }
@@ -1803,6 +1800,8 @@ border: 1px solid rgba(245, 158, 11, 0.3);
 <div id="why-trending-reasons" class="why-trending-reasons"></div>
 </div>
 </div>
+<!-- Hidden Audio Element -->
+<audio id="audio-player" preload="metadata"></audio>
 
 <script>
 // ============================================
@@ -1834,6 +1833,7 @@ let soundMomentumData = [];
 let currentAudioTrack = null;
 let isPlaying = false;
 let selectedMood = 'all';
+let opportunityAlerts = [];
 // Filter options
 const filters = ['All', 'Music', 'Film & Series', 'Podcasts', 'Gaming', 'Comedy', 'Live', 'Top 24 Hrs', 'Rising Creators'];
 // Mood filters
@@ -2381,11 +2381,12 @@ return;
 container.innerHTML = filtered.map(item => {
 const thumbnailUrl = buildThumbnailUrl(item.thumbnail_url);
 const creatorName = item.user_profiles?.username || 'Creator';
-const waveformBars = Array.from({length: 20}, (_, i) => 
+const waveformBars = Array.from({length: 20}, (_, i) =>
 `<div class="waveform-bar" style="height:${Math.random() * 25 + 5}px;animation-delay:${i * 0.05}s"></div>`
 ).join('');
+const duration = formatDuration(item.duration);
 return `
-<div class="audio-shorts-card" onclick="playAudioTrack('${item.id}', '${escapeHtml(item.title)}', '${escapeHtml(creatorName)}', '${thumbnailUrl}')">
+<div class="audio-shorts-card" onclick="playAudioTrack('${item.id}', '${escapeHtml(item.title)}', '${escapeHtml(creatorName)}', '${thumbnailUrl}', '${item.file_url || ''}')">
 <div class="audio-shorts-thumbnail">
 <img src="${thumbnailUrl}" loading="lazy">
 <div class="trending-sound-badge">🔥 TRENDING</div>
@@ -2393,7 +2394,8 @@ return `
 <div class="audio-shorts-overlay">
 <div class="audio-waveform">${waveformBars}</div>
 <div style="font-size:0.8rem;font-weight:600;margin-bottom:4px;">${escapeHtml(item.title)}</div>
-<div style="font-size:0.7rem;color:var(--slate-grey);">@${escapeHtml(creatorName)}</div>
+<div style="font-size:0.7rem;color:var(--slate-grey);margin-bottom:4px;">@${escapeHtml(creatorName)}</div>
+<div style="font-size:0.7rem;color:var(--warm-gold);"><i class="fas fa-clock"></i> ${duration}</div>
 </div>
 </div>
 </div>`;
@@ -2413,8 +2415,9 @@ const metrics = item.content_metrics_realtime || {};
 const velocity = metrics.velocity_score || 0;
 const trendStage = metrics.trend_stage || 'new';
 const trendLabel = metrics.trend_label || 'Stable';
+const duration = formatDuration(item.duration);
 return `
-<div class="audio-card" onclick="playAudioTrack('${item.id}', '${escapeHtml(item.title)}', '${escapeHtml(item.user_profiles?.username || 'Creator')}', '${thumbnailUrl}')">
+<div class="audio-card" onclick="playAudioTrack('${item.id}', '${escapeHtml(item.title)}', '${escapeHtml(item.user_profiles?.username || 'Creator')}', '${thumbnailUrl}', '${item.file_url || ''}')">
 <div class="audio-card-thumbnail">
 <img src="${thumbnailUrl}" loading="lazy">
 <div class="rising-sound-badge">🔥 ${trendLabel}</div>
@@ -2425,6 +2428,7 @@ return `
 <div class="audio-card-content">
 <div class="audio-card-title">${escapeHtml(item.title)}</div>
 <div class="audio-card-stats">
+<span><i class="fas fa-clock"></i> ${duration}</span>
 <span><i class="fas fa-play"></i> ${formatNumber(metrics.views_last_1h || 0)}/hr</span>
 <span><i class="fas fa-heart"></i> ${formatNumber(metrics.likes || 0)}</span>
 </div>
@@ -2442,18 +2446,20 @@ return;
 container.innerHTML = podcastBitesData.slice(0, 8).map(item => {
 const thumbnailUrl = buildThumbnailUrl(item.thumbnail_url);
 const keywords = ['Trending', 'Viral', 'Must Hear'].slice(0, 3);
+const duration = formatDuration(item.duration);
 return `
-<div class="podcast-bite-card" onclick="playAudioTrack('${item.id}', '${escapeHtml(item.title)}', '${escapeHtml(item.user_profiles?.username || 'Creator')}', '${thumbnailUrl}')">
+<div class="podcast-bite-card" onclick="playAudioTrack('${item.id}', '${escapeHtml(item.title)}', '${escapeHtml(item.user_profiles?.username || 'Creator')}', '${thumbnailUrl}', '${item.file_url || ''}')">
 <div class="podcast-bite-thumbnail">
 <img src="${thumbnailUrl}" loading="lazy">
 </div>
 <div class="podcast-bite-content">
 <div class="podcast-bite-title">${escapeHtml(item.title)}</div>
+<div style="font-size:0.75rem;color:var(--warm-gold);margin-bottom:8px;"><i class="fas fa-clock"></i> ${duration}</div>
 <div class="podcast-bite-caption">The moment everyone is talking about...</div>
 <div class="podcast-bite-keywords">
 ${keywords.map(k => `<span class="keyword-tag">${k}</span>`).join('')}
 </div>
-<button class="jump-to-episode">Jump to Full Episode →</button>
+<button class="jump-to-episode" onclick="event.stopPropagation();window.location.href='content-detail.html?id=${item.id}'">Jump to Full Episode →</button>
 </div>
 </div>`;
 }).join('');
@@ -2494,28 +2500,47 @@ loadContent();
 }
 
 // ============================================
-// MINI PLAYER FUNCTIONS
+// MINI PLAYER FUNCTIONS - WITH ACTUAL AUDIO PLAYBACK
 // ============================================
-function playAudioTrack(id, title, creator, thumbnail) {
-currentAudioTrack = { id, title, creator, thumbnail };
+function playAudioTrack(id, title, creator, thumbnail, fileUrl) {
+currentAudioTrack = { id, title, creator, thumbnail, fileUrl };
+const audioPlayer = document.getElementById('audio-player');
 const miniPlayer = document.getElementById('mini-player');
 const thumbnailEl = document.getElementById('mini-player-thumbnail');
 const titleEl = document.getElementById('mini-player-title');
 const creatorEl = document.getElementById('mini-player-creator');
 const playBtn = document.getElementById('mini-player-play');
+// Set audio source
+if (fileUrl && audioPlayer) {
+audioPlayer.src = fileUrl;
+audioPlayer.play().then(() => {
+isPlaying = true;
+if (playBtn) playBtn.innerHTML = '<i class="fas fa-pause"></i>';
+}).catch(err => {
+console.error('Audio playback error:', err);
+showToast('Audio file not available', 'error');
+});
+}
+// Update UI
 if (thumbnailEl) thumbnailEl.src = thumbnail;
 if (titleEl) titleEl.textContent = title;
 if (creatorEl) creatorEl.textContent = creator;
-if (playBtn) playBtn.innerHTML = '<i class="fas fa-pause"></i>';
 miniPlayer.classList.add('active');
-isPlaying = true;
 showToast('Now playing', 'success');
 }
 function toggleAudioPlay() {
+const audioPlayer = document.getElementById('audio-player');
 const playBtn = document.getElementById('mini-player-play');
-if (!playBtn) return;
-isPlaying = !isPlaying;
-playBtn.innerHTML = isPlaying ? '<i class="fas fa-pause"></i>' : '<i class="fas fa-play"></i>';
+if (!audioPlayer || !playBtn) return;
+if (isPlaying) {
+audioPlayer.pause();
+playBtn.innerHTML = '<i class="fas fa-play"></i>';
+isPlaying = false;
+} else {
+audioPlayer.play();
+playBtn.innerHTML = '<i class="fas fa-pause"></i>';
+isPlaying = true;
+}
 showToast(isPlaying ? 'Playing' : 'Paused', 'info');
 }
 function playPreviousTrack() { showToast('Previous track', 'info'); }
@@ -2600,8 +2625,8 @@ return `
 <span><i class="fas fa-chart-line"></i> ${velocity.toFixed(0)}</span>
 </div>
 <div class="remix-respond-container">
-<button class="remix-btn" onclick="event.stopPropagation();showToast('Remix feature coming soon', 'info')"><i class="fas fa-magic"></i> Remix</button>
-<button class="respond-btn" onclick="event.stopPropagation();showToast('Respond feature coming soon', 'info')"><i class="fas fa-reply"></i> Respond</button>
+<button class="remix-btn" onclick="event.stopPropagation();remixContent('${item.id}', '${escapeHtml(item.title)}')"><i class="fas fa-magic"></i> Remix</button>
+<button class="respond-btn" onclick="event.stopPropagation();respondToContent('${item.id}', '${escapeHtml(item.title)}')"><i class="fas fa-reply"></i> Respond</button>
 </div>
 </div>
 </div>`;
@@ -2631,25 +2656,73 @@ stats.innerHTML = `
 `;
 container.style.display = 'block';
 }
-function renderOpportunityAlerts() {
+async function renderOpportunityAlerts() {
 const container = document.getElementById('opportunity-alerts-container');
 const list = document.getElementById('opportunity-alerts-list');
 if (!container || !list) return;
-const alerts = [
-{ title: 'Post Now', desc: 'Your audience is most active right now', icon: 'fa-clock' },
-{ title: 'Trending Topic', desc: '#Amapiano is trending in your niche', icon: 'fa-fire' },
-{ title: 'Collaboration', desc: '3 creators want to collaborate with you', icon: 'fa-users' }
+// Fetch real opportunity alerts from database if user is logged in
+if (currentUser) {
+try {
+const { data } = await window.supabaseClient
+.from('creator_opportunities')
+.select('*')
+.eq('creator_id', currentUser.id)
+.eq('is_active', true)
+.order('created_at', { ascending: false })
+.limit(5);
+opportunityAlerts = data || [];
+} catch (error) {
+console.error('Error fetching opportunities:', error);
+opportunityAlerts = [];
+}
+}
+// Fallback alerts if none found
+if (!opportunityAlerts.length) {
+opportunityAlerts = [
+{ id: 1, title: 'Post Now', description: 'Your audience is most active right now', icon: 'fa-clock', action_type: 'post_now' },
+{ id: 2, title: 'Trending Topic', description: '#Amapiano is trending in your niche', icon: 'fa-fire', action_type: 'trending_topic' },
+{ id: 3, title: 'Collaboration', description: '3 creators want to collaborate with you', icon: 'fa-users', action_type: 'collaboration' }
 ];
-list.innerHTML = alerts.map(alert => `
+}
+list.innerHTML = opportunityAlerts.map(alert => `
 <div class="opportunity-alert">
-<div class="opportunity-alert-icon"><i class="fas ${alert.icon}"></i></div>
+<div class="opportunity-alert-icon"><i class="fas ${alert.icon || 'fa-lightbulb'}"></i></div>
 <div class="opportunity-alert-info">
-<div class="opportunity-alert-title">${alert.title}</div>
-<div class="opportunity-alert-desc">${alert.desc}</div>
+<div class="opportunity-alert-title">${escapeHtml(alert.title)}</div>
+<div class="opportunity-alert-desc">${escapeHtml(alert.description || alert.desc)}</div>
 </div>
-<button class="opportunity-alert-action" onclick="showToast('Action taken!', 'success')">ACT</button>
+<button class="opportunity-alert-action" onclick="handleOpportunityAction('${alert.id}', '${alert.action_type || 'general'}')">ACT</button>
 </div>`).join('');
 container.style.display = 'block';
+}
+// Handle opportunity alert actions
+async function handleOpportunityAction(alertId, actionType) {
+switch(actionType) {
+case 'post_now':
+window.location.href = 'creator-upload.html?prompt=quick_post';
+break;
+case 'trending_topic':
+window.location.href = 'creator-upload.html?suggested_hashtag=Amapiano';
+break;
+case 'collaboration':
+showToast('Opening collaboration requests...', 'info');
+setTimeout(() => {
+window.location.href = 'creator-dashboard.html?tab=collaborations';
+}, 1000);
+break;
+default:
+// Mark alert as acted upon
+if (currentUser && alertId) {
+await window.supabaseClient
+.from('creator_opportunities')
+.update({ is_active: false, acted_at: new Date().toISOString() })
+.eq('id', alertId);
+}
+showToast('Opportunity activated! Redirecting...', 'success');
+setTimeout(() => {
+window.location.href = 'creator-dashboard.html';
+}, 1000);
+}
 }
 function showWhyTrending(contentId) {
 const modal = document.getElementById('why-trending-modal');
@@ -2673,6 +2746,32 @@ reasonsContainer.innerHTML = reasons.map(r => `
 </div>
 </div>`).join('');
 modal.classList.add('active');
+}
+
+// ============================================
+// REMIX & RESPOND FUNCTIONS
+// ============================================
+function remixContent(contentId, contentTitle) {
+if (!currentUser) {
+showToast('Please sign in to remix content', 'warning');
+setTimeout(() => {
+window.location.href = 'login.html?redirect=trending_screen.html';
+}, 1500);
+return;
+}
+// Redirect to creator upload with remix reference
+window.location.href = `creator-upload.html?remix_of=${contentId}&title=${encodeURIComponent('Remix: ' + contentTitle)}`;
+}
+function respondToContent(contentId, contentTitle) {
+if (!currentUser) {
+showToast('Please sign in to respond', 'warning');
+setTimeout(() => {
+window.location.href = 'login.html?redirect=trending_screen.html';
+}, 1500);
+return;
+}
+// Redirect to creator upload with response reference
+window.location.href = `creator-upload.html?response_to=${contentId}&title=${encodeURIComponent('Response to: ' + contentTitle)}`;
 }
 
 // ============================================
@@ -2802,7 +2901,7 @@ return trendingHashtags.map(tag => `<div class="hashtag" data-hashtag="${tag}">$
 function renderShorts(items) {
 if (!items || !items.length) return '';
 return items.map(item => `
-<div class="shorts-card" onclick="window.location.href='content-detail.html?id=${item.id}'">
+<div class="shorts-card" onclick="window.location.href='shorts-detail.html?id=${item.id}'">
 <div class="shorts-thumbnail">
 <img src="${buildThumbnailUrl(item.thumbnail_url)}" loading="lazy">
 <div class="shorts-badge">SHORTS</div>
@@ -2963,7 +3062,7 @@ document.getElementById('creator-momentum-section').style.display = 'block';
 renderRisingCreators();
 renderVelocityCards();
 renderAudiencePulse();
-renderOpportunityAlerts();
+await renderOpportunityAlerts();
 }
 loading.style.display = 'none';
 app.style.display = 'block';
