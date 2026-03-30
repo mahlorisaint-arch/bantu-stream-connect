@@ -16,7 +16,7 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
 /* ============================================ */
-/* COMPLETE STYLES - MATCHING CONTENT-DETAIL PAGE */
+/* COMPLETE STYLES - WITH MOMENTUM SCORING UI */
 /* ============================================ */
 :root {
 --deep-black: #0A0E12;
@@ -42,6 +42,7 @@
 --trend-rising: #F59E0B;
 --trend-peak: #EF4444;
 --trend-declining: #64748B;
+--decay-gradient: linear-gradient(135deg, #1D4ED8, #8B5CF6);
 }
 .theme-light {
 --deep-black: #F8FAFC;
@@ -544,8 +545,21 @@ margin-bottom: 8px;
 flex-wrap: wrap;
 }
 .card-stats { display: flex; gap: 12px; font-size: 0.7rem; color: rgba(255, 255, 255, 0.6); }
-.verified-badge { color: var(--bantu-blue); font-size: 0.7rem; }
-.recency-text { font-size: 0.65rem; color: var(--slate-grey); }
+.momentum-score-badge {
+position: absolute;
+bottom: 10px;
+left: 10px;
+padding: 4px 8px;
+background: rgba(0, 0, 0, 0.8);
+border-radius: 6px;
+font-size: 0.7rem;
+font-weight: 700;
+z-index: 2;
+display: flex;
+align-items: center;
+gap: 4px;
+color: var(--warm-gold);
+}
 .featured-trend-card {
 position: relative;
 border-radius: 20px;
@@ -1514,7 +1528,7 @@ border: 1px solid rgba(245, 158, 11, 0.3);
 <!-- Loading Screen -->
 <div id="loading" class="loading-screen">
 <div class="spinner"></div>
-<div id="loading-text">Loading Trending Content...</div>
+<div id="loading-text">Loading Trending Content with Momentum Algorithm...</div>
 </div>
 <!-- Sidebar Overlay -->
 <div id="sidebar-overlay" class="sidebar-overlay"></div>
@@ -1698,7 +1712,7 @@ border: 1px solid rgba(245, 158, 11, 0.3);
 </main>
 <!-- Footer -->
 <footer class="footer">
-<p>Bantu Stream Connect © 2025 • Built in South Africa • NO DNA, JUST RSA</p>
+<p>Bantu Stream Connect © 2025 • Built in South Africa • Powered by Momentum Algorithm</p>
 <div class="footer-links">
 <a href="privacy-policy.html">Privacy Policy</a>
 <a href="terms-of-service.html">Terms of Service</a>
@@ -2271,26 +2285,27 @@ window.location.href = `content-detail.html?id=${el.dataset.id}`;
 }
 
 // ============================================
-// FETCH CONTENT
+// FETCH CONTENT WITH MOMENTUM SCORES
 // ============================================
 async function fetchContent(offset = 0, limit = 50) {
 try {
+// Use the trending_by_momentum view for momentum-based sorting
 const { data, error } = await window.supabaseClient
-.from('Content')
-.select('*, user_profiles!user_id(*)')
-.eq('status', 'published')
-.order('created_at', { ascending: false })
+.from('trending_by_momentum')
+.select('*')
 .range(offset, offset + limit - 1);
 if (error) {
+console.error('Error fetching from trending view, falling back:', error);
+// Fallback to regular content fetch
 const { data: fallbackData } = await window.supabaseClient
-.from('content')
+.from('Content')
 .select('*, user_profiles!user_id(*)')
 .eq('status', 'published')
 .order('created_at', { ascending: false })
 .range(offset, offset + limit - 1);
 return await enrichWithViewCounts(fallbackData || []);
 }
-return await enrichWithViewCounts(data || []);
+return data || [];
 } catch (error) {
 console.error('Error fetching content:', error);
 return [];
@@ -2315,33 +2330,27 @@ return enriched;
 }
 
 // ============================================
-// FETCH SOUNDSPHERE DATA
+// FETCH SOUNDSPHERE DATA WITH MOMENTUM
 // ============================================
 async function fetchSoundSphereData() {
 try {
-// Fetch audio content (music, podcasts)
-const { data: audioContent } = await window.supabaseClient
-.from('Content')
-.select('*, user_profiles!user_id(*), content_metrics_realtime(*)')
-.eq('status', 'published')
-.in('genre', ['Music', 'Podcasts'])
-.order('created_at', { ascending: false })
+// Fetch audio content from trending_audio_momentum view
+const { data: audioTrending } = await window.supabaseClient
+.from('trending_audio_momentum')
+.select('*')
 .limit(30);
-// Fetch creator momentum data from real table
+// Fetch creator momentum data
 const { data: creatorData } = await window.supabaseClient
-.from('creator_momentum')
-.select('*, user_profiles!creator_id(*)')
-.order('momentum_score', { ascending: false })
+.from('rising_creators_momentum')
+.select('*')
 .limit(10);
-// Fetch content with velocity data
+// Fetch content velocity from trending_by_momentum
 const { data: velocityContent } = await window.supabaseClient
-.from('Content')
-.select('*, user_profiles!user_id(*), content_metrics_realtime(*)')
-.eq('status', 'published')
-.order('created_at', { ascending: false })
+.from('trending_by_momentum')
+.select('*')
 .limit(20);
-audioShortsData = (audioContent || []).filter(c => (c.duration || 0) < 60);
-podcastBitesData = (audioContent || []).filter(c => c.genre === 'Podcasts');
+audioShortsData = (audioTrending || []).filter(c => (c.duration || 0) < 60);
+podcastBitesData = (audioTrending || []).filter(c => c.genre === 'Podcasts');
 creatorMomentumData = creatorData || [];
 soundMomentumData = velocityContent || [];
 return { audioShortsData, podcastBitesData, creatorMomentumData, soundMomentumData };
@@ -2380,20 +2389,24 @@ return;
 }
 container.innerHTML = filtered.map(item => {
 const thumbnailUrl = buildThumbnailUrl(item.thumbnail_url);
-const creatorName = item.user_profiles?.username || 'Creator';
+const creatorName = item.creator_username || item.creator_display_name || 'Creator';
 const waveformBars = Array.from({length: 20}, (_, i) => 
 `<div class="waveform-bar" style="height:${Math.random() * 25 + 5}px;animation-delay:${i * 0.05}s"></div>`
 ).join('');
+const momentumScore = item.momentum_score || 0;
 return `
 <div class="audio-shorts-card" onclick="playAudioTrack('${item.id}', '${escapeHtml(item.title)}', '${escapeHtml(creatorName)}', '${thumbnailUrl}')">
 <div class="audio-shorts-thumbnail">
 <img src="${thumbnailUrl}" loading="lazy">
-<div class="trending-sound-badge">🔥 TRENDING</div>
+<div class="trending-sound-badge">🔥 ${momentumScore > 200 ? 'HOT' : 'TRENDING'}</div>
 <div class="creator-voice-tag">🎤 VOICE</div>
 <div class="audio-shorts-overlay">
 <div class="audio-waveform">${waveformBars}</div>
 <div style="font-size:0.8rem;font-weight:600;margin-bottom:4px;">${escapeHtml(item.title)}</div>
 <div style="font-size:0.7rem;color:var(--slate-grey);">@${escapeHtml(creatorName)}</div>
+<div class="audio-card-stats" style="margin-top:5px;">
+<span><i class="fas fa-chart-line"></i> ${Math.round(momentumScore)}</span>
+</div>
 </div>
 </div>
 </div>`;
@@ -2409,12 +2422,11 @@ return;
 }
 container.innerHTML = items.map(item => {
 const thumbnailUrl = buildThumbnailUrl(item.thumbnail_url);
-const metrics = item.content_metrics_realtime || {};
-const velocity = metrics.velocity_score || 0;
-const trendStage = metrics.trend_stage || 'new';
-const trendLabel = metrics.trend_label || 'Stable';
+const momentumScore = item.momentum_score || 0;
+const velocityScore = item.velocity_score || 0;
+const trendLabel = item.trend_label || 'Stable';
 return `
-<div class="audio-card" onclick="playAudioTrack('${item.id}', '${escapeHtml(item.title)}', '${escapeHtml(item.user_profiles?.username || 'Creator')}', '${thumbnailUrl}')">
+<div class="audio-card" onclick="playAudioTrack('${item.id}', '${escapeHtml(item.title)}', '${escapeHtml(item.creator_username || item.creator_display_name || 'Creator')}', '${thumbnailUrl}')">
 <div class="audio-card-thumbnail">
 <img src="${thumbnailUrl}" loading="lazy">
 <div class="rising-sound-badge">🔥 ${trendLabel}</div>
@@ -2425,8 +2437,8 @@ return `
 <div class="audio-card-content">
 <div class="audio-card-title">${escapeHtml(item.title)}</div>
 <div class="audio-card-stats">
-<span><i class="fas fa-play"></i> ${formatNumber(metrics.views_last_1h || 0)}/hr</span>
-<span><i class="fas fa-heart"></i> ${formatNumber(metrics.likes || 0)}</span>
+<span><i class="fas fa-chart-line"></i> ${Math.round(momentumScore)}</span>
+<span><i class="fas fa-eye"></i> ${formatNumber(item.views_last_1h || 0)}/hr</span>
 </div>
 </div>
 </div>`;
@@ -2443,7 +2455,7 @@ container.innerHTML = podcastBitesData.slice(0, 8).map(item => {
 const thumbnailUrl = buildThumbnailUrl(item.thumbnail_url);
 const keywords = ['Trending', 'Viral', 'Must Hear'].slice(0, 3);
 return `
-<div class="podcast-bite-card" onclick="playAudioTrack('${item.id}', '${escapeHtml(item.title)}', '${escapeHtml(item.user_profiles?.username || 'Creator')}', '${thumbnailUrl}')">
+<div class="podcast-bite-card" onclick="playAudioTrack('${item.id}', '${escapeHtml(item.title)}', '${escapeHtml(item.creator_username || item.creator_display_name || 'Creator')}', '${thumbnailUrl}')">
 <div class="podcast-bite-thumbnail">
 <img src="${thumbnailUrl}" loading="lazy">
 </div>
@@ -2494,23 +2506,19 @@ loadContent();
 }
 
 // ============================================
-// AUDIO PLAYER FUNCTIONS (FIXED)
+// AUDIO PLAYER FUNCTIONS (FIXED - SINGLE AUDIO CONTEXT)
 // ============================================
-// Create a global audio element for consistent playback
 const globalAudio = new Audio();
 let currentPlayingId = null;
 
 function playAudioTrack(id, title, creator, thumbnail) {
-// If the same track is already playing, pause it
 if (currentPlayingId === id && isPlaying) {
 pauseAudio();
 return;
 }
-// If there's a different track playing, stop it first
 if (globalAudio.src && !globalAudio.paused) {
 globalAudio.pause();
 }
-// Fetch the actual audio URL from Supabase storage based on content ID
 window.supabaseClient
 .from('Content')
 .select('file_url')
@@ -2531,7 +2539,6 @@ showToast('Unable to play audio', 'error');
 currentPlayingId = id;
 isPlaying = true;
 currentAudioTrack = { id, title, creator, thumbnail };
-// Update mini-player UI
 const miniPlayer = document.getElementById('mini-player');
 const thumbnailEl = document.getElementById('mini-player-thumbnail');
 const titleEl = document.getElementById('mini-player-title');
@@ -2543,12 +2550,10 @@ if (creatorEl) creatorEl.textContent = creator;
 if (playBtn) playBtn.innerHTML = '<i class="fas fa-pause"></i>';
 miniPlayer.classList.add('active');
 showToast(`Now playing: ${title}`, 'success');
-// Add duration badge update when metadata loads
 globalAudio.onloadedmetadata = () => {
-const durationEl = document.getElementById('mini-player-duration');
-if (durationEl) durationEl.textContent = formatDuration(globalAudio.duration);
+const durationDisplay = document.getElementById('mini-player-duration');
+if (durationDisplay) durationDisplay.textContent = formatDuration(globalAudio.duration);
 };
-// Handle track end
 globalAudio.onended = () => {
 isPlaying = false;
 const playBtn = document.getElementById('mini-player-play');
@@ -2594,19 +2599,18 @@ container.innerHTML = '<div style="color:var(--slate-grey);padding:20px;">No ris
 return;
 }
 container.innerHTML = creatorMomentumData.slice(0, 10).map(creator => {
-const profile = creator.user_profiles || {};
-const avatarUrl = buildThumbnailUrl(profile.avatar_url);
+const avatarUrl = buildThumbnailUrl(creator.avatar_url);
 const growthRate = creator.growth_rate || 0;
-const momentumScore = creator.momentum_score || 0;
+const creatorMomentum = creator.creator_momentum || 0;
 return `
-<div class="rising-creator-card" onclick="window.location.href='profile.html?creator=${profile.id}'">
+<div class="rising-creator-card" onclick="window.location.href='profile.html?creator=${creator.creator_id}'">
 <div class="rising-creator-header"></div>
 <div class="rising-creator-avatar">
-<img src="${avatarUrl}" alt="${escapeHtml(profile.full_name || profile.username || 'Creator')}">
+<img src="${avatarUrl}" alt="${escapeHtml(creator.full_name || creator.username || 'Creator')}">
 </div>
 <div class="rising-creator-body">
-<div class="rising-creator-name">${escapeHtml(profile.full_name || profile.username || 'Creator')}</div>
-<div class="rising-creator-handle">@${escapeHtml(profile.username || 'creator')}</div>
+<div class="rising-creator-name">${escapeHtml(creator.full_name || creator.username || 'Creator')}</div>
+<div class="rising-creator-handle">@${escapeHtml(creator.username || 'creator')}</div>
 <div class="rising-creator-metrics">
 <div class="rising-creator-metric">
 <div class="rising-creator-metric-value">${formatNumber(creator.total_views_24h || 0)}</div>
@@ -2623,7 +2627,7 @@ return `
 </div>
 <div class="growth-indicator">
 <i class="fas fa-arrow-trend-up"></i>
-<span>Rising Fast</span>
+<span>Momentum: ${Math.round(creatorMomentum)}</span>
 </div>
 </div>
 </div>`;
@@ -2638,11 +2642,12 @@ return;
 }
 container.innerHTML = soundMomentumData.slice(0, 10).map(item => {
 const thumbnailUrl = buildThumbnailUrl(item.thumbnail_url);
-const metrics = item.content_metrics_realtime || {};
-const velocity = metrics.velocity_score || 0;
-const velocityPercent = Math.min(100, velocity / 5);
-const trendStage = metrics.trend_stage || 'new';
-const trendLabel = metrics.trend_label || 'Stable';
+const momentumScore = item.momentum_score || 0;
+const velocityScore = item.velocity_score || 0;
+const velocityPercent = Math.min(100, momentumScore / 10);
+const trendStage = item.trend_stage || 'new';
+const trendLabel = item.trend_label || 'Stable';
+const ageHours = item.content_age_hours || 0;
 return `
 <div class="velocity-card" onclick="showWhyTrending('${item.id}')">
 <div class="velocity-card-thumbnail">
@@ -2651,19 +2656,19 @@ return `
 <div class="velocity-bar-container">
 <div class="velocity-bar-fill" style="width:${velocityPercent}%"></div>
 </div>
-<div class="velocity-label">${trendLabel}</div>
+<div class="velocity-label">Momentum: ${Math.round(momentumScore)}</div>
 </div>
-<div class="trend-lifecycle-badge ${trendStage}">${trendStage.toUpperCase()}</div>
+<div class="trend-lifecycle-badge ${trendStage}">${trendLabel}</div>
 </div>
 <div class="velocity-card-content">
 <div class="velocity-card-title">${escapeHtml(item.title)}</div>
 <div class="velocity-card-stats">
-<span><i class="fas fa-eye"></i> ${formatNumber(metrics.views_last_1h || 0)}/hr</span>
-<span><i class="fas fa-chart-line"></i> ${velocity.toFixed(0)}</span>
+<span><i class="fas fa-chart-line"></i> ${Math.round(momentumScore)}</span>
+<span><i class="fas fa-clock"></i> ${ageHours.toFixed(1)}h</span>
 </div>
 <div class="remix-respond-container">
 <button class="remix-btn" onclick="event.stopPropagation();window.location.href='creator-upload.html?remix=${item.id}'"><i class="fas fa-magic"></i> Remix</button>
-<button class="respond-btn" onclick="event.stopPropagation();showToast('Respond feature - comment section opens', 'success');"><i class="fas fa-reply"></i> Respond</button>
+<button class="respond-btn" onclick="event.stopPropagation();window.location.href='content-detail.html?id=${item.id}#comments'"><i class="fas fa-reply"></i> Respond</button>
 </div>
 </div>
 </div>`;
@@ -2674,8 +2679,7 @@ const container = document.getElementById('audience-pulse-container');
 const fill = document.getElementById('audience-pulse-fill');
 const stats = document.getElementById('audience-pulse-stats');
 if (!container || !fill || !stats) return;
-// Simulated pulse data based on real-time metrics from content
-const pulseLevel = Math.floor(Math.random() * 100);
+const pulseLevel = Math.min(100, Math.floor(Math.random() * 100));
 fill.style.width = `${pulseLevel}%`;
 stats.innerHTML = `
 <div class="audience-pulse-stat">
@@ -2697,7 +2701,6 @@ function renderOpportunityAlerts() {
 const container = document.getElementById('opportunity-alerts-container');
 const list = document.getElementById('opportunity-alerts-list');
 if (!container || !list) return;
-// Fetch real opportunity alerts from Supabase if available, else fallback to dynamic data
 window.supabaseClient
 .from('opportunity_alerts')
 .select('*')
@@ -2708,7 +2711,6 @@ let alerts = [];
 if (data && data.length) {
 alerts = data;
 } else {
-// Fallback alerts based on trending content
 alerts = [
 { title: 'Post Now', description: 'Your audience is most active right now', icon: 'fa-clock' },
 { title: 'Trending Topic', description: '#Amapiano is trending in your niche', icon: 'fa-fire' },
@@ -2728,7 +2730,6 @@ container.style.display = 'block';
 });
 }
 function handleOpportunityAction(alertId) {
-// Perform real action (e.g., open creator upload, share topic, etc.)
 showToast('Action taken! Redirecting to create...', 'success');
 setTimeout(() => {
 window.location.href = 'creator-upload.html';
@@ -2738,7 +2739,6 @@ function showWhyTrending(contentId) {
 const modal = document.getElementById('why-trending-modal');
 const reasonsContainer = document.getElementById('why-trending-reasons');
 if (!modal || !reasonsContainer) return;
-// Fetch real trend explanations from trend_explanations table
 window.supabaseClient
 .from('trend_explanations')
 .select('*')
@@ -2755,11 +2755,10 @@ desc: r.reason || 'High engagement spike',
 value: `${r.metric_value}${r.metric_type === 'watch_time' ? 's' : r.metric_type === 'percentile_rank' ? '%' : ''}`
 }));
 } else {
-// Fallback reasons
 reasons = [
 { icon: 'fa-clock', title: 'High Watch Time', desc: '85% average completion rate', value: '85%' },
 { icon: 'fa-share', title: 'Viral Shares', desc: 'Shares increasing 300% in 24h', value: '+300%' },
-{ icon: 'fa-comment', title: 'Engagement Spike', desc: 'Comments up 250% from baseline', value: '+250%' }
+{ icon: 'fa-chart-line', title: 'Momentum Score', desc: 'Accelerating velocity', value: 'High' }
 ];
 }
 reasonsContainer.innerHTML = reasons.map(r => `
@@ -2844,6 +2843,7 @@ window.location.href = `content-library.html?genre=${encodeURIComponent(filter)}
 }
 function renderFeatured(content) {
 if (!content) return '';
+const momentumScore = content.momentum_score || 0;
 return `
 <div class="featured-trend-card" onclick="window.location.href='content-detail.html?id=${content.id}'">
 <div class="featured-bg" style="background-image:url('${buildThumbnailUrl(content.thumbnail_url)}')"></div>
@@ -2851,11 +2851,12 @@ return `
 ${content.is_live ? '<div class="live-badge">LIVE NOW</div>' : ''}
 <h2 class="featured-title">${escapeHtml(content.title)}</h2>
 <div class="featured-creator">
-@${escapeHtml(content.user_profiles?.username || 'Creator')}
+@${escapeHtml(content.creator_username || content.creator_display_name || 'Creator')}
 <span class="recency-text">• ${formatTimeAgo(content.created_at)}</span>
 </div>
 <div class="featured-stats">
-<span><i class="fas fa-eye"></i> ${formatNumber(content.real_views)} views</span>
+<span><i class="fas fa-chart-line"></i> Momentum: ${Math.round(momentumScore)}</span>
+<span><i class="fas fa-eye"></i> ${formatNumber(content.views_last_1h || 0)}/hr</span>
 </div>
 <button class="watch-now-btn">WATCH NOW <i class="fas fa-play"></i></button>
 </div>
@@ -2866,14 +2867,16 @@ if (!items || !items.length) return '';
 const cardClass = type === 'grid' ? 'gem-card' : 'content-card';
 return items.map(item => {
 const thumbnailUrl = buildThumbnailUrl(item.thumbnail_url);
-const creatorName = item.user_profiles?.username || 'Creator';
+const creatorName = item.creator_username || item.creator_display_name || 'Creator';
 const hoverVideo = item.file_url ? `<video data-src="${item.file_url}" muted loop preload="none"></video>` : '';
+const momentumScore = item.momentum_score || 0;
 return `
 <div class="${cardClass}" data-content-id="${item.id}">
 <div class="${type === 'grid' ? 'gem-thumbnail' : 'card-thumbnail'}">
 <img src="${thumbnailUrl}" alt="${escapeHtml(item.title)}" loading="lazy">
 ${hoverVideo}
 <div class="duration-badge">${formatDuration(item.duration)}</div>
+<div class="momentum-score-badge"><i class="fas fa-chart-line"></i> ${Math.round(momentumScore)}</div>
 ${item.is_live ? '<div class="badge live">LIVE</div>' : ''}
 ${item.is_new ? '<div class="badge new">NEW</div>' : ''}
 <div class="card-actions">
@@ -2892,8 +2895,8 @@ ${item.is_new ? '<div class="badge new">NEW</div>' : ''}
 <span class="recency-text">• ${formatTimeAgo(item.created_at)}</span>
 </div>
 <div class="card-stats">
-<span><i class="fas fa-eye"></i> ${formatNumber(item.real_views)}</span>
-<span><i class="fas fa-heart"></i> ${formatNumber(item.likes_count || 0)}</span>
+<span><i class="fas fa-chart-line"></i> ${Math.round(momentumScore)}</span>
+<span><i class="fas fa-eye"></i> ${formatNumber(item.views_last_1h || 0)}/hr</span>
 </div>
 </div>
 </div>`;
@@ -2912,7 +2915,7 @@ return items.map(item => `
 <div class="duration-badge">${formatDuration(item.duration)}</div>
 <div class="shorts-overlay">
 <div class="shorts-title">${escapeHtml(item.title)}</div>
-<div class="shorts-stats"><i class="fas fa-eye"></i> ${formatNumber(item.real_views)}</div>
+<div class="shorts-stats"><i class="fas fa-chart-line"></i> ${Math.round(item.momentum_score || 0)}</div>
 </div>
 </div>
 </div>`).join('');
@@ -2982,7 +2985,7 @@ const newContent = await fetchContent(contentOffset, 50);
 if (newContent.length === 0) { hasMoreContent = false; }
 else {
 allContentData = [...allContentData, ...newContent];
-const moreGems = [...newContent].sort((a, b) => (b.real_views + b.likes_count*2) - (a.real_views + a.likes_count*2)).slice(0, 8);
+const moreGems = [...newContent].sort((a, b) => (b.momentum_score || 0) - (a.momentum_score || 0)).slice(0, 8);
 const gemsContainer = document.querySelector('.community-grid');
 if (gemsContainer && moreGems.length) {
 gemsContainer.insertAdjacentHTML('beforeend', renderCards(moreGems, 'grid'));
@@ -3015,18 +3018,15 @@ const app = document.getElementById('app');
 loading.style.display = 'flex';
 const contentData = await fetchContent(0, 80);
 allContentData = contentData;
-// Fetch SoundSphere & Creator Momentum data
 await fetchSoundSphereData();
-const featured = [...contentData].sort((a, b) => (b.real_views || 0) - (a.real_views || 0))[0];
+const featured = [...contentData].sort((a, b) => (b.momentum_score || 0) - (a.momentum_score || 0))[0];
 const liveStreams = contentData.filter(c => c.is_live).slice(0, 10);
 const shorts = contentData.filter(c => (c.duration || 0) < 60).slice(0, 15);
 const communityGems = [...contentData]
-.sort((a, b) => ((b.real_views || 0) + (b.likes_count || 0) * 2) - ((a.real_views || 0) + (a.likes_count || 0) * 2))
+.sort((a, b) => (b.momentum_score || 0) - (a.momentum_score || 0))
 .slice(0, 12);
 const personalized = generatePersonalizedRow(contentData);
-// Build HTML
 let html = '';
-// 1. SHORTS SECTION
 if (shorts.length) {
 const shortsContainer = document.getElementById('shorts-scroll');
 const shortsSection = document.getElementById('shorts-section');
@@ -3035,22 +3035,18 @@ shortsContainer.innerHTML = renderShorts(shorts);
 shortsSection.style.display = 'block';
 }
 } else { document.getElementById('shorts-section')?.style.setProperty('display', 'none'); }
-// 2. THE PULSE
 if (featured) html += `<section class="section"><div class="section-header"><h2 class="section-title"><i class="fas fa-rocket section-icon"></i>THE PULSE</h2></div>${renderFeatured(featured)}</section>`;
-// 3. Rest of sections
 if (personalized.length) html += `<section class="section"><div class="section-header"><h2 class="section-title"><i class="fas fa-magic section-icon"></i>MADE FOR YOU</h2><button class="see-all-btn" onclick="window.location.href='content-library.html?for-you=true'">SEE ALL</button></div><div class="content-horizontal-scroll">${renderCards(personalized)}</div></section>`;
 if (liveStreams.length) html += `<section class="section"><div class="section-header"><h2 class="section-title"><i class="fas fa-tv section-icon"></i>LIVE NOW</h2><button class="see-all-btn" onclick="window.location.href='content-library.html?genre=Live'">SEE ALL</button></div><div class="content-horizontal-scroll">${renderCards(liveStreams)}</div></section>`;
 html += `<section class="section"><div class="section-header"><h2 class="section-title"><i class="fas fa-hashtag section-icon"></i>TRENDING TOPICS</h2></div><div class="hashtags-container">${renderHashtags()}</div></section>`;
 if (communityGems.length) html += `<section class="section"><div class="section-header"><h2 class="section-title"><i class="fas fa-gem section-icon"></i>COMMUNITY GEMS</h2><button class="see-all-btn" onclick="window.location.href='content-library.html?sort=popular'">SEE ALL</button></div><div class="community-grid">${renderCards(communityGems, 'grid')}</div></section>`;
 document.getElementById('trending-sections').innerHTML = html;
 attachCardListeners();
-// Continue Watching
 const continueItems = await loadContinueWatching();
 if (continueItems.length) {
 document.getElementById('continue-watching-container').innerHTML = renderContinueBar(continueItems[0]);
 document.getElementById('continue-watching-container').style.display = 'block';
 }
-// Render SoundSphere
 if (audioShortsData.length || podcastBitesData.length) {
 document.getElementById('soundsphere-section').style.display = 'block';
 renderMoodFilters();
@@ -3060,7 +3056,6 @@ renderPodcastBites();
 renderSoundMap();
 renderSoundDNA();
 }
-// Render Creator Momentum
 if (creatorMomentumData.length || soundMomentumData.length) {
 document.getElementById('creator-momentum-section').style.display = 'block';
 renderRisingCreators();
@@ -3092,7 +3087,7 @@ return !!currentUser;
 // INITIALIZATION
 // ============================================
 async function init() {
-console.log('🔥 Trending Screen Initializing with full features...');
+console.log('🔥 Trending Screen Initializing with Momentum Algorithm...');
 setupSidebar();
 initThemeSelector();
 setupNavigation();
@@ -3119,7 +3114,7 @@ await loadContent();
 showToast('Signed out', 'info');
 }
 });
-console.log('✅ Trending Screen Initialized');
+console.log('✅ Trending Screen Initialized with Momentum Scoring');
 }
 init();
 </script>
