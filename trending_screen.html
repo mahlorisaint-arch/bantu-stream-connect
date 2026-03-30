@@ -1594,7 +1594,7 @@ border: 1px solid rgba(245, 158, 11, 0.3);
 <!-- Continue Watching Bar -->
 <div id="continue-watching-container" style="display: none;"></div>
 <!-- SoundSphere Section -->
-<section id="soundsphere-section" class="soundsphere-section" style="display: none;">
+<section id="soundsphere-section" class="soundsphere-section">
 <div class="soundsphere-header">
 <h2 class="section-title"><i class="fas fa-headphones section-icon"></i>SoundSphere — Hear What Africa Is Feeling</h2>
 <button class="see-all-btn" onclick="window.location.href='content-library.html?type=audio'">SEE ALL</button>
@@ -1612,14 +1612,14 @@ border: 1px solid rgba(245, 158, 11, 0.3);
 <h3 class="section-title" style="font-size: 1.2rem;"><i class="fas fa-podcast"></i>Podcast Smart Bites</h3>
 </div>
 <div id="podcast-bites-scroll" class="content-horizontal-scroll"></div>
-<div class="soundmap-container" id="soundmap-container" style="display: none;">
+<div class="soundmap-container" id="soundmap-container">
 <div class="soundmap-header">
 <i class="fas fa-globe-africa" style="font-size: 1.5rem; color: var(--warm-gold);"></i>
 <h3 style="font-family: 'Orbitron', sans-serif; font-size: 1.1rem;">SoundMap — What's Trending Across Africa</h3>
 </div>
 <div id="soundmap-grid" class="soundmap-grid"></div>
 </div>
-<div class="sound-dna-container" id="sound-dna-container" style="display: none;">
+<div class="sound-dna-container" id="sound-dna-container">
 <div class="sound-dna-header">
 <i class="fas fa-dna" style="font-size: 1.5rem; color: var(--podcast-accent);"></i>
 <h3 style="font-family: 'Orbitron', sans-serif; font-size: 1.1rem;">Your Sound DNA</h3>
@@ -1628,12 +1628,12 @@ border: 1px solid rgba(245, 158, 11, 0.3);
 </div>
 </section>
 <!-- Creator Momentum Section -->
-<section id="creator-momentum-section" class="creator-momentum-section" style="display: none;">
+<section id="creator-momentum-section" class="creator-momentum-section">
 <div class="momentum-header">
 <h2 class="section-title"><i class="fas fa-rocket section-icon"></i>Creator Momentum — See What's Blowing Up</h2>
 <button class="see-all-btn" onclick="window.location.href='creator-dashboard.html'">CREATOR DASHBOARD</button>
 </div>
-<div class="audience-pulse-container" id="audience-pulse-container" style="display: none;">
+<div class="audience-pulse-container" id="audience-pulse-container">
 <div class="audience-pulse-header">
 <i class="fas fa-heartbeat" style="font-size: 1.5rem; color: var(--warm-gold);"></i>
 <h3 style="font-family: 'Orbitron', sans-serif; font-size: 1.1rem;">Audience Pulse Meter</h3>
@@ -1647,7 +1647,7 @@ border: 1px solid rgba(245, 158, 11, 0.3);
 </div>
 <div id="audience-pulse-stats" class="audience-pulse-stats"></div>
 </div>
-<div class="opportunity-alerts-container" id="opportunity-alerts-container" style="display: none;">
+<div class="opportunity-alerts-container" id="opportunity-alerts-container">
 <div class="opportunity-alerts-header">
 <i class="fas fa-lightbulb" style="font-size: 1.5rem; color: var(--success-color);"></i>
 <h3 style="font-family: 'Orbitron', sans-serif; font-size: 1.1rem;">Creator Opportunity Alerts</h3>
@@ -1666,7 +1666,7 @@ border: 1px solid rgba(245, 158, 11, 0.3);
 <!-- Trending Sections Container -->
 <div id="trending-sections"></div>
 <!-- Shorts Section -->
-<div id="shorts-section" class="shorts-section" style="display: none;">
+<div id="shorts-section" class="shorts-section">
 <div class="section-header">
 <h2 class="section-title"><i class="fas fa-bolt section-icon"></i>BSC SHORTS</h2>
 <button id="view-all-shorts" class="see-all-btn">SEE ALL</button>
@@ -2297,7 +2297,7 @@ return enriched;
 }
 
 // ============================================
-// FETCH SOUNDSPHERE DATA - REAL DATA ONLY, NO MOCKS
+// FETCH SOUNDSPHERE DATA - REAL DATA ONLY
 // ============================================
 async function fetchSoundSphereData() {
 try {
@@ -2398,10 +2398,8 @@ showToast(`Filtering by ${moodFilters.find(m => m.id === selectedMood)?.label}`,
 function renderAudioShorts() {
 const container = document.getElementById('audio-shorts-scroll');
 if (!container) return;
-// Note: Mood filtering would require a 'mood' field in your database
-// Currently just displaying all audio shorts
 if (!audioShortsData.length) {
-container.innerHTML = '<div style="color:var(--slate-grey);padding:20px;">No audio shorts available</div>';
+container.innerHTML = '<div style="color:var(--slate-grey);padding:20px;text-align:center;">No audio shorts available. Upload audio content to see it here.</div>';
 return;
 }
 container.innerHTML = audioShortsData.slice(0, 12).map(item => {
@@ -2429,7 +2427,7 @@ function renderAudioCards() {
 const container = document.getElementById('audio-cards-scroll');
 if (!container) return;
 if (!soundMomentumData.length) {
-container.innerHTML = '<div style="color:var(--slate-grey);padding:20px;">No trending sounds available</div>';
+container.innerHTML = '<div style="color:var(--slate-grey);padding:20px;text-align:center;">No trending sounds available. Content with momentum will appear here.</div>';
 return;
 }
 container.innerHTML = soundMomentumData.slice(0, 10).map(item => {
@@ -2458,7 +2456,7 @@ function renderPodcastBites() {
 const container = document.getElementById('podcast-bites-scroll');
 if (!container) return;
 if (!podcastBitesData.length) {
-container.innerHTML = '<div style="color:var(--slate-grey);padding:20px;">No podcast bites available</div>';
+container.innerHTML = '<div style="color:var(--slate-grey);padding:20px;text-align:center;">No podcast bites available. Upload podcast content to see it here.</div>';
 return;
 }
 container.innerHTML = podcastBitesData.slice(0, 8).map(item => {
@@ -2495,8 +2493,7 @@ function renderSoundDNA() {
 const container = document.getElementById('sound-dna-container');
 const grid = document.getElementById('sound-dna-grid');
 if (!container || !grid) return;
-// This would normally come from user listening history
-// For now, show placeholder that will be populated when user has history
+// This will be populated from user listening history when available
 grid.innerHTML = `
 <div class="sound-dna-item">
 <div class="sound-dna-icon">🎵</div>
@@ -2504,7 +2501,7 @@ grid.innerHTML = `
 </div>
 <div class="sound-dna-item">
 <div class="sound-dna-icon">📊</div>
-<div class="sound-dna-label">Based on your listening</div>
+<div class="sound-dna-label">Based on your listening history</div>
 </div>`;
 container.style.display = 'block';
 }
@@ -2600,7 +2597,7 @@ function renderRisingCreators() {
 const container = document.getElementById('rising-creators-scroll');
 if (!container) return;
 if (!creatorMomentumData.length) {
-container.innerHTML = '<div style="color:var(--slate-grey);padding:20px;">No rising creators data available</div>';
+container.innerHTML = '<div style="color:var(--slate-grey);padding:20px;text-align:center;">No rising creators data available. Creator momentum will appear here.</div>';
 return;
 }
 container.innerHTML = creatorMomentumData.slice(0, 10).map(creator => {
@@ -2642,7 +2639,7 @@ function renderVelocityCards() {
 const container = document.getElementById('velocity-cards-scroll');
 if (!container) return;
 if (!soundMomentumData.length) {
-container.innerHTML = '<div style="color:var(--slate-grey);padding:20px;">No velocity data available</div>';
+container.innerHTML = '<div style="color:var(--slate-grey);padding:20px;text-align:center;">No velocity data available. Content with momentum will appear here.</div>';
 return;
 }
 container.innerHTML = soundMomentumData.slice(0, 10).map(item => {
@@ -2682,15 +2679,39 @@ const fill = document.getElementById('audience-pulse-fill');
 const stats = document.getElementById('audience-pulse-stats');
 if (!container || !fill || !stats) return;
 // Real audience pulse would come from analytics
-// For now, hide if no data
-container.style.display = 'none';
+// Show placeholder indicating data will appear when available
+fill.style.width = '0%';
+stats.innerHTML = `
+<div class="audience-pulse-stat">
+<div class="audience-pulse-stat-value">--</div>
+<div class="audience-pulse-stat-label">Active Now</div>
+</div>
+<div class="audience-pulse-stat">
+<div class="audience-pulse-stat-value">--</div>
+<div class="audience-pulse-stat-label">Avg Watch Time</div>
+</div>
+<div class="audience-pulse-stat">
+<div class="audience-pulse-stat-value">--</div>
+<div class="audience-pulse-stat-label">Engagement Rate</div>
+</div>
+`;
+container.style.display = 'block';
 }
 function renderOpportunityAlerts() {
 const container = document.getElementById('opportunity-alerts-container');
 const list = document.getElementById('opportunity-alerts-list');
 if (!container || !list) return;
 // Real opportunity alerts would come from database
-container.style.display = 'none';
+list.innerHTML = `
+<div class="opportunity-alert">
+<div class="opportunity-alert-icon"><i class="fas fa-clock"></i></div>
+<div class="opportunity-alert-info">
+<div class="opportunity-alert-title">Check Your Dashboard</div>
+<div class="opportunity-alert-desc">View personalized insights and opportunities</div>
+</div>
+<button class="opportunity-alert-action" onclick="window.location.href='creator-dashboard.html'">VIEW</button>
+</div>`;
+container.style.display = 'block';
 }
 function showWhyTrending(contentId) {
 const modal = document.getElementById('why-trending-modal');
@@ -2705,7 +2726,7 @@ window.supabaseClient
 .limit(3)
 .then(({ data, error }) => {
 if (error || !data || !data.length) {
-reasonsContainer.innerHTML = '<div style="text-align:center;padding:20px;">No trend data available</div>';
+reasonsContainer.innerHTML = '<div style="text-align:center;padding:20px;">No trend data available for this content yet.</div>';
 } else {
 reasonsContainer.innerHTML = data.map(r => `
 <div class="why-trending-reason">
@@ -2957,14 +2978,18 @@ const communityGems = [...contentData]
 .sort((a, b) => ((b.real_views || 0) + (b.likes_count || 0) * 2) - ((a.real_views || 0) + (a.likes_count || 0) * 2))
 .slice(0, 12);
 const personalized = generatePersonalizedRow(contentData);
-if (shorts.length) {
+// Render shorts section
 const shortsContainer = document.getElementById('shorts-scroll');
 const shortsSection = document.getElementById('shorts-section');
 if (shortsContainer && shortsSection) {
+if (shorts.length) {
 shortsContainer.innerHTML = renderShorts(shorts);
 shortsSection.style.display = 'block';
+} else {
+shortsContainer.innerHTML = '<div style="color:var(--slate-grey);padding:20px;text-align:center;">No shorts available. Upload short-form content to see it here.</div>';
+shortsSection.style.display = 'block';
 }
-} else { document.getElementById('shorts-section')?.style.setProperty('display', 'none'); }
+}
 let html = '';
 if (featured) html += `<section class="section"><div class="section-header"><h2 class="section-title"><i class="fas fa-rocket section-icon"></i>THE PULSE</h2></div>${renderFeatured(featured)}</section>`;
 if (personalized.length) html += `<section class="section"><div class="section-header"><h2 class="section-title"><i class="fas fa-magic section-icon"></i>MADE FOR YOU</h2><button class="see-all-btn" onclick="window.location.href='content-library.html?for-you=true'">SEE ALL</button></div><div class="content-horizontal-scroll">${renderCards(personalized)}</div></section>`;
@@ -2978,24 +3003,18 @@ if (continueItems.length) {
 document.getElementById('continue-watching-container').innerHTML = renderContinueBar(continueItems[0]);
 document.getElementById('continue-watching-container').style.display = 'block';
 }
-// Only show SoundSphere section if there's real data
-if (audioShortsData.length || podcastBitesData.length) {
-document.getElementById('soundsphere-section').style.display = 'block';
+// Render SoundSphere sections (always show, with empty states if no data)
 renderMoodFilters();
 renderAudioShorts();
 renderAudioCards();
 renderPodcastBites();
 renderSoundMap();
 renderSoundDNA();
-}
-// Only show Creator Momentum section if there's real data
-if (creatorMomentumData.length || soundMomentumData.length) {
-document.getElementById('creator-momentum-section').style.display = 'block';
+// Render Creator Momentum sections (always show, with empty states if no data)
 renderRisingCreators();
 renderVelocityCards();
 renderAudiencePulse();
 renderOpportunityAlerts();
-}
 loading.style.display = 'none';
 app.style.display = 'block';
 }
