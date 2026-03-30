@@ -1155,6 +1155,17 @@ Share your content with your community to boost early engagement.
 <div id="toast-container"></div>
 
 <script>
+// Initialize shared Supabase client BEFORE DOMContentLoaded
+if (!window.supabaseClient) {
+    window.supabaseClient = supabase.createClient(
+        'https://ydnxqnbjoshvxteevemc.supabase.co',
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkbnhxbmJqb3Nodnh0ZWV2ZW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MzI0OTMsImV4cCI6MjA3MzIwODQ5M30.NlaCCnLPSz1mM7AFeSlfZQ78kYEKUMh_Fi-7P_ccs_U'
+    );
+    console.log('✅ Global Supabase client initialized');
+}
+</script>
+
+<script>
 // ============================================
 // GENRE-SPECIFIC FORM CONFIGURATION
 // ============================================
@@ -1168,8 +1179,7 @@ const genreConfig = {
             { name: 'release_year', type: 'number', label: 'Release Year', required: true, min: 1900, max: new Date().getFullYear() },
             { name: 'certification', type: 'select', label: 'Certification', required: true, 
               options: ['G', 'PG', 'PG-13', 'R', 'NC-17', 'Not Rated'] },
-            { name: 'production_company', type: 'text', label: 'Production Company', required: false, placeholder: 'e.g., Bantu Studios' },
-            { name: 'runtime', type: 'duration', label: 'Runtime', required: false, note: 'Auto-detected from video' }
+            { name: 'production_company', type: 'text', label: 'Production Company', required: false, placeholder: 'e.g., Bantu Studios' }
         ],
         content_format: 'film',
         requires_chapters: false,
@@ -1329,7 +1339,6 @@ function createTagsInput(field) {
             </span>
         `).join('');
         
-        // Store tags in hidden input or dataset
         container.dataset.tags = JSON.stringify(tags);
     }
     
@@ -1403,14 +1412,6 @@ function createFieldHTML(field) {
                 </div>
             </div>`;
             
-        case 'duration':
-            return `<div class="form-group">
-                <label class="form-label">${field.label} <span class="optional">(Auto-detected)</span></label>
-                <div style="padding:12px;background:rgba(255,255,255,.05);border-radius:8px;color:var(--slate-grey)">
-                    <i class="fas fa-clock"></i> <span id="auto-duration-display">Not detected yet</span>
-                </div>
-            </div>`;
-            
         default:
             return '';
     }
@@ -1431,10 +1432,8 @@ function updateGenreForm() {
         return;
     }
     
-    // Update title
     document.getElementById('dynamic-fields-title').innerHTML = `<i class="fas fa-layer-group"></i> ${config.title}`;
     
-    // Generate fields
     contentDiv.innerHTML = '';
     config.fields.forEach(field => {
         if (field.type === 'tags') {
@@ -1451,14 +1450,12 @@ function updateGenreForm() {
     
     container.classList.add('active');
     
-    // Show/hide mood section
     if (config.requires_mood) {
         moodSection.classList.add('active');
     } else {
         moodSection.classList.remove('active');
     }
     
-    // Show/hide chapters section
     if (config.requires_chapters) {
         chaptersSection.classList.add('active');
         renderChaptersList();
@@ -1466,7 +1463,6 @@ function updateGenreForm() {
         chaptersSection.classList.remove('active');
     }
     
-    // Update checklist
     updateChecklist();
 }
 
@@ -1482,7 +1478,6 @@ function renderChaptersList() {
         </div>
     `).join('');
     
-    // Add event listeners
     container.querySelectorAll('.chapter-time').forEach(input => {
         input.addEventListener('change', (e) => {
             const idx = parseInt(e.target.dataset.index);
@@ -1527,7 +1522,6 @@ function collectContentMetadata() {
         if (!element) return;
         
         if (field.type === 'tags') {
-            // Get tags from container
             const container = element.closest('.tags-input-container') || element.querySelector('.tags-input-container');
             if (container && container.dataset.tags) {
                 metadata[field.name] = JSON.parse(container.dataset.tags);
@@ -1588,7 +1582,6 @@ async function handlePlaylistLinking(contentId, genre, metadata) {
         return null;
     }
     
-    // Check if playlist already exists
     const { data: existingPlaylist } = await window.supabaseClient
         .from('creator_playlists')
         .select('id')
@@ -1600,7 +1593,6 @@ async function handlePlaylistLinking(contentId, genre, metadata) {
     if (existingPlaylist) {
         playlistId = existingPlaylist.id;
     } else {
-        // Create new playlist
         const description = genre === 'Music' 
             ? `Album: ${playlistName} by ${metadata.artist_name || 'Artist'}`
             : `Series: ${playlistName}`;
@@ -1626,7 +1618,6 @@ async function handlePlaylistLinking(contentId, genre, metadata) {
         playlistId = newPlaylist.id;
     }
     
-    // Add to collection_items
     if (playlistId) {
         const position = genre === 'Music' ? (metadata.track_number || 0) : 0;
         
@@ -1663,12 +1654,10 @@ async function createContentRecordWithMetadata(data) {
             chapters: data.chapters || []
         };
         
-        // Add duration if available
         if (data.duration !== null && data.duration !== undefined) {
             insertData.duration = data.duration;
         }
         
-        // Add series/episode fields for series content
         if (data.content_format === 'series_episode') {
             insertData.season_number = data.season_number;
             insertData.episode_number = data.episode_number;
@@ -1728,7 +1717,6 @@ async function uploadContent(isDraft = false) {
         return;
     }
     
-    // Validate shorts duration
     if (selectedMediaType === 'short') {
         if (extractedDuration === null) {
             showToast('Please wait for duration to be extracted', 'error');
@@ -1743,7 +1731,6 @@ async function uploadContent(isDraft = false) {
     isUploading = true;
     updateButtonsState();
     
-    // Reset progress tracking
     uploadStartTime = Date.now();
     lastLoadedBytes = 0;
     lastUpdateTime = Date.now();
@@ -1752,22 +1739,18 @@ async function uploadContent(isDraft = false) {
     document.getElementById('progress-text').textContent = 'Starting upload...';
     
     try {
-        // Collect metadata
         const contentMetadata = collectContentMetadata();
         const moodData = collectMoodData();
         const chaptersData = collectChaptersData();
         const config = genreConfig[genre];
         
-        // Determine media type
         let finalMediaType = selectedMediaFile.type.includes('video') ? 'video' : 'audio';
         if (selectedMediaType === 'short') finalMediaType = 'short';
         
-        // Handle music video toggle
         if (genre === 'Music' && contentMetadata.media_type_toggle === 'Music Video') {
             finalMediaType = 'video';
         }
         
-        // Upload media file
         document.getElementById('progress-text').textContent = 'Uploading media file...';
         const mediaUrl = await uploadFileWithProgress(
             selectedMediaFile,
@@ -1776,7 +1759,6 @@ async function uploadContent(isDraft = false) {
             (loaded, total) => updateUploadProgress(loaded, total)
         );
         
-        // Upload thumbnail
         let thumbnailUrl = null;
         if (selectedThumbnailFile) {
             document.getElementById('progress-text').textContent = 'Uploading thumbnail...';
@@ -1787,7 +1769,6 @@ async function uploadContent(isDraft = false) {
             );
         }
         
-        // Create content record
         document.getElementById('progress-text').textContent = 'Creating content record...';
         
         const contentRecord = await createContentRecordWithMetadata({
@@ -1806,30 +1787,24 @@ async function uploadContent(isDraft = false) {
             episode_number: contentMetadata.episode_number
         });
         
-        // Add mood tags
         if (moodData && contentRecord.id) {
             await addMoodTags(contentRecord.id, moodData);
         }
         
-        // Handle playlist linking for series/album
         if (contentRecord.id && config?.uses_playlist) {
             await handlePlaylistLinking(contentRecord.id, genre, contentMetadata);
         }
         
-        // Complete
         document.getElementById('progress-fill').style.width = '100%';
         document.getElementById('progress-percentage').textContent = '100%';
         document.getElementById('progress-text').textContent = 'Upload complete!';
         
-        // Clear draft
         localStorage.removeItem(`draft_${currentUserId}`);
         
-        // Show processing state
         document.getElementById('upload-form-state').style.display = 'none';
         document.getElementById('processing-state').classList.add('active');
         progressSection.classList.remove('active');
         
-        // Simulate processing
         setTimeout(() => {
             document.getElementById('processing-state').classList.remove('active');
             document.getElementById('success-state').classList.add('active');
@@ -1850,7 +1825,7 @@ async function uploadContent(isDraft = false) {
 }
 
 // ============================================
-// UPLOAD HELPER FUNCTIONS (Keep from original)
+// UPLOAD HELPER FUNCTIONS
 // ============================================
 
 async function uploadFileWithProgress(file, bucket, basePath, onProgress) {
@@ -1919,7 +1894,6 @@ function updateUploadProgress(loaded, total) {
     document.getElementById('progress-fill').style.width = `${percentage}%`;
     document.getElementById('progress-percentage').textContent = `${Math.round(percentage)}%`;
     
-    // Update speed
     const now = Date.now();
     if (uploadStartTime === 0) {
         uploadStartTime = now;
@@ -1970,7 +1944,7 @@ function resetProgress() {
 }
 
 // ============================================
-// MEDIA HANDLING FUNCTIONS (Keep from original)
+// MEDIA HANDLING FUNCTIONS
 // ============================================
 
 function extractMediaDuration(file) {
@@ -2188,7 +2162,6 @@ function updateChecklist() {
     
     let score = 0;
     
-    // Title
     if (title.length > 5) {
         document.getElementById('check-title').classList.add('completed');
         document.getElementById('check-title').innerHTML = '<i class="fas fa-check-circle"></i> Compelling Title';
@@ -2198,7 +2171,6 @@ function updateChecklist() {
         document.getElementById('check-title').innerHTML = '<i class="far fa-circle"></i> Compelling Title';
     }
     
-    // Description
     if (desc.length > 20) {
         document.getElementById('check-desc').classList.add('completed');
         document.getElementById('check-desc').innerHTML = '<i class="fas fa-check-circle"></i> Detailed Description';
@@ -2208,7 +2180,6 @@ function updateChecklist() {
         document.getElementById('check-desc').innerHTML = '<i class="far fa-circle"></i> Detailed Description';
     }
     
-    // Media
     if (selectedMediaFile) {
         document.getElementById('check-media').classList.add('completed');
         document.getElementById('check-media').innerHTML = '<i class="fas fa-check-circle"></i> Media File Uploaded';
@@ -2218,7 +2189,6 @@ function updateChecklist() {
         document.getElementById('check-media').innerHTML = '<i class="far fa-circle"></i> Media File Uploaded';
     }
     
-    // Thumbnail
     if (selectedThumbnailFile) {
         document.getElementById('check-thumb').classList.add('completed');
         document.getElementById('check-thumb').innerHTML = '<i class="fas fa-check-circle"></i> Custom Thumbnail <span style="color:var(--warm-gold);font-size:12px;margin-left:5px">(2x more clicks)</span>';
@@ -2226,10 +2196,9 @@ function updateChecklist() {
     } else {
         document.getElementById('check-thumb').classList.remove('completed');
         document.getElementById('check-thumb').innerHTML = '<i class="far fa-circle"></i> Custom Thumbnail <span style="color:var(--warm-gold);font-size:12px;margin-left:5px">(2x more clicks)</span>';
-        score += 10; // Auto-generated thumbnail still gives partial credit
+        score += 10;
     }
     
-    // Genre
     if (genre) {
         document.getElementById('check-genre').classList.add('completed');
         document.getElementById('check-genre').innerHTML = '<i class="fas fa-check-circle"></i> Genre Selected';
@@ -2239,7 +2208,6 @@ function updateChecklist() {
         document.getElementById('check-genre').innerHTML = '<i class="far fa-circle"></i> Genre Selected';
     }
     
-    // Metadata (genre-specific fields)
     const hasMetadata = config && config.fields.some(field => {
         if (field.required) {
             const element = document.getElementById(`field-${field.name}`);
@@ -2336,7 +2304,6 @@ function loadDraftFromLocalStorage() {
 // ============================================
 
 function setupEventListeners() {
-    // Media type selector
     document.querySelectorAll('.media-type-option').forEach(opt => {
         opt.addEventListener('click', () => {
             document.querySelectorAll('.media-type-option').forEach(o => o.classList.remove('selected'));
@@ -2354,14 +2321,12 @@ function setupEventListeners() {
         });
     });
     
-    // Genre change
     document.getElementById('content-genre').addEventListener('change', () => {
         updateGenreForm();
         updateChecklist();
         saveDraftToLocalStorage();
     });
     
-    // Mood selection
     document.querySelectorAll('.mood-option').forEach(opt => {
         opt.addEventListener('click', () => {
             document.querySelectorAll('.mood-option').forEach(o => o.classList.remove('selected'));
@@ -2371,10 +2336,8 @@ function setupEventListeners() {
         });
     });
     
-    // Add chapter button
     document.getElementById('add-chapter-btn')?.addEventListener('click', addChapter);
     
-    // Input listeners
     ['content-title', 'content-description'].forEach(id => {
         document.getElementById(id).addEventListener('input', () => {
             updateButtonsState();
@@ -2383,7 +2346,6 @@ function setupEventListeners() {
         });
     });
     
-    // Form submission
     document.getElementById('upload-form').addEventListener('submit', (e) => {
         e.preventDefault();
         if (!isUploading) uploadContent(false);
@@ -2393,7 +2355,6 @@ function setupEventListeners() {
         if (!isUploading) uploadContent(true);
     });
     
-    // Media upload zone
     const mediaZone = document.getElementById('media-upload-zone');
     const mediaInput = document.getElementById('media-file-input');
     mediaZone.addEventListener('click', () => mediaInput.click());
@@ -2401,7 +2362,6 @@ function setupEventListeners() {
         if (e.target.files.length) handleMediaFile(e.target.files[0]);
     });
     
-    // Thumbnail upload
     const thumbZone = document.getElementById('thumbnail-upload-zone');
     const thumbInput = document.getElementById('thumbnail-file-input');
     thumbZone.addEventListener('click', () => thumbInput.click());
@@ -2409,7 +2369,6 @@ function setupEventListeners() {
         if (e.target.files.length) handleThumbnailFile(e.target.files[0], false);
     });
     
-    // Auth buttons
     document.getElementById('auth-login-btn').addEventListener('click', () => {
         window.location.href = `login.html?redirect=${encodeURIComponent('creator-upload.html')}`;
     });
@@ -2417,7 +2376,6 @@ function setupEventListeners() {
         document.getElementById('auth-modal').classList.remove('active');
     });
     
-    // Navigation
     document.getElementById('back-btn').addEventListener('click', () => window.history.back());
     document.getElementById('profile-btn').addEventListener('click', () => {
         window.location.href = currentUserId ? 'profile.html' : `login.html?redirect=${encodeURIComponent('creator-upload.html')}`;
@@ -2459,7 +2417,6 @@ async function initialize() {
     setupAuth();
     setupEventListeners();
     
-    // Initialize default state
     updateGenreForm();
     updateButtonsState();
     updateChecklist();
@@ -2469,7 +2426,6 @@ async function initialize() {
     console.log('✅ Creator Upload initialized');
 }
 
-// Global functions for inline handlers
 window.removeMediaFile = function() {
     selectedMediaFile = null;
     extractedDuration = null;
@@ -2547,7 +2503,6 @@ function triggerConfetti() {
     }
 }
 
-// Start the app
 initialize();
 </script>
 </body>
