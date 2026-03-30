@@ -1813,7 +1813,7 @@ let contentOffset = 0;
 let hasMoreContent = true;
 let notifications = [];
 let trendingChart = null;
-// SoundSphere State
+// SoundSphere State - REAL DATA ONLY
 let audioShortsData = [];
 let podcastBitesData = [];
 let creatorMomentumData = [];
@@ -1823,7 +1823,7 @@ let isPlaying = false;
 let selectedMood = 'all';
 // Filter options
 const filters = ['All', 'Music', 'Film & Series', 'Podcasts', 'Gaming', 'Comedy', 'Live', 'Top 24 Hrs', 'Rising Creators'];
-// Mood filters
+// Mood filters (UI only - actual filtering happens on real data)
 const moodFilters = [
 { id: 'all', label: 'All', emoji: '🎵' },
 { id: 'hype', label: 'Hype', emoji: '🔥' },
@@ -1834,7 +1834,7 @@ const moodFilters = [
 { id: 'african-stories', label: 'African Stories', emoji: '🌍' },
 { id: 'late-night', label: 'Late Night Vibes', emoji: '💤' }
 ];
-// SoundMap regions
+// SoundMap regions (static UI - actual data filtering happens separately)
 const soundMapRegions = [
 { code: 'ZA', flag: '🇿🇦', country: 'South Africa', genre: 'Amapiano' },
 { code: 'NG', flag: '🇳🇬', country: 'Nigeria', genre: 'Afrobeats' },
@@ -1895,12 +1895,8 @@ div.textContent = text;
 return div.innerHTML;
 }
 function buildThumbnailUrl(thumbnailPath) {
-const fallbackImages = [
-'https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=400&h=225&fit=crop',
-'https://images.unsplash.com/photo-1574375927938-d5a98e8ffe85?w=400&h=225&fit=crop',
-'https://images.unsplash.com/photo-1585829365295-ab7cd400c167?w=400&h=225&fit=crop'
-];
-if (!thumbnailPath || thumbnailPath.trim() === '') return fallbackImages[0];
+const fallbackImage = 'https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=400&h=225&fit=crop';
+if (!thumbnailPath || thumbnailPath.trim() === '') return fallbackImage;
 if (thumbnailPath.startsWith('http')) return thumbnailPath;
 const cleanPath = thumbnailPath.replace(/^\/+/, '');
 return `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/${cleanPath}`;
@@ -2258,7 +2254,7 @@ window.location.href = `content-detail.html?id=${el.dataset.id}`;
 }
 
 // ============================================
-// FETCH CONTENT
+// FETCH CONTENT - REAL DATA ONLY
 // ============================================
 async function fetchContent(offset = 0, limit = 50) {
 try {
@@ -2269,13 +2265,8 @@ const { data, error } = await window.supabaseClient
 .order('created_at', { ascending: false })
 .range(offset, offset + limit - 1);
 if (error) {
-const { data: fallbackData } = await window.supabaseClient
-.from('content')
-.select('*, user_profiles!user_id(*)')
-.eq('status', 'published')
-.order('created_at', { ascending: false })
-.range(offset, offset + limit - 1);
-return await enrichWithViewCounts(fallbackData || []);
+console.error('Error fetching from Content:', error);
+return [];
 }
 return await enrichWithViewCounts(data || []);
 } catch (error) {
@@ -2286,13 +2277,17 @@ return [];
 async function enrichWithViewCounts(contentArray) {
 const enriched = [];
 for (const item of contentArray) {
+let viewsCount = item.views_count || 0;
+if (!viewsCount) {
 const { count } = await window.supabaseClient
 .from('content_views')
 .select('*', { count: 'exact', head: true })
 .eq('content_id', item.id);
+viewsCount = count || 0;
+}
 enriched.push({
 ...item,
-real_views: count || 0,
+real_views: viewsCount,
 is_new: isContentNew(item.created_at),
 duration: item.duration || 0,
 is_live: item.is_live || false
@@ -2302,72 +2297,87 @@ return enriched;
 }
 
 // ============================================
-// FETCH SOUNDSPHERE DATA - ROBUST VERSION
+// FETCH SOUNDSPHERE DATA - REAL DATA ONLY, NO MOCKS
 // ============================================
 async function fetchSoundSphereData() {
 try {
-console.log('Fetching SoundSphere data...');
-// Fetch audio content (Music & Podcasts)
-const { data: audioContent } = await window.supabaseClient
+console.log('Fetching SoundSphere real data...');
+// Fetch audio content from Content table
+const { data: audioContent, error: audioError } = await window.supabaseClient
 .from('Content')
 .select('*, user_profiles!user_id(*)')
 .eq('status', 'published')
 .in('genre', ['Music', 'Podcasts', 'Shorts'])
 .order('created_at', { ascending: false })
 .limit(50);
-// Fetch creator momentum
-const { data: creatorData } = await window.supabaseClient
+if (audioError) {
+console.error('Error fetching audio content:', audioError);
+audioShortsData = [];
+podcastBitesData = [];
+soundMomentumData = [];
+} else {
+const processed = await Promise.all((audioContent || []).map(async (item) => {
+let viewsCount = item.views_count || 0;
+if (!viewsCount) {
+const { count } = await window.supabaseClient
+.from('content_views')
+.select('*', { count: 'exact', head: true })
+.eq('content_id', item.id);
+viewsCount = count || 0;
+}
+let momentumScore = item.momentum_score || 0;
+let velocityScore = item.velocity_score || 0;
+if (!momentumScore && item.id) {
+const { data: metrics } = await window.supabaseClient
+.from('content_metrics_realtime')
+.select('momentum_score, velocity_score, trend_label')
+.eq('content_id', item.id)
+.maybeSingle();
+if (metrics) {
+momentumScore = metrics.momentum_score || 0;
+velocityScore = metrics.velocity_score || 0;
+}
+}
+return {
+...item,
+real_views: viewsCount,
+duration: item.duration || (item.genre === 'Podcasts' ? 900 : 180),
+momentum_score: momentumScore,
+velocity_score: velocityScore,
+creator_username: item.user_profiles?.username || item.creator_username || 'Creator'
+};
+}));
+// Audio Shorts: duration < 60 seconds OR genre 'Shorts'
+audioShortsData = processed.filter(item => (item.duration && item.duration < 60) || item.genre === 'Shorts');
+// Podcast Bites: genre 'Podcasts'
+podcastBitesData = processed.filter(item => item.genre === 'Podcasts');
+// Trending Sounds: sorted by momentum_score if available, otherwise by views
+soundMomentumData = [...processed].sort((a, b) => {
+if (a.momentum_score !== b.momentum_score) return (b.momentum_score || 0) - (a.momentum_score || 0);
+return (b.real_views || 0) - (a.real_views || 0);
+}).slice(0, 15);
+}
+// Fetch creator momentum data
+const { data: creatorData, error: creatorError } = await window.supabaseClient
 .from('creator_momentum')
 .select('*, user_profiles!creator_id(*)')
 .order('momentum_score', { ascending: false })
 .limit(10);
-// Fetch velocity content with metrics
-const { data: velocityContent } = await window.supabaseClient
-.from('Content')
-.select('*, user_profiles!user_id(*)')
-.eq('status', 'published')
-.order('created_at', { ascending: false })
-.limit(20);
-const processedAudio = (audioContent || []).map(item => ({
-...item,
-duration: item.duration || (item.genre === 'Podcasts' ? 900 : 180),
-real_views: item.views_count || Math.floor(Math.random() * 5000) + 500,
-momentum_score: item.momentum_score || Math.floor(Math.random() * 100),
-velocity_score: item.velocity_score || Math.floor(Math.random() * 50),
-trend_label: item.trend_label || (Math.random() > 0.7 ? 'Trending' : 'Stable'),
-creator_username: item.user_profiles?.username || 'Creator',
-creator_avatar: item.user_profiles?.avatar_url
-}));
-// Audio Shorts: duration < 60 OR genre Shorts
-audioShortsData = processedAudio.filter(item => (item.duration && item.duration < 60) || item.genre === 'Shorts');
-if (audioShortsData.length === 0 && processedAudio.length) {
-audioShortsData = processedAudio.filter(item => item.genre === 'Music').slice(0, 8);
-}
-// Podcast Bites
-podcastBitesData = processedAudio.filter(item => item.genre === 'Podcasts');
-if (podcastBitesData.length === 0 && processedAudio.length) {
-podcastBitesData = processedAudio.slice(0, 6).map(item => ({ ...item, genre: 'Podcasts' }));
-}
-// Sound Momentum (trending sounds)
-soundMomentumData = [...processedAudio].sort((a, b) => (b.momentum_score || 0) - (a.momentum_score || 0)).slice(0, 15);
-// Creator Momentum
+if (creatorError) {
+console.error('Error fetching creator momentum:', creatorError);
+creatorMomentumData = [];
+} else {
 creatorMomentumData = creatorData || [];
-if (creatorMomentumData.length === 0) {
-creatorMomentumData = [
-{ id: 'sample1', user_profiles: { id: 'c1', username: 'AmapianoKing', full_name: 'DJ Maphorisa' }, total_views_24h: 50000, growth_rate: 45, momentum_score: 850 },
-{ id: 'sample2', user_profiles: { id: 'c2', username: 'AfroBeatsQueen', full_name: 'Tems' }, total_views_24h: 42000, growth_rate: 38, momentum_score: 720 },
-{ id: 'sample3', user_profiles: { id: 'c3', username: 'PodcastMaster', full_name: 'The Podfather' }, total_views_24h: 28000, growth_rate: 52, momentum_score: 680 }
-];
 }
 return { audioShortsData, podcastBitesData, creatorMomentumData, soundMomentumData };
 } catch (error) {
-console.error('Error fetching SoundSphere data:', error);
+console.error('Error in fetchSoundSphereData:', error);
 return { audioShortsData: [], podcastBitesData: [], creatorMomentumData: [], soundMomentumData: [] };
 }
 }
 
 // ============================================
-// RENDER SOUNDSPHERE
+// RENDER SOUNDSPHERE - REAL DATA ONLY
 // ============================================
 function renderMoodFilters() {
 const container = document.getElementById('mood-filter-container');
@@ -2388,12 +2398,13 @@ showToast(`Filtering by ${moodFilters.find(m => m.id === selectedMood)?.label}`,
 function renderAudioShorts() {
 const container = document.getElementById('audio-shorts-scroll');
 if (!container) return;
-const filtered = selectedMood === 'all' ? audioShortsData : audioShortsData.slice(0, 10);
-if (!filtered.length) {
+// Note: Mood filtering would require a 'mood' field in your database
+// Currently just displaying all audio shorts
+if (!audioShortsData.length) {
 container.innerHTML = '<div style="color:var(--slate-grey);padding:20px;">No audio shorts available</div>';
 return;
 }
-container.innerHTML = filtered.slice(0, 12).map(item => {
+container.innerHTML = audioShortsData.slice(0, 12).map(item => {
 const thumbnailUrl = buildThumbnailUrl(item.thumbnail_url);
 const creatorName = item.creator_username || 'Creator';
 const waveformBars = Array.from({length: 20}, (_, i) => 
@@ -2403,7 +2414,7 @@ return `
 <div class="audio-shorts-card" onclick="playAudioTrack('${item.id}', '${escapeHtml(item.title || 'Untitled')}', '${escapeHtml(creatorName)}', '${thumbnailUrl}')">
 <div class="audio-shorts-thumbnail">
 <img src="${thumbnailUrl}" loading="lazy">
-<div class="trending-sound-badge">🔥 TRENDING</div>
+${item.momentum_score > 50 ? '<div class="trending-sound-badge">🔥 TRENDING</div>' : ''}
 <div class="creator-voice-tag">🎤 VOICE</div>
 <div class="audio-shorts-overlay">
 <div class="audio-waveform">${waveformBars}</div>
@@ -2417,15 +2428,13 @@ return `
 function renderAudioCards() {
 const container = document.getElementById('audio-cards-scroll');
 if (!container) return;
-const items = soundMomentumData.slice(0, 10);
-if (!items.length) {
-container.innerHTML = '<div style="color:var(--slate-grey);padding:20px;">No trending sounds</div>';
+if (!soundMomentumData.length) {
+container.innerHTML = '<div style="color:var(--slate-grey);padding:20px;">No trending sounds available</div>';
 return;
 }
-container.innerHTML = items.map(item => {
+container.innerHTML = soundMomentumData.slice(0, 10).map(item => {
 const thumbnailUrl = buildThumbnailUrl(item.thumbnail_url);
-const velocity = item.velocity_score || 0;
-const trendLabel = item.trend_label || 'Stable';
+const trendLabel = item.momentum_score > 60 ? 'Trending' : (item.momentum_score > 30 ? 'Rising' : 'Stable');
 return `
 <div class="audio-card" onclick="playAudioTrack('${item.id}', '${escapeHtml(item.title || 'Untitled')}', '${escapeHtml(item.creator_username || 'Creator')}', '${thumbnailUrl}')">
 <div class="audio-card-thumbnail">
@@ -2454,7 +2463,6 @@ return;
 }
 container.innerHTML = podcastBitesData.slice(0, 8).map(item => {
 const thumbnailUrl = buildThumbnailUrl(item.thumbnail_url);
-const keywords = ['Trending', 'Viral', 'Must Hear'].slice(0, 3);
 return `
 <div class="podcast-bite-card" onclick="playAudioTrack('${item.id}', '${escapeHtml(item.title || 'Podcast')}', '${escapeHtml(item.creator_username || 'Creator')}', '${thumbnailUrl}')">
 <div class="podcast-bite-thumbnail">
@@ -2462,9 +2470,9 @@ return `
 </div>
 <div class="podcast-bite-content">
 <div class="podcast-bite-title">${escapeHtml(item.title || 'Podcast Episode')}</div>
-<div class="podcast-bite-caption">The moment everyone is talking about...</div>
+<div class="podcast-bite-caption">${escapeHtml(item.description || 'Listen to this episode')}</div>
 <div class="podcast-bite-keywords">
-${keywords.map(k => `<span class="keyword-tag">${k}</span>`).join('')}
+${(item.tags || ['Podcast']).slice(0, 3).map(t => `<span class="keyword-tag">${escapeHtml(t)}</span>`).join('')}
 </div>
 <button class="jump-to-episode" onclick="event.stopPropagation();window.location.href='content-detail.html?id=${item.id}'">Jump to Full Episode →</button>
 </div>
@@ -2487,17 +2495,17 @@ function renderSoundDNA() {
 const container = document.getElementById('sound-dna-container');
 const grid = document.getElementById('sound-dna-grid');
 if (!container || !grid) return;
-const dnaItems = [
-{ icon: '🎵', label: 'Top Genre: Amapiano' },
-{ icon: '🌍', label: 'Region: South Africa' },
-{ icon: '⏰', label: 'Peak Time: Evening' },
-{ icon: '🎤', label: 'Favorite: Podcasts' }
-];
-grid.innerHTML = dnaItems.map(dna => `
+// This would normally come from user listening history
+// For now, show placeholder that will be populated when user has history
+grid.innerHTML = `
 <div class="sound-dna-item">
-<div class="sound-dna-icon">${dna.icon}</div>
-<div class="sound-dna-label">${dna.label}</div>
-</div>`).join('');
+<div class="sound-dna-icon">🎵</div>
+<div class="sound-dna-label">Your taste profile will appear here</div>
+</div>
+<div class="sound-dna-item">
+<div class="sound-dna-icon">📊</div>
+<div class="sound-dna-label">Based on your listening</div>
+</div>`;
 container.style.display = 'block';
 }
 function filterByRegion(code) {
@@ -2520,22 +2528,18 @@ return;
 if (globalAudio.src && !globalAudio.paused) {
 globalAudio.pause();
 }
-// Try to get audio URL from content
 window.supabaseClient
 .from('Content')
 .select('file_url')
 .eq('id', id)
 .single()
 .then(({ data, error }) => {
-let audioUrl = '';
 if (error || !data || !data.file_url) {
-// Fallback: use a demo audio stream for demonstration
-audioUrl = 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3';
-showToast('Demo audio: full audio will be available soon', 'info');
-} else {
-audioUrl = data.file_url.startsWith('http') ? data.file_url : 
-`https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/${data.file_url.replace(/^\/+/, '')}`;
+showToast('No audio file available for this content', 'error');
+return;
 }
+const audioUrl = data.file_url.startsWith('http') ? data.file_url : 
+`https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/${data.file_url.replace(/^\/+/, '')}`;
 globalAudio.src = audioUrl;
 globalAudio.play().catch(e => {
 console.error('Playback failed:', e);
@@ -2590,13 +2594,13 @@ function playPreviousTrack() { showToast('Previous track (feature coming soon)',
 function playNextTrack() { showToast('Next track (feature coming soon)', 'info'); }
 
 // ============================================
-// RENDER CREATOR MOMENTUM
+// RENDER CREATOR MOMENTUM - REAL DATA ONLY
 // ============================================
 function renderRisingCreators() {
 const container = document.getElementById('rising-creators-scroll');
 if (!container) return;
 if (!creatorMomentumData.length) {
-container.innerHTML = '<div style="color:var(--slate-grey);padding:20px;">No rising creators data</div>';
+container.innerHTML = '<div style="color:var(--slate-grey);padding:20px;">No rising creators data available</div>';
 return;
 }
 container.innerHTML = creatorMomentumData.slice(0, 10).map(creator => {
@@ -2622,7 +2626,7 @@ return `
 <div class="rising-creator-metric-label">Engagement</div>
 </div>
 <div class="rising-creator-metric">
-<div class="rising-creator-metric-value" style="color:var(--success-color)">+${growthRate.toFixed(1)}%</div>
+<div class="rising-creator-metric-value" style="color:var(--success-color)">${growthRate > 0 ? '+' : ''}${growthRate.toFixed(1)}%</div>
 <div class="rising-creator-metric-label">Growth</div>
 </div>
 </div>
@@ -2638,7 +2642,7 @@ function renderVelocityCards() {
 const container = document.getElementById('velocity-cards-scroll');
 if (!container) return;
 if (!soundMomentumData.length) {
-container.innerHTML = '<div style="color:var(--slate-grey);padding:20px;">No velocity data</div>';
+container.innerHTML = '<div style="color:var(--slate-grey);padding:20px;">No velocity data available</div>';
 return;
 }
 container.innerHTML = soundMomentumData.slice(0, 10).map(item => {
@@ -2646,7 +2650,6 @@ const thumbnailUrl = buildThumbnailUrl(item.thumbnail_url);
 const velocity = item.velocity_score || 0;
 const velocityPercent = Math.min(100, velocity / 5);
 const trendStage = velocity > 40 ? 'rising' : (velocity > 20 ? 'new' : 'stable');
-const trendLabel = item.trend_label || (velocity > 40 ? 'Trending' : 'Stable');
 return `
 <div class="velocity-card" onclick="showWhyTrending('${item.id}')">
 <div class="velocity-card-thumbnail">
@@ -2655,14 +2658,14 @@ return `
 <div class="velocity-bar-container">
 <div class="velocity-bar-fill" style="width:${velocityPercent}%"></div>
 </div>
-<div class="velocity-label">${trendLabel}</div>
+<div class="velocity-label">${item.momentum_score > 50 ? 'Trending' : 'Stable'}</div>
 </div>
 <div class="trend-lifecycle-badge ${trendStage}">${trendStage.toUpperCase()}</div>
 </div>
 <div class="velocity-card-content">
 <div class="velocity-card-title">${escapeHtml(item.title || 'Untitled')}</div>
 <div class="velocity-card-stats">
-<span><i class="fas fa-eye"></i> ${formatNumber(item.real_views || 0)}/hr</span>
+<span><i class="fas fa-eye"></i> ${formatNumber(item.real_views || 0)}</span>
 <span><i class="fas fa-chart-line"></i> ${velocity.toFixed(0)}</span>
 </div>
 <div class="remix-respond-container">
@@ -2678,70 +2681,47 @@ const container = document.getElementById('audience-pulse-container');
 const fill = document.getElementById('audience-pulse-fill');
 const stats = document.getElementById('audience-pulse-stats');
 if (!container || !fill || !stats) return;
-const pulseLevel = Math.floor(Math.random() * 100);
-fill.style.width = `${pulseLevel}%`;
-stats.innerHTML = `
-<div class="audience-pulse-stat">
-<div class="audience-pulse-stat-value">${formatNumber(Math.floor(Math.random() * 10000))}</div>
-<div class="audience-pulse-stat-label">Active Now</div>
-</div>
-<div class="audience-pulse-stat">
-<div class="audience-pulse-stat-value">${(Math.random() * 10 + 5).toFixed(1)}min</div>
-<div class="audience-pulse-stat-label">Avg Watch Time</div>
-</div>
-<div class="audience-pulse-stat">
-<div class="audience-pulse-stat-value">${(Math.random() * 8 + 2).toFixed(1)}%</div>
-<div class="audience-pulse-stat-label">Engagement Rate</div>
-</div>
-`;
-container.style.display = 'block';
+// Real audience pulse would come from analytics
+// For now, hide if no data
+container.style.display = 'none';
 }
 function renderOpportunityAlerts() {
 const container = document.getElementById('opportunity-alerts-container');
 const list = document.getElementById('opportunity-alerts-list');
 if (!container || !list) return;
-const alerts = [
-{ title: 'Post Now', description: 'Your audience is most active right now', icon: 'fa-clock' },
-{ title: 'Trending Topic', description: '#Amapiano is trending in your niche', icon: 'fa-fire' },
-{ title: 'Collaboration', description: '3 creators want to collaborate with you', icon: 'fa-users' }
-];
-list.innerHTML = alerts.map(alert => `
-<div class="opportunity-alert">
-<div class="opportunity-alert-icon"><i class="fas ${alert.icon}"></i></div>
-<div class="opportunity-alert-info">
-<div class="opportunity-alert-title">${escapeHtml(alert.title)}</div>
-<div class="opportunity-alert-desc">${escapeHtml(alert.description)}</div>
-</div>
-<button class="opportunity-alert-action" onclick="handleOpportunityAction('${alert.title}')">ACT</button>
-</div>`).join('');
-container.style.display = 'block';
-}
-function handleOpportunityAction(alertId) {
-showToast('Action taken! Redirecting to create...', 'success');
-setTimeout(() => { window.location.href = 'creator-upload.html'; }, 1000);
+// Real opportunity alerts would come from database
+container.style.display = 'none';
 }
 function showWhyTrending(contentId) {
 const modal = document.getElementById('why-trending-modal');
 const reasonsContainer = document.getElementById('why-trending-reasons');
 if (!modal || !reasonsContainer) return;
-const reasons = [
-{ icon: 'fa-clock', title: 'High Watch Time', desc: '85% average completion rate', value: '85%' },
-{ icon: 'fa-share', title: 'Viral Shares', desc: 'Shares increasing 300% in 24h', value: '+300%' },
-{ icon: 'fa-comment', title: 'Engagement Spike', desc: 'Comments up 250% from baseline', value: '+250%' }
-];
-reasonsContainer.innerHTML = reasons.map(r => `
+// Fetch real trending reasons from database
+window.supabaseClient
+.from('trend_explanations')
+.select('*')
+.eq('content_id', contentId)
+.order('created_at', { ascending: false })
+.limit(3)
+.then(({ data, error }) => {
+if (error || !data || !data.length) {
+reasonsContainer.innerHTML = '<div style="text-align:center;padding:20px;">No trend data available</div>';
+} else {
+reasonsContainer.innerHTML = data.map(r => `
 <div class="why-trending-reason">
-<div class="why-trending-icon"><i class="fas ${r.icon}"></i></div>
+<div class="why-trending-icon"><i class="fas fa-chart-line"></i></div>
 <div class="why-trending-info">
-<div class="why-trending-reason-title">${escapeHtml(r.title)}</div>
-<div class="why-trending-reason-desc">${escapeHtml(r.desc)}</div>
+<div class="why-trending-reason-title">${escapeHtml(r.metric_type || 'Trending')}</div>
+<div class="why-trending-reason-desc">${escapeHtml(r.reason || 'High engagement spike')}</div>
 </div>
 <div class="why-trending-metric">
-<div class="why-trending-metric-value">${escapeHtml(r.value)}</div>
+<div class="why-trending-metric-value">${escapeHtml(String(r.metric_value || 'N/A'))}</div>
 <div class="why-trending-metric-label">Impact</div>
 </div>
 </div>`).join('');
+}
 modal.classList.add('active');
+});
 }
 
 // ============================================
@@ -2998,6 +2978,7 @@ if (continueItems.length) {
 document.getElementById('continue-watching-container').innerHTML = renderContinueBar(continueItems[0]);
 document.getElementById('continue-watching-container').style.display = 'block';
 }
+// Only show SoundSphere section if there's real data
 if (audioShortsData.length || podcastBitesData.length) {
 document.getElementById('soundsphere-section').style.display = 'block';
 renderMoodFilters();
@@ -3007,6 +2988,7 @@ renderPodcastBites();
 renderSoundMap();
 renderSoundDNA();
 }
+// Only show Creator Momentum section if there's real data
 if (creatorMomentumData.length || soundMomentumData.length) {
 document.getElementById('creator-momentum-section').style.display = 'block';
 renderRisingCreators();
@@ -3038,7 +3020,7 @@ return !!currentUser;
 // INITIALIZATION
 // ============================================
 async function init() {
-console.log('🔥 Trending Screen Initializing with full features...');
+console.log('🔥 Trending Screen Initializing with real data only...');
 setupSidebar();
 initThemeSelector();
 setupNavigation();
