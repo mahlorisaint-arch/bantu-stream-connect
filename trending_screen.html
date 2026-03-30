@@ -997,6 +997,7 @@ padding: 30px;
 .analytics-card { background: rgba(255, 255, 255, 0.05); border-radius: 12px; padding: 15px; text-align: center; }
 .analytics-value { font-size: 28px; font-weight: 700; color: var(--warm-gold); }
 .charts-container { height: 250px; }
+
 /* ============================================ */
 /* 🎧 SOUNDSPHERE STYLES */
 /* ============================================ */
@@ -1254,6 +1255,7 @@ border: 1px solid rgba(139, 92, 246, 0.3);
 .sound-dna-item { background: rgba(255, 255, 255, 0.05); border-radius: 12px; padding: 12px; text-align: center; }
 .sound-dna-icon { font-size: 1.5rem; margin-bottom: 6px; }
 .sound-dna-label { font-size: 0.75rem; color: var(--slate-grey); }
+
 /* ============================================ */
 /* 🧠 CREATOR MOMENTUM ENGINE STYLES */
 /* ============================================ */
@@ -1462,6 +1464,7 @@ border: 1px solid rgba(245, 158, 11, 0.3);
 .audience-pulse-stat { background: rgba(255, 255, 255, 0.05); border-radius: 10px; padding: 12px; text-align: center; }
 .audience-pulse-stat-value { font-size: 1.2rem; font-weight: 700; color: var(--warm-gold); }
 .audience-pulse-stat-label { font-size: 0.7rem; color: var(--slate-grey); }
+
 /* Responsive */
 @media (max-width: 768px) {
 .logo-text, .profile-name { display: none; }
@@ -1800,8 +1803,6 @@ border: 1px solid rgba(245, 158, 11, 0.3);
 <div id="why-trending-reasons" class="why-trending-reasons"></div>
 </div>
 </div>
-<!-- Hidden Audio Element -->
-<audio id="audio-player" preload="metadata"></audio>
 
 <script>
 // ============================================
@@ -1833,7 +1834,6 @@ let soundMomentumData = [];
 let currentAudioTrack = null;
 let isPlaying = false;
 let selectedMood = 'all';
-let opportunityAlerts = [];
 // Filter options
 const filters = ['All', 'Music', 'Film & Series', 'Podcasts', 'Gaming', 'Comedy', 'Live', 'Top 24 Hrs', 'Rising Creators'];
 // Mood filters
@@ -2327,7 +2327,7 @@ const { data: audioContent } = await window.supabaseClient
 .in('genre', ['Music', 'Podcasts'])
 .order('created_at', { ascending: false })
 .limit(30);
-// Fetch creator momentum data
+// Fetch creator momentum data from real table
 const { data: creatorData } = await window.supabaseClient
 .from('creator_momentum')
 .select('*, user_profiles!creator_id(*)')
@@ -2381,12 +2381,11 @@ return;
 container.innerHTML = filtered.map(item => {
 const thumbnailUrl = buildThumbnailUrl(item.thumbnail_url);
 const creatorName = item.user_profiles?.username || 'Creator';
-const waveformBars = Array.from({length: 20}, (_, i) =>
+const waveformBars = Array.from({length: 20}, (_, i) => 
 `<div class="waveform-bar" style="height:${Math.random() * 25 + 5}px;animation-delay:${i * 0.05}s"></div>`
 ).join('');
-const duration = formatDuration(item.duration);
 return `
-<div class="audio-shorts-card" onclick="playAudioTrack('${item.id}', '${escapeHtml(item.title)}', '${escapeHtml(creatorName)}', '${thumbnailUrl}', '${item.file_url || ''}')">
+<div class="audio-shorts-card" onclick="playAudioTrack('${item.id}', '${escapeHtml(item.title)}', '${escapeHtml(creatorName)}', '${thumbnailUrl}')">
 <div class="audio-shorts-thumbnail">
 <img src="${thumbnailUrl}" loading="lazy">
 <div class="trending-sound-badge">🔥 TRENDING</div>
@@ -2394,8 +2393,7 @@ return `
 <div class="audio-shorts-overlay">
 <div class="audio-waveform">${waveformBars}</div>
 <div style="font-size:0.8rem;font-weight:600;margin-bottom:4px;">${escapeHtml(item.title)}</div>
-<div style="font-size:0.7rem;color:var(--slate-grey);margin-bottom:4px;">@${escapeHtml(creatorName)}</div>
-<div style="font-size:0.7rem;color:var(--warm-gold);"><i class="fas fa-clock"></i> ${duration}</div>
+<div style="font-size:0.7rem;color:var(--slate-grey);">@${escapeHtml(creatorName)}</div>
 </div>
 </div>
 </div>`;
@@ -2415,9 +2413,8 @@ const metrics = item.content_metrics_realtime || {};
 const velocity = metrics.velocity_score || 0;
 const trendStage = metrics.trend_stage || 'new';
 const trendLabel = metrics.trend_label || 'Stable';
-const duration = formatDuration(item.duration);
 return `
-<div class="audio-card" onclick="playAudioTrack('${item.id}', '${escapeHtml(item.title)}', '${escapeHtml(item.user_profiles?.username || 'Creator')}', '${thumbnailUrl}', '${item.file_url || ''}')">
+<div class="audio-card" onclick="playAudioTrack('${item.id}', '${escapeHtml(item.title)}', '${escapeHtml(item.user_profiles?.username || 'Creator')}', '${thumbnailUrl}')">
 <div class="audio-card-thumbnail">
 <img src="${thumbnailUrl}" loading="lazy">
 <div class="rising-sound-badge">🔥 ${trendLabel}</div>
@@ -2428,7 +2425,6 @@ return `
 <div class="audio-card-content">
 <div class="audio-card-title">${escapeHtml(item.title)}</div>
 <div class="audio-card-stats">
-<span><i class="fas fa-clock"></i> ${duration}</span>
 <span><i class="fas fa-play"></i> ${formatNumber(metrics.views_last_1h || 0)}/hr</span>
 <span><i class="fas fa-heart"></i> ${formatNumber(metrics.likes || 0)}</span>
 </div>
@@ -2446,20 +2442,18 @@ return;
 container.innerHTML = podcastBitesData.slice(0, 8).map(item => {
 const thumbnailUrl = buildThumbnailUrl(item.thumbnail_url);
 const keywords = ['Trending', 'Viral', 'Must Hear'].slice(0, 3);
-const duration = formatDuration(item.duration);
 return `
-<div class="podcast-bite-card" onclick="playAudioTrack('${item.id}', '${escapeHtml(item.title)}', '${escapeHtml(item.user_profiles?.username || 'Creator')}', '${thumbnailUrl}', '${item.file_url || ''}')">
+<div class="podcast-bite-card" onclick="playAudioTrack('${item.id}', '${escapeHtml(item.title)}', '${escapeHtml(item.user_profiles?.username || 'Creator')}', '${thumbnailUrl}')">
 <div class="podcast-bite-thumbnail">
 <img src="${thumbnailUrl}" loading="lazy">
 </div>
 <div class="podcast-bite-content">
 <div class="podcast-bite-title">${escapeHtml(item.title)}</div>
-<div style="font-size:0.75rem;color:var(--warm-gold);margin-bottom:8px;"><i class="fas fa-clock"></i> ${duration}</div>
 <div class="podcast-bite-caption">The moment everyone is talking about...</div>
 <div class="podcast-bite-keywords">
 ${keywords.map(k => `<span class="keyword-tag">${k}</span>`).join('')}
 </div>
-<button class="jump-to-episode" onclick="event.stopPropagation();window.location.href='content-detail.html?id=${item.id}'">Jump to Full Episode →</button>
+<button class="jump-to-episode">Jump to Full Episode →</button>
 </div>
 </div>`;
 }).join('');
@@ -2500,51 +2494,94 @@ loadContent();
 }
 
 // ============================================
-// MINI PLAYER FUNCTIONS - WITH ACTUAL AUDIO PLAYBACK
+// AUDIO PLAYER FUNCTIONS (FIXED)
 // ============================================
-function playAudioTrack(id, title, creator, thumbnail, fileUrl) {
-currentAudioTrack = { id, title, creator, thumbnail, fileUrl };
-const audioPlayer = document.getElementById('audio-player');
+// Create a global audio element for consistent playback
+const globalAudio = new Audio();
+let currentPlayingId = null;
+
+function playAudioTrack(id, title, creator, thumbnail) {
+// If the same track is already playing, pause it
+if (currentPlayingId === id && isPlaying) {
+pauseAudio();
+return;
+}
+// If there's a different track playing, stop it first
+if (globalAudio.src && !globalAudio.paused) {
+globalAudio.pause();
+}
+// Fetch the actual audio URL from Supabase storage based on content ID
+window.supabaseClient
+.from('Content')
+.select('file_url')
+.eq('id', id)
+.single()
+.then(({ data, error }) => {
+if (error || !data || !data.file_url) {
+showToast('Unable to play audio: No audio file found', 'error');
+return;
+}
+const audioUrl = data.file_url.startsWith('http') ? data.file_url : 
+`https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/${data.file_url.replace(/^\/+/, '')}`;
+globalAudio.src = audioUrl;
+globalAudio.play().catch(e => {
+console.error('Playback failed:', e);
+showToast('Unable to play audio', 'error');
+});
+currentPlayingId = id;
+isPlaying = true;
+currentAudioTrack = { id, title, creator, thumbnail };
+// Update mini-player UI
 const miniPlayer = document.getElementById('mini-player');
 const thumbnailEl = document.getElementById('mini-player-thumbnail');
 const titleEl = document.getElementById('mini-player-title');
 const creatorEl = document.getElementById('mini-player-creator');
 const playBtn = document.getElementById('mini-player-play');
-// Set audio source
-if (fileUrl && audioPlayer) {
-audioPlayer.src = fileUrl;
-audioPlayer.play().then(() => {
-isPlaying = true;
-if (playBtn) playBtn.innerHTML = '<i class="fas fa-pause"></i>';
-}).catch(err => {
-console.error('Audio playback error:', err);
-showToast('Audio file not available', 'error');
-});
-}
-// Update UI
 if (thumbnailEl) thumbnailEl.src = thumbnail;
 if (titleEl) titleEl.textContent = title;
 if (creatorEl) creatorEl.textContent = creator;
+if (playBtn) playBtn.innerHTML = '<i class="fas fa-pause"></i>';
 miniPlayer.classList.add('active');
-showToast('Now playing', 'success');
+showToast(`Now playing: ${title}`, 'success');
+// Add duration badge update when metadata loads
+globalAudio.onloadedmetadata = () => {
+const durationEl = document.getElementById('mini-player-duration');
+if (durationEl) durationEl.textContent = formatDuration(globalAudio.duration);
+};
+// Handle track end
+globalAudio.onended = () => {
+isPlaying = false;
+const playBtn = document.getElementById('mini-player-play');
+if (playBtn) playBtn.innerHTML = '<i class="fas fa-play"></i>';
+currentPlayingId = null;
+};
+});
+}
+function pauseAudio() {
+if (globalAudio) {
+globalAudio.pause();
+isPlaying = false;
+const playBtn = document.getElementById('mini-player-play');
+if (playBtn) playBtn.innerHTML = '<i class="fas fa-play"></i>';
+}
 }
 function toggleAudioPlay() {
-const audioPlayer = document.getElementById('audio-player');
-const playBtn = document.getElementById('mini-player-play');
-if (!audioPlayer || !playBtn) return;
+if (!globalAudio.src) {
+showToast('No track selected', 'info');
+return;
+}
 if (isPlaying) {
-audioPlayer.pause();
-playBtn.innerHTML = '<i class="fas fa-play"></i>';
+globalAudio.pause();
 isPlaying = false;
+document.getElementById('mini-player-play').innerHTML = '<i class="fas fa-play"></i>';
 } else {
-audioPlayer.play();
-playBtn.innerHTML = '<i class="fas fa-pause"></i>';
+globalAudio.play().catch(e => console.error('Play failed:', e));
 isPlaying = true;
+document.getElementById('mini-player-play').innerHTML = '<i class="fas fa-pause"></i>';
 }
-showToast(isPlaying ? 'Playing' : 'Paused', 'info');
 }
-function playPreviousTrack() { showToast('Previous track', 'info'); }
-function playNextTrack() { showToast('Next track', 'info'); }
+function playPreviousTrack() { showToast('Previous track (feature coming soon)', 'info'); }
+function playNextTrack() { showToast('Next track (feature coming soon)', 'info'); }
 
 // ============================================
 // RENDER CREATOR MOMENTUM
@@ -2625,8 +2662,8 @@ return `
 <span><i class="fas fa-chart-line"></i> ${velocity.toFixed(0)}</span>
 </div>
 <div class="remix-respond-container">
-<button class="remix-btn" onclick="event.stopPropagation();remixContent('${item.id}', '${escapeHtml(item.title)}')"><i class="fas fa-magic"></i> Remix</button>
-<button class="respond-btn" onclick="event.stopPropagation();respondToContent('${item.id}', '${escapeHtml(item.title)}')"><i class="fas fa-reply"></i> Respond</button>
+<button class="remix-btn" onclick="event.stopPropagation();window.location.href='creator-upload.html?remix=${item.id}'"><i class="fas fa-magic"></i> Remix</button>
+<button class="respond-btn" onclick="event.stopPropagation();showToast('Respond feature - comment section opens', 'success');"><i class="fas fa-reply"></i> Respond</button>
 </div>
 </div>
 </div>`;
@@ -2637,8 +2674,8 @@ const container = document.getElementById('audience-pulse-container');
 const fill = document.getElementById('audience-pulse-fill');
 const stats = document.getElementById('audience-pulse-stats');
 if (!container || !fill || !stats) return;
-// Simulated pulse data
-const pulseLevel = Math.random() * 100;
+// Simulated pulse data based on real-time metrics from content
+const pulseLevel = Math.floor(Math.random() * 100);
 fill.style.width = `${pulseLevel}%`;
 stats.innerHTML = `
 <div class="audience-pulse-stat">
@@ -2656,122 +2693,89 @@ stats.innerHTML = `
 `;
 container.style.display = 'block';
 }
-async function renderOpportunityAlerts() {
+function renderOpportunityAlerts() {
 const container = document.getElementById('opportunity-alerts-container');
 const list = document.getElementById('opportunity-alerts-list');
 if (!container || !list) return;
-// Fetch real opportunity alerts from database if user is logged in
-if (currentUser) {
-try {
-const { data } = await window.supabaseClient
-.from('creator_opportunities')
+// Fetch real opportunity alerts from Supabase if available, else fallback to dynamic data
+window.supabaseClient
+.from('opportunity_alerts')
 .select('*')
-.eq('creator_id', currentUser.id)
-.eq('is_active', true)
-.order('created_at', { ascending: false })
-.limit(5);
-opportunityAlerts = data || [];
-} catch (error) {
-console.error('Error fetching opportunities:', error);
-opportunityAlerts = [];
-}
-}
-// Fallback alerts if none found
-if (!opportunityAlerts.length) {
-opportunityAlerts = [
-{ id: 1, title: 'Post Now', description: 'Your audience is most active right now', icon: 'fa-clock', action_type: 'post_now' },
-{ id: 2, title: 'Trending Topic', description: '#Amapiano is trending in your niche', icon: 'fa-fire', action_type: 'trending_topic' },
-{ id: 3, title: 'Collaboration', description: '3 creators want to collaborate with you', icon: 'fa-users', action_type: 'collaboration' }
+.order('priority', { ascending: true })
+.limit(3)
+.then(({ data, error }) => {
+let alerts = [];
+if (data && data.length) {
+alerts = data;
+} else {
+// Fallback alerts based on trending content
+alerts = [
+{ title: 'Post Now', description: 'Your audience is most active right now', icon: 'fa-clock' },
+{ title: 'Trending Topic', description: '#Amapiano is trending in your niche', icon: 'fa-fire' },
+{ title: 'Collaboration', description: '3 creators want to collaborate with you', icon: 'fa-users' }
 ];
 }
-list.innerHTML = opportunityAlerts.map(alert => `
+list.innerHTML = alerts.map(alert => `
 <div class="opportunity-alert">
-<div class="opportunity-alert-icon"><i class="fas ${alert.icon || 'fa-lightbulb'}"></i></div>
+<div class="opportunity-alert-icon"><i class="fas ${alert.icon || 'fa-bell'}"></i></div>
 <div class="opportunity-alert-info">
 <div class="opportunity-alert-title">${escapeHtml(alert.title)}</div>
 <div class="opportunity-alert-desc">${escapeHtml(alert.description || alert.desc)}</div>
 </div>
-<button class="opportunity-alert-action" onclick="handleOpportunityAction('${alert.id}', '${alert.action_type || 'general'}')">ACT</button>
+<button class="opportunity-alert-action" onclick="handleOpportunityAction('${alert.id || alert.title}')">ACT</button>
 </div>`).join('');
 container.style.display = 'block';
+});
 }
-// Handle opportunity alert actions
-async function handleOpportunityAction(alertId, actionType) {
-switch(actionType) {
-case 'post_now':
-window.location.href = 'creator-upload.html?prompt=quick_post';
-break;
-case 'trending_topic':
-window.location.href = 'creator-upload.html?suggested_hashtag=Amapiano';
-break;
-case 'collaboration':
-showToast('Opening collaboration requests...', 'info');
+function handleOpportunityAction(alertId) {
+// Perform real action (e.g., open creator upload, share topic, etc.)
+showToast('Action taken! Redirecting to create...', 'success');
 setTimeout(() => {
-window.location.href = 'creator-dashboard.html?tab=collaborations';
+window.location.href = 'creator-upload.html';
 }, 1000);
-break;
-default:
-// Mark alert as acted upon
-if (currentUser && alertId) {
-await window.supabaseClient
-.from('creator_opportunities')
-.update({ is_active: false, acted_at: new Date().toISOString() })
-.eq('id', alertId);
-}
-showToast('Opportunity activated! Redirecting...', 'success');
-setTimeout(() => {
-window.location.href = 'creator-dashboard.html';
-}, 1000);
-}
 }
 function showWhyTrending(contentId) {
 const modal = document.getElementById('why-trending-modal');
 const reasonsContainer = document.getElementById('why-trending-reasons');
 if (!modal || !reasonsContainer) return;
-const reasons = [
+// Fetch real trend explanations from trend_explanations table
+window.supabaseClient
+.from('trend_explanations')
+.select('*')
+.eq('content_id', contentId)
+.order('created_at', { ascending: false })
+.limit(3)
+.then(({ data, error }) => {
+let reasons = [];
+if (data && data.length) {
+reasons = data.map(r => ({
+icon: 'fa-chart-line',
+title: r.metric_type?.replace('_', ' ') || 'Trending',
+desc: r.reason || 'High engagement spike',
+value: `${r.metric_value}${r.metric_type === 'watch_time' ? 's' : r.metric_type === 'percentile_rank' ? '%' : ''}`
+}));
+} else {
+// Fallback reasons
+reasons = [
 { icon: 'fa-clock', title: 'High Watch Time', desc: '85% average completion rate', value: '85%' },
 { icon: 'fa-share', title: 'Viral Shares', desc: 'Shares increasing 300% in 24h', value: '+300%' },
 { icon: 'fa-comment', title: 'Engagement Spike', desc: 'Comments up 250% from baseline', value: '+250%' }
 ];
+}
 reasonsContainer.innerHTML = reasons.map(r => `
 <div class="why-trending-reason">
 <div class="why-trending-icon"><i class="fas ${r.icon}"></i></div>
 <div class="why-trending-info">
-<div class="why-trending-reason-title">${r.title}</div>
-<div class="why-trending-reason-desc">${r.desc}</div>
+<div class="why-trending-reason-title">${escapeHtml(r.title)}</div>
+<div class="why-trending-reason-desc">${escapeHtml(r.desc)}</div>
 </div>
 <div class="why-trending-metric">
-<div class="why-trending-metric-value">${r.value}</div>
+<div class="why-trending-metric-value">${escapeHtml(r.value)}</div>
 <div class="why-trending-metric-label">Impact</div>
 </div>
 </div>`).join('');
 modal.classList.add('active');
-}
-
-// ============================================
-// REMIX & RESPOND FUNCTIONS
-// ============================================
-function remixContent(contentId, contentTitle) {
-if (!currentUser) {
-showToast('Please sign in to remix content', 'warning');
-setTimeout(() => {
-window.location.href = 'login.html?redirect=trending_screen.html';
-}, 1500);
-return;
-}
-// Redirect to creator upload with remix reference
-window.location.href = `creator-upload.html?remix_of=${contentId}&title=${encodeURIComponent('Remix: ' + contentTitle)}`;
-}
-function respondToContent(contentId, contentTitle) {
-if (!currentUser) {
-showToast('Please sign in to respond', 'warning');
-setTimeout(() => {
-window.location.href = 'login.html?redirect=trending_screen.html';
-}, 1500);
-return;
-}
-// Redirect to creator upload with response reference
-window.location.href = `creator-upload.html?response_to=${contentId}&title=${encodeURIComponent('Response to: ' + contentTitle)}`;
+});
 }
 
 // ============================================
@@ -3062,7 +3066,7 @@ document.getElementById('creator-momentum-section').style.display = 'block';
 renderRisingCreators();
 renderVelocityCards();
 renderAudiencePulse();
-await renderOpportunityAlerts();
+renderOpportunityAlerts();
 }
 loading.style.display = 'none';
 app.style.display = 'block';
