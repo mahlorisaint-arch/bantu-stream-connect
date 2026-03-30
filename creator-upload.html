@@ -1450,6 +1450,7 @@ function updateGenreForm() {
     
     container.classList.add('active');
     
+    // Remove required attributes from hidden fields when not active
     if (config.requires_mood) {
         moodSection.classList.add('active');
     } else {
@@ -1634,6 +1635,43 @@ async function handlePlaylistLinking(contentId, genre, metadata) {
 }
 
 // ============================================
+// VALIDATE GENRE-SPECIFIC FIELDS
+// ============================================
+
+function validateGenreFields() {
+    const genre = document.getElementById('content-genre').value;
+    const config = genreConfig[genre];
+    
+    if (!config) return true;
+    
+    for (const field of config.fields) {
+        if (field.required) {
+            const element = document.getElementById(`field-${field.name}`);
+            if (field.type === 'tags') {
+                const container = element?.closest('.tags-input-container') || element?.querySelector('.tags-input-container');
+                const tags = container?.dataset.tags;
+                const tagsArray = tags ? JSON.parse(tags) : [];
+                if (tagsArray.length === 0) {
+                    showToast(`Please fill in ${field.label}`, 'error');
+                    return false;
+                }
+            } else if (field.type === 'radio') {
+                const selected = document.querySelector(`input[name="field-${field.name}"]:checked`);
+                if (!selected) {
+                    showToast(`Please select ${field.label}`, 'error');
+                    return false;
+                }
+            } else if (element && !element.value.trim()) {
+                showToast(`Please fill in ${field.label}`, 'error');
+                return false;
+            }
+        }
+    }
+    
+    return true;
+}
+
+// ============================================
 // UPDATE CONTENT RECORD WITH METADATA
 // ============================================
 
@@ -1714,6 +1752,11 @@ async function uploadContent(isDraft = false) {
     
     if (!title || !desc || !selectedMediaFile || !genre) {
         showToast('Please fill all required fields');
+        return;
+    }
+    
+    // Validate genre-specific fields
+    if (!validateGenreFields()) {
         return;
     }
     
@@ -2208,20 +2251,29 @@ function updateChecklist() {
         document.getElementById('check-genre').innerHTML = '<i class="far fa-circle"></i> Genre Selected';
     }
     
-    const hasMetadata = config && config.fields.some(field => {
-        if (field.required) {
-            const element = document.getElementById(`field-${field.name}`);
-            if (field.type === 'tags') {
-                const container = element?.closest('.tags-input-container');
-                const tags = container?.dataset.tags;
-                return tags && JSON.parse(tags).length > 0;
+    // Check if genre metadata is completed (for required fields only)
+    let metadataCompleted = true;
+    if (config) {
+        for (const field of config.fields) {
+            if (field.required) {
+                const element = document.getElementById(`field-${field.name}`);
+                if (field.type === 'tags') {
+                    const container = element?.closest('.tags-input-container') || element?.querySelector('.tags-input-container');
+                    const tags = container?.dataset.tags;
+                    const tagsArray = tags ? JSON.parse(tags) : [];
+                    if (tagsArray.length === 0) {
+                        metadataCompleted = false;
+                        break;
+                    }
+                } else if (element && !element.value.trim()) {
+                    metadataCompleted = false;
+                    break;
+                }
             }
-            return element && element.value;
         }
-        return false;
-    });
+    }
     
-    if (hasMetadata || !config) {
+    if (metadataCompleted && config) {
         document.getElementById('check-metadata').classList.add('completed');
         document.getElementById('check-metadata').innerHTML = '<i class="fas fa-check-circle"></i> Genre Metadata Completed';
         score += 15;
@@ -2300,6 +2352,145 @@ function loadDraftFromLocalStorage() {
 }
 
 // ============================================
+// PROFILE FUNCTIONS
+// ============================================
+
+async function loadUserProfilePicture(user) {
+    try {
+        if (!user || !document.getElementById('userProfilePlaceholder')) return;
+        const placeholder = document.getElementById('userProfilePlaceholder');
+        const displayName = user.email || 'User';
+        const fallbackInitials = getInitials(user.email);
+        
+        while (placeholder.firstChild) {
+            placeholder.removeChild(placeholder.firstChild);
+        }
+        
+        const tempDiv = document.createElement('div');
+        tempDiv.className = 'profile-placeholder';
+        tempDiv.style.cssText = 'width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,#1D4ED8,#F59E0B);display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:16px';
+        tempDiv.textContent = fallbackInitials;
+        placeholder.appendChild(tempDiv);
+        
+        const { data: profile, error: profileError } = await window.supabaseClient
+            .from('user_profiles')
+            .select('*')
+            .eq('id', user.id)
+            .maybeSingle();
+        
+        if (profileError) {
+            console.log('Profile query error:', profileError);
+            return;
+        }
+        
+        if (profile && profile.avatar_url) {
+            let avatarUrl = profile.avatar_url;
+            if (!avatarUrl.startsWith('http')) {
+                if (avatarUrl.startsWith('avatars/')) {
+                    avatarUrl = `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/${avatarUrl}`;
+                } else {
+                    avatarUrl = `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/avatars/${avatarUrl}`;
+                }
+            }
+            
+            while (placeholder.firstChild) {
+                placeholder.removeChild(placeholder.firstChild);
+            }
+            
+            const img = document.createElement('img');
+            img.className = 'profile-img';
+            img.alt = displayName;
+            img.style.cssText = 'width: 100%; height: 100%; border-radius: 50%; object-fit: cover;';
+            img.src = avatarUrl;
+            
+            img.onerror = () => {
+                const fallback = document.createElement('div');
+                fallback.className = 'profile-placeholder';
+                fallback.style.cssText = 'width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,#1D4ED8,#F59E0B);display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:16px';
+                const finalInitials = profile.full_name ? getInitialsFromName(profile.full_name) : fallbackInitials;
+                fallback.textContent = finalInitials;
+                while (placeholder.firstChild) {
+                    placeholder.removeChild(placeholder.firstChild);
+                }
+                placeholder.appendChild(fallback);
+            };
+            placeholder.appendChild(img);
+        }
+        else if (profile && profile.full_name) {
+            const nameInitials = getInitialsFromName(profile.full_name);
+            while (placeholder.firstChild) {
+                placeholder.removeChild(placeholder.firstChild);
+            }
+            const nameDiv = document.createElement('div');
+            nameDiv.className = 'profile-placeholder';
+            nameDiv.style.cssText = 'width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,#1D4ED8,#F59E0B);display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:16px';
+            nameDiv.textContent = nameInitials;
+            placeholder.appendChild(nameDiv);
+        }
+    } catch (error) {
+        console.error('Error loading user profile picture:', error);
+    }
+}
+
+function getInitials(email) {
+    if (!email) return 'U';
+    const parts = email.split('@')[0];
+    return parts.substring(0, 2).toUpperCase();
+}
+
+function getInitialsFromName(fullName) {
+    if (!fullName) return 'U';
+    const names = fullName.split(' ');
+    if (names.length >= 2) {
+        return (names[0].charAt(0) + names[names.length - 1].charAt(0)).toUpperCase();
+    }
+    return fullName.charAt(0).toUpperCase();
+}
+
+// ============================================
+// AUTHENTICATION
+// ============================================
+
+async function checkAuthentication() {
+    try {
+        const sessionResponse = await window.supabaseClient.auth.getSession();
+        const session = sessionResponse.data.session;
+        const error = sessionResponse.error;
+        
+        if (error || !session?.user) {
+            console.log('⚠️ User not authenticated');
+            return null;
+        }
+        
+        currentSession = session;
+        currentUserId = session.user.id;
+        console.log('✅ Authenticated user ID:', currentUserId);
+        
+        await loadUserProfilePicture(session.user);
+        await loadCreatorStreak();
+        
+        return session.user;
+    } catch (error) {
+        console.error('Auth check failed:', error);
+        return null;
+    }
+}
+
+async function loadCreatorStreak() {
+    try {
+        const streak = localStorage.getItem('creator_streak') || 0;
+        const streakEl = document.getElementById('creator-streak');
+        const streakCount = document.getElementById('streak-count');
+        if (streakEl && streakCount) {
+            streakCount.textContent = streak;
+            streakEl.style.display = 'flex';
+        }
+    } catch (error) {
+        console.error('Error loading streak:', error);
+    }
+}
+
+// ============================================
 // EVENT LISTENERS & INITIALIZATION
 // ============================================
 
@@ -2374,58 +2565,53 @@ function setupEventListeners() {
     });
     document.getElementById('auth-cancel-btn').addEventListener('click', () => {
         document.getElementById('auth-modal').classList.remove('active');
+        window.history.back();
     });
     
     document.getElementById('back-btn').addEventListener('click', () => window.history.back());
     document.getElementById('profile-btn').addEventListener('click', () => {
-        window.location.href = currentUserId ? 'profile.html' : `login.html?redirect=${encodeURIComponent('creator-upload.html')}`;
-    });
-}
-
-function setupAuth() {
-    window.supabaseClient.auth.getSession().then(async ({ data: { session } }) => {
-        if (session?.user) {
-            currentSession = session;
-            currentUserId = session.user.id;
-            console.log('✅ Authenticated:', currentUserId);
-            document.getElementById('auth-modal').classList.remove('active');
-            loadDraftFromLocalStorage();
+        if (currentUserId) {
+            window.location.href = 'profile.html';
         } else {
-            document.getElementById('auth-modal').classList.add('active');
+            window.location.href = `login.html?redirect=${encodeURIComponent('creator-upload.html')}`;
         }
     });
     
-    window.supabaseClient.auth.onAuthStateChange((event, session) => {
-        if (event === 'SIGNED_IN' && session?.user) {
-            currentSession = session;
-            currentUserId = session.user.id;
-            document.getElementById('auth-modal').classList.remove('active');
-            loadDraftFromLocalStorage();
-            showToast('Welcome back!', 'success');
-        } else if (event === 'SIGNED_OUT') {
-            currentSession = null;
-            currentUserId = null;
-            document.getElementById('auth-modal').classList.add('active');
-        }
+    // Search and notifications setup (keep existing)
+    document.getElementById('search-btn')?.addEventListener('click', () => {
+        document.getElementById('search-modal').classList.add('active');
+    });
+    document.getElementById('close-search-btn')?.addEventListener('click', () => {
+        document.getElementById('search-modal').classList.remove('active');
+    });
+    document.getElementById('notifications-btn')?.addEventListener('click', () => {
+        document.getElementById('notifications-panel').classList.add('active');
+    });
+    document.getElementById('close-notifications')?.addEventListener('click', () => {
+        document.getElementById('notifications-panel').classList.remove('active');
     });
 }
 
 async function initialize() {
-    document.getElementById('loading').style.display = 'flex';
-    document.getElementById('app').style.display = 'none';
+    const loading = document.getElementById('loading');
+    const app = document.getElementById('app');
+    loading.style.display = 'flex';
+    app.style.display = 'none';
     
-    setupAuth();
+    await checkAuthentication();
     setupEventListeners();
     
     updateGenreForm();
     updateButtonsState();
     updateChecklist();
+    loadDraftFromLocalStorage();
     
-    document.getElementById('loading').style.display = 'none';
-    document.getElementById('app').style.display = 'block';
+    loading.style.display = 'none';
+    app.style.display = 'block';
     console.log('✅ Creator Upload initialized');
 }
 
+// Global functions for inline handlers
 window.removeMediaFile = function() {
     selectedMediaFile = null;
     extractedDuration = null;
@@ -2502,6 +2688,33 @@ function triggerConfetti() {
         setTimeout(() => confetti.remove(), 4000);
     }
 }
+
+// Auth state listener
+window.supabaseClient.auth.onAuthStateChange(async (event, session) => {
+    console.log('Auth state changed:', event);
+    
+    if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+        if (session?.user) {
+            currentSession = session;
+            currentUserId = session.user.id;
+            await loadUserProfilePicture(session.user);
+            await loadCreatorStreak();
+            document.getElementById('auth-modal').classList.remove('active');
+            isUploading = false;
+            updateButtonsState();
+            showToast('Welcome back!', 'success');
+        }
+    } else if (event === 'SIGNED_OUT') {
+        currentSession = null;
+        currentUserId = null;
+        document.getElementById('userProfilePlaceholder').innerHTML = `
+            <div class="profile-placeholder">
+                <i class="fas fa-user"></i>
+            </div>
+        `;
+        showToast('Signed out successfully', 'info');
+    }
+});
 
 initialize();
 </script>
