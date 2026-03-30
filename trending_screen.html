@@ -1822,17 +1822,16 @@ let currentAudioTrack = null;
 let isPlaying = false;
 let selectedMood = 'all';
 // Filter options
-const filters = ['All', 'Music', 'Film & Series', 'Podcasts', 'Gaming', 'Comedy', 'Live', 'Top 24 Hrs', 'Rising Creators'];
+const filters = ['All', 'Music', 'Film', 'Documentary', 'Series', 'Podcasts', 'Shorts'];
 // Mood filters (UI only - actual filtering happens on real data)
 const moodFilters = [
 { id: 'all', label: 'All', emoji: '🎵' },
-{ id: 'hype', label: 'Hype', emoji: '🔥' },
-{ id: 'heartbreak', label: 'Heartbreak', emoji: '💔' },
-{ id: 'deep-talks', label: 'Deep Talks', emoji: '🧠' },
-{ id: 'motivation', label: 'Motivation', emoji: '🚀' },
-{ id: 'comedy', label: 'Comedy Audio', emoji: '😂' },
-{ id: 'african-stories', label: 'African Stories', emoji: '🌍' },
-{ id: 'late-night', label: 'Late Night Vibes', emoji: '💤' }
+{ id: 'energetic', label: 'Energetic', emoji: '⚡' },
+{ id: 'relaxing', label: 'Relaxing', emoji: '😌' },
+{ id: 'inspiring', label: 'Inspiring', emoji: '✨' },
+{ id: 'thought-provoking', label: 'Thought-Provoking', emoji: '🧠' },
+{ id: 'feel-good', label: 'Feel-Good', emoji: '😊' },
+{ id: 'nostalgic', label: 'Nostalgic', emoji: '📸' }
 ];
 // SoundMap regions (static UI - actual data filtering happens separately)
 const soundMapRegions = [
@@ -2285,77 +2284,63 @@ const { count } = await window.supabaseClient
 .eq('content_id', item.id);
 viewsCount = count || 0;
 }
-enriched.push({
-...item,
-real_views: viewsCount,
-is_new: isContentNew(item.created_at),
-duration: item.duration || 0,
-is_live: item.is_live || false
-});
-}
-return enriched;
-}
-
-// ============================================
-// FETCH SOUNDSPHERE DATA - REAL DATA ONLY
-// ============================================
-async function fetchSoundSphereData() {
-try {
-console.log('Fetching SoundSphere real data...');
-// Fetch audio content from Content table
-const { data: audioContent, error: audioError } = await window.supabaseClient
-.from('Content')
-.select('*, user_profiles!user_id(*)')
-.eq('status', 'published')
-.in('genre', ['Music', 'Podcasts', 'Shorts'])
-.order('created_at', { ascending: false })
-.limit(50);
-if (audioError) {
-console.error('Error fetching audio content:', audioError);
-audioShortsData = [];
-podcastBitesData = [];
-soundMomentumData = [];
-} else {
-const processed = await Promise.all((audioContent || []).map(async (item) => {
-let viewsCount = item.views_count || 0;
-if (!viewsCount) {
-const { count } = await window.supabaseClient
-.from('content_views')
-.select('*', { count: 'exact', head: true })
-.eq('content_id', item.id);
-viewsCount = count || 0;
-}
-let momentumScore = item.momentum_score || 0;
-let velocityScore = item.velocity_score || 0;
-if (!momentumScore && item.id) {
+let momentumScore = 0;
+let velocityScore = 0;
 const { data: metrics } = await window.supabaseClient
 .from('content_metrics_realtime')
-.select('momentum_score, velocity_score, trend_label')
+.select('momentum_score, velocity_score, trend_stage, engagement_score')
 .eq('content_id', item.id)
 .maybeSingle();
 if (metrics) {
 momentumScore = metrics.momentum_score || 0;
 velocityScore = metrics.velocity_score || 0;
 }
-}
-return {
+enriched.push({
 ...item,
 real_views: viewsCount,
+real_momentum: momentumScore,
+real_velocity: velocityScore,
+is_new: isContentNew(item.created_at),
+duration: item.duration || 0,
+is_live: item.is_live || false,
+content_format: item.content_format || (item.duration < 60 ? 'short' : 'long_form')
+});
+}
+return enriched;
+}
+
+// ============================================
+// FETCH SOUNDSPHERE DATA - USING MOMENTUM VIEWS
+// ============================================
+async function fetchSoundSphereData() {
+try {
+console.log('Fetching SoundSphere real data from momentum views...');
+// Fetch from trending_by_momentum view for audio/music content
+const { data: trendingAudio, error: audioError } = await window.supabaseClient
+.from('trending_by_momentum')
+.select('*, user_profiles!user_id(*)')
+.limit(30);
+if (audioError) {
+console.error('Error fetching trending_by_momentum:', audioError);
+audioShortsData = [];
+podcastBitesData = [];
+soundMomentumData = [];
+} else {
+const processed = (trendingAudio || []).map(item => ({
+...item,
+real_views: item.views_count || 0,
+real_likes: item.likes_count || 0,
+momentum_score: item.momentum_score || 0,
+velocity_score: item.velocity_score || 0,
 duration: item.duration || (item.genre === 'Podcasts' ? 900 : 180),
-momentum_score: momentumScore,
-velocity_score: velocityScore,
-creator_username: item.user_profiles?.username || item.creator_username || 'Creator'
-};
+creator_username: item.creator_username || item.user_profiles?.username || 'Creator'
 }));
-// Audio Shorts: duration < 60 seconds OR genre 'Shorts'
-audioShortsData = processed.filter(item => (item.duration && item.duration < 60) || item.genre === 'Shorts');
-// Podcast Bites: genre 'Podcasts'
-podcastBitesData = processed.filter(item => item.genre === 'Podcasts');
-// Trending Sounds: sorted by momentum_score if available, otherwise by views
-soundMomentumData = [...processed].sort((a, b) => {
-if (a.momentum_score !== b.momentum_score) return (b.momentum_score || 0) - (a.momentum_score || 0);
-return (b.real_views || 0) - (a.real_views || 0);
-}).slice(0, 15);
+// Audio Shorts: duration < 60 seconds OR content_format 'short'
+audioShortsData = processed.filter(item => (item.duration && item.duration < 60) || item.content_format === 'short');
+// Podcast Bites: genre 'Podcasts' OR content_format 'podcast_episode'
+podcastBitesData = processed.filter(item => item.genre === 'Podcasts' || item.content_format === 'podcast_episode');
+// Trending Sounds: sorted by momentum_score
+soundMomentumData = [...processed].sort((a, b) => (b.momentum_score || 0) - (a.momentum_score || 0)).slice(0, 15);
 }
 // Fetch creator momentum data
 const { data: creatorData, error: creatorError } = await window.supabaseClient
@@ -2493,7 +2478,6 @@ function renderSoundDNA() {
 const container = document.getElementById('sound-dna-container');
 const grid = document.getElementById('sound-dna-grid');
 if (!container || !grid) return;
-// This will be populated from user listening history when available
 grid.innerHTML = `
 <div class="sound-dna-item">
 <div class="sound-dna-icon">🎵</div>
@@ -2678,8 +2662,6 @@ const container = document.getElementById('audience-pulse-container');
 const fill = document.getElementById('audience-pulse-fill');
 const stats = document.getElementById('audience-pulse-stats');
 if (!container || !fill || !stats) return;
-// Real audience pulse would come from analytics
-// Show placeholder indicating data will appear when available
 fill.style.width = '0%';
 stats.innerHTML = `
 <div class="audience-pulse-stat">
@@ -2701,7 +2683,6 @@ function renderOpportunityAlerts() {
 const container = document.getElementById('opportunity-alerts-container');
 const list = document.getElementById('opportunity-alerts-list');
 if (!container || !list) return;
-// Real opportunity alerts would come from database
 list.innerHTML = `
 <div class="opportunity-alert">
 <div class="opportunity-alert-icon"><i class="fas fa-clock"></i></div>
@@ -2717,7 +2698,6 @@ function showWhyTrending(contentId) {
 const modal = document.getElementById('why-trending-modal');
 const reasonsContainer = document.getElementById('why-trending-reasons');
 if (!modal || !reasonsContainer) return;
-// Fetch real trending reasons from database
 window.supabaseClient
 .from('trend_explanations')
 .select('*')
@@ -2823,6 +2803,7 @@ ${content.is_live ? '<div class="live-badge">LIVE NOW</div>' : ''}
 </div>
 <div class="featured-stats">
 <span><i class="fas fa-eye"></i> ${formatNumber(content.real_views)} views</span>
+${content.real_momentum ? `<span><i class="fas fa-chart-line"></i> ${content.real_momentum.toFixed(0)} momentum</span>` : ''}
 </div>
 <button class="watch-now-btn">WATCH NOW <i class="fas fa-play"></i></button>
 </div>
@@ -2971,11 +2952,11 @@ loading.style.display = 'flex';
 const contentData = await fetchContent(0, 80);
 allContentData = contentData;
 await fetchSoundSphereData();
-const featured = [...contentData].sort((a, b) => (b.real_views || 0) - (a.real_views || 0))[0];
+const featured = [...contentData].sort((a, b) => (b.real_momentum || b.real_views || 0) - (a.real_momentum || a.real_views || 0))[0];
 const liveStreams = contentData.filter(c => c.is_live).slice(0, 10);
-const shorts = contentData.filter(c => (c.duration || 0) < 60).slice(0, 15);
+const shorts = contentData.filter(c => (c.duration || 0) < 60 || c.content_format === 'short').slice(0, 15);
 const communityGems = [...contentData]
-.sort((a, b) => ((b.real_views || 0) + (b.likes_count || 0) * 2) - ((a.real_views || 0) + (a.likes_count || 0) * 2))
+.sort((a, b) => ((b.real_momentum || 0) + (b.real_views || 0) + (b.likes_count || 0) * 2) - ((a.real_momentum || 0) + (a.real_views || 0) + (a.likes_count || 0) * 2))
 .slice(0, 12);
 const personalized = generatePersonalizedRow(contentData);
 // Render shorts section
@@ -3039,7 +3020,7 @@ return !!currentUser;
 // INITIALIZATION
 // ============================================
 async function init() {
-console.log('🔥 Trending Screen Initializing with real data only...');
+console.log('🔥 Trending Screen Initializing with momentum views...');
 setupSidebar();
 initThemeSelector();
 setupNavigation();
