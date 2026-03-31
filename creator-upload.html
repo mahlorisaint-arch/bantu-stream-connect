@@ -1082,6 +1082,8 @@ window.supabaseClient = supabase.createClient(
 );
 console.log('✅ Global Supabase client initialized');
 }
+</script>
+<script>
 // ============================================
 // GENRE CONFIGURATION
 // ============================================
@@ -1174,9 +1176,7 @@ let uploadStartTime = 0;
 let uploadStartBytes = 0;
 let lastLoadedBytes = 0;
 let lastUpdateTime = 0;
-// ============================================
-// DOM ELEMENTS
-// ============================================
+// DOM Elements
 let loadingScreen, app, authModal, publishBtn, saveDraftBtn, profileBtn, backBtn;
 let notificationsBtn, searchBtn, progressSection, progressFill, progressPercentage;
 let progressText, progressSpeed, progressEta, uploadFormState, processingState, successState;
@@ -1210,8 +1210,10 @@ div.textContent = text;
 return div.innerHTML;
 }
 function setLoading(loading) {
+if (loadingScreen && app) {
 loadingScreen.style.display = loading ? 'flex' : 'none';
 app.style.display = loading ? 'none' : 'block';
+}
 }
 // ============================================
 // DYNAMIC FORM GENERATION
@@ -1257,7 +1259,12 @@ const container = document.getElementById('dynamic-fields-container');
 const contentDiv = document.getElementById('dynamic-fields-content');
 const moodSection = document.getElementById('mood-tags-section');
 const chaptersSection = document.getElementById('chapters-section');
-if (!config) { container.classList.remove('active'); moodSection.classList.remove('active'); chaptersSection.classList.remove('active'); return; }
+if (!config) {
+container.classList.remove('active');
+moodSection.classList.remove('active');
+chaptersSection.classList.remove('active');
+return;
+}
 document.getElementById('dynamic-fields-title').innerHTML = `<i class="fas fa-layer-group"></i> ${config.title}`;
 contentDiv.innerHTML = '';
 config.fields.forEach(field => {
@@ -1518,7 +1525,6 @@ else { durationDisplay.classList.add('valid'); durationDisplay.classList.remove(
 }
 if (file.type.includes('video') && !selectedThumbnailFile) {
 try {
-showToast('Generating thumbnail from video...', 'info');
 const thumbnail = await generateVideoThumbnail(file);
 handleThumbnailFile(thumbnail, true);
 } catch (thumbError) { console.error('Auto-thumbnail generation failed:', thumbError); }
@@ -1879,7 +1885,7 @@ grid.innerHTML = results.map(item => {
 const creator = item.user_profiles?.full_name || item.user_profiles?.username || item.creator || 'Creator';
 const creatorId = item.user_profiles?.id || item.user_id;
 const thumbnailUrl = item.thumbnail_url ? `https://ydnxqnbjoshvxteevemc.supabase.co/storage/v1/object/public/${item.thumbnail_url.replace(/^\/+/, '')}` : 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop';
-return `<div class="content-card" data-content-id="${item.id}"><div class="card-thumbnail"><img src="${thumbnailUrl}" alt="${escapeHtml(item.title)}" loading="lazy"><div class="thumbnail-overlay"></div><div class="play-overlay"><div class="play-icon"><i class="fas fa-play"></i></div></div></div><div class="card-content"><h3 class="card-title">${escapeHtml(item.title).substring(0, 45)}...</h3><button class="creator-btn" onclick="event.stopPropagation(); window.location.href='creator-channel.html?id=${creatorId}&name=${encodeURIComponent(creator)}'"><i class="fas fa-user"></i> ${escapeHtml(creator).substring(0, 15)}</button><div class="card-stats"><div class="card-stat"><i class="fas fa-eye"></i> ${item.real_views || item.views_count || 0}</div><div class="card-stat"><i class="fas fa-heart"></i> ${item.real_likes || 0}</div></div></div></div>`;
+return `<div class="content-card" data-content-id="${item.id}"><div class="card-thumbnail"><img src="${thumbnailUrl}" alt="${escapeHtml(item.title)}" loading="lazy"><div class="thumbnail-overlay"></div><div class="play-overlay"><div class="play-icon"><i class="fas fa-play"></i></div></div></div><div class="card-content"><h3 class="card-title">${escapeHtml(item.title).substring(0, 45)}...</h3><button class="creator-btn" onclick="event.stopPropagation(); window.location.href='creator-channel.html?id=${creatorId}&name=${encodeURIComponent(creator)}'"><i class="fas fa-user"></i> ${escapeHtml(creator).substring(0, 15)}</button><div class="card-stats"><div class="card-stat"><i class="fas fa-eye"></i> ${formatNumber(item.real_views || item.views_count || 0)}</div><div class="card-stat"><i class="fas fa-heart"></i> ${formatNumber(item.real_likes || 0)}</div></div></div></div>`;
 }).join('');
 grid.querySelectorAll('.content-card').forEach(card => {
 card.addEventListener('click', (e) => { if (e.target.closest('.creator-btn')) return; const id = card.dataset.contentId; if (id) window.location.href = `content-detail.html?id=${id}`; });
@@ -1989,7 +1995,7 @@ setTimeout(() => confetti.remove(), 4000);
 }
 }
 // ============================================
-// INITIALIZATION - CRITICAL FIX
+// INITIALIZATION - FIXED
 // ============================================
 async function initialize() {
 try {
@@ -2045,7 +2051,7 @@ await loadUserProfilePicture(session.user);
 }
 }
 console.log('✅ User state set');
-// Setup all event listeners
+// Setup ALL event listeners
 setupEventListeners();
 setupSearchModal();
 setupNotificationsPanel();
@@ -2063,11 +2069,12 @@ if (currentUserId) {
 loadNotifications();
 console.log('✅ Notifications loaded');
 }
-// CRITICAL: Hide loading screen
+// CRITICAL: Hide loading screen - ALWAYS CALLED
 setLoading(false);
 console.log('✅ Loading screen hidden - initialization complete');
 } catch (error) {
 console.error('❌ Initialization failed:', error);
+// CRITICAL: Still hide loading screen even on error
 setLoading(false);
 showToast('Failed to load upload page', 'error');
 }
