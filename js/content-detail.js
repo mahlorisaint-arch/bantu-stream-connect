@@ -3128,84 +3128,94 @@ function setupEventListeners() {
   // ============================================
   // LIKE BUTTON - RLS-COMPLIANT ✅ FIXED
   // ============================================
-  const likeBtn = document.getElementById('likeBtn');
-  if (likeBtn) {
-    likeBtn.addEventListener('click', async function() {
-      if (!currentContent) return;
+  // ============================================
+// LIKE BUTTON - JAVASCRIPT COUNT UPDATE FALLBACK ✅
+// ============================================
+const likeBtn = document.getElementById('likeBtn');
+if (likeBtn) {
+  likeBtn.addEventListener('click', async function() {
+    if (!currentContent) return;
+    
+    if (!window.AuthHelper?.isAuthenticated?.()) {
+      showToast('Sign in to like content', 'warning');
+      return;
+    }
+    
+    const userProfile = window.AuthHelper.getUserProfile();
+    if (!userProfile?.id) {
+      showToast('User profile not found', 'error');
+      return;
+    }
+    
+    const isLiked = likeBtn.classList.contains('active');
+    const likesCountEl = document.getElementById('likesCount');
+    const currentLikes = parseInt(likesCountEl?.textContent.replace(/\D/g, '') || '0') || 0;
+    const newLikes = isLiked ? currentLikes - 1 : currentLikes + 1;
+    
+    try {
+      // Update UI optimistically
+      likeBtn.classList.toggle('active', !isLiked);
+      likeBtn.innerHTML = !isLiked
+        ? '<i class="fas fa-heart"></i><span>Liked</span>'
+        : '<i class="far fa-heart"></i><span>Like</span>';
       
-      if (!window.AuthHelper?.isAuthenticated?.()) {
-        showToast('Sign in to like content', 'warning');
-        return;
+      if (likesCountEl) {
+        likesCountEl.textContent = formatNumber(newLikes);
       }
       
-      const userProfile = window.AuthHelper.getUserProfile();
-      if (!userProfile?.id) {
-        showToast('User profile not found', 'error');
-        return;
-      }
-      
-      const isLiked = likeBtn.classList.contains('active');
-      const likesCountEl = document.getElementById('likesCount');
-      const currentLikes = parseInt(likesCountEl?.textContent.replace(/\D/g, '') || '0') || 0;
-      const newLikes = isLiked ? currentLikes - 1 : currentLikes + 1;
-      
-      try {
-        // Update UI optimistically
-        likeBtn.classList.toggle('active', !isLiked);
-        likeBtn.innerHTML = !isLiked
-          ? '<i class="fas fa-heart"></i><span>Liked</span>'
-          : '<i class="far fa-heart"></i><span>Like</span>';
+      if (!isLiked) {
+        // LIKE: Insert new record
+        const { error: insertError } = await window.supabaseClient
+          .from('content_likes')
+          .insert({ 
+            user_id: userProfile.id, 
+            content_id: currentContent.id 
+          });
         
-        if (likesCountEl) {
-          likesCountEl.textContent = formatNumber(newLikes);
-        }
+        if (insertError) throw insertError;
         
-        if (!isLiked) {
-          // ✅ LIKE: Insert with proper WHERE clause
-          const { error } = await window.supabaseClient
-            .from('content_likes')
-            .insert({
-              user_id: userProfile.id,
-              content_id: currentContent.id
-            });
+        // ✅ MANUAL COUNT UPDATE: Increment likes_count in Content table
+        await window.supabaseClient
+          .from('Content')
+          .update({ likes_count: newLikes })
+          .eq('id', currentContent.id);
           
-          if (error) throw error;
-        } else {
-          // ✅ UNLIKE: Delete with BOTH WHERE clauses (RLS compliant)
-          const { error } = await window.supabaseClient
-            .from('content_likes')
-            .delete()
-            .eq('user_id', userProfile.id)      // ← WHERE clause #1
-            .eq('content_id', currentContent.id); // ← WHERE clause #2
-          
-          if (error) throw error;
-        }
+      } else {
+        // UNLIKE: Delete record
+        const { error: deleteError } = await window.supabaseClient
+          .from('content_likes')
+          .delete()
+          .eq('user_id', userProfile.id)
+          .eq('content_id', currentContent.id);
         
-        // Refresh counts from source
-        await refreshCountsFromSource();
+        if (deleteError) throw deleteError;
         
-        showToast(!isLiked ? 'Liked!' : 'Like removed', !isLiked ? 'success' : 'info');
-        
-        if (window.track?.contentLike) {
-          window.track.contentLike(currentContent.id, !isLiked);
-        }
-      } catch (error) {
-        console.error('Like operation failed:', error);
-        
-        // Revert UI on error
-        likeBtn.classList.toggle('active', isLiked);
-        likeBtn.innerHTML = isLiked
-          ? '<i class="fas fa-heart"></i><span>Liked</span>'
-          : '<i class="far fa-heart"></i><span>Like</span>';
-        
-        if (likesCountEl) {
-          likesCountEl.textContent = formatNumber(currentLikes);
-        }
-        
-        showToast('Failed: ' + error.message, 'error');
+        // ✅ MANUAL COUNT UPDATE: Decrement likes_count
+        await window.supabaseClient
+          .from('Content')
+          .update({ likes_count: newLikes })
+          .eq('id', currentContent.id);
       }
-    });
-  }
+      
+      showToast(!isLiked ? 'Liked!' : 'Like removed', !isLiked ? 'success' : 'info');
+      
+      // Refresh from source to ensure accuracy
+      await refreshCountsFromSource();
+      
+    } catch (error) {
+      console.error('Like operation failed:', error);
+      // Revert UI on error
+      likeBtn.classList.toggle('active', isLiked);
+      likeBtn.innerHTML = isLiked
+        ? '<i class="fas fa-heart"></i><span>Liked</span>'
+        : '<i class="far fa-heart"></i><span>Like</span>';
+      if (likesCountEl) {
+        likesCountEl.textContent = formatNumber(currentLikes);
+      }
+      showToast('Failed: ' + error.message, 'error');
+    }
+  });
+}
   
   // ============================================
   // FAVORITE BUTTON
